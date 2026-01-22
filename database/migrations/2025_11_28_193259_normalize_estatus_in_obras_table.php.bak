@@ -1,0 +1,56 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use App\Models\Obra;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('obras', function (Blueprint $table) {
+            // 1. Crear columna temporal
+            $table->tinyInteger('estatus_nuevo')
+                  ->default(2)
+                  ->comment('1=planeacion, 2=en_curso, 3=terminada, 4=cancelada')
+                  ->after('status');
+        });
+
+        // 2. Migrar datos del varchar al tinyInteger
+        foreach (\DB::table('obras')->select('id', 'status')->get() as $obra) {
+
+            $nuevo = 2; // default: en curso
+
+            $valor = strtolower(trim($obra->status ?? ''));
+
+            if (in_array($valor, ['plan', 'planeada', 'planeacion', 'pre', 'contratada'])) {
+                $nuevo = 1;
+            } elseif (in_array($valor, ['curso', 'activa', 'en curso'])) {
+                $nuevo = 2;
+            } elseif (in_array($valor, ['terminada', 'finalizada', 'fin'])) {
+                $nuevo = 3;
+            } elseif (in_array($valor, ['cancelada', 'suspendida'])) {
+                $nuevo = 4;
+            }
+
+            DB::table('obras')
+                ->where('id', $obra->id)
+                ->update(['estatus_nuevo' => $nuevo]);
+        }
+
+        Schema::table('obras', function (Blueprint $table) {
+            // 3. Borrar campo viejo
+            $table->dropColumn('status');
+
+            // 4. Renombrar el nuevo campo
+            $table->renameColumn('estatus_nuevo', 'status');
+        });
+    }
+
+    public function down(): void
+    {
+        // Si necesitas revertir, solo lo avisamos porque revertir esto no es trivial
+        throw new Exception("Cannot revert this migration automatically.");
+    }
+};
