@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\AsistenciasController;
 use App\Http\Controllers\Api\V1\VehiculoKmController;
+use App\Http\Controllers\Api\V1\ComisionController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -35,6 +36,8 @@ Route::prefix('v1')->group(function () {
         
         Route::get('vehiculos/km-log', [VehiculoKmController::class, 'index']);
         Route::post('vehiculos/km-log', [VehiculoKmController::class, 'store']);
+    
+        Route::post('obras/{obra}/comisiones', [ComisionController::class, 'store']);
 
     });
 });
