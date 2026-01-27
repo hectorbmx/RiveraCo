@@ -15,14 +15,21 @@
         <aside id="sidebar" class="w-64 bg-[#0B265A] text-white flex flex-col transition-all duration-300">
 
             {{-- Logo --}}
+            {{-- Logo --}}
             <div class="flex items-center px-6 py-6 gap-3 border-b border-white/10">
-                <div class="w-12 h-12 rounded-xl bg-[#FFC107] flex items-center justify-center text-[#0B265A] font-bold">
-                    RC
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden">
+                    <img 
+                        src="{{ asset('images/logo.png') }}" 
+                        alt="Rivera Construcciones"
+                        class="w-full h-full object-contain"
+                    >
                 </div>
+
                 <div class="font-semibold text-lg leading-tight sidebar-text">
                     Rivera<br>Construcciones
                 </div>
             </div>
+
 
             {{-- MENU --}}
             <nav class="flex-1 py-6 space-y-1">
