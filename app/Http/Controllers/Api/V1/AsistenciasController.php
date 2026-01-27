@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Collection;
 use App\Models\Obra;
 use App\Models\ObraAsistencia;
 use Illuminate\Http\Request;
@@ -132,5 +133,142 @@ class AsistenciasController extends Controller
         ],
     ], 201);
 }
+//para las checadas de la app en obra por empleado
+public function showEmpleado($obraId, $empleadoId)
+{
+    $raw = ObraAsistencia::query()
+        ->with('empleado')
+        ->where('obra_id', $obraId)
+        ->where('empleado_id', $empleadoId)
+        ->orderBy('checked_at')
+        ->get();
+
+    $asistencias = $raw
+        ->groupBy(fn ($a) => $a->empleado_id . '|' . $a->checked_at->toDateString())
+        ->map(function (Collection $items) {
+            $entrada = $items->firstWhere('tipo', 'entrada');
+            $salida  = $items->firstWhere('tipo', 'salida');
+
+            return [
+                'empleado' => $items->first()->empleado,
+                'checked_date' => $items->first()->checked_at->toDateString(),
+                'entrada' => $entrada ? [
+                    'id' => $entrada->id,
+                    'hora' => $entrada->checked_at?->format('H:i'),
+                    'photo_url' => $entrada->photo_path ? Storage::disk('public')->url($entrada->photo_path) : null,
+                ] : null,
+                'salida' => $salida ? [
+                    'id' => $salida->id,
+                    'hora' => $salida->checked_at?->format('H:i'),
+                    'photo_url' => $salida->photo_path ? Storage::disk('public')->url($salida->photo_path) : null,
+                ] : null,
+            ];
+        })
+        ->values();
+
+    return response()->json([
+        'obra_id' => (int) $obraId,
+        'empleado_id' => (int) $empleadoId,
+        'data' => $asistencias,
+    ]);
+}
+
+//para las checadas de la app en obra general
+public function show(Request $request, $obraId)
+{
+    $raw = ObraAsistencia::query()
+        ->with('empleado')
+        ->where('obra_id', $obraId)
+        ->orderBy('checked_at')
+        ->get();
+
+    $asistencias = $raw
+        ->groupBy(fn ($a) => $a->empleado_id . '|' . $a->checked_at->toDateString())
+        ->map(function (Collection $items) {
+            $entrada = $items->firstWhere('tipo', 'entrada');
+            $salida  = $items->firstWhere('tipo', 'salida');
+
+            return [
+                'empleado' => $items->first()->empleado,
+                'checked_date' => $items->first()->checked_at->toDateString(),
+
+                'entrada' => $entrada ? [
+                    'id'         => $entrada->id,
+                    'hora'       => $entrada->checked_at?->format('H:i'),
+                    'photo_path' => $entrada->photo_path,
+                    'photo_url'  => $entrada->photo_path
+                        ? Storage::disk('public')->url($entrada->photo_path)
+                        : null,
+                ] : null,
+
+                'salida' => $salida ? [
+                    'id'         => $salida->id,
+                    'hora'       => $salida->checked_at?->format('H:i'),
+                    'photo_path' => $salida->photo_path,
+                    'photo_url'  => $salida->photo_path
+                        ? Storage::disk('public')->url($salida->photo_path)
+                        : null,
+                ] : null,
+            ];
+        })
+        ->values();
+
+    return response()->json([
+        'obra_id' => (int) $obraId,
+        'data'    => $asistencias,
+    ]);
+}
+
+public function destroy(Request $request, Obra $obra, $asistencia)
+{
+    $user = $request->user();
+
+    $data = $request->validate([
+        'reason' => ['nullable','string','max:255'],
+        // Si quieres permitir borrar la foto físicamente al hacer delete:
+        'delete_photo' => ['nullable','boolean'],
+    ]);
+
+    // 1) Buscar asistencia FORZANDO que sea de esa obra
+    $row = \App\Models\ObraAsistencia::query()
+        ->where('obra_id', $obra->id)
+        ->whereNull('deleted_at')
+        ->findOrFail($asistencia);
+
+    // 2) (Opcional) Autorización: aquí puedes meter Gate/Policy/roles
+    // Ej: solo el que la registró o un admin/residente
+    // if ($row->registrado_por_user_id !== $user->id && !$user->hasRole('admin')) { ... }
+
+    // 3) Soft delete con auditoría
+    \DB::transaction(function () use ($row, $user, $data) {
+
+        $row->deleted_by_user_id = $user->id;
+        $row->delete_reason = $data['reason'] ?? null;
+        $row->save();
+
+        $deletePhoto = (bool)($data['delete_photo'] ?? false);
+
+        // RECOMENDACIÓN: en soft delete normalmente NO borres la foto.
+        // Si aun así lo quieres permitir:
+        if ($deletePhoto && $row->photo_path) {
+            \Storage::disk('public')->delete($row->photo_path);
+            $row->photo_path = null;
+            $row->save();
+        }
+
+        $row->delete(); // soft delete (set deleted_at)
+    });
+
+    return response()->json([
+        'ok' => true,
+        'message' => 'Asistencia eliminada.',
+        'data' => [
+            'id' => $row->id,
+            'obra_id' => $row->obra_id,
+            'empleado_id' => $row->empleado_id,
+        ],
+    ], 200);
+}
+
 
 }

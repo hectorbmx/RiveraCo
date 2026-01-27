@@ -80,7 +80,7 @@
                         {{-- Email --}}
                         <div>
                             <x-input-label for="email" value="Correo electrónico" class="text-sm text-slate-700" />
-                            <div class="mt-1">
+                            <div class="mt-1 ">
                                 <x-text-input id="email"
                                               class="block w-full rounded-xl border-slate-200 focus:border-[#FFC107] focus:ring-[#FFC107]"
                                               type="email"

@@ -20,6 +20,8 @@ class ObraAsistencia extends Model
         'lng',
         'ubicacion_texto',
         'meta',
+        'deleted_by_user_id',
+        'delete_reason',
     ];
 
     protected $casts = [

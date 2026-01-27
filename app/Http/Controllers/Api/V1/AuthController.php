@@ -224,10 +224,6 @@ public function login(Request $request)
         ];
     })->values();
 
-
-
-
-
     $maquinaPayload = null;
     if ($maquinaActiva) {
         $maquinaPayload = [
