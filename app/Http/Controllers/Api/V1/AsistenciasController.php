@@ -168,12 +168,12 @@ public function showEmpleado($obraId, $empleadoId)
                 'checked_date' => $items->first()->checked_at->toDateString(),
                 'entrada' => $entrada ? [
                     'id' => $entrada->id,
-                    'hora' => $entrada->checked_at?->format('H:i'),
+                    'hora' => $entrada->checked_at?->timezone('America/Mexico_City')->format('H:i'), // ✅ Convertir a México
                     'photo_url' => $entrada->photo_path ? Storage::disk('public')->url($entrada->photo_path) : null,
                 ] : null,
                 'salida' => $salida ? [
                     'id' => $salida->id,
-                    'hora' => $salida->checked_at?->format('H:i'),
+                    'hora' => $salida->checked_at?->timezone('America/Mexico_City')->format('H:i'), // ✅ Convertir a México
                     'photo_url' => $salida->photo_path ? Storage::disk('public')->url($salida->photo_path) : null,
                 ] : null,
             ];
