@@ -36,8 +36,8 @@ class AsistenciasController extends Controller
     $hasTz = (bool) preg_match('/(Z|[+-]\d{2}:?\d{2})$/', $raw);
 
     $checkedAt = $hasTz
-        ? Carbon::parse($raw)->utc()
-        : Carbon::parse($raw, 'America/Mexico_City')->utc();
+    ? Carbon::parse($raw)->timezone('America/Mexico_City')->utc() // Convierte UTC a México primero
+    : Carbon::parse($raw, 'America/Mexico_City')->utc();
 
 
    $checkedDate = $checkedAt->clone()
