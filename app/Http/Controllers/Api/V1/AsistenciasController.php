@@ -23,10 +23,8 @@ class AsistenciasController extends Controller
     $data = $request->validate([
         'empleado_id'      => ['required','integer'],
         'checked_at'       => ['required','string'],
-
         // foto se valida después según el tipo determinado
         'foto'             => ['nullable','file'],
-
         'lat'              => ['nullable','numeric'],
         'lng'              => ['nullable','numeric'],
         'ubicacion_texto'  => ['nullable','string','max:255'],
@@ -35,7 +33,12 @@ class AsistenciasController extends Controller
 
     // 2) Parsear fecha/hora del dispositivo
     $raw = $data['checked_at'];
-    $checkedAt = Carbon::parse($raw)->utc();
+    $hasTz = (bool) preg_match('/(Z|[+-]\d{2}:?\d{2})$/', $raw);
+
+    $checkedAt = $hasTz
+        ? Carbon::parse($raw)->utc()
+        : Carbon::parse($raw, 'America/Mexico_City')->utc();
+
 
    $checkedDate = $checkedAt->clone()
     ->timezone('America/Mexico_City')
