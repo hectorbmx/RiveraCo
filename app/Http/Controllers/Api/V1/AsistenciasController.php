@@ -34,8 +34,17 @@ class AsistenciasController extends Controller
     ]);
 
     // 2) Parsear fecha/hora del dispositivo
-    $checkedAt   = \Carbon\Carbon::parse($data['checked_at']);
-    $checkedDate = $checkedAt->toDateString();
+    $raw = $data['checked_at'];
+    $checkedAt = Carbon::parse($raw)->utc();
+
+   $checkedDate = $checkedAt->clone()
+    ->timezone('America/Mexico_City')
+    ->toDateString();
+
+    // $checkedAt = $checkedAtLocal->clone()->utc(); // <-- guardar en UTC
+    // $checkedDate = $checkedAtLocal->toDateString(); // <-- IMPORTANTE: el día “local” del empleado
+    // $checkedAt   = \Carbon\Carbon::parse($data['checked_at']);
+    // $checkedDate = $checkedAt->toDateString();
 
     // 3) Verificar que el empleado pertenezca a la obra (ajusta tabla/columnas si aplica)
     $pertenece = \DB::table('obra_empleado')
@@ -126,7 +135,9 @@ class AsistenciasController extends Controller
         'data' => [
             'id' => $asistencia->id,
             'tipo' => $asistencia->tipo,
-            'checked_at' => $asistencia->checked_at?->toIso8601String(),
+            // 'checked_at' => $asistencia->checked_at?->toIso8601String(),
+            'checked_at' => optional($asistencia->checked_at)->timezone('America/Mexico_City')->toIso8601String(),
+
             'photo_url' => $asistencia->photo_path
                 ? \Storage::disk('public')->url($asistencia->photo_path)
                 : null,
