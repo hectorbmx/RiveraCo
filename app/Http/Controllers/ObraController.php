@@ -144,8 +144,8 @@ public function edit(Request $request, Obra $obra)
                 'empleado'      => $items->first()->empleado,
                 'checked_date'  => $items->first()->checked_date,
 
-                'entrada_hora'  => $entrada?->checked_at?->format('H:i'),
-                'salida_hora'   => $salida?->checked_at?->format('H:i'),
+                'entrada_hora'  => $entrada?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
+                'salida_hora'   => $salida?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
 
                 'entrada_foto'  => $entrada?->photo_path,
                 'salida_foto'   => $salida?->photo_path,
