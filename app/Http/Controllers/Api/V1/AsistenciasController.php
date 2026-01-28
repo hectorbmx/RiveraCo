@@ -32,15 +32,15 @@ class AsistenciasController extends Controller
     ]);
 
     // 2) Parsear fecha/hora del dispositivo
-    $raw = $data['checked_at'];
-    $hasTz = (bool) preg_match('/(Z|[+-]\d{2}:?\d{2})$/', $raw);
+   
+$raw = $data['checked_at'];
+$hasTz = (bool) preg_match('/(Z|[+-]\d{2}:?\d{2})$/', $raw);
 
-    $checkedAt = $hasTz
-    ? Carbon::parse($raw)->timezone('America/Mexico_City')->utc() // Convierte UTC a México primero
-    : Carbon::parse($raw, 'America/Mexico_City')->utc();
+$checkedAt = $hasTz
+    ? Carbon::parse($raw)->utc()  // Si tiene zona, ya viene en UTC
+    : Carbon::parse($raw, 'America/Mexico_City')->utc(); // Si NO tiene zona, interpretarlo como México
 
-
-   $checkedDate = $checkedAt->clone()
+$checkedDate = $checkedAt->clone()
     ->timezone('America/Mexico_City')
     ->toDateString();
 
