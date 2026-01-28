@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\ObraMaquinaRegistro;
 use App\Models\CatalogoActividadComision;
 use App\Models\ObraAsistencia;
+use Carbon\Carbon;
 
 
 
@@ -82,6 +83,18 @@ public function edit(Request $request, Obra $obra)
     $clientes     = Cliente::orderBy('nombre_comercial')->get();
     $responsables = User::orderBy('name')->get();
 
+    $desde =$request->query('asist_desde');
+    $hasta =$request->query('asist_hasta');
+    
+
+    if (!$desde && !$hasta) {
+    $start = Carbon::now('America/Mexico_City')->startOfWeek(Carbon::MONDAY);
+    $end   = Carbon::now('America/Mexico_City')->endOfWeek(Carbon::SUNDAY);
+
+    $desde = $start->toDateString(); // YYYY-MM-DD
+    $hasta = $end->toDateString();
+}
+
     // Puestos BASE que se pueden asignar a una obra
     // (estos son los grupos normalizados en la columna puesto_base)
     $puestosBaseAsignables = [
@@ -123,17 +136,49 @@ public function edit(Request $request, Obra $obra)
         5 => 'cancelada',
     ];
     $asistencias = collect();
+    $weekDays = collect();
+    $asistenciasSemana = collect();
+    $daysCount = 0;
 
-       if ($tab === 'asistencias') {
-    $fecha = request('date') ?? now()->toDateString();
+if ($tab === 'asistencias') {
 
-    $raw = ObraAsistencia::where('obra_id', $obra->id)
-        ->where('checked_date', $fecha)
-        ->with('empleado')
+    $rawQuery = ObraAsistencia::query()
+        ->where('obra_id', $obra->id)
+        ->with('empleado');
+
+    // Filtro por rango
+    if ($desde && $hasta) {
+        $request->validate([
+            'asist_desde' => ['date'],
+            'asist_hasta' => ['date', 'after_or_equal:asist_desde'],
+        ]);
+
+        $rawQuery->whereBetween('checked_date', [$desde, $hasta]);
+
+    } elseif ($desde || $hasta) {
+        $d = $desde ?: $hasta;
+
+        $request->validate([
+            $desde ? 'asist_desde' : 'asist_hasta' => ['date'],
+        ]);
+
+        $rawQuery->whereDate('checked_date', $d);
+
+    } else {
+        $rawQuery->whereDate('checked_date', now()->toDateString());
+    }
+
+    // 👉 AQUÍ se ejecuta el query
+    $raw = $rawQuery
+        ->orderByDesc('checked_date')
         ->orderBy('checked_at')
         ->get();
 
-    // Agrupar por empleado + día
+    /*
+    |--------------------------------------------------------------------------
+    | TABLA GENERAL (ya la tenías)
+    |--------------------------------------------------------------------------
+    */
     $asistencias = $raw
         ->groupBy(fn ($a) => $a->empleado_id . '|' . $a->checked_date)
         ->map(function (Collection $items) {
@@ -141,21 +186,88 @@ public function edit(Request $request, Obra $obra)
             $salida  = $items->firstWhere('tipo', 'salida');
 
             return (object) [
-                'empleado'      => $items->first()->empleado,
-                'checked_date'  => $items->first()->checked_date,
+                    'empleado'      => $items->first()->empleado,
+                    'checked_date'  => $items->first()->checked_date,
 
-                'entrada_hora'  => $entrada?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
-                'salida_hora'   => $salida?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
+                    'entrada_hora'  => $entrada?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
+                    'salida_hora'   => $salida?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
 
-                'entrada_foto'  => $entrada?->photo_path,
-                'salida_foto'   => $salida?->photo_path,
+                    // ✅ estas 2 líneas son las que te faltan
+                    'entrada_foto'  => $entrada?->photo_path,
+                    'salida_foto'   => $salida?->photo_path,
 
-                'entrada_id'    => $entrada?->id,
-                'salida_id'     => $salida?->id,
-            ];
+                    'entrada_id'    => $entrada?->id,
+                    'salida_id'     => $salida?->id,
+                ];
         })
-        ->values(); // colección limpia para Blade
+        ->values();
+
+    /*
+    |--------------------------------------------------------------------------
+    | TABLA SEMANAL (NUEVA)
+    |--------------------------------------------------------------------------
+    */
+    $start = Carbon::parse($desde, 'America/Mexico_City')->startOfDay();
+    $end   = Carbon::parse($hasta, 'America/Mexico_City')->startOfDay();
+
+    $daysCount = $start->diffInDays($end) + 1;
+
+    $weekDays = collect();
+    if ($daysCount === 7) {
+        for ($i = 0; $i < 7; $i++) {
+            $d = $start->copy()->addDays($i);
+            $weekDays->push([
+                'date'  => $d->toDateString(),
+                'label' => $d->format('d/m'),
+                'dow'   => mb_strtoupper($d->isoFormat('ddd')),
+            ]);
+        }
+    }
+
+    $getEmpId = function ($r) {
+    // prioridad: si la relación empleado existe, toma su PK real
+    return $r->empleado?->id_Empleado ?? $r->empleado_id;
+};
+
+    // $index = $raw->groupBy(fn ($r) => $r->empleado_id . '|' . $r->checked_date);
+    // $index = $raw->groupBy(fn ($r) => $getEmpId($r) . '|' . $r->checked_date);
+    $index = $raw->groupBy(fn ($r) => $getEmpId($r) . '|' . Carbon::parse($r->checked_date)->toDateString());
+
+
+    $asistenciasSemana = collect();
+
+    if ($daysCount === 7) {
+        // $empleados = $raw->pluck('empleado')->filter()->unique('id_Empleado');
+        $empleados = $raw->map(fn($r) => $r->empleado)->filter()
+        ->unique(fn($e) => $e->id_Empleado)
+        ->values();
+
+
+        $asistenciasSemana = $empleados->map(function ($emp) use ($weekDays, $index) {
+            $dias = [];
+
+            foreach ($weekDays as $wd) {
+                $key = $emp->id_Empleado . '|' . $wd['date'];
+                $items = $index->get($key, collect());
+
+                $entrada = $items->firstWhere('tipo', 'entrada');
+                $salida  = $items->firstWhere('tipo', 'salida');
+
+                $dias[$wd['date']] = [
+                    'entrada' => $entrada?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
+                    'salida'  => $salida?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
+                ];
+            }
+
+            return (object)[
+                'empleado' => $emp,
+                'dias'     => $dias,
+            ];
+        })->values();
+    }
 }
+
+
 
     $currentStatus = $obra->estatus_nuevo;
     if (!is_null($currentStatus) && !is_numeric($currentStatus)) {
@@ -397,9 +509,15 @@ return view('obras.edit', [
     'totalPendiente'              => $totalPendiente,
 
     // NUEVO: lo usamos en la barra de avance de cobro en Información general
-    'avanceCobrado'               => $avanceCobrado,
+    'avanceCobrado'                => $avanceCobrado,
     'roles'                        =>$roles,
     'asistencias'                  =>$asistencias,
+    'asist_desde'                  => $desde,
+    'asist_hasta'                  => $hasta,
+'weekDays' => $weekDays,
+'asistenciasSemana' => $asistenciasSemana,
+'daysCount' => $daysCount,
+
 
     ]);
 }

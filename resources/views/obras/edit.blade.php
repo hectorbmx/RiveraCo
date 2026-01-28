@@ -1152,6 +1152,64 @@
       {{ session('success') }}
     </div>
   @endif
+<form method="GET"
+      action="{{ route('obras.edit', $obra) }}"
+      class="mb-4">
+
+    <input type="hidden" name="tab" value="asistencias">
+
+    <div class="flex flex-wrap items-end gap-4">
+
+        {{-- Desde --}}
+        <div class="flex flex-col">
+            <label class="text-xs text-gray-500 mb-1">Desde</label>
+            <input
+                type="date"
+                name="asist_desde"
+                value="{{ old('asist_desde', $asist_desde ?? '') }}"
+                class="w-44 rounded-md border-gray-300 text-sm focus:border-yellow-400 focus:ring-yellow-400"
+            >
+        </div>
+
+        {{-- Hasta --}}
+        <div class="flex flex-col">
+            <label class="text-xs text-gray-500 mb-1">Hasta</label>
+            <input
+                type="date"
+                name="asist_hasta"
+                value="{{ old('asist_hasta', $asist_hasta ?? '') }}"
+                class="w-44 rounded-md border-gray-300 text-sm focus:border-yellow-400 focus:ring-yellow-400"
+            >
+        </div>
+
+        {{-- Botones --}}
+        <div class="flex items-center gap-2 mt-1">
+            <button
+                type="submit"
+                class="inline-flex items-center px-4 py-2 rounded-md bg-yellow-400 text-sm font-semibold text-gray-900 hover:bg-yellow-500 transition"
+            >
+                Filtrar
+            </button>
+
+            <a
+                href="{{ route('obras.edit', [$obra, 'tab' => 'asistencias']) }}"
+                class="text-sm text-gray-500 hover:text-gray-700 underline"
+            >
+                Limpiar
+            </a>
+        </div>
+    </div>
+
+    {{-- Mensaje de rango activo --}}
+    @if(request('asist_desde') || request('asist_hasta'))
+        <div class="mt-2 text-xs text-gray-500">
+            Mostrando asistencias del
+            <strong>{{ request('asist_desde') ?? request('asist_hasta') }}</strong>
+            al
+            <strong>{{ request('asist_hasta') ?? request('asist_desde') }}</strong>
+        </div>
+    @endif
+</form>
 
   @if($errors->any())
     <div class="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
@@ -1161,6 +1219,108 @@
 
   {{-- full width --}}
   <div class="max-w-6xl">
+    {{-- =========================
+     VISTA SEMANAL (1 row por empleado)
+     ========================= --}}
+@if(($daysCount ?? 0) !== 7)
+    <div class="text-sm text-gray-500 mb-4">
+        La vista semanal solo se muestra cuando el rango es de 7 días (Lun–Dom).
+    </div>
+@else
+    <div class="mb-6">
+
+        <div class="flex items-center justify-between mb-2">
+            <div class="text-sm font-semibold text-gray-800">
+                Resumen semanal ({{ $weekDays->first()['label'] }} - {{ $weekDays->last()['label'] }})
+            </div>
+
+            <div class="text-xs text-gray-500">
+                <span class="inline-flex items-center gap-2">
+                    <span class="px-2 py-1 rounded bg-gray-100">Ent</span>
+                    <span class="px-2 py-1 rounded bg-gray-100">Sal</span>
+                </span>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+            <table class="min-w-full text-sm">
+
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="text-left px-4 py-3 sticky left-0 bg-gray-50 z-10 min-w-[260px]">
+                            Empleado
+                        </th>
+
+                        @foreach($weekDays as $wd)
+                            <th colspan="2" class="text-center px-3 py-3 border-l border-gray-200 min-w-[120px]">
+                                <div class="text-[11px] text-gray-500 leading-none">{{ $wd['dow'] }}</div>
+                                <div class="font-semibold text-gray-800 leading-none mt-1">{{ $wd['label'] }}</div>
+                            </th>
+                        @endforeach
+                    </tr>
+
+                    <tr class="bg-gray-50">
+                        <th class="sticky left-0 bg-gray-50 z-10"></th>
+
+                        @foreach($weekDays as $wd)
+                            <th class="text-center px-2 py-2 border-l border-gray-200 text-[11px] text-gray-500">
+                                Ent
+                            </th>
+                            <th class="text-center px-2 py-2 text-[11px] text-gray-500">
+                                Sal
+                            </th>
+                        @endforeach
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-100">
+                    @forelse($asistenciasSemana as $row)
+                        <tr class="hover:bg-gray-50/50 transition">
+                            {{-- Empleado (sticky) --}}
+                            <td class="px-4 py-3 sticky left-0 bg-white z-10 min-w-[260px]">
+                                <div class="font-semibold text-gray-900">
+                                    {{ $row->empleado->Nombre }} {{ $row->empleado->Apellidos }}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    {{ $row->empleado->Puesto ?? $row->empleado->puesto_base ?? '' }}
+                                </div>
+                            </td>
+
+                            {{-- Celdas por día --}}
+                            @foreach($weekDays as $wd)
+                                @php
+                                    $cell = $row->dias[$wd['date']] ?? null;
+                                    $ent = $cell['entrada'] ?? null;
+                                    $sal = $cell['salida'] ?? null;
+                                @endphp
+
+                                <td class="text-center px-2 py-3 border-l border-gray-200 whitespace-nowrap">
+                                    <span class="{{ $ent ? 'font-semibold text-gray-900' : 'text-gray-400' }}">
+                                        {{ $ent ?? '—' }}
+                                    </span>
+                                </td>
+
+                                <td class="text-center px-2 py-3 whitespace-nowrap">
+                                    <span class="{{ $sal ? 'font-semibold text-gray-900' : 'text-gray-400' }}">
+                                        {{ $sal ?? '—' }}
+                                    </span>
+                                </td>
+                            @endforeach
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="{{ 1 + ($weekDays->count() * 2) }}" class="px-4 py-6 text-center text-gray-500">
+                                Sin asistencias registradas en esta semana.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+@endif
+
     <h3 class="text-sm font-semibold text-slate-700 mb-3">Asistencias registradas</h3>
 
     <div class="border rounded-xl overflow-hidden w-full">
