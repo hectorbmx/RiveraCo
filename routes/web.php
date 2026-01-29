@@ -54,13 +54,28 @@ Route::get('/', function () {
 // Route::get('/dashboard', function () {
 //     return view('dashboard');
 // })->middleware(['auth', 'verified'])->name('dashboard');
-Route::prefix('usuarios')->name('usuarios.')->group(function () {
-    Route::get('/', [UsuarioController::class, 'index'])->name('index');
-    Route::get('/create', [UsuarioController::class, 'create'])->name('create');
-    Route::post('/', [UsuarioController::class, 'store'])->name('store');
-    Route::get('/{usuario}/edit', [UsuarioController::class, 'edit'])->name('edit');
-    Route::put('/{usuario}', [UsuarioController::class, 'update'])->name('update');
-});
+// Route::prefix('usuarios')->name('usuarios.')->group(function () {
+//     Route::get('/', [UsuarioController::class, 'index'])->name('index');
+//     Route::get('/create', [UsuarioController::class, 'create'])->name('create');
+//     Route::post('/', [UsuarioController::class, 'store'])->name('store');
+//     Route::get('/{usuario}/edit', [UsuarioController::class, 'edit'])->name('edit');
+//     Route::put('/{usuario}', [UsuarioController::class, 'update'])->name('update');
+// });
+Route::middleware(['auth', 'verified'])
+    ->prefix('usuarios')
+    ->name('usuarios.')
+    ->group(function () {
+
+        Route::get('/', [UsuarioController::class, 'index'])->name('index');
+        Route::get('/create', [UsuarioController::class, 'create'])->name('create');
+
+        // 🔎 buscador empleados legacy (JSON)
+        Route::get('/empleados/search', [UsuarioController::class, 'searchEmpleados'])->name('empleados.search');
+
+        Route::post('/', [UsuarioController::class, 'store'])->name('store');
+        Route::get('/{usuario}/edit', [UsuarioController::class, 'edit'])->name('edit');
+        Route::put('/{usuario}', [UsuarioController::class, 'update'])->name('update');
+    });
 
 Route::middleware('auth','verified')->group(function () {
 

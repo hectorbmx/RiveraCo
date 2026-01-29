@@ -71,6 +71,14 @@
                     <option value="EUR">EUR</option>
                 </select>
             </div>
+            <div>
+            <label>IVA base (%)</label>
+                    <select name="iva" class="w-full border p-2">
+                        <option value="0">0%</option>
+                        <option value="12">12%</option>
+                        <option value="16" selected>16%</option>
+                    </select>
+                </div>
 
             <div>
                 <label>Tipo de cambio</label>
