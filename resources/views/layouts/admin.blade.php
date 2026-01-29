@@ -40,54 +40,62 @@
                     <span class="text-lg">📊</span>
                     <span class="sidebar-text">Dashboard</span>
                 </a>
-
+                @can('clientes.access')
                 <a href="{{ route('clientes.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->is('clientes*') ? 'bg-white/10' : '' }}"
                    title="Clientes">
                     <span class="text-lg">👥</span>
                     <span class="sidebar-text">Clientes</span>
                 </a>
-
+                @endcan
+                @can('obras.access')
                 <a href="{{ route('obras.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->is('obras*') ? 'bg-white/10' : '' }}"
                    title="Obras">
                     <span class="text-lg">🏗️</span>
                     <span class="sidebar-text">Obras</span>
                 </a>
+                @endcan
+                @can('vehiculos.access')
                 <a href="{{ route('mantenimiento.vehiculos.index') }}"
                 class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                 title="Vehículos">
                     <span class="text-lg">🚗</span>
                     <span class="sidebar-text">Vehículos</span>
                 </a>
+                @endcan
 
-
+                @can('mantenimiento.access')
                 <a href="{{ route ('mantenimiento.mantenimientos.index')}}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                    title="Mantenimiento">
                     <span class="text-lg">🛠️</span>
                     <span class="sidebar-text">Mantenimiento</span>
                 </a>
-
+                @endcan
+                @can('empleados.access')
                 <a href="{{ route('empleados.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                    title="Empleados">
                     <span class="text-lg">👥</span>
                     <span class="sidebar-text">Empleados</span>
                 </a>
-
+                @endcan
+                @can('nomina.access')
                 <a href="{{ route('nomina.generador.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                    title="Nómina">
                     <span class="text-lg">📄</span>
                     <span class="sidebar-text">Nómina</span>
                 </a>
+                @endcan
                 <a href="{{ route('ordenes_compra.index') }}"
                 class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                 title="Órdenes de compra">
                     <span class="text-lg">🛒</span>
                     <span class="sidebar-text">Órdenes de compra</span>
                 </a>
+                @can('productos.access')
                <a href="{{ route('productos.index') }}"
                 class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                 title="Productos">
@@ -95,7 +103,8 @@
                     <span class="text-lg">📦</span>
                     <span class="sidebar-text">Productos</span>
                 </a>
-
+                @endcan
+                @can('proveedores.access')    
                  <a href="{{ route('proveedores.index') }}"
                     class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('proveedores.*') ? 'bg-white/10' : '' }}"
                     title="Proveedores">
@@ -103,29 +112,32 @@
                         <span class="text-lg">🏭</span>
                         <span class="sidebar-text">Proveedores</span>
                     </a>
+                @endcan
 
-
-
+                @can('reportes.access')
                 <a href="{{ route('reportes.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                    title="Reportes">
                     <span class="text-lg">📑</span>
                     <span class="sidebar-text">Reportes</span>
                 </a>
-
+                @endcan
+                @can('empresa.access')
                 <a href="{{ route('empresa_config.edit') }}"
                     class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                     title="Configuración de empresa">
                         <span class="text-lg">🏢</span>
                         <span class="sidebar-text">Empresa</span>
                     </a>
-
+                @endcan
+                @can('usuarios app.access')
                  <a href="{{ route('usuarios.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                    title="Usuarios App">
                     <span class="text-lg">👥</span>
                     <span class="sidebar-text">Usuarios App</span>
                 </a>
+                @endcan
 
             </nav>
 

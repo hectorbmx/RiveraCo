@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\EmpresaConfig;
 use Illuminate\Http\Request;
 use App\Models\Maquina;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 class EmpresaConfigController extends Controller
 {
@@ -13,17 +15,66 @@ public function index(){
     return view('empresa_config.index');
 }
 
-    public function edit()
-    {
-        $config = EmpresaConfig::firstOrCreate(['id' => 1], [
-            'moneda_base'     => 'MXN',
-            'iva_por_defecto' => 16.00,
-            'activa'          => true,
-        ]);
-        $maquinas = Maquina::orderBy('nombre')->get();
+    // public function edit()
+    // {
+    //     $config = EmpresaConfig::firstOrCreate(['id' => 1], [
+    //         'moneda_base'     => 'MXN',
+    //         'iva_por_defecto' => 16.00,
+    //         'activa'          => true,
+    //     ]);
+    //     $maquinas = Maquina::orderBy('nombre')->get();
 
-        return view('empresa_config.edit', compact('config','maquinas'));
+    //     return view('empresa_config.edit', compact('config','maquinas'));
+    // }
+    public function edit()
+{
+    $config = EmpresaConfig::firstOrCreate(['id' => 1], [
+        'moneda_base'     => 'MXN',
+        'iva_por_defecto' => 16.00,
+        'activa'          => true,
+    ]);
+
+    $maquinas = Maquina::orderBy('nombre')->get();
+
+    // ✅ Seguridad (solo para admin/super-admin)
+    $roles = collect();
+    $permissions = collect();
+    $selectedRole = null;
+    $selectedRolePermissionIds = [];
+
+    if (auth()->check() && auth()->user()->hasAnyRole(['admin', 'super-admin'])) {
+
+        $roles = Role::query()
+            ->where('guard_name', 'web')
+            ->orderBy('name')
+            ->get();
+
+        $permissions = Permission::query()
+            ->where('guard_name', 'web')
+            ->orderBy('name')
+            ->get();
+
+        // Selección de rol: por query (?role=ID) o el primero
+        $roleId = request()->integer('role');
+        $selectedRole = $roleId
+            ? $roles->firstWhere('id', $roleId)
+            : $roles->first();
+
+        $selectedRolePermissionIds = $selectedRole
+            ? $selectedRole->permissions()->pluck('id')->toArray()
+            : [];
     }
+
+    return view('empresa_config.edit', compact(
+        'config',
+        'maquinas',
+        'roles',
+        'permissions',
+        'selectedRole',
+        'selectedRolePermissionIds'
+    ));
+}
+
 
   public function update(Request $request)
 {

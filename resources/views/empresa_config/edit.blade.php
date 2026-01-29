@@ -55,6 +55,10 @@
                                 'reglas'    => ['label' => 'Reglas', 'desc' => 'Políticas y flujos'],
                                 'alertas'   => ['label' => 'Alertas', 'desc' => 'Notificaciones y avisos'],
                             ];
+                             if (auth()->check() && auth()->user()->hasAnyRole(['admin','super-admin'])) {
+                                $tabs['roles']    = ['label' => 'Roles', 'desc' => 'Perfiles de acceso'];
+                                $tabs['permisos'] = ['label' => 'Permisos', 'desc' => 'Acciones del sistema'];
+                            }
                         @endphp
 
                         @foreach ($tabs as $key => $t)
@@ -493,7 +497,232 @@
 
             </div>
         </div>
+{{-- TAB: ROLES --}}
+<div x-show="tab === 'roles'" x-cloak class="p-4 sm:p-6">
+    @if(session('ok'))
+        <div class="mb-4 p-3 rounded bg-green-100 text-green-900 text-sm">{{ session('ok') }}</div>
+    @endif
+    @if(session('err'))
+        <div class="mb-4 p-3 rounded bg-red-100 text-red-900 text-sm">{{ session('err') }}</div>
+    @endif
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        {{-- Crear Rol --}}
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+            <h3 class="font-semibold text-sm mb-3">Crear rol</h3>
+
+            <form method="POST" action="{{ route('empresa_config.roles.store') }}">
+                @csrf
+
+                <div class="mb-3">
+                    <label class="block text-xs text-gray-600 mb-1">Nombre</label>
+                    <input name="name" value="{{ old('name') }}"
+                           class="w-full border rounded-lg px-3 py-2 text-sm"
+                           placeholder="ej: admin, residente, captura">
+                    @error('name')
+                        <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <input type="hidden" name="guard_name" value="web">
+
+                <button class="w-full px-3 py-2 rounded-lg bg-gray-900 text-white text-sm">
+                    Guardar
+                </button>
+            </form>
+        </div>
+
+        {{-- Selección de Rol + Renombrar/Eliminar --}}
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 lg:col-span-2">
+            <div class="flex items-center justify-between gap-2 mb-3">
+                <h3 class="font-semibold text-sm">Roles</h3>
+
+                {{-- Selector por query: tab=roles&role=ID --}}
+                <form method="GET" action="{{ route('empresa_config.edit') }}" class="flex items-center gap-2">
+                    <input type="hidden" name="tab" value="roles">
+                    <select name="role" class="border rounded-lg px-3 py-2 text-sm"
+                            onchange="this.form.submit()">
+                        @foreach($roles as $r)
+                            <option value="{{ $r->id }}" {{ optional($selectedRole)->id === $r->id ? 'selected' : '' }}>
+                                {{ $r->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+            </div>
+
+            @if(!$selectedRole)
+                <div class="text-sm text-gray-500">
+                    No hay roles disponibles. Crea uno para asignarle permisos.
+                </div>
+            @else
+                {{-- Renombrar Rol --}}
+                <div class="border rounded-xl p-3 mb-4">
+                    <div class="text-xs text-gray-500 mb-2">Editar rol seleccionado</div>
+                    <form method="POST" action="{{ route('empresa_config.roles.update', $selectedRole) }}" class="flex gap-2">
+                        @csrf
+                        @method('PUT')
+
+                        <input name="name" value="{{ old('name', $selectedRole->name) }}"
+                               class="flex-1 border rounded-lg px-3 py-2 text-sm">
+
+                        <button class="px-3 py-2 rounded-lg border text-sm">
+                            Renombrar
+                        </button>
+                    </form>
+
+                    {{-- Eliminar Rol --}}
+                    <form method="POST" action="{{ route('empresa_config.roles.destroy', $selectedRole) }}"
+                          class="mt-2"
+                          onsubmit="return confirm('¿Eliminar rol? (solo si no está asignado a usuarios)')">
+                        @csrf
+                        @method('DELETE')
+                        <button class="text-sm text-red-600 hover:underline">
+                            Eliminar rol
+                        </button>
+                    </form>
+                </div>
+
+                {{-- Asignar Permisos al Rol --}}
+                <div class="border rounded-xl p-3">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <div class="font-semibold text-sm">Permisos del rol</div>
+                            <div class="text-xs text-gray-500">
+                                Marca/desmarca y guarda. (Guard: {{ $selectedRole->guard_name }})
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ route('empresa_config.roles.permissions.sync', $selectedRole) }}">
+                        @csrf
+                        @method('PUT')
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            @foreach($permissions as $p)
+                                <label class="flex items-center gap-2 p-2 border rounded-lg">
+                                    <input type="checkbox" name="permissions[]" value="{{ $p->id }}"
+                                           {{ in_array($p->id, $selectedRolePermissionIds ?? []) ? 'checked' : '' }}>
+                                    <span class="text-sm">{{ $p->name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+
+                        <div class="mt-4">
+                            <button class="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm">
+                                Guardar permisos
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            @endif
+        </div>
+    </div>
+</div>
+{{-- TAB: PERMISOS --}}
+<div x-show="tab === 'permisos'" x-cloak class="p-4 sm:p-6">
+    @if(session('ok'))
+        <div class="mb-4 p-3 rounded bg-green-100 text-green-900 text-sm">{{ session('ok') }}</div>
+    @endif
+    @if(session('err'))
+        <div class="mb-4 p-3 rounded bg-red-100 text-red-900 text-sm">{{ session('err') }}</div>
+    @endif
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        {{-- Crear Permiso (modulo.access) --}}
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+            <h3 class="font-semibold text-sm mb-3">Crear permiso (módulo)</h3>
+
+            <form method="POST" action="{{ route('empresa_config.permissions.store') }}">
+                @csrf
+
+                <div class="mb-3">
+                    <label class="block text-xs text-gray-600 mb-1">Módulo</label>
+                    <input name="module" value="{{ old('module') }}"
+                           class="w-full border rounded-lg px-3 py-2 text-sm"
+                           placeholder="ej: clientes, obras, ordenes_compra">
+                    @error('module')
+                        <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                {{-- Creamos name final como module.access desde frontend --}}
+                <input type="hidden" name="guard_name" value="web">
+                <input type="hidden" name="name" id="perm_name_final">
+
+                <button type="submit"
+                        onclick="
+                          const m = (this.form.module.value || '').trim().toLowerCase();
+                          document.getElementById('perm_name_final').value = m ? (m + '.access') : '';
+                        "
+                        class="w-full px-3 py-2 rounded-lg bg-gray-900 text-white text-sm">
+                    Guardar
+                </button>
+            </form>
+
+            {{-- Generar base (opcional) --}}
+            @if(Route::has('empresa_config.permissions.seed_modules'))
+                <form method="POST" action="{{ route('empresa_config.permissions.seed_modules') }}" class="mt-3"
+                      onsubmit="return confirm('¿Generar permisos base de módulos? (si ya existen, no duplica)')">
+                    @csrf
+                    <button class="w-full px-3 py-2 rounded-lg border text-sm">
+                        Generar permisos base
+                    </button>
+                </form>
+            @endif
+
+            <div class="mt-3 text-xs text-gray-500">
+                Se crea como <span class="font-mono">modulo.access</span> (guard web).
+            </div>
+        </div>
+
+        {{-- Listado de permisos --}}
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 lg:col-span-2">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold text-sm">Permisos existentes</h3>
+                <div class="text-xs text-gray-500">Guard: web</div>
+            </div>
+
+            @php
+                // Filtramos solo *.access y dashboard.view (por el esquema acordado)
+                $modulePerms = ($permissions ?? collect())
+                    ->filter(fn($p) => str_ends_with($p->name, '.access') || $p->name === 'dashboard.view')
+                    ->values();
+            @endphp
+
+            @if($modulePerms->isEmpty())
+                <div class="text-sm text-gray-500">
+                    No hay permisos de módulo todavía. Crea uno o usa “Generar permisos base”.
+                </div>
+            @else
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    @foreach($modulePerms as $p)
+                        <div class="flex items-center justify-between gap-3 p-2 border rounded-lg">
+                            <div class="text-sm">
+                                <div class="font-medium">{{ $p->name }}</div>
+                                <div class="text-xs text-gray-500">id: {{ $p->id }}</div>
+                            </div>
+
+                            <form method="POST" action="{{ route('empresa_config.permissions.destroy', $p) }}"
+                                  onsubmit="return confirm('¿Eliminar permiso? (solo si no está asignado)')">
+                                @csrf
+                                @method('DELETE')
+                                <button class="text-sm text-red-600 hover:underline">
+                                    Eliminar
+                                </button>
+                            </form>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
 
     </div>
+</div>
+
+    </div>
+    
     
 @endsection

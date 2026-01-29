@@ -192,4 +192,35 @@ class EmpresaSecurityController extends Controller
 
         return $this->backToTab('permisos')->with('ok', 'Permiso eliminado.');
     }
+
+    public function permissionsSeedModules()
+{
+    $modules = [
+        'dashboard.view',
+
+        'clientes.access',
+        'obras.access',
+        'vehiculos.access',
+        'mantenimiento.access',
+        'empleados.access',
+        'nomina.access',
+        'ordenes_compra.access',
+        'productos.access',
+        'proveedores.access',
+        'reportes.access',
+        'empresa.access',
+        'usuarios_app.access',
+    ];
+
+    foreach ($modules as $name) {
+        Permission::firstOrCreate([
+            'name' => $name,
+            'guard_name' => 'web',
+        ]);
+    }
+
+    $this->forgetSpatieCache();
+
+    return $this->backToTab('permisos')->with('ok', 'Permisos base generados.');
+}
 }
