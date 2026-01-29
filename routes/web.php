@@ -25,7 +25,10 @@ use App\Http\Controllers\OrdenCompraController;
 use App\Http\Controllers\OrdenCompraDetalleController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\ProductoController;
+
 use App\Http\Controllers\Admin\UsuarioController;
+use App\Http\Controllers\Admin\EmpresaSecurityController;
+
 use App\Http\Controllers\EmpresaConfigController;
 use App\Http\Controllers\ObraMaquinaHorasController;
 use App\Http\Controllers\EmpresaConfigMaquinaController;
@@ -51,16 +54,6 @@ Route::get('/', function () {
       return redirect()->route('login');
 });
 
-// Route::get('/dashboard', function () {
-//     return view('dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
-// Route::prefix('usuarios')->name('usuarios.')->group(function () {
-//     Route::get('/', [UsuarioController::class, 'index'])->name('index');
-//     Route::get('/create', [UsuarioController::class, 'create'])->name('create');
-//     Route::post('/', [UsuarioController::class, 'store'])->name('store');
-//     Route::get('/{usuario}/edit', [UsuarioController::class, 'edit'])->name('edit');
-//     Route::put('/{usuario}', [UsuarioController::class, 'update'])->name('update');
-// });
 Route::middleware(['auth', 'verified'])
     ->prefix('usuarios')
     ->name('usuarios.')
@@ -84,6 +77,22 @@ Route::middleware('auth','verified')->group(function () {
 
     Route::put('/configuracion-empresa', [EmpresaConfigController::class, 'update'])
         ->name('empresa_config.update');
+
+           Route::middleware(['role:admin|super-admin'])->prefix('configuracion-empresa')->name('empresa_config.')->group(function () {
+
+        // Roles
+        Route::post('/roles', [EmpresaSecurityController::class, 'roleStore'])->name('roles.store');
+        Route::put('/roles/{role}', [EmpresaSecurityController::class, 'roleUpdate'])->name('roles.update');
+        Route::delete('/roles/{role}', [EmpresaSecurityController::class, 'roleDestroy'])->name('roles.destroy');
+
+        // Asignar permisos a un rol
+        Route::put('/roles/{role}/permisos', [EmpresaSecurityController::class, 'roleSyncPermissions'])->name('roles.permissions.sync');
+
+        // Permisos
+        Route::post('/permisos', [EmpresaSecurityController::class, 'permissionStore'])->name('permissions.store');
+        Route::put('/permisos/{permission}', [EmpresaSecurityController::class, 'permissionUpdate'])->name('permissions.update');
+        Route::delete('/permisos/{permission}', [EmpresaSecurityController::class, 'permissionDestroy'])->name('permissions.destroy');
+    });
 
     Route::get('/configuracion-empresa/maquinas/create', [EmpresaConfigMaquinaController::class, 'create'])
         ->name('empresa_config.maquinas.create');
