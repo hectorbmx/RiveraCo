@@ -10,16 +10,26 @@ class Producto extends Model
     public $timestamps = true;
 
     // Columnas reales legacy (para guardar sin errores)
-    protected $fillable = [
-        'legacy_prod_id',
-        'nombre',
-        'descripcion',
-        'sku',
-        'unidad',
-        'tipo',
-        'activo',
-        'iva_default', // la agregaremos con ALTER
-    ];
+   protected $fillable = [
+    'legacy_prod_id',
+    'nombre',
+    'descripcion',
+    'sku',
+    'unidad',
+
+    // inventario (si existen en tabla)
+    'tipo_inventario',
+    'stock_minimo',
+    'punto_reorden',
+    'iva_default',
+    'activo',
+
+    // uso/segmento (si existen en tabla)
+    'uso_type',
+    'uso_id',
+    'uso_label',
+    'segmento_legacy',
+];
 
     protected $casts = [
         'activo' => 'boolean',
@@ -65,5 +75,26 @@ class Producto extends Model
             ])
             ->withTimestamps();
     }
+    public function usoSegmento()
+    {
+        return $this->belongsTo(\App\Models\CatalogoSegmento::class, 'uso_id')
+            ->where($this->getTable() . '.uso_type', 'segmento');
+    }
+
+    public function usoMaquina()
+    {
+        return $this->belongsTo(\App\Models\Maquina::class, 'uso_id')
+            ->where($this->getTable() . '.uso_type', 'maquina');
+    }
+    public function uso()
+{
+    // uso_type: 'segmento' | 'maquina'
+    // uso_id:   id del registro destino
+    return $this->morphTo(__FUNCTION__, 'uso_type', 'uso_id');
+}
+public function inventarioStocks()
+{
+    return $this->hasMany(\App\Models\InventarioStock::class, 'producto_id');
+}
 
 }

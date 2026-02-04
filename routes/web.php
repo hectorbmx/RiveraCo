@@ -35,6 +35,10 @@ use App\Http\Controllers\EmpresaConfigMaquinaController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\MaquinasReporteDiarioController;
 use App\Http\Controllers\SnapshotsController;
+use App\Http\Controllers\Inventario\InventarioStockController;
+
+
+use App\Http\Controllers\Inventario\InventarioDocumentoController;
 
 
 
@@ -54,6 +58,11 @@ Route::get('/', function () {
       return redirect()->route('login');
 });
 
+
+Route::prefix('inventario')->group(function () {
+    Route::get('stock', [InventarioStockController::class, 'index'])
+        ->name('inventario.stock.index.temp');
+});
 Route::middleware(['auth', 'verified'])
     ->prefix('usuarios')
     ->name('usuarios.')
@@ -71,6 +80,26 @@ Route::middleware(['auth', 'verified'])
     });
 
 Route::middleware('auth','verified')->group(function () {
+
+    Route::prefix('inventario')->group(function () {
+
+    // 🔹 STOCK
+    Route::get('stock', [InventarioStockController::class, 'view'])->name('inventario.stock.index');
+
+    Route::get('stock.json', [InventarioStockController::class, 'index'])->name('inventario.stock.index.json');
+
+    // 🔹 DOCUMENTOS
+    Route::get('documentos', [InventarioDocumentoController::class, 'index'])->name('inventario.documentos.index');
+
+    Route::post('documentos', [InventarioDocumentoController::class, 'store']);
+
+    Route::get('documentos/{doc}', [InventarioDocumentoController::class, 'show'])->name('inventario.documentos.show');
+
+    Route::post('documentos/{doc}/aplicar', [InventarioDocumentoController::class, 'aplicar'])->name('inventario.documentos.aplicar');
+
+    Route::post('documentos/{doc}/cancelar', [InventarioDocumentoController::class, 'cancelar'])->name('inventario.documentos.cancelar');
+});
+
 
     Route::get('/configuracion-empresa', [EmpresaConfigController::class, 'edit'])
     ->name('empresa_config.edit');

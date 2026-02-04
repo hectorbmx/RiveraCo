@@ -9,27 +9,30 @@ class ProductoController extends Controller
 {
 
      public function index(Request $request)
-    {
-        $q = Producto::query()->orderBy('nombre');
+{
+    $q = Producto::query()
+        ->withSum('inventarioStocks as existencias', 'stock_actual')
+        ->orderBy('nombre');
 
-        if ($request->filled('estado')) {
-            if ($request->estado === 'activos') $q->where('activo', 1);
-            if ($request->estado === 'inactivos') $q->where('activo', 0);
-        }
-
-        if ($request->filled('q')) {
-            $term = trim($request->q);
-            $q->where(function ($x) use ($term) {
-                $x->where('nombre', 'like', "%{$term}%")
-                  ->orWhere('sku', 'like', "%{$term}%")
-                  ->orWhere('legacy_prod_id', 'like', "%{$term}%");
-            });
-        }
-
-        $productos = $q->paginate(20)->withQueryString();
-
-        return view('productos.index', compact('productos'));
+    if ($request->filled('estado')) {
+        if ($request->estado === 'activos') $q->where('activo', 1);
+        if ($request->estado === 'inactivos') $q->where('activo', 0);
     }
+
+    if ($request->filled('q')) {
+        $term = trim($request->q);
+        $q->where(function ($x) use ($term) {
+            $x->where('nombre', 'like', "%{$term}%")
+              ->orWhere('sku', 'like', "%{$term}%")
+              ->orWhere('legacy_prod_id', 'like', "%{$term}%");
+        });
+    }
+
+    $productos = $q->paginate(20)->withQueryString();
+
+    return view('productos.index', compact('productos'));
+}
+
 
     public function create()
     {

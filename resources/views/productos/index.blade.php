@@ -69,6 +69,7 @@
                     <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500">Producto</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500">SKU</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500">Unidad</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500">Existencias</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500">Estatus</th>
                     <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500">Acciones</th>
                 </tr>
@@ -87,6 +88,13 @@
 
                         <td class="px-4 py-3 text-slate-700">{{ $p->sku ?? '-' }}</td>
                         <td class="px-4 py-3 text-slate-700">{{ $p->unidad ?? '-' }}</td>
+                        @php
+                        $exist = (float) ($p->existencias ?? 0);
+                        @endphp
+
+                        <td class="px-4 py-3 text-right font-semibold {{ $exist <= 0 ? 'text-red-600' : 'text-slate-800' }}">
+                            {{ number_format($exist, 3) }}
+                        </td>
 
                         <td class="px-4 py-3">
                             @if($p->activo)
