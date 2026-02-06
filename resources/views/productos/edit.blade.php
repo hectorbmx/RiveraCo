@@ -36,6 +36,7 @@
                 'general'     => 'Información general',
                 'proveedores' => 'Proveedores',
                 'costos'      => 'Costos / historial',
+                'kardex'      => 'Kardex',
             ];
             $tab = $tab ?? 'general';
         @endphp
@@ -81,6 +82,17 @@
         @if($tab === 'costos')
             @include('productos.partials._costos', ['producto' => $producto])
         @endif
+        @if($tab === 'kardex')
+        @include('productos.partials._kardex', [
+            'producto' => $producto,
+            'movimientos' => $movimientos ?? collect(),
+            'almacenes' => $almacenes ?? collect(),
+            'almacenId' => $almacenId ?? null,
+            'desde' => $desde ?? null,
+            'hasta' => $hasta ?? null,
+        ])
+    @endif
+
 
     </div>
 </div>

@@ -58,47 +58,43 @@ class InventarioStockController extends Controller
         ]);
     }
 
-     public function view(Request $request)
-    {
-        $almacenId = $request->integer('almacen_id');
-        $q         = trim((string) $request->get('q', ''));
-        $minimos   = (int) $request->get('minimos', 0);
+    public function view(Request $request)
+{
+    $almacenId = $request->integer('almacen_id');
+    $q         = trim((string) $request->get('q', ''));
+    $minimos   = (int) $request->get('minimos', 0);
 
-        $query = InventarioStock::query()
-            ->with(['almacen'])
-            ->when($almacenId, fn($qq) => $qq->where('almacen_id', $almacenId))
-            ->when($q !== '', function ($qq) use ($q) {
-                $qq->where(function ($w) use ($q) {
-                    $w->where('sku', 'like', "%{$q}%")
-                      ->orWhere('descripcion', 'like', "%{$q}%");
-                });
-            })
-            ->when($minimos === 1, fn($qq) => $qq->whereColumn('existencia', '<=', 'stock_minimo'))
-            ->orderBy('id');
-        $base = (clone $query)->getQuery();
-       $totalesPorAlmacen = DB::table('inventario_stock')
-                ->selectRaw('almacen_id, COALESCE(SUM(stock_actual),0) as stock_total, COALESCE(SUM(valor_total),0) as valor_total')
-                ->when($almacenId, fn($qq) => $qq->where('almacen_id', $almacenId))
-                ->when($q !== '', function ($qq) use ($q) {
-                    // ⚠️ si NO tienes sku/descripcion en inventario_stock, no busques aquí
-                    // Por ahora, solo dejamos el filtro por producto_id si el usuario teclea número
-                    if (ctype_digit($q)) {
-                        $qq->where('producto_id', (int) $q);
-                    }
-                })
-                ->when($minimos === 1, function ($qq) {
-                    // si no tienes stock_minimo en esta tabla, este filtro NO aplica aún
-                    // lo dejamos sin tocar para no romper
-                })
-                ->groupBy('almacen_id')
-                ->get()
-                ->keyBy('almacen_id');
+    $query = InventarioStock::query()
+        ->with(['almacen','producto'])
+        ->when($almacenId, fn($qq) => $qq->where('almacen_id', $almacenId))
+        ->when($q !== '', function ($qq) use ($q) {
+            $qq->whereHas('producto', function ($p) use ($q) {
+                $p->where('sku', 'like', "%{$q}%")
+                  ->orWhere('nombre', 'like', "%{$q}%"); // o 'descripcion' si así se llama en productos
+            });
+        })
+        // ->when($minimos === 1, fn($qq) => $qq->whereColumn('stock_actual', '<=', 'stock_minimo'))
+        ->when($minimos === 1, fn($qq) => $qq->whereNotNull('stock_minimo')->whereColumn('stock_actual', '<=', 'stock_minimo'))
 
+        ->orderBy('id');
 
-        $stocks = $query->paginate(25)->withQueryString();
+    $totalesPorAlmacen = InventarioStock::query()
+        ->selectRaw('almacen_id, COALESCE(SUM(stock_actual),0) as stock_total, COALESCE(SUM(valor_total),0) as valor_total')
+        ->when($almacenId, fn($qq) => $qq->where('almacen_id', $almacenId))
+        ->when($q !== '', function ($qq) use ($q) {
+            $qq->whereHas('producto', function ($p) use ($q) {
+                $p->where('sku', 'like', "%{$q}%")
+                  ->orWhere('nombre', 'like', "%{$q}%");
+            });
+        })
+        ->groupBy('almacen_id')
+        ->get()
+        ->keyBy('almacen_id');
 
-        $almacenes = Almacen::query()->orderBy('nombre')->get(['id','nombre']);
+    $stocks = $query->paginate(25)->withQueryString();
+    $almacenes = Almacen::query()->orderBy('nombre')->get(['id','nombre']);
 
-        return view('inventario.stock.index', compact('stocks','almacenes','almacenId','q','minimos','totalesPorAlmacen'));
-    }
+    return view('inventario.stock.index', compact('stocks','almacenes','almacenId','q','minimos','totalesPorAlmacen'));
+}
+
 }

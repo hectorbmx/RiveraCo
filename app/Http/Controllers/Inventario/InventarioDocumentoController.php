@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 
 use App\Models\InventarioDocumento;
 use App\Models\Almacen;
+use App\Models\Proveedor;
+use App\Models\Producto;
+use App\Models\Obra;
 use App\Models\InventarioDocumentoDetalle;
 use App\Services\Inventario\InventarioDocumentoService;
 use Illuminate\Http\Request;
@@ -54,7 +57,88 @@ class InventarioDocumentoController extends Controller
 
         return view('inventario.documentos.index', compact('docs','almacenes','almacenId','tipo','estado','q','tipos','estados'));
     }
+public function create(Request $request)
+{
+    $tipo = $request->query('tipo', 'entrada');
 
+    // 1. Cargamos los almacenes para el select del formulario
+    $almacenes = Almacen::query()
+        ->where('activo', true) // Opcional: solo traer los activos
+        ->orderBy('nombre')
+        ->get(['id', 'nombre']);
+    
+    $obras = Obra::query()
+        ->where('status','planeacion')
+        ->orderBy('clave_obra')
+        ->get(['id','clave_obra']);
+
+    $proveedores = Proveedor::query()
+    ->where('activo',true)
+    ->orderBy('nombre')
+    ->get(['id','rfc','nombre']);
+
+    // 2. Si tienes otras listas (como estados o tipos), cárgalas también
+    $tipos = [
+        'entrada' => 'Entrada',
+        'salida' => 'Salida',
+        'cancelacion' => 'Cancelación',
+    ];
+
+    // 3. Pasamos todo a la vista 'create'
+    return view('inventario.documentos.create', compact('tipo', 'almacenes', 'tipos','obras'));
+}
+//buscaa proveedoir para generador de entradas y salidas
+public function buscarProveedor(Request $request)
+{
+    $q = trim($request->get('q', ''));
+
+    // Solo buscamos si hay 3 o más caracteres
+    if (strlen($q) < 3) {
+        return response()->json([]);
+    }
+
+    $proveedores = Proveedor::query()
+        ->where('activo', true)
+        ->where(function($query) use ($q) {
+            $query->where('nombre', 'like', "%{$q}%")
+                  ->orWhere('rfc', 'like', "%{$q}%");
+        })
+        ->limit(10)
+        ->get(['id', 'nombre', 'rfc']);
+
+    return response()->json($proveedores);
+}
+//buscar producto para generador de entradas ys alidas
+public function buscarProducto(Request $request)
+{
+    $q = trim($request->get('q', ''));
+
+    // Solo buscamos si hay 3 o más caracteres
+    if (strlen($q) < 3) {
+        return response()->json([]);
+    }
+
+    $productos = Producto::query()
+        ->where('activo', true)
+        ->where(function($query) use ($q) {
+            $query->where('nombre', 'like', "%{$q}%")
+                  ->orWhere('descripcion', 'like', "%{$q}%");
+        })
+        ->limit(10)
+        ->get(['id', 'nombre', 'descripcion']);
+
+    return response()->json($productos);
+}
+
+public function edit(InventarioDocumento $doc)
+{
+    return view('inventario.documentos.edit', compact('doc'));
+}
+
+public function update(Request $request, InventarioDocumento $doc)
+{
+    abort(501); // placeholder, luego lo implementamos
+}
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -106,31 +190,56 @@ class InventarioDocumentoController extends Controller
             ]);
         }
 
-        return response()->json([
-            'ok' => true,
-            'data' => $doc->load('detalles')
-        ]);
+       // Si la petición espera JSON (AJAX)
+if (request()->expectsJson()) {
+    return response()->json([
+        'ok'   => true,
+        'data' => $doc->load('detalles')
+    ]);
+}
+
+// Web normal → redirigir
+return redirect()
+    ->route('inventario.documentos.index')
+    ->with('status', "Documento #{$doc->id} guardado correctamente.");
+
     }
 
-  public function show(InventarioDocumento $doc)
-    {
-        $doc->load(['almacen','detalles']); // agrega relaciones necesarias
-        return view('inventario.documentos.show', compact('doc'));
-    }
+ public function show(InventarioDocumento $doc)
+{
+    $doc->load([
+        'almacen',
+        'detalles.producto', // ✅ para poder leer sku/descripcion desde Producto
+    ]);
 
-    public function aplicar(InventarioDocumento $doc)
-    {
-        // Opcional: Gate/Policy aquí (ej. permisos inventario.aplicar)
-        InventarioDocumentoService::aplicar($doc);
+    return view('inventario.documentos.show', compact('doc'));
+}
 
-        return redirect()
-            ->route('inventario.documentos.index')
-            ->with('status', "Documento #{$doc->id} aplicado.");
-    }
 
-     public function cancelar(InventarioDocumento $doc)
-    {
-        InventarioDocumentoService::cancelar($doc);
+    // public function aplicar(InventarioDocumento $doc)
+    // {
+    //     // Opcional: Gate/Policy aquí (ej. permisos inventario.aplicar)
+    //     InventarioDocumentoService::aplicar($doc);
+
+    //     return redirect()
+    //         ->route('inventario.documentos.index')
+    //         ->with('status', "Documento #{$doc->id} aplicado.");
+    // }
+    public function aplicar(InventarioDocumento $doc, InventarioDocumentoService $service)
+{
+    $service->aplicar($doc);
+
+    return redirect()
+        ->route('inventario.documentos.index')
+        ->with('status', "Documento #{$doc->id} aplicado.");
+}
+
+     
+    public function cancelar(
+        InventarioDocumento $doc,
+        InventarioDocumentoService $service
+    ) {
+        $service->cancelar($doc);
 
         return redirect()
             ->route('inventario.documentos.index')

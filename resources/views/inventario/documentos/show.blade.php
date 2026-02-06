@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('content')
 <div class="max-w-5xl mx-auto px-4 py-6 space-y-6">
@@ -19,7 +19,10 @@
         <div><span class="text-slate-500">Almacén:</span> <span class="text-slate-900 font-medium">{{ $doc->almacen?->nombre ?? '—' }}</span></div>
         <div><span class="text-slate-500">Folio:</span> <span class="text-slate-900 font-medium">{{ $doc->folio ?? '—' }}</span></div>
         <div><span class="text-slate-500">Referencia:</span> <span class="text-slate-900 font-medium">{{ $doc->referencia ?? '—' }}</span></div>
-        <div><span class="text-slate-500">Observaciones:</span> <span class="text-slate-900 font-medium">{{ $doc->observaciones ?? '—' }}</span></div>
+        <!-- <div><span class="text-slate-500">Observaciones:</span> <span class="text-slate-900 font-medium">{{ $doc->observaciones ?? '—' }}</span></div> -->
+         <div><span class="text-slate-500">Motivo:</span> <span class="text-slate-900 font-medium">{{ $doc->motivo ?? '—' }}</span></div>
+<div><span class="text-slate-500">Notas:</span> <span class="text-slate-900 font-medium">{{ $doc->notas ?? '—' }}</span></div>
+
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -33,17 +36,35 @@
                     <th class="text-right font-medium px-4 py-3">Importe</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
-                @foreach($doc->detalles as $it)
-                    <tr>
-                        <td class="px-4 py-3 font-mono">{{ $it->sku }}</td>
-                        <td class="px-4 py-3">{{ $it->descripcion }}</td>
-                        <td class="px-4 py-3 text-right">{{ number_format((float)$it->cantidad, 2) }}</td>
-                        <td class="px-4 py-3 text-right">$ {{ number_format((float)$it->costo_unitario, 2) }}</td>
-                        <td class="px-4 py-3 text-right font-semibold">$ {{ number_format((float)$it->importe, 2) }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
+           <tbody class="divide-y divide-slate-100">
+    @forelse($doc->detalles as $it)
+        @php
+            $sku  = $it->producto?->sku ?? '—';
+            $desc = $it->producto?->nombre ?? ($it->producto?->descripcion ?? '—'); // ajusta al campo real
+            $importe = (float)$it->cantidad * (float)$it->costo_unitario;
+        @endphp
+
+        <tr>
+            <td class="px-4 py-3 font-mono">{{ $sku }}</td>
+            <td class="px-4 py-3">
+                {{ $desc }}
+                @if(!empty($it->notas))
+                    <div class="text-xs text-slate-500 mt-1">{{ $it->notas }}</div>
+                @endif
+            </td>
+            <td class="px-4 py-3 text-right">{{ number_format((float)$it->cantidad, 2) }}</td>
+            <td class="px-4 py-3 text-right">$ {{ number_format((float)$it->costo_unitario, 2) }}</td>
+            <td class="px-4 py-3 text-right font-semibold">$ {{ number_format($importe, 2) }}</td>
+        </tr>
+    @empty
+        <tr>
+            <td colspan="5" class="px-4 py-6 text-center text-slate-500">
+                Sin partidas capturadas.
+            </td>
+        </tr>
+    @endforelse
+</tbody>
+
         </table>
     </div>
 

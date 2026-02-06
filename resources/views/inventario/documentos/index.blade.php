@@ -13,6 +13,50 @@
             Ver Stock
         </a>
     </div>
+@php
+  // Tipo activo (default: entrada)
+  $tipo = request('tipo', 'entrada');
+
+  // Tabs disponibles (no incluimos "cancelacion")
+  $tabs = [
+    'entrada'   => 'Entradas',
+    'salida'    => 'Salidas',
+    'resguardo' => 'Resguardos',
+    'devolucion'=> 'Devoluciones',
+    'ajuste'    => 'Ajustes',
+  ];
+
+  // Helper: construir URL del tab conservando filtros actuales, cambiando solo tipo
+  $tabUrl = function(string $t) {
+    return route('inventario.documentos.index', array_merge(request()->query(), ['tipo' => $t]));
+  };
+@endphp
+
+<div class="flex items-center justify-between gap-4 mb-4">
+  <div class="inline-flex rounded-xl bg-white border border-slate-200 p-1">
+    @foreach($tabs as $key => $label)
+      <a
+        href="{{ $tabUrl($key) }}"
+        class="
+          px-4 py-2 rounded-lg text-sm font-medium transition
+          {{ $tipo === $key
+              ? 'bg-[#0B265A] text-white shadow'
+              : 'text-slate-700 hover:bg-slate-100' }}
+        "
+      >
+        {{ $label }}
+      </a>
+    @endforeach
+  </div>
+
+  {{-- Botón Nuevo: respeta el tab activo --}}
+  <a
+    href="{{ route('inventario.documentos.create', array_merge(request()->query(), ['tipo' => $tipo])) }}"
+    class="px-4 py-2 rounded-xl bg-[#0B265A] text-white text-sm font-medium hover:opacity-95"
+  >
+    + Nuevo
+  </a>
+</div>
 
     @if(session('status'))
         <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-3 text-sm">
@@ -33,7 +77,7 @@
                 </select>
             </div>
 
-            <div>
+            <!-- <div>
                 <label class="text-xs font-medium text-slate-600">Tipo</label>
                 <select name="tipo" class="mt-1 w-full rounded-xl border-slate-300">
                     <option value="">Todos</option>
@@ -41,7 +85,7 @@
                         <option value="{{ $k }}" @selected($tipo===$k)>{{ $label }}</option>
                     @endforeach
                 </select>
-            </div>
+            </div> -->
 
             <div>
                 <label class="text-xs font-medium text-slate-600">Estado</label>

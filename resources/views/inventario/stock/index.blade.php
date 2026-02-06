@@ -85,13 +85,13 @@
                 <tbody class="divide-y divide-slate-100">
                     @forelse($stocks as $s)
                         @php
-                            $isMin = $s->stock_minimo !== null && $s->existencia <= $s->stock_minimo;
+                             $isMin = $s->stock_minimo !== null && $s->stock_actual <= $s->stock_minimo;
                         @endphp
                         <tr class="{{ $isMin ? 'bg-amber-50/60' : '' }}">
                             <td class="px-4 py-3 text-slate-700">{{ $s->almacen?->nombre ?? '—' }}</td>
-                            <td class="px-4 py-3 text-slate-700 font-mono">{{ $s->sku }}</td>
-                            <td class="px-4 py-3 text-slate-900">{{ $s->descripcion }}</td>
-                            <td class="px-4 py-3 text-right font-medium text-slate-900">{{ number_format((float)$s->existencia, 2) }}</td>
+                            <td class="px-4 py-3 text-slate-700 font-mono">{{ $s->producto?->sku?? '-' }}</td>
+                            <td class="px-4 py-3 text-slate-900">{{ $s->producto?->nombre?? '-' }}</td>
+                            <td class="px-4 py-3 text-right font-medium text-slate-900">{{ number_format((float)$s->stock_actual, 2) }}</td>
                             <td class="px-4 py-3 text-right text-slate-700">{{ number_format((float)$s->stock_minimo, 2) }}</td>
                             <td class="px-4 py-3 text-right text-slate-700">$ {{ number_format((float)$s->costo_promedio, 2) }}</td>
                             <td class="px-4 py-3 text-right font-semibold text-slate-900">$ {{ number_format((float)$s->valor_total, 2) }}</td>

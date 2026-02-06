@@ -67,12 +67,12 @@ class InventarioSeedInicial extends Command
             DB::transaction(function () use ($productos, $almacenId, $qtyDefault, $costDefault, &$procesados) {
 
                 $doc = InventarioDocumento::create([
-                    'tipo'        => 'entrada_inicial',
+                    'tipo'        => 'inicial',
                     'almacen_id'  => $almacenId,
                     'fecha'       => now()->toDateString(),
-                    'referencia'  => 'Carga inicial por comando',
-                    'notas'       => null,
-                    'aplicado_at' => null,
+                    // 'referencia'  => 'Carga inicial por comando',
+                    'notas'       => 'Carga inicial por comando',
+                    // 'aplicado_at' => null,
                     // si tienes user_id o creado_por, agrega aquí
                 ]);
 
@@ -80,7 +80,8 @@ class InventarioSeedInicial extends Command
                     // Si qty_default=0, esto creará filas con 0 (no afecta stock, pero crea fila al aplicar).
                     // Si quieres crear solo con qty>0, cambia la condición.
                     InventarioDocumentoDetalle::create([
-                        'inventario_documento_id' => $doc->id,
+                        'documento_id' => $doc->id,
+                        // 'inventario_documento_id' => $doc->id,
                         'producto_id'             => $p->id,
                         'cantidad'                => $qtyDefault,
                         'costo_unitario'          => $costDefault,
@@ -89,7 +90,9 @@ class InventarioSeedInicial extends Command
                 }
 
                 // APLICAR => aquí se generan movimientos y stock
-                InventarioDocumentoService::aplicar($doc);
+                // InventarioDocumentoService::aplicar($doc);
+                app(InventarioDocumentoService::class)->aplicar($doc);
+                
 
                 $procesados += $productos->count();
             });

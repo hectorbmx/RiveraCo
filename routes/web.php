@@ -36,8 +36,7 @@ use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\MaquinasReporteDiarioController;
 use App\Http\Controllers\SnapshotsController;
 use App\Http\Controllers\Inventario\InventarioStockController;
-
-
+use App\Http\Controllers\Inventario\InventarioKardexController;
 use App\Http\Controllers\Inventario\InventarioDocumentoController;
 
 
@@ -82,22 +81,35 @@ Route::middleware(['auth', 'verified'])
 Route::middleware('auth','verified')->group(function () {
 
     Route::prefix('inventario')->group(function () {
-
     // 🔹 STOCK
-    Route::get('stock', [InventarioStockController::class, 'view'])->name('inventario.stock.index');
+       // 🔹 STOCK
+        Route::get('stock', [InventarioStockController::class, 'view'])->name('inventario.stock.index');
+        
+        Route::get('documentos/buscar-proveedor', [InventarioDocumentoController::class, 'buscarProveedor'])->name('inventario.documentos.buscar-proveedor');
+        Route::get('documentos/buscar-producto',  [InventarioDocumentoController::class, 'buscarProducto'])->name('inventario.documentos.buscar-producto');
 
-    Route::get('stock.json', [InventarioStockController::class, 'index'])->name('inventario.stock.index.json');
+        Route::get('stock.json', [InventarioStockController::class, 'index'])->name('inventario.stock.index.json');
+        // 🔹 DOCUMENTOS (MOVIMIENTOS)
+        // Index con tabs (?tipo=entrada|salida|resguardo|devolucion|ajuste)
+        Route::get('documentos', [InventarioDocumentoController::class, 'index'])->name('inventario.documentos.index');
+        // Crear
+        Route::get('documentos/create', [InventarioDocumentoController::class, 'create'])->name('inventario.documentos.create');
+        // Guardar (borrador o guardar+aplicar)
+        Route::post('documentos', [InventarioDocumentoController::class, 'store'])->name('inventario.documentos.store');
+        // Ver
+        Route::get('documentos/{doc}', [InventarioDocumentoController::class, 'show'])->name('inventario.documentos.show');
+        // Editar (solo borrador)
+        Route::get('documentos/{doc}/edit', [InventarioDocumentoController::class, 'edit'])->name('inventario.documentos.edit');
+        // Actualizar (solo borrador)
+        Route::put('documentos/{doc}', [InventarioDocumentoController::class, 'update'])->name('inventario.documentos.update');
+        // Aplicar
+        Route::post('documentos/{doc}/aplicar', [InventarioDocumentoController::class, 'aplicar'])->name('inventario.documentos.aplicar');
+        // Cancelar (crea documento cancelación)
+        Route::post('documentos/{doc}/cancelar', [InventarioDocumentoController::class, 'cancelar'])->name('inventario.documentos.cancelar');
+        
+        Route::get('kardex', [InventarioKardexController::class, 'index'])->name('inventario.kardex.index');
 
-    // 🔹 DOCUMENTOS
-    Route::get('documentos', [InventarioDocumentoController::class, 'index'])->name('inventario.documentos.index');
 
-    Route::post('documentos', [InventarioDocumentoController::class, 'store']);
-
-    Route::get('documentos/{doc}', [InventarioDocumentoController::class, 'show'])->name('inventario.documentos.show');
-
-    Route::post('documentos/{doc}/aplicar', [InventarioDocumentoController::class, 'aplicar'])->name('inventario.documentos.aplicar');
-
-    Route::post('documentos/{doc}/cancelar', [InventarioDocumentoController::class, 'cancelar'])->name('inventario.documentos.cancelar');
 });
 
 

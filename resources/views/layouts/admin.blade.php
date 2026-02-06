@@ -103,6 +103,22 @@
                     <span class="text-lg">📦</span>
                     <span class="sidebar-text">Productos</span>
                 </a>
+             
+                <li class="menu-item has-children">
+                    <a href="#"  class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
+                                    title="Inventario">
+                        📦 Inventario
+                    </a>
+                    <ul class="submenu">
+                        <li><a href="{{ route('inventario.documentos.index') }}"  class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
+                                    title="Documentos">📄 Documentos</a></li>
+                        <li><a href="{{ route('inventario.stock.index') }}" class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
+                                    title="Stock">📊 Stock</a></li>
+                        <li><a href="{{ route('inventario.kardex.index') }}" class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
+                                    title="Kardex">📚 Kardex</a></li>
+                    </ul>
+                </li>
+
                 @endcan
                 @can('proveedores.access')    
                  <a href="{{ route('proveedores.index') }}"
