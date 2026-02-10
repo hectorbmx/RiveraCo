@@ -110,12 +110,28 @@ public function login(Request $request)
     }
 
     // Por ahora: solo residente
-    if (!$user->hasRole('residente')) {
+    // if (!$user->hasRole('residente')) {
+    //     return response()->json([
+    //         'ok' => false,
+    //         'message' => 'Tu rol no tiene acceso a la app.'
+    //     ], 403);
+    // }
+    
+    $isResidente = $user->hasRole('residente');
+    $isGerencial = $user->can('app.gerencial.access'); // admin-rivera (o quien tenga el permiso)
+    // Token
+    $tokenName = $request->header('X-Device-Name', 'mobile');
+    $token = $user->createToken($tokenName)->plainTextToken;
+
+    if($isResidente){
+
+    if (!$isResidente && !$isGerencial) {
         return response()->json([
             'ok' => false,
             'message' => 'Tu rol no tiene acceso a la app.'
         ], 403);
     }
+
 
     // =========================
     // 1) Obtener la OBRA (única) asignada a este residente
@@ -240,10 +256,6 @@ public function login(Request $request)
         ];
     }
 
-    // Token
-    $tokenName = $request->header('X-Device-Name', 'mobile');
-    $token = $user->createToken($tokenName)->plainTextToken;
-
     return response()->json([
         'ok' => true,
         'token' => $token,
@@ -257,6 +269,11 @@ public function login(Request $request)
             'empleado_id' => $usuarioApp->empleado_id,
             'is_active' => (bool) $usuarioApp->is_active,
         ],
+        'authz' => [
+            'roles' => $user->getRoleNames()->values(),
+            'permissions' => $user->getAllPermissions()->pluck('name')->values(),
+        ],
+
         'contexto' => [
             'obra' => [
                 'id' => $obra->id,
@@ -294,27 +311,32 @@ public function login(Request $request)
         ] : null,
         ],
     ]);
+    }//aqui termina el bloque de residenete
+    return response()->json([
+    'ok' => true,
+    'token' => $token, // OJO: en este punto aún no existe si lo creas abajo (te digo cómo acomodarlo en Paso 3)
+    'user' => [
+        'id' => $user->id,
+        'email' => $user->email,
+        'name' => $user->name ?? null,
+    ],
+    'app' => [
+        'user_app_id' => $usuarioApp->id,
+        'empleado_id' => $usuarioApp->empleado_id,
+        'is_active' => (bool) $usuarioApp->is_active,
+    ],
+    'authz' => [
+        'roles' => $user->getRoleNames()->values(),
+        'permissions' => $user->getAllPermissions()->pluck('name')->values(),
+    ],
+    'contexto' => null,
+    'gerencial' => [
+        'kpis' => null,
+        'obras_preview' => [],
+    ],
+]);
 }
-    // public function me(Request $request)
-    //     {
-    //         $user = $request->user();
-
-    //         $usuarioApp = UsuarioApp::where('user_id', $user->id)->first();
-
-    //         return response()->json([
-    //             'ok' => true,
-    //             'user' => [
-    //                 'id' => $user->id,
-    //                 'email' => $user->email,
-    //                 'name' => $user->name ?? null,
-    //             ],
-    //             'app' => $usuarioApp ? [
-    //                 'user_app_id' => $usuarioApp->id,
-    //                 'empleado_id' => $usuarioApp->empleado_id,
-    //                 'is_active' => (bool) $usuarioApp->is_active,
-    //             ] : null,
-    //         ]);
-    //     }
+ 
     public function me(Request $request)
 {
     $user = $request->user();

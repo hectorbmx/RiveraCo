@@ -41,4 +41,11 @@ class Maquina extends Model
     {
         return $query->where('estado', 'operativa');
     }
+    public function asignacionActiva()
+    {
+        return $this->hasOne(ObraMaquina::class, 'maquina_id')
+            ->whereNull('fecha_fin')
+            ->latestOfMany('fecha_inicio'); // si hay varias activas por error, toma la más reciente
+    }
+
 }

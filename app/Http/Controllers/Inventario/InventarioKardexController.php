@@ -78,4 +78,15 @@ class InventarioKardexController extends Controller
             'hasta'
         ));
     }
+
+    public function producto(Request $request, int $producto)
+{
+    // Redirige a index con producto_id ya seteado, y conserva filtros opcionales
+    $params = array_merge($request->all(), [
+        'producto_id' => $producto,
+    ]);
+
+    return redirect()->route('inventario.kardex.index', $params);
+}
+
 }

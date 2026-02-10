@@ -57,10 +57,25 @@ class Empleado extends Model
         'infonavit'        => 'decimal:2',
     ];
 
+    public function getRouteKeyName()
+    {
+        return 'id_Empleado';
+    }
+
+
     public function asignaciones()
     {
         return $this->hasMany(ObraEmpleado::class, 'empleado_id', 'id_Empleado');
     }
+    public function area()
+    {
+        return $this->belongsTo(
+            \App\Models\Area::class,
+            'Area', // FK en empleados
+            'id'    // PK en areas
+        );
+    }
+    
 
     public function asignacionActiva()
     {

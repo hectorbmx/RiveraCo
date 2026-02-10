@@ -7,6 +7,14 @@ use App\Http\Controllers\Api\V1\AsistenciasController;
 use App\Http\Controllers\Api\V1\VehiculoKmController;
 use App\Http\Controllers\Api\V1\ComisionController;
 use App\Http\Controllers\Api\V1\MaquinaRegistroController;
+use App\Http\Controllers\Api\V1\Gerencial\ObrasGerencialController;
+use App\Http\Controllers\Api\V1\Gerencial\MaquinasGerencialController;
+use App\Http\Controllers\Api\V1\Gerencial\PersonalGerencialController;
+use App\Http\Controllers\Api\V1\Gerencial\InventarioGerencialController;
+use App\Http\Controllers\Api\V1\Gerencial\InventarioKardexGerencialController;
+
+
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -46,6 +54,31 @@ Route::prefix('v1')->group(function () {
         Route::post('vehiculos/km-log', [VehiculoKmController::class, 'store']);
     
         Route::post('obras/{obra}/comisiones', [ComisionController::class, 'store']);
+
+        //acceso gerencial
+          Route::prefix('gerencial')->middleware('permission:app.gerencial.access')->group(function () {
+                Route::get('obras', [ObrasGerencialController::class, 'index']); // cabecera paginada
+                Route::get('obras/{obra}', [ObrasGerencialController::class, 'show']);
+                //catalogo de maquinas
+                Route::get('maquinas', [MaquinasGerencialController::class, 'index']);
+                Route::get('maquinas/{maquina}', [MaquinasGerencialController::class, 'show']);
+                Route::get('maquinas/{maquina}/registros', [MaquinasGerencialController::class, 'registros']);
+                Route::get('maquinas/{maquina}/registros/resumen', [MaquinasGerencialController::class, 'registrosResumen']);
+                //catalogo de empleados
+                Route::get('empleados', [PersonalGerencialController::class, 'index']);
+                Route::get('empleados/{empleado}', [PersonalGerencialController::class, 'show']); // opcional, pero recomendable
+                //catalogo de productos
+                Route::get('inventario/stock', [InventarioGerencialController::class, 'stock']);
+                Route::get('inventario/stock/resumen', [InventarioGerencialController::class, 'resumen']);
+                
+                
+                Route::get('inventario/productos/{producto}/kardex', [InventarioKardexGerencialController::class, 'producto'])
+                ->name('api.gerencial.inventario.kardex.producto');
+                Route::get('inventario/productos/{producto}/kardex/resumen', [InventarioKardexGerencialController::class, 'resumenProducto']);
+
+
+
+            });
 
     });
 });

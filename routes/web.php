@@ -108,7 +108,8 @@ Route::middleware('auth','verified')->group(function () {
         Route::post('documentos/{doc}/cancelar', [InventarioDocumentoController::class, 'cancelar'])->name('inventario.documentos.cancelar');
         
         Route::get('kardex', [InventarioKardexController::class, 'index'])->name('inventario.kardex.index');
-
+        Route::get('kardex/productos/{producto}', [InventarioKardexController::class, 'producto'])
+            ->name('inventario.kardex.producto');
 
 });
 
