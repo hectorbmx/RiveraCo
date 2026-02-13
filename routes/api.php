@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\Gerencial\ObrasGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\MaquinasGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\PersonalGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\InventarioGerencialController;
+use App\Http\Controllers\Api\V1\Gerencial\DashboardGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\InventarioKardexGerencialController;
 
 
@@ -57,6 +58,9 @@ Route::prefix('v1')->group(function () {
 
         //acceso gerencial
           Route::prefix('gerencial')->middleware('permission:app.gerencial.access')->group(function () {
+
+                Route::get('dashboard', [DashboardGerencialController::class, 'index']);
+
                 Route::get('obras', [ObrasGerencialController::class, 'index']); // cabecera paginada
                 Route::get('obras/{obra}', [ObrasGerencialController::class, 'show']);
                 //catalogo de maquinas
@@ -64,6 +68,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('maquinas/{maquina}', [MaquinasGerencialController::class, 'show']);
                 Route::get('maquinas/{maquina}/registros', [MaquinasGerencialController::class, 'registros']);
                 Route::get('maquinas/{maquina}/registros/resumen', [MaquinasGerencialController::class, 'registrosResumen']);
+                
                 //catalogo de empleados
                 Route::get('empleados', [PersonalGerencialController::class, 'index']);
                 Route::get('empleados/{empleado}', [PersonalGerencialController::class, 'show']); // opcional, pero recomendable
@@ -75,9 +80,6 @@ Route::prefix('v1')->group(function () {
                 Route::get('inventario/productos/{producto}/kardex', [InventarioKardexGerencialController::class, 'producto'])
                 ->name('api.gerencial.inventario.kardex.producto');
                 Route::get('inventario/productos/{producto}/kardex/resumen', [InventarioKardexGerencialController::class, 'resumenProducto']);
-
-
-
             });
 
     });

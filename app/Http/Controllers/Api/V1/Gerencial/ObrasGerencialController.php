@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\ObraEmpleado;
 use App\Models\ObraMaquina;
 use App\Models\ObraPila;
-
+use Illuminate\Support\Facades\DB;
 
 class ObrasGerencialController extends Controller
 {
@@ -41,10 +41,22 @@ class ObrasGerencialController extends Controller
             });
         }
 
+     $proyectosActivosCount = DB::table('obras')
+    ->whereIn('estatus_nuevo', [1,2])
+    ->count();
+
+
         $perPage = min(max((int) $request->get('per_page', 20), 1), 50);
         $obras = $q->paginate($perPage)->withQueryString();
-
+// $debug = [
+//   'total_obras' => DB::table('obras')->count(),
+//   'estatus_1'   => DB::table('obras')->where('estatus_nuevo', 1)->count(),
+//   'estatus_2'   => DB::table('obras')->where('estatus_nuevo', 2)->count(),
+//   'estatus_3'   => DB::table('obras')->where('estatus_nuevo', 3)->count(),
+//   'in_2_3'      => DB::table('obras')->whereIn('estatus_nuevo', [2,3])->count(),
+// ];
         return response()->json([
+            
             'ok' => true,
             'data' => $obras->through(function ($o) {
                 return [
@@ -67,6 +79,10 @@ class ObrasGerencialController extends Controller
                 'per_page' => $obras->perPage(),
                 'total' => $obras->total(),
             ],
+              'counts' => [
+            'proyectos_activos' => (int) $proyectosActivosCount,
+        ],
+        //   'debug_counts' => $debug, // 👈 temporal
         ]);
     }
     public function show(Request $request, Obra $obra)
