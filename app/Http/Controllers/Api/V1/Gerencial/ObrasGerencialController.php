@@ -85,7 +85,121 @@ class ObrasGerencialController extends Controller
         //   'debug_counts' => $debug, // 👈 temporal
         ]);
     }
-    public function show(Request $request, Obra $obra)
+//     public function show(Request $request, Obra $obra)
+// {
+//     // 1) Cabecera de obra (ligera)
+//     $obra->load(['cliente:id,nombre_comercial']);
+
+//     // 2) KPIs / Resúmenes (ligeros)
+//     $empleadosCount = ObraEmpleado::query()
+//         ->where('obra_id', $obra->id)
+//         ->where('activo', 1)
+//         ->whereNull('fecha_baja')
+//         ->count();
+
+//     $maquinaActiva = ObraMaquina::query()
+//         ->with(['maquina:id,nombre']) // ajusta campos si necesitas
+//         ->where('obra_id', $obra->id)
+//         ->activas()
+//         ->latest('fecha_inicio')
+//         ->first();
+
+//     // 3) Empleados (preview, NO catálogo completo)
+//     $empleadosPreview = ObraEmpleado::query()
+//         ->with([
+//             'empleado:id_Empleado,Nombre,Apellidos,Telefono',
+//             'rol:id,rol_key,nombre',
+//         ])
+//         ->where('obra_id', $obra->id)
+//         ->where('activo', 1)
+//         ->whereNull('fecha_baja')
+//         ->orderByDesc('id')
+//         ->limit(10)
+//         ->get()
+//         ->map(function ($oe) {
+//             return [
+//                 'obra_empleado_id' => $oe->id,
+//                 'empleado_id'      => $oe->empleado_id,
+//                 'rol_id'           => $oe->rol_id,
+//                 'rol'              => $oe->rol ? [
+//                     'id'      => $oe->rol->id,
+//                     'rol_key' => $oe->rol->rol_key ?? null,
+//                     'nombre'  => $oe->rol->nombre ?? null,
+//                 ] : null,
+//                 'empleado'         => $oe->empleado ? [
+//                     'id_Empleado' => $oe->empleado->id_Empleado,
+//                     'nombre'      => trim(($oe->empleado->Nombre ?? '') . ' ' . ($oe->empleado->Apellidos ?? '')),
+//                     'telefono'    => $oe->empleado->Telefono ?? null, // ojo: en tu map anterior usabas telefono minúscula, aquí dejo Telefono como en select
+//                 ] : null,
+//             ];
+//         })
+//         ->values();
+
+//     // 4) Pilas (si pueden ser muchas, también preview + totales)
+//     $pilasRaw = ObraPila::query()
+//         ->where('obra_id', $obra->id)
+//         ->orderBy('numero_pila')
+//         ->get();
+
+//     $pilasTotalProgramado = (int) $pilasRaw->sum('cantidad_programada');
+
+//     $pilasPreview = $pilasRaw->take(30)->map(function ($p) {
+//         return [
+//             'id' => (int) $p->id,
+//             'obra_id' => (int) $p->obra_id,
+//             'numero_pila' => $p->numero_pila ?? null,
+//             'tipo' => $p->tipo ?? null,
+//             'cantidad_programada' => $p->cantidad_programada !== null ? (int)$p->cantidad_programada : 0,
+//             'diametro' => $p->diametro_proyecto !== null ? (float)$p->diametro_proyecto : null,
+//             'profundidad' => $p->profundidad_proyecto !== null ? (float)$p->profundidad_proyecto : null,
+//             'ubicacion' => $p->ubicacion ?? null,
+//             'activo' => (bool) $p->activo,
+//         ];
+//     })->values();
+
+//     $maquinaPayload = null;
+//     if ($maquinaActiva) {
+//         $maquinaPayload = [
+//             'obra_maquina_id'  => $maquinaActiva->id,
+//             'maquina_id'       => $maquinaActiva->maquina_id,
+//             'fecha_inicio'     => optional($maquinaActiva->fecha_inicio)->toDateString(),
+//             'horometro_inicio' => $maquinaActiva->horometro_inicio,
+//             'estado'           => $maquinaActiva->estado,
+//             'maquina'          => $maquinaActiva->maquina ? [
+//                 'id'     => $maquinaActiva->maquina->id ?? null,
+//                 'nombre' => $maquinaActiva->maquina->nombre ?? null,
+//             ] : null,
+//         ];
+//     }
+
+//     return response()->json([
+//         'ok' => true,
+//         'data' => [
+//             'obra' => [
+//                 'id' => (int) $obra->id,
+//                 'cliente' => $obra->cliente ? [
+//                     'id' => (int) $obra->cliente->id,
+//                     'nombre' => $obra->cliente->nombre_comercial,
+//                 ] : null,
+//                 'nombre' => $obra->nombre,
+//                 'clave_obra' => $obra->clave_obra,
+//                 'ubicacion' => $obra->ubicacion,
+//                 'estatus_nuevo' => $obra->estatus_nuevo,
+//                 'fecha_inicio_programada' => optional($obra->fecha_inicio_programada)->toDateString(),
+//                 'fecha_inicio_real' => optional($obra->fecha_inicio_real)->toDateString(),
+//             ],
+//             'kpis' => [
+//                 'empleados_activos' => $empleadosCount,
+//                 'pilas_total_programado' => $pilasTotalProgramado,
+//                 'pilas_total_rows' => (int) $pilasRaw->count(),
+//             ],
+//             'maquina_activa' => $maquinaPayload,
+//             'empleados_preview' => $empleadosPreview,
+//             'pilas_preview' => $pilasPreview,
+//         ],
+//     ]);
+// }
+public function show(Request $request, Obra $obra)
 {
     // 1) Cabecera de obra (ligera)
     $obra->load(['cliente:id,nombre_comercial']);
@@ -98,13 +212,13 @@ class ObrasGerencialController extends Controller
         ->count();
 
     $maquinaActiva = ObraMaquina::query()
-        ->with(['maquina:id,nombre']) // ajusta campos si necesitas
+        ->with(['maquina:id,nombre'])
         ->where('obra_id', $obra->id)
         ->activas()
         ->latest('fecha_inicio')
         ->first();
 
-    // 3) Empleados (preview, NO catálogo completo)
+    // 3) Empleados preview
     $empleadosPreview = ObraEmpleado::query()
         ->with([
             'empleado:id_Empleado,Nombre,Apellidos,Telefono',
@@ -129,19 +243,27 @@ class ObrasGerencialController extends Controller
                 'empleado'         => $oe->empleado ? [
                     'id_Empleado' => $oe->empleado->id_Empleado,
                     'nombre'      => trim(($oe->empleado->Nombre ?? '') . ' ' . ($oe->empleado->Apellidos ?? '')),
-                    'telefono'    => $oe->empleado->Telefono ?? null, // ojo: en tu map anterior usabas telefono minúscula, aquí dejo Telefono como en select
+                    'telefono'    => $oe->empleado->Telefono ?? null,
                 ] : null,
             ];
         })
         ->values();
 
-    // 4) Pilas (si pueden ser muchas, también preview + totales)
+    // 4) PILAS con ejecutadas (misma fuente que web: detallesComision)
     $pilasRaw = ObraPila::query()
         ->where('obra_id', $obra->id)
+        ->withSum('detallesComision as cantidad_ejecutada', 'cantidad')
         ->orderBy('numero_pila')
         ->get();
 
-    $pilasTotalProgramado = (int) $pilasRaw->sum('cantidad_programada');
+    $pilasProgramadas = (int) $pilasRaw->sum('cantidad_programada');
+    $pilasRealizadas  = (int) $pilasRaw->sum(fn($p) => (int) ($p->cantidad_ejecutada ?? 0));
+    $pilasFaltan      = max(0, $pilasProgramadas - $pilasRealizadas);
+
+    $pilasPct = 0;
+    if ($pilasProgramadas > 0) {
+        $pilasPct = round(($pilasRealizadas / $pilasProgramadas) * 100, 2);
+    }
 
     $pilasPreview = $pilasRaw->take(30)->map(function ($p) {
         return [
@@ -150,12 +272,26 @@ class ObrasGerencialController extends Controller
             'numero_pila' => $p->numero_pila ?? null,
             'tipo' => $p->tipo ?? null,
             'cantidad_programada' => $p->cantidad_programada !== null ? (int)$p->cantidad_programada : 0,
+            'cantidad_ejecutada'  => $p->cantidad_ejecutada !== null ? (int)$p->cantidad_ejecutada : 0,
             'diametro' => $p->diametro_proyecto !== null ? (float)$p->diametro_proyecto : null,
             'profundidad' => $p->profundidad_proyecto !== null ? (float)$p->profundidad_proyecto : null,
             'ubicacion' => $p->ubicacion ?? null,
             'activo' => (bool) $p->activo,
         ];
     })->values();
+
+    // 5) COBRANZA (misma fuente que web: facturas pagadas)
+    // Asegúrate de incluir el campo en tu select si en algún lado usas select([...])
+    $montoContratado = (float) ($obra->monto_contratado ?? 0);
+
+    $montoCobrado = (float) $obra->facturas()
+        ->where('estado', 'pagada')
+        ->sum('monto');
+
+    $cobranzaPct = 0;
+    if ($montoContratado > 0) {
+        $cobranzaPct = round(($montoCobrado / $montoContratado) * 100, 2);
+    }
 
     $maquinaPayload = null;
     if ($maquinaActiva) {
@@ -187,11 +323,29 @@ class ObrasGerencialController extends Controller
                 'estatus_nuevo' => $obra->estatus_nuevo,
                 'fecha_inicio_programada' => optional($obra->fecha_inicio_programada)->toDateString(),
                 'fecha_inicio_real' => optional($obra->fecha_inicio_real)->toDateString(),
+
+                // opcional: exponer para debugging/UI
+                'monto_contratado' => $montoContratado,
             ],
             'kpis' => [
+                // (lo dejamos por compatibilidad si tu UI aún lo lee)
                 'empleados_activos' => $empleadosCount,
-                'pilas_total_programado' => $pilasTotalProgramado,
-                'pilas_total_rows' => (int) $pilasRaw->count(),
+
+                // NUEVO: cobranza
+                'cobranza' => [
+                    'monto_contratado' => $montoContratado,
+                    'monto_cobrado'    => $montoCobrado,
+                    'porcentaje'       => $cobranzaPct,
+                ],
+
+                // NUEVO: pilas
+                'pilas' => [
+                    'programadas' => $pilasProgramadas,
+                    'realizadas'  => $pilasRealizadas,
+                    'faltan'      => $pilasFaltan,
+                    'porcentaje'  => $pilasPct,
+                    'rows'        => (int) $pilasRaw->count(),
+                ],
             ],
             'maquina_activa' => $maquinaPayload,
             'empleados_preview' => $empleadosPreview,
@@ -199,5 +353,6 @@ class ObrasGerencialController extends Controller
         ],
     ]);
 }
+
 
 }
