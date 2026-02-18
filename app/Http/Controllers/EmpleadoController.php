@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Empleado;
 use App\Models\EmpleadoNota;
 use Illuminate\Http\Request;
+use App\Services\Empleados\EmpleadoKardexService;
 
 class EmpleadoController extends Controller
 {
@@ -84,8 +85,25 @@ class EmpleadoController extends Controller
                 $empleado->load('contactosEmergencia');
                 }
 
+    $kardex = collect();
 
-            return view('empleados.edit', compact('empleado', 'tab'));
+    if ($tab === 'nomina') {
+        $empleado->load([
+            'nominaRecibos.obra',
+        ]);
+    }
+
+    if ($tab === 'kardex') {
+        // ⚠️ Carga lo necesario para construir kardex
+        $empleado->load([
+            'nominaRecibos.obra',
+            // si ya existe relación:
+            // 'nominaRecibos.pagosExtra',
+        ]);
+
+        $kardex = app(EmpleadoKardexService::class)->build($empleado);
+    }
+            return view('empleados.edit', compact('empleado', 'tab','kardex'));
         }
 
 

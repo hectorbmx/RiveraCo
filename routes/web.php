@@ -35,6 +35,7 @@ use App\Http\Controllers\EmpresaConfigMaquinaController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\MaquinasReporteDiarioController;
 use App\Http\Controllers\SnapshotsController;
+use App\Http\Controllers\Nomina\NominaCorridaController;
 use App\Http\Controllers\Inventario\InventarioStockController;
 use App\Http\Controllers\Inventario\InventarioKardexController;
 use App\Http\Controllers\Inventario\InventarioDocumentoController;
@@ -76,6 +77,26 @@ Route::middleware(['auth', 'verified'])
         Route::post('/', [UsuarioController::class, 'store'])->name('store');
         Route::get('/{usuario}/edit', [UsuarioController::class, 'edit'])->name('edit');
         Route::put('/{usuario}', [UsuarioController::class, 'update'])->name('update');
+
+    });
+    //rutas nomina
+Route::middleware(['auth','verified'])
+    ->prefix('nomina')
+    ->name('nomina.')
+    ->group(function () {
+
+        Route::post('corridas',[NominaCorridaController::class, 'store'])->name('corridas.store');
+        
+        Route::get('corridas/{corrida}',[NominaCorridaController::class, 'show'])->name('corridas.show');
+        Route::post('corridas/{corrida}/recibos/generar',[NominaCorridaController::class, 'generarRecibos'])->name('corridas.recibos.generar');
+        Route::post('corridas/{corrida}/recibos/guardar',[NominaCorridaController::class, 'guardarRecibos'])->name('corridas.recibos.guardar');
+        Route::delete('corridas/{corrida}/recibos',[NominaCorridaController::class, 'destroyRecibos'])->name('corridas.recibos.destroy');
+        Route::delete('corridas/{corrida}',[NominaCorridaController::class, 'destroy'])->name('corridas.destroy');
+        
+        Route::post('corridas/{corrida}/cerrar', [NominaCorridaController::class, 'cerrar'])->name('corridas.cerrar');
+        Route::post('corridas/{corrida}/pagar',  [NominaCorridaController::class, 'marcarPagada'])->name('corridas.pagar');
+        Route::post('corridas/{corrida}/reabrir',[NominaCorridaController::class, 'reabrir'])->name('corridas.reabrir');
+
     });
 
 Route::middleware('auth','verified')->group(function () {

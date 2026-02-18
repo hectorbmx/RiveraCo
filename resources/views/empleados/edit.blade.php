@@ -37,6 +37,7 @@
                 'emergencia'=> 'Contactos emergencia',
                 'contrato'  => 'Contrato',
                 'nomina'    => 'Nómina',
+                'kardex'    => 'Kardex',
             ];
         @endphp
 
@@ -91,6 +92,10 @@
         {{-- TAB: NOMINA --}}
         @if($tab === 'nomina')
             @include('empleados.partials._nomina', ['empleado' => $empleado])
+        @endif
+        {{-- TAB: KARDEX --}}
+        @if($tab === 'kardex')
+        @include('empleados.partials._kardex', ['empleado' => $empleado, 'kardex' => $kardex ?? collect()])
         @endif
 
     </div>
