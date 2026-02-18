@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Empleado;
+use App\Models\Area;
 use App\Models\EmpleadoNota;
 use Illuminate\Http\Request;
 use App\Services\Empleados\EmpleadoKardexService;
@@ -103,7 +104,11 @@ class EmpleadoController extends Controller
 
         $kardex = app(EmpleadoKardexService::class)->build($empleado);
     }
-            return view('empleados.edit', compact('empleado', 'tab','kardex'));
+     $areas = Area::where('activo', true)
+                 ->orderBy('nombre')
+                 ->get();
+
+            return view('empleados.edit', compact('empleado', 'tab','kardex','areas'));
         }
 
 
@@ -119,22 +124,23 @@ class EmpleadoController extends Controller
     }
 
     // Activar / dar de baja
-    public function toggleStatus(Empleado $empleado)
-    {
-        if ($empleado->Estatus === 'BAJA') {
-            $empleado->Estatus = 'ACTIVO';
-            $empleado->Fecha_baja = null;
-        } else {
-            $empleado->Estatus = 'BAJA';
-            $empleado->Fecha_baja = now()->toDateString();
-        }
-
-        $empleado->save();
-
-        return redirect()
-            ->route('empleados.index')
-            ->with('success', 'Estatus del empleado actualizado.');
+  public function toggleStatus(Empleado $empleado)
+{
+    if ((int)$empleado->Estatus === 2) {
+        $empleado->Estatus = 1;          // Activo
+        $empleado->Fecha_baja = null;
+    } else {
+        $empleado->Estatus = 2;          // Baja
+        $empleado->Fecha_baja = now()->toDateString();
     }
+
+    $empleado->save();
+
+    return redirect()
+        ->route('empleados.index')
+        ->with('success', 'Estatus del empleado actualizado.');
+}
+
 
     /**
      * Validación centralizada

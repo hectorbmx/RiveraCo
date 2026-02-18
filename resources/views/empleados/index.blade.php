@@ -93,17 +93,13 @@
                                 -
                             @endif
                         </td>
-                        <td class="py-2 px-3">
-                            @if($emp->Estatus == 2)
-                                <span class="inline-flex px-2 py-1 rounded-full text-xs bg-red-100 text-red-700">
-                                    Baja
-                                </span>
+                       <td class="py-2 px-3">
+                            @if((int)$emp->Estatus === 2)
+                                <span class="inline-flex px-2 py-1 rounded-full text-xs bg-red-100 text-red-700">Baja</span>
                             @else
-                                <span class="inline-flex px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
-                                    Activo
-                                </span>
+                                <span class="inline-flex px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">Activo</span>
                             @endif
-                        </td>
+                            </td>
                         <td class="py-2 px-3 text-right space-x-2">
                             <a href="{{ route('empleados.edit', ['empleado' => $emp->id_Empleado, 'tab' => 'datos']) }}"
                             class="text-xs text-blue-600 hover:text-blue-800 font-medium">
@@ -112,15 +108,16 @@
 
 
 
-                            <form action="{{ route('empleados.toggle-status', $emp->id_Empleado) }}"
-                                  method="POST"
-                                  class="inline-block"
-                                  onsubmit="return confirm('¿Cambiar estatus de este empleado?')">
-                                @csrf
-                                @method('PATCH')
-                                <button class="text-xs text-slate-600 hover:text-slate-900 font-medium">
-                                    {{ $emp->Estatus === 'BAJA' ? 'Reactivar' : 'Dar de baja' }}
-                                </button>
+                          <form action="{{ route('empleados.toggle-status', $emp->id_Empleado) }}"
+                                method="POST"
+                                class="inline-block"
+                                onsubmit="return confirm('¿Cambiar estatus de este empleado?')">
+                            @csrf
+                            @method('PATCH')
+
+                            <button class="text-xs text-slate-600 hover:text-slate-900 font-medium">
+                                {{ (int)$emp->Estatus === 2 ? 'Reactivar' : 'Dar de baja' }}
+                            </button>
                             </form>
                         </td>
                     </tr>

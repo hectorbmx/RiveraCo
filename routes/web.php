@@ -28,6 +28,7 @@ use App\Http\Controllers\ProductoController;
 
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Admin\EmpresaSecurityController;
+use App\Http\Controllers\Admin\EmpresaConfigAreaController;
 
 use App\Http\Controllers\EmpresaConfigController;
 use App\Http\Controllers\ObraMaquinaHorasController;
@@ -135,13 +136,12 @@ Route::middleware('auth','verified')->group(function () {
 });
 
 
-    Route::get('/configuracion-empresa', [EmpresaConfigController::class, 'edit'])
-    ->name('empresa_config.edit');
+        Route::get('/configuracion-empresa', [EmpresaConfigController::class, 'edit'])->name('empresa_config.edit');
+        Route::put('/configuracion-empresa', [EmpresaConfigController::class, 'update'])->name('empresa_config.update');
 
-    Route::put('/configuracion-empresa', [EmpresaConfigController::class, 'update'])
-        ->name('empresa_config.update');
 
-           Route::middleware(['role:admin|super-admin'])->prefix('configuracion-empresa')->name('empresa_config.')->group(function () {
+
+        Route::middleware(['role:admin|super-admin'])->prefix('configuracion-empresa')->name('empresa_config.')->group(function () {
 
         // Roles
         Route::post('/roles', [EmpresaSecurityController::class, 'roleStore'])->name('roles.store');
@@ -157,17 +157,16 @@ Route::middleware('auth','verified')->group(function () {
         Route::delete('/permisos/{permission}', [EmpresaSecurityController::class, 'permissionDestroy'])->name('permissions.destroy');
     });
 
-    Route::get('/configuracion-empresa/maquinas/create', [EmpresaConfigMaquinaController::class, 'create'])
-        ->name('empresa_config.maquinas.create');
+    Route::get('/configuracion-empresa/maquinas/create', [EmpresaConfigMaquinaController::class, 'create'])->name('empresa_config.maquinas.create');
+    Route::post('/empresa-config/maquinas', [EmpresaConfigMaquinaController::class, 'store'])->name('empresa_config.maquinas.store');
+    Route::put('/empresa-config/maquinas/{maquina}', [EmpresaConfigMaquinaController::class, 'update'])->name('empresa_config.maquinas.update');
 
-    Route::post('/empresa-config/maquinas', [EmpresaConfigMaquinaController::class, 'store'])
-        ->name('empresa_config.maquinas.store');
+    Route::post('/empresa-config/areas', [EmpresaConfigAreaController::class, 'store'])->name('empresa-config.areas.store');
+    Route::patch('/empresa-config/areas/{area}', [EmpresaConfigAreaController::class, 'update'])->name('empresa-config.areas.update');
+    Route::patch('/empresa-config/areas/{area}/toggle', [EmpresaConfigAreaController::class, 'toggle'])->name('empresa-config.areas.toggle');
+    Route::delete('/empresa-config/areas/{area}', [EmpresaConfigAreaController::class, 'destroy'])->name('empresa-config.areas.destroy');
 
-    Route::put('/empresa-config/maquinas/{maquina}', [EmpresaConfigMaquinaController::class, 'update'])
-        ->name('empresa_config.maquinas.update');
-
-    Route::get('/configuracion-empresa/maquinas/{maquina}/edit', [EmpresaConfigMaquinaController::class, 'edit'])
-    ->name('empresa_config.maquinas.edit');
+    Route::get('/configuracion-empresa/maquinas/{maquina}/edit', [EmpresaConfigMaquinaController::class, 'edit'])->name('empresa_config.maquinas.edit');
 
     
     Route::get('/reportes/maquinaria/diario', [MaquinasReporteDiarioController::class, 'index'])

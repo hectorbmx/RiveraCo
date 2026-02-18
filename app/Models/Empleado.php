@@ -55,6 +55,8 @@ class Empleado extends Model
         'Sueldo_real'      => 'decimal:2',
         'Complemento'      => 'decimal:2',
         'infonavit'        => 'decimal:2',
+        'Estatus' => 'integer',
+
     ];
 
     public function getRouteKeyName()

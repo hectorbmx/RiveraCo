@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\EmpresaConfig;
 use Illuminate\Http\Request;
 use App\Models\Maquina;
+use App\Models\Area;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
@@ -12,7 +13,8 @@ class EmpresaConfigController extends Controller
 {
 
 public function index(){
-    return view('empresa_config.index');
+      $areas = Area::orderBy('codigo')->orderBy('nombre')->get();
+    return view('empresa_config.index',compact('areas'));
 }
 
     // public function edit()
@@ -28,11 +30,13 @@ public function index(){
     // }
     public function edit()
 {
+
     $config = EmpresaConfig::firstOrCreate(['id' => 1], [
         'moneda_base'     => 'MXN',
         'iva_por_defecto' => 16.00,
         'activa'          => true,
     ]);
+    $areas = Area::orderBy('codigo')->orderBy('nombre')->get();
 
     $maquinas = Maquina::orderBy('nombre')->get();
 
@@ -69,6 +73,7 @@ public function index(){
         'config',
         'maquinas',
         'roles',
+        'areas',
         'permissions',
         'selectedRole',
         'selectedRolePermissionIds'
