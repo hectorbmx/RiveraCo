@@ -117,11 +117,17 @@ class Empleado extends Model
     }
 
     // solo las asignaciones activas
+    // public function obraActiva()
+    // {
+    //     return $this->belongsToMany(Obra::class, 'obra_empleado', 'empleado_id', 'obra_id')
+    //         ->wherePivot('activo', 1);
+    // }
     public function obraActiva()
-    {
-        return $this->belongsToMany(Obra::class, 'obra_empleado', 'empleado_id', 'obra_id')
-            ->wherePivot('activo', 1);
-    }
+{
+    return $this->belongsToMany(Obra::class, 'obra_empleado', 'empleado_id', 'obra_id')
+        ->withPivot(['puesto_en_obra', 'activo']) // Añade los campos que necesites de la tabla intermedia
+        ->wherePivot('activo', 1);
+}
         // Vehículos que ha tenido asignados (histórico)
     public function vehiculosAsignados()
     {

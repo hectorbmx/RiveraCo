@@ -71,14 +71,12 @@ Route::prefix('v1')->group(function () {
                 
                 //catalogo de empleados
                 Route::get('empleados', [PersonalGerencialController::class, 'index']);
-                Route::get('empleados/{empleado}', [PersonalGerencialController::class, 'show']); // opcional, pero recomendable
+                Route::get('empleados/{empleado}', [PersonalGerencialController::class, 'show']); 
                 //catalogo de productos
                 Route::get('inventario/stock', [InventarioGerencialController::class, 'stock']);
                 Route::get('inventario/stock/resumen', [InventarioGerencialController::class, 'resumen']);
                 
-                
-                Route::get('inventario/productos/{producto}/kardex', [InventarioKardexGerencialController::class, 'producto'])
-                ->name('api.gerencial.inventario.kardex.producto');
+                Route::get('inventario/productos/{producto}/kardex', [InventarioKardexGerencialController::class, 'producto'])->name('api.gerencial.inventario.kardex.producto');
                 Route::get('inventario/productos/{producto}/kardex/resumen', [InventarioKardexGerencialController::class, 'resumenProducto']);
             });
 
