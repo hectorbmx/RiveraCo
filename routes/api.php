@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\Gerencial\PersonalGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\InventarioGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\DashboardGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\InventarioKardexGerencialController;
+use App\Http\Controllers\Integrations\ContpaqiFacturaImportController;
 
 
 
@@ -30,6 +31,12 @@ use App\Http\Controllers\Api\V1\Gerencial\InventarioKardexGerencialController;
 // Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 //     return $request->user();
 // });
+
+
+Route::post('/integrations/contpaqi/invoices', [ContpaqiFacturaImportController::class, 'store'])
+  ->middleware('api.key:contpaqi');
+
+ 
 Route::prefix('v1')->group(function () {
 
     Route::post('login', [AuthController::class, 'login']);
