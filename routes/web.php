@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\EmpresaConfigAreaController;
 
 use App\Http\Controllers\EmpresaConfigController;
 use App\Http\Controllers\ObraMaquinaHorasController;
+use App\Http\Controllers\FacturaController;
 use App\Http\Controllers\EmpresaConfigMaquinaController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\MaquinasReporteDiarioController;
@@ -101,6 +102,13 @@ Route::middleware(['auth','verified'])
     });
 
 Route::middleware('auth','verified')->group(function () {
+
+
+    Route::prefix('factura')->group(function(){
+        
+            Route::get('facturas',[FacturaController::class,'index'])->name('facturas.index');
+            
+    });
 
     Route::prefix('inventario')->group(function () {
     // 🔹 STOCK

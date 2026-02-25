@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Obra;
+use App\Models\Factura;
 
 class Cliente extends Model
 {
@@ -30,5 +31,11 @@ class Cliente extends Model
     {
         return $this->hasMany(Obra::class);
     }
-    
+    public function facturas()
+{
+    return $this->hasMany(Factura::class,
+        'rfc_receptor', // FK en facturas
+        'rfc'           // PK lógica en clientes
+    );
+}
 }

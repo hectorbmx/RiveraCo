@@ -15,7 +15,7 @@
         <aside id="sidebar" class="w-64 bg-[#0B265A] text-white flex flex-col transition-all duration-300">
 
             {{-- Logo --}}
-            {{-- Logo --}}
+            
             <div class="flex items-center px-6 py-6 gap-3 border-b border-white/10">
                 <div class="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden">
                     <img 
@@ -39,6 +39,12 @@
                    title="Dashboard">
                     <span class="text-lg">📊</span>
                     <span class="sidebar-text">Dashboard</span>
+                </a>
+                <a href="{{ route('facturas.index') }}"
+                   class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->is('facturas*') ? 'bg-white/10' : '' }}"
+                   title="Facturas">
+                    <span class="text-lg">👥</span>
+                    <span class="sidebar-text">Facturas</span>
                 </a>
                 @can('clientes.access')
                 <a href="{{ route('clientes.index') }}"
