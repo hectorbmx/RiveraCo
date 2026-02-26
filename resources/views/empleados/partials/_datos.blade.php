@@ -21,16 +21,12 @@
         <div class="w-full">
             <div class="w-36 h-36 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
                 @if(!empty($empleado->foto))
-                    <!-- <img
+                    <img
                         src="{{ asset('storage/' . $empleado->foto) }}"
                         alt="Foto del empleado"
                         class="w-full h-full object-cover"
-                    > -->
-                    <img
-  src="{{ Storage::url($empleado->foto) }}"
-  alt="Foto del empleado"
-  class="w-full h-full object-cover"
-/>
+                    >
+                    
                 @else
                     <span class="text-xs text-slate-400">Sin foto</span>
                 @endif
