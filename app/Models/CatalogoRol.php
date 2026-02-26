@@ -13,10 +13,12 @@ class CatalogoRol extends Model
         'rol_key',
         'descripcion',
         'activo',
+        'comisionable'
     ];
 
     protected $casts = [
         'activo' => 'boolean',
+        'comisionable' => 'boolean'
     ];
 
     /*

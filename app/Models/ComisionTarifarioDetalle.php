@@ -32,4 +32,12 @@ class ComisionTarifarioDetalle extends Model
     {
         return $this->belongsTo(ComisionTarifario::class, 'tarifario_id');
     }
+        public function rol()
+    {
+        return $this->belongsTo(\App\Models\CatalogoRol::class, 'rol_id');
+    }
+    public function uom()
+    {
+        return $this->belongsTo(\App\Models\Uom::class, 'uom_id');
+    }
 }

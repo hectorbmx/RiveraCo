@@ -50,7 +50,7 @@
                                 'general'   => ['label' => 'General', 'desc' => 'Datos base del sistema'],
                                 'vehiculos' => ['label' => 'Vehículos', 'desc' => 'Mantenimientos y alertas'],
                                 'maquinaria'=> ['label' => 'Maquinaria', 'desc' => 'Servicios por horas y tiempos'],
-                                'rrhh'      => ['label' => 'Puestos & Costos', 'desc' => 'Horas y horas extra'],
+                                'rrhh'      => ['label' => 'Puestos', 'desc' => 'Horas y horas extra'],
                                 'comisiones'=> ['label' => 'Comisiones', 'desc' => 'Reglas por tipo de trabajo'],
                                 'reglas'    => ['label' => 'Reglas', 'desc' => 'Políticas y flujos'],
                                 'alertas'   => ['label' => 'Alertas', 'desc' => 'Notificaciones y avisos'],
@@ -340,91 +340,249 @@
 </div>
                 </div>
 
-                {{-- ======================
-                     RRHH
-                ======================= --}}
-                <div x-show="tab === 'rrhh'" x-cloak class="space-y-6">
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-900">Puestos & Costos</h2>
-                        <p class="text-sm text-gray-600">Costos por hora y reglas de hora extra por puesto.</p>
-                    </div>
+              {{-- ======================
+                            RRHH
+                    ======================= --}}
+<div x-show="tab === 'rrhh'" x-cloak class="space-y-6">
 
-                    {{-- Placeholder: aquí normalmente pondrías una tabla editable por rol/puesto --}}
-                    <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
-                        Sugerencia: aquí va una tabla “Puesto / Costo hora / Multiplicador extra / Tope”.
-                        Si quieres, la armamos con inputs por fila y “Guardar cambios”.
-                    </div>
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900">Puestos</h2>
+            <p class="text-sm text-gray-600">
+                Catálogo de puestos disponibles en la empresa.
+            </p>
+        </div>
 
-                    <form method="POST" action="{{ route('empresa_config.update') }}"
-                          class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="section" value="rrhh">
+        <a href="{{ route('empresa_config.catalogo_roles.create') }}"
+           class="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-gray-800">
+            Nuevo puesto
+        </a>
+    </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Multiplicador hora extra (default)</label>
-                            <input type="number" step="0.01" name="hora_extra_mult" value="1.5"
-                                   class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
-                        </div>
+    <div class="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+                <tr>
+                    <th class="text-left px-4 py-3">ROL_KEY</th>
+                    <th class="text-left px-4 py-3">Nombre</th>
+                    <th class="text-left px-4 py-3">Comisionable</th>
+                    
+                    <th class="text-right px-4 py-3">Acciones</th>
+                </tr>
+            </thead>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Tope hora extra (horas/semana)</label>
-                            <input type="number" name="hora_extra_tope" value="10"
-                                   class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
-                        </div>
+            <tbody class="divide-y divide-gray-100">
+                @forelse($catalogoRoles as $rol)
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-mono text-xs text-gray-700">
+                            {{ $rol->rol_key }}
+                        </td>
 
-                        <div class="flex items-end justify-end md:col-span-2">
-                            <button class="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-gray-800">
-                                Guardar RRHH
-                            </button>
-                        </div>
-                    </form>
+                        <td class="px-4 py-3 text-gray-900">
+                            {{ $rol->nombre }}
+                        </td>
+
+                        <td class="px-4 py-3">
+                            <span class="text-xs px-2 py-1 rounded-lg
+                                {{ $rol->comisionable ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600' }}">
+                                {{ $rol->comisionable ? 'Sí' : 'No' }}
+                            </span>
+                        </td>
+
+                      
+
+                        <td class="px-4 py-3 text-right">
+                            <a href="{{ route('empresa_config.catalogo_roles.edit', $rol->id) }}"
+                               class="text-xs text-gray-700 hover:underline mr-3">
+                                Editar
+                            </a>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="5" class="px-4 py-6 text-center text-gray-400 text-sm">
+                            No hay puestos registrados.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+               {{-- ======================
+     COMISIONES
+======================= --}}
+<div x-show="tab === 'comisiones'" x-cloak class="space-y-6">
+
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900">Comisiones</h2>
+            <p class="text-sm text-gray-600">Tarifarios y reglas vigentes para cálculo de comisiones.</p>
+        </div>
+
+        <a href="{{ route('empresa_config.comisiones.tarifarios.create') }}"
+           class="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-gray-800">
+            Nuevo tarifario
+        </a>
+    </div>
+
+    {{-- Tabla tarifarios --}}
+    <div class="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+                <tr>
+                    <th class="text-left px-4 py-3">Nombre</th>
+                    <th class="text-left px-4 py-3">Estado</th>
+                    <th class="text-left px-4 py-3">Vigencia</th>
+                    <th class="text-left px-4 py-3">Publicado</th>
+                    <th class="text-right px-4 py-3">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                @forelse($tarifarios as $t)
+                    @php
+                        $isVigente = $tarifarioVigente && $tarifarioVigente->id === $t->id;
+                    @endphp
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium text-gray-900">
+                            {{ $t->nombre }}
+                            @if($isVigente)
+                                <span class="ml-2 text-xs px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700">
+                                    Vigente
+                                </span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 text-gray-700">{{ $t->estado }}</td>
+                        <td class="px-4 py-3 text-gray-700">
+                            {{ optional($t->vigente_desde)->format('Y-m-d') ?? '—' }}
+                            <span class="text-gray-400">→</span>
+                            {{ optional($t->vigente_hasta)->format('Y-m-d') ?? '—' }}
+                        </td>
+                        <td class="px-4 py-3 text-gray-700">
+                            {{ optional($t->published_at)->format('Y-m-d') ?? '—' }}
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <a href="{{ route('empresa_config.comisiones.tarifarios.show', $t->id) }}"
+                               class="text-xs text-gray-700 hover:underline">
+                                Ver detalles
+                            </a>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="5" class="px-4 py-6 text-center text-gray-400">
+                            No hay tarifarios aún.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    {{-- Detalles del vigente --}}
+    <div class="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="text-sm font-semibold text-gray-900">Detalles del tarifario vigente</div>
+                <div class="text-xs text-gray-500">
+                    Estos importes son los que se usarán al generar comisiones.
                 </div>
+            </div>
 
-                {{-- ======================
-                     COMISIONES
-                ======================= --}}
-                <div x-show="tab === 'comisiones'" x-cloak class="space-y-6">
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-900">Comisiones</h2>
-                        <p class="text-sm text-gray-600">Reglas globales por tipo de trabajo.</p>
-                    </div>
+            @if($tarifarioVigente)
+                <a href="{{ route('empresa_config.comisiones.detalles.create', $tarifarioVigente->id) }}"
+                   class="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-gray-800">
+                    Agregar Nuevo Concepto
+                </a>
+            @endif
+        </div>
 
-                    <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
-                        Recomendación: manejar una tabla por “tipo_trabajo” y “modo” (por metro/hora/pieza/%).
-                        Si ya tienes catálogo de tipos, lo conectamos aquí.
-                    </div>
+        @if(!$tarifarioVigente)
+            <div class="text-sm text-gray-600">
+                No hay tarifario vigente. Crea uno para comenzar.
+            </div>
+        @else
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+                        <tr>
+                            <th class="text-left px-3 py-2">Rol</th>
+                            <!-- <th class="text-left px-3 py-2">Trabajo</th> -->
+                            <th class="text-left px-3 py-2">Concepto</th>
+                            <!-- <th class="text-left px-3 py-2">Trabajo</th> -->
+                            <th class="text-left px-3 py-2">UOM</th>
+                            <th class="text-right px-3 py-2">Tarifa</th>
+                            <th class="text-center px-3 py-2">Activo</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @forelse($tarifarioDetalles as $d)
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-3 py-2">
+                                    {{ $d->rol?->nombre ?? ('Rol #' . $d->rol_id) }}
+                                </td>
+                                <!-- <td class="px-3 py-2">
+                                    {{ $d->trabajo_id }}
+                                </td> -->
+                                <!-- <td class="px-3 py-2">{{ $d->concepto }}</td> -->
+                                <td class="px-3 py-2">{{ $d->variable_origen }}</td>
+                                <td class="px-3 py-2">  {{ $d->uom?->nombre ?? '—' }}</td>
+                                <td class="px-3 py-2 text-right font-medium">
+                                    {{ number_format((float)$d->tarifa, 2) }}
+                                </td>
+                                <td class="px-3 py-2 text-center">
+                                    <span class="text-xs px-2 py-1 rounded-lg {{ $d->activo ? 'bg-sky-50 text-sky-700' : 'bg-gray-100 text-gray-600' }}">
+                                        {{ $d->activo ? 'Sí' : 'No' }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="px-3 py-6 text-center text-gray-400">
+                                    Aún no hay detalles en el tarifario vigente.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </div>
 
-                    <form method="POST" action="{{ route('empresa_config.update') }}"
-                          class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="section" value="comisiones">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Comisión default (%)</label>
-                            <input type="number" step="0.01" name="comision_default_pct" value="0"
-                                   class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
-                        </div>
+    {{-- Tus settings globales (los que ya tenías) --}}
+    <form method="POST" action="{{ route('empresa_config.update') }}"
+          class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        @csrf
+        @method('PUT')
+        <input type="hidden" name="section" value="comisiones">
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Comisión por metro (default)</label>
-                            <input type="number" step="0.01" name="comision_por_metro" value="0"
-                                   class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
-                        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Comisión default (%)</label>
+            <input type="number" step="0.01" name="comision_default_pct" value="0"
+                   class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
+        </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Comisión por hora (default)</label>
-                            <input type="number" step="0.01" name="comision_por_hora" value="0"
-                                   class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
-                        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Comisión por metro (default)</label>
+            <input type="number" step="0.01" name="comision_por_metro" value="0"
+                   class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
+        </div>
 
-                        <div class="flex items-end justify-end md:col-span-3">
-                            <button class="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-gray-800">
-                                Guardar Comisiones
-                            </button>
-                        </div>
-                    </form>
-                </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Comisión por hora (default)</label>
+            <input type="number" step="0.01" name="comision_por_hora" value="0"
+                   class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
+        </div>
+
+        <div class="flex items-end justify-end md:col-span-3">
+            <button class="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-gray-800">
+                Guardar Comisiones
+            </button>
+        </div>
+    </form>
+</div>
 
                 {{-- ======================
                      REGLAS

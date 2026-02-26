@@ -6,8 +6,12 @@ use App\Models\EmpresaConfig;
 use Illuminate\Http\Request;
 use App\Models\Maquina;
 use App\Models\Area;
+use App\Models\CatalogoRol;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use App\Models\ComisionTarifario;
+use App\Models\ComisionTarifarioDetalle;
+
 
 class EmpresaConfigController extends Controller
 {
@@ -37,12 +41,29 @@ public function index(){
         'activa'          => true,
     ]);
     $areas = Area::orderBy('codigo')->orderBy('nombre')->get();
+    
+    // $Catrol = CatalogoRol::orderBy('id')->orderBy('nombre')->get();
 
     $maquinas = Maquina::orderBy('nombre')->get();
+    $catalogoRoles = CatalogoRol::orderBy('nombre')->get();    
+    $tarifarios = ComisionTarifario::orderByDesc('vigente_desde')->orderByDesc('id')->get();
+
+    // “vigente” = el más reciente (por ahora solo 1)
+    $tarifarioVigente = $tarifarios->first();
+
+    // detalles del vigente (si existe)
+    $tarifarioDetalles = $tarifarioVigente
+        ? ComisionTarifarioDetalle::with(['rol','uom']) // rol = CatalogoRol
+            ->where('tarifario_id', $tarifarioVigente->id)
+            ->orderBy('rol_id')
+            ->orderBy('trabajo_id')
+            ->get()
+        : collect();
 
     // ✅ Seguridad (solo para admin/super-admin)
     $roles = collect();
     $permissions = collect();
+    
     $selectedRole = null;
     $selectedRolePermissionIds = [];
 
@@ -52,6 +73,8 @@ public function index(){
             ->where('guard_name', 'web')
             ->orderBy('name')
             ->get();
+
+        
 
         $permissions = Permission::query()
             ->where('guard_name', 'web')
@@ -73,10 +96,14 @@ public function index(){
         'config',
         'maquinas',
         'roles',
+        'catalogoRoles',
         'areas',
         'permissions',
         'selectedRole',
-        'selectedRolePermissionIds'
+        'selectedRolePermissionIds',
+        'tarifarios',
+        'tarifarioVigente',
+        'tarifarioDetalles',
     ));
 }
 

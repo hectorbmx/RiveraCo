@@ -22,13 +22,25 @@
     </div>
 
     {{-- Área y Puesto --}}
-    <div>
-        <label class="block text-xs font-medium text-slate-700">Área</label>
-        <input type="text" name="Area"
-               value="{{ old('Area', $empleado->Area ?? '') }}"
-               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                      focus:border-[#FFC107] focus:ring-[#FFC107]">
-    </div>
+   {{-- Área --}}
+<div>
+  <label class="block text-xs font-medium text-slate-700">Área</label>
+
+  <select name="Area"
+    class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+           focus:border-[#FFC107] focus:ring-[#FFC107]">
+    <option value="">-- Seleccionar área --</option>
+
+    @foreach($areas as $a)
+      <option value="{{ $a->id }}"
+        {{ (string)old('Area', $empleado->Area ?? '') === (string)$a->id ? 'selected' : '' }}>
+        {{ $a->nombre }}
+      </option>
+    @endforeach
+  </select>
+
+  @error('Area') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+</div>
 
     <div>
         <label class="block text-xs font-medium text-slate-700">Puesto</label>

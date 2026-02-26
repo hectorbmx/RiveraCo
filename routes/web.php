@@ -37,6 +37,7 @@ use App\Http\Controllers\EmpresaConfigMaquinaController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\MaquinasReporteDiarioController;
 use App\Http\Controllers\SnapshotsController;
+use App\Http\Controllers\CatalogoRolController;
 use App\Http\Controllers\Nomina\NominaCorridaController;
 use App\Http\Controllers\Inventario\InventarioStockController;
 use App\Http\Controllers\Inventario\InventarioKardexController;
@@ -146,7 +147,7 @@ Route::middleware('auth','verified')->group(function () {
 
         Route::get('/configuracion-empresa', [EmpresaConfigController::class, 'edit'])->name('empresa_config.edit');
         Route::put('/configuracion-empresa', [EmpresaConfigController::class, 'update'])->name('empresa_config.update');
-
+        
 
 
         Route::middleware(['role:admin|super-admin'])->prefix('configuracion-empresa')->name('empresa_config.')->group(function () {
@@ -163,6 +164,23 @@ Route::middleware('auth','verified')->group(function () {
         Route::post('/permisos', [EmpresaSecurityController::class, 'permissionStore'])->name('permissions.store');
         Route::put('/permisos/{permission}', [EmpresaSecurityController::class, 'permissionUpdate'])->name('permissions.update');
         Route::delete('/permisos/{permission}', [EmpresaSecurityController::class, 'permissionDestroy'])->name('permissions.destroy');
+
+        
+       Route::post('catalogo-roles', [CatalogoRolController::class, 'store'])->name('catalogo_roles.store');
+       Route::put('catalogo-roles/{rol}', [CatalogoRolController::class, 'update'])->name('catalogo_roles.update');
+       Route::delete('catalogo-roles/{rol}', [CatalogoRolController::class, 'destroy'])->name('catalogo_roles.destroy');
+
+       Route::get('catalogo-roles/create', [CatalogoRolController::class, 'create'])
+        ->name('catalogo_roles.create');
+
+       Route::get('catalogo-roles/{rol}/edit', [CatalogoRolController::class, 'edit'])
+            ->name('catalogo_roles.edit');
+
+       Route::get('comisiones/tarifarios/create', fn() => 'TODO create tarifario')->name('comisiones.tarifarios.create');
+       Route::get('comisiones/tarifarios/{tarifario}', fn() => 'TODO show tarifario')->name('comisiones.tarifarios.show');
+       Route::get('comisiones/tarifarios/{tarifario}/detalles/create', fn() => 'TODO create detalle')->name('comisiones.detalles.create');
+
+
     });
 
     Route::get('/configuracion-empresa/maquinas/create', [EmpresaConfigMaquinaController::class, 'create'])->name('empresa_config.maquinas.create');

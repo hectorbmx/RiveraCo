@@ -1,6 +1,6 @@
 <h2 class="text-lg font-semibold mb-4">Datos generales del empleado</h2>
 
-<form action="{{ route('empleados.update', $empleado->id_Empleado) }}" method="POST">
+<form action="{{ route('empleados.update', $empleado->id_Empleado) }}" method="POST" enctype="multipart/form-data">
     @csrf
     @method('PUT')
 
@@ -8,98 +8,145 @@
     <div class="mb-6">
         <h3 class="text-sm font-semibold text-slate-700 mb-2">Datos personales</h3>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-xs font-medium text-slate-600">Nombre</label>
-                <input type="text" name="Nombre"
-                       value="{{ old('Nombre', $empleado->Nombre) }}"
-                       class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                              focus:border-[#FFC107] focus:ring-[#FFC107]" required>
-                @error('Nombre') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+        {{-- 3 columnas en md: Foto (1) + Campos (2) --}}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            {{-- FOTO --}}
+{{-- FOTO --}}
+<div class="md:col-span-1">
+    <label class="block text-xs font-medium text-slate-600 mb-2">Foto del empleado</label>
+
+    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
+        {{-- Foto grande --}}
+        <div class="w-full">
+            <div class="w-36 h-36 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
+                @if(!empty($empleado->foto))
+                    <img
+                        src="{{ asset('storage/' . $empleado->foto) }}"
+                        alt="Foto del empleado"
+                        class="w-full h-full object-cover"
+                    >
+                @else
+                    <span class="text-xs text-slate-400">Sin foto</span>
+                @endif
             </div>
 
-            <div>
-                <label class="block text-xs font-medium text-slate-600">Apellidos</label>
-                <input type="text" name="Apellidos"
-                       value="{{ old('Apellidos', $empleado->Apellidos) }}"
-                       class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                              focus:border-[#FFC107] focus:ring-[#FFC107]" required>
-                @error('Apellidos') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
-            </div>
+            <p class="text-xs text-slate-600 leading-5 mt-3">
+                Sube una foto (JPG/PNG). Se guardará en <span class="font-mono">storage/empleados</span>.
+            </p>
 
-            <div>
-                <label class="block text-xs font-medium text-slate-600">Email</label>
-                <input type="email" name="Email"
-                       value="{{ old('Email', $empleado->Email) }}"
-                       class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                              focus:border-[#FFC107] focus:ring-[#FFC107]">
-                @error('Email') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
-            </div>
+            {{-- Botón abajo --}}
+            <input
+                type="file"
+                name="foto"
+                accept="image/*"
+                class="mt-3 block w-full text-xs
+                       file:w-full file:py-2 file:px-3
+                       file:rounded-xl file:border-0
+                       file:bg-slate-100 file:text-slate-700
+                       hover:file:bg-slate-200"
+            >
 
-            <div>
-                <label class="block text-xs font-medium text-slate-600">Celular</label>
-                <input type="text" name="Celular"
-                       value="{{ old('Celular', $empleado->Celular) }}"
-                       class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                              focus:border-[#FFC107] focus:ring-[#FFC107]">
-                @error('Celular') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
-            </div>
+            @error('foto') <p class="text-xs text-red-600 mt-2">{{ $message }}</p> @enderror
+        </div>
+    </div>
+</div>
 
-            <div>
-                <label class="block text-xs font-medium text-slate-600">Teléfono</label>
-                <input type="text" name="Telefono"
-                       value="{{ old('Telefono', $empleado->Telefono) }}"
-                       class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                              focus:border-[#FFC107] focus:ring-[#FFC107]">
-                @error('Telefono') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
-            </div>
+            {{-- CAMPOS --}}
+            <div class="md:col-span-2">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-           <div>
-                <label class="block text-xs font-medium text-slate-600">Área</label>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600">Nombre</label>
+                        <input type="text" name="Nombre"
+                               value="{{ old('Nombre', $empleado->Nombre) }}"
+                               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                                      focus:border-[#FFC107] focus:ring-[#FFC107]" required>
+                        @error('Nombre') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
 
-                <select name="Area"
-                    class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                            focus:border-[#FFC107] focus:ring-[#FFC107]">
-                    <option value="">-- Seleccionar área --</option>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600">Apellidos</label>
+                        <input type="text" name="Apellidos"
+                               value="{{ old('Apellidos', $empleado->Apellidos) }}"
+                               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                                      focus:border-[#FFC107] focus:ring-[#FFC107]" required>
+                        @error('Apellidos') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
 
-                    @foreach($areas as $a)
-                    <option value="{{ $a->id }}"
-                        {{ (string)old('Area', $empleado->Area) === (string)$a->id ? 'selected' : '' }}>
-                        {{ $a->nombre }}
-                    </option>
-                    @endforeach
-                </select>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600">Email</label>
+                        <input type="email" name="Email"
+                               value="{{ old('Email', $empleado->Email) }}"
+                               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                                      focus:border-[#FFC107] focus:ring-[#FFC107]">
+                        @error('Email') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
 
-                @error('Area') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600">Celular</label>
+                        <input type="text" name="Celular"
+                               value="{{ old('Celular', $empleado->Celular) }}"
+                               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                                      focus:border-[#FFC107] focus:ring-[#FFC107]">
+                        @error('Celular') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600">Teléfono</label>
+                        <input type="text" name="Telefono"
+                               value="{{ old('Telefono', $empleado->Telefono) }}"
+                               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                                      focus:border-[#FFC107] focus:ring-[#FFC107]">
+                        @error('Telefono') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600">Área</label>
+                        <select name="Area"
+                                class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                                       focus:border-[#FFC107] focus:ring-[#FFC107]">
+                            <option value="">-- Seleccionar área --</option>
+                            @foreach($areas as $a)
+                                <option value="{{ $a->id }}"
+                                    {{ (string)old('Area', $empleado->Area) === (string)$a->id ? 'selected' : '' }}>
+                                    {{ $a->nombre }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('Area') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600">Puesto</label>
+                        <input type="text" name="Puesto"
+                               value="{{ old('Puesto', $empleado->Puesto) }}"
+                               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                                      focus:border-[#FFC107] focus:ring-[#FFC107]">
+                        @error('Puesto') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600">Fecha de nacimiento</label>
+                        <input type="date" name="Fecha_nacimiento"
+                               value="{{ old('Fecha_nacimiento', optional($empleado->Fecha_nacimiento)->format('Y-m-d')) }}"
+                               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                                      focus:border-[#FFC107] focus:ring-[#FFC107]">
+                        @error('Fecha_nacimiento') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600">Fecha de ingreso</label>
+                        <input type="date" name="Fecha_ingreso"
+                               value="{{ old('Fecha_ingreso', optional($empleado->Fecha_ingreso)->format('Y-m-d')) }}"
+                               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                                      focus:border-[#FFC107] focus:ring-[#FFC107]">
+                        @error('Fecha_ingreso') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
+
                 </div>
-
-
-            <div>
-                <label class="block text-xs font-medium text-slate-600">Puesto</label>
-                <input type="text" name="Puesto"
-                       value="{{ old('Puesto', $empleado->Puesto) }}"
-                       class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                              focus:border-[#FFC107] focus:ring-[#FFC107]">
-                @error('Puesto') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
 
-            <div>
-                <label class="block text-xs font-medium text-slate-600">Fecha de nacimiento</label>
-                <input type="date" name="Fecha_nacimiento"
-                       value="{{ old('Fecha_nacimiento', optional($empleado->Fecha_nacimiento)->format('Y-m-d')) }}"
-                       class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                              focus:border-[#FFC107] focus:ring-[#FFC107]">
-                @error('Fecha_nacimiento') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
-            </div>
-
-            <div>
-                <label class="block text-xs font-medium text-slate-600">Fecha de ingreso</label>
-                <input type="date" name="Fecha_ingreso"
-                       value="{{ old('Fecha_ingreso', optional($empleado->Fecha_ingreso)->format('Y-m-d')) }}"
-                       class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                              focus:border-[#FFC107] focus:ring-[#FFC107]">
-                @error('Fecha_ingreso') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
-            </div>
         </div>
     </div>
 
@@ -245,15 +292,33 @@
                 @error('Complemento') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
 
-            <div>
-                <label class="block text-xs font-medium text-slate-600">Tipo de sueldo</label>
-                <input type="number" name="Sueldo_tipo"
-                       value="{{ old('Sueldo_tipo', $empleado->Sueldo_tipo) }}"
-                       class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                              focus:border-[#FFC107] focus:ring-[#FFC107]"
-                       placeholder="Ej. 1=Semanal, 2=Quincenal">
-                @error('Sueldo_tipo') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
-            </div>
+          <div>
+    <label class="block text-xs font-medium text-slate-600">Tipo de sueldo</label>
+
+    @php
+        $tipo = old('Sueldo_tipo', $empleado->Sueldo_tipo ?? null);
+    @endphp
+
+    <select name="Sueldo_tipo"
+        class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+               focus:border-[#FFC107] focus:ring-[#FFC107]">
+
+        <option value="">-- Seleccionar --</option>
+
+        <option value="1" @selected((int)$tipo === 1)>
+            Semanal
+        </option>
+
+        <option value="2" @selected((int)$tipo === 2)>
+            Quincenal
+        </option>
+
+    </select>
+
+    @error('Sueldo_tipo')
+        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+    @enderror
+</div>
 
             <div>
                 <label class="block text-xs font-medium text-slate-600">Lista raya</label>

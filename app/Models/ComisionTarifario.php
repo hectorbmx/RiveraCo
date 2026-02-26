@@ -19,6 +19,19 @@ class ComisionTarifario extends Model
         'published_at',
     ];
 
+    const ESTADO_BORRADOR = 'borrador';
+    const ESTADO_PUBLICADO = 'publicado';
+    const ESTADO_ARCHIVADO = 'archivado';
+
+    public static function estados()
+    {
+        return [
+            self::ESTADO_BORRADOR,
+            self::ESTADO_PUBLICADO,
+            self::ESTADO_ARCHIVADO,
+        ];
+    }
+
     protected $casts = [
         'vigente_desde' => 'datetime',
         'vigente_hasta' => 'datetime',

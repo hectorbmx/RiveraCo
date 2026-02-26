@@ -1,8 +1,9 @@
 <?php
 
 namespace App\Models;
-use App\Models\Obra;
 
+use App\Models\Obra;
+use App\Models\Area;
 use Illuminate\Database\Eloquent\Model;
 
 class Empleado extends Model
@@ -69,15 +70,24 @@ class Empleado extends Model
     {
         return $this->hasMany(ObraEmpleado::class, 'empleado_id', 'id_Empleado');
     }
-    public function area()
-    {
-        return $this->belongsTo(
-            \App\Models\Area::class,
-            'Area', // FK en empleados
-            'id'    // PK en areas
-        );
-    }
-    
+//    public function area()
+// {
+//     return $this->belongsTo(
+//         \App\Models\Area::class,
+//         'Area',
+//         'id'
+//     );
+// }
+public function areaRef()
+{
+    return $this->belongsTo(\App\Models\Area::class, 'Area', 'id');
+}
+
+// ✅ helper seguro si en algún lado te están accediendo raro:
+public function getAreaIdAttribute()
+{
+    return $this->getAttribute('Area');
+}
 
     public function asignacionActiva()
     {

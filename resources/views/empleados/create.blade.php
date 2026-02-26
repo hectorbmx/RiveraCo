@@ -13,9 +13,9 @@
     @endif
 
     <div class="bg-white rounded-2xl shadow p-6">
-        <form action="{{ route('empleados.store') }}" method="POST">
-            @include('empleados._form', ['empleado' => new \App\Models\Empleado()])
-        </form>
+      <form action="{{ route('empleados.store') }}" method="POST" enctype="multipart/form-data">
+  @include('empleados._form', ['empleado' => new \App\Models\Empleado(), 'areas' => $areas])
+</form>
     </div>
 </div>
 @endsection
