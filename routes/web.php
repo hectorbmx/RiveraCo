@@ -21,6 +21,7 @@ use App\Http\Controllers\ObraPilaController;
 use App\Http\Controllers\ObraFacturaController;
 use App\Http\Controllers\VehiculoController;
 use App\Http\Controllers\MantenimientoController;
+use App\Http\Controllers\MaquinaController;
 use App\Http\Controllers\OrdenCompraController;
 use App\Http\Controllers\OrdenCompraDetalleController;
 use App\Http\Controllers\ProveedorController;
@@ -351,8 +352,20 @@ Route::middleware('auth','verified')->group(function () {
         Route::resource('mantenimientos', MantenimientoController::class)
             ->except(['destroy']);
 
-
     });
+//ara la vista de maquinas en el menu (no es el de la empresa config)
+    Route::prefix('maquinas')->name('maquinas.')->group(function(){
+        
+        Route::get('/', [MaquinaController::class, 'index'])->name('index');
+        Route::get('maquinas/{maquina}', [MaquinaController::class, 'show'])->name('show');
+
+    // acciones puntuales (NO crear maquina, solo cambiar estado/ubicacion y agregar seguro)
+        Route::post('maquinas/{maquina}/cambiar-estado', [MaquinaController::class, 'cambiarEstado'])->name('cambiarEstado');
+        Route::post('maquinas/{maquina}/cambiar-ubicacion', [MaquinaController::class, 'cambiarUbicacion'])->name('cambiarUbicacion');
+        Route::post('maquinas/{maquina}/seguros', [MaquinaSeguroController::class, 'store'])->name('seguros.store');
+        Route::post('maquinas/{maquina}/toggle-servicio', [MaquinaController::class, 'toggleServicio'])->name('toggleServicio');
+    });
+
     Route::prefix('obras/{obra}')
         ->name('obras.')
         ->group(function () {
