@@ -14,7 +14,7 @@ use App\Http\Controllers\Api\V1\Gerencial\InventarioGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\DashboardGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\InventarioKardexGerencialController;
 use App\Http\Controllers\Integrations\ContpaqiFacturaImportController;
-use App\Http\Controllers\Api\AttendanceIngestController;
+use App\Http\Controllers\Api\V1\AttendanceIngestController;
 
 
 
@@ -33,7 +33,7 @@ use App\Http\Controllers\Api\AttendanceIngestController;
 //     return $request->user();
 // });
 
-Route::post('/v1/attendance/devices/{serial}/ingest', [\App\Http\Controllers\Api\AttendanceIngestController::class, 'ingest']);
+Route::post('/v1/attendance/devices/{serial}/ingest', [AttendanceIngestController::class, 'ingest']);
 
 Route::post('/integrations/contpaqi/invoices', [ContpaqiFacturaImportController::class, 'store'])
   ->middleware('api.key:contpaqi');

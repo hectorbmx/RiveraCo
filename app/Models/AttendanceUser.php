@@ -11,4 +11,9 @@ class AttendanceUser extends Model
 
         protected $fillable = ['attendance_device_id','device_uid','enroll_id','name','cardno'];
 
+        public function device()
+        {
+            return $this->belongsTo(AttendanceDevice::class, 'attendance_device_id');
+        }
+
 }

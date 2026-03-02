@@ -43,6 +43,8 @@ use App\Http\Controllers\Nomina\NominaCorridaController;
 use App\Http\Controllers\Inventario\InventarioStockController;
 use App\Http\Controllers\Inventario\InventarioKardexController;
 use App\Http\Controllers\Inventario\InventarioDocumentoController;
+use App\Http\Controllers\Attendance\AttendanceController;
+use App\Http\Controllers\Attendance\AttendanceWebController;
 
 
 
@@ -110,6 +112,10 @@ Route::middleware('auth','verified')->group(function () {
         
             Route::get('facturas',[FacturaController::class,'index'])->name('facturas.index');
             
+    });
+   Route::prefix('attendance')->group(function () {
+        Route::get('logs', [AttendanceWebController::class, 'index'])->name('attendance.logs.index');
+        Route::get('employees/{employee}', [AttendanceWebController::class, 'showEmployee'])->name('attendance.employees.show');
     });
 
     Route::prefix('inventario')->group(function () {
@@ -222,14 +228,14 @@ Route::middleware('auth','verified')->group(function () {
         ->name('reportes.index');
    //para guardar el reporte diario de obra y que quede configurable
 
-  Route::post('snapshots', [MaquinasReporteDiarioController::class, 'storeSnapshot'])
-    ->name('snapshots.store');
+    Route::post('snapshots', [MaquinasReporteDiarioController::class, 'storeSnapshot'])
+        ->name('snapshots.store');
 
-    Route::delete('/empresa-config/maquinas/{maquina}', [EmpresaConfigMaquinaController::class, 'destroy'])
-        ->name('empresa_config.maquinas.destroy');
+        Route::delete('/empresa-config/maquinas/{maquina}', [EmpresaConfigMaquinaController::class, 'destroy'])
+            ->name('empresa_config.maquinas.destroy');
 
-    Route::post('reportes/maquinaria/snapshots', [MaquinasReporteDiarioController::class, 'storeSnapshot'])
-    ->name('reportes.maquinaria.snapshots.store');
+        Route::post('reportes/maquinaria/snapshots', [MaquinasReporteDiarioController::class, 'storeSnapshot'])
+        ->name('reportes.maquinaria.snapshots.store');
 
 
     // Route::get('empresa-config', [EmpresaConfigController::class, 'index'])->name('empresa_config.index');

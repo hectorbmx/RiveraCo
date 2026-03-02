@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceDevice;
@@ -18,16 +18,34 @@ class AttendanceIngestController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $device = AttendanceDevice::firstOrCreate(
-            ['serial' => $serial],
-            [
-                'name' => $request->input('device_name', 'Device '.$serial),
-                'ip'   => $request->input('device_ip', null),
-                'port' => (int)($request->input('device_port', 4370)),
-                'is_active' => true,
-            ]
-        );
+       $ip   = $request->input('device_ip');
+$port = (int) $request->input('device_port', 4370);
 
+// 1) si existe por serial -> update
+$device = AttendanceDevice::where('serial', $serial)->first();
+
+// 2) si no existe por serial, intenta por ip+port (por tu unique)
+if (!$device && $ip) {
+    $device = AttendanceDevice::where('ip', $ip)->where('port', $port)->first();
+}
+
+if ($device) {
+    $device->update([
+        'serial' => $serial, // asegura que quede ligado al serial
+        'name' => $request->input('device_name', $device->name),
+        'ip' => $ip ?? $device->ip,
+        'port' => $port ?: $device->port,
+        'is_active' => true,
+    ]);
+} else {
+    $device = AttendanceDevice::create([
+        'serial' => $serial,
+        'name' => $request->input('device_name', 'Device '.$serial),
+        'ip' => $ip,
+        'port' => $port,
+        'is_active' => true,
+    ]);
+}
         $logs = $request->input('logs', []);
         $users = $request->input('users', []);
 

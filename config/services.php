@@ -34,8 +34,8 @@ return [
       'api_key' => env('CONTPAQI_API_KEY'),
     ],
     // config/services.php
-        'attendance' => [
-        'device_token' => env('ATTENDANCE_DEVICE_TOKEN'),
-        ],
+    'attendance' => [
+    'ingest_token' => env('ATTENDANCE_INGEST_TOKEN'),
+],
 
 ];
