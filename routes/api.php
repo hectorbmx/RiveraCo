@@ -32,6 +32,7 @@ use App\Http\Controllers\Integrations\ContpaqiFacturaImportController;
 //     return $request->user();
 // });
 
+Route::post('/v1/attendance/devices/{serial}/ingest', [\App\Http\Controllers\Api\AttendanceIngestController::class, 'ingest']);
 
 Route::post('/integrations/contpaqi/invoices', [ContpaqiFacturaImportController::class, 'store'])
   ->middleware('api.key:contpaqi');

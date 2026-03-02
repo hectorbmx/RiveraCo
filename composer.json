@@ -10,6 +10,7 @@
         "laravel/framework": "^10.10",
         "laravel/sanctum": "*",
         "laravel/tinker": "^2.8",
+        "rats/zkteco": "^002.0",
         "setasign/fpdf": "^1.8",
         "spatie/laravel-permission": "^6.23"
     },
