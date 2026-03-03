@@ -45,21 +45,25 @@
             </select>
         </div>
 
-        {{-- Empleado --}}
-        <div class="md:col-span-4">
-            <label class="block text-sm font-semibold text-slate-700 mb-1">Empleado</label>
-            <select name="employee_id" class="w-full rounded-xl border-slate-300 focus:border-slate-400 focus:ring-slate-200">
-                <option value="">Todos</option>
-                @foreach($employees as $e)
-                    <option value="{{ $e->id }}" @selected((string)$employeeId === (string)$e->id)>
-                        {{ $e->name ?? '—' }} — #{{ $e->enroll_id }}
-                    </option>
-                @endforeach
-            </select>
-            <p class="text-xs text-slate-500 mt-1">
-                Tip: si filtras por dispositivo, la lista de empleados se reduce.
-            </p>
-        </div>
+
+       {{-- Empleado --}}
+<div class="md:col-span-3 relative" id="employee-container">
+    <label class="block text-sm font-semibold text-slate-700 mb-1">Empleado</label>
+    <input
+        type="text"
+        id="employeeSearch"
+        class="w-full rounded-xl border-slate-300 focus:border-slate-400 focus:ring-slate-200"
+        placeholder="Buscar empleado..."
+        autocomplete="off"
+        value="{{ $selectedEmployee?->name ?? '' }}"
+    />
+    <input type="hidden" name="employee_id" id="employeeId" value="{{ $employeeId ?? '' }}"/>
+
+    {{-- Lista de resultados --}}
+    <div id="employeeResults" 
+         class="absolute z-[100] w-full bg-white border border-slate-200 rounded-xl shadow-lg mt-1 hidden max-h-60 overflow-y-auto">
+    </div>
+</div>
 
         {{-- Desde --}}
         <div class="md:col-span-2">
@@ -77,10 +81,24 @@
 
         {{-- Botón --}}
         <div class="md:col-span-1 flex items-end">
-            <button type="submit"
-                    class="w-full bg-[#FFC107] text-[#0B265A] font-semibold px-4 py-2 rounded-xl shadow hover:bg-[#e0ac05] transition">
-                Filtrar
-            </button>
+          {{-- Botones --}}
+<div class="md:col-span-2 flex items-end gap-2">
+    {{-- Botón Filtrar --}}
+    <button type="submit"
+            class="flex-1 bg-[#FFC107] text-[#0B265A] font-semibold px-4 py-2 rounded-xl shadow hover:bg-[#e0ac05] transition">
+        Filtrar
+    </button>
+
+    {{-- Botón Exportar --}}
+    <button type="button" 
+            onclick="exportData()"
+            class="flex-1 bg-green-600 text-white font-semibold px-4 py-2 rounded-xl shadow hover:bg-green-700 transition flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        Excel
+    </button>
+</div>
         </div>
     </form>
 </div>
@@ -189,3 +207,121 @@
 </div>
 
 @endsection
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('employeeSearch');
+    const hidden = document.getElementById('employeeId');
+    const results = document.getElementById('employeeResults');
+    const deviceSelect = document.querySelector('select[name="device_id"]');
+
+    if (!input || !results) return;
+
+    let timer = null;
+    let lastQuery = '';
+
+    function closeResults() {
+        results.classList.add('hidden');
+        results.innerHTML = '';
+    }
+
+    function openResults() {
+        results.classList.remove('hidden');
+    }
+
+    async function search(q) {
+        const deviceId = deviceSelect ? deviceSelect.value : '';
+        const url = new URL("{{ route('attendance.employees.search') }}", window.location.origin);
+        url.searchParams.set('q', q);
+        
+        if (deviceId && deviceId !== '' && deviceId !== '0') {
+            url.searchParams.set('device_id', deviceId);
+        }
+
+        try {
+            const res = await fetch(url.toString(), { 
+                headers: { 'Accept': 'application/json' }
+            });
+            const json = await res.json();
+            return (json && json.data) ? json.data : [];
+        } catch (e) {
+            console.error("Error en búsqueda:", e);
+            return [];
+        }
+    }
+
+    function render(items) {
+        results.innerHTML = '';
+        if (!items.length) {
+            results.innerHTML = `<div class="p-3 text-sm text-slate-500">Sin resultados</div>`;
+            openResults();
+            return;
+        }
+
+        items.forEach(it => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            // Estilo Tailwind para los items
+            btn.className = 'w-full text-left px-4 py-2 text-sm hover:bg-slate-100 border-b border-slate-50 last:border-none transition';
+            btn.textContent = it.text;
+            
+            btn.onclick = () => {
+                input.value = it.name;
+                hidden.value = it.id;
+                closeResults();
+            };
+            results.appendChild(btn);
+        });
+        openResults();
+    }
+
+    input.addEventListener('input', () => {
+        hidden.value = ''; // Limpiar ID si el usuario escribe
+        const q = input.value.trim();
+        
+        if (q.length < 2) { 
+            closeResults(); 
+            return; 
+        }
+
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(async () => {
+            if (q === lastQuery) return;
+            lastQuery = q;
+            const items = await search(q);
+            render(items);
+        }, 300);
+    });
+
+    if (deviceSelect) {
+        deviceSelect.addEventListener('change', () => {
+            input.value = '';
+            hidden.value = '';
+            closeResults();
+        });
+    }
+
+    // Cerrar al hacer click afuera
+    document.addEventListener('click', (ev) => {
+        if (!results.contains(ev.target) && ev.target !== input) {
+            closeResults();
+        }
+    });
+});
+function exportData() {
+    // Obtener los valores actuales de los filtros
+    const deviceId = document.querySelector('select[name="device_id"]').value;
+    const employeeId = document.getElementById('employeeId').value;
+    const from = document.querySelector('input[name="from"]').value;
+    const to = document.querySelector('input[name="to"]').value;
+
+    // Construir la URL con los parámetros
+    const url = new URL("{{ route('attendance.logs.export') }}", window.location.origin);
+    if (deviceId) url.searchParams.set('device_id', deviceId);
+    if (employeeId) url.searchParams.set('employee_id', employeeId);
+    if (from) url.searchParams.set('from', from);
+    if (to) url.searchParams.set('to', to);
+
+    // Redirigir para descargar
+    window.location.href = url.toString();
+}
+</script>

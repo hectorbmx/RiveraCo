@@ -10,130 +10,127 @@
         <h1 class="text-2xl font-bold text-[#0B265A]">
             {{ $employee->name ?? 'Empleado' }}
         </h1>
-        <div class="text-sm text-slate-600 mt-1">
-            Enroll: <span class="font-semibold">{{ $employee->enroll_id }}</span>
+        <div class="text-sm text-slate-600 mt-1 flex items-center gap-2">
+            <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">Enroll: {{ $employee->enroll_id }}</span>
             @if($employee->device)
-                · Dispositivo: <span class="font-semibold">{{ $employee->device->name }}</span>
-                <span class="text-slate-500">({{ $employee->device->ip }}:{{ $employee->device->port }})</span>
+                <span>· {{ $employee->device->name }}</span>
+                <span class="text-slate-400">({{ $employee->device->ip }})</span>
             @endif
         </div>
     </div>
 
     <div class="flex gap-2">
         <a href="{{ route('attendance.logs.index', ['employee_id' => $employee->id]) }}"
-           class="bg-slate-100 text-slate-800 font-semibold px-4 py-2 rounded-xl shadow hover:bg-slate-200 transition">
-            Ver en listado
+           class="bg-slate-100 text-slate-800 font-semibold px-4 py-2 rounded-xl shadow-sm hover:bg-slate-200 transition text-sm">
+            Ver en listado global
         </a>
-
         <a href="{{ route('attendance.logs.index') }}"
-           class="bg-slate-100 text-slate-800 font-semibold px-4 py-2 rounded-xl shadow hover:bg-slate-200 transition">
+           class="bg-[#0B265A] text-white font-semibold px-4 py-2 rounded-xl shadow-sm hover:opacity-90 transition text-sm">
             Volver
         </a>
     </div>
 </div>
 
-{{-- ALERTAS --}}
-@if (session('success'))
-    <div class="mb-4 p-3 rounded-lg bg-green-100 text-green-700 text-sm">
-        {{ session('success') }}
+{{-- KPIs INTERACTIVOS --}}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    {{-- Card Días --}}
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <div class="text-slate-500 text-sm font-medium mb-1">Días Trabajados</div>
+        <div class="flex items-baseline gap-2">
+            <span class="text-3xl font-bold text-[#0B265A]">{{ $workedDays }}</span>
+            <span class="text-slate-400 text-sm">en el periodo</span>
+        </div>
     </div>
-@endif
 
-@if (session('error'))
-    <div class="mb-4 p-3 rounded-lg bg-red-100 text-red-700 text-sm">
-        {{ session('error') }}
+    {{-- Card Horas --}}
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <div class="text-slate-500 text-sm font-medium mb-1">Total Horas (Est.)</div>
+        <div class="flex items-baseline gap-2">
+            <span class="text-3xl font-bold text-green-600">{{ $totalHours }}</span>
+            <span class="text-slate-400 text-sm">hrs acumuladas</span>
+        </div>
     </div>
-@endif
+
+    {{-- Card Promedio Entrada --}}
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <div class="text-slate-500 text-sm font-medium mb-1">Promedio de Entrada</div>
+        <div class="flex items-baseline gap-2">
+            <span class="text-3xl font-bold text-orange-500">{{ $avgEntry }}</span>
+            <span class="text-slate-400 text-sm">hora usual</span>
+        </div>
+    </div>
+</div>
 
 {{-- FILTROS --}}
-<div class="bg-white rounded-2xl shadow p-6 mb-6">
-    <form method="GET" action="{{ route('attendance.employees.show', $employee) }}"
-          class="grid grid-cols-1 md:grid-cols-12 gap-4">
-
-        {{-- Desde --}}
+<div class="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-slate-100">
+    <form method="GET" action="{{ route('attendance.employees.show', $employee) }}" class="grid grid-cols-1 md:grid-cols-12 gap-4">
         <div class="md:col-span-4">
-            <label class="block text-sm font-semibold text-slate-700 mb-1">Desde</label>
-            <input type="date" name="from" value="{{ $from }}"
-                   class="w-full rounded-xl border-slate-300 focus:border-slate-400 focus:ring-slate-200" />
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Desde</label>
+            <input type="date" name="from" value="{{ $from }}" class="w-full rounded-xl border-slate-200 focus:ring-[#FFC107] transition" />
         </div>
-
-        {{-- Hasta --}}
         <div class="md:col-span-4">
-            <label class="block text-sm font-semibold text-slate-700 mb-1">Hasta</label>
-            <input type="date" name="to" value="{{ $to }}"
-                   class="w-full rounded-xl border-slate-300 focus:border-slate-400 focus:ring-slate-200" />
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hasta</label>
+            <input type="date" name="to" value="{{ $to }}" class="w-full rounded-xl border-slate-200 focus:ring-[#FFC107] transition" />
         </div>
-
         <div class="md:col-span-4 flex items-end gap-2">
-            <button type="submit"
-                    class="bg-[#FFC107] text-[#0B265A] font-semibold px-4 py-2 rounded-xl shadow hover:bg-[#e0ac05] transition">
-                Filtrar
+            <button type="submit" class="bg-[#FFC107] text-[#0B265A] font-bold px-6 py-2 rounded-xl shadow-sm hover:bg-[#e0ac05] transition flex-1">
+                Filtrar Periodo
             </button>
-
-            <a href="{{ route('attendance.employees.show', $employee) }}"
-               class="bg-slate-100 text-slate-800 font-semibold px-4 py-2 rounded-xl shadow hover:bg-slate-200 transition">
+            <a href="{{ route('attendance.employees.show', $employee) }}" class="bg-slate-100 text-slate-600 font-bold px-4 py-2 rounded-xl hover:bg-slate-200 transition">
                 Limpiar
             </a>
         </div>
     </form>
 </div>
 
-{{-- TABLA --}}
-<div class="bg-white rounded-2xl shadow p-6">
-
-    <div class="flex items-center justify-between mb-4">
-        <div class="text-sm text-slate-600">
-            Mostrando <span class="font-semibold">{{ $logs->count() }}</span> de
-            <span class="font-semibold">{{ $logs->total() }}</span> checadas
-        </div>
-
-        <div>
-            {{ $logs->links() }}
-        </div>
+{{-- TABLA DE REGISTROS --}}
+<div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="p-4 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+        <h3 class="font-bold text-[#0B265A] text-sm uppercase tracking-wider">Historial Detallado</h3>
+        <span class="text-xs font-medium text-slate-500">{{ $logs->total() }} registros encontrados</span>
     </div>
 
     <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
+        <table class="min-w-full">
             <thead>
-                <tr class="text-left text-slate-600 border-b">
-                    <th class="px-4 py-3">Fecha/Hora</th>
-                    <th class="px-4 py-3">Estado</th>
-                    <th class="px-4 py-3">Tipo</th>
-                    <th class="px-4 py-3">UID reloj</th>
+                <tr class="bg-white text-left text-xs font-bold text-slate-400 uppercase tracking-wider border-b">
+                    <th class="px-6 py-4">Día</th>
+                    <th class="px-6 py-4">Fecha y Hora</th>
+                    <th class="px-6 py-4 text-center">Estado</th>
+                    <th class="px-6 py-4 text-center">Tipo</th>
+                    <th class="px-6 py-4 text-right">ID Reloj</th>
                 </tr>
             </thead>
-
-            <tbody>
+            <tbody class="divide-y divide-slate-100">
                 @forelse($logs as $log)
-                    <tr class="border-t hover:bg-slate-50">
-                        <td class="px-4 py-3 font-medium text-slate-800 whitespace-nowrap">
-                            {{-- si checked_at es datetime casteado a Carbon, format funciona;
-                                 si no, muestra el string --}}
-                            {{ $log->checked_at instanceof \Carbon\Carbon ? $log->checked_at->format('Y-m-d H:i:s') : $log->checked_at }}
+                    @php
+                        $dt = \Carbon\Carbon::parse($log->checked_at);
+                        // Configurar locale a español para el nombre del día
+                        \Carbon\Carbon::setLocale('es');
+                    @endphp
+                    <tr class="hover:bg-blue-50/30 transition">
+                        <td class="px-6 py-4">
+                            <span class="text-sm font-bold text-slate-700 capitalize">{{ $dt->translatedFormat('l') }}</span>
                         </td>
-
-                        <td class="px-4 py-3">
-                            <span class="inline-flex px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-700">
-                                {{ $log->state ?? '—' }}
+                        <td class="px-6 py-4 text-sm text-slate-600">
+                            {{ $dt->format('d/m/Y') }} <span class="font-bold text-[#0B265A] ml-1">{{ $dt->format('H:i:s') }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold {{ $log->state == 1 ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600' }}">
+                                {{ $log->state ?? '0' }}
                             </span>
                         </td>
-
-                        <td class="px-4 py-3">
-                            <span class="inline-flex px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-700">
-                                {{ $log->type ?? '—' }}
-                            </span>
+                        <td class="px-6 py-4 text-center text-xs font-medium text-slate-500">
+                            {{ $log->type ?? '—' }}
                         </td>
-
-                        <td class="px-4 py-3">
-                            <span class="inline-flex px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-700">
-                                {{ $log->device_uid ?? '—' }}
-                            </span>
+                        <td class="px-6 py-4 text-right text-xs text-slate-400">
+                            #{{ $log->device_uid }}
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-4 py-8 text-center text-slate-500">
-                            No hay checadas con esos filtros.
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="text-slate-400">No hay registros en este rango de fechas.</div>
                         </td>
                     </tr>
                 @endforelse
@@ -141,9 +138,11 @@
         </table>
     </div>
 
-    <div class="mt-4">
-        {{ $logs->links() }}
-    </div>
+    @if($logs->hasPages())
+        <div class="p-4 border-t border-slate-50 bg-slate-50/30">
+            {{ $logs->links() }}
+        </div>
+    @endif
 </div>
 
 @endsection

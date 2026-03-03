@@ -116,7 +116,9 @@ Route::middleware('auth','verified')->group(function () {
    Route::prefix('attendance')->group(function () {
         Route::get('logs', [AttendanceWebController::class, 'index'])->name('attendance.logs.index');
         Route::get('employees/{employee}', [AttendanceWebController::class, 'showEmployee'])->name('attendance.employees.show');
-    });
+        Route::get('/attendance/employees/search', [AttendanceWebController::class, 'searchEmployees'])->name('attendance.employees.search');
+        Route::get('/attendance/logs/export', [AttendanceWebController::class, 'export'])->name('attendance.logs.export');
+        });
 
     Route::prefix('inventario')->group(function () {
     // 🔹 STOCK
