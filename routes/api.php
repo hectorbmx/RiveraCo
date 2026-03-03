@@ -15,11 +15,7 @@ use App\Http\Controllers\Api\V1\Gerencial\DashboardGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\InventarioKardexGerencialController;
 use App\Http\Controllers\Integrations\ContpaqiFacturaImportController;
 use App\Http\Controllers\Api\V1\AttendanceIngestController;
-<<<<<<< Updated upstream
-
-=======
            
->>>>>>> Stashed changes
 
 
 /*
