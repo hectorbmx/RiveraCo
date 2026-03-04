@@ -49,6 +49,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('maquinas/{obraMaquina}/registros', [MaquinaRegistroController::class, 'index']);
         Route::post('maquinas/{obraMaquina}/registros', [MaquinaRegistroController::class, 'store']);
+        Route::post('maquinas/{obraMaquina}/reportar-falla', [MaquinaRegistroController::class, 'reportarFalla']);
 
         //checadas asistencias en obra
         Route::post('obras/{obra}/asistencias',[AsistenciasController::class, 'store']);

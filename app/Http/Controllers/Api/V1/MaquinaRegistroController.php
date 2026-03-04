@@ -8,6 +8,8 @@ use App\Models\ObraMaquina;
 use App\Models\ObraMaquinaRegistro;
 use App\Models\UsuarioApp;
 use Illuminate\Http\Request;
+use App\Services\Maquinas\MaquinaService;
+use App\Models\Maquina;
 
 class MaquinaRegistroController extends Controller
 {
@@ -15,91 +17,184 @@ class MaquinaRegistroController extends Controller
      * Lista registros y da “horómetro sugerido”
      * GET /api/v1/maquinas/{obraMaquina}/registros
      */
-    public function index(Request $request, ObraMaquina $obraMaquina)
-    {
-        $user = $request->user();
-        if (!$user) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'No autenticado.'
-            ], 401);
-        }
-        // 1) Verificar usuario app activo
-        $usuarioApp = UsuarioApp::where('user_id', $user->id)->first();
-        if (!$usuarioApp || !$usuarioApp->is_active) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'Acceso no habilitado para la app.'
-            ], 403);
-        }
+    // public function index(Request $request, ObraMaquina $obraMaquina)
+    // {
+    //     $user = $request->user();
+    //     if (!$user) {
+    //         return response()->json([
+    //             'ok' => false,
+    //             'message' => 'No autenticado.'
+    //         ], 401);
+    //     }
+    //     // 1) Verificar usuario app activo
+    //     $usuarioApp = UsuarioApp::where('user_id', $user->id)->first();
+    //     if (!$usuarioApp || !$usuarioApp->is_active) {
+    //         return response()->json([
+    //             'ok' => false,
+    //             'message' => 'Acceso no habilitado para la app.'
+    //         ], 403);
+    //     }
 
-        // 2) Verificar que esté activa
-        if ($obraMaquina->estado !== 'activa') {
-            return response()->json([
-                'ok' => false,
-                'message' => 'No puedes registrar horas en una asignación finalizada.'
-            ], 422);
-        }
+    //     // 2) Verificar que esté activa
+    //     if ($obraMaquina->estado !== 'activa') {
+    //         return response()->json([
+    //             'ok' => false,
+    //             'message' => 'No puedes registrar horas en una asignación finalizada.'
+    //         ], 422);
+    //     }
 
-        // 3) Verificar que el residente esté asignado a la obra de esa máquina
-        $estaAsignado = ObraEmpleado::query()
-            ->where('obra_id', $obraMaquina->obra_id)
-            ->where('empleado_id', $usuarioApp->empleado_id)
-            ->where('activo', 1)
-            ->whereNull('fecha_baja')
-            ->exists();
+    //     // 3) Verificar que el residente esté asignado a la obra de esa máquina
+    //     $estaAsignado = ObraEmpleado::query()
+    //         ->where('obra_id', $obraMaquina->obra_id)
+    //         ->where('empleado_id', $usuarioApp->empleado_id)
+    //         ->where('activo', 1)
+    //         ->whereNull('fecha_baja')
+    //         ->exists();
 
-        if (!$estaAsignado) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'No tienes acceso a esta obra.'
-            ], 403);
-        }
+    //     if (!$estaAsignado) {
+    //         return response()->json([
+    //             'ok' => false,
+    //             'message' => 'No tienes acceso a esta obra.'
+    //         ], 403);
+    //     }
 
-        // 4) Horómetro sugerido: último fin o baseline de asignación
-        $ultimo = $obraMaquina->registrosHoras()
-            ->orderByDesc('fin')
-            ->orderByDesc('id')
-            ->first();
+    //     // 4) Horómetro sugerido: último fin o baseline de asignación
+    //     $ultimo = $obraMaquina->registrosHoras()
+    //         ->orderByDesc('fin')
+    //         ->orderByDesc('id')
+    //         ->first();
 
-        $horometroSugerido = $ultimo?->horometro_fin ?? $obraMaquina->horometro_inicio ?? 0;
+    //     $horometroSugerido = $ultimo?->horometro_fin ?? $obraMaquina->horometro_inicio ?? 0;
 
-        // 5) Últimos registros (para mostrar historial)
-        $registros = ObraMaquinaRegistro::query()
-            ->where('obra_maquina_id', $obraMaquina->id)
-            ->orderByDesc('fin')
-            ->orderByDesc('id')
-            ->limit(30)
-            ->get([
-                'id',
-                'inicio',
-                'fin',
-                'horometro_inicio',
-                'horometro_fin',
-                'horas',
-                'notas',
-                'created_at',
-            ]);
+    //     // 5) Últimos registros (para mostrar historial)
+    //     $registros = ObraMaquinaRegistro::query()
+    //         ->where('obra_maquina_id', $obraMaquina->id)
+    //         ->orderByDesc('fin')
+    //         ->orderByDesc('id')
+    //         ->limit(30)
+    //         ->get([
+    //             'id',
+    //             'inicio',
+    //             'fin',
+    //             'horometro_inicio',
+    //             'horometro_fin',
+    //             'horas',
+    //             'notas',
+    //             'created_at',
+    //         ]);
 
+    //     return response()->json([
+    //         'ok' => true,
+    //         'asignacion' => [
+    //             'obra_maquina_id'  => $obraMaquina->id,
+    //             'obra_id'          => $obraMaquina->obra_id,
+    //             'maquina_id'       => $obraMaquina->maquina_id,
+    //             'estado'           => $obraMaquina->estado,
+    //             'fecha_inicio'     => optional($obraMaquina->fecha_inicio)->toDateString(),
+    //             'horometro_inicio' => $obraMaquina->horometro_inicio,
+    //             'maquina'          => $obraMaquina->maquina ? [
+    //                 'id'     => $obraMaquina->maquina->id ?? null,
+    //                 'nombre' => $obraMaquina->maquina->nombre ?? null,
+    //             ] : null,
+    //         ],
+    //         'horometro_sugerido' => (float) $horometroSugerido,
+    //         'registros' => $registros,
+    //     ]);
+    // }
+public function index(Request $request, ObraMaquina $obraMaquina)
+{
+    $user = $request->user();
+    if (!$user) {
         return response()->json([
-            'ok' => true,
-            'asignacion' => [
-                'obra_maquina_id'  => $obraMaquina->id,
-                'obra_id'          => $obraMaquina->obra_id,
-                'maquina_id'       => $obraMaquina->maquina_id,
-                'estado'           => $obraMaquina->estado,
-                'fecha_inicio'     => optional($obraMaquina->fecha_inicio)->toDateString(),
-                'horometro_inicio' => $obraMaquina->horometro_inicio,
-                'maquina'          => $obraMaquina->maquina ? [
-                    'id'     => $obraMaquina->maquina->id ?? null,
-                    'nombre' => $obraMaquina->maquina->nombre ?? null,
-                ] : null,
-            ],
-            'horometro_sugerido' => (float) $horometroSugerido,
-            'registros' => $registros,
-        ]);
+            'ok' => false,
+            'message' => 'No autenticado.',
+        ], 401);
     }
 
+    // 1) Verificar usuario app activo
+    $usuarioApp = UsuarioApp::where('user_id', $user->id)->first();
+    if (!$usuarioApp || !$usuarioApp->is_active) {
+        return response()->json([
+            'ok' => false,
+            'message' => 'Acceso no habilitado para la app.',
+        ], 403);
+    }
+
+    // Cargar relación de máquina (para devolver estado real)
+    $obraMaquina->loadMissing('maquina:id,nombre,estado');
+
+    // 2) Verificar que la asignación esté activa
+    if ($obraMaquina->estado !== 'activa') {
+        return response()->json([
+            'ok' => false,
+            'message' => 'No puedes registrar horas en una asignación finalizada.',
+        ], 422);
+    }
+
+    // 3) Verificar que el residente esté asignado a la obra de esa máquina
+    $estaAsignado = ObraEmpleado::query()
+        ->where('obra_id', $obraMaquina->obra_id)
+        ->where('empleado_id', $usuarioApp->empleado_id)
+        ->where('activo', 1)
+        ->whereNull('fecha_baja')
+        ->exists();
+
+    if (!$estaAsignado) {
+        return response()->json([
+            'ok' => false,
+            'message' => 'No tienes acceso a esta obra.',
+        ], 403);
+    }
+
+    // 4) Horómetro sugerido: último fin o baseline de asignación
+    $ultimo = $obraMaquina->registrosHoras()
+        ->orderByDesc('fin')
+        ->orderByDesc('id')
+        ->first();
+
+    $horometroSugerido = $ultimo?->horometro_fin ?? $obraMaquina->horometro_inicio ?? 0;
+
+    // 5) Últimos registros (para mostrar historial)
+    $registros = ObraMaquinaRegistro::query()
+        ->where('obra_maquina_id', $obraMaquina->id)
+        ->orderByDesc('fin')
+        ->orderByDesc('id')
+        ->limit(30)
+        ->get([
+            'id',
+            'inicio',
+            'fin',
+            'horometro_inicio',
+            'horometro_fin',
+            'horas',
+            'notas',
+            'created_at',
+        ]);
+
+    return response()->json([
+        'ok' => true,
+        'asignacion' => [
+            'obra_maquina_id'  => $obraMaquina->id,
+            'obra_id'          => $obraMaquina->obra_id,
+            'maquina_id'       => $obraMaquina->maquina_id,
+
+            // Estado de la ASIGNACIÓN (obra_maquina)
+            'estado'           => $obraMaquina->estado,
+
+            'fecha_inicio'     => optional($obraMaquina->fecha_inicio)->toDateString(),
+            'horometro_inicio' => $obraMaquina->horometro_inicio,
+
+            // Datos + estado REAL de la máquina (maquinas.estado)
+            'maquina'          => $obraMaquina->maquina ? [
+                'id'     => $obraMaquina->maquina->id,
+                'nombre' => $obraMaquina->maquina->nombre,
+                'estado' => $obraMaquina->maquina->estado,
+            ] : null,
+        ],
+        'horometro_sugerido' => (float) $horometroSugerido,
+        'registros' => $registros,
+    ]);
+}
     /**
      * Crea un registro de horas
      * POST /api/v1/maquinas/{obraMaquina}/registros
@@ -187,4 +282,75 @@ class MaquinaRegistroController extends Controller
             'registro' => $registro,
         ], 201);
     }
+
+    //reportar falla en obra
+    /**
+ * Reportar falla de máquina
+ * POST /api/v1/maquinas/{obraMaquina}/reportar-falla
+ */
+public function reportarFalla(Request $request, ObraMaquina $obraMaquina, MaquinaService $svc)
+{
+    $user = $request->user();
+
+    // 1) Verificar usuario app
+    $usuarioApp = UsuarioApp::where('user_id', $user->id)->first();
+
+    if (!$usuarioApp || !$usuarioApp->is_active) {
+        return response()->json([
+            'ok' => false,
+            'message' => 'Acceso no habilitado para la app.'
+        ], 403);
+    }
+
+    // 2) Verificar que esté asignado a la obra
+    $estaAsignado = ObraEmpleado::query()
+        ->where('obra_id', $obraMaquina->obra_id)
+        ->where('empleado_id', $usuarioApp->empleado_id)
+        ->where('activo', 1)
+        ->whereNull('fecha_baja')
+        ->exists();
+
+    if (!$estaAsignado) {
+        return response()->json([
+            'ok' => false,
+            'message' => 'No tienes acceso a esta obra.'
+        ], 403);
+    }
+
+    $data = $request->validate([
+        'motivo' => 'required|string|max:190',
+        'notas'  => 'nullable|string|max:2000',
+    ]);
+
+    $maquina = $obraMaquina->maquina;
+
+    try {
+
+        $svc->cambiarEstado(
+            maquina: $maquina,
+            nuevoEstado: Maquina::ESTADO_FUERA_SERVICIO,
+            obraId: $obraMaquina->obra_id,
+            obraMaquinaId: $obraMaquina->id,
+            motivo: $data['motivo'],
+            notas: $data['notas'] ?? null
+        );
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Falla reportada correctamente.'
+        ]);
+
+    } catch (\Throwable $e) {
+
+        \Log::error('API reportarFalla', [
+            'maquina_id' => $maquina->id,
+            'error' => $e->getMessage()
+        ]);
+
+        return response()->json([
+            'ok' => false,
+            'message' => $e->getMessage()
+        ], 422);
+    }
+}
 }

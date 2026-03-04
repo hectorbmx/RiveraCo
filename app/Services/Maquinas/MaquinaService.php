@@ -139,7 +139,16 @@ class MaquinaService
             if ($anterior === $nuevoEstado) {
                 return;
             }
+            $permitidos = [
+                Maquina::ESTADO_OPERATIVA       => [Maquina::ESTADO_FUERA_SERVICIO, Maquina::ESTADO_BAJA_DEFINITIVA],
+                Maquina::ESTADO_FUERA_SERVICIO  => [Maquina::ESTADO_EN_REPARACION, Maquina::ESTADO_OPERATIVA, Maquina::ESTADO_BAJA_DEFINITIVA],
+                Maquina::ESTADO_EN_REPARACION   => [Maquina::ESTADO_OPERATIVA, Maquina::ESTADO_BAJA_DEFINITIVA],
+                Maquina::ESTADO_BAJA_DEFINITIVA => [],
+            ];
 
+            if (!in_array($nuevoEstado, $permitidos[$anterior] ?? [], true)) {
+                throw new \RuntimeException("Transición de estado no permitida: {$anterior} → {$nuevoEstado}");
+            }
             $maquina->update([
                 'estado' => $nuevoEstado,
             ]);

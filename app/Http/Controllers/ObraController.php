@@ -327,7 +327,7 @@ if ($tab === 'asistencias') {
             ->get();
     }
 
-
+//tab maquionas
     //    if ($tab === 'maquinaria' || $tab === 'comisiones') {
     if (in_array($tab, ['maquinaria', 'horas-maquina', 'comisiones'], true)) {
 

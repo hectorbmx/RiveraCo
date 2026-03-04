@@ -73,6 +73,39 @@ public function show(Request $request, Maquina $maquina)
 
     return view('maquinas.show', compact('maquina', 'tab'));
 }
+public function cambiarEstado(Request $request, Maquina $maquina, MaquinaService $svc)
+{
+    \Log::info('MAQUINA cambiarEstado HIT', [
+  'maquina_id' => $maquina->id,
+  'estado_actual' => $maquina->estado,
+  'payload' => $request->all(),
+]);
+    $data = $request->validate([
+        'estado' => ['required', 'string'],
+        'motivo' => ['nullable', 'string', 'max:190'],
+        'notas'  => ['nullable', 'string', 'max:2000'],
+    ]);
+
+    $asig = $maquina->asignacionActiva;
+    $obraId = $asig?->obra_id;
+    $obraMaquinaId = $asig?->id;
+
+    try {
+        $svc->cambiarEstado(
+            maquina: $maquina,
+            nuevoEstado: $data['estado'],
+            obraId: $obraId,
+            obraMaquinaId: $obraMaquinaId,
+            motivo: $data['motivo'] ?? null,
+            notas: $data['notas'] ?? null
+        );
+
+        return back()->with('success', 'Estado actualizado correctamente.');
+    } catch (\Throwable $e) {
+        // return back()->withErrors(['general' => $e->getMessage()]);
+        
+    }
+}
 public function toggleServicio(Request $request, Maquina $maquina, MaquinaService $svc)
 {
     // Solo operativa <-> fuera_servicio

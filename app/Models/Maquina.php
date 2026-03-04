@@ -10,7 +10,8 @@ class Maquina extends Model
     public const ESTADO_OPERATIVA = 'operativa';
     public const ESTADO_FUERA_SERVICIO = 'fuera_servicio';
     public const ESTADO_BAJA_DEFINITIVA = 'baja_definitiva';
-
+    public const ESTADO_EN_REPARACION = 'en_reparacion';
+    
     public const UBIC_EN_OBRA = 'en_obra';
     public const UBIC_EN_CAMINO = 'en_camino';
     public const UBIC_EN_REPARACION = 'en_reparacion';

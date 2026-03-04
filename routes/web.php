@@ -372,6 +372,7 @@ Route::middleware('auth','verified')->group(function () {
         Route::post('maquinas/{maquina}/cambiar-ubicacion', [MaquinaController::class, 'cambiarUbicacion'])->name('cambiarUbicacion');
         Route::post('maquinas/{maquina}/seguros', [MaquinaSeguroController::class, 'store'])->name('seguros.store');
         Route::post('maquinas/{maquina}/toggle-servicio', [MaquinaController::class, 'toggleServicio'])->name('toggleServicio');
+        Route::post('maquinas/{maquina}/estado', [MaquinaController::class, 'cambiarEstado'])->name('maquinas.cambiarEstado');
     });
 
     Route::prefix('obras/{obra}')

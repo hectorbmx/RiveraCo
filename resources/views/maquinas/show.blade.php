@@ -122,54 +122,61 @@
 <div class="mt-4 pt-4 border-t">
     <div class="text-sm font-semibold text-slate-800 mb-2">Acciones</div>
 
-    <form method="POST" action="{{ route('maquinas.toggleServicio', $maquina) }}" class="space-y-3">
-        @csrf
+    <form method="POST" action="{{ route('maquinas.cambiarEstado', $maquina) }}" class="space-y-3">
+    @csrf
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-                <label class="block text-xs text-slate-500 mb-1">Motivo (opcional)</label>
-                <input
-                    type="text"
-                    name="motivo"
-                    class="w-full rounded-lg border-slate-200 text-sm"
-                    placeholder="Ej. Falla hidráulica"
-                    value="{{ old('motivo') }}"
-                />
-            </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="md:col-span-1">
+            <label class="block text-xs text-slate-500 mb-1">Nuevo estado</label>
 
-            <div>
-                <label class="block text-xs text-slate-500 mb-1">Notas (opcional)</label>
-                <input
-                    type="text"
-                    name="notas"
-                    class="w-full rounded-lg border-slate-200 text-sm"
-                    placeholder="Detalle breve"
-                    value="{{ old('notas') }}"
-                />
-            </div>
+            @php
+                $opciones = [];
+
+                if ($maquina->estado === \App\Models\Maquina::ESTADO_OPERATIVA) {
+                    $opciones = [\App\Models\Maquina::ESTADO_FUERA_SERVICIO => 'Fuera de servicio'];
+                } elseif ($maquina->estado === \App\Models\Maquina::ESTADO_FUERA_SERVICIO) {
+                    $opciones = [
+                        \App\Models\Maquina::ESTADO_EN_REPARACION => 'En reparación',
+                        \App\Models\Maquina::ESTADO_OPERATIVA     => 'Operativa',
+                    ];
+                } elseif ($maquina->estado === \App\Models\Maquina::ESTADO_EN_REPARACION) {
+                    $opciones = [\App\Models\Maquina::ESTADO_OPERATIVA => 'Operativa'];
+                }
+            @endphp
+
+            @if(empty($opciones))
+                <select class="w-full rounded-lg border-slate-200 text-sm bg-slate-100" disabled>
+                    <option>Estado no editable</option>
+                </select>
+            @else
+                <select name="estado" class="w-full rounded-lg border-slate-200 text-sm">
+                    @foreach($opciones as $value => $label)
+                        <option value="{{ $value }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+            @endif
         </div>
 
-        @if($maquina->estado === 'operativa')
-            <button type="submit"
-                    class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium
-                           bg-amber-600 text-white hover:bg-amber-700">
-                Marcar como fuera de servicio
-            </button>
-        @elseif($maquina->estado === 'fuera_servicio')
-            <button type="submit"
-                    class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium
-                           bg-emerald-600 text-white hover:bg-emerald-700">
-                Regresar a operativa
-            </button>
-        @else
-            <button type="button"
-                    class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium
-                           bg-slate-200 text-slate-600 cursor-not-allowed"
-                    disabled>
-                Estado no editable
-            </button>
-        @endif
-    </form>
+        <div class="md:col-span-1">
+            <label class="block text-xs text-slate-500 mb-1">Motivo (opcional)</label>
+            <input type="text" name="motivo" class="w-full rounded-lg border-slate-200 text-sm"
+                   placeholder="Ej. Falla hidráulica" value="{{ old('motivo') }}" />
+        </div>
+
+        <div class="md:col-span-1">
+            <label class="block text-xs text-slate-500 mb-1">Notas (opcional)</label>
+            <input type="text" name="notas" class="w-full rounded-lg border-slate-200 text-sm"
+                   placeholder="Detalle breve" value="{{ old('notas') }}" />
+        </div>
+    </div>
+
+    <button type="submit"
+            class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium
+                   bg-[#0B265A] text-white hover:opacity-90 disabled:bg-slate-200 disabled:text-slate-600"
+            @disabled(empty($opciones))>
+        Aplicar cambio de estado
+    </button>
+</form>
 
     <p class="mt-3 text-xs text-slate-500">
         * Las asignaciones cambian ubicación automáticamente. Aquí solo se cambia el estado (operativa / fuera de servicio).

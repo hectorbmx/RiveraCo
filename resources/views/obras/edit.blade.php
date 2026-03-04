@@ -1661,7 +1661,7 @@
                                 </td>
                                 <td class="py-2 px-3">
                                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-emerald-50 text-emerald-700">
-                                        Activa
+                                        {{ $asig->maquina->estado }}
                                     </span>
                                 </td>
                                 <td>
