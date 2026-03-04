@@ -88,53 +88,62 @@
     <div class="p-4 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
         <h3 class="font-bold text-[#0B265A] text-sm uppercase tracking-wider">Historial Detallado</h3>
         <span class="text-xs font-medium text-slate-500">{{ $logs->total() }} registros encontrados</span>
+        
     </div>
 
     <div class="overflow-x-auto">
         <table class="min-w-full">
-            <thead>
-                <tr class="bg-white text-left text-xs font-bold text-slate-400 uppercase tracking-wider border-b">
-                    <th class="px-6 py-4">Día</th>
-                    <th class="px-6 py-4">Fecha y Hora</th>
-                    <th class="px-6 py-4 text-center">Estado</th>
-                    <th class="px-6 py-4 text-center">Tipo</th>
-                    <th class="px-6 py-4 text-right">ID Reloj</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                @forelse($logs as $log)
-                    @php
-                        $dt = \Carbon\Carbon::parse($log->checked_at);
-                        // Configurar locale a español para el nombre del día
-                        \Carbon\Carbon::setLocale('es');
-                    @endphp
-                    <tr class="hover:bg-blue-50/30 transition">
-                        <td class="px-6 py-4">
-                            <span class="text-sm font-bold text-slate-700 capitalize">{{ $dt->translatedFormat('l') }}</span>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-slate-600">
-                            {{ $dt->format('d/m/Y') }} <span class="font-bold text-[#0B265A] ml-1">{{ $dt->format('H:i:s') }}</span>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold {{ $log->state == 1 ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600' }}">
-                                {{ $log->state ?? '0' }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-center text-xs font-medium text-slate-500">
-                            {{ $log->type ?? '—' }}
-                        </td>
-                        <td class="px-6 py-4 text-right text-xs text-slate-400">
-                            #{{ $log->device_uid }}
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="5" class="px-6 py-12 text-center">
-                            <div class="text-slate-400">No hay registros en este rango de fechas.</div>
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
+       <thead>
+            <tr class="bg-white text-left text-xs font-bold text-slate-400 uppercase tracking-wider border-b">
+                <th class="px-6 py-4">Día</th>
+                <th class="px-6 py-4">Fecha</th>
+                <th class="px-6 py-4">Entrada</th>
+                <th class="px-6 py-4">Salida</th>
+                <th class="px-6 py-4 text-right">Horas</th>
+                <th class="px-6 py-4 text-center">Registros</th>
+            </tr>
+        </thead>
+       <tbody class="divide-y divide-slate-100">
+@forelse($logs as $row)
+    <tr class="hover:bg-blue-50/30 transition">
+        <td class="px-6 py-4">
+            <span class="text-sm font-bold text-slate-700 capitalize">{{ $row->day_name }}</span>
+        </td>
+
+        <td class="px-6 py-4 text-sm text-slate-600">
+            {{ \Carbon\Carbon::parse($row->date)->format('d/m/Y') }}
+        </td>
+
+        <td class="px-6 py-4 text-sm text-slate-600">
+            <span class="font-bold text-[#0B265A]">{{ $row->entry_at->format('H:i:s') }}</span>
+        </td>
+
+        <td class="px-6 py-4 text-sm text-slate-600">
+            @if($row->exit_at)
+                <span class="font-bold text-[#0B265A]">{{ $row->exit_at->format('H:i:s') }}</span>
+            @else
+                <span class="text-slate-400">—</span>
+            @endif
+        </td>
+
+        <td class="px-6 py-4 text-right text-sm font-bold text-slate-700">
+            {{ number_format($row->hours, 2) }}
+        </td>
+
+        <td class="px-6 py-4 text-center">
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                {{ $row->count }}
+            </span>
+        </td>
+    </tr>
+@empty
+    <tr>
+        <td colspan="6" class="px-6 py-12 text-center">
+            <div class="text-slate-400">No hay registros en este rango de fechas.</div>
+        </td>
+    </tr>
+@endforelse
+</tbody>
         </table>
     </div>
 

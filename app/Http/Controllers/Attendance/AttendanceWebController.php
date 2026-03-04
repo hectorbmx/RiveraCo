@@ -8,6 +8,9 @@ use App\Models\AttendanceLog;
 use App\Models\AttendanceUser;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class AttendanceWebController extends Controller
 {
@@ -131,13 +134,69 @@ public function searchEmployees(Request $request)
 
     //     return view('attendance.employees.show', compact('employee','logs','from','to'));
     // }
-    public function showEmployee(AttendanceUser $employee, Request $request)
+//     public function showEmployee(AttendanceUser $employee, Request $request)
+// {
+//     // Forzamos fechas por defecto (Mes actual) si no existen
+//     $from = $request->query('from') ?? now()->startOfMonth()->format('Y-m-d');
+//     $to   = $request->query('to')   ?? now()->endOfMonth()->format('Y-m-d');
+
+//     // Obtenemos TODOS los logs del periodo para los KPIs (sin paginar)
+//     $allLogs = AttendanceLog::query()
+//         ->where('attendance_device_id', $employee->attendance_device_id)
+//         ->where('enroll_id', $employee->enroll_id)
+//         ->whereDate('checked_at', '>=', $from)
+//         ->whereDate('checked_at', '<=', $to)
+//         ->orderBy('checked_at', 'asc')
+//         ->get();
+
+//     // --- CÁLCULO DE KPIs ---
+    
+//     // 1. Días trabajados (agrupando por fecha única)
+//     $workedDays = $allLogs->groupBy(fn($log) => \Carbon\Carbon::parse($log->checked_at)->format('Y-m-d'))->count();
+
+//     // 2. Horas totales (Basado en primera y última checada de cada día)
+//     $totalSeconds = 0;
+//     foreach ($allLogs->groupBy(fn($log) => \Carbon\Carbon::parse($log->checked_at)->format('Y-m-d')) as $dayLogs) {
+//         if ($dayLogs->count() >= 2) {
+//             $first = \Carbon\Carbon::parse($dayLogs->first()->checked_at);
+//             $last = \Carbon\Carbon::parse($dayLogs->last()->checked_at);
+//             $totalSeconds += $first->diffInSeconds($last);
+//         }
+//     }
+//     $totalHours = round($totalSeconds / 3600, 1);
+
+//     // 3. Promedio de entrada (Solo días que tienen registros)
+//     $avgEntry = '—';
+//     if ($workedDays > 0) {
+//         $totalMinutes = 0;
+//         foreach ($allLogs->groupBy(fn($log) => \Carbon\Carbon::parse($log->checked_at)->format('Y-m-d')) as $dayLogs) {
+//             $first = \Carbon\Carbon::parse($dayLogs->first()->checked_at);
+//             $totalMinutes += ($first->hour * 60) + $first->minute;
+//         }
+//         $avgEntry = now()->startOfDay()->addMinutes($totalMinutes / $workedDays)->format('h:i A');
+//     }
+
+//     // Paginación para la tabla
+//     $logs = AttendanceLog::query()
+//         ->where('attendance_device_id', $employee->attendance_device_id)
+//         ->where('enroll_id', $employee->enroll_id)
+//         ->whereDate('checked_at', '>=', $from)
+//         ->whereDate('checked_at', '<=', $to)
+//         ->orderByDesc('checked_at')
+//         ->paginate(100)
+//         ->withQueryString();
+
+//     return view('attendance.employees.show', compact(
+//         'employee', 'logs', 'from', 'to', 'workedDays', 'totalHours', 'avgEntry'
+//     ));
+// }
+public function showEmployee(AttendanceUser $employee, Request $request)
 {
-    // Forzamos fechas por defecto (Mes actual) si no existen
+    // Fechas default (mes actual)
     $from = $request->query('from') ?? now()->startOfMonth()->format('Y-m-d');
     $to   = $request->query('to')   ?? now()->endOfMonth()->format('Y-m-d');
 
-    // Obtenemos TODOS los logs del periodo para los KPIs (sin paginar)
+    // Traemos todos los logs del periodo (para KPIs + agrupar por día)
     $allLogs = AttendanceLog::query()
         ->where('attendance_device_id', $employee->attendance_device_id)
         ->where('enroll_id', $employee->enroll_id)
@@ -146,48 +205,83 @@ public function searchEmployees(Request $request)
         ->orderBy('checked_at', 'asc')
         ->get();
 
-    // --- CÁLCULO DE KPIs ---
-    
-    // 1. Días trabajados (agrupando por fecha única)
-    $workedDays = $allLogs->groupBy(fn($log) => \Carbon\Carbon::parse($log->checked_at)->format('Y-m-d'))->count();
+    // Agrupar por fecha (Y-m-d)
+    $byDay = $allLogs->groupBy(fn($log) => Carbon::parse($log->checked_at)->format('Y-m-d'));
 
-    // 2. Horas totales (Basado en primera y última checada de cada día)
+    // KPI 1) Días trabajados
+    $workedDays = $byDay->count();
+
+    // KPI 2) Horas totales estimadas (primera vs última checada de cada día)
     $totalSeconds = 0;
-    foreach ($allLogs->groupBy(fn($log) => \Carbon\Carbon::parse($log->checked_at)->format('Y-m-d')) as $dayLogs) {
+    foreach ($byDay as $dayLogs) {
         if ($dayLogs->count() >= 2) {
-            $first = \Carbon\Carbon::parse($dayLogs->first()->checked_at);
-            $last = \Carbon\Carbon::parse($dayLogs->last()->checked_at);
+            $first = Carbon::parse($dayLogs->first()->checked_at);
+            $last  = Carbon::parse($dayLogs->last()->checked_at);
             $totalSeconds += $first->diffInSeconds($last);
         }
     }
     $totalHours = round($totalSeconds / 3600, 1);
 
-    // 3. Promedio de entrada (Solo días que tienen registros)
+    // KPI 3) Promedio de entrada
     $avgEntry = '—';
     if ($workedDays > 0) {
         $totalMinutes = 0;
-        foreach ($allLogs->groupBy(fn($log) => \Carbon\Carbon::parse($log->checked_at)->format('Y-m-d')) as $dayLogs) {
-            $first = \Carbon\Carbon::parse($dayLogs->first()->checked_at);
+        foreach ($byDay as $dayLogs) {
+            $first = Carbon::parse($dayLogs->first()->checked_at);
             $totalMinutes += ($first->hour * 60) + $first->minute;
         }
         $avgEntry = now()->startOfDay()->addMinutes($totalMinutes / $workedDays)->format('h:i A');
     }
 
-    // Paginación para la tabla
-    $logs = AttendanceLog::query()
-        ->where('attendance_device_id', $employee->attendance_device_id)
-        ->where('enroll_id', $employee->enroll_id)
-        ->whereDate('checked_at', '>=', $from)
-        ->whereDate('checked_at', '<=', $to)
-        ->orderByDesc('checked_at')
-        ->paginate(100)
-        ->withQueryString();
+    // Construir filas por día (1 row = 1 día)
+    $rows = $byDay->map(function (Collection $dayLogs, string $date) {
+        // Aseguramos orden por hora
+        $sorted = $dayLogs->sortBy('checked_at')->values();
+
+        $firstLog = $sorted->first();
+        $lastLog  = $sorted->last();
+
+        $entryAt = Carbon::parse($firstLog->checked_at);
+        $exitAt  = ($sorted->count() >= 2) ? Carbon::parse($lastLog->checked_at) : null;
+
+        $hours = ($exitAt)
+            ? round($entryAt->diffInMinutes($exitAt) / 60, 2)
+            : 0;
+
+        return (object) [
+            'date'       => $date,
+            'day_name'   => $entryAt->locale('es')->translatedFormat('l'),
+            'entry_at'   => $entryAt,
+            'exit_at'    => $exitAt,
+            'hours'      => $hours,
+            'count'      => $sorted->count(),
+
+            // Si quieres seguir mostrando datos del log (opcional)
+            'device_uid' => $firstLog->device_uid ?? null,
+        ];
+    })
+    ->values()
+    ->sortByDesc('date') // día más nuevo primero
+    ->values();
+
+    // Paginación por días (no por logs)
+    $perPage = 31;
+    $page    = (int) $request->query('page', 1);
+    $slice   = $rows->slice(($page - 1) * $perPage, $perPage)->values();
+
+    $logs = new LengthAwarePaginator(
+        $slice,
+        $rows->count(),
+        $perPage,
+        $page,
+        ['path' => $request->url(), 'query' => $request->query()]
+    );
 
     return view('attendance.employees.show', compact(
-        'employee', 'logs', 'from', 'to', 'workedDays', 'totalHours', 'avgEntry'
+        'employee', 'logs', 'from', 'to',
+        'workedDays', 'totalHours', 'avgEntry'
     ));
 }
-
     public function export(Request $request)
 {
     $deviceId   = $request->query('device_id');
