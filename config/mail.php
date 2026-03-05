@@ -130,5 +130,7 @@ return [
             resource_path('views/vendor/mail'),
         ],
     ],
+    'notificaciones_maquinas' => env('NOTIFICACIONES_DESTINO', 'sistemas@riveraco.com.mx'),
 
 ];
+
