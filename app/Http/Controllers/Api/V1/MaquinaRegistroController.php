@@ -353,4 +353,32 @@ public function reportarFalla(Request $request, ObraMaquina $obraMaquina, Maquin
         ], 422);
     }
 }
+/**
+ * Actualizar estado de máquina (Iniciar/Finalizar reparación)
+ * POST /api/v1/maquinas/{obraMaquina}/actualizar-estado
+ */
+// En MaquinaRegistroController.php
+public function actualizarEstado(Request $request, ObraMaquina $obraMaquina, MaquinaService $svc)
+{
+    $data = $request->validate([
+        'estado' => 'required|string|in:en_reparacion,operativa,fuera_servicio',
+        'motivo' => 'required|string|max:190',
+        'notas'  => 'nullable|string|max:2000', // <-- Validar notas
+    ]);
+
+    try {
+        $svc->cambiarEstado(
+            maquina: $obraMaquina->maquina,
+            nuevoEstado: $data['estado'],
+            obraId: $obraMaquina->obra_id,
+            obraMaquinaId: $obraMaquina->id,
+            motivo: $data['motivo'],
+            notas: $data['notas'] ?? null // <-- Pasarlas al Service
+        );
+
+        return response()->json(['ok' => true]);
+    } catch (\Throwable $e) {
+        return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
+    }
+}
 }
