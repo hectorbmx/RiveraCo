@@ -23,16 +23,19 @@ class SendMaquinaEstadoNotification implements ShouldQueue
     /**
      * Handle the event.
      */
-   public function handle(MaquinaEstadoCambiado $event): void
-    {
-        // Enviamos el mailable que creamos en el paso anterior
-        Mail::to('control@tuempresa.com')
-            ->send(new MaquinaEstadoMail(
-                $event->maquina,
-                $event->anterior,
-                $event->nuevo,
-                $event->motivo,
-                $event->notas,
-            ));
-    }
+  public function handle(MaquinaEstadoCambiado $event): void
+{
+    // Obtiene la lista del .env, si no hay nada, usa un correo de soporte
+    $destinatarios = explode(',', env('NOTIFICACIONES_DESTINO', 'soporte@tuempresa.com'));
+
+    Mail::to($destinatarios)->send(
+        new MaquinaEstadoMail(
+            $event->maquina,
+            $event->anterior,
+            $event->nuevo,
+            $event->motivo,
+            $event->notas
+        )
+    );
+}
 }
