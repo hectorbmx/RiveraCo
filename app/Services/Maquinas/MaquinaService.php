@@ -4,6 +4,7 @@ namespace App\Services\Maquinas;
 
 use App\Models\Maquina;
 use App\Models\MaquinaMovimiento;
+use App\Events\MaquinaEstadoCambiado;
 use App\Models\Obra;
 use App\Models\ObraMaquina;
 use Illuminate\Support\Facades\Auth;
@@ -124,6 +125,49 @@ class MaquinaService
         });
     }
 
+    // public function cambiarEstado(
+    //     Maquina $maquina,
+    //     string $nuevoEstado,
+    //     ?int $obraId = null,
+    //     ?int $obraMaquinaId = null,
+    //     ?string $motivo = null,
+    //     ?string $notas = null
+    // ): void {
+    //     DB::transaction(function () use ($maquina, $nuevoEstado, $obraId, $obraMaquinaId, $motivo, $notas) {
+
+    //         $anterior = $maquina->estado;
+
+    //         if ($anterior === $nuevoEstado) {
+    //             return;
+    //         }
+    //         $permitidos = [
+    //             Maquina::ESTADO_OPERATIVA       => [Maquina::ESTADO_FUERA_SERVICIO, Maquina::ESTADO_BAJA_DEFINITIVA],
+    //             Maquina::ESTADO_FUERA_SERVICIO  => [Maquina::ESTADO_EN_REPARACION, Maquina::ESTADO_OPERATIVA, Maquina::ESTADO_BAJA_DEFINITIVA],
+    //             Maquina::ESTADO_EN_REPARACION   => [Maquina::ESTADO_OPERATIVA, Maquina::ESTADO_BAJA_DEFINITIVA],
+    //             Maquina::ESTADO_BAJA_DEFINITIVA => [],
+    //         ];
+
+    //         if (!in_array($nuevoEstado, $permitidos[$anterior] ?? [], true)) {
+    //             throw new \RuntimeException("Transición de estado no permitida: {$anterior} → {$nuevoEstado}");
+    //         }
+    //         $maquina->update([
+    //             'estado' => $nuevoEstado,
+    //         ]);
+
+    //         MaquinaMovimiento::create([
+    //             'maquina_id'      => $maquina->id,
+    //             'obra_id'         => $obraId,
+    //             'obra_maquina_id' => $obraMaquinaId,
+    //             'tipo'            => 'cambio_estado',
+    //             'estado_anterior' => $anterior,
+    //             'estado_nuevo'    => $nuevoEstado,
+    //             'motivo'          => $motivo,
+    //             'notas'           => $notas,
+    //             'user_id'         => Auth::id(),
+    //             'fecha_evento'    => now(),
+    //         ]);
+    //     });
+    // }
     public function cambiarEstado(
         Maquina $maquina,
         string $nuevoEstado,
@@ -132,13 +176,16 @@ class MaquinaService
         ?string $motivo = null,
         ?string $notas = null
     ): void {
-        DB::transaction(function () use ($maquina, $nuevoEstado, $obraId, $obraMaquinaId, $motivo, $notas) {
+        // 1. Guardamos el estado actual antes de entrar a la transacción
+        $estadoAnterior = $maquina->estado;
 
+        DB::transaction(function () use ($maquina, $nuevoEstado, $obraId, $obraMaquinaId, $motivo, $notas) {
             $anterior = $maquina->estado;
 
             if ($anterior === $nuevoEstado) {
                 return;
             }
+
             $permitidos = [
                 Maquina::ESTADO_OPERATIVA       => [Maquina::ESTADO_FUERA_SERVICIO, Maquina::ESTADO_BAJA_DEFINITIVA],
                 Maquina::ESTADO_FUERA_SERVICIO  => [Maquina::ESTADO_EN_REPARACION, Maquina::ESTADO_OPERATIVA, Maquina::ESTADO_BAJA_DEFINITIVA],
@@ -149,6 +196,7 @@ class MaquinaService
             if (!in_array($nuevoEstado, $permitidos[$anterior] ?? [], true)) {
                 throw new \RuntimeException("Transición de estado no permitida: {$anterior} → {$nuevoEstado}");
             }
+
             $maquina->update([
                 'estado' => $nuevoEstado,
             ]);
@@ -166,5 +214,16 @@ class MaquinaService
                 'fecha_evento'    => now(),
             ]);
         });
+
+        // 2. Disparamos el evento después de que la transacción fue exitosa
+        if ($estadoAnterior !== $nuevoEstado) {
+            event(new \App\Events\MaquinaEstadoCambiado(
+                $maquina, 
+                $estadoAnterior, 
+                $nuevoEstado, 
+                $motivo,
+                $notas
+            ));
+        }
     }
 }
