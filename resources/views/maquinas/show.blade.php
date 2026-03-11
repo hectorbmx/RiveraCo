@@ -263,48 +263,108 @@
     @endif
 
     @if($tab === 'seguros')
-        <div class="rounded-xl border bg-white overflow-hidden">
-            <div class="px-4 py-3 border-b flex items-center justify-between">
-                <div>
-                    <div class="text-sm font-semibold text-slate-800">Historial de seguros</div>
-                    <div class="text-xs text-slate-500">Aquí después habilitamos “Agregar seguro”.</div>
-                </div>
-                {{-- Botón lo agregamos después --}}
-                <button class="px-3 py-2 rounded-lg border text-sm bg-slate-100 text-slate-500 cursor-not-allowed" disabled>
-                    + Agregar seguro
-                </button>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="min-w-full text-sm">
-                    <thead class="bg-slate-50 text-slate-600">
-                        <tr>
-                            <th class="text-left px-4 py-3">Aseguradora</th>
-                            <th class="text-left px-4 py-3">Póliza</th>
-                            <th class="text-left px-4 py-3">Inicio</th>
-                            <th class="text-left px-4 py-3">Fin</th>
-                            <th class="text-left px-4 py-3">Archivo</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y">
-                        @forelse($maquina->seguros ?? [] as $s)
-                            <tr class="hover:bg-slate-50">
-                                <td class="px-4 py-3">{{ $s->aseguradora ?? '—' }}</td>
-                                <td class="px-4 py-3">{{ $s->numero_poliza ?? '—' }}</td>
-                                <td class="px-4 py-3">{{ $s->vigencia_inicio?->format('Y-m-d') ?? '—' }}</td>
-                                <td class="px-4 py-3">{{ $s->vigencia_fin?->format('Y-m-d') ?? '—' }}</td>
-                                <td class="px-4 py-3 text-slate-500">—</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="px-4 py-6 text-center text-slate-500">Sin seguros registrados.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+<div class="rounded-xl border bg-white overflow-hidden">
+    <div class="px-4 py-3 border-b flex items-center justify-between">
+        <div>
+            <div class="text-sm font-semibold text-slate-800">Historial de seguros</div>
         </div>
-    @endif
+
+        <a 
+    href="{{ route('maquinas.seguros.create', $maquina) }}"
+    class="px-3 py-2 rounded-lg border text-sm bg-blue-600 text-white hover:bg-blue-700"
+>
+    + Agregar seguro
+</a>
+    </div>
+
+    <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+    <thead class="bg-slate-50 text-slate-600">
+        <tr>
+            <th class="px-2 py-3"></th>
+            <th class="text-left px-4 py-3">Aseguradora</th>
+            <th class="text-left px-4 py-3">Póliza</th>
+            <th class="text-left px-4 py-3">Inicio</th>
+            <th class="text-left px-4 py-3">Fin</th>
+            <th class="text-left px-4 py-3">Archivo</th>
+            <th class="text-left px-4 py-3"></th>
+        </tr>
+    </thead>
+
+    <tbody class="divide-y">
+        @forelse($maquina->seguros ?? [] as $s)
+           @php
+    $hoy = \Carbon\Carbon::today();
+    $fin = $s->vigencia_hasta;
+    $dias = $fin ? $hoy->diffInDays($fin, false) : null;
+
+    if ($fin && $fin->lt($hoy)) {
+        $tooltip = 'Vencido hace ' . abs($dias) . ' días';
+        $estado = 'rojo';
+    } elseif ($dias !== null && $dias <= 60) {
+        $tooltip = 'Vence en ' . $dias . ' días';
+        $estado = 'amarillo';
+    } else {
+        $tooltip = 'Vigente';
+        $estado = 'verde';
+    }
+@endphp
+
+            <tr class="hover:bg-slate-50">
+              <td class="px-2 py-3 align-middle">
+                    <span
+                        title="{{ $tooltip }}"
+                        style="
+                            display:inline-block;
+                            width:12px;
+                            height:12px;
+                            border-radius:9999px;
+                            background:
+                            @if($estado === 'rojo')
+                                #ef4444
+                            @elseif($estado === 'amarillo')
+                                #facc15
+                            @else
+                                #22c55e
+                            @endif
+                            ;
+                        "
+                    ></span>
+                </td>
+
+                <td class="px-4 py-3">{{ $s->aseguradora ?? '—' }}</td>
+                <td class="px-4 py-3">{{ $s->poliza_numero ?? '—' }}</td>
+                <td class="px-4 py-3">{{ $s->vigencia_desde?->format('Y-m-d') ?? '—' }}</td>
+                <td class="px-4 py-3">{{ $s->vigencia_hasta?->format('Y-m-d') ?? '—' }}</td>
+
+                <td class="px-4 py-3">
+                    @if($s->documento_path)
+                        <a href="{{ asset('storage/'.$s->documento_path) }}" target="_blank" class="text-blue-600 hover:underline">
+                            Ver archivo
+                        </a>
+                    @else
+                        <span class="text-slate-400">—</span>
+                    @endif
+                </td>
+
+                <td class="px-4 py-3">
+                    <a href="{{ route('maquinas.seguros.edit', [$maquina, $s]) }}" class="text-blue-600 hover:underline text-sm">
+                        Editar
+                    </a>
+                </td>
+            </tr>
+        @empty
+            <tr>
+                <td colspan="7" class="px-4 py-6 text-center text-slate-500">
+                    Sin seguros registrados.
+                </td>
+            </tr>
+        @endforelse
+    </tbody>
+</table>
+    </div>
+</div>
+@endif
     @if($tab === 'kardex')
 <div class="rounded-xl border bg-white overflow-hidden">
     <div class="px-4 py-3 border-b">

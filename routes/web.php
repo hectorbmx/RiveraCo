@@ -37,6 +37,9 @@ use App\Http\Controllers\FacturaController;
 use App\Http\Controllers\EmpresaConfigMaquinaController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\MaquinasReporteDiarioController;
+use App\Http\Controllers\Maquinas\MaquinaSeguroController;
+use App\Http\Controllers\Vehiculos\VehiculoSeguroController;
+
 use App\Http\Controllers\SnapshotsController;
 use App\Http\Controllers\CatalogoRolController;
 use App\Http\Controllers\Nomina\NominaCorridaController;
@@ -345,7 +348,6 @@ Route::middleware('auth','verified')->group(function () {
         ->name('productos.proveedores.detach');
 //mantenimiento y vehiculos
     Route::prefix('mantenimiento')->name('mantenimiento.')->group(function () {
-
         // Catálogo de vehículos
         Route::resource('vehiculos', VehiculoController::class)
             ->except(['destroy']);
@@ -353,8 +355,8 @@ Route::middleware('auth','verified')->group(function () {
         Route::post('vehiculos/{vehiculo}/asignar', [VehiculoController::class, 'asignar'])
         ->name('vehiculos.asignar');
         
-        Route::post('vehiculos/{vehiculo}/seguro', [VehiculoController::class, 'guardarSeguro'])
-        ->name('vehiculos.seguro.store');
+        // Route::post('vehiculos/{vehiculo}/seguro', [VehiculoController::class, 'guardarSeguro'])
+        // ->name('vehiculos.seguro.store');
 
         // Mantenimientos de vehículos
         Route::resource('mantenimientos', MantenimientoController::class)
@@ -366,13 +368,29 @@ Route::middleware('auth','verified')->group(function () {
         
         Route::get('/', [MaquinaController::class, 'index'])->name('index');
         Route::get('maquinas/{maquina}', [MaquinaController::class, 'show'])->name('show');
-
     // acciones puntuales (NO crear maquina, solo cambiar estado/ubicacion y agregar seguro)
         Route::post('maquinas/{maquina}/cambiar-estado', [MaquinaController::class, 'cambiarEstado'])->name('cambiarEstado');
         Route::post('maquinas/{maquina}/cambiar-ubicacion', [MaquinaController::class, 'cambiarUbicacion'])->name('cambiarUbicacion');
-        Route::post('maquinas/{maquina}/seguros', [MaquinaSeguroController::class, 'store'])->name('seguros.store');
+        // Route::post('maquinas/{maquina}/seguros', [MaquinaSeguroController::class, 'store'])->name('seguros.store');
         Route::post('maquinas/{maquina}/toggle-servicio', [MaquinaController::class, 'toggleServicio'])->name('toggleServicio');
         Route::post('maquinas/{maquina}/estado', [MaquinaController::class, 'cambiarEstado'])->name('maquinas.cambiarEstado');
+
+    });
+    Route::prefix('maquinas/{maquina}/seguros')->name('maquinas.seguros.')->group(function () {
+            Route::get('/', [MaquinaSeguroController::class, 'index'])->name('index');
+            Route::get('/create', [MaquinaSeguroController::class, 'create'])->name('create');
+            Route::get('/edit/{seguro}', [MaquinaSeguroController::class, 'edit'])->name('edit');
+            Route::post('/', [MaquinaSeguroController::class, 'store'])->name('store');
+            Route::get('/{seguro}', [MaquinaSeguroController::class, 'show'])->name('show');
+            Route::put('/{seguro}', [MaquinaSeguroController::class, 'update'])->name('update');
+            Route::delete('/{seguro}', [MaquinaSeguroController::class, 'destroy'])->name('destroy');
+        });
+
+    Route::prefix('vehiculos/{vehiculo}/seguros')->name('vehiculos.seguros.')->group(function () {
+            Route::get('/create', [VehiculoSeguroController::class, 'create'])->name('create');
+            Route::post('/', [VehiculoSeguroController::class, 'store'])->name('store');
+            Route::get('/edit/{seguro}', [VehiculoSeguroController::class, 'edit'])->name('edit');
+            Route::put('/{seguro}', [VehiculoSeguroController::class, 'update'])->name('update');
     });
 
     Route::prefix('obras/{obra}')

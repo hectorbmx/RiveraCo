@@ -60,16 +60,17 @@ public function show(Request $request, Maquina $maquina)
 
     if ($tab === 'seguros') {
         $maquina->load([
-            'seguros' => fn($q) => $q->orderByDesc('vigencia_fin'),
+            'seguros' => fn($q) => $q->orderByDesc('vigencia_hasta'),
         ]);
     }
+
     if ($tab === 'kardex') {
-    $maquina->load([
-        'movimientos' => fn($q) => $q
-            ->with(['obra:id,nombre', 'user:id,name'])
-            ->orderByDesc('fecha_evento'),
-    ]);
-}
+        $maquina->load([
+            'movimientos' => fn($q) => $q
+                ->with(['obra:id,nombre', 'user:id,name'])
+                ->orderByDesc('fecha_evento'),
+        ]);
+    }
 
     return view('maquinas.show', compact('maquina', 'tab'));
 }

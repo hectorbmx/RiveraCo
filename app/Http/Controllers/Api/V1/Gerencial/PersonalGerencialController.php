@@ -31,7 +31,7 @@ public function index(Request $request)
             'empleados.Sueldo_real',
         ])
         // Cargamos la relación de la obra activa para saber SIEMPRE en qué obra está
-        ->with(['area:id,nombre', 'obraActiva' => function($query) {
+        ->with(['areaRef:id,nombre', 'obraActiva' => function($query) {
             $query->select('obras.id', 'obras.nombre','obras.clave_obra'); // Ajusta según tus columnas de Obra
         }])
         ->orderBy('Nombre');
@@ -156,7 +156,7 @@ public function show(Empleado $empleado)
 {
     // Cargamos las relaciones necesarias para el detalle
     $empleado->load([
-        'area:id,nombre', 
+        'areaRef:id,nombre', 
         'obraActiva.cliente', // Por si quieres mostrar el cliente de la obra
     ]);
 

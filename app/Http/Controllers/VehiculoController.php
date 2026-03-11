@@ -113,23 +113,22 @@ public function index()
                 ->orderBy('Apellidos')
                 ->get();
         }
-        if ($tab === 'seguro') {
-            // Póliza vigente: por estatus activa o por fecha_fin >= hoy
-            $hoy = now()->toDateString();
+     if ($tab === 'seguro') {
+    $hoy = now()->toDateString();
 
-            $polizaVigente = $vehiculo->seguros()
-                ->where(function ($q) use ($hoy) {
-                    $q->where('estatus', 'activa')
-                    ->orWhere('fecha_fin', '>=', $hoy);
-                })
-                ->orderByDesc('fecha_fin')
-                ->first();
+    // Póliza vigente real
+    $polizaVigente = $vehiculo->seguros()
+        ->where('estatus', '!=', 'cancelada')
+        ->whereDate('vigencia_desde', '<=', $hoy)
+        ->whereDate('vigencia_hasta', '>=', $hoy)
+        ->orderByDesc('vigencia_hasta')
+        ->first();
 
-            // Historial completo
-            $historialSeguros = $vehiculo->seguros()
-                ->orderByDesc('fecha_inicio')
-                ->get();
-        }
+    // Historial completo
+    $historialSeguros = $vehiculo->seguros()
+        ->orderByDesc('vigencia_hasta')
+        ->get();
+}
 
         if ($tab === 'mantenimientos') {
             $mantenimientosVehiculo = $vehiculo->mantenimientos()
@@ -158,51 +157,52 @@ public function index()
     }
 
     //asignar seguros a un vehiculo
-    public function guardarSeguro(Request $request, Vehiculo $vehiculo)
-    {
-        $validated = $request->validate([
-            'aseguradora'     => 'required|string|max:100',
-            'numero_poliza'   => 'required|string|max:100',
-            'tipo_cobertura'  => 'nullable|string|max:100',
-            'fecha_inicio'    => 'required|date',
-            'fecha_fin'       => 'required|date|after_or_equal:fecha_inicio',
-            'costo_anual'     => 'nullable|numeric|min:0',
-            'estatus'         => 'required|in:activa,vencida,cancelada',
-            'archivo_poliza'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:4096',
-            'notas'           => 'nullable|string',
-        ]);
+//     public function guardarSeguro(Request $request, Vehiculo $vehiculo)
+// {
+//     $validated = $request->validate([
+//         'aseguradora'                => 'required|string|max:255',
+//         'numero_poliza'              => 'required|string|max:255',
+//         'tipo_cobertura'             => 'nullable|string|max:100',
+//         'fecha_inicio'               => 'required|date',
+//         'fecha_fin'                  => 'required|date|after_or_equal:fecha_inicio',
+//         'costo_anual'                => 'nullable|numeric|min:0',
+//         'estatus'                    => 'required|in:activa,vencida,cancelada',
+//         'archivo_poliza'             => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:4096',
+//         'notas'                      => 'nullable|string',
+//     ]);
 
-        // Si se marca como activa, puedes marcar otras pólizas como vencidas
-        if ($validated['estatus'] === 'activa') {
-            $vehiculo->seguros()
-                ->where('estatus', 'activa')
-                ->update(['estatus' => 'vencida']);
-        }
+//     $rutaArchivo = null;
 
-        // Manejo de archivo
-        $rutaArchivo = null;
-        if ($request->hasFile('archivo_poliza')) {
-            $rutaArchivo = $request->file('archivo_poliza')
-                ->store('polizas_vehiculos', 'public');
-        }
+//     if ($request->hasFile('archivo_poliza')) {
+//         $rutaArchivo = $request->file('archivo_poliza')->store('seguros/documentos', 'public');
+//     }
 
-        SeguroVehiculo::create([
-            'vehiculo_id'    => $vehiculo->id,
-            'aseguradora'    => $validated['aseguradora'],
-            'numero_poliza'  => $validated['numero_poliza'],
-            'tipo_cobertura' => $validated['tipo_cobertura'] ?? null,
-            'fecha_inicio'   => $validated['fecha_inicio'],
-            'fecha_fin'      => $validated['fecha_fin'],
-            'costo_anual'    => $validated['costo_anual'] ?? 0,
-            'estatus'        => $validated['estatus'],
-            'archivo_poliza' => $rutaArchivo,
-            'notas'          => $validated['notas'] ?? null,
-        ]);
+//     $estatus = match ($validated['estatus']) {
+//         'activa' => 'vigente',
+//         'vencida' => 'vencida',
+//         'cancelada' => 'cancelada',
+//         default => 'vigente',
+//     };
 
-        return redirect()
-            ->route('mantenimiento.vehiculos.edit', ['vehiculo' => $vehiculo->id, 'tab' => 'seguro'])
-            ->with('success', 'Póliza de seguro registrada correctamente.');
-    }
+//     $vehiculo->seguros()->create([
+//         'aseguradora' => $validated['aseguradora'],
+//         'poliza_numero' => $validated['numero_poliza'],
+//         'tipo_seguro' => $validated['tipo_cobertura'] ?? null,
+//         'costo' => $validated['costo_anual'] ?? 0,
+//         'moneda' => 'MXN',
+//         'vigencia_desde' => $validated['fecha_inicio'],
+//         'vigencia_hasta' => $validated['fecha_fin'],
+//         'estatus' => $estatus,
+//         'documento_path' => $rutaArchivo,
+//         'observaciones' => $validated['notas'] ?? null,
+//         'created_by' => auth()->id(),
+//         'updated_by' => auth()->id(),
+//     ]);
+
+//     return redirect()
+//         ->route('mantenimiento.vehiculos.edit', ['vehiculo' => $vehiculo->id, 'tab' => 'seguro'])
+//         ->with('success', 'Póliza de seguro registrada correctamente.');
+// }
 
 
     public function asignar(Request $request, Vehiculo $vehiculo)

@@ -44,9 +44,14 @@ class Vehiculo extends Model
     }
 
     // Seguros del vehículo
+    // public function seguros()
+    // {
+    //     return $this->hasMany(SeguroVehiculo::class, 'vehiculo_id');
+    // }
     public function seguros()
     {
-        return $this->hasMany(SeguroVehiculo::class, 'vehiculo_id');
+        return $this->morphMany(\App\Models\Seguro::class, 'asegurable')
+            ->orderByDesc('vigencia_hasta');
     }
 
     // Documentos (tarjeta circulación, verificación, etc.)

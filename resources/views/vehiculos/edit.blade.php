@@ -345,265 +345,237 @@
                 </div>
             @endif
             {{-- FIN TAB: ASIGNACIÓN --}}
+{{-- TAB: SEGURO --}}
+@if($tab === 'seguro')
 
-            {{-- TAB: SEGURO --}}
-                        
-            @if($tab === 'seguro')
-                @php
-                    $polizaVigente = $polizaVigente ?? null;
-                    $historialSeguros = $historialSeguros ?? collect();
-                @endphp
+@php
+    $polizaVigente = $polizaVigente ?? null;
+    $historialSeguros = $historialSeguros ?? collect();
+@endphp
 
-                <div class="space-y-6">
+<div class="space-y-6">
 
-                    {{-- Mensaje de éxito --}}
-                    @if(session('success'))
-                        <div class="mb-2 p-3 bg-green-100 text-green-700 rounded-lg text-sm">
-                            {{ session('success') }}
+    {{-- Mensaje de éxito --}}
+    @if(session('success'))
+        <div class="mb-2 p-3 bg-green-100 text-green-700 rounded-lg text-sm">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    {{-- BOTON NUEVA POLIZA --}}
+    <div class="flex justify-end">
+        <a href="{{ route('vehiculos.seguros.create', $vehiculo) }}"
+           class="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700">
+            Registrar nueva póliza
+        </a>
+    </div>
+
+
+    {{-- PÓLIZA VIGENTE --}}
+    <div class="border border-slate-200 rounded-lg p-4 bg-slate-50/60">
+        <h2 class="text-sm font-semibold text-slate-700 mb-3">
+            Póliza vigente
+        </h2>
+
+        @if($polizaVigente)
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+
+                <div>
+                    <div class="text-slate-500 text-xs">Aseguradora</div>
+                    <div class="text-slate-800 font-medium">
+                        {{ $polizaVigente->aseguradora }}
+                    </div>
+
+                    <div class="text-slate-500 text-xs mt-1">
+                        Póliza: {{ $polizaVigente->poliza_numero }}
+                    </div>
+                </div>
+
+
+                <div>
+                    <div class="text-slate-500 text-xs">Vigencia</div>
+
+                    <div class="text-slate-800 font-medium">
+                        {{ \Carbon\Carbon::parse($polizaVigente->vigencia_desde)->format('d/m/Y') }}
+                        —
+                        {{ \Carbon\Carbon::parse($polizaVigente->vigencia_hasta)->format('d/m/Y') }}
+                    </div>
+
+                    <div class="text-slate-500 text-xs mt-1">
+                        Estatus:
+                        <span class="font-semibold
+                            @if($polizaVigente->estatus === 'vigente') text-emerald-700
+                            @elseif($polizaVigente->estatus === 'vencido') text-red-600
+                            @else text-slate-700 @endif">
+                            {{ ucfirst($polizaVigente->estatus) }}
+                        </span>
+                    </div>
+                </div>
+
+
+                <div>
+                    <div class="text-slate-500 text-xs">Costo anual</div>
+
+                    <div class="text-slate-800 font-medium">
+                        ${{ number_format($polizaVigente->costo, 2) }}
+                    </div>
+
+                    @if($polizaVigente->documento_path)
+                        <div class="mt-2">
+                            <a href="{{ asset('storage/'.$polizaVigente->documento_path) }}"
+                               target="_blank"
+                               class="text-xs text-blue-600 hover:underline">
+                                Ver archivo de póliza
+                            </a>
                         </div>
                     @endif
-
-                    {{-- PÓLIZA VIGENTE --}}
-                    <div class="border border-slate-200 rounded-lg p-4 bg-slate-50/60">
-                        <h2 class="text-sm font-semibold text-slate-700 mb-3">
-                            Póliza vigente
-                        </h2>
-
-                        @if($polizaVigente)
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                <div>
-                                    <div class="text-slate-500 text-xs">Aseguradora</div>
-                                    <div class="text-slate-800 font-medium">
-                                        {{ $polizaVigente->aseguradora }}
-                                    </div>
-                                    <div class="text-slate-500 text-xs mt-1">
-                                        Póliza: {{ $polizaVigente->numero_poliza }}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div class="text-slate-500 text-xs">Vigencia</div>
-                                    <div class="text-slate-800 font-medium">
-                                        {{ \Carbon\Carbon::parse($polizaVigente->fecha_inicio)->format('d/m/Y') }}
-                                        —
-                                        {{ \Carbon\Carbon::parse($polizaVigente->fecha_fin)->format('d/m/Y') }}
-                                    </div>
-                                    <div class="text-slate-500 text-xs mt-1">
-                                        Estatus:
-                                        <span class="font-semibold
-                                            @if($polizaVigente->estatus === 'activa') text-emerald-700
-                                            @elseif($polizaVigente->estatus === 'vencida') text-red-600
-                                            @else text-slate-700 @endif">
-                                            {{ ucfirst($polizaVigente->estatus) }}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div class="text-slate-500 text-xs">Costo anual</div>
-                                    <div class="text-slate-800 font-medium">
-                                        ${{ number_format($polizaVigente->costo_anual, 2) }}
-                                    </div>
-
-                                    @if($polizaVigente->archivo_poliza)
-                                        <div class="mt-2">
-                                            <a href="{{ asset('storage/'.$polizaVigente->archivo_poliza) }}"
-                                            target="_blank"
-                                            class="text-xs text-blue-600 hover:underline">
-                                                Ver archivo de póliza
-                                            </a>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        @else
-                            <p class="text-sm text-slate-500">
-                                No hay póliza vigente registrada para este vehículo.
-                            </p>
-                        @endif
-                    </div>
-
-                    {{-- FORMULARIO NUEVA PÓLIZA --}}
-                    <div class="border border-slate-200 rounded-lg p-4">
-                        <h3 class="text-sm font-semibold text-slate-700 mb-3">
-                            Registrar / actualizar póliza de seguro
-                        </h3>
-
-                        <form method="POST"
-                            action="{{ route('mantenimiento.vehiculos.seguro.store', $vehiculo) }}"
-                            enctype="multipart/form-data"
-                            class="space-y-4">
-                            @csrf
-
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {{-- Aseguradora --}}
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">
-                                        Aseguradora <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="text" name="aseguradora"
-                                        class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-                                        value="{{ old('aseguradora') }}">
-                                </div>
-
-                                {{-- Número de póliza --}}
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">
-                                        Número de póliza <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="text" name="numero_poliza"
-                                        class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-                                        value="{{ old('numero_poliza') }}">
-                                </div>
-
-                                {{-- Tipo de cobertura --}}
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">
-                                        Tipo de cobertura
-                                    </label>
-                                    <input type="text" name="tipo_cobertura"
-                                        class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-                                        placeholder="Amplia, limitada, RC, etc."
-                                        value="{{ old('tipo_cobertura') }}">
-                                </div>
-
-                                {{-- Costo anual --}}
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">
-                                        Costo anual
-                                    </label>
-                                    <input type="number" step="0.01" min="0" name="costo_anual"
-                                        class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-                                        value="{{ old('costo_anual') }}">
-                                </div>
-
-                                {{-- Fecha inicio --}}
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">
-                                        Fecha inicio <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="date" name="fecha_inicio"
-                                        class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-                                        value="{{ old('fecha_inicio') }}">
-                                </div>
-
-                                {{-- Fecha fin --}}
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">
-                                        Fecha fin <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="date" name="fecha_fin"
-                                        class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-                                        value="{{ old('fecha_fin') }}">
-                                </div>
-
-                                {{-- Estatus --}}
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">
-                                        Estatus <span class="text-red-500">*</span>
-                                    </label>
-                                    <select name="estatus"
-                                            class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
-                                        <option value="activa" {{ old('estatus') === 'activa' ? 'selected' : '' }}>Activa</option>
-                                        <option value="vencida" {{ old('estatus') === 'vencida' ? 'selected' : '' }}>Vencida</option>
-                                        <option value="cancelada" {{ old('estatus') === 'cancelada' ? 'selected' : '' }}>Cancelada</option>
-                                    </select>
-                                </div>
-
-                                {{-- Archivo póliza --}}
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-600 mb-1">
-                                        Archivo póliza (PDF/JPG/PNG)
-                                    </label>
-                                    <input type="file" name="archivo_poliza"
-                                        class="w-full text-sm text-slate-600">
-                                </div>
-                            </div>
-
-                            {{-- Notas --}}
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">
-                                    Notas
-                                </label>
-                                <textarea name="notas" rows="3"
-                                        class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-                                        placeholder="Comentarios adicionales sobre la póliza">{{ old('notas') }}</textarea>
-                            </div>
-
-                            <div class="flex justify-end">
-                                <button type="submit"
-                                        class="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700">
-                                    Guardar póliza
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    {{-- HISTORIAL DE PÓLIZAS --}}
-                    <div class="border border-slate-200 rounded-lg p-4">
-                        <h3 class="text-sm font-semibold text-slate-700 mb-3">
-                            Historial de pólizas
-                        </h3>
-
-                        @if($historialSeguros->isEmpty())
-                            <p class="text-sm text-slate-500">
-                                No hay pólizas registradas para este vehículo.
-                            </p>
-                        @else
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full text-xs">
-                                    <thead class="bg-slate-50 border-b border-slate-200">
-                                        <tr>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Aseguradora</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Póliza</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Vigencia</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Estatus</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Costo anual</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Archivo</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($historialSeguros as $seguro)
-                                            <tr class="border-b border-slate-100">
-                                                <td class="px-3 py-2 text-slate-700">
-                                                    {{ $seguro->aseguradora }}
-                                                </td>
-                                                <td class="px-3 py-2 text-slate-600">
-                                                    {{ $seguro->numero_poliza }}
-                                                </td>
-                                                <td class="px-3 py-2 text-slate-600">
-                                                    {{ \Carbon\Carbon::parse($seguro->fecha_inicio)->format('d/m/Y') }}
-                                                    —
-                                                    {{ \Carbon\Carbon::parse($seguro->fecha_fin)->format('d/m/Y') }}
-                                                </td>
-                                                <td class="px-3 py-2 text-slate-600">
-                                                    {{ ucfirst($seguro->estatus) }}
-                                                </td>
-                                                <td class="px-3 py-2 text-slate-600">
-                                                    ${{ number_format($seguro->costo_anual, 2) }}
-                                                </td>
-                                                <td class="px-3 py-2 text-slate-600">
-                                                    @if($seguro->archivo_poliza)
-                                                        <a href="{{ asset('storage/'.$seguro->archivo_poliza) }}"
-                                                        target="_blank"
-                                                        class="text-xs text-blue-600 hover:underline">
-                                                            Ver archivo
-                                                        </a>
-                                                    @else
-                                                        —
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        @endif
-                    </div>
-
                 </div>
-            @endif
-            {{-- FIN TAB: SEGURO --}}
+
+            </div>
+
+        @else
+
+            <p class="text-sm text-slate-500">
+                No hay póliza vigente registrada para este vehículo.
+            </p>
+
+        @endif
+
+    </div>
+
+
+    {{-- HISTORIAL --}}
+<div class="border border-slate-200 rounded-lg p-4">
+
+    <h3 class="text-sm font-semibold text-slate-700 mb-3">
+        Historial de pólizas
+    </h3>
+
+    @if($historialSeguros->isEmpty())
+
+        <p class="text-sm text-slate-500">
+            No hay pólizas registradas para este vehículo.
+        </p>
+
+    @else
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full text-xs">
+
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-2 py-2"></th>
+                        <th class="px-3 py-2 text-left font-semibold text-slate-500">Aseguradora</th>
+                        <th class="px-3 py-2 text-left font-semibold text-slate-500">Póliza</th>
+                        <th class="px-3 py-2 text-left font-semibold text-slate-500">Vigencia</th>
+                        <th class="px-3 py-2 text-left font-semibold text-slate-500">Estatus</th>
+                        <th class="px-3 py-2 text-left font-semibold text-slate-500">Costo anual</th>
+                        <th class="px-3 py-2 text-left font-semibold text-slate-500">Archivo</th>
+                        <th class="px-3 py-2 text-left font-semibold text-slate-500"></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach($historialSeguros as $seguro)
+                        @php
+                            $hoy = \Carbon\Carbon::today();
+                            $fin = $seguro->vigencia_hasta;
+                            $dias = $fin ? $hoy->diffInDays($fin, false) : null;
+
+                            if ($fin && $fin->lt($hoy)) {
+                                $tooltip = 'Vencido hace ' . abs($dias) . ' días';
+                                $estadoColor = 'rojo';
+                            } elseif ($dias !== null && $dias <= 60) {
+                                $tooltip = 'Vence en ' . $dias . ' días';
+                                $estadoColor = 'amarillo';
+                            } else {
+                                $tooltip = 'Vigente';
+                                $estadoColor = 'verde';
+                            }
+                        @endphp
+
+                        <tr class="border-b border-slate-100">
+
+                            <td class="px-2 py-3 align-middle">
+                                <span
+                                    title="{{ $tooltip }}"
+                                    style="
+                                        display:inline-block;
+                                        width:12px;
+                                        height:12px;
+                                        border-radius:9999px;
+                                        background:
+                                        @if($estadoColor === 'rojo')
+                                            #ef4444
+                                        @elseif($estadoColor === 'amarillo')
+                                            #facc15
+                                        @else
+                                            #22c55e
+                                        @endif
+                                        ;
+                                    "
+                                ></span>
+                            </td>
+
+                            <td class="px-3 py-2 text-slate-700">
+                                {{ $seguro->aseguradora }}
+                            </td>
+
+                            <td class="px-3 py-2 text-slate-600">
+                                {{ $seguro->poliza_numero }}
+                            </td>
+
+                            <td class="px-3 py-2 text-slate-600">
+                                {{ \Carbon\Carbon::parse($seguro->vigencia_desde)->format('d/m/Y') }}
+                                —
+                                {{ \Carbon\Carbon::parse($seguro->vigencia_hasta)->format('d/m/Y') }}
+                            </td>
+
+                            <td class="px-3 py-2 text-slate-600">
+                                {{ ucfirst($seguro->estatus) }}
+                            </td>
+
+                            <td class="px-3 py-2 text-slate-600">
+                                ${{ number_format($seguro->costo, 2) }}
+                            </td>
+
+                            <td class="px-3 py-2 text-slate-600">
+                                @if($seguro->documento_path)
+                                    <a href="{{ asset('storage/'.$seguro->documento_path) }}"
+                                       target="_blank"
+                                       class="text-xs text-blue-600 hover:underline">
+                                        Ver archivo
+                                    </a>
+                                @else
+                                    —
+                                @endif
+                            </td>
+
+                            <td class="px-3 py-2">
+                                <a href="{{ route('vehiculos.seguros.edit', [$vehiculo, $seguro]) }}"
+                                   class="text-xs text-blue-600 hover:underline">
+                                    Editar
+                                </a>
+                            </td>
+
+                        </tr>
+                    @endforeach
+                </tbody>
+
+            </table>
+
+        </div>
+
+    @endif
+
+</div>
+
+</div>
+
+@endif
+{{-- FIN TAB: SEGURO --}}
 
            {{-- TAB: MANTENIMIENTOS --}}
 @if($tab === 'mantenimientos')

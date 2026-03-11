@@ -69,18 +69,18 @@ public function movimientos()
 }
 
 // Seguros
-public function seguros()
-{
-    return $this->hasMany(\App\Models\SeguroMaquina::class, 'maquina_id');
-}
+// public function seguros()
+// {
+//     return $this->hasMany(\App\Models\SeguroMaquina::class, 'maquina_id');
+// }
 
-public function seguroVigente()
-{
-    return $this->hasOne(\App\Models\SeguroMaquina::class, 'maquina_id')
-        ->whereDate('vigencia_inicio', '<=', now()->toDateString())
-        ->whereDate('vigencia_fin', '>=', now()->toDateString())
-        ->latestOfMany('vigencia_fin');
-}
+// public function seguroVigente()
+// {
+//     return $this->hasOne(\App\Models\SeguroMaquina::class, 'maquina_id')
+//         ->whereDate('vigencia_inicio', '<=', now()->toDateString())
+//         ->whereDate('vigencia_fin', '>=', now()->toDateString())
+//         ->latestOfMany('vigencia_fin');
+// }
 
 // Mantenimientos (reutilizando tabla mantenimientos)
 public function mantenimientos()
@@ -107,5 +107,16 @@ public function scopeBajaDefinitiva($query)
 public function scopeEnObra($query)
 {
     return $query->where('ubicacion', 'en_obra');
+}
+public function seguros()
+{
+    return $this->morphMany(\App\Models\Seguro::class, 'asegurable')
+        ->orderByDesc('vigencia_hasta');
+}
+public function seguroVigente()
+{
+    return $this->morphOne(\App\Models\Seguro::class, 'asegurable')
+        ->where('estatus', 'vigente')
+        ->latestOfMany('vigencia_hasta');
 }
 }
