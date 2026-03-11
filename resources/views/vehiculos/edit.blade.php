@@ -548,7 +548,7 @@
                                        class="text-xs text-blue-600 hover:underline">
                                         Ver archivo
                                     </a> -->
-                                    <a href="{{ Storage::url($s->documento_path) }}" target="_blank" class="text-blue-600 hover:underline">
+                                    <a href="{{ Storage::url($seguro->documento_path) }}" target="_blank" class="text-blue-600 hover:underline">
                                     Ver archivo
                                     </a>
                                 @else
