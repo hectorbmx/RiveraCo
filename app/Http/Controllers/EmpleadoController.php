@@ -85,7 +85,7 @@ public function store(Request $request)
     $data['id_Empleado'] = $nextId;
 
     if (empty($data['Estatus'])) {
-        $data['Estatus'] = 'ACTIVO';
+        $data['Estatus'] = 1;
     }
 
     DB::transaction(function () use ($request, &$data) {
