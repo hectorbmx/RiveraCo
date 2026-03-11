@@ -543,13 +543,10 @@
 
                             <td class="px-3 py-2 text-slate-600">
                                 @if($seguro->documento_path)
-                                    <!-- <a href="{{ asset('storage/'.$seguro->documento_path) }}"
+                                    <a href="{{ asset('storage/'.$seguro->documento_path) }}"
                                        target="_blank"
                                        class="text-xs text-blue-600 hover:underline">
                                         Ver archivo
-                                    </a> -->
-                                    <a href="{{ Storage::url($seguro->documento_path) }}" target="_blank" class="text-blue-600 hover:underline">
-                                    Ver archivo
                                     </a>
                                 @else
                                     —
