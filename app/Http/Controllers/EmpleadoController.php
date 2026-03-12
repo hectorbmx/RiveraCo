@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Empleado;
 use App\Models\Area;
+use App\Models\CatalogoRol;
 use App\Models\EmpleadoNota;
 use Illuminate\Http\Request;
 use App\Services\Empleados\EmpleadoKardexService;
@@ -51,8 +52,10 @@ class EmpleadoController extends Controller
 
 public function create()
 {
-    $areas = \App\Models\Area::orderBy('nombre')->get();
-    return view('empleados.create', compact('areas'));
+    $areas = Area::orderBy('nombre')->get();
+    $roles = CatalogoRol::orderBy('nombre')->get();
+
+    return view('empleados.create', compact('areas', 'roles'));
 }
 
     // public function store(Request $request)
@@ -88,6 +91,34 @@ public function store(Request $request)
         $data['Estatus'] = 1;
     }
 
+    // Normalizar textos
+    if (!empty($data['Nombre'])) {
+        $data['Nombre'] = trim($data['Nombre']);
+    }
+
+    if (!empty($data['Apellidos'])) {
+        $data['Apellidos'] = trim($data['Apellidos']);
+    }
+
+    if (!empty($data['Puesto'])) {
+        $data['Puesto'] = trim($data['Puesto']);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | puesto_base
+    |--------------------------------------------------------------------------
+    | Si no viene puesto_base lo tomamos del Puesto
+    | y lo normalizamos en MAYÚSCULAS
+    */
+    if (empty($data['puesto_base']) && !empty($data['Puesto'])) {
+        $data['puesto_base'] = $data['Puesto'];
+    }
+
+    if (!empty($data['puesto_base'])) {
+        $data['puesto_base'] = strtoupper(trim($data['puesto_base']));
+    }
+
     DB::transaction(function () use ($request, &$data) {
 
         if ($request->hasFile('foto') && $request->file('foto')->isValid()) {
@@ -95,15 +126,15 @@ public function store(Request $request)
             $filename = 'empleado_' . $data['id_Empleado'] . '_' . Str::uuid() . '.' . $ext;
 
             $path = $request->file('foto')->storeAs('empleados', $filename, 'public');
-            $data['foto'] = $path; // ej: empleados/empleado_123_uuid.jpg
+            $data['foto'] = $path;
         }
 
         Empleado::create($data);
     });
 
-    return redirect()->route('empleados.index')->with('success', 'Empleado creado correctamente.');
+    return redirect()->route('empleados.index')
+        ->with('success', 'Empleado creado correctamente.');
 }
-
     // public function edit(Empleado $empleado)
     // {
     //     return view('empleados.edit', compact('empleado'));
@@ -119,30 +150,33 @@ public function store(Request $request)
                 $empleado->load('contactosEmergencia');
                 }
 
-    $kardex = collect();
+            $kardex = collect();
 
-    if ($tab === 'nomina') {
-        $empleado->load([
-            'nominaRecibos.obra',
-        ]);
-    }
+            if ($tab === 'nomina') {
+                $empleado->load([
+                    'nominaRecibos.obra',
+                ]);
+            }
 
-    if ($tab === 'kardex') {
-        // ⚠️ Carga lo necesario para construir kardex
-        $empleado->load([
-            'nominaRecibos.obra',
-            // si ya existe relación:
-            // 'nominaRecibos.pagosExtra',
-        ]);
+            if ($tab === 'kardex') {
+                // ⚠️ Carga lo necesario para construir kardex
+                $empleado->load([
+                    'nominaRecibos.obra',
+                    // si ya existe relación:
+                    // 'nominaRecibos.pagosExtra',
+                ]);
 
-        $kardex = app(EmpleadoKardexService::class)->build($empleado);
-    }
-     $areas = Area::where('activo', true)
-                 ->orderBy('nombre')
-                 ->get();
+                $kardex = app(EmpleadoKardexService::class)->build($empleado);
+            }
+            $areas = Area::where('activo', true)
+                        ->orderBy('nombre')
+                        ->get();
 
-            return view('empleados.edit', compact('empleado', 'tab','kardex','areas'));
-        }
+            $roles = \App\Models\CatalogoRol::orderBy('nombre')->get();
+
+
+                    return view('empleados.edit', compact('empleado', 'tab','kardex','areas','roles'));
+                }
 
 
     // public function update(Request $request, Empleado $empleado)
@@ -155,12 +189,33 @@ public function store(Request $request)
     //         ->route('empleados.edit', $empleado->id_Empleado)
     //         ->with('success', 'Empleado actualizado correctamente.');
     // }
-    public function update(Request $request, Empleado $empleado)
+ public function update(Request $request, Empleado $empleado)
 {
     $data = $this->validateData($request, false);
 
     // ⚠️ evita guardar tmp path si no procesas el archivo
     unset($data['foto']);
+
+    // Normalizaciones
+    if (array_key_exists('Estatus', $data) && $data['Estatus'] !== null && $data['Estatus'] !== '') {
+        $data['Estatus'] = (int) $data['Estatus'];
+    }
+
+    if (!empty($data['puesto_base'])) {
+        $data['puesto_base'] = strtoupper(trim($data['puesto_base']));
+    }
+
+    if (!empty($data['Puesto'])) {
+        $data['Puesto'] = trim($data['Puesto']);
+    }
+
+    if (!empty($data['Nombre'])) {
+        $data['Nombre'] = trim($data['Nombre']);
+    }
+
+    if (!empty($data['Apellidos'])) {
+        $data['Apellidos'] = trim($data['Apellidos']);
+    }
 
     DB::transaction(function () use ($request, $empleado, &$data) {
 

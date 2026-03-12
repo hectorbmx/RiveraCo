@@ -951,197 +951,183 @@
         </div>
     @endif
 
-    <div class="grid grid-cols-1 lg:grid-cols-[2fr_1.2fr] gap-6">
+    {{-- FORM PARA ASIGNAR NUEVO EMPLEADO --}}
+    <div class="mb-6">
+        <h3 class="text-sm font-semibold text-slate-700 mb-3">Asignar empleado a esta obra</h3>
 
-        {{-- LISTA DE ASIGNACIONES ACTIVAS --}}
-        <div>
-            <h3 class="text-sm font-semibold text-slate-700 mb-3">Empleados actualmente en la obra</h3>
+        @if($empleadosAsignables->isEmpty())
+            <p class="text-sm text-slate-500">
+                No hay empleados disponibles sin asignación activa.
+            </p>
+        @else
+            <form id="form-asignar-empleado"
+                  method="POST"
+                  action="{{ route('obras.empleados.store', $obra) }}"
+                  class="bg-white border rounded-xl p-4">
+                @csrf
 
-            <div class="border rounded-xl overflow-hidden">
-                <table class="w-full text-sm">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 items-end">
+                    {{-- Buscar empleado --}}
+                    <div class="relative">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">
+                            Buscar empleado
+                        </label>
+
+                        <input type="text"
+                               id="buscador-empleado"
+                               autocomplete="off"
+                               placeholder="Escribe apellido o nombre"
+                               class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
+
+                        <input type="hidden"
+                               name="empleado_id"
+                               id="empleado_id"
+                               value="{{ old('empleado_id') }}">
+
+                        <div id="resultados-empleado"
+                             class="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow text-sm max-h-60 overflow-y-auto hidden">
+                        </div>
+
+                        @error('empleado_id')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Rol en la obra --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">
+                            Puesto en la obra
+                        </label>
+
+                        <select name="rol_id"
+                                class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
+                            <option value="">Selecciona...</option>
+                            @foreach($roles as $rol)
+                                <option value="{{ $rol->id }}" @selected(old('rol_id') == $rol->id)>
+                                    {{ $rol->nombre }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        @error('rol_id')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Notas --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">
+                            Notas
+                        </label>
+                        <input type="text"
+                               name="notas"
+                               value="{{ old('notas') }}"
+                               class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
+
+                        @error('notas')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Botón --}}
+                    <div class="flex md:justify-end">
+                        <button type="submit"
+                                class="w-full md:w-auto px-4 py-2 bg-teal-600 text-white text-sm rounded-xl hover:bg-teal-700">
+                            Asignar empleado
+                        </button>
+                    </div>
+                </div>
+            </form>
+        @endif
+    </div>
+
+    {{-- LISTA DE ASIGNACIONES ACTIVAS --}}
+    <div>
+        <h3 class="text-sm font-semibold text-slate-700 mb-3">Empleados actualmente en la obra</h3>
+
+        <div class="border rounded-xl overflow-hidden bg-white">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50">
+                    <tr class="border-b text-slate-500">
+                        <th class="py-2 px-3 text-left">Empleado</th>
+                        <th class="py-2 px-3 text-left">Puesto</th>
+                        <th class="py-2 px-3 text-left">Alta</th>
+                        <th class="py-2 px-3 text-left">Días</th>
+                        <th class="py-2 px-3 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($asignacionesActivas as $asig)
+                        <tr class="border-b hover:bg-slate-50">
+                            <td class="py-2 px-3">
+                                {{ $asig->empleado->Nombre }} {{ $asig->empleado->Apellidos }}<br>
+                                <span class="text-[11px] text-slate-400">
+                                    {{ $asig->empleado->Area }} | {{ $asig->empleado->Puesto }}
+                                </span>
+                            </td>
+                            <td class="py-2 px-3">
+                                {{ $asig->puesto_en_obra ?? $asig->empleado->Puesto }}
+                            </td>
+                            <td class="py-2 px-3">
+                                {{ $asig->fecha_alta?->format('d/m/Y') }}
+                            </td>
+                            <td class="py-2 px-3">
+                                {{ $asig->dias_trabajados ?? $asig->fecha_alta?->diffInDays(now())+1 }}
+                            </td>
+                            <td class="py-2 px-3 text-right">
+                                <form action="{{ route('obras.empleados.baja', [$obra->id, $asig->id]) }}"
+                                      method="POST"
+                                      onsubmit="return confirm('¿Dar de baja a este empleado en la obra?')">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button class="text-xs text-red-600 hover:text-red-800 font-medium">
+                                        Dar de baja
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="py-4 text-center text-slate-500">
+                                No hay empleados asignados actualmente a esta obra.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        {{-- HISTÓRICO --}}
+        @if($asignacionesHistoricas->count() > 0)
+            <h3 class="text-sm font-semibold text-slate-700 mt-6 mb-2">Historial de asignaciones</h3>
+            <div class="border rounded-xl overflow-hidden max-h-64 overflow-y-auto bg-white">
+                <table class="w-full text-xs">
                     <thead class="bg-slate-50">
                         <tr class="border-b text-slate-500">
                             <th class="py-2 px-3 text-left">Empleado</th>
-                            <th class="py-2 px-3 text-left">Puesto</th>
                             <th class="py-2 px-3 text-left">Alta</th>
+                            <th class="py-2 px-3 text-left">Baja</th>
                             <th class="py-2 px-3 text-left">Días</th>
-                            <th class="py-2 px-3 text-right">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($asignacionesActivas as $asig)
-                            <tr class="border-b hover:bg-slate-50">
-                                <td class="py-2 px-3">
-                                    {{ $asig->empleado->Nombre }} {{ $asig->empleado->Apellidos }}<br>
-                                    <span class="text-[11px] text-slate-400">
-                                        {{ $asig->empleado->Area }} | {{ $asig->empleado->Puesto }}
-                                    </span>
+                        @foreach($asignacionesHistoricas as $asig)
+                            <tr class="border-b">
+                                <td class="py-1 px-3">
+                                    {{ $asig->empleado->Nombre }} {{ $asig->empleado->Apellidos }}
                                 </td>
-                                <td class="py-2 px-3">
-                                    {{ $asig->puesto_en_obra ?? $asig->empleado->Puesto }}
-                                </td>
-                                <td class="py-2 px-3">
-                                    {{ $asig->fecha_alta?->format('d/m/Y') }}
-                                </td>
-                                <td class="py-2 px-3">
-                                    {{ $asig->dias_trabajados ?? $asig->fecha_alta?->diffInDays(now())+1 }}
-                                </td>
-                                <td class="py-2 px-3 text-right">
-                                    <form action="{{ route('obras.empleados.baja', [$obra->id, $asig->id]) }}"
-                                          method="POST"
-                                          onsubmit="return confirm('¿Dar de baja a este empleado en la obra?')">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button class="text-xs text-red-600 hover:text-red-800 font-medium">
-                                            Dar de baja
-                                        </button>
-                                    </form>
+                                <td class="py-1 px-3">{{ $asig->fecha_alta?->format('d/m/Y') }}</td>
+                                <td class="py-1 px-3">{{ $asig->fecha_baja?->format('d/m/Y') }}</td>
+                                <td class="py-1 px-3">
+                                    {{ $asig->dias_trabajados }}
                                 </td>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="py-4 text-center text-slate-500">
-                                    No hay empleados asignados actualmente a esta obra.
-                                </td>
-                            </tr>
-                        @endforelse
+                        @endforeach
                     </tbody>
                 </table>
             </div>
-
-            {{-- HISTÓRICO --}}
-            @if($asignacionesHistoricas->count() > 0)
-                <h3 class="text-sm font-semibold text-slate-700 mt-6 mb-2">Historial de asignaciones</h3>
-                <div class="border rounded-xl overflow-hidden max-h-64 overflow-y-auto">
-                    <table class="w-full text-xs">
-                        <thead class="bg-slate-50">
-                            <tr class="border-b text-slate-500">
-                                <th class="py-2 px-3 text-left">Empleado</th>
-                                <th class="py-2 px-3 text-left">Alta</th>
-                                <th class="py-2 px-3 text-left">Baja</th>
-                                <th class="py-2 px-3 text-left">Días</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($asignacionesHistoricas as $asig)
-                                <tr class="border-b">
-                                    <td class="py-1 px-3">
-                                        {{ $asig->empleado->Nombre }} {{ $asig->empleado->Apellidos }}
-                                    </td>
-                                    <td class="py-1 px-3">{{ $asig->fecha_alta?->format('d/m/Y') }}</td>
-                                    <td class="py-1 px-3">{{ $asig->fecha_baja?->format('d/m/Y') }}</td>
-                                    <td class="py-1 px-3">
-                                        {{ $asig->dias_trabajados }}
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
-
-        {{-- FORM PARA ASIGNAR NUEVO EMPLEADO --}}
-<div>
-    <h3 class="text-sm font-semibold text-slate-700 mb-3">Asignar empleado a esta obra</h3>
-
-    @if($empleadosAsignables->isEmpty())
-        <p class="text-sm text-slate-500">
-            No hay empleados disponibles sin asignación activa.
-        </p>
-    @else
-        <form id="form-asignar-empleado"
-              method="POST"
-              action="{{ route('obras.empleados.store', $obra) }}">
-            @csrf
-
-            <div class="grid md:grid-cols-3 gap-3">
-                {{-- Buscador de empleado --}}
-                <div class="relative">
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">
-                        Buscar empleado
-                    </label>
-
-                    {{-- Input visible donde el usuario escribe el nombre/apellido --}}
-                    <input type="text"
-                           id="buscador-empleado"
-                           autocomplete="off"
-                           placeholder="Escribe apellido o nombre"
-                           class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
-
-                    {{-- Input oculto que realmente se envía en el form --}}
-                    <input type="hidden" name="empleado_id" id="empleado_id" value="{{ old('empleado_id') }}">
-
-                    {{-- Contenedor para los resultados --}}
-                    <div id="resultados-empleado"
-                         class="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow text-sm max-h-60 overflow-y-auto hidden">
-                        {{-- Aquí se insertan los resultados por JS --}}
-                    </div>
-
-                    @error('empleado_id')
-                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Puesto en la obra --}}
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">
-                        Puesto en la obra
-                    </label>
-                    {{-- Rol en la obra (CANÓNICO) --}}
-                            <div>
-                                <!-- <label class="block text-xs font-semibold text-slate-600 mb-1">
-                                    Rol en la obra
-                                </label> -->
-
-                                <select name="rol_id"
-                                        class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
-                                    <option value="">Selecciona...</option>
-                                    @foreach($roles as $rol)
-                                        <option value="{{ $rol->id }}" @selected(old('rol_id') == $rol->id)>
-                                            {{ $rol->nombre }}
-                                        </option>
-                                    @endforeach
-                                </select>
-
-                                @error('rol_id')
-                                    <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                    <!-- <input type="text"
-                           name="puesto_en_obra"
-                           value="{{ old('puesto_en_obra') }}"
-                           class="w-full rounded-xl border-slate-200 text-sm px-3 py-2"> -->
-                    @error('puesto_en_obra')
-                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Notas --}}
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">
-                        Notas
-                    </label>
-                    <input type="text"
-                           name="notas"
-                           value="{{ old('notas') }}"
-                           class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
-                    @error('notas')
-                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                    @enderror
-                </div>
-            </div>
-
-            <div class="mt-4 flex justify-end">
-                <button type="submit"
-                        class="px-4 py-2 bg-teal-600 text-white text-sm rounded-xl hover:bg-teal-700">
-                    Asignar empleado
-                </button>
-            </div>
-        </form>
-    @endif
-</div>
+        @endif
+    </div>
 @endif
 {{-- TAB ASISTENCIAS --}}
 @if($tab === 'asistencias')

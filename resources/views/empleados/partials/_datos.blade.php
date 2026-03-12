@@ -118,14 +118,25 @@
                         @error('Area') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-medium text-slate-600">Puesto</label>
-                        <input type="text" name="Puesto"
-                               value="{{ old('Puesto', $empleado->Puesto) }}"
-                               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                                      focus:border-[#FFC107] focus:ring-[#FFC107]">
-                        @error('Puesto') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
-                    </div>
+                <div>
+    <label class="block text-xs font-medium text-slate-700">Puesto</label>
+
+    @php
+        $puestoSeleccionado = old('Puesto', $empleado->Puesto ?? '');
+    @endphp
+
+    <select name="Puesto"
+            class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                   focus:border-[#FFC107] focus:ring-[#FFC107]">
+        <option value="">Seleccione un puesto</option>
+
+        @foreach($roles as $rol)
+            <option value="{{ $rol->nombre }}" @selected($puestoSeleccionado === $rol->nombre)>
+                {{ $rol->nombre }}
+            </option>
+        @endforeach
+    </select>
+</div>
 
                     <div>
                         <label class="block text-xs font-medium text-slate-600">Fecha de nacimiento</label>

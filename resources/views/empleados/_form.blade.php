@@ -42,13 +42,24 @@
   @error('Area') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
 </div>
 
-    <div>
-        <label class="block text-xs font-medium text-slate-700">Puesto</label>
-        <input type="text" name="Puesto"
-               value="{{ old('Puesto', $empleado->Puesto ?? '') }}"
-               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                      focus:border-[#FFC107] focus:ring-[#FFC107]">
-    </div>
+   <div>
+    <label class="block text-xs font-medium text-slate-700">Puesto</label>
+    @php
+        $puestoSeleccionado = old('Puesto', $empleado->Puesto ?? '');
+    @endphp
+
+    <select name="Puesto"
+            class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                   focus:border-[#FFC107] focus:ring-[#FFC107]">
+        <option value="">Seleccione un puesto</option>
+
+        @foreach($roles as $rol)
+            <option value="{{ $rol->nombre }}" @selected($puestoSeleccionado === $rol->nombre)>
+                {{ $rol->nombre }}
+            </option>
+        @endforeach
+    </select>
+</div>
 
     {{-- Contacto --}}
     <div>
@@ -124,12 +135,13 @@
         <select name="Estatus"
                 class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
                        focus:border-[#FFC107] focus:ring-[#FFC107]">
-            @php
-                $estatus = old('Estatus', $empleado->Estatus ?? 'ACTIVO');
+          @php
+                $estatus = old('Estatus', $empleado->Estatus ?? 1);
             @endphp
-            <option value="ACTIVO" @selected($estatus === 'ACTIVO')>ACTIVO</option>
-            <option value="BAJA" @selected($estatus === 'BAJA')>BAJA</option>
-        </select>
+
+            <option value="1" @selected($estatus == 1)>ACTIVO</option>
+            <option value="0" @selected($estatus == 0)>BAJA</option>
+                    </select>
     </div>
 
     {{-- Notas --}}

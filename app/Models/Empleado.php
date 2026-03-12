@@ -24,6 +24,7 @@ class Empleado extends Model
         'Fecha_baja',
         'Area',
         'Puesto',
+        'puesto_base',
         'Telefono',
         'Celular',
         'Direccion',
