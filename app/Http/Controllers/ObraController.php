@@ -109,6 +109,7 @@ public function edit(Request $request, Obra $obra)
         'MECANICO',
         'CHOFER',
         'SUPERVISOR',
+        'OPERADOR GRUA'
     ];
 
     // Cargar relaciones principales de la obra
