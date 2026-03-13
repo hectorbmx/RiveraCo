@@ -243,20 +243,54 @@
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {{-- Empleado --}}
-                                <div>
+                               <div class="relative">
                                     <label class="block text-xs font-semibold text-slate-600 mb-1">
                                         Empleado <span class="text-red-500">*</span>
                                     </label>
-                                    <select name="empleado_id"
-                                            class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-                                            required>
-                                        <option value="">Selecciona un empleado...</option>
+
+                                    {{-- id real que se enviará al form --}}
+                                    <input type="hidden" name="empleado_id" id="empleado_id" required>
+
+                                    {{-- input visible para buscar --}}
+                                    <input
+                                        type="text"
+                                        id="empleado_search"
+                                        autocomplete="off"
+                                        placeholder="Buscar empleado por nombre o apellidos..."
+                                        class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                    >
+
+                                    {{-- empleado seleccionado --}}
+                                    <div id="empleado_selected" class="mt-2 hidden">
+                                        <div class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 text-sm border border-blue-200">
+                                            <span id="empleado_selected_text"></span>
+                                            <button type="button" id="clear_empleado" class="text-red-500 hover:text-red-700 font-semibold">
+                                                ×
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {{-- resultados --}}
+                                    <div
+                                        id="empleado_results"
+                                        class="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto hidden"
+                                    >
                                         @foreach($empleadosAsignables as $empleado)
-                                            <option value="{{ $empleado->id_Empleado }}">
-                                                {{ $empleado->Nombre . ' ' . $empleado->Apellidos ?? 'Empleado #' . $empleado->id_Empleado }}
-                                            </option>
+                                            @php
+                                                $nombreCompleto = trim(($empleado->Nombre ?? '') . ' ' . ($empleado->Apellidos ?? ''));
+                                                $texto = $nombreCompleto !== '' ? $nombreCompleto : 'Empleado #'.$empleado->id_Empleado;
+                                            @endphp
+
+                                            <button
+                                                type="button"
+                                                class="empleado-option w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                                                data-id="{{ $empleado->id_Empleado }}"
+                                                data-text="{{ $texto }}"
+                                            >
+                                                {{ $texto }}
+                                            </button>
                                         @endforeach
-                                    </select>
+                                    </div>
                                 </div>
 
                                 {{-- Fecha asignación --}}
@@ -268,6 +302,22 @@
                                            value="{{ now()->toDateString() }}"
                                            class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
                                 </div>
+                                <div>
+    <label class="block text-xs font-semibold text-slate-600 mb-1">
+        Km inicial <span class="text-red-500">*</span>
+    </label>
+    <input
+        type="number"
+        name="km_inicial"
+        min="0"
+        step="1"
+        value="{{ old('km_inicial', $kmSugeridoAsignacion ?? 0) }}"
+        class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+    >
+    <p class="mt-1 text-xs text-slate-500">
+        Se sugiere el último kilometraje conocido del vehículo. Puedes ajustarlo si esta asignación anterior fue solo administrativa.
+    </p>
+</div>
                             </div>
 
                             {{-- Notas --}}
@@ -763,3 +813,87 @@
         </div> {{-- FIN CONTENEDOR TABS --}}
     </div>
 @endsection
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('empleado_search');
+    const hiddenInput = document.getElementById('empleado_id');
+    const resultsBox = document.getElementById('empleado_results');
+    const options = Array.from(document.querySelectorAll('.empleado-option'));
+    const selectedBox = document.getElementById('empleado_selected');
+    const selectedText = document.getElementById('empleado_selected_text');
+    const clearBtn = document.getElementById('clear_empleado');
+
+    function showResults() {
+        resultsBox.classList.remove('hidden');
+    }
+
+    function hideResults() {
+        resultsBox.classList.add('hidden');
+    }
+
+    function filterOptions() {
+        const query = searchInput.value.toLowerCase().trim();
+        let visibles = 0;
+
+        options.forEach(option => {
+            const text = option.dataset.text.toLowerCase();
+            const match = text.includes(query);
+
+            option.classList.toggle('hidden', !match);
+            if (match) visibles++;
+        });
+
+        if (visibles > 0 && searchInput.value.trim() !== '') {
+            showResults();
+        } else {
+            hideResults();
+        }
+    }
+
+    function selectEmpleado(id, text) {
+        hiddenInput.value = id;
+        searchInput.value = text;
+        selectedText.textContent = text;
+        selectedBox.classList.remove('hidden');
+        hideResults();
+    }
+
+    function clearEmpleado() {
+        hiddenInput.value = '';
+        searchInput.value = '';
+        selectedText.textContent = '';
+        selectedBox.classList.add('hidden');
+
+        options.forEach(option => option.classList.remove('hidden'));
+    }
+
+    searchInput.addEventListener('focus', function () {
+        if (searchInput.value.trim() !== '') {
+            filterOptions();
+        }
+    });
+
+    searchInput.addEventListener('input', function () {
+        hiddenInput.value = '';
+        selectedBox.classList.add('hidden');
+        filterOptions();
+    });
+
+    options.forEach(option => {
+        option.addEventListener('click', function () {
+            selectEmpleado(this.dataset.id, this.dataset.text);
+        });
+    });
+
+    clearBtn.addEventListener('click', function () {
+        clearEmpleado();
+    });
+
+    document.addEventListener('click', function (e) {
+        const container = searchInput.closest('.relative');
+        if (!container.contains(e.target)) {
+            hideResults();
+        }
+    });
+});
+</script>

@@ -8,6 +8,8 @@ use App\Models\Empleado;
 use App\Models\SeguroVehiculo;
 use App\Models\Mantenimiento;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class VehiculoController extends Controller
 {
@@ -76,163 +78,218 @@ public function index()
      * Formulario edición
      */
     public function edit(Request $request, Vehiculo $vehiculo)
-    {
-        $tab = $request->query('tab', 'general');
+{
+    $tab = $request->query('tab', 'general');
 
-        // Valores por defecto para no romper la vista
-        $asignacionActual = null;
-        $historialAsignaciones = collect();
-        $empleadosAsignables = collect();
-        $polizaVigente   = null;
-        $historialSeguros = collect();
-        $mantenimientosVehiculo = collect();
-        $statsMantenimientos = [
-            'total'       => 0,
-            'pendiente'   => 0,
-            'en_proceso'  => 0,
-            'completado'  => 0,
-            'cancelado'   => 0,
-        ];
+    // Valores por defecto para no romper la vista
+    $asignacionActual = null;
+    $historialAsignaciones = collect();
+    $empleadosAsignables = collect();
+    $polizaVigente = null;
+    $historialSeguros = collect();
+    $mantenimientosVehiculo = collect();
+    $kmSugeridoAsignacion = 0;
 
-        if ($tab === 'asignacion') {
-            // Asignación actual (sin fecha_fin)
-            $asignacionActual = $vehiculo->asignaciones()
-                ->with('empleado')
-                ->whereNull('fecha_fin')
+    $statsMantenimientos = [
+        'total'       => 0,
+        'pendiente'   => 0,
+        'en_proceso'  => 0,
+        'completado'  => 0,
+        'cancelado'   => 0,
+    ];
+
+    if ($tab === 'asignacion') {
+        // Asignación actual
+        $asignacionActual = $vehiculo->asignaciones()
+            ->with('empleado')
+            ->whereNull('fecha_fin')
+            ->orderByDesc('fecha_asignacion')
+            ->first();
+
+        // Historial completo
+        $historialAsignaciones = $vehiculo->asignaciones()
+            ->with('empleado')
+            ->orderByDesc('fecha_asignacion')
+            ->get();
+
+        // Empleados asignables
+        $empleadosAsignables = Empleado::where('Estatus', '=', '1')
+            ->orderBy('Apellidos')
+            ->get();
+
+        // Km sugerido
+        if ($asignacionActual) {
+            $ultimoLog = DB::table('vehiculo_empleado_km_logs')
+                ->where('vehiculo_empleado_id', $asignacionActual->id)
+                ->orderByDesc('fecha')
+                ->orderByDesc('id')
+                ->value('km');
+
+            $kmSugeridoAsignacion = $ultimoLog
+                ?? $asignacionActual->km_final
+                ?? $asignacionActual->km_inicial
+                ?? 0;
+        } else {
+            $ultimaAsignacion = $vehiculo->asignaciones()
                 ->orderByDesc('fecha_asignacion')
+                ->orderByDesc('id')
                 ->first();
 
-            // Historial completo
-            $historialAsignaciones = $vehiculo->asignaciones()
-                ->with('empleado')
-                ->orderByDesc('fecha_asignacion')
-                ->get();
-
-            // Empleados para asignar (por ahora todos; luego podemos filtrar)
-            $empleadosAsignables = Empleado::where('Estatus','=','1')
-                ->orderBy('Apellidos')
-                ->get();
+            $kmSugeridoAsignacion = $ultimaAsignacion->km_final
+                ?? $ultimaAsignacion->km_inicial
+                ?? 0;
         }
-     if ($tab === 'seguro') {
-    $hoy = now()->toDateString();
-
-    // Póliza vigente real
-    $polizaVigente = $vehiculo->seguros()
-        ->where('estatus', '!=', 'cancelada')
-        ->whereDate('vigencia_desde', '<=', $hoy)
-        ->whereDate('vigencia_hasta', '>=', $hoy)
-        ->orderByDesc('vigencia_hasta')
-        ->first();
-
-    // Historial completo
-    $historialSeguros = $vehiculo->seguros()
-        ->orderByDesc('vigencia_hasta')
-        ->get();
-}
-
-        if ($tab === 'mantenimientos') {
-            $mantenimientosVehiculo = $vehiculo->mantenimientos()
-                ->with(['mecanico', 'obra'])
-                ->orderByDesc('fecha_programada')
-                ->orderByDesc('id')
-                ->get();
-
-            $statsMantenimientos['total']      = $mantenimientosVehiculo->count();
-            $statsMantenimientos['pendiente']  = $mantenimientosVehiculo->where('estatus', 'pendiente')->count();
-            $statsMantenimientos['en_proceso'] = $mantenimientosVehiculo->where('estatus', 'en_proceso')->count();
-            $statsMantenimientos['completado'] = $mantenimientosVehiculo->where('estatus', 'completado')->count();
-            $statsMantenimientos['cancelado']  = $mantenimientosVehiculo->where('estatus', 'cancelado')->count();
-        }
-        return view('vehiculos.edit', compact(
-            'vehiculo',
-            'tab',
-            'asignacionActual',
-            'historialAsignaciones',
-            'empleadosAsignables',
-            'polizaVigente',
-            'historialSeguros',
-            'mantenimientosVehiculo',
-            'statsMantenimientos'
-        ));
     }
 
-    //asignar seguros a un vehiculo
-//     public function guardarSeguro(Request $request, Vehiculo $vehiculo)
-// {
-//     $validated = $request->validate([
-//         'aseguradora'                => 'required|string|max:255',
-//         'numero_poliza'              => 'required|string|max:255',
-//         'tipo_cobertura'             => 'nullable|string|max:100',
-//         'fecha_inicio'               => 'required|date',
-//         'fecha_fin'                  => 'required|date|after_or_equal:fecha_inicio',
-//         'costo_anual'                => 'nullable|numeric|min:0',
-//         'estatus'                    => 'required|in:activa,vencida,cancelada',
-//         'archivo_poliza'             => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:4096',
-//         'notas'                      => 'nullable|string',
-//     ]);
+    if ($tab === 'seguro') {
+        $hoy = now()->toDateString();
 
-//     $rutaArchivo = null;
+        $polizaVigente = $vehiculo->seguros()
+            ->where('estatus', '!=', 'cancelada')
+            ->whereDate('vigencia_desde', '<=', $hoy)
+            ->whereDate('vigencia_hasta', '>=', $hoy)
+            ->orderByDesc('vigencia_hasta')
+            ->first();
 
-//     if ($request->hasFile('archivo_poliza')) {
-//         $rutaArchivo = $request->file('archivo_poliza')->store('seguros/documentos', 'public');
-//     }
+        $historialSeguros = $vehiculo->seguros()
+            ->orderByDesc('vigencia_hasta')
+            ->get();
+    }
 
-//     $estatus = match ($validated['estatus']) {
-//         'activa' => 'vigente',
-//         'vencida' => 'vencida',
-//         'cancelada' => 'cancelada',
-//         default => 'vigente',
-//     };
+    if ($tab === 'mantenimientos') {
+        $mantenimientosVehiculo = $vehiculo->mantenimientos()
+            ->with(['mecanico', 'obra'])
+            ->orderByDesc('fecha_programada')
+            ->orderByDesc('id')
+            ->get();
 
-//     $vehiculo->seguros()->create([
-//         'aseguradora' => $validated['aseguradora'],
-//         'poliza_numero' => $validated['numero_poliza'],
-//         'tipo_seguro' => $validated['tipo_cobertura'] ?? null,
-//         'costo' => $validated['costo_anual'] ?? 0,
-//         'moneda' => 'MXN',
-//         'vigencia_desde' => $validated['fecha_inicio'],
-//         'vigencia_hasta' => $validated['fecha_fin'],
-//         'estatus' => $estatus,
-//         'documento_path' => $rutaArchivo,
-//         'observaciones' => $validated['notas'] ?? null,
-//         'created_by' => auth()->id(),
-//         'updated_by' => auth()->id(),
-//     ]);
+        $statsMantenimientos['total']      = $mantenimientosVehiculo->count();
+        $statsMantenimientos['pendiente']  = $mantenimientosVehiculo->where('estatus', 'pendiente')->count();
+        $statsMantenimientos['en_proceso'] = $mantenimientosVehiculo->where('estatus', 'en_proceso')->count();
+        $statsMantenimientos['completado'] = $mantenimientosVehiculo->where('estatus', 'completado')->count();
+        $statsMantenimientos['cancelado']  = $mantenimientosVehiculo->where('estatus', 'cancelado')->count();
+    }
 
-//     return redirect()
-//         ->route('mantenimiento.vehiculos.edit', ['vehiculo' => $vehiculo->id, 'tab' => 'seguro'])
-//         ->with('success', 'Póliza de seguro registrada correctamente.');
-// }
+    return view('vehiculos.edit', compact(
+        'vehiculo',
+        'tab',
+        'asignacionActual',
+        'historialAsignaciones',
+        'empleadosAsignables',
+        'polizaVigente',
+        'historialSeguros',
+        'mantenimientosVehiculo',
+        'statsMantenimientos',
+        'kmSugeridoAsignacion'
+    ));
+}
+    
 
+public function asignar(Request $request, Vehiculo $vehiculo)
+{
+    $validated = $request->validate([
+        'empleado_id'      => 'required|integer|exists:empleados,id_Empleado',
+        'fecha_asignacion' => 'nullable|date',
+        'km_inicial'       => 'nullable|integer|min:0',
+        'notas'            => 'nullable|string',
+    ]);
 
-    public function asignar(Request $request, Vehiculo $vehiculo)
-    {
-        $validated = $request->validate([
-            'empleado_id'      => 'required|integer|exists:empleados,id_Empleado',
-            'fecha_asignacion' => 'nullable|date',
-            'notas'            => 'nullable|string',
-        ]);
+    DB::transaction(function () use ($vehiculo, $validated) {
+        $fechaAsignacion = $validated['fecha_asignacion'] ?? now()->toDateString();
 
-        // Cerrar cualquier asignación activa previa de este vehículo
-        $vehiculo->asignaciones()
+        // Asignación activa previa
+        $asignacionActiva = $vehiculo->asignaciones()
             ->whereNull('fecha_fin')
-            ->update([
-                'fecha_fin' => now()->toDateString(),
-            ]);
+            ->latest('fecha_asignacion')
+            ->first();
+
+        // Resolver km inicial
+        $kmInicial = $validated['km_inicial'] ?? null;
+
+        if ($kmInicial === null) {
+            $kmInicial = $this->resolverKmInicialAsignacion($vehiculo, $asignacionActiva);
+        }
+
+        // Fallback final duro
+        if ($kmInicial === null) {
+            $kmInicial = 0;
+        }
+
+        // Cerrar asignación previa si existe
+        if ($asignacionActiva) {
+            // Si no tiene km_final, intentar cerrarla con el km resuelto
+            if ($asignacionActiva->km_final === null) {
+                $asignacionActiva->km_final = $kmInicial;
+            }
+
+            $asignacionActiva->fecha_fin = $fechaAsignacion;
+            $asignacionActiva->save();
+        }
 
         // Crear nueva asignación
         VehiculoEmpleado::create([
             'vehiculo_id'      => $vehiculo->id,
             'empleado_id'      => $validated['empleado_id'],
-            'fecha_asignacion' => $validated['fecha_asignacion'] ?? now()->toDateString(),
+            'fecha_asignacion' => $fechaAsignacion,
+            'km_inicial'       => $kmInicial,
             'notas'            => $validated['notas'] ?? null,
         ]);
+    });
 
-        return redirect()
-            ->route('mantenimiento.vehiculos.edit', ['vehiculo' => $vehiculo->id, 'tab' => 'asignacion'])
-            ->with('success', 'Vehículo asignado correctamente al empleado.');
+    return redirect()
+        ->route('mantenimiento.vehiculos.edit', [
+            'vehiculo' => $vehiculo->id,
+            'tab' => 'asignacion',
+        ])
+        ->with('success', 'Vehículo asignado correctamente al empleado.');
+}
+
+/**
+ * Obtiene el mejor km disponible para iniciar una nueva asignación.
+ */
+protected function resolverKmInicialAsignacion(Vehiculo $vehiculo, ?VehiculoEmpleado $asignacionActiva = null): ?int
+{
+    $ultimoLog = DB::table('vehiculo_empleado_km_logs as logs')
+        ->join('vehiculo_empleado as ve', 've.id', '=', 'logs.vehiculo_empleado_id')
+        ->where('ve.vehiculo_id', $vehiculo->id)
+        ->orderByDesc('logs.fecha')
+        ->orderByDesc('logs.id')
+        ->value('logs.km');
+
+    if ($ultimoLog !== null) {
+        return (int) $ultimoLog;
     }
 
+    if ($asignacionActiva && $asignacionActiva->km_final !== null) {
+        return (int) $asignacionActiva->km_final;
+    }
+
+    if ($asignacionActiva && $asignacionActiva->km_inicial !== null) {
+        return (int) $asignacionActiva->km_inicial;
+    }
+
+    $ultimaAsignacionConKmFinal = $vehiculo->asignaciones()
+        ->whereNotNull('km_final')
+        ->orderByDesc('fecha_fin')
+        ->orderByDesc('id')
+        ->first();
+
+    if ($ultimaAsignacionConKmFinal) {
+        return (int) $ultimaAsignacionConKmFinal->km_final;
+    }
+
+    $ultimaAsignacionConKmInicial = $vehiculo->asignaciones()
+        ->whereNotNull('km_inicial')
+        ->orderByDesc('fecha_asignacion')
+        ->orderByDesc('id')
+        ->first();
+
+    if ($ultimaAsignacionConKmInicial) {
+        return (int) $ultimaAsignacionConKmInicial->km_inicial;
+    }
+
+    return null;
+}
 
 
     /**
