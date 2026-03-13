@@ -140,44 +140,57 @@ public function store(Request $request)
     //     return view('empleados.edit', compact('empleado'));
     // }
     public function edit(Request $request, Empleado $empleado)
-        {
-            $tab = $request->query('tab', 'datos');
+{
+    $tab = $request->query('tab', 'datos');
 
-             if ($tab === 'notas') {
-                    $empleado->load('notas.autor');
-                }
-             if ($tab === 'emergencia') {
-                $empleado->load('contactosEmergencia');
-                }
+    if ($tab === 'notas') {
+        $empleado->load('notas.autor');
+    }
 
-            $kardex = collect();
+    if ($tab === 'emergencia') {
+        $empleado->load('contactosEmergencia');
+    }
 
-            if ($tab === 'nomina') {
-                $empleado->load([
-                    'nominaRecibos.obra',
-                ]);
-            }
+    $kardex = collect();
+    $documentos = collect();
 
-            if ($tab === 'kardex') {
-                // ⚠️ Carga lo necesario para construir kardex
-                $empleado->load([
-                    'nominaRecibos.obra',
-                    // si ya existe relación:
-                    // 'nominaRecibos.pagosExtra',
-                ]);
+    if ($tab === 'nomina') {
+        $empleado->load([
+            'nominaRecibos.obra',
+        ]);
+    }
 
-                $kardex = app(EmpleadoKardexService::class)->build($empleado);
-            }
-            $areas = Area::where('activo', true)
-                        ->orderBy('nombre')
-                        ->get();
+    if ($tab === 'kardex') {
+        $empleado->load([
+            'nominaRecibos.obra',
+        ]);
 
-            $roles = \App\Models\CatalogoRol::orderBy('nombre')->get();
+        $kardex = app(EmpleadoKardexService::class)->build($empleado);
+    }
 
+    if ($tab === 'documentos') {
+        $empleado->load([
+            'documentos',
+        ]);
 
-                    return view('empleados.edit', compact('empleado', 'tab','kardex','areas','roles'));
-                }
+        $documentos = $empleado->documentos;
+    }
 
+    $areas = Area::where('activo', true)
+        ->orderBy('nombre')
+        ->get();
+
+    $roles = \App\Models\CatalogoRol::orderBy('nombre')->get();
+
+    return view('empleados.edit', compact(
+        'empleado',
+        'tab',
+        'kardex',
+        'documentos',
+        'areas',
+        'roles'
+    ));
+}
 
     // public function update(Request $request, Empleado $empleado)
     // {

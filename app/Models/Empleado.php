@@ -162,5 +162,10 @@ public function getAreaIdAttribute()
         return $this->hasMany(VehiculoObra::class, 'empleado_id', 'id_Empleado');
     }
 
-
+        public function documentos()
+        {
+            return $this->hasMany(\App\Models\EmpleadoDocumento::class, 'empleado_id', 'id_Empleado')
+                ->orderByDesc('vigente')
+                ->orderByDesc('created_at');
+        }
 }

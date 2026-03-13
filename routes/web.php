@@ -26,6 +26,7 @@ use App\Http\Controllers\OrdenCompraController;
 use App\Http\Controllers\OrdenCompraDetalleController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\ProductoController;
+use App\Http\Controllers\EmpleadoDocumentoController;
 
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Admin\EmpresaSecurityController;
@@ -458,6 +459,12 @@ Route::middleware('auth','verified')->group(function () {
 
     Route::delete('empleados/{empleado}/contactos/{contacto}', [EmpleadoContactoEmergenciaController::class, 'destroy'])
         ->name('empleados.contactos.destroy');
+
+    Route::post('empleados/{empleado}/documentos', [EmpleadoDocumentoController::class, 'store'])
+        ->name('empleados.documentos.store');
+
+    Route::delete('empleados/{empleado}/documentos/{documento}', [EmpleadoDocumentoController::class, 'destroy'])
+        ->name('empleados.documentos.destroy');
 
 
     Route::get('nomina/generador', [NominaGeneradorController::class, 'index'])

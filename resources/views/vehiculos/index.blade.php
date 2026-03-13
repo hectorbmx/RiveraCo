@@ -34,7 +34,7 @@
                         <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Vehículo</th>
                         <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Placas</th>
                         <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Asignado a</th>
-                        <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Asignado</th>
+                        <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Año</th>
                         <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Serie</th>
                         <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Tipo</th>
                         <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">KM</th>
@@ -57,13 +57,7 @@
                 <span class="font-medium text-slate-800">
                     {{ $vehiculo->marca }} {{ $vehiculo->modelo }}
                 </span>
-                <span class="text-xs text-slate-500">
-                    @if($vehiculo->anio)
-                        Año {{ $vehiculo->anio }}
-                    @else
-                        Sin año
-                    @endif
-                </span>
+              
             </div>
         </td>
 
@@ -81,21 +75,14 @@
             @endif
         </td>
 
-        {{-- Columna asignado --}}
+        {{-- Columna año vehiculo --}}
         <td class="px-4 py-2 text-center">
-            @php
-                $asignado = $vehiculo->asignacionActual ? true : false;
-            @endphp
-
-            @if($asignado)
+            
                 <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                    Sí
+                    {{ $vehiculo->anio }}
                 </span>
-            @else
-                <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
-                    No
-                </span>
-            @endif
+            
+            
         </td>
         <td class="px-4 py-2 text-center">{{ $vehiculo->serie }}</td>
 

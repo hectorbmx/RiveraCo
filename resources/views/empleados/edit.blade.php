@@ -38,6 +38,7 @@
                 'contrato'  => 'Contrato',
                 'nomina'    => 'Nómina',
                 'kardex'    => 'Kardex',
+                'documentos'=> 'Documentos',
             ];
         @endphp
 
@@ -97,6 +98,13 @@
         @if($tab === 'kardex')
         @include('empleados.partials._kardex', ['empleado' => $empleado, 'kardex' => $kardex ?? collect()])
         @endif
+         {{-- TAB: DOCUMENTOS --}}
+     @if($tab === 'documentos')
+            @include('empleados.partials._documentos', [
+                    'empleado' => $empleado,
+                    'documentos' => $documentos ?? collect(),
+                ])
+    @endif
 
     </div>
 </div>
