@@ -802,13 +802,235 @@
 
 
             {{-- TAB: DOCUMENTOS --}}
-            @if($tab === 'documentos')
-                <h2 class="text-lg font-semibold mb-4">Documentos del vehículo</h2>
-                <p class="text-sm text-slate-500">
-                    Aquí podrás subir y gestionar tarjeta de circulación, verificaciones, tenencias y otros documentos del vehículo.
-                </p>
+         {{-- TAB: DOCUMENTOS --}}
+@if($tab === 'documentos')
+    <div class="space-y-6">
+        <div>
+            <h2 class="text-lg font-semibold mb-1">Documentos del vehículo</h2>
+            <p class="text-sm text-slate-500">
+                Aquí podrás subir y consultar la tarjeta de circulación del vehículo.
+            </p>
+        </div>
+
+        @if(session('success'))
+            <div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <ul class="list-disc pl-5 space-y-1">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        {{-- Documento vigente --}}
+        <div class="rounded-xl border bg-white p-5 shadow-sm">
+            <h3 class="text-base font-semibold mb-4">Tarjeta de circulación vigente</h3>
+
+            @php
+                $tarjetaVigente = $vehiculo->documentos
+                    ->where('tipo', 'tarjeta_circulacion')
+                    ->where('vigente', true)
+                    ->sortByDesc('created_at')
+                    ->first();
+            @endphp
+
+            @if($tarjetaVigente)
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span class="block text-slate-500">Archivo</span>
+                        <a href="{{ asset('storage/' . $tarjetaVigente->archivo_path) }}"
+                           target="_blank"
+                           class="text-blue-600 hover:underline">
+                            Ver documento
+                        </a>
+                    </div>
+
+                    <div>
+                        <span class="block text-slate-500">Nombre original</span>
+                        <span>{{ $tarjetaVigente->nombre_original ?: '—' }}</span>
+                    </div>
+
+                    <div>
+                        <span class="block text-slate-500">Fecha del documento</span>
+                        <span>{{ $tarjetaVigente->fecha_documento ? $tarjetaVigente->fecha_documento->format('d/m/Y') : '—' }}</span>
+                    </div>
+
+                    <div>
+                        <span class="block text-slate-500">Fecha de vencimiento</span>
+                        <span>{{ $tarjetaVigente->fecha_vencimiento ? $tarjetaVigente->fecha_vencimiento->format('d/m/Y') : '—' }}</span>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <span class="block text-slate-500">Observaciones</span>
+                        <span>{{ $tarjetaVigente->observaciones ?: '—' }}</span>
+                    </div>
+                </div>
+            @else
+                <p class="text-sm text-slate-500">No hay una tarjeta de circulación vigente cargada.</p>
             @endif
-            {{-- FIN TAB: DOCUMENTOS --}}
+        </div>
+
+        {{-- Formulario de carga --}}
+        <div class="rounded-xl border bg-white p-5 shadow-sm">
+            <h3 class="text-base font-semibold mb-4">Subir nueva tarjeta de circulación</h3>
+
+            <form action="{{ route('vehiculos.documentos.store', $vehiculo) }}"
+                  method="POST"
+                  enctype="multipart/form-data"
+                  class="space-y-4">
+                @csrf
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Archivo
+                    </label>
+                    <input
+                        type="file"
+                        name="archivo"
+                        accept=".pdf,.jpg,.jpeg,.png,.webp"
+                        required
+                        class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    >
+                    <p class="mt-1 text-xs text-slate-500">
+                        Formatos permitidos: PDF, JPG, JPEG, PNG, WEBP. Máximo 10 MB.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            Fecha del documento
+                        </label>
+                        <input
+                            type="date"
+                            name="fecha_documento"
+                            value="{{ old('fecha_documento') }}"
+                            class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            Fecha de vencimiento
+                        </label>
+                        <input
+                            type="date"
+                            name="fecha_vencimiento"
+                            value="{{ old('fecha_vencimiento') }}"
+                            class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        >
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Observaciones
+                    </label>
+                    <textarea
+                        name="observaciones"
+                        rows="3"
+                        class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    >{{ old('observaciones') }}</textarea>
+                </div>
+
+                <div class="flex justify-end">
+                    <button
+                        type="submit"
+                        class="inline-flex items-center rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-medium text-white hover:bg-[#163a7a]"
+                    >
+                        Subir documento
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {{-- Historial --}}
+        <div class="rounded-xl border bg-white p-5 shadow-sm">
+            <h3 class="text-base font-semibold mb-4">Historial de documentos</h3>
+
+            @php
+                $documentos = $vehiculo->documentos
+                    ->where('tipo', 'tarjeta_circulacion')
+                    ->sortByDesc('created_at');
+            @endphp
+
+            @if($documentos->count())
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead>
+                            <tr class="border-b bg-slate-50 text-left">
+                                <th class="px-4 py-3 font-semibold text-slate-700">Fecha carga</th>
+                                <th class="px-4 py-3 font-semibold text-slate-700">Documento</th>
+                                <th class="px-4 py-3 font-semibold text-slate-700">Fecha documento</th>
+                                <th class="px-4 py-3 font-semibold text-slate-700">Vencimiento</th>
+                                <th class="px-4 py-3 font-semibold text-slate-700">Vigente</th>
+                                <th class="px-4 py-3 font-semibold text-slate-700 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($documentos as $documento)
+                                <tr class="border-b">
+                                    <td class="px-4 py-3">
+                                        {{ $documento->created_at?->format('d/m/Y H:i') ?? '—' }}
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <a href="{{ asset('storage/' . $documento->archivo_path) }}"
+                                           target="_blank"
+                                           class="text-blue-600 hover:underline">
+                                            {{ $documento->nombre_original ?: 'Ver archivo' }}
+                                        </a>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        {{ $documento->fecha_documento ? $documento->fecha_documento->format('d/m/Y') : '—' }}
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        {{ $documento->fecha_vencimiento ? $documento->fecha_vencimiento->format('d/m/Y') : '—' }}
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        @if($documento->vigente)
+                                            <span class="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
+                                                Sí
+                                            </span>
+                                        @else
+                                            <span class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+                                                No
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-right">
+                                        <form action="{{ route('vehiculos.documentos.destroy', [$vehiculo, $documento]) }}"
+                                              method="POST"
+                                              onsubmit="return confirm('¿Deseas eliminar este documento?');"
+                                              class="inline-block">
+                                            @csrf
+                                            @method('DELETE')
+
+                                            <button
+                                                type="submit"
+                                                class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-100"
+                                            >
+                                                Eliminar
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <p class="text-sm text-slate-500">Aún no hay documentos cargados.</p>
+            @endif
+        </div>
+    </div>
+@endif
+{{-- FIN TAB: DOCUMENTOS --}}
 
         </div> {{-- FIN CONTENEDOR TABS --}}
     </div>

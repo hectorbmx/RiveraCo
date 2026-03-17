@@ -55,15 +55,26 @@ class Vehiculo extends Model
     }
 
     // Documentos (tarjeta circulación, verificación, etc.)
-    public function documentos()
-    {
-        return $this->hasMany(DocumentoVehiculo::class, 'vehiculo_id');
-    }
+    // public function documentos()
+    // {
+    //     return $this->hasMany(DocumentoVehiculo::class, 'vehiculo_id');
+    // }
     public function obras()
     {
         return $this->hasMany(VehiculoObra::class, 'vehiculo_id');
     }
+    public function documentos()
+    {
+        return $this->hasMany(VehiculoDocumento::class);
+    }
 
+    public function documentoTarjetaCirculacionVigente()
+    {
+        return $this->hasOne(VehiculoDocumento::class)
+            ->where('tipo', 'tarjeta_circulacion')
+            ->where('vigente', true)
+            ->latestOfMany();
+    }
    
 
 }

@@ -37,12 +37,15 @@ use App\Http\Controllers\ObraMaquinaHorasController;
 use App\Http\Controllers\FacturaController;
 use App\Http\Controllers\EmpresaConfigMaquinaController;
 use App\Http\Controllers\ReportesController;
-use App\Http\Controllers\MaquinasReporteDiarioController;
-use App\Http\Controllers\Maquinas\MaquinaSeguroController;
-use App\Http\Controllers\Vehiculos\VehiculoSeguroController;
-
 use App\Http\Controllers\SnapshotsController;
 use App\Http\Controllers\CatalogoRolController;
+use App\Http\Controllers\MaquinasReporteDiarioController;
+
+use App\Http\Controllers\Maquinas\MaquinaSeguroController;
+use App\Http\Controllers\Vehiculos\VehiculoSeguroController;
+use App\Http\Controllers\Vehiculos\VehiculoDocumentoController;
+
+
 use App\Http\Controllers\Nomina\NominaCorridaController;
 use App\Http\Controllers\Inventario\InventarioStockController;
 use App\Http\Controllers\Inventario\InventarioKardexController;
@@ -392,6 +395,14 @@ Route::middleware('auth','verified')->group(function () {
             Route::post('/', [VehiculoSeguroController::class, 'store'])->name('store');
             Route::get('/edit/{seguro}', [VehiculoSeguroController::class, 'edit'])->name('edit');
             Route::put('/{seguro}', [VehiculoSeguroController::class, 'update'])->name('update');
+    });
+
+    Route::prefix('vehiculos/{vehiculo}/documentos')->name('vehiculos.documentos.')->group(function () {
+
+        Route::post('/', [VehiculoDocumentoController::class, 'store'])->name('store');
+
+        Route::delete('/{documento}', [VehiculoDocumentoController::class, 'destroy'])->name('destroy');
+
     });
 
     Route::prefix('obras/{obra}')
