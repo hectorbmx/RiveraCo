@@ -180,7 +180,7 @@ public function login(Request $request)
         ->where('activo', 1)
         ->whereNull('fecha_baja')
         ->orderBy('id')
-        ->limit(5)
+        
         ->get()
         ->map(function ($oe) {
             return [
