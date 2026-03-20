@@ -7,6 +7,7 @@ use App\Models\Empleado; // AJUSTA: este es el modelo de tu tabla empleados
 use App\Models\ObraEmpleado;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 
 class PersonalGerencialController extends Controller
@@ -158,6 +159,7 @@ public function show(Empleado $empleado)
     $empleado->load([
         'areaRef:id,nombre', 
         'obraActiva.cliente', // Por si quieres mostrar el cliente de la obra
+        'contactosEmergencia', // Contactos de emergencia
     ]);
 
     // Procesamos la foto igual que en el index
@@ -168,12 +170,31 @@ public function show(Empleado $empleado)
             ? $empleado->foto 
             : asset('storage/' . ltrim($path, '/'));
     }
+    $antiguedad = null;
 
+    if ($empleado->Fecha_ingreso) {
+        $fechaIngreso = Carbon::parse($empleado->Fecha_ingreso);
+        $hoy = now();
+
+        $antiguedad = [
+            'anios' => $fechaIngreso->diffInYears($hoy),
+            'meses' => $fechaIngreso->copy()->addYears($fechaIngreso->diffInYears($hoy))->diffInMonths($hoy),
+            'dias' => $fechaIngreso->copy()->addMonths($fechaIngreso->diffInMonths($hoy))->diffInDays($hoy),
+            'texto' => $fechaIngreso->diffForHumans($hoy, [
+                'parts' => 3,
+                'short' => false,
+                'syntax' => Carbon::DIFF_ABSOLUTE,
+            ]),
+        ];
+    }
     return response()->json([
         'ok' => true,
         'data' => [
             'id' => (int) $empleado->id_Empleado,
             'nombre_completo' => $empleado->nombre_completo,
+            'Direccion' => $empleado->Direccion,
+            'Telefono' => $empleado->Telefono,
+            'Celular' => $empleado->Celular,
             'puesto' => $empleado->Puesto,
             'sueldo' => $empleado->Sueldo,
             'complemento' => $empleado->Complemento,
@@ -185,9 +206,14 @@ public function show(Empleado $empleado)
             'curp' => $empleado->CURP,
             'rfc' => $empleado->RFC,
             'fecha_ingreso' => $empleado->Fecha_ingreso,
+            'antiguedad' => $antiguedad,
             'estatus' => (int) $empleado->Estatus,
             'foto_url' => $fotoUrl,
-            'area' => $empleado->area,
+            // 'area' => $empleado->area,
+            'area' => $empleado->areaRef ? [
+                'id' => $empleado->areaRef->id,
+                'nombre' => $empleado->areaRef->nombre,
+            ] : null,
             'obra_actual' => $empleado->obraActiva->first() ? [
                 'id' => $empleado->obraActiva->first()->id,
                 'nombre' => $empleado->obraActiva->first()->nombre,
@@ -195,6 +221,17 @@ public function show(Empleado $empleado)
                 'puesto_en_obra' => $empleado->obraActiva->first()->pivot->puesto_en_obra ?? null,
                 'fecha_asignacion' => $empleado->obraActiva->first()->pivot->created_at ?? null,
             ] : null,
+            'contactos_emergencia' => $empleado->contactosEmergencia->map(function ($contacto) {
+                    return [
+                        'id' => (int) $contacto->id,
+                        'nombre' => $contacto->nombre,
+                        'parentesco' => $contacto->parentesco,
+                        'telefono' => $contacto->telefono,
+                        'celular' => $contacto->celular,
+                        'es_principal' => (bool) $contacto->es_principal,
+                        'notas' => $contacto->notas,
+                    ];
+                })->values(),
         ]
     ]);
 }
