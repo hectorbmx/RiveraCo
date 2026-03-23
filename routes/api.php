@@ -15,7 +15,8 @@ use App\Http\Controllers\Api\V1\Gerencial\DashboardGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\InventarioKardexGerencialController;
 use App\Http\Controllers\Integrations\ContpaqiFacturaImportController;
 use App\Http\Controllers\Api\V1\AttendanceIngestController;
-           
+use App\Http\Controllers\Api\V1\Attendance\AttendanceApiController;
+
 
 
 /*
@@ -66,6 +67,10 @@ Route::prefix('v1')->group(function () {
         Route::post('vehiculos/km-log', [VehiculoKmController::class, 'store']);
     
         Route::post('obras/{obra}/comisiones', [ComisionController::class, 'store']);
+
+        Route::get('attendance/logs', [AttendanceApiController::class, 'index']);
+        Route::get('attendance/employees/search', [AttendanceApiController::class, 'searchEmployees']);
+        Route::get('attendance/employees/{employee}/summary', [AttendanceApiController::class, 'employeeSummary']);
 
         //acceso gerencial
           Route::prefix('gerencial')->middleware('permission:app.gerencial.access')->group(function () {
