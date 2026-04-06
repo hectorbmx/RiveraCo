@@ -15,39 +15,52 @@ use Illuminate\Support\Str;
 
 class EmpleadoController extends Controller
 {
-   public function index(Request $request)
+
+
+public function index(Request $request)
 {
-    $search = $request->get('q');
+    $search  = $request->get('q');
     $estatus = $request->get('estatus'); // activo / baja / todos
+    $area    = $request->get('area');    // id de area
 
-    $empleados = Empleado::query()
+    $areas = Area::query()
+        ->where('activo', 1)
+        ->orderBy('nombre')
+        ->get(['id', 'nombre', 'codigo']);
 
-        // BUSCADOR
+    $empleados = Empleado::with('areaRef')
         ->when($search, function ($q) use ($search) {
             $q->where(function($q) use ($search) {
                 $q->where('Nombre', 'like', "%{$search}%")
                   ->orWhere('Apellidos', 'like', "%{$search}%")
                   ->orWhere('Puesto', 'like', "%{$search}%")
-                  ->orWhere('Area', 'like', "%{$search}%");
+                  ->orWhereHas('areaRef', function ($areaQ) use ($search) {
+                      $areaQ->where('nombre', 'like', "%{$search}%")
+                            ->orWhere('codigo', 'like', "%{$search}%");
+                  });
             });
         })
 
-        // FILTRO POR ESTATUS
         ->when($estatus === 'activo', function ($q) {
-            $q->where('Estatus', '=', 1);
+            $q->where('Estatus', 1);
         })
         ->when($estatus === 'baja', function ($q) {
-            $q->where('Estatus', '=', 2);
+            $q->where('Estatus', 2);
+        })
+
+        ->when($area, function ($q) use ($area) {
+            $q->where('Area', $area);
         })
 
         ->orderBy('Nombre')
         ->paginate(15)
         ->appends([
             'q' => $search,
-            'estatus' => $estatus
+            'estatus' => $estatus,
+            'area' => $area,
         ]);
 
-    return view('empleados.index', compact('empleados', 'search', 'estatus'));
+    return view('empleados.index', compact('empleados', 'search', 'estatus', 'areas', 'area'));
 }
 
 public function create()

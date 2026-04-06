@@ -51,7 +51,21 @@
             </a>
         </div>
     </div>
+<div class="flex flex-wrap items-center gap-2 mb-4">
+    <a href="{{ route('empleados.index', array_merge(request()->except('page', 'area'), ['area' => null])) }}"
+       class="px-3 py-1.5 rounded-full text-sm font-medium border transition
+              {{ empty($area) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}">
+        Todas
+    </a>
 
+    @foreach($areas as $item)
+        <a href="{{ route('empleados.index', array_merge(request()->except('page'), ['area' => $item->id])) }}"
+           class="px-3 py-1.5 rounded-full text-sm font-medium border transition
+                  {{ (string)$area === (string)$item->id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}">
+            {{ $item->nombre }}
+        </a>
+    @endforeach
+</div>
     {{-- Mensaje flash --}}
     @if(session('success'))
         <div class="mb-4 p-3 rounded-lg bg-green-100 text-green-700 text-sm">
@@ -84,7 +98,8 @@
                                 {{ $emp->Fecha_ingreso ? $emp->Fecha_ingreso->format('d/m/Y') : '-' }}
                             </span>
                         </td>
-                        <td class="py-2 px-3">{{ $emp->Area ?? '-' }}</td>
+                        <!-- <td class="py-2 px-3">{{ $emp->Area ?? '-' }}</td> -->
+                        <td class="py-2 px-3">{{ $emp->areaRef->nombre ?? '-' }}</td>
                         <td class="py-2 px-3">{{ $emp->Puesto ?? '-' }}</td>
                         <td class="py-2 px-3">
                             @if(!is_null($emp->Sueldo_real ?? $emp->Sueldo))
