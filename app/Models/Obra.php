@@ -141,6 +141,28 @@ class Obra extends Model
         return $this->hasMany(VehiculoObra::class, 'obra_id');
     }
 
+   public function presupuestos_vinculados()
+    {
+        // Apuntamos a la cabecera 'Presupuesto' a través de la tabla pivote 'obra_presupuesto'
+        return $this->belongsToMany(Presupuesto::class, 'obra_presupuesto', 'obra_id', 'presupuesto_id');
+    }
+// app/Models/Obra.php
 
+    public function getSemanasTotalesAttribute()
+        {
+            if (!$this->fecha_inicio_programada || !$this->fecha_fin_programada) {
+                return 0;
+            }
 
+            $inicio = \Carbon\Carbon::parse($this->fecha_inicio_programada);
+            $fin = \Carbon\Carbon::parse($this->fecha_fin_programada);
+
+            // diffInWeeks nos da la diferencia, +1 para incluir la semana de inicio
+            return $inicio->diffInWeeks($fin) + 1;
+        }
+
+        public function planeacionGastos()
+    {
+        return $this->hasMany(ObraPlaneacionGasto::class);
+    }
 }

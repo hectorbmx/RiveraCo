@@ -10,11 +10,13 @@ use App\Models\Cliente;
 use App\Models\User;
 use App\Models\Empleado;
 use App\Models\ObraEmpleado;
+use App\Models\ObraPlaneacionGasto;
 use App\Models\Comision;
 use App\Models\ComisionDetalle;
 use App\Models\ObraMaquina;
 use App\Models\Maquina;
 use App\Models\Pila;
+use App\Models\Presupuesto;
 use App\Models\ObraPila;
 use App\Models\CatalogoPila;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +24,7 @@ use App\Models\ObraMaquinaRegistro;
 use App\Models\CatalogoActividadComision;
 use App\Models\ObraAsistencia;
 use Carbon\Carbon;
+
 
 
 
@@ -85,7 +88,17 @@ public function edit(Request $request, Obra $obra)
 
     $desde =$request->query('asist_desde');
     $hasta =$request->query('asist_hasta');
+    $semanas = $obra->semanas_totales;
     
+
+   // En ObraController.php -> edit
+        $planeacion = $obra->planeacionGastos->mapToGroups(function ($item) {
+            // Creamos una llave única combinando el tipo de ID y la semana
+            $key = ($item->presupuesto_detalle_id ?? 'pila_' . $item->presupuesto_pila_id);
+            return [$key => $item];
+        })->map(function ($group) {
+            return $group->keyBy('numero_semana');
+        });
 
     if (!$desde && !$hasta) {
     $start = Carbon::now('America/Mexico_City')->startOfWeek(Carbon::MONDAY);
@@ -120,9 +133,20 @@ public function edit(Request $request, Obra $obra)
         'presupuestos',
         'empleadosAsignados.empleado',
         'maquinasAsignadas.maquina',
+        'presupuestos',
+        'presupuestos_vinculados.resumenes',
+        'presupuestos_vinculados.pilas'
     ]);
 
     $tab = $request->query('tab', 'general');
+
+   // Cambiamos $id por $obra->id para evitar el error de variable indefinida
+$presupuestosDisponibles = Presupuesto::whereDoesntHave('obras', function($query) use ($obra) {
+    $query->where('obras.id', $obra->id);
+})
+// Usamos el nombre del cliente de la relación de la obra
+// ->where('nombre_cliente', $obra->cliente->nombre) 
+->get();
 
     // Asignaciones activas e histórico (de esta obra)
     $asignaciones           = $obra->empleadosAsignados;
@@ -518,6 +542,10 @@ return view('obras.edit', [
 'weekDays' => $weekDays,
 'asistenciasSemana' => $asistenciasSemana,
 'daysCount' => $daysCount,
+'presupuestosDisponibles'     => $presupuestosDisponibles,
+'semanas' => $semanas,
+'planeacion' => $planeacion
+
 
 
     ]);
@@ -568,4 +596,49 @@ return view('obras.edit', [
         return redirect()->route('obras.index')
             ->with('success', 'Obra eliminada correctamente.');
     }
+
+    // En ObraController.php
+
+ public function vincularPresupuesto(Request $request, $id)
+{
+    $obra = \App\Models\Obra::findOrFail($id);
+    
+    if ($request->has('presupuestos')) {
+        // attach añade los registros a la tabla pivote obra_presupuesto
+        $obra->presupuestos_vinculados()->attach($request->presupuestos);
+    }
+
+    return redirect()->route('obras.edit', ['obra' => $id, 'tab' => 'presupuestos'])
+                     ->with('success', 'Presupuesto vinculado correctamente.');
+}
+
+public function guardarPlaneacion(Request $request, $id)
+{
+    $obra = Obra::findOrFail($id);
+    $datos = $request->input('plan', []);
+
+    foreach ($datos as $tipo => $items) {
+        foreach ($items as $item_id => $semanas) {
+            foreach ($semanas as $numero_semana => $monto) {
+                // Solo guardamos si el monto es mayor a 0 o si ya existía para permitir borrar
+                if ($monto > 0 || ObraPlaneacionGasto::where('obra_id', $id)->where('numero_semana', $numero_semana)->exists()) {
+                    ObraPlaneacionGasto::updateOrCreate(
+                        [
+                            'obra_id' => $id,
+                            'presupuesto_detalle_id' => ($tipo === 'detalle') ? $item_id : null,
+                            'presupuesto_pila_id' => ($tipo === 'pila') ? $item_id : null,
+                            'numero_semana' => $numero_semana,
+                        ],
+                        [
+                            'monto_programado' => $monto ?? 0
+                        ]
+                    );
+                }
+            }
+        }
+    }
+
+    return redirect()->route('obras.edit', ['obra' => $id, 'tab' => 'planeacion'])
+                     ->with('success', 'Planeación guardada correctamente.');
+}
 }

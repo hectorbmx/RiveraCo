@@ -120,6 +120,16 @@ Route::middleware('auth','verified')->group(function () {
             Route::get('facturas',[FacturaController::class,'index'])->name('facturas.index');
             
     });
+
+    Route::prefix('presupuesto')->group(function(){
+        Route::get('presupuestos', [App\Http\Controllers\PresupuestoController::class, 'index'])->name('presupuesto.index');
+        // Ruta para ver el detalle de uno específico (la usaremos después)
+        Route::get('presupuestos/{id}', [App\Http\Controllers\PresupuestoController::class, 'show'])->name('presupuesto.show');
+        Route::get('presupuestos/{id}/pdf', [App\Http\Controllers\PresupuestoController::class, 'exportPdf'])->name('presupuesto.pdf');
+     
+        });
+
+
    Route::prefix('attendance')->group(function () {
         Route::get('logs', [AttendanceWebController::class, 'index'])->name('attendance.logs.index');
         Route::get('employees/{employee}', [AttendanceWebController::class, 'showEmployee'])->name('attendance.employees.show');
@@ -259,7 +269,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::resource('clientes', ClienteController::class)->except(['show']);
     Route::resource('obras', ObraController::class)->except(['show']);
 
-    Route::resource('obras', ObraController::class)->except(['show']);
+    // Route::resource('obras', ObraController::class)->except(['show']);
 
     // Contratos de obra (solo store y destroy por ahora)
     Route::post('obras/{obra}/contratos', [ObraContratoController::class, 'store'])
@@ -300,6 +310,11 @@ Route::middleware('auth','verified')->group(function () {
     Route::get('obras/{obra}/maquinaria/{obraMaquina}/horas/create',[ObraMaquinaHorasController::class,'create'])->name('obras.horas_maquina.create');
     Route::post('obras/{obra}/maquinaria/{obraMaquina}/horas',[ObraMaquinaHorasController::class, 'store'])->name('obras.horas_maquina.store');
         
+// routes/web.php
+    Route::post('obras/{id}/vincular-presupuesto', [ObraController::class, 'vincularPresupuesto'])->name('obras.vincularPresupuesto');
+    // Rutas de Obras
+    Route::post('obras/{obra}/guardar-planeacion', [ObraController::class, 'guardarPlaneacion'])->name('obras.guardarPlaneacion');
+
     Route::resource('ordenes_compra', OrdenCompraController::class)->except(['show','destroy']);
 
     Route::post('ordenes_compra/{id}/autorizar', [OrdenCompraController::class, 'autorizar'])

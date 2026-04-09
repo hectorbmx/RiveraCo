@@ -17,7 +17,7 @@ use App\Http\Controllers\Integrations\ContpaqiFacturaImportController;
 use App\Http\Controllers\Api\V1\AttendanceIngestController;
 use App\Http\Controllers\Api\V1\Attendance\AttendanceApiController;
 
-
+use App\Http\Controllers\Api\V1\PresupuestoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,6 +33,8 @@ use App\Http\Controllers\Api\V1\Attendance\AttendanceApiController;
 // Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 //     return $request->user();
 // });
+
+Route::post('/presupuestos/sync', [PresupuestoController::class, 'store']);
 
 Route::post('/v1/attendance/devices/{serial}/ingest', [AttendanceIngestController::class, 'ingest']);
 

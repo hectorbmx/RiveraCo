@@ -33,6 +33,7 @@
             'contratos'    => 'Contratos',
             'planos'       => 'Planos',
             'presupuestos' => 'Presupuestos',
+            'planeacion'   => 'Planeacion',
             'pilas'        => 'Pilas',
             'empleados'    => 'Empleados',
             'maquinaria'   => 'Maquinaria',
@@ -784,7 +785,7 @@
 
 
        {{-- TAB: PRESUPUESTOS --}}
-@if($tab === 'presupuestos')
+<!-- @if($tab === 'presupuestos')
     <h2 class="text-lg font-semibold mb-4">Presupuestos</h2>
 
     @if(session('success'))
@@ -932,9 +933,139 @@
             </form>
         </div>
     </div>
+@endif -->
+{{-- TAB: PRESUPUESTOS --}}
+@if($tab === 'presupuestos')
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+            <h2 class="text-xl font-bold text-[#0B265A]">Presupuestos de la Obra</h2>
+            <p class="text-sm text-slate-500">Gestión de presupuestos maestros vinculados y archivos adicionales.</p>
+        </div>
+        
+        {{-- BOTÓN PARA ABRIR MODAL (Lo vincularemos después) --}}
+        <button onclick="openModalPresupuestos()" 
+                class="flex items-center gap-2 px-4 py-2 bg-[#0B265A] text-white rounded-xl text-sm font-semibold shadow-lg hover:bg-[#1a3a7a] transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="height="12" M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            Vincular Presupuesto Maestro
+        </button>
+    </div>
+
+    @if(session('success'))
+        <div class="mb-4 p-3 bg-green-100 text-green-700 rounded-lg text-sm flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            {{ session('success') }}
+        </div>
+    @endif
+
+    <div class="grid grid-cols-1 xl:grid-cols-[1fr_350px] gap-8">
+
+        {{-- COLUMNA IZQUIERDA: DESGLOSE TÉCNICO --}}
+        <div class="space-y-6">
+            <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Desglose Técnico Consolidado</h3>
+            
+            @forelse($obra->presupuestos_vinculados as $pv)
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                    {{-- Encabezado del Presupuesto Vinculado --}}
+                    <div class="bg-slate-50 px-4 py-3 border-b flex justify-between items-center">
+                        <div>
+                            <span class="text-[10px] font-bold text-blue-600 uppercase">Folio: {{ $pv->codigo_proyecto }}</span>
+                            <h4 class="font-bold text-slate-800">{{ $pv->nombre_cliente }}</h4>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-xs text-slate-500">Total Presupuestado</span>
+                            <span class="font-bold text-green-600">${{ number_format($pv->total_presupuesto, 2) }}</span>
+                        </div>
+                    </div>
+
+                    {{-- Tabla de Conceptos (Misma lógica que en Presupuestos) --}}
+                    <table class="w-full text-[11px]">
+                        <thead class="bg-slate-50/50 text-slate-500 uppercase">
+                            <tr>
+                                <th class="py-2 px-4 text-left">Concepto</th>
+                                <th class="py-2 px-2 text-center">Unidad</th>
+                                <th class="py-2 px-2 text-center">Cant.</th>
+                                <th class="py-2 px-2 text-right">P.U.</th>
+                                <th class="py-2 px-4 text-right">Importe</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {{-- Aquí mapeamos los resúmenes y pilas vinculados --}}
+                            @foreach($pv->resumenes as $r)
+                                @if($r->cantidad > 0 && $r->precio_unitario > 0)
+                                <tr>
+                                    <td class="py-2 px-4">{{ $r->concepto }}</td>
+                                    <td class="py-2 px-2 text-center text-slate-400">{{ $r->unidad }}</td>
+                                    <td class="py-2 px-2 text-center">{{ number_format($r->cantidad, 2) }}</td>
+                                    <td class="py-2 px-2 text-right">${{ number_format($r->precio_unitario, 2) }}</td>
+                                    <td class="py-2 px-4 text-right font-medium">${{ number_format($r->importe, 2) }}</td>
+                                </tr>
+                                @endif
+                            @endforeach
+                        </tbody>
+                    </div>
+                </div>
+            @empty
+                <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center">
+                    <p class="text-slate-500">No hay presupuestos maestros vinculados a esta obra.</p>
+                </div>
+            @endforelse
+        </div>
+
+     
+    </div>
 @endif
+@if($tab === 'planeacion')
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+        <div>
+            <h3 class="text-lg font-bold text-slate-800">Planeación de Gasto Semanal</h3>
+            <p class="text-xs text-slate-500">Distribuye el costo directo en las {{ $semanas }} semanas programadas.</p>
+        </div>
+        <button type="submit" form="formPlaneacion" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-sm transition-all">
+            Guardar Planeación
+        </button>
+    </div>
 
+    <form id="formPlaneacion" action="{{ route('obras.guardarPlaneacion', $obra->id) }}" method="POST">
+        @csrf
+        <div class="overflow-x-auto">
+            <table class="w-full text-xs border-collapse">
+                <thead class="bg-slate-100">
+                    <tr>
+                        <th class="p-3 border sticky left-0 bg-slate-100 z-10 w-64 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Concepto / Partida</th>
+                        <th class="p-3 border text-right w-28">Tope (Presupuesto)</th>
+                        <th class="p-3 border text-right w-28">Programado</th>
+                        <th class="p-3 border text-right w-28">Diferencia</th>
+                        
+                        @for($i = 1; $i <= $semanas; $i++)
+                            <th class="p-3 border text-center min-w-[120px] bg-blue-50/50">Semana {{ $i }}</th>
+                        @endfor
+                    </tr>
+                </thead>
+                <tbody>
+                    {{-- Renderizamos los conceptos (puedes reutilizar tu lógica de Pilas y Detalles) --}}
+                    @foreach($obra->presupuestos_vinculados as $presupuesto)
+                        {{-- 1. PILAS --}}
+                        @foreach($presupuesto->pilas as $pila)
+                            @include('obras.partials.fila_planeacion', ['item' => $pila, 'tipo' => 'pila'])
+                        @endforeach
 
+                        {{-- 2. DETALLES GENERALES --}}
+                        @foreach($presupuesto->detalles as $det)
+                            @include('obras.partials.fila_planeacion', ['item' => $det, 'tipo' => 'detalle'])
+                        @endforeach
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </form>
+</div>
+@endif
+{{--  TERMINA TAB : PLANEACION --}}
  {{-- TAB: EMPLEADOS --}}
 @if($tab === 'empleados')
     <h2 class="text-lg font-semibold mb-4">Empleados asignados a la obra</h2>
@@ -2653,3 +2784,184 @@ console.log('Total empleados asignables:', empleados.length);
 </script>
 
 @endsection
+{{-- COLOCAR ESTO AL FINAL DEL ARCHIVO, FUERA DE LOS @if($tab) --}}
+
+<div id="modalPresupuestos" class="fixed inset-0 z-[100] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-slate-900/75 transition-opacity" onclick="closeModalPresupuestos()"></div>
+
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border border-slate-200">
+            <div class="bg-white">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">Vincular Presupuestos Maestros</h3>
+                        <p class="text-xs text-slate-500">Selecciona los presupuestos disponibles para esta obra.</p>
+                    </div>
+                    <button type="button" onclick="closeModalPresupuestos()" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="px-6 py-4 max-h-[60vh] overflow-y-auto bg-white">
+                    <form id="formVincularPresupuesto" action="{{ route('obras.vincularPresupuesto', $obra->id) }}" method="POST">
+                        @csrf
+                        <table class="w-full text-sm">
+                            <thead class="text-slate-500 uppercase text-[10px] tracking-wider border-b sticky top-0 bg-white">
+                                <tr>
+                                    <th class="py-3 px-2 text-left">Selección</th>
+                                    <th class="py-3 px-2 text-left">Folio</th>
+                                    <th class="py-3 px-2 text-left">Cliente / Proyecto</th>
+                                    <th class="py-3 px-2 text-right">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @forelse($presupuestosDisponibles as $pre)
+                                    <tr class="hover:bg-blue-50/50 transition-colors">
+                                        <td class="py-3 px-2">
+                                            <input type="checkbox" name="presupuestos[]" value="{{ $pre->id }}" 
+                                                   class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4">
+                                        </td>
+                                        <td class="py-3 px-2 font-mono text-xs font-bold text-blue-700">
+                                            {{ $pre->codigo_proyecto }}
+                                        </td>
+                                        <td class="py-3 px-2 text-slate-700">
+                                            {{ $pre->nombre_cliente }}
+                                        </td>
+                                        <td class="py-3 px-2 text-right font-bold text-slate-900">
+                                            ${{ number_format($pre->total_presupuesto, 2) }}
+                                        </td>
+                                    </tr>
+                               @empty
+                                    <tr>
+                                        <td colspan="4" class="py-12 text-center">
+                                            <div class="flex flex-col items-center justify-center">
+                                                {{-- Icono con tamaño controlado h-12 w-12 --}}
+                                                <div class="bg-slate-50 p-4 rounded-full mb-3">
+                                                    <svg class="h-10 w-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                </div>
+                                                <p class="text-slate-500 font-medium">Todos los presupuestos están vinculados</p>
+                                                <p class="text-slate-400 text-xs mt-1">No hay presupuestos maestros disponibles para este cliente.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </form>
+                </div>
+
+                <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                    <button type="button" onclick="closeModalPresupuestos()" 
+                            class="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" form="formVincularPresupuesto" 
+                            class="px-6 py-2 bg-[#0B265A] text-white rounded-xl text-sm font-bold shadow-lg hover:bg-[#1a3a7a] transition-all transform hover:scale-[1.02]">
+                        Vincular Seleccionados
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openModalPresupuestos() {
+        const modal = document.getElementById('modalPresupuestos');
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; // Evita el scroll de fondo
+    }
+    function closeModalPresupuestos() {
+        const modal = document.getElementById('modalPresupuestos');
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto'; // Devuelve el scroll
+    }
+
+    function calcularFila(idCampo) {
+    const inputs = document.querySelectorAll(`.input-semana-${idCampo}`);
+    const displayTotal = document.getElementById(`total_prog_${idCampo}`);
+    const displayDiff = document.getElementById(`diff_${idCampo}`);
+    
+    let totalProgramado = 0;
+    let tope = 0;
+
+    inputs.forEach(input => {
+        totalProgramado += parseFloat(input.value) || 0;
+        tope = parseFloat(input.dataset.tope); // El tope lo sacamos del primer input
+    });
+
+    const diferencia = tope - totalProgramado;
+
+    // Actualizar textos
+    displayTotal.innerText = '$' + totalProgramado.toLocaleString('en-US', {minimumFractionDigits: 2});
+    displayDiff.innerText = '$' + diferencia.toLocaleString('en-US', {minimumFractionDigits: 2});
+
+    // Color de alerta si se pasa
+    if (diferencia < 0) {
+        displayDiff.classList.remove('text-green-600', 'text-slate-600');
+        displayDiff.classList.add('text-red-600');
+    } else {
+        displayDiff.classList.remove('text-red-600');
+        displayDiff.classList.add('text-green-600');
+    }
+}
+
+// Ejecutar una vez al cargar para llenar los totales iniciales
+document.addEventListener('DOMContentLoaded', function() {
+    const uniqueIds = [...new Set([...document.querySelectorAll('input[data-id]')].map(i => i.dataset.id))];
+    uniqueIds.forEach(id => calcularFila(id));
+});
+// Quita comas para que el usuario pueda editar el número fácilmente
+function limpiarFormato(input) {
+    let valor = input.value.replace(/,/g, '');
+    input.type = 'number'; // Cambiamos temporalmente a number para teclado numérico en móvil
+    input.value = valor;
+}
+
+// Pone comas y decimales cuando el usuario termina de editar
+function aplicarFormato(input) {
+    let valor = parseFloat(input.value) || 0;
+    input.type = 'text';
+    input.dataset.valor = valor; // Guardamos el valor crudo para cálculos
+    input.value = valor.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+// Ajusta tu función calcularFila para que use dataset.valor
+function calcularFila(idCampo) {
+    const inputs = document.querySelectorAll(`.input-semana-${idCampo}`);
+    const displayTotal = document.getElementById(`total_prog_${idCampo}`);
+    const displayDiff = document.getElementById(`diff_${idCampo}`);
+    
+    let totalProgramado = 0;
+    let tope = 0;
+
+    inputs.forEach(input => {
+        // Usamos el valor crudo del dataset o limpiamos el value si no existe
+        let valorLimpio = input.dataset.valor || input.value.replace(/,/g, '');
+        totalProgramado += parseFloat(valorLimpio) || 0;
+        tope = parseFloat(input.dataset.tope);
+    });
+
+    const diferencia = tope - totalProgramado;
+
+    displayTotal.innerText = '$' + totalProgramado.toLocaleString('en-US', {minimumFractionDigits: 2});
+    displayDiff.innerText = '$' + diferencia.toLocaleString('en-US', {minimumFractionDigits: 2});
+
+    // Colores de alerta
+    if (diferencia < 0) {
+        displayDiff.className = 'p-3 border text-right font-bold text-red-600';
+    } else {
+        displayDiff.className = 'p-3 border text-right font-bold text-green-600';
+    }
+}
+</script>
+
