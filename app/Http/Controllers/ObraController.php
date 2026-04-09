@@ -612,6 +612,8 @@ return view('obras.edit', [
                      ->with('success', 'Presupuesto vinculado correctamente.');
 }
 
+// En app/Http/Controllers/ObraController.php
+
 public function guardarPlaneacion(Request $request, $id)
 {
     $obra = Obra::findOrFail($id);
@@ -620,8 +622,12 @@ public function guardarPlaneacion(Request $request, $id)
     foreach ($datos as $tipo => $items) {
         foreach ($items as $item_id => $semanas) {
             foreach ($semanas as $numero_semana => $monto) {
-                // Solo guardamos si el monto es mayor a 0 o si ya existía para permitir borrar
-                if ($monto > 0 || ObraPlaneacionGasto::where('obra_id', $id)->where('numero_semana', $numero_semana)->exists()) {
+                
+                // --- AGREGA ESTA LÍNEA PARA LIMPIAR EL MONTO ---
+                // Eliminamos las comas para que solo quede el número decimal (ej. 10,000.50 -> 10000.50)
+                $montoLimpio = str_replace(',', '', $monto);
+                
+                if (floatval($montoLimpio) > 0 || ObraPlaneacionGasto::where('obra_id', $id)->where('numero_semana', $numero_semana)->exists()) {
                     ObraPlaneacionGasto::updateOrCreate(
                         [
                             'obra_id' => $id,
@@ -630,7 +636,7 @@ public function guardarPlaneacion(Request $request, $id)
                             'numero_semana' => $numero_semana,
                         ],
                         [
-                            'monto_programado' => $monto ?? 0
+                            'monto_programado' => $montoLimpio // Usamos el valor sin comas
                         ]
                     );
                 }
