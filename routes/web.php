@@ -126,7 +126,8 @@ Route::middleware('auth','verified')->group(function () {
         // Ruta para ver el detalle de uno específico (la usaremos después)
         Route::get('presupuestos/{id}', [App\Http\Controllers\PresupuestoController::class, 'show'])->name('presupuesto.show');
         Route::get('presupuestos/{id}/pdf', [App\Http\Controllers\PresupuestoController::class, 'exportPdf'])->name('presupuesto.pdf');
-     
+        Route::delete('presupuestos/{id}', [App\Http\Controllers\PresupuestoController::class, 'destroy'])->name('presupuesto.destroy');
+
         });
 
 

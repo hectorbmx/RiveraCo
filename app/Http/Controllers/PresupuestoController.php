@@ -5,6 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Presupuesto;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+
+use Illuminate\Support\Facades\DB;
+use App\Models\PresupuestoDetalle;
+use App\Models\PresupuestoPila;
+use App\Models\PresupuestoResumen;
 class PresupuestoController extends Controller
 {
     public function index()
@@ -56,5 +61,34 @@ class PresupuestoController extends Controller
         $pdf = Pdf::loadView('presupuesto.pdf_template', compact('presupuesto', 'tablaConsolidada', 'totalGeneral'));
         
         return $pdf->stream("Presupuesto_{$presupuesto->codigo_proyecto}.pdf");
+    }
+
+    public function destroy($id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $presupuesto = Presupuesto::findOrFail($id);
+
+            // Borrar tablas hijas
+            PresupuestoDetalle::where('presupuesto_id', $presupuesto->id)->delete();
+            PresupuestoPila::where('presupuesto_id', $presupuesto->id)->delete();
+            PresupuestoResumen::where('presupuesto_id', $presupuesto->id)->delete();
+
+            // Borrar cabecera
+            $presupuesto->delete();
+
+            DB::commit();
+
+            return redirect()
+                ->route('presupuesto.index')
+                ->with('success', 'Presupuesto eliminado correctamente.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return redirect()
+                ->route('presupuesto.index')
+                ->with('error', 'Ocurrió un error al eliminar el presupuesto.');
+        }
     }
 }
