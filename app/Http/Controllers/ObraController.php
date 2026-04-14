@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Empleado;
 use App\Models\ObraEmpleado;
 use App\Models\ObraPlaneacionGasto;
+use App\Models\gastosPlaneados;
 use App\Models\Comision;
 use App\Models\ComisionDetalle;
 use App\Models\ObraMaquina;
@@ -82,23 +83,27 @@ public function edit(Request $request, Obra $obra)
 {
 
     $roles = \DB::table('catalogo_roles')->orderBy('nombre')->get();
-
     $clientes     = Cliente::orderBy('nombre_comercial')->get();
     $responsables = User::orderBy('name')->get();
 
     $desde =$request->query('asist_desde');
     $hasta =$request->query('asist_hasta');
     $semanas = $obra->semanas_totales;
-    
+    // Por esto:
+// $presupuestoIds = $obra->presupuestos_vinculados->pluck('id');
+$presupuestoIds = $obra->presupuestos_vinculados()->pluck('presupuestos.id');
 
-   // En ObraController.php -> edit
-        $planeacion = $obra->planeacionGastos->mapToGroups(function ($item) {
-            // Creamos una llave única combinando el tipo de ID y la semana
-            $key = ($item->presupuesto_detalle_id ?? 'pila_' . $item->presupuesto_pila_id);
-            return [$key => $item];
-        })->map(function ($group) {
-            return $group->keyBy('numero_semana');
-        });
+$registrosPlaneacion = \App\Models\ObraPlaneacionGasto::whereIn('presupuesto_id', $presupuestoIds)->get();
+
+$gastosBase = $registrosPlaneacion->where('numero_semana', 0)->values();
+
+$planeacion = \App\Models\ObraPlaneacionSemanal::query()
+    ->whereIn('planeacion_gasto_id', $gastosBase->pluck('id'))
+    ->get()
+    ->groupBy('planeacion_gasto_id')
+    ->map(function ($group) {
+        return $group->keyBy('numero_semana');
+    });
 
     if (!$desde && !$hasta) {
     $start = Carbon::now('America/Mexico_City')->startOfWeek(Carbon::MONDAY);
@@ -128,6 +133,7 @@ public function edit(Request $request, Obra $obra)
     // Cargar relaciones principales de la obra
     $obra->load([
         'cliente',
+        'gastosPlaneados',
         'contratos',
         'planos',
         'presupuestos',
@@ -539,14 +545,15 @@ return view('obras.edit', [
     'asistencias'                  =>$asistencias,
     'asist_desde'                  => $desde,
     'asist_hasta'                  => $hasta,
-'weekDays' => $weekDays,
-'asistenciasSemana' => $asistenciasSemana,
-'daysCount' => $daysCount,
-'presupuestosDisponibles'     => $presupuestosDisponibles,
-'semanas' => $semanas,
-'planeacion' => $planeacion
+    'weekDays' => $weekDays,
+    'asistenciasSemana' => $asistenciasSemana,
+    'daysCount' => $daysCount,
+    'presupuestosDisponibles'     => $presupuestosDisponibles,
 
 
+    'gastosBase' => $gastosBase,
+    'planeacion' => $planeacion,
+    'semanas'    => $semanas,
 
     ]);
 }
@@ -613,38 +620,65 @@ return view('obras.edit', [
 }
 
 // En app/Http/Controllers/ObraController.php
-
 public function guardarPlaneacion(Request $request, $id)
 {
     $obra = Obra::findOrFail($id);
     $datos = $request->input('plan', []);
 
-    foreach ($datos as $tipo => $items) {
-        foreach ($items as $item_id => $semanas) {
-            foreach ($semanas as $numero_semana => $monto) {
-                
-                // --- AGREGA ESTA LÍNEA PARA LIMPIAR EL MONTO ---
-                // Eliminamos las comas para que solo quede el número decimal (ej. 10,000.50 -> 10000.50)
-                $montoLimpio = str_replace(',', '', $monto);
-                
-                if (floatval($montoLimpio) > 0 || ObraPlaneacionGasto::where('obra_id', $id)->where('numero_semana', $numero_semana)->exists()) {
-                    ObraPlaneacionGasto::updateOrCreate(
-                        [
-                            'obra_id' => $id,
-                            'presupuesto_detalle_id' => ($tipo === 'detalle') ? $item_id : null,
-                            'presupuesto_pila_id' => ($tipo === 'pila') ? $item_id : null,
-                            'numero_semana' => $numero_semana,
-                        ],
-                        [
-                            'monto_programado' => $montoLimpio // Usamos el valor sin comas
-                        ]
-                    );
-                }
-            }
-        }
+    if (empty($datos)) {
+        return redirect()->back()->with('info', 'No se enviaron datos para procesar.');
     }
 
-    return redirect()->route('obras.edit', ['obra' => $id, 'tab' => 'planeacion'])
-                     ->with('success', 'Planeación guardada correctamente.');
+    try {
+        \DB::beginTransaction();
+
+        foreach ($datos as $gasto_id => $semanas) {
+            $gastoBase = \App\Models\ObraPlaneacionGasto::where('id', $gasto_id)
+                ->where('numero_semana', 0)
+                ->first();
+
+            if (!$gastoBase) {
+                \Log::warning("No se encontró gasto base para ID: {$gasto_id}");
+                continue;
+            }
+
+            foreach ($semanas as $numero_semana => $monto) {
+                if ($monto === null || $monto === '') {
+                    continue;
+                }
+
+                $montoLimpio = (float) preg_replace('/[^-0-9.]/', '', (string) $monto);
+
+                \App\Models\ObraPlaneacionSemanal::updateOrCreate(
+                    [
+                        'planeacion_gasto_id' => $gastoBase->id,
+                        'numero_semana'       => (int) $numero_semana,
+                    ],
+                    [
+                        'monto_programado' => $montoLimpio,
+                    ]
+                );
+            }
+        }
+
+        \DB::commit();
+
+        return redirect()->route('obras.edit', [
+            'obra' => $id,
+            'tab'  => 'planeacion',
+        ])->with('success', 'Planeación guardada correctamente.');
+
+    } catch (\Exception $e) {
+        \DB::rollBack();
+
+        \Log::error('Error guardando planeación', [
+            'obra_id' => $id,
+            'message' => $e->getMessage(),
+            'line'    => $e->getLine(),
+            'file'    => $e->getFile(),
+        ]);
+
+        return redirect()->back()->with('error', 'Ocurrió un error al guardar los datos.');
+    }
 }
 }

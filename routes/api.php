@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\AttendanceIngestController;
 use App\Http\Controllers\Api\V1\Attendance\AttendanceApiController;
 
 use App\Http\Controllers\Api\V1\PresupuestoController;
+use App\Http\Controllers\Api\V1\PlaneacionGastosController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,6 +36,8 @@ use App\Http\Controllers\Api\V1\PresupuestoController;
 // });
 
 Route::post('/presupuestos/sync', [PresupuestoController::class, 'store']);
+Route::post('/planeacion-gastos/sync', [PlaneacionGastosController::class, 'sync']);
+
 
 Route::post('/v1/attendance/devices/{serial}/ingest', [AttendanceIngestController::class, 'ingest']);
 

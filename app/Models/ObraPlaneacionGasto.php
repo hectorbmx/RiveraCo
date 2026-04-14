@@ -11,13 +11,19 @@ class ObraPlaneacionGasto extends Model
 
     protected $table = 'obra_planeacion_gastos';
 
-    protected $fillable = [
-        'obra_id',
-        'presupuesto_detalle_id',
-        'presupuesto_pila_id',
-        'numero_semana',
-        'monto_programado',
-    ];
+   protected $fillable = [
+    'obra_id',
+    'presupuesto_id',
+    'partida',           // Nuevo
+    'concepto',          // Nuevo
+    'unidad',            // Nuevo
+    'cantidad',          // Nuevo
+    'precio_unitario',   // Nuevo
+    'numero_semana',     
+    'monto_programado',  // Aquí guardaremos el TOTAL de la fila del Excel
+    'presupuesto_detalle_id',
+    'presupuesto_pila_id',
+];
 
     /**
      * Relación con la Obra
@@ -50,4 +56,9 @@ class ObraPlaneacionGasto extends Model
     {
         return $query->where('numero_semana', $semana);
     }
+
+    public function semanas()
+{
+    return $this->hasMany(ObraPlaneacionSemanal::class, 'planeacion_gasto_id');
+}
 }

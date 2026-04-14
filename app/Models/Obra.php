@@ -165,4 +165,13 @@ class Obra extends Model
     {
         return $this->hasMany(ObraPlaneacionGasto::class);
     }
+    
+
+public function gastosPlaneados()
+{
+    // Forzamos a que use el modelo correcto que ya configuraste
+    return $this->hasMany(ObraPlaneacionGasto::class, 'obra_id');
+}
+            
+    
 }

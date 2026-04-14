@@ -2703,7 +2703,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     // Lista de empleados desde PHP → JS
     const empleados = {!! $empleadosAsignables->toJson(JSON_UNESCAPED_UNICODE) !!};
-console.log('Total empleados asignables:', empleados.length);
+// console.log('Total empleados asignables:', empleados.length);
 
 
     const inputBuscar = document.getElementById('buscador-empleado');
@@ -2883,34 +2883,34 @@ console.log('Total empleados asignables:', empleados.length);
         document.body.style.overflow = 'auto'; // Devuelve el scroll
     }
 
-    function calcularFila(idCampo) {
-    const inputs = document.querySelectorAll(`.input-semana-${idCampo}`);
-    const displayTotal = document.getElementById(`total_prog_${idCampo}`);
-    const displayDiff = document.getElementById(`diff_${idCampo}`);
+//     function calcularFila(idCampo) {
+//     const inputs = document.querySelectorAll(`.input-semana-${idCampo}`);
+//     const displayTotal = document.getElementById(`total_prog_${idCampo}`);
+//     const displayDiff = document.getElementById(`diff_${idCampo}`);
     
-    let totalProgramado = 0;
-    let tope = 0;
+//     let totalProgramado = 0;
+//     let tope = 0;
 
-    inputs.forEach(input => {
-        totalProgramado += parseFloat(input.value) || 0;
-        tope = parseFloat(input.dataset.tope); // El tope lo sacamos del primer input
-    });
+//     inputs.forEach(input => {
+//         totalProgramado += parseFloat(input.value) || 0;
+//         tope = parseFloat(input.dataset.tope); // El tope lo sacamos del primer input
+//     });
 
-    const diferencia = tope - totalProgramado;
+//     const diferencia = tope - totalProgramado;
 
-    // Actualizar textos
-    displayTotal.innerText = '$' + totalProgramado.toLocaleString('en-US', {minimumFractionDigits: 2});
-    displayDiff.innerText = '$' + diferencia.toLocaleString('en-US', {minimumFractionDigits: 2});
+//     // Actualizar textos
+//     displayTotal.innerText = '$' + totalProgramado.toLocaleString('en-US', {minimumFractionDigits: 2});
+//     displayDiff.innerText = '$' + diferencia.toLocaleString('en-US', {minimumFractionDigits: 2});
 
-    // Color de alerta si se pasa
-    if (diferencia < 0) {
-        displayDiff.classList.remove('text-green-600', 'text-slate-600');
-        displayDiff.classList.add('text-red-600');
-    } else {
-        displayDiff.classList.remove('text-red-600');
-        displayDiff.classList.add('text-green-600');
-    }
-}
+//     // Color de alerta si se pasa
+//     if (diferencia < 0) {
+//         displayDiff.classList.remove('text-green-600', 'text-slate-600');
+//         displayDiff.classList.add('text-red-600');
+//     } else {
+//         displayDiff.classList.remove('text-red-600');
+//         displayDiff.classList.add('text-green-600');
+//     }
+// }
 
 // Ejecutar una vez al cargar para llenar los totales iniciales
 document.addEventListener('DOMContentLoaded', function() {
@@ -2932,6 +2932,25 @@ function aplicarFormato(input) {
     input.value = valor.toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
+    });
+}
+
+// Ajusta tu función calcularFila para que use dataset.valor
+// Cache de referencias al cargar la página
+const filaCache = {};
+
+function buildCache() {
+    document.querySelectorAll('[data-id]').forEach(input => {
+        const id = input.dataset.id;
+        if (!filaCache[id]) {
+            filaCache[id] = {
+                inputs: [],
+                total: document.getElementById(`total_prog_${id}`),
+                diff:  document.getElementById(`diff_${id}`),
+                tope:  parseFloat(input.dataset.tope) || 0,
+            };
+        }
+        filaCache[id].inputs.push(input);
     });
 }
 
@@ -2963,5 +2982,14 @@ function calcularFila(idCampo) {
         displayDiff.className = 'p-3 border text-right font-bold text-green-600';
     }
 }
+
+// Deshabilitar inputs vacíos antes de enviar para que no viajen en el Request
+// document.querySelector('form').addEventListener('submit', function() {
+//     this.querySelectorAll('.input-semana').forEach(input => {
+//         if (input.value === "" || input.value === null) {
+//             input.disabled = true; // No se enviará al servidor
+//         }
+//     });
+// });
 </script>
 

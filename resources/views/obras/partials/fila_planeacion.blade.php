@@ -1,42 +1,65 @@
 @php
-    $id_campo = ($tipo === 'pila') ? 'pila_' . $item->id : 'det_' . $item->id;
-    $tope = ($tipo === 'pila') ? $item->total : $item->importe;
+    // Normalizamos la referencia
+    $gasto = $item;
+
+    // ID único por fila para JS
+    $id_campo = 'gasto_' . $gasto->id;
+
+    // Campos base con fallback por si pila/detalle cambian ligeramente
+    $concepto = $gasto->concepto ?? $gasto->descripcion ?? $gasto->nombre ?? ('Concepto #' . $gasto->id);
+    $unidad   = $gasto->unidad ?? '-';
+    $cantidad = $gasto->cantidad ?? 0;
+    $tope     = (float) ($gasto->monto_programado ?? $gasto->importe ?? $gasto->total ?? 0);
+
+    $totalProg = 0;
 @endphp
 
 <tr class="hover:bg-slate-50 border-b group">
+    {{-- Concepto --}}
     <td class="p-3 border sticky left-0 bg-white group-hover:bg-slate-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-        <span class="block font-bold text-[10px] text-blue-700 uppercase">{{ $item->partida ?? 'PERFORACIÓN' }}</span>
-        <span class="text-slate-600 line-clamp-1" title="{{ $item->concepto }}">{{ $item->concepto }}</span>
+        <div class="flex flex-col">
+            <span class="text-slate-700 font-medium line-clamp-1" title="{{ $concepto }}">
+                {{ $concepto }}
+            </span>
+
+            <span class="text-slate-400 text-[10px]">
+                {{ strtoupper($tipo ?? 'item') }} · {{ $unidad }} · cant: {{ $cantidad }}
+            </span>
+        </div>
     </td>
 
-    <td class="p-3 border text-right font-mono bg-slate-50/50">
+    {{-- Tope --}}
+    <td class="p-3 border text-right font-mono text-slate-600 bg-slate-50">
         ${{ number_format($tope, 2) }}
     </td>
 
-    <td class="p-3 border text-right font-bold text-blue-900 bg-blue-50/20" id="total_prog_{{ $id_campo }}">
+    {{-- Total programado --}}
+    <td class="p-3 border text-right font-bold text-blue-800 bg-blue-50/30" id="total_prog_{{ $id_campo }}">
         $0.00
     </td>
 
-    <td class="p-3 border text-right font-bold" id="diff_{{ $id_campo }}">
+    {{-- Diferencia --}}
+    <td class="p-3 border text-right font-bold text-green-600" id="diff_{{ $id_campo }}">
         $0.00
     </td>
 
-   @for($i = 1; $i <= $semanas; $i++)
-    @php
-        // Buscamos si hay un valor guardado para esta fila y esta semana
-        $item_key = ($tipo === 'detalle') ? $item->id : 'pila_' . $item->id;
-        $valorGuardado = $planeacion[$item_key][$i]->monto_programado ?? 0;
-    @endphp
-    <td class="p-2 border">
-      <input type="text" 
-       name="plan[{{ $tipo }}][{{ $item->id }}][{{ $i }}]" 
-       value="{{ number_format($valorGuardado, 2) }}" {{-- Formato inicial desde PHP --}}
-       data-valor="{{ $valorGuardado }}"
-       data-tope="{{ $tope }}"
-       data-id="{{ $id_campo }}"
-       onfocus="limpiarFormato(this)"
-       onblur="aplicarFormato(this); calcularFila('{{ $id_campo }}')"
-       class="w-full p-1 text-right border-transparent focus:border-blue-500 focus:ring-0 rounded bg-transparent hover:bg-white transition-all input-semana-{{ $id_campo }}">
-    </td>
-@endfor
+    {{-- Inputs por semana --}}
+    @for($i = 1; $i <= $semanas; $i++)
+     @php
+            $valorGuardado = $planeacion[$gasto->id][$i]->monto_programado ?? 0;
+            $totalProg += $valorGuardado;
+        @endphp
+
+        <td class="p-2 border">
+            <input
+                type="text"
+                name="plan[{{ $gasto->id }}][{{ $i }}]"
+                value="{{ $valorGuardado > 0 ? number_format($valorGuardado, 2, '.', '') : '' }}"
+                placeholder="0.00"
+                data-tope="{{ $tope }}"
+                data-id="{{ $id_campo }}"
+                class="input-semana input-semana-{{ $id_campo }} w-full p-1 text-right text-xs border border-transparent focus:border-blue-400 focus:ring-1 focus:ring-blue-200 rounded bg-transparent hover:bg-white transition-all"
+            >
+        </td>
+    @endfor
 </tr>

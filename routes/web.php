@@ -71,6 +71,7 @@ Route::get('/', function () {
       return redirect()->route('login');
 });
 
+Route::get('/phpinfo', function() { phpinfo(); });
 
 Route::prefix('inventario')->group(function () {
     Route::get('stock', [InventarioStockController::class, 'index'])
