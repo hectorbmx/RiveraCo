@@ -93,9 +93,16 @@ public function edit(Request $request, Obra $obra)
 // $presupuestoIds = $obra->presupuestos_vinculados->pluck('id');
 $presupuestoIds = $obra->presupuestos_vinculados()->pluck('presupuestos.id');
 
-$registrosPlaneacion = \App\Models\ObraPlaneacionGasto::whereIn('presupuesto_id', $presupuestoIds)->get();
+$registrosPlaneacion = \App\Models\ObraPlaneacionGasto::query()
+    ->where(function ($q) use ($obra, $presupuestoIds) {
+        $q->where('obra_id', $obra->id)
+          ->orWhereIn('presupuesto_id', $presupuestoIds);
+    })
+    ->get();
 
-$gastosBase = $registrosPlaneacion->where('numero_semana', 0)->values();
+$gastosBase = $registrosPlaneacion
+    ->where('numero_semana', 0)
+    ->values();
 
 $planeacion = \App\Models\ObraPlaneacionSemanal::query()
     ->whereIn('planeacion_gasto_id', $gastosBase->pluck('id'))

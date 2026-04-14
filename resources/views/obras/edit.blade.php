@@ -1047,19 +1047,28 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {{-- Renderizamos los conceptos (puedes reutilizar tu lógica de Pilas y Detalles) --}}
-                    @foreach($obra->presupuestos_vinculados as $presupuesto)
-                        {{-- 1. PILAS --}}
-                        @foreach($presupuesto->pilas as $pila)
-                            @include('obras.partials.fila_planeacion', ['item' => $pila, 'tipo' => 'pila'])
-                        @endforeach
+                        @php
+                            $gruposGastos = $gastosBase->groupBy('partida');
+                        @endphp
 
-                        {{-- 2. DETALLES GENERALES --}}
-                        @foreach($presupuesto->detalles as $det)
-                            @include('obras.partials.fila_planeacion', ['item' => $det, 'tipo' => 'detalle'])
-                        @endforeach
-                    @endforeach
-                </tbody>
+                        @forelse($gruposGastos as $partida => $items)
+                            <tr class="bg-slate-100">
+                                <td colspan="{{ 4 + $semanas }}" class="p-2 font-bold text-slate-700 uppercase border">
+                                    {{ $partida ?: 'GENERAL' }}
+                                </td>
+                            </tr>
+
+                            @foreach($items as $gasto)
+                                @include('obras.partials.fila_planeacion', ['item' => $gasto, 'tipo' => 'planeacion'])
+                            @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="{{ 4 + $semanas }}" class="p-8 text-center text-slate-400 text-sm">
+                                    No hay conceptos de planeación para esta obra.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
             </table>
         </div>
     </form>
