@@ -9,8 +9,14 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-   public function up(): void
+ public function up(): void
 {
+    // Solo para prod: quitar la FK incorrecta que ya existe
+    \DB::statement("
+        ALTER TABLE obra_planeacion_semanal
+        DROP FOREIGN KEY obra_planeacion_semanal_planeacion_gasto_id_foreign
+    ");
+
     Schema::table('obra_planeacion_semanal', function (Blueprint $table) {
         $table->foreign('planeacion_gasto_id')
             ->references('id')
