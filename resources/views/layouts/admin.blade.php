@@ -111,6 +111,89 @@
                     <span class="sidebar-text">Nómina</span>
                 </a>
                 @endcan
+               @can('sat.access')
+<div x-data="{ openSat: false }" class="w-full">
+
+    <!-- Header SAT -->
+    <button @click="openSat = !openSat"
+        class="w-full flex items-center justify-between gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10">
+        
+        <div class="flex items-center gap-3">
+            <span class="text-lg">📄</span>
+            <span class="sidebar-text">SAT</span>
+        </div>
+
+        <svg class="w-4 h-4 transition-transform"
+             :class="{ 'rotate-180': openSat }"
+             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 9l-7 7-7-7"></path>
+        </svg>
+    </button>
+
+    <!-- Submenu -->
+    <div x-show="openSat" x-transition class="ml-10">
+
+        <!-- Empresas -->
+        <a href="{{ route('sat.empresas.index') }}"
+           class="block px-4 py-2 text-sm hover:bg-white/10">
+            Empresas
+        </a>
+
+        <!-- Solicitudes -->
+        <a href="{{ route('sat.descargas.index') }}"
+           class="block px-4 py-2 text-sm hover:bg-white/10">
+            Solicitudes
+        </a>
+
+        <!-- CFDIs -->
+        <a href="{{ route('sat.cfdis.index') }}"
+           class="block px-4 py-2 text-sm hover:bg-white/10">
+            Documentos
+        </a>
+
+    </div>
+</div>
+@endcan
+                <!-- @can('sat.access') -->
+                
+<!-- <div x-data="{ open: false }">
+
+    {{-- Botón principal --}}
+    <button @click="open = !open"
+        class="w-full flex items-center justify-between px-6 py-3 text-sm font-medium hover:bg-white/10"
+        title="SAT">
+
+        <div class="flex items-center gap-3">
+            <span class="text-lg">🧾</span>
+            <span class="sidebar-text">SAT</span>
+        </div>
+
+        <span class="text-xs" x-text="open ? '▲' : '▼'"></span>
+    </button>
+
+    {{-- Submenú --}}
+    <div x-show="open" x-transition class="ml-6">
+
+        <a href="{{ route('sat.empresas.index') }}"
+           class="flex items-center gap-2 px-6 py-2 text-sm text-gray-200 hover:bg-white/10">
+            🏢 Empresas SAT
+        </a>
+
+        <a href="{{ route('sat.descargas.index') }}"
+           class="flex items-center gap-2 px-6 py-2 text-sm text-gray-200 hover:bg-white/10">
+            ⬇️ Solicitudes SAT
+        </a>
+
+        <a href="{{ route('sat.cfdis.index') }}"
+           class="flex items-center gap-2 px-6 py-2 text-sm text-gray-200 hover:bg-white/10">
+            📄 CFDIs
+        </a>
+
+    </div>
+
+</div> -->
+<!-- @endcan -->
                 <a href="{{ route('ordenes_compra.index') }}"
                 class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                 title="Órdenes de compra">
