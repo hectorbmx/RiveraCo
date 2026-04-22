@@ -54,6 +54,11 @@ use App\Http\Controllers\Attendance\AttendanceController;
 use App\Http\Controllers\Attendance\AttendanceWebController;
 
 
+use App\Http\Controllers\Sat\SatDownloadController;
+use App\Http\Controllers\Sat\SatCfdiController;
+use App\Http\Controllers\Sat\SatEmpresaController;
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -70,6 +75,50 @@ Route::get('/', function () {
     // return view('welcome');
       return redirect()->route('login');
 });
+
+Route::middleware(['auth', 'verified'])
+    ->prefix('sat')
+    ->name('sat.')
+    ->group(function () {
+
+        /*
+        |--------------------------------------------------------------------------
+        | EMPRESAS SAT
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('empresas')->name('empresas.')->group(function () {
+            Route::get('/', [SatEmpresaController::class, 'index'])->name('index');
+            Route::get('/create', [SatEmpresaController::class, 'create'])->name('create');
+            Route::post('/', [SatEmpresaController::class, 'store'])->name('store');
+            Route::delete('/{empresa}', [SatEmpresaController::class, 'destroy'])->name('destroy');
+            Route::get('/{empresa}/edit', [SatEmpresaController::class, 'edit'])->name('edit');
+            Route::put('/{empresa}', [SatEmpresaController::class, 'update'])->name('update');
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | SOLICITUDES / DESCARGAS SAT
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('descargas')->name('descargas.')->group(function () {
+            Route::get('/', [SatDownloadController::class, 'index'])->name('index');
+            Route::get('/create', [SatDownloadController::class, 'create'])->name('create');
+            Route::post('/', [SatDownloadController::class, 'store'])->name('store');
+            Route::post('/{id}/retry', [SatDownloadController::class, 'retry'])->name('retry');
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | CFDIs DESCARGADOS
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('cfdis')->name('cfdis.')->group(function () {
+            Route::get('/', [SatCfdiController::class, 'index'])->name('index');
+            Route::get('/{cfdi}', [SatCfdiController::class, 'show'])->name('show');
+            Route::get('/{cfdi}/detalle', [SatCfdiController::class, 'detalle'])->name('detalle');
+        });
+
+    });
 
 Route::get('/phpinfo', function() { phpinfo(); });
 
