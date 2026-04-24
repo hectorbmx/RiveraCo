@@ -320,26 +320,27 @@
 
 </div>
 <!-- Modal CFDI -->
+<!-- Modal CFDI -->
 <div x-show="open"
      x-transition
      class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
 
-    <div class="bg-gray-50 w-full max-w-3xl rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+    <div class="bg-gray-50 w-full max-w-4xl rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
 
         <!-- Header -->
         <div class="flex items-center justify-between px-6 py-4 bg-blue-600 text-white">
-            <h2 class="text-lg font-semibold text-gray-900">
+            <h2 class="text-lg font-semibold text-white">
                 Detalle CFDI
             </h2>
 
             <button @click="close()"
-                    class="text-gray-400 hover:text-gray-600">
+                    class="text-white/80 hover:text-white">
                 ✕
             </button>
         </div>
 
         <!-- Body -->
-       <div class="p-6 max-h-[70vh] overflow-y-auto bg-white">
+        <div class="p-6 max-h-[70vh] overflow-y-auto bg-white">
 
             <!-- Loader -->
             <div x-show="loading" class="text-center text-gray-500 py-10">
@@ -347,34 +348,120 @@
             </div>
 
             <!-- Contenido -->
-            <div x-show="!loading && data">
+            <div x-show="!loading && data" class="space-y-5">
 
                 <!-- Datos generales -->
-                <div class="grid grid-cols-2 gap-4 text-sm mb-6">
-                    <div>
-                        <span class="text-gray-500">UUID</span>
-                        <div class="font-medium" x-text="data.uuid"></div>
+                <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">
+                        Datos generales
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div class="md:col-span-2">
+                            <span class="text-gray-500">UUID</span>
+                            <div class="font-medium break-all" x-text="data?.uuid || '-'"></div>
+                        </div>
+
+                        <div>
+                            <span class="text-gray-500">Fecha</span>
+                            <div class="font-medium" x-text="data?.fecha_emision || '-'"></div>
+                        </div>
+
+                        <div>
+                            <span class="text-gray-500">Serie / Folio</span>
+                            <div class="font-medium">
+                                <span x-text="data?.serie || '-'"></span>
+                                <span x-text="data?.folio || ''"></span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="text-gray-500">Tipo CFDI</span>
+                            <div class="font-medium" x-text="data?.tipo_comprobante || '-'"></div>
+                        </div>
+
+                        <div>
+                            <span class="text-gray-500">Total</span>
+                            <div class="font-semibold text-green-700" x-text="data?.total || '-'"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pago -->
+                <div class="rounded-xl border border-gray-200 bg-white p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">
+                        Pago y expedición
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-500">Forma de pago</span>
+                            <div class="font-medium" x-text="data?.forma_pago || '-'"></div>
+                        </div>
+
+                        <div>
+                            <span class="text-gray-500">Método de pago</span>
+                            <div class="font-medium" x-text="data?.metodo_pago || '-'"></div>
+                        </div>
+
+                        <div>
+                            <span class="text-gray-500">Lugar expedición</span>
+                            <div class="font-medium" x-text="data?.lugar_expedicion || '-'"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emisor / Receptor -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <!-- Emisor -->
+                    <div class="rounded-xl border border-gray-200 bg-white p-4">
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">
+                            Emisor
+                        </h3>
+
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <span class="text-gray-500">RFC</span>
+                                <div class="font-medium" x-text="data?.rfc_emisor || data?.emisor_rfc || '-'"></div>
+                            </div>
+
+                            <div>
+                                <span class="text-gray-500">Nombre</span>
+                                <div class="font-medium" x-text="data?.emisor_nombre || '-'"></div>
+                            </div>
+
+                            <div>
+                                <span class="text-gray-500">Régimen fiscal</span>
+                                <div class="font-medium" x-text="data?.emisor_regimen_fiscal || '-'"></div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div>
-                        <span class="text-gray-500">Fecha</span>
-                        <div class="font-medium" x-text="data.fecha_emision"></div>
+                    <!-- Receptor -->
+                    <div class="rounded-xl border border-gray-200 bg-white p-4">
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">
+                            Receptor
+                        </h3>
+
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <span class="text-gray-500">RFC</span>
+                                <div class="font-medium" x-text="data?.rfc_receptor || data?.receptor_rfc || '-'"></div>
+                            </div>
+
+                            <div>
+                                <span class="text-gray-500">Nombre</span>
+                                <div class="font-medium" x-text="data?.receptor_nombre || '-'"></div>
+                            </div>
+
+                            <div>
+                                <span class="text-gray-500">Uso CFDI</span>
+                                <div class="font-medium" x-text="data?.receptor_uso_cfdi || '-'"></div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div>
-                        <span class="text-gray-500">RFC Emisor</span>
-                        <div class="font-medium" x-text="data.rfc_emisor"></div>
-                    </div>
-
-                    <div>
-                        <span class="text-gray-500">RFC Receptor</span>
-                        <div class="font-medium" x-text="data.rfc_receptor"></div>
-                    </div>
-
-                    <div>
-                        <span class="text-gray-500">Total</span>
-                        <div class="font-medium" x-text="data.total"></div>
-                    </div>
                 </div>
 
                 <!-- Conceptos -->
@@ -397,7 +484,7 @@
                             </thead>
 
                             <tbody>
-                                <template x-for="c in data.conceptos" :key="c.id">
+                                <template x-for="c in (data?.conceptos || [])" :key="c.id">
                                     <tr class="border-t">
                                         <td class="px-3 py-2" x-text="c.clave_prod_serv"></td>
                                         <td class="px-3 py-2" x-text="c.descripcion"></td>
