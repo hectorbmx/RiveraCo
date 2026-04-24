@@ -11,6 +11,7 @@
         "laravel/framework": "^10.10",
         "laravel/sanctum": "*",
         "laravel/tinker": "^2.8",
+        "phpcfdi/csf-sat-scraper": "^0.1.0",
         "phpcfdi/sat-ws-descarga-masiva": "^1.1",
         "rats/zkteco": "^002.0",
         "setasign/fpdf": "^1.8",

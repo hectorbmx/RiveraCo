@@ -35,7 +35,16 @@
                 <input type="checkbox" name="fiel_password_has_trailing_space" value="1">
                 <span class="text-sm">La contraseña termina con espacio</span>
             </label>
-        </div>
+        </div>  
+        <div class="mb-4">
+    <label class="block text-sm mb-1">Contraseña SAT / CIEC (opcional)</label>
+    <input type="text" name="sat_password"
+           class="w-full border rounded-lg px-3 py-2">
+
+    <p class="text-xs text-gray-500 mt-1">
+        Déjalo vacío si no deseas cambiar la contraseña SAT / CIEC actual.
+    </p>
+</div>
 
         <!-- CER -->
         <div class="mb-4">

@@ -57,6 +57,8 @@ use App\Http\Controllers\Attendance\AttendanceWebController;
 use App\Http\Controllers\Sat\SatDownloadController;
 use App\Http\Controllers\Sat\SatCfdiController;
 use App\Http\Controllers\Sat\SatEmpresaController;
+use App\Http\Controllers\Sat\SatCaptchaController;
+
 
 
 
@@ -93,6 +95,7 @@ Route::middleware(['auth', 'verified'])
             Route::delete('/{empresa}', [SatEmpresaController::class, 'destroy'])->name('destroy');
             Route::get('/{empresa}/edit', [SatEmpresaController::class, 'edit'])->name('edit');
             Route::put('/{empresa}', [SatEmpresaController::class, 'update'])->name('update');
+            Route::post('/{empresa}/solicitar-csf', [SatEmpresaController::class, 'storeCsfRequest'])->name('solicitar-csf');
         });
 
         /*
@@ -116,6 +119,29 @@ Route::middleware(['auth', 'verified'])
             Route::get('/', [SatCfdiController::class, 'index'])->name('index');
             Route::get('/{cfdi}', [SatCfdiController::class, 'show'])->name('show');
             Route::get('/{cfdi}/detalle', [SatCfdiController::class, 'detalle'])->name('detalle');
+        });
+
+        /*
+|--------------------------------------------------------------------------
+| SOLICITUDES DE DOCUMENTOS SAT (CAPTCHA)
+|--------------------------------------------------------------------------
+*/
+        Route::prefix('document-requests')->name('document-requests.')->group(function () {
+            Route::post('/{documentRequest}/captcha', [SatEmpresaController::class, 'submitCaptcha'])
+                ->name('captcha');
+           Route::get('/{documentRequest}/pdf', [SatEmpresaController::class, 'downloadPdf'])
+        ->name('pdf');
+                
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | CAPTCHA SESSIONS (flujo nuevo)
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('captcha')->name('captcha.')->group(function () {
+            Route::get('/{token}', [SatCaptchaController::class, 'image'])->name('image');
+            Route::post('/{token}', [SatCaptchaController::class, 'submit'])->name('submit');
         });
 
     });

@@ -37,5 +37,8 @@ return [
     'attendance' => [
     'ingest_token' => env('ATTENDANCE_INGEST_TOKEN'),
 ],
+'anticaptcha' => [
+    'key' => env('ANTI_CAPTCHA_KEY'),
+],
 
 ];

@@ -7,14 +7,25 @@ use App\Models\SatEmpresa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Models\SatDocumentRequest;
+use App\Models\SatDownloadRequest;
+use App\Services\Sat\CsfRequestService;
+use App\Jobs\Sat\ProcessSatCsfRequestJob;
+
+
 
 class SatEmpresaController extends Controller
 {
-    public function index()
+   public function index()
     {
         $empresas = SatEmpresa::orderBy('nombre')->get();
 
-        return view('sat.empresas.index', compact('empresas'));
+        $documentRequests = SatDocumentRequest::with(['empresa', 'requester'])
+            ->latest()
+            ->take(20)
+            ->get();
+
+        return view('sat.empresas.index', compact('empresas', 'documentRequests'));
     }
 
     public function create()
@@ -105,6 +116,7 @@ public function edit(SatEmpresa $empresa)
                     'nombre' => ['required', 'string', 'max:255'],
                     'rfc' => ['required', 'string', 'max:13', 'unique:sat_empresas,rfc,' . $empresa->id],
                     'fiel_password' => ['nullable', 'string', 'max:255'],
+                    'sat_password' => ['nullable', 'string', 'max:255'],
                     'cer_file' => ['nullable', 'file', 'extensions:cer', 'max:5120'],
                     'key_file' => ['nullable', 'file', 'extensions:key', 'max:5120'],
                     'activo' => ['nullable', 'boolean'],
@@ -123,6 +135,9 @@ public function edit(SatEmpresa $empresa)
 
                     $empresa->fiel_password = $password;
                 }
+                if (!empty($data['sat_password'])) {
+                        $empresa->sat_password = $data['sat_password'];
+                    }
 
                 // 🔹 Archivos
                 if ($request->hasFile('cer_file')) {
@@ -153,4 +168,110 @@ public function edit(SatEmpresa $empresa)
                     ->route('sat.empresas.index')
                     ->with('success', 'Empresa SAT actualizada correctamente.');
             }
+
+//    public function storeCsfRequest(SatEmpresa $empresa, CsfRequestService $csfRequestService)
+public function storeCsfRequest(SatEmpresa $empresa)
+{
+    $documentRequest = SatDocumentRequest::create([
+        'sat_empresa_id' => $empresa->id,
+        'type'           => SatDocumentRequest::TYPE_CSF,
+        'status'         => SatDocumentRequest::STATUS_PENDING,
+        'requested_by'   => auth()->id(),
+    ]);
+
+    \App\Jobs\Sat\ProcessSatCsfRequestJob::dispatch($documentRequest->id);
+
+    return redirect()
+        ->route('sat.empresas.index')
+        ->with('success', 'Solicitud enviada, en un momento aparecerá el captcha.');
+}
+// public function submitCaptcha(Request $request, SatDocumentRequest $documentRequest)
+// {
+//     $data = $request->validate([
+//         'captcha_answer' => ['required', 'string', 'max:50'],
+//     ]);
+
+//     $documentRequest->update([
+//         'captcha_answer' => trim($data['captcha_answer']),
+//         'status' => SatDocumentRequest::STATUS_PROCESSING,
+//         'error_message' => null,
+//     ]);
+
+//     try {
+//         \App\Jobs\Sat\ProcessSatCsfRequestJob::dispatchSync($documentRequest->id);
+//     } catch (\Throwable $e) {
+//         $documentRequest->refresh();
+
+//         return redirect()
+//             ->route('sat.empresas.index')
+//             ->with('error', $documentRequest->error_message ?: $e->getMessage());
+//     }
+
+//     $documentRequest->refresh();
+
+//     // Si falló login/captcha y quedó pendiente sin captcha_path,
+//     // volvemos a ejecutar para generar un nuevo captcha en la misma solicitud.
+//     if (
+//         $documentRequest->status === \App\Models\SatDocumentRequest::STATUS_PENDING
+//         && empty($documentRequest->captcha_path)
+//     ) {
+//         try {
+//             \App\Jobs\Sat\ProcessSatCsfRequestJob::dispatchSync($documentRequest->id);
+//         } catch (\Throwable $e) {
+//             $documentRequest->refresh();
+
+//             return redirect()
+//                 ->route('sat.empresas.index')
+//                 ->with('error', $documentRequest->error_message ?: $e->getMessage());
+//         }
+//     }
+
+//     return redirect()
+//         ->route('sat.empresas.index')
+//         ->with('success', 'Captcha enviado, procesando solicitud.');
+// }
+
+public function captchaImage(string $token)
+{
+    $session = \App\Models\SatCaptchaSession::where('token', $token)
+        ->where('expires_at', '>', now())
+        ->first();
+
+    if (!$session) {
+        return response()->json(['available' => false]);
+    }
+
+    return response()->json([
+        'available' => true,
+        'image'     => $session->image_inline_html, // data:image/png;base64,...
+    ]);
+}
+public function submitCaptcha(Request $request, string $token)
+{
+    $data = $request->validate([
+        'answer' => ['required', 'string', 'max:50'],
+    ]);
+
+    $updated = \App\Models\SatCaptchaSession::where('token', $token)
+        ->where('expires_at', '>', now())
+        ->where('answered', false)
+        ->update([
+            'answer'   => trim($data['answer']),
+            'answered' => true,
+        ]);
+
+    if (!$updated) {
+        return response()->json(['error' => 'Sesión de captcha no encontrada o expirada'], 404);
+    }
+
+    return response()->json(['ok' => true]);
+}
+public function downloadPdf(SatDocumentRequest $documentRequest)
+{
+    if (!$documentRequest->file_path || !Storage::exists($documentRequest->file_path)) {
+        abort(404);
+    }
+
+    return Storage::response($documentRequest->file_path, $documentRequest->file_name);
+}
 }
