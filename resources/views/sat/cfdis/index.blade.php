@@ -94,6 +94,7 @@
                             <option value="I" @selected(request('tipo_comprobante') === 'I')>Ingresos</option>
                             <option value="E" @selected(request('tipo_comprobante') === 'E')>Egresos</option>
                             <option value="P" @selected(request('tipo_comprobante') === 'P')>Pagos</option>
+                            <option value="N" @selected(request('tipo_comprobante') === 'N')>Nóminas</option>
                         </select>
                     </div>
 
@@ -136,7 +137,8 @@
         </div>
 
         {{-- Resúmenes --}}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <!-- <div class="grid grid-cols-1 lg:grid-cols-3 gap-4"> -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
             <div class="rounded-2xl border border-indigo-300 bg-indigo-50 shadow-sm p-5">
                 <div class="flex items-start justify-between">
@@ -206,6 +208,28 @@
                     </div>
                 </div>
             </div>
+            <div class="rounded-2xl border border-amber-300 bg-amber-50 shadow-sm p-5">
+    <div class="flex items-start justify-between">
+        <div>
+            <div class="text-lg font-semibold text-gray-900">Nóminas</div>
+            <div class="text-sm text-gray-500 mt-1">CFDIs tipo N</div>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 text-lg">
+            👥
+        </div>
+    </div>
+
+    <div class="mt-5 space-y-3">
+        <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-600">Registros</span>
+            <span class="font-semibold text-gray-900">{{ number_format($resumenNominas) }}</span>
+        </div>
+        <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-600">Subtotal</span>
+            <span class="font-semibold text-gray-900">${{ number_format((float) $subtotalNominas, 2) }}</span>
+        </div>
+    </div>
+</div>
         </div>
 
         {{-- Encabezado de detalle --}}

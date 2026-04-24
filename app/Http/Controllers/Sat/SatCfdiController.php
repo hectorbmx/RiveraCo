@@ -102,10 +102,12 @@ class SatCfdiController extends Controller
         $resumenIngresos = (clone $q)->where('tipo_comprobante', 'I')->count();
         $resumenEgresos = (clone $q)->where('tipo_comprobante', 'E')->count();
         $resumenPagos = (clone $q)->where('tipo_comprobante', 'P')->count();
+        $resumenNominas = (clone $q)->where('tipo_comprobante', 'N')->count();
 
         $subtotalIngresos = (clone $q)->where('tipo_comprobante', 'I')->sum('total');
         $subtotalEgresos = (clone $q)->where('tipo_comprobante', 'E')->sum('total');
         $subtotalPagos = (clone $q)->where('tipo_comprobante', 'P')->sum('total');
+        $subtotalNominas = (clone $q)->where('tipo_comprobante', 'N')->sum('total');
 
         $cfdis = $q->orderByDesc('fecha_emision')
             ->paginate(20)
@@ -120,9 +122,11 @@ class SatCfdiController extends Controller
             'resumenIngresos',
             'resumenEgresos',
             'resumenPagos',
+            'resumenNominas',
             'subtotalIngresos',
             'subtotalEgresos',
-            'subtotalPagos'
+            'subtotalPagos',
+            'subtotalNominas',
         ));
     }
     public function show(\App\Models\SatCfdi $cfdi)
