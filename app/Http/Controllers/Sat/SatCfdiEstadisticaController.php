@@ -145,20 +145,20 @@ public function detalleMes(Request $request, $empresa)
     $rfc = strtoupper(trim($empresa->rfc));
 
     $query = SatCfdi::query()
-        ->whereYear('fecha', $year)
-        ->whereMonth('fecha', $month)
+        ->whereYear('fecha_emision', $year)
+        ->whereMonth('fecha_emision', $month)
         ->where('tipo_comprobante', 'I');
 
     if ($tipo === 'ingresos') {
-        $query->where('rfc_emisor', $rfc);
+        $query->where('emisor_rfc', $rfc);
     }
 
     if ($tipo === 'gastos') {
-        $query->where('rfc_receptor', $rfc);
+        $query->where('receptor_rfc', $rfc);
     }
 
     $cfdis = $query
-        ->orderBy('fecha', 'desc')
+        ->orderBy('fecha_emision', 'desc')
         ->get();
 
     $items = $cfdis->map(function ($cfdi) use ($tipo) {
@@ -166,17 +166,20 @@ public function detalleMes(Request $request, $empresa)
 
         return [
             'id' => $cfdi->id,
-            'fecha' => optional($cfdi->fecha)->format('Y-m-d'),
+            'fecha' => $cfdi->fecha_emision
+                ? \Carbon\Carbon::parse($cfdi->fecha_emision)->format('Y-m-d')
+                : null,
+
             'uuid' => $cfdi->uuid,
             'serie_folio' => $serieFolio !== '' ? $serieFolio : null,
 
             'rfc' => $tipo === 'ingresos'
-                ? $cfdi->rfc_receptor
-                : $cfdi->rfc_emisor,
+                ? $cfdi->receptor_rfc
+                : $cfdi->emisor_rfc,
 
             'nombre' => $tipo === 'ingresos'
-                ? $cfdi->nombre_receptor
-                : $cfdi->nombre_emisor,
+                ? $cfdi->receptor_nombre
+                : $cfdi->emisor_nombre,
 
             'subtotal' => (float) $cfdi->subtotal,
             'total' => (float) $cfdi->total,
