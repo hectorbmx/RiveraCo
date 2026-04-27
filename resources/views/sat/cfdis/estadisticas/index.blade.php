@@ -33,45 +33,53 @@
         @endforeach
     </select>
 </form>
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
 
-    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-        <div class="text-sm text-gray-500">Ingresos</div>
-        <div class="mt-2 text-2xl font-bold text-gray-900">
+    <div class="flex flex-nowrap gap-4 overflow-x-auto">
+
+
+
+    {{-- INGRESOS --}}
+    <!-- <div class="flex-1 rounded-2xl border border-emerald-200 bg-emerald-50 shadow-sm p-5"> -->
+        <div class="min-w-[250px] flex-1 rounded-2xl border border-emerald-200 bg-emerald-50 shadow-sm p-5">
+        <div class="text-sm text-emerald-700">Ingresos</div>
+        <div class="mt-2 text-2xl font-bold text-emerald-900">
             ${{ number_format($totalIngresos, 2) }}
         </div>
-        <div class="mt-1 text-xs text-gray-500">
+        <div class="mt-1 text-xs text-emerald-600">
             {{ number_format($totalCfdisIngresos) }} CFDIs
         </div>
     </div>
 
-    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-        <div class="text-sm text-gray-500">Gastos</div>
-        <div class="mt-2 text-2xl font-bold text-gray-900">
+    {{-- GASTOS --}}
+<div class="min-w-[250px] flex-1 rounded-2xl  border border-rose-200 bg-rose-50 shadow-sm p-5">     
+       <div class="text-sm text-rose-700">Gastos</div>
+        <div class="mt-2 text-2xl font-bold text-rose-900">
             ${{ number_format($totalGastos, 2) }}
         </div>
-        <div class="mt-1 text-xs text-gray-500">
+        <div class="mt-1 text-xs text-rose-600">
             {{ number_format($totalCfdisGastos) }} CFDIs
         </div>
     </div>
 
-    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-        <div class="text-sm text-gray-500">Balance</div>
-        <div class="mt-2 text-2xl font-bold {{ $balance >= 0 ? 'text-emerald-600' : 'text-red-600' }}">
+    {{-- BALANCE --}}
+    <div class="min-w-[250px] flex-1 rounded-2xl border border-indigo-200 bg-indigo-50 shadow-sm p-5">
+        <div class="text-sm text-indigo-700">Balance</div>
+        <div class="mt-2 text-2xl font-bold text-indigo-900"">
             ${{ number_format($balance, 2) }}
         </div>
-        <div class="mt-1 text-xs text-gray-500">
+        <div class="mt-1 text-xs text-indigo-900"">
             Ingresos - gastos
         </div>
     </div>
 
-    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-        <div class="text-sm text-gray-500">Año consultado</div>
+    {{-- AÑO --}}
+    <div class="min-w-[250px] flex-1 rounded-2xl border border-gray-200 bg-gray-50  shadow-sm p-5">
+        <div class="text-sm text-gray-600">Año</div>
         <div class="mt-2 text-2xl font-bold text-gray-900">
             {{ $year }}
         </div>
         <div class="mt-1 text-xs text-gray-500">
-            Empresa: {{ $empresaRfc }}
+            {{ $empresaRfc }}
         </div>
     </div>
 
