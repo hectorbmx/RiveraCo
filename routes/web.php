@@ -118,18 +118,20 @@ Route::middleware(['auth', 'verified'])
         */
      Route::prefix('cfdis')->name('cfdis.')->group(function () {
 
-    /*
-    |----------------------------------------------------------------------
-    | ESTADÍSTICAS CFDI
-    |----------------------------------------------------------------------
-    */
-    Route::get('/estadisticas', [SatCfdiEstadisticaController::class, 'index'])->name('estadisticas');
-    Route::get('/estadisticas/data', [SatCfdiEstadisticaController::class, 'data'])->name('estadisticas.data');
-    Route::get('/estadisticas/{empresa}', [SatCfdiEstadisticaController::class, 'index'])->name('estadisticas');
+        /*
+        |----------------------------------------------------------------------
+        | ESTADÍSTICAS CFDI
+        |----------------------------------------------------------------------
+        */
+        Route::get('/estadisticas', [SatCfdiEstadisticaController::class, 'index'])->name('estadisticas');
+        Route::get('/estadisticas/data', [SatCfdiEstadisticaController::class, 'data'])->name('estadisticas.data');
+        Route::get('/estadisticas/{empresa}', [SatCfdiEstadisticaController::class, 'index'])->name('estadisticas');
+        Route::get('/estadisticas/{empresa}/detalle-mes', [SatCfdiEstadisticaController::class, 'detalleMes'])->name('estadisticas.detalleMes');
 
-    Route::get('/', [SatCfdiController::class, 'index'])->name('index');
-    Route::get('/{cfdi}', [SatCfdiController::class, 'show'])->name('show');
-    Route::get('/{cfdi}/detalle', [SatCfdiController::class, 'detalle'])->name('detalle');
+
+        Route::get('/', [SatCfdiController::class, 'index'])->name('index');
+        Route::get('/{cfdi}', [SatCfdiController::class, 'show'])->name('show');
+        Route::get('/{cfdi}/detalle', [SatCfdiController::class, 'detalle'])->name('detalle');
 });
 
         /*
