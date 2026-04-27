@@ -127,6 +127,7 @@ $planeacion = \App\Models\ObraPlaneacionSemanal::query()
         'AYUDANTE GENERAL',
         'RESIDENTE',
         'INGENIERO',
+        'COLADOR',
         'ARQUITECTO',
         'OPERADOR',
         'OFICIAL',
