@@ -123,10 +123,13 @@ $planeacion = \App\Models\ObraPlaneacionSemanal::query()
     // Puestos BASE que se pueden asignar a una obra
     // (estos son los grupos normalizados en la columna puesto_base)
     $puestosBaseAsignables = [
+        'AYUDANTE PERFORADOR',
+        'AYUDANTE GENERAL',
         'RESIDENTE',
         'INGENIERO',
         'ARQUITECTO',
         'OPERADOR',
+        'OFICIAL',
         'AYUDANTE',
         'TUBERO',
         'SOLDADOR',
@@ -134,7 +137,9 @@ $planeacion = \App\Models\ObraPlaneacionSemanal::query()
         'MECANICO',
         'CHOFER',
         'SUPERVISOR',
-        'OPERADOR GRUA'
+        'SUPERVISOR_OBRA',
+        'OPERADOR GRUA',
+        'AXILAR'
     ];
 
     // Cargar relaciones principales de la obra
