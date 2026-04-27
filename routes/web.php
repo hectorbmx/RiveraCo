@@ -58,6 +58,7 @@ use App\Http\Controllers\Sat\SatDownloadController;
 use App\Http\Controllers\Sat\SatCfdiController;
 use App\Http\Controllers\Sat\SatEmpresaController;
 use App\Http\Controllers\Sat\SatCaptchaController;
+use App\Http\Controllers\Sat\SatCfdiEstadisticaController;
 
 
 
@@ -115,11 +116,21 @@ Route::middleware(['auth', 'verified'])
         | CFDIs DESCARGADOS
         |--------------------------------------------------------------------------
         */
-        Route::prefix('cfdis')->name('cfdis.')->group(function () {
-            Route::get('/', [SatCfdiController::class, 'index'])->name('index');
-            Route::get('/{cfdi}', [SatCfdiController::class, 'show'])->name('show');
-            Route::get('/{cfdi}/detalle', [SatCfdiController::class, 'detalle'])->name('detalle');
-        });
+     Route::prefix('cfdis')->name('cfdis.')->group(function () {
+
+    /*
+    |----------------------------------------------------------------------
+    | ESTADÍSTICAS CFDI
+    |----------------------------------------------------------------------
+    */
+    Route::get('/estadisticas', [SatCfdiEstadisticaController::class, 'index'])->name('estadisticas');
+    Route::get('/estadisticas/data', [SatCfdiEstadisticaController::class, 'data'])->name('estadisticas.data');
+    Route::get('/estadisticas/{empresa}', [SatCfdiEstadisticaController::class, 'index'])->name('estadisticas');
+
+    Route::get('/', [SatCfdiController::class, 'index'])->name('index');
+    Route::get('/{cfdi}', [SatCfdiController::class, 'show'])->name('show');
+    Route::get('/{cfdi}/detalle', [SatCfdiController::class, 'detalle'])->name('detalle');
+});
 
         /*
 |--------------------------------------------------------------------------
