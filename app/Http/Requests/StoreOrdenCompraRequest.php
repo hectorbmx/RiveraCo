@@ -14,23 +14,24 @@ class StoreOrdenCompraRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
-            'proveedor_id' => ['required','integer','exists:proveedores,id'],
-            'obra_id'      => ['nullable','integer','exists:obras,id'],
-
-            'area_id'      => ['required','integer','exists:areas,id'],
-
-            'moneda'       => ['required', Rule::in(['MXN','USD','EUR'])],
-            'tipo_cambio'  => ['nullable','numeric','min:0'],
-
-            'fecha'        => ['required','date'],
-
-            'cotizacion'   => ['nullable','string','max:50'],
-            'atencion'     => ['nullable','string','max:100'],
-            'tipo_pago'    => ['nullable','string','max:50'],
-            'forma_pago'   => ['nullable','string','max:50'],
-            'comentarios'  => ['nullable','string'],
-        ];
+       return [
+        'proveedor_id'         => ['required', 'integer', 'exists:proveedores,id'],
+        'obra_id'              => ['nullable', 'integer', 'exists:obras,id'],
+        'planeacion_gasto_id'  => ['nullable', 'integer', 'exists:obra_planeacion_gastos,id'],  // NUEVO
+ 
+        'area_id'              => ['required', 'integer', 'exists:areas,id'],
+ 
+        'moneda'               => ['required', Rule::in(['MXN', 'USD', 'EUR'])],
+        'tipo_cambio'          => ['nullable', 'numeric', 'min:0'],
+ 
+        'fecha'                => ['required', 'date'],
+ 
+        'cotizacion'           => ['nullable', 'string', 'max:50'],
+        'atencion'             => ['nullable', 'string', 'max:100'],
+        'tipo_pago'            => ['nullable', 'string', 'max:50'],
+        'forma_pago'           => ['nullable', 'string', 'max:50'],
+        'comentarios'          => ['nullable', 'string'],
+    ];
     }
 
     public function withValidator($validator)
@@ -53,4 +54,6 @@ class StoreOrdenCompraRequest extends FormRequest
             'fecha.required'        => 'La fecha es obligatoria.',
         ];
     }
+
+    
 }

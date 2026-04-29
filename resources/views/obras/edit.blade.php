@@ -34,6 +34,7 @@
             'planos'       => 'Planos',
             'presupuestos' => 'Presupuestos',
             'planeacion'   => 'Planeacion',
+            'gastos'       => 'Gastos',
             'pilas'        => 'Pilas',
             'empleados'    => 'Empleados',
             'maquinaria'   => 'Maquinaria',
@@ -1075,6 +1076,101 @@
 </div>
 @endif
 {{--  TERMINA TAB : PLANEACION --}}
+{{--  TAB :GASTOS --}}
+@if($tab === 'gastos')
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="p-4 bg-slate-50 border-b border-slate-200">
+        <h3 class="text-lg font-bold text-slate-800">Gastos de la Obra</h3>
+        <p class="text-xs text-slate-500">
+            Resumen de gastos por partida presupuestal y órdenes de compra autorizadas.
+        </p>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse">
+            <thead class="bg-slate-100">
+                <tr>
+                    <th class="p-3 border text-left">Partida / Concepto</th>
+                    <th class="p-3 border text-right">Tope</th>
+                    <th class="p-3 border text-right">Gastado</th>
+                    <th class="p-3 border text-right">Disponible</th>
+                    <th class="p-3 border text-center">OCs</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @forelse($gastosPorPartida as $grupo)
+                    @php
+                        $gastoBase = $grupo['gasto_base'];
+                        $disponible = $grupo['disponible'];
+                    @endphp
+
+                    <tr class="bg-slate-50">
+                        <td class="p-3 border">
+                            <div class="font-bold text-slate-800">
+                                {{ $gastoBase->partida ?? 'SIN PARTIDA' }}
+                            </div>
+                            <div class="text-xs text-slate-500">
+                                {{ $gastoBase->concepto ?? '-' }}
+                            </div>
+                        </td>
+
+                        <td class="p-3 border text-right">
+                            ${{ number_format($grupo['tope'], 2) }}
+                            
+                        </td>
+
+                        <td class="p-3 border text-right font-semibold text-orange-700">
+                            ${{ number_format($grupo['gastado'], 2) }}
+                        </td>
+
+                        <td class="p-3 border text-right font-bold {{ $disponible < 0 ? 'text-red-600' : 'text-green-700' }}">
+                            ${{ number_format($disponible, 2) }}
+                        </td>
+
+                        <td class="p-3 border text-center">
+                            {{ $grupo['ordenes']->count() }}
+                        </td>
+                    </tr>
+
+                    @foreach($grupo['ordenes'] as $oc)
+                        <tr class="hover:bg-white">
+                            <td class="p-3 border pl-8 text-slate-600">
+                                OC: {{ $oc->folio ?? $oc->id }}
+                            </td>
+
+                            <td class="p-3 border text-right text-slate-400">
+                                {{ optional($oc->fecha)->format('d/m/Y') ?? $oc->fecha ?? '-' }}
+                            </td>
+
+                            <td class="p-3 border">
+                                {{ $oc->proveedor->nombre ?? $oc->proveedor->razon_social ?? '-' }}
+                            </td>
+
+                            <td class="p-3 border text-right font-medium">
+                                ${{ number_format($oc->total ?? 0, 2) }}
+                            </td>
+
+                            <td class="p-3 border text-center">
+                                <span class="px-2 py-1 rounded-full text-xs bg-green-100 text-green-700 font-semibold">
+                                    {{ $oc->estado }}
+                                </span>
+                            </td>
+                        </tr>
+                    @endforeach
+                @empty
+                    <tr>
+                        <td colspan="5" class="p-8 text-center text-slate-400">
+                            No hay gastos autorizados para esta obra.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
+{{--  TERMINA TAB :GASTOS --}}
  {{-- TAB: EMPLEADOS --}}
 @if($tab === 'empleados')
     <h2 class="text-lg font-semibold mb-4">Empleados asignados a la obra</h2>

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\ObraPlaneacionGasto;
 
 class OrdenCompra extends Model
 {
@@ -73,4 +74,13 @@ class OrdenCompra extends Model
     {
         return $this->hasMany(OrdenCompraDetalle::class, 'orden_compra_id');
     }
+    public function partida()
+    {
+        return $this->belongsTo(\App\Models\ObraPlaneacionGasto::class, 'planeacion_gasto_id');
+    }
+    public function planeacionGasto()
+    {
+        return $this->belongsTo(ObraPlaneacionGasto::class, 'planeacion_gasto_id');
+    }
+ 
 }

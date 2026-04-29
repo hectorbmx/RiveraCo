@@ -101,6 +101,7 @@ class OrdenCompraController extends Controller
             $oc->folio        = $this->generarFolioPorArea($area); // folio por área
             $oc->proveedor_id = (int) $request->proveedor_id;
             $oc->obra_id      = $request->obra_id ? (int)$request->obra_id : null;
+            $oc->planeacion_gasto_id = $request->planeacion_gasto_id ? (int)$request->planeacion_gasto_id : null;
 
             // nuevo
             $oc->area_id      = (int) $request->area_id;
@@ -233,38 +234,93 @@ public function edit($id)
 
     //     return back()->with('success', 'Orden autorizada.');
     // }
-   public function autorizar($id)
+//    public function autorizar($id)
+// {
+//     $user = auth()->user();
+//     if (!auth()->user()->can('ordenes_compra.autorizar')) {
+//         abort(403, 'No tienes permiso para autorizar órdenes de compra.');
+//     }
+//     // if (!in_array($user->rol ?? null, ['admin', 'compras'])) {
+//     //     abort(403, 'No tienes permiso para autorizar órdenes de compra.');
+//     // }
+
+//     $oc = OrdenCompra::findOrFail($id);
+
+//     if ($oc->estado_normalizado === 'cancelada') {
+//         return back()->with('error', 'No puedes autorizar una orden cancelada.');
+//     }
+
+//     if ($oc->estado_normalizado === 'autorizada') {
+//         return back()->with('success', 'La orden ya estaba autorizada.');
+//     }
+
+//     if ($oc->detalles()->count() === 0) {
+//         return back()->with('error', 'No puedes autorizar una orden sin detalles.');
+//     }
+
+//     $oc->estado = 'AUTORIZADA';
+//     $oc->fecha_autorizacion = now()->toDateString();
+//     $oc->usuario_autoriza = $this->usuarioActualNombre();
+//     $oc->save();
+
+//     return back()->with('success', 'Orden autorizada.');
+// }
+//nueva funcion autorizar con la parte de las partidas
+public function autorizar($id)
 {
-    $user = auth()->user();
     if (!auth()->user()->can('ordenes_compra.autorizar')) {
         abort(403, 'No tienes permiso para autorizar órdenes de compra.');
     }
-    // if (!in_array($user->rol ?? null, ['admin', 'compras'])) {
-    //     abort(403, 'No tienes permiso para autorizar órdenes de compra.');
-    // }
-
+ 
     $oc = OrdenCompra::findOrFail($id);
-
+ 
     if ($oc->estado_normalizado === 'cancelada') {
         return back()->with('error', 'No puedes autorizar una orden cancelada.');
     }
-
+ 
     if ($oc->estado_normalizado === 'autorizada') {
         return back()->with('success', 'La orden ya estaba autorizada.');
     }
-
+ 
     if ($oc->detalles()->count() === 0) {
         return back()->with('error', 'No puedes autorizar una orden sin detalles.');
     }
-
-    $oc->estado = 'AUTORIZADA';
+ 
+    // ── NUEVO: validación de saldo disponible ────────────────────────────────
+    if ($oc->planeacion_gasto_id) {
+        $gasto = \App\Models\ObraPlaneacionGasto::find($oc->planeacion_gasto_id);
+ 
+        if ($gasto) {
+            $tope = (float) $gasto->precio_unitario * (float) $gasto->cantidad;
+ 
+            // Suma de OCs ya autorizadas para esta partida (excluyendo la actual)
+            $gastadoPrevio = OrdenCompra::where('planeacion_gasto_id', $gasto->id)
+                ->where('estado', 'AUTORIZADA')
+                ->where('id', '!=', $oc->id)
+                ->sum('total');
+ 
+            $totalConEsta = (float) $gastadoPrevio + (float) $oc->total;
+ 
+            if ($totalConEsta > $tope) {
+                $exceso = number_format($totalConEsta - $tope, 2);
+                $topeF  = number_format($tope, 2);
+                return back()->with(
+                    'error',
+                    "No se puede autorizar: se excede el presupuesto de la partida \"{$gasto->concepto}\" "
+                    . "por \${$exceso} (tope: \${$topeF})."
+                );
+            }
+        }
+    }
+    // ── FIN validación ───────────────────────────────────────────────────────
+ 
+    $oc->estado             = 'AUTORIZADA';
     $oc->fecha_autorizacion = now()->toDateString();
-    $oc->usuario_autoriza = $this->usuarioActualNombre();
+    $oc->usuario_autoriza   = $this->usuarioActualNombre();
     $oc->save();
-
+ 
     return back()->with('success', 'Orden autorizada.');
 }
-
 
 /**
  * Imprimir OC en PDF
@@ -777,4 +833,46 @@ public function print(OrdenCompra $orden_compra)
 
         return $pref . str_pad((string)$num, 6, '0', STR_PAD_LEFT);
     }
+
+    public function partidasPorObra($obra_id)
+{
+    $obra = \App\Models\Obra::findOrFail($obra_id);
+ 
+    // IDs de presupuestos vinculados a esta obra
+    $presupuestoIds = $obra->presupuestos_vinculados()->pluck('presupuestos.id');
+ 
+    // Filas base (numero_semana = 0) de la planeación de esta obra
+    $gastos = \App\Models\ObraPlaneacionGasto::query()
+        ->where(function ($q) use ($obra, $presupuestoIds) {
+            $q->where('obra_id', $obra->id)
+              ->orWhereIn('presupuesto_id', $presupuestoIds);
+        })
+        ->where('numero_semana', 0)
+        ->get();
+ 
+    // Para cada partida calculamos el gastado autorizado sumando OCs autorizadas
+    $gastadoPorPartida = \App\Models\OrdenCompra::query()
+        ->whereIn('planeacion_gasto_id', $gastos->pluck('id'))
+        ->where('estado', 'AUTORIZADA')
+        ->selectRaw('planeacion_gasto_id, SUM(total) as total_gastado')
+        ->groupBy('planeacion_gasto_id')
+        ->pluck('total_gastado', 'planeacion_gasto_id');
+ 
+    $resultado = $gastos->map(function ($g) use ($gastadoPorPartida) {
+        $tope     = (float) $g->precio_unitario * (float) $g->cantidad;
+        $gastado  = (float) ($gastadoPorPartida[$g->id] ?? 0);
+        $disponible = max(0, $tope - $gastado);
+ 
+        return [
+            'id'         => $g->id,
+            'partida'    => $g->partida,
+            'concepto'   => $g->concepto,
+            'tope'       => $tope,
+            'gastado'    => $gastado,
+            'disponible' => $disponible,
+        ];
+    });
+ 
+    return response()->json($resultado->values());
+}
 }

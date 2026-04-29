@@ -25,6 +25,7 @@ use App\Models\ObraMaquinaRegistro;
 use App\Models\CatalogoActividadComision;
 use App\Models\ObraAsistencia;
 use Carbon\Carbon;
+use App\Models\OrdenCompra;
 
 
 
@@ -182,8 +183,36 @@ $presupuestosDisponibles = Presupuesto::whereDoesntHave('obras', function($query
     $asistencias = collect();
     $weekDays = collect();
     $asistenciasSemana = collect();
+    $gastosOC = collect();
+    $gastosPorPartida = collect();
     $daysCount = 0;
+if ($tab === 'gastos') {
+    $gastosOC = OrdenCompra::where('obra_id', $obra->id)
+        ->whereNotNull('planeacion_gasto_id')
+        ->where('estado', 'AUTORIZADA')
+        // ->with(['partida', 'proveedor'])
+            ->with(['proveedor', 'planeacionGasto'])
 
+        ->orderBy('fecha')
+        ->get();
+}
+$gastosPorPartida = $gastosOC
+    ->groupBy('planeacion_gasto_id')
+    ->map(function ($ocs) {
+        $gastoBase = $ocs->first()->planeacionGasto;
+
+        $tope = (float) ($gastoBase->monto_programado ?? 0);
+        $gastado = (float) $ocs->sum('total');
+        $disponible = $tope - $gastado;
+
+        return [
+            'gasto_base' => $gastoBase,
+            'tope' => $tope,
+            'gastado' => $gastado,
+            'disponible' => $disponible,
+            'ordenes' => $ocs,
+        ];
+    });
 if ($tab === 'asistencias') {
 
     $rawQuery = ObraAsistencia::query()
@@ -530,6 +559,7 @@ return view('obras.edit', [
     'maquinasAsignadasHistoricas' => $maquinasAsignadasHistoricas,
     'maquinasDisponibles'         => $maquinasDisponibles,
     'registrosHorasMaquina'       => $registrosHorasMaquina,
+    
 
     
     'pilasAsignadasActivas'       => $pilasAsignadasActivas,
@@ -567,6 +597,8 @@ return view('obras.edit', [
     'gastosBase' => $gastosBase,
     'planeacion' => $planeacion,
     'semanas'    => $semanas,
+    'gastosOC'                    => $gastosOC,
+    'gastosPorPartida' => $gastosPorPartida,
 
     ]);
 }

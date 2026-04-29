@@ -48,7 +48,7 @@
                 </select>
             </div>
 
-            <div>
+            <!-- <div>
                 <label>Obra</label>
                 <select name="obra_id" class="w-full border p-2">
                     <option value="">Compra general</option>
@@ -56,7 +56,159 @@
                         <option value="{{ $o->id }}">{{ $o->nombre }}</option>
                     @endforeach
                 </select>
-            </div>
+            </div> -->
+            {{-- Hidden para planeacion_gasto_id --}}
+<input type="hidden" name="planeacion_gasto_id" id="planeacion_gasto_id" value="{{ old('planeacion_gasto_id') }}">
+ 
+<div>
+    <label class="block text-sm font-medium mb-1">Obra</label>
+    <select
+        name="obra_id"
+        id="obra_id"
+        class="w-full border p-2 rounded"
+        data-partidas-url="{{ route('ordenes_compra.partidas_obra', ['obra_id' => '__ID__']) }}"
+    >
+        <option value="">Compra general</option>
+        @foreach($obras as $o)
+            <option value="{{ $o->id }}" {{ old('obra_id') == $o->id ? 'selected' : '' }}>
+                {{ $o->nombre }}
+            </option>
+        @endforeach
+    </select>
+</div>
+ 
+{{-- Select de partidas — se muestra solo cuando hay obra seleccionada --}}
+<div id="partidas_wrapper" class="{{ old('obra_id') ? '' : 'hidden' }}">
+    <label class="block text-sm font-medium mb-1">Partida presupuestal</label>
+    <select
+        name="_partida_display"
+        id="partida_select"
+        class="w-full border p-2 rounded"
+    >
+        <option value="">— Selecciona una partida —</option>
+    </select>
+    <p id="partidas_cargando" class="text-xs text-slate-400 mt-1 hidden">Cargando partidas…</p>
+    <p id="partidas_sin_datos" class="text-xs text-slate-400 mt-1 hidden">Esta obra no tiene partidas de planeación.</p>
+</div>
+ 
+{{-- ─────────────────────────────────────────────────────────────────────────
+     Script — agregar dentro del @push('scripts') existente,
+     DESPUÉS del script del buscador de proveedores.
+     ───────────────────────────────────────────────────────────────────────── --}}
+<script>
+(function () {
+    const obraSelect      = document.getElementById('obra_id');
+    const partidasWrapper = document.getElementById('partidas_wrapper');
+    const partidaSelect   = document.getElementById('partida_select');
+    const hiddenPartida   = document.getElementById('planeacion_gasto_id');
+    const msgCargando     = document.getElementById('partidas_cargando');
+    const msgSinDatos     = document.getElementById('partidas_sin_datos');
+ 
+    if (!obraSelect) return;
+ 
+    // URL base: reemplazamos el placeholder __ID__ con el id real
+    const urlBase = obraSelect.dataset.partidasUrl;
+ 
+    function formatMonto(n) {
+        return new Intl.NumberFormat('es-MX', {
+            style: 'currency',
+            currency: 'MXN',
+            minimumFractionDigits: 2
+        }).format(n);
+    }
+ 
+    function limpiarPartidas() {
+        partidaSelect.innerHTML = '<option value="">— Selecciona una partida —</option>';
+        hiddenPartida.value = '';
+    }
+ 
+    async function cargarPartidas(obraId) {
+        limpiarPartidas();
+        msgSinDatos.classList.add('hidden');
+        msgCargando.classList.remove('hidden');
+        partidasWrapper.classList.remove('hidden');
+ 
+        try {
+            const url = urlBase.replace('__ID__', obraId);
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+ 
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+ 
+            const partidas = await res.json();
+ 
+            msgCargando.classList.add('hidden');
+ 
+            if (!partidas.length) {
+                msgSinDatos.classList.remove('hidden');
+                return;
+            }
+ 
+            // Agrupamos por partida para el optgroup
+            const grupos = {};
+            partidas.forEach(p => {
+                if (!grupos[p.partida]) grupos[p.partida] = [];
+                grupos[p.partida].push(p);
+            });
+ 
+            Object.entries(grupos).forEach(([grupo, items]) => {
+                const og = document.createElement('optgroup');
+                og.label = grupo;
+ 
+                items.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.dataset.disponible = p.disponible;
+ 
+                    const disponibleStr = formatMonto(p.disponible);
+                    const topeStr       = formatMonto(p.tope);
+                    const agotado       = p.disponible <= 0;
+ 
+                    opt.textContent = `${p.concepto} | Disponible: ${disponibleStr} / Tope: ${topeStr}${agotado ? ' ⚠️ AGOTADO' : ''}`;
+                    opt.disabled    = false; // dejamos seleccionar aunque esté agotado, el bloqueo es al autorizar
+ 
+                    og.appendChild(opt);
+                });
+ 
+                partidaSelect.appendChild(og);
+            });
+ 
+            // Si venía un valor previo (old input), restaurarlo
+            const oldVal = '{{ old('planeacion_gasto_id') }}';
+            if (oldVal) {
+                partidaSelect.value = oldVal;
+                hiddenPartida.value = oldVal;
+            }
+ 
+        } catch (e) {
+            msgCargando.classList.add('hidden');
+            console.error('Error cargando partidas:', e);
+        }
+    }
+ 
+    // Al cambiar la obra
+    obraSelect.addEventListener('change', function () {
+        const obraId = this.value;
+ 
+        if (!obraId) {
+            partidasWrapper.classList.add('hidden');
+            limpiarPartidas();
+            return;
+        }
+ 
+        cargarPartidas(obraId);
+    });
+ 
+    // Al cambiar la partida seleccionada
+    partidaSelect.addEventListener('change', function () {
+        hiddenPartida.value = this.value || '';
+    });
+ 
+    // Si al cargar la página ya hay una obra seleccionada (old input / edit)
+    if (obraSelect.value) {
+        cargarPartidas(obraSelect.value);
+    }
+})();
+</script>
 
             <div>
                 <label>Fecha</label>

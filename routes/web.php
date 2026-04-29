@@ -407,25 +407,19 @@ Route::middleware('auth','verified')->group(function () {
 
     Route::resource('ordenes_compra', OrdenCompraController::class)->except(['show','destroy']);
 
-    Route::post('ordenes_compra/{id}/autorizar', [OrdenCompraController::class, 'autorizar'])
-            // ->middleware('permission:ordenes_compra.autorizar')
+    Route::post('ordenes_compra/{id}/autorizar', [OrdenCompraController::class, 'autorizar']) // ->middleware('permission:ordenes_compra.autorizar')
             ->name('ordenes_compra.autorizar');
 
-    Route::post('ordenes_compra/{id}/cancelar', [OrdenCompraController::class, 'cancelar'])
-            ->name('ordenes_compra.cancelar');
+    Route::post('ordenes_compra/{id}/cancelar', [OrdenCompraController::class, 'cancelar'])->name('ordenes_compra.cancelar');
                     // Detalles anidados
-    Route::post('ordenes_compra/{orden}/detalles', [OrdenCompraDetalleController::class, 'store'])
-            ->name('ordenes_compra.detalles.store');
+    Route::post('ordenes_compra/{orden}/detalles', [OrdenCompraDetalleController::class, 'store'])->name('ordenes_compra.detalles.store');
 
-    Route::put('ordenes_compra/{orden}/detalles/{detalle}', [OrdenCompraDetalleController::class, 'update'])
-            ->name('ordenes_compra.detalles.update');
+    Route::put('ordenes_compra/{orden}/detalles/{detalle}', [OrdenCompraDetalleController::class, 'update'])->name('ordenes_compra.detalles.update');
 
-    Route::delete('ordenes_compra/{orden}/detalles/{detalle}', [OrdenCompraDetalleController::class, 'destroy'])
-            ->name('ordenes_compra.detalles.destroy');
-    Route::get('ordenes_compra/{orden_compra}/print', [OrdenCompraController::class, 'print'])
-        ->name('ordenes_compra.print');
+    Route::delete('ordenes_compra/{orden}/detalles/{detalle}', [OrdenCompraDetalleController::class, 'destroy'])->name('ordenes_compra.detalles.destroy');
+    Route::get('ordenes_compra/{orden_compra}/print', [OrdenCompraController::class, 'print'])->name('ordenes_compra.print');
     
-     
+    Route::get('ordenes-compra/partidas-obra/{obra_id}', [OrdenCompraController::class, 'partidasPorObra'])->name('ordenes_compra.partidas_obra');
 
     Route::get('proveedores/buscar', [ProveedorController::class, 'buscar'])
     ->name('proveedores.buscar');
