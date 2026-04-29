@@ -2541,11 +2541,13 @@
 
       {{-- BUSCADORES --}}
 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-    <input type="date"
-           x-model="filters.fecha"
-           @input="applyFilters()"
-           class="rounded-lg border-gray-300 text-sm"
-           placeholder="Fecha">
+  <input type="date"
+       id="filtro_fecha_cfdi"
+       name="fecha"
+       x-model="filters.fecha"
+       @input="applyFilters()"
+       class="rounded-lg border-gray-300 text-sm"
+       placeholder="Fecha">
 
     <input type="text"
            x-model="filters.uuid"
