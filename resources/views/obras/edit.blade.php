@@ -2697,6 +2697,7 @@ function relacionFacturasModal() {
             const fecha = this.filters.fecha;
             const uuid = this.filters.uuid.toLowerCase().trim();
             const monto = this.filters.monto.replace(',', '').trim();
+    console.log('Filtro fecha:', fecha);
 
             this.filteredCfdis = this.cfdis.filter(cfdi => {
                 const matchFecha = !fecha || String(cfdi.fecha_emision ?? '').includes(fecha);
