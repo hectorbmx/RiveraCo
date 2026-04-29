@@ -240,7 +240,7 @@
 
                     @foreach($columnas as $key => $label)
                         <td class="px-4 py-2 text-right">
-                            {{ number_format($r['conceptos'][$key] ?? 0, 2) }}
+                           ${{ number_format($r['conceptos'][$key] ?? 0, 2) }}
                         </td>
                     @endforeach
 
