@@ -2691,6 +2691,9 @@ function relacionFacturasModal() {
             this.open = true;
             this.filteredCfdis = this.cfdis;
             this.currentPage = 1;
+
+             console.log('Total CFDIs cargados en modal:', this.cfdis.length);
+    console.log('CFDIs del 2026-03-17:', this.cfdis.filter(c => c.fecha_emision === '2026-03-17'));
         },
 
         applyFilters() {
