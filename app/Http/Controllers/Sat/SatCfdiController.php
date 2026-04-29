@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SatCfdi;
 use App\Models\SatEmpresa;
 use Illuminate\Http\Request;
+use App\Models\Obra;
 
 class SatCfdiController extends Controller
 {
@@ -16,6 +17,7 @@ class SatCfdiController extends Controller
             ->get();
 
         $empresaSeleccionada = null;
+        $obras = Obra::orderBy('nombre')->get();
         $cfdis = collect();
 
         $totalGeneral = 0;
@@ -42,7 +44,8 @@ class SatCfdiController extends Controller
                 'resumenPagos',
                 'subtotalIngresos',
                 'subtotalEgresos',
-                'subtotalPagos'
+                'subtotalPagos',
+                'obras',
             ));
         }
 
@@ -60,11 +63,13 @@ class SatCfdiController extends Controller
                 'resumenPagos',
                 'subtotalIngresos',
                 'subtotalEgresos',
-                'subtotalPagos'
+                'subtotalPagos',
+                'obras',
             ));
         }
 
-        $q = SatCfdi::query()->where(function ($sub) use ($empresaSeleccionada) {
+        // $q = SatCfdi::query()->where(function ($sub) use ($empresaSeleccionada) {
+        $q = SatCfdi::query()->with('obra')->where(function ($sub) use ($empresaSeleccionada) {
             $sub->where('rfc_emisor', $empresaSeleccionada->rfc)
                 ->orWhere('rfc_receptor', $empresaSeleccionada->rfc);
         });
@@ -112,7 +117,7 @@ class SatCfdiController extends Controller
         $cfdis = $q->orderByDesc('fecha_emision')
             ->paginate(20)
             ->withQueryString();
-
+        
         return view('sat.cfdis.index', compact(
             'empresas',
             'empresaSeleccionada',
@@ -127,6 +132,7 @@ class SatCfdiController extends Controller
             'subtotalEgresos',
             'subtotalPagos',
             'subtotalNominas',
+            'obras'
         ));
     }
     public function show(\App\Models\SatCfdi $cfdi)
@@ -143,4 +149,19 @@ class SatCfdiController extends Controller
                 'cfdi' => $cfdi,
             ]);
         }
+
+        public function relacionarObra(Request $request, SatCfdi $cfdi)
+    {
+        $validated = $request->validate([
+            'obra_id' => ['required', 'exists:obras,id'],
+        ]);
+
+        $cfdi->update([
+            'obra_id' => $validated['obra_id'],
+        ]);
+
+        return redirect()
+            ->back()
+            ->with('success', 'CFDI relacionado correctamente a la obra.');
+    }
 }

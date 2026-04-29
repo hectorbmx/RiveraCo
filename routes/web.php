@@ -132,6 +132,9 @@ Route::middleware(['auth', 'verified'])
         Route::get('/', [SatCfdiController::class, 'index'])->name('index');
         Route::get('/{cfdi}', [SatCfdiController::class, 'show'])->name('show');
         Route::get('/{cfdi}/detalle', [SatCfdiController::class, 'detalle'])->name('detalle');
+
+        //RELACIONAR UNA FACTURA CON UNA OBRA
+        Route::put('/{cfdi}/relacionar-obra', [SatCfdiController::class, 'relacionarObra'])->name('relacionarObra');
 });
 
         /*
@@ -404,6 +407,8 @@ Route::middleware('auth','verified')->group(function () {
     Route::post('obras/{id}/vincular-presupuesto', [ObraController::class, 'vincularPresupuesto'])->name('obras.vincularPresupuesto');
     // Rutas de Obras
     Route::post('obras/{obra}/guardar-planeacion', [ObraController::class, 'guardarPlaneacion'])->name('obras.guardarPlaneacion');
+//relacionar facturas desde la vista de las obras
+    Route::post('/obras/{obra}/relacionar-cfdis', [ObraController::class, 'relacionarCfdis'])->name('obras.relacionarCfdis');
 
     Route::resource('ordenes_compra', OrdenCompraController::class)->except(['show','destroy']);
 

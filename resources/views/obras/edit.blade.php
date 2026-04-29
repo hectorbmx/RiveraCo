@@ -41,6 +41,7 @@
             'horas-maquina'=> 'Horas maquina',
             'comisiones'   => 'Comisiones',
             'facturacion'  => 'Facturacion',
+            'relacionar'  => 'Relacionar Facturas',
             'asistencias'  => 'Asistencias',
         ];
     @endphp
@@ -2483,6 +2484,273 @@
     </div>
     
 @endif
+
+{{--  TAB RELACIONAR  FACTURAS --}}
+@if ($tab === 'relacionar')
+<div x-data="relacionFacturasModal()">
+
+    <div class="bg-white rounded-xl shadow-sm p-6">
+
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold">Facturas relacionadas</h2>
+
+            <button
+                @click="openModal()"
+                class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+                + Relacionar facturas
+            </button>
+        </div>
+
+        {{-- Tabla de facturas ya relacionadas --}}
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                    <tr class="text-left text-gray-500">
+                        <th class="py-2">UUID</th>
+                        <th class="py-2">Fecha</th>
+                        <th class="py-2">Monto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($obra->cfdis as $cfdi)
+                        <tr class="border-t">
+                            <td class="py-2">{{ $cfdi->uuid }}</td>
+                            <td class="py-2">{{ $cfdi->fecha_emision }}</td>
+                            <td class="py-2">${{ number_format($cfdi->total,2) }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-gray-400">
+                                Sin facturas relacionadas
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+{{-- MODAL --}}
+<div x-show="open"
+     x-cloak
+     class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+
+    <div class="bg-white w-full max-w-2xl rounded-xl p-6">
+
+        <h3 class="text-lg font-semibold mb-4">Relacionar facturas</h3>
+
+      {{-- BUSCADORES --}}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+    <input type="date"
+           x-model="filters.fecha"
+           @input="applyFilters()"
+           class="rounded-lg border-gray-300 text-sm"
+           placeholder="Fecha">
+
+    <input type="text"
+           x-model="filters.uuid"
+           @input="applyFilters()"
+           class="rounded-lg border-gray-300 text-sm"
+           placeholder="Buscar UUID">
+
+    <input type="text"
+           x-model="filters.monto"
+           @input="applyFilters()"
+           class="rounded-lg border-gray-300 text-sm"
+           placeholder="Buscar monto">
+</div>
+
+{{-- TABLA --}}
+<div class="max-h-96 overflow-y-auto border rounded-lg">
+    <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 sticky top-0">
+            <tr>
+                <th class="px-3 py-2 text-left">Fecha</th>
+                <th class="px-3 py-2 text-left">UUID</th>
+                <th class="px-3 py-2 text-right">Monto</th>
+                <th class="px-3 py-2 text-center">Seleccionar</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            
+                <template x-for="cfdi in paginatedCfdis" :key="cfdi.id">
+                <tr class="border-t hover:bg-gray-50">
+                    <td class="px-3 py-2" x-text="cfdi.fecha_emision"></td>
+
+                    <td class="px-3 py-2">
+                        <span class="font-mono text-xs" x-text="cfdi.uuid"></span>
+                    </td>
+
+                    <td class="px-3 py-2 text-right font-medium">
+                        $<span x-text="Number(cfdi.total).toLocaleString('es-MX', { minimumFractionDigits: 2 })"></span>
+                    </td>
+
+                    <td class="px-3 py-2 text-center">
+                        <input type="checkbox"
+                               :value="cfdi.id"
+                               x-model="selected"
+                               class="rounded border-gray-300">
+                    </td>
+                </tr>
+            </template>
+
+            <tr x-show="filteredCfdis.length === 0">
+                <td colspan="4" class="px-3 py-6 text-center text-gray-400">
+                    No se encontraron CFDIs
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="mt-4 flex items-center justify-between text-sm">
+    <div class="text-gray-500">
+        Mostrando
+        <span x-text="paginatedCfdis.length"></span>
+        de
+        <span x-text="filteredCfdis.length"></span>
+        CFDIs
+    </div>
+
+    <div class="flex items-center gap-2">
+        <button type="button"
+                @click="prevPage()"
+                :disabled="currentPage === 1"
+                class="rounded-lg border px-3 py-1 disabled:opacity-40">
+            Anterior
+        </button>
+
+        <span class="text-gray-600">
+            Página <span x-text="currentPage"></span> de <span x-text="totalPages"></span>
+        </span>
+
+        <button type="button"
+                @click="nextPage()"
+                :disabled="currentPage === totalPages"
+                class="rounded-lg border px-3 py-1 disabled:opacity-40">
+            Siguiente
+        </button>
+    </div>
+</div>
+</div>
+
+        {{-- ACCIONES --}}
+        <div class="flex justify-end gap-2 mt-4">
+            <button @click="open=false" class="px-4 py-2 border rounded">
+                Cancelar
+            </button>
+
+            <button @click="relacionar()"
+                    class="bg-green-600 text-white px-4 py-2 rounded">
+                Relacionar seleccionadas
+            </button>
+        </div>
+
+    </div>
+</div>
+</div>
+   @php
+    $cfdisDisponiblesJson = $cfdisDisponibles->map(function ($cfdi) {
+        return [
+            'id' => $cfdi->id,
+            'uuid' => $cfdi->uuid,
+            'fecha_emision' => optional($cfdi->fecha_emision)->format('Y-m-d'),
+            'total' => (float) $cfdi->total,
+        ];
+    })->values();
+@endphp
+<script>
+function relacionFacturasModal() {
+    return {
+        open: false,
+
+        cfdis: @json($cfdisDisponiblesJson),
+        filteredCfdis: [],
+        selected: [],
+
+        filters: {
+            fecha: '',
+            uuid: '',
+            monto: '',
+        },
+
+        currentPage: 1,
+        perPage: 10,
+
+        get totalPages() {
+            return Math.max(1, Math.ceil(this.filteredCfdis.length / this.perPage));
+        },
+
+        get paginatedCfdis() {
+            const start = (this.currentPage - 1) * this.perPage;
+            return this.filteredCfdis.slice(start, start + this.perPage);
+        },
+
+        openModal() {
+            this.open = true;
+            this.filteredCfdis = this.cfdis;
+            this.currentPage = 1;
+        },
+
+        applyFilters() {
+            const fecha = this.filters.fecha;
+            const uuid = this.filters.uuid.toLowerCase().trim();
+            const monto = this.filters.monto.replace(',', '').trim();
+
+            this.filteredCfdis = this.cfdis.filter(cfdi => {
+                const matchFecha = !fecha || String(cfdi.fecha_emision ?? '').includes(fecha);
+                const matchUuid = !uuid || String(cfdi.uuid ?? '').toLowerCase().includes(uuid);
+                const matchMonto = !monto || String(cfdi.total ?? '').includes(monto);
+
+                return matchFecha && matchUuid && matchMonto;
+            });
+
+            this.currentPage = 1;
+        },
+
+        nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+            }
+        },
+
+        prevPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+            }
+        },
+
+        closeModal() {
+            this.open = false;
+            this.filters = { fecha: '', uuid: '', monto: '' };
+            this.selected = [];
+            this.filteredCfdis = this.cfdis;
+            this.currentPage = 1;
+        },
+
+        async relacionar() {
+            if (this.selected.length === 0) {
+                alert('Selecciona al menos una factura.');
+                return;
+            }
+
+            await fetch(`/obras/{{ $obra->id }}/relacionar-cfdis`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    cfdis: this.selected
+                })
+            });
+
+            location.reload();
+        }
+    }
+}
+</script>
+@endif
+{{--  TERMINA TAB RELACIONAR  FACTURAS --}}
 {{-- TAB: FACTURACIÓN --}}
 @if ($tab === 'facturacion')
     <h2 class="text-lg font-semibold mb-4">Facturación de la obra</h2>

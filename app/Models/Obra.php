@@ -174,4 +174,8 @@ public function gastosPlaneados()
 }
             
     
+public function cfdis()
+{
+    return $this->hasMany(SatCfdi::class, 'obra_id');
+}
 }

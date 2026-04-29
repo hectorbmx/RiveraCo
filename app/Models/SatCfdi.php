@@ -42,6 +42,7 @@ class SatCfdi extends Model
         'sello',
         'xml_path',
         'package_id',
+        'obra_id',
     ];
 
     protected $casts = [
@@ -59,5 +60,14 @@ class SatCfdi extends Model
     public function conceptos(): HasMany
     {
         return $this->hasMany(SatCfdiConcepto::class, 'sat_cfdi_id');
+    }
+    public function obra()
+    {
+        return $this->belongsTo(Obra::class);
+    }
+
+    public function pagos()
+    {
+        return $this->hasMany(SatCfdiPago::class, 'sat_cfdi_id');
     }
 }

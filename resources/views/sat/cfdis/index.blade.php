@@ -261,6 +261,7 @@
                             <th class="px-4 py-3 text-left font-medium">RFC receptor</th>
                             <th class="px-4 py-3 text-left font-medium">Moneda</th>
                             <th class="px-4 py-3 text-left font-medium">Total MXN</th>
+                            <th class="px-4 py-3 text-left font-medium">Obra</th>
                             <th class="px-4 py-3 text-left font-medium">Acciones</th>
                         </tr>
                     </thead>
@@ -314,17 +315,48 @@
                                 <td class="px-4 py-3 font-medium text-gray-900">
                                     ${{ number_format((float) $cfdi->total, 2) }}
                                 </td>
-                                <td class="px-4 py-3">
-                                    <button type="button"
-                                        class="inline-flex items-center rounded-lg bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 border border-blue-200 hover:bg-blue-100"
-                                        @click="openCfdiModal('{{ route('sat.cfdis.detalle', $cfdi->id) }}')">
-                                        Ver
-                                    </button>
+                               <td class="px-4 py-3">
+                                    @if($cfdi->obra)
+                                        <span class="inline-flex max-w-[220px] truncate rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 border border-emerald-200"
+                                            title="{{ $cfdi->obra->nombre ?? $cfdi->obra->Nombre ?? 'Obra #' . $cfdi->obra->id }}">
+                                            {{ $cfdi->obra->nombre ?? $cfdi->obra->Nombre ?? 'Obra #' . $cfdi->obra->id }}
+                                        </span>
+                                    @else
+                                        <span class="inline-flex rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 border border-amber-200">
+                                            Sin obra
+                                        </span>
+                                    @endif
+                                </td>
+                              <td class="px-4 py-3">
+                                    <div class="flex items-center gap-2">
+
+                                        {{-- Ver detalle --}}
+                                        <button type="button"
+                                            class="inline-flex items-center rounded-lg bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 border border-blue-200 hover:bg-blue-100"
+                                            @click="openCfdiModal('{{ route('sat.cfdis.detalle', $cfdi->id) }}')">
+                                            Ver
+                                        </button>
+
+                                        {{-- Relacionar / Cambiar obra --}}
+                                        <button type="button"
+                                            class="inline-flex items-center rounded-lg px-3 py-1 text-xs font-medium border
+                                                {{ $cfdi->obra_id 
+                                                    ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' 
+                                                    : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' }}"
+                                            @click="openRelacionarModal(
+                                                '{{ route('sat.cfdis.relacionarObra', $cfdi->id) }}',
+                                                '{{ $cfdi->uuid }}',
+                                                '{{ $cfdi->obra_id ?? '' }}'
+                                            )">
+                                            {{ $cfdi->obra_id ? 'Cambiar obra' : 'Relacionar' }}
+                                        </button>
+
+                                    </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-4 py-10 text-center text-gray-500">
+                                <td colspan="8" class="px-4 py-10 text-center text-gray-500">
                                     No hay CFDIs registrados para esta empresa.
                                 </td>
                             </tr>
@@ -343,7 +375,7 @@
     @endif
 
 </div>
-<!-- Modal CFDI -->
+
 <!-- Modal CFDI -->
 <div x-show="open"
      x-transition
@@ -535,6 +567,70 @@
         </div>
 
     </div>
+    
+</div>
+{{-- Modal relacionar CFDI con obra --}}
+<div x-show="showRelacionarModal"
+     x-cloak
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+
+    <div class="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+
+        <div class="flex items-start justify-between border-b border-gray-200 px-6 py-4">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900">
+                    Relacionar CFDI a obra
+                </h3>
+                <p class="mt-1 text-xs text-gray-500">
+                    UUID:
+                    <span class="font-mono" x-text="relacionCfdiUuid"></span>
+                </p>
+            </div>
+
+            <button type="button"
+                    class="text-gray-400 hover:text-gray-600"
+                    @click="closeRelacionarModal()">
+                ✕
+            </button>
+        </div>
+
+        <form :action="relacionFormAction" method="POST" class="px-6 py-5">
+            @csrf
+            @method('PUT')
+
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">
+                    Obra
+                </label>
+
+                <select name="obra_id"
+                        x-model="relacionObraId"
+                        required
+                        class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">Selecciona una obra</option>
+
+                    @foreach ($obras as $obra)
+                        <option value="{{ $obra->id }}">
+                            {{ $obra->nombre ?? $obra->Nombre ?? 'Obra #' . $obra->id }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+                <button type="button"
+                        class="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        @click="closeRelacionarModal()">
+                    Cancelar
+                </button>
+
+                <button type="submit"
+                        class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+                    Relacionar
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 <script>
 function cfdiModal() {
@@ -542,6 +638,11 @@ function cfdiModal() {
         open: false,
         loading: false,
         data: null,
+
+        showRelacionarModal: false,
+        relacionFormAction: '',
+        relacionCfdiUuid: '',
+        relacionObraId: '',
 
         async openCfdiModal(url) {
             this.open = true;
@@ -563,9 +664,24 @@ function cfdiModal() {
         close() {
             this.open = false;
             this.data = null;
+        },
+
+        openRelacionarModal(action, uuid, obraId = '') {
+            this.relacionFormAction = action;
+            this.relacionCfdiUuid = uuid;
+            this.relacionObraId = obraId || '';
+            this.showRelacionarModal = true;
+        },
+
+        closeRelacionarModal() {
+            this.showRelacionarModal = false;
+            this.relacionFormAction = '';
+            this.relacionCfdiUuid = '';
+            this.relacionObraId = '';
         }
     }
 }
+
 </script>
 </div>
 

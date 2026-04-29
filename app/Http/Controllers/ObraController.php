@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use App\Models\Obra;
 use App\Models\Cliente;
+use App\Models\SatCfdi;
 use App\Models\User;
 use App\Models\Empleado;
 use App\Models\ObraEmpleado;
@@ -104,6 +105,11 @@ $registrosPlaneacion = \App\Models\ObraPlaneacionGasto::query()
 $gastosBase = $registrosPlaneacion
     ->where('numero_semana', 0)
     ->values();
+
+    $cfdisDisponibles = SatCfdi::whereNull('obra_id')
+    ->orderByDesc('fecha_emision')
+    ->limit(300)
+    ->get();
 
 $planeacion = \App\Models\ObraPlaneacionSemanal::query()
     ->whereIn('planeacion_gasto_id', $gastosBase->pluck('id'))
@@ -600,6 +606,8 @@ return view('obras.edit', [
     'gastosOC'                    => $gastosOC,
     'gastosPorPartida' => $gastosPorPartida,
 
+    'cfdisDisponibles' => $cfdisDisponibles,
+
     ]);
 }
 
@@ -725,5 +733,23 @@ public function guardarPlaneacion(Request $request, $id)
 
         return redirect()->back()->with('error', 'Ocurrió un error al guardar los datos.');
     }
+}
+public function relacionarCfdis(Request $request, Obra $obra)
+{
+    $validated = $request->validate([
+        'cfdis' => ['required', 'array', 'min:1'],
+        'cfdis.*' => ['integer', 'exists:sat_cfdis,id'],
+    ]);
+
+    SatCfdi::whereIn('id', $validated['cfdis'])
+        ->update([
+            'obra_id' => $obra->id,
+        ]);
+
+    return response()->json([
+        'ok' => true,
+        'message' => 'CFDIs relacionados correctamente.',
+        'total' => count($validated['cfdis']),
+    ]);
 }
 }
