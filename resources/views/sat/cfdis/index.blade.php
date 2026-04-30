@@ -369,6 +369,7 @@
                                                 <button type="button"
                                                     class="inline-flex items-center rounded-lg bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 border border-indigo-200 hover:bg-indigo-100"
                                                     @click="openPagoModal({
+                                                        action: '{{ route('sat.cfdis.pagos.store', $cfdi->id) }}',
                                                         id: {{ $cfdi->id }},
                                                         uuid: '{{ $cfdi->uuid }}',
                                                         total: {{ (float) $cfdi->total }},
@@ -720,9 +721,13 @@
             <div><strong>Método:</strong> <span x-text="pagoForm.metodo"></span></div>
         </div>
 
-        <form method="POST" 
+        <!-- <form method="POST" 
+
               :action="`/sat/cfdis/${pagoForm.cfdi_id}/pagos`"
-              enctype="multipart/form-data">
+              enctype="multipart/form-data"> -->
+              <form method="POST"
+      :action="pagoForm.action"
+      enctype="multipart/form-data">
 
             @csrf
 
@@ -901,6 +906,7 @@ function pagoModal() {
         verPagosModalOpen: false,
 
         pagoForm: {
+             action: '',
             cfdi_id: null,
             uuid: '',
             total: 0,
@@ -923,12 +929,13 @@ function pagoModal() {
 
         openPagoModal(data) {
                 console.log('openPagoModal llamado', data);
-    const miRfc = 'RCO820921T66'; // 🔥 luego lo pasamos dinámico
+                const miRfc = 'RCO820921T66'; // 🔥 luego lo pasamos dinámico
 
-    const esIngreso = data.rfc_emisor === miRfc;
-            this.verPagosModalOpen = false;
+                const esIngreso = data.rfc_emisor === miRfc;
+                        this.verPagosModalOpen = false;
 
             this.pagoForm = {
+                action: data.action,
                 cfdi_id: data.id,
                 uuid: data.uuid,
                 total: Number(data.total || 0),
