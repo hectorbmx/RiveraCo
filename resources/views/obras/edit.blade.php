@@ -2733,25 +2733,38 @@ function relacionFacturasModal() {
             this.currentPage = 1;
         },
 
-        async relacionar() {
-            if (this.selected.length === 0) {
-                alert('Selecciona al menos una factura.');
-                return;
-            }
+       async relacionar() {
+    console.log('IDs enviados:', this.selected);
 
-            await fetch(`/obras/{{ $obra->id }}/relacionar-cfdis`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
-                    cfdis: this.selected
-                })
-            });
+    if (this.selected.length === 0) {
+        alert('Selecciona al menos una factura.');
+        return;
+    }
 
-            location.reload();
-        }
+    const res = await fetch(`{{ route('obras.relacionarCfdis', $obra->id) }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            cfdis: this.selected
+        })
+    });
+
+    const text = await res.text();
+
+    console.log('Status:', res.status);
+    console.log('Respuesta:', text);
+
+    if (!res.ok) {
+        alert('Error al relacionar. Revisa consola.');
+        return;
+    }
+
+    location.reload();
+}
     }
 }
 </script>
