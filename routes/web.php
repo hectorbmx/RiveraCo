@@ -59,6 +59,7 @@ use App\Http\Controllers\Sat\SatCfdiController;
 use App\Http\Controllers\Sat\SatEmpresaController;
 use App\Http\Controllers\Sat\SatCaptchaController;
 use App\Http\Controllers\Sat\SatCfdiEstadisticaController;
+use App\Http\Controllers\Sat\SatCfdiPagoController;
 
 
 
@@ -135,6 +136,17 @@ Route::middleware(['auth', 'verified'])
 
         //RELACIONAR UNA FACTURA CON UNA OBRA
         Route::put('/{cfdi}/relacionar-obra', [SatCfdiController::class, 'relacionarObra'])->name('relacionarObra');
+
+        /*
+        |--------------------------------------------------------------------------
+        | PAGOS CFDI
+        |--------------------------------------------------------------------------
+        */
+        Route::post('/{cfdi}/pagos', [SatCfdiPagoController::class, 'store'])->name('pagos.store');
+
+        Route::put('/pagos/{pago}', [SatCfdiPagoController::class, 'update'])->name('pagos.update');
+
+        Route::post('/pagos/{pago}/cancelar', [SatCfdiPagoController::class, 'cancelar'])->name('pagos.cancelar');
 });
 
         /*

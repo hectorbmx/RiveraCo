@@ -70,4 +70,36 @@ class SatCfdi extends Model
     {
         return $this->hasMany(SatCfdiPago::class, 'sat_cfdi_id');
     }
+    public function totalPagado()
+{
+    return $this->pagos()
+        ->where('estatus', 'activo')
+        ->sum('monto');
+}
+
+public function saldoPendiente()
+{
+    return round((float) $this->total - (float) $this->totalPagado(), 2);
+}
+
+public function estaPagada()
+{
+    return $this->saldoPendiente() <= 0;
+}
+
+public function estadoPago()
+{
+    $totalPagado = (float) $this->totalPagado();
+    $saldo = (float) $this->saldoPendiente();
+
+    if ($saldo <= 0) {
+        return 'pagada';
+    }
+
+    if ($totalPagado > 0) {
+        return 'parcial';
+    }
+
+    return 'sin_pago';
+}
 }

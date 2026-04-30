@@ -3,8 +3,9 @@
 @section('title', 'CFDIs descargados')
 
 @section('content')
-<div x-data="cfdiModal()" x-cloak>
-<div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+<!-- <div x-data="cfdiModal()" x-cloak> -->
+    <div x-data="{ ...cfdiModal(), ...pagoModal() }" x-cloak>
+<div class="max-w-8xl mx-auto px-4 py-6 space-y-6">
 
     {{-- Header --}}
     <div>
@@ -138,6 +139,8 @@
 
         {{-- Resúmenes --}}
         <!-- <div class="grid grid-cols-1 lg:grid-cols-3 gap-4"> -->
+            <div x-data="{ openResumenes: true }">
+                <div x-show="openResumenes" x-transition>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
             <div class="rounded-2xl border border-indigo-300 bg-indigo-50 shadow-sm p-5">
@@ -231,6 +234,20 @@
     </div>
 </div>
         </div>
+</div><div class="flex justify-between items-center mb-3">
+    <h3 class="text-lg font-semibold text-gray-800">Resúmenes</h3>
+
+    <button 
+        @click="openResumenes = !openResumenes"
+        class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+    >
+        <span x-show="openResumenes">Ocultar</span>
+        <span x-show="!openResumenes">Mostrar</span>
+    </button>
+</div>  
+</div>
+<!-- terminan resumenes  -->
+ 
 
         {{-- Encabezado de detalle --}}
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
@@ -268,7 +285,18 @@
 
                     <tbody class="divide-y divide-gray-100 bg-white">
                         @forelse ($cfdis as $cfdi)
-                            <tr class="hover:bg-gray-50">
+                                                        @php
+                                $estadoPago = $cfdi->estadoPago();
+
+                                $rowPagoClass = match($estadoPago) {
+                                    'pagada' => 'bg-emerald-50',
+                                    'parcial' => 'bg-amber-50',
+                                    default => 'bg-white',
+                                };
+                            @endphp
+
+                            <tr class="{{ $rowPagoClass }}">
+                                
                                 <td class="px-4 py-3">
                                     <span class="inline-flex max-w-[260px] truncate rounded-lg border border-indigo-300 bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700"
                                           title="{{ $cfdi->uuid }}">
@@ -336,7 +364,44 @@
                                             @click="openCfdiModal('{{ route('sat.cfdis.detalle', $cfdi->id) }}')">
                                             Ver
                                         </button>
+                                        {{-- Pagar --}}
+                                            @if($cfdi->tipo_comprobante === 'I' && !$cfdi->estaPagada())
+                                                <button type="button"
+                                                    class="inline-flex items-center rounded-lg bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 border border-indigo-200 hover:bg-indigo-100"
+                                                    @click="openPagoModal({
+                                                        id: {{ $cfdi->id }},
+                                                        uuid: '{{ $cfdi->uuid }}',
+                                                        total: {{ (float) $cfdi->total }},
+                                                        pagado: {{ (float) $cfdi->totalPagado() }},
+                                                        saldo: {{ (float) $cfdi->saldoPendiente() }},
+                                                        metodo: '{{ $cfdi->metodo_pago }}'
+                                                    })">
+                                                    Pagar
+                                                </button>
+                                            @endif
+@if($cfdi->estadoPago() === 'pagada')
+    <span class="inline-flex items-center rounded-lg bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 border border-emerald-200">
+        Pagada
+    </span>
+@elseif($cfdi->estadoPago() === 'parcial')
+    <span class="inline-flex items-center rounded-lg bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 border border-amber-200">
+        Parcial
+    </span>
+@endif
+@if($cfdi->totalPagado() > 0)
+    <button type="button"
+        class="inline-flex items-center rounded-lg bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700 border border-slate-200 hover:bg-slate-100"
+        @click="console.log('click ver pagos'); openVerPagosModal({
 
+            uuid: '{{ $cfdi->uuid }}',
+            total: {{ (float) $cfdi->total }},
+            pagado: {{ (float) $cfdi->totalPagado() }},
+            saldo: {{ (float) $cfdi->saldoPendiente() }},
+            pagos: @js($cfdi->pagos()->where('estatus', 'activo')->latest()->get())
+        })">
+        Ver pagos
+    </button>
+@endif
                                         {{-- Relacionar / Cambiar obra --}}
                                         <button type="button"
                                             class="inline-flex items-center rounded-lg px-3 py-1 text-xs font-medium border
@@ -631,6 +696,153 @@
             </div>
         </form>
     </div>
+
+
+</div>
+
+    {{-- MODAL PAGO --}}
+<div x-show="pagoModalOpen"
+     x-transition 
+     class="fixed inset-0  z-[9999] flex items-center justify-center bg-black/50">
+
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+
+        <h2 class="text-lg font-semibold mb-4">
+    <span x-text="pagoForm.tipo === 'cobro' ? 'Registrar Cobro' : 'Registrar Pago'"></span>
+</h2>
+
+        {{-- Info CFDI --}}
+        <div class="text-sm mb-4 space-y-1">
+            <div><strong>UUID:</strong> <span x-text="pagoForm.uuid"></span></div>
+            <div><strong>Total:</strong> $<span x-text="pagoForm.total.toFixed(2)"></span></div>
+            <div><strong>Pagado:</strong> $<span x-text="pagoForm.pagado.toFixed(2)"></span></div>
+            <div><strong>Saldo:</strong> $<span x-text="pagoForm.saldo.toFixed(2)"></span></div>
+            <div><strong>Método:</strong> <span x-text="pagoForm.metodo"></span></div>
+        </div>
+
+        <form method="POST" 
+              :action="`/sat/cfdis/${pagoForm.cfdi_id}/pagos`"
+              enctype="multipart/form-data">
+
+            @csrf
+
+            <div class="space-y-3">
+
+                <input type="date" name="fecha_pago" x-model="pagoForm.fecha_pago"
+                    class="w-full border rounded-lg p-2 text-sm" required>
+
+                <input type="number" step="0.01" name="monto" x-model="pagoForm.monto"
+                    class="w-full border rounded-lg p-2 text-sm"
+                    :max="pagoForm.saldo"
+                    placeholder="Monto" required>
+
+                <select name="metodo_pago" x-model="pagoForm.metodo_pago"
+                    class="w-full border rounded-lg p-2 text-sm">
+                    <option value="">Método</option>
+                    <option value="transferencia">Transferencia</option>
+                    <option value="cheque">Cheque</option>
+                    <option value="efectivo">Efectivo</option>
+                    <option value="tarjeta">Tarjeta</option>
+                </select>
+
+                <input type="text" name="referencia" x-model="pagoForm.referencia"
+                    class="w-full border rounded-lg p-2 text-sm"
+                    placeholder="Referencia / folio">
+
+                <input type="file" name="comprobante"
+                    class="w-full text-sm">
+
+            </div>
+
+            <div class="flex justify-end gap-2 mt-5">
+                <button type="button"
+                    @click="pagoModalOpen = false"
+                    class="px-4 py-2 text-sm bg-gray-100 rounded-lg">
+                    Cancelar
+                </button>
+
+                <button type="submit"
+                    class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{{-- MODAL VER PAGOS --}}
+<div x-show="verPagosModalOpen"
+     x-transition
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+     ">
+
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6">
+
+        <div class="flex items-start justify-between mb-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">Pagos registrados</h2>
+                <p class="text-xs text-gray-500 mt-1">
+                    UUID: <span x-text="verPagosData.uuid"></span>
+                </p>
+            </div>
+
+            <button type="button"
+                @click="closeVerPagosModal()"
+                class="text-gray-400 hover:text-gray-700">
+                ✕
+            </button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 mb-4">
+            <div class="rounded-lg bg-gray-50 border p-3">
+                <div class="text-xs text-gray-500">Total</div>
+                <div class="font-semibold">$<span x-text="money(verPagosData.total)"></span></div>
+            </div>
+
+            <div class="rounded-lg bg-emerald-50 border border-emerald-200 p-3">
+                <div class="text-xs text-emerald-600">Pagado</div>
+                <div class="font-semibold text-emerald-700">$<span x-text="money(verPagosData.pagado)"></span></div>
+            </div>
+
+            <div class="rounded-lg bg-amber-50 border border-amber-200 p-3">
+                <div class="text-xs text-amber-600">Saldo</div>
+                <div class="font-semibold text-amber-700">$<span x-text="money(verPagosData.saldo)"></span></div>
+            </div>
+        </div>
+
+        <div class="border rounded-xl overflow-hidden">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 text-gray-600">
+                    <tr>
+                        <th class="px-3 py-2 text-left">Fecha</th>
+                        <th class="px-3 py-2 text-left">Método</th>
+                        <th class="px-3 py-2 text-left">Referencia</th>
+                        <th class="px-3 py-2 text-right">Monto</th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y">
+                    <template x-for="pago in verPagosData.pagos" :key="pago.id">
+                        <tr>
+                            <td class="px-3 py-2" x-text="pago.fecha_pago"></td>
+                            <td class="px-3 py-2" x-text="pago.metodo_pago ?? '-'"></td>
+                            <td class="px-3 py-2" x-text="pago.referencia ?? pago.folio_transferencia ?? pago.numero_cheque ?? '-'"></td>
+                            <td class="px-3 py-2 text-right font-semibold">
+                                $<span x-text="money(pago.monto)"></span>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex justify-end mt-5">
+            <button type="button"
+                @click="closeVerPagosModal()"
+                class="px-4 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">
+                Cerrar
+            </button>
+        </div>
+    </div>
 </div>
 <script>
 function cfdiModal() {
@@ -682,6 +894,91 @@ function cfdiModal() {
     }
 }
 
+
+function pagoModal() {
+    return {
+        pagoModalOpen: false,
+        verPagosModalOpen: false,
+
+        pagoForm: {
+            cfdi_id: null,
+            uuid: '',
+            total: 0,
+            pagado: 0,
+            saldo: 0,
+            metodo: '',
+            fecha_pago: '',
+            monto: '',
+            metodo_pago: '',
+            referencia: '',
+        },
+
+        verPagosData: {
+            uuid: '',
+            total: 0,
+            pagado: 0,
+            saldo: 0,
+            pagos: [],
+        },
+
+        openPagoModal(data) {
+                console.log('openPagoModal llamado', data);
+    const miRfc = 'RCO820921T66'; // 🔥 luego lo pasamos dinámico
+
+    const esIngreso = data.rfc_emisor === miRfc;
+            this.verPagosModalOpen = false;
+
+            this.pagoForm = {
+                cfdi_id: data.id,
+                uuid: data.uuid,
+                total: Number(data.total || 0),
+                pagado: Number(data.pagado || 0),
+                saldo: Number(data.saldo || 0),
+                metodo: data.metodo || '',
+                fecha_pago: '',
+                monto: '',
+                metodo_pago: '',
+                referencia: '',
+            };
+             console.log('pagoModalOpen antes:', this.pagoModalOpen);
+    this.pagoModalOpen = true;
+    console.log('pagoModalOpen después:', this.pagoModalOpen);
+
+            
+        },
+
+        openVerPagosModal(data) {
+                console.log('openVerPagosModal llamado', data);
+
+            this.pagoModalOpen = false;
+
+            this.verPagosData = {
+                uuid: data.uuid,
+                total: Number(data.total || 0),
+                pagado: Number(data.pagado || 0),
+                saldo: Number(data.saldo || 0),
+                pagos: data.pagos || [],
+            };
+
+            this.verPagosModalOpen = true;
+        },
+
+        closePagoModal() {
+            this.pagoModalOpen = false;
+        },
+
+        closeVerPagosModal() {
+            this.verPagosModalOpen = false;
+        },
+
+        money(value) {
+            return Number(value || 0).toLocaleString('es-MX', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+    }
+}
 </script>
 </div>
 
