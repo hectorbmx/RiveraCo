@@ -230,7 +230,13 @@
           class="grid grid-cols-6 gap-2 mb-4">
         @csrf
         
-  <input id="descProducto" name="descripcion"class="border p-2 col-span-2" placeholder="Descripción / buscar producto..."  autocomplete="off">
+  <!-- <input id="descProducto" name="descripcion"class="border p-2 col-span-2" placeholder="Descripción / buscar producto..."  autocomplete="off"> -->
+   <div class="col-span-2">
+        <input id="descProducto" name="descripcion" class="w-full border p-2 rounded" placeholder="Descripción / buscar producto..." autocomplete="off">
+        <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">Descripción del Producto</span>
+        
+        <div id="sugerenciasProductos" class="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow hidden max-h-60 overflow-auto"></div>
+    </div>
 
   <input type="hidden" name="producto_id" id="producto_id">
   <input type="hidden" name="legacy_prod_id" id="legacy_prod_id">
@@ -242,10 +248,32 @@
 
 
         <!-- <input name="descripcion" placeholder="Descripción" class="border p-2 col-span-2" required> -->
-        <input name="cantidad" type="number" step="0.001" placeholder="Cant." class="border p-2">
+        <!-- <input name="cantidad" type="number" step="0.001" placeholder="Cant." class="border p-2">
         <input name="precio_unitario" type="number" step="0.0001" placeholder="Precio" class="border p-2">
-        <input name="iva" type="number" step="0.01" placeholder="IVA" class="border p-2" value="">
-        <button class="bg-blue-600 text-white px-3 py-2 rounded">Agregar</button>
+        <input name="iva" type="number" step="0.01" placeholder="IVA" class="border p-2" value=""> -->
+        <!-- Cantidad -->
+    <div>
+        <input name="cantidad" type="number" step="0.001" placeholder="0.000" class="w-full border p-2 rounded">
+        <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">Cantidad</span>
+    </div>
+
+    <!-- Precio -->
+    <div>
+        <input name="precio_unitario" type="number" step="0.0001" placeholder="0.00" class="w-full border p-2 rounded">
+        <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">Precio Unit.</span>
+    </div>
+
+    <!-- IVA -->
+    <div>
+        <input name="iva" type="number" step="0.01" placeholder="0" class="w-full border p-2 rounded">
+        <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">% IVA</span>
+    </div>
+        <div class="flex flex-col">
+        <button class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 transition-colors">
+            Agregar
+        </button>
+        <span class="text-[10px] text-transparent mt-1 ml-1 select-none">-</span> <!-- Espaciador para alinear -->
+    </div>
     </form>
     @endif
 
