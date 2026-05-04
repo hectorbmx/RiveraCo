@@ -103,6 +103,32 @@
     @error('proveedor_id')<div class="text-red-600 text-xs mt-1">{{ $message }}</div>@enderror
   </div>
 @endif
+@if($tipo === 'entrada')
+
+
+    <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">
+            Orden de compra (opcional)
+        </label>
+
+        <select  id="orden_compra_id" name="orden_compra_id"
+                class="w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-200">
+            <option value="">Sin orden de compra</option>
+
+            @foreach($ordenesCompra as $oc)
+                <option value="{{ $oc->id }}" @selected(old('orden_compra_id') == $oc->id)>
+                    {{ $oc->folio ?? 'OC #'.$oc->id }}
+                    — {{ $oc->proveedor->nombre ?? 'Sin proveedor' }}
+                    — {{ ucfirst($oc->estado) }}
+                </option>
+            @endforeach
+        </select>
+
+        @error('orden_compra_id')
+            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+    </div>
+@endif
 
         {{-- Obra (si aplica) --}}
         @if($needsObra)
@@ -268,72 +294,22 @@
 
 {{-- JS mínimo para filas --}}
 <script>
-(function() {
-  const rowsBody = document.getElementById('rowsBody');
-  const btnAddRow = document.getElementById('btnAddRow');
 
-  function renumberRows() {
-    const rows = rowsBody.querySelectorAll('tr[data-row]');
-    rows.forEach((tr, idx) => {
-      tr.querySelectorAll('select, input').forEach((el) => {
-        const name = el.getAttribute('name');
-        if (!name) return;
-        // detalles[0][campo]
-        el.setAttribute('name', name.replace(/detalles\[\d+\]/, `detalles[${idx}]`));
-      });
-    });
-  }
+/**
+ * Lógica para el selector de Orden de Compra (Vanilla JS)
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    const ordenCompraSelect = document.getElementById('orden_compra_id');
+    if (ordenCompraSelect) {
+        ordenCompraSelect.addEventListener('change', function () {
+            console.log("Orden seleccionada:", this.value);
+        });
+    }
+});
 
-  function applyCostRules() {
-    const tipo = @json($tipo);
-    const ajusteSelect = document.getElementById('ajusteTipoSelect');
-    const ajusteTipo = ajusteSelect ? ajusteSelect.value : null;
-
-    const needCost = (tipo === 'entrada') || (tipo === 'ajuste' && ajusteTipo === 'incremento');
-
-    rowsBody.querySelectorAll('.costo-unitario').forEach((input) => {
-      if (needCost) {
-        input.required = true;
-        input.min = "0.0001";
-      } else {
-        input.required = false;
-        // para evitar validación HTML, lo dejamos sin min cuando no aplica
-        input.removeAttribute('min');
-      }
-    });
-  }
-
-  btnAddRow?.addEventListener('click', () => {
-    const first = rowsBody.querySelector('tr[data-row]');
-    const clone = first.cloneNode(true);
-
-    // limpiar valores
-    clone.querySelectorAll('input').forEach(i => i.value = '');
-    clone.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
-
-    rowsBody.appendChild(clone);
-    renumberRows();
-    applyCostRules();
-  });
-
-  rowsBody.addEventListener('click', (e) => {
-    const btn = e.target.closest('.btnRemoveRow');
-    if (!btn) return;
-
-    const rows = rowsBody.querySelectorAll('tr[data-row]');
-    if (rows.length <= 1) return; // siempre dejar al menos 1 fila
-
-    btn.closest('tr[data-row]').remove();
-    renumberRows();
-    applyCostRules();
-  });
-
-  document.getElementById('ajusteTipoSelect')?.addEventListener('change', applyCostRules);
-
-  // initial
-  applyCostRules();
-})();
-//termina busccar producto
+/**
+ * Componente para la búsqueda de Proveedores
+ */
 function buscadorProveedor() {
     return {
         search: '',
@@ -357,18 +333,23 @@ function buscadorProveedor() {
         },
         select(p) {
             this.selectedId = p.id;
-            this.search = p.nombre; // Muestra el nombre en el input
-            this.results = [];      // Cierra la lista
+            this.search = p.nombre;
+            this.results = [];
         }
     }
 }
 
+/**
+ * Componente principal de Partidas (Reemplaza toda la lógica manual anterior)
+ */
 function documentoPartidas() {
     return {
         search: '',
         results: [],
         selectedProduct: null,
-        partidas: [], // Aquí se guardan las filas de la tabla
+        partidas: [], // Este array controla la tabla automáticamente
+        tipoDoc: @json($tipo), // 'entrada', 'salida', 'ajuste'
+        ajusteTipo: 'incremento', // Vinculado a x-model del select de ajuste
 
         async buscar() {
             if (this.search.length < 3) {
@@ -387,6 +368,7 @@ function documentoPartidas() {
             this.selectedProduct = producto;
             this.search = producto.nombre;
             this.results = [];
+            this.addRow(); // Agrega la fila al seleccionar
         },
 
         addRow() {
@@ -394,7 +376,7 @@ function documentoPartidas() {
 
             const tempId = 'qty-' + Date.now();
 
-            // Agregamos el producto a la lista
+            // Al añadir al array, Alpine renderiza el <tr> automáticamente
             this.partidas.push({
                 producto_id: this.selectedProduct.id,
                 nombre: this.selectedProduct.nombre,
@@ -404,21 +386,30 @@ function documentoPartidas() {
                 refId: tempId
             });
 
-            // Limpiamos el buscador
+            // Limpiar buscador
             this.selectedProduct = null;
             this.search = '';
 
-            this.$nextTick(() =>{
-              const input =document.getElementById(tempId);
-              if(input){
-                input.focus();
-                input.select();
-              }
-            })
+            // Hacer foco en el nuevo input de cantidad
+            this.$nextTick(() => {
+                const input = document.getElementById(tempId);
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            });
         },
 
         removeRow(index) {
+            // No es necesario buscar el botón ni el .closest('tr')
             this.partidas.splice(index, 1);
+        },
+
+        // Determina si el costo es obligatorio (reemplaza applyCostRules)
+        get isCostRequired() {
+            if (this.tipoDoc === 'entrada') return true;
+            if (this.tipoDoc === 'ajuste' && this.ajusteTipo === 'incremento') return true;
+            return false;
         }
     }
 }

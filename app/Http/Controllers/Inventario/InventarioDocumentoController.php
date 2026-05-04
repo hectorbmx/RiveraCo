@@ -8,6 +8,7 @@ use App\Models\InventarioDocumento;
 use App\Models\Almacen;
 use App\Models\Proveedor;
 use App\Models\Producto;
+use App\Models\OrdenCompra;
 use App\Models\Obra;
 use App\Models\InventarioDocumentoDetalle;
 use App\Services\Inventario\InventarioDocumentoService;
@@ -61,31 +62,46 @@ public function create(Request $request)
 {
     $tipo = $request->query('tipo', 'entrada');
 
-    // 1. Cargamos los almacenes para el select del formulario
     $almacenes = Almacen::query()
-        ->where('activo', true) // Opcional: solo traer los activos
+        ->where('activo', true)
         ->orderBy('nombre')
         ->get(['id', 'nombre']);
-    
+
     $obras = Obra::query()
-        ->where('status','planeacion')
+        ->where('status', 'planeacion')
         ->orderBy('clave_obra')
-        ->get(['id','clave_obra']);
+        ->get(['id', 'clave_obra']);
 
     $proveedores = Proveedor::query()
-    ->where('activo',true)
-    ->orderBy('nombre')
-    ->get(['id','rfc','nombre']);
+        ->where('activo', true)
+        ->orderBy('nombre')
+        ->get(['id', 'rfc', 'nombre']);
 
-    // 2. Si tienes otras listas (como estados o tipos), cárgalas también
+    $ordenesCompra = collect();
+
+// En tu Controller
+if ($tipo === 'entrada') {
+    $ordenesCompra = OrdenCompra::query()
+        ->with('proveedor')
+        ->whereIn('estado', ['AUTORIZADA', 'APROBADA']) // Ajusta según tus datos reales
+        ->orderByDesc('id')
+        ->get(['id', 'folio', 'proveedor_id', 'estado']);
+}
+
     $tipos = [
         'entrada' => 'Entrada',
         'salida' => 'Salida',
         'cancelacion' => 'Cancelación',
     ];
 
-    // 3. Pasamos todo a la vista 'create'
-    return view('inventario.documentos.create', compact('tipo', 'almacenes', 'tipos','obras'));
+    return view('inventario.documentos.create', compact(
+        'tipo',
+        'almacenes',
+        'tipos',
+        'obras',
+        'proveedores',
+        'ordenesCompra'
+    ));
 }
 //buscaa proveedoir para generador de entradas y salidas
 public function buscarProveedor(Request $request)
