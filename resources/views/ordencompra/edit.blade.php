@@ -291,77 +291,103 @@
 @endsection
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const input = document.getElementById('descProducto');
-  const box   = document.getElementById('sugerenciasProductos');
+    const input = document.getElementById('descProducto');
+    const box   = document.getElementById('sugerenciasProductos');
 
-  const productoId = document.getElementById('producto_id');
-  const legacyId   = document.getElementById('legacy_prod_id');
-  const unidad     = document.getElementById('unidad');
+    // IDs actualizados para coincidir con tu formulario de detalles
+    const productoId = document.getElementById('detalle_producto_id') || document.getElementById('producto_id');
+    const legacyId   = document.getElementById('detalle_legacy_prod_id') || document.getElementById('legacy_prod_id');
+    const unidad     = document.getElementById('detalle_unidad') || document.getElementById('unidad');
 
-  // Si no existe el input/box en esta vista, no hacemos nada (evita el crash)
-  if (!input || !box || !productoId || !legacyId || !unidad) {
-    console.warn('Autocomplete productos: faltan elementos en DOM', {
-      input: !!input, box: !!box, productoId: !!productoId, legacyId: !!legacyId, unidad: !!unidad
-    });
-    return;
-  }
-
-  let timer = null;
-
-  input.addEventListener('input', () => {
-    clearTimeout(timer);
-
-    const q = input.value.trim();
-    if (q.length < 2) {
-      box.classList.add('hidden');
-      box.innerHTML = '';
-      productoId.value = '';
-      legacyId.value = '';
-      return;
+    if (!input || !box || !productoId) {
+        console.warn('Autocomplete: Faltan elementos esenciales en el DOM');
+        return;
     }
 
-    timer = setTimeout(async () => {
-      const res = await fetch(`/productos/buscar?q=${encodeURIComponent(q)}`, {
-        headers: { 'Accept': 'application/json' }
-      });
+    let timer = null;
 
-      if (!res.ok) return;
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
 
-      const data = await res.json();
+        const q = input.value.trim();
+        
+        // Limpiar campos si el texto es muy corto
+        if (q.length < 2) {
+            box.classList.add('hidden');
+            box.innerHTML = '';
+            productoId.value = '';
+            if(legacyId) legacyId.value = '';
+            return;
+        }
 
-      if (!data.length) {
-        box.classList.add('hidden');
-        box.innerHTML = '';
-        return;
-      }
+        timer = setTimeout(async () => {
+            try {
+                /** 
+                 * SOLUCIÓN A SUBDOMINIOS Y CARPETAS:
+                 * Usamos el helper route() de Laravel para que la URL sea absoluta y correcta
+                 * sin importar si estás en /v2/public/ o en la raíz.
+                 */
+                const urlBusqueda = "{{ route('productos.buscar') }}";
+                
+                const res = await fetch(`${urlBusqueda}?q=${encodeURIComponent(q)}`, {
+                    headers: { 
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
 
-      box.innerHTML = data.map(p => `
-        <div class="px-3 py-2 hover:bg-slate-50 cursor-pointer"
-             data-id="${p.id}"
-             data-legacy="${p.legacy_prod_id ?? ''}"
-             data-nombre="${(p.nombre ?? '').replace(/"/g,'&quot;')}"
-             data-unidad="${p.unidad ?? ''}">
-          <div class="font-semibold">${p.nombre}</div>
-          <div class="text-xs text-slate-500">SKU: ${p.sku ?? '-'} · Unidad: ${p.unidad ?? '-'}</div>
-        </div>
-      `).join('');
+                if (!res.ok) throw new Error('Error en la respuesta del servidor');
 
-      box.classList.remove('hidden');
+                const data = await res.json();
 
-      box.querySelectorAll('[data-id]').forEach(item => {
-        item.addEventListener('dblclick', () => {
-          productoId.value = item.dataset.id;
-          legacyId.value   = item.dataset.legacy || '';
-          unidad.value     = item.dataset.unidad || '';
-          input.value      = item.dataset.nombre || input.value;
+                if (!data.length) {
+                    box.classList.add('hidden');
+                    box.innerHTML = '';
+                    return;
+                }
 
-          box.classList.add('hidden');
-          box.innerHTML = '';
-        });
-      });
+                // Generar lista de sugerencias
+                box.innerHTML = data.map(p => `
+                    <div class="px-3 py-2 hover:bg-slate-100 cursor-pointer border-b border-slate-50 last:border-0"
+                         data-id="${p.id}"
+                         data-legacy="${p.legacy_prod_id ?? ''}"
+                         data-nombre="${(p.nombre ?? '').replace(/"/g,'&quot;')}"
+                         data-unidad="${p.unidad ?? ''}">
+                        <div class="font-semibold text-slate-800">${p.nombre}</div>
+                        <div class="text-xs text-slate-500">
+                            SKU: ${p.sku ?? '-'} · Unidad: ${p.unidad ?? '-'}
+                        </div>
+                    </div>
+                `).join('');
 
-    }, 250);
-  });
+                box.classList.remove('hidden');
+
+                // Eventos para seleccionar producto
+                box.querySelectorAll('[data-id]').forEach(item => {
+                    // Cambiado a 'click' simple para mayor agilidad
+                    item.addEventListener('click', () => {
+                        productoId.value = item.dataset.id;
+                        if(legacyId) legacyId.value = item.dataset.legacy || '';
+                        if(unidad)   unidad.value   = item.dataset.unidad || '';
+                        
+                        input.value = item.dataset.nombre || input.value;
+
+                        box.classList.add('hidden');
+                        box.innerHTML = '';
+                    });
+                });
+
+            } catch (error) {
+                console.error('Error en el fetch de productos:', error);
+            }
+        }, 300);
+    });
+
+    // Cerrar el buscador si el usuario hace clic fuera de él
+    document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !box.contains(e.target)) {
+            box.classList.add('hidden');
+        }
+    });
 });
-
 </script>
