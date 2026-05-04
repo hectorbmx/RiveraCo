@@ -127,6 +127,8 @@ $planeacion = \App\Models\ObraPlaneacionSemanal::query()
     $hasta = $end->toDateString();
 }
 
+
+
     // Puestos BASE que se pueden asignar a una obra
     // (estos son los grupos normalizados en la columna puesto_base)
     $puestosBaseAsignables = [
@@ -458,6 +460,7 @@ if ($tab === 'horas-maquina') {
 }
 
     $comisiones =collect();
+    $comisionesAgrupadas = collect();
     $fechasDisponibles =collect();
     $selectedFecha = null;
 
@@ -492,6 +495,18 @@ if ($tab === 'horas-maquina') {
 
     // 5) Obtenemos el histórico (sin paginar porque estás dentro de la misma vista)
     $comisiones = $query->get();
+    $comisionesAgrupadas = $comisiones
+    ->groupBy(function ($comision) {
+        return $comision->fecha?->format('Y-m-d');
+    })
+    ->map(function ($items, $fecha) {
+        return (object) [
+            'fecha' => \Carbon\Carbon::parse($fecha),
+            'total_pilas' => $items->sum('total_pilas'),
+            'comisiones' => $items,
+        ];
+    })
+    ->values();
 }
   $tab = $request->query('tab', 'general');
   
@@ -573,6 +588,7 @@ return view('obras.edit', [
     'pilasCatalogo'               => $pilasCatalogo,
 
     'comisiones'                  => $comisiones,
+    'comisionesAgrupadas'         => $comisionesAgrupadas,
     'fechasDisponibles'           => $fechasDisponibles,
     'selectedFecha'               => $selectedFecha,
 

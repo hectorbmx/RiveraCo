@@ -1757,76 +1757,43 @@
                 Aún no hay comisiones registradas para esta obra.
             </p>
         @else
-            <table class="w-full text-sm">
-                <thead class="bg-slate-50 border-b text-slate-500">
-                    <tr>
-                        <th class="py-2 px-3 text-left">Fecha</th>
-                        <th class="py-2 px-3 text-left">Maquina</th>
-                        <th class="py-2 px-3 text-left">Pilas Hechas</th>
-                        <th class="py-2 px-3 text-left">Residente</th>
-                        <th class="py-2 px-3 text-right">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($comisiones as $comision)
-                        <tr class="border-b hover:bg-slate-50">
-                            <td class="py-2 px-3">
-                                {{ $comision->fecha?->format('d/m/Y') }}
-                            </td>
-                            {{-- Máquina usada en la comisión --}}
-                            <td class="py-2 px-3">
-                                @php
-                                    // Tomamos el primer detalle (todos tienen la misma obra_maquina_id)
-                                    $detallePrimario = $comision->detalles->first();
-                                    $maquina = $detallePrimario?->asignacionMaquina?->maquina;
-                                @endphp
+               <table class="w-full text-sm">
+    <thead class="bg-slate-50 border-b text-slate-500">
+        <tr>
+            <th class="py-2 px-3 text-left">Fecha</th>
+            <th class="py-2 px-3 text-left">Total pilas hechas</th>
+            <th class="py-2 px-3 text-left">Comisiones registradas</th>
+            <th class="py-2 px-3 text-right">Acciones</th>
 
-                                {{ $maquina ? $maquina->nombre : '—' }}
-                            </td>
+        </tr>
+    </thead>
 
-                            {{-- Total de pilas hechas en esta comisión (suma de cantidades de todos los tipos) --}}
-                            <td class="py-2 px-3">
-                                {{ (int) ($comision->total_pilas ?? 0) }}
-                            </td>
-                            <td class="py-2 px-3">
-                                @php $res = $comision->residente ?? null; @endphp
-                                {{ $res ? $res->Nombre . ' ' . $res->Apellidos : '—' }}
-                            </td>
-                            <td class="py-2 px-3 text-right text-xs">
-                                <a href="{{ route('obras.comisiones.show', [$obra, $comision]) }}"
-                                   class="text-sky-600 hover:underline mr-3">
-                                    Ver
-                                </a>
-                                <a href="{{ route('obras.comisiones.print', [$obra, $comision]) }}"target ="_blank"
-                                   class="text-slate-600 hover:underline mr-3">
-                                    Imprimir
-                                </a>
-                                <a href="{{ route('obras.comisiones.edit', [$obra, $comision]) }}"
-                                   class="text-amber-600 hover:underline mr-3">
-                                    Editar
-                                </a>
-                      
-                               
-                            {{-- Eliminar --}}
-                                    <form action="{{ route('obras.comisiones.destroy', [$obra, $comision]) }}"
-                                        method="POST"
-                                        onsubmit="return confirm('¿Eliminar definitivamente esta comisión?');"
-                                        class="inline">
+    <tbody>
+        @foreach($comisionesAgrupadas as $grupo)
+            <tr class="border-b hover:bg-slate-50">
+                <td class="py-2 px-3">
+                    {{ $grupo->fecha->format('d/m/Y') }}
+                </td>
 
-                                        @csrf
-                                        @method('DELETE')
+                <td class="py-2 px-3 font-semibold">
+                    {{ (int) $grupo->total_pilas }}
+                </td>
 
-                                        <button type="submit"
-                                            class="text-red-600 hover:underline mr-3">
-                                            Eliminar
-                                        </button>
-                                    </form>
-                                                                    
-                            </td>
-                        </tr>
+                <td class="py-2 px-3">
+                    {{ $grupo->comisiones->count() }}
+                </td>
+                  <td class="py-2 px-3 text-right text-xs">
+                    @foreach($grupo->comisiones as $comision)
+                        <a href="{{ route('obras.comisiones.show', [$obra, $comision]) }}"
+                           class="inline-flex items-center rounded-md bg-sky-50 px-2 py-1 text-sky-700 hover:bg-sky-100 mr-1 mb-1">
+                            Ver #{{ $comision->id }}
+                        </a>
                     @endforeach
-                </tbody>
-            </table>
+                </td>
+            </tr>
+        @endforeach
+    </tbody>
+</table>
         @endif
     </div>
 @endif

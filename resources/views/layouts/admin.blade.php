@@ -35,19 +35,22 @@
 
             {{-- MENU --}}
             <nav class="flex-1 py-6 space-y-1">
-
+                 @can('dashboard.access')
                 <a href="{{ route('dashboard') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('dashboard') ? 'bg-white/10' : '' }}"
                    title="Dashboard">
                     <span class="text-lg">📊</span>
                     <span class="sidebar-text">Dashboard</span>
                 </a>
+                @endcan
+                @can('factuas.access')
                 <a href="{{ route('facturas.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->is('facturas*') ? 'bg-white/10' : '' }}"
                    title="Facturas">
                     <span class="text-lg">👥</span>
                     <span class="sidebar-text">Facturas</span>
                 </a>
+                @endcan
                 @can('clientes.access')
                 <a href="{{ route('clientes.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->is('clientes*') ? 'bg-white/10' : '' }}"
