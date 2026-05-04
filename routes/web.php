@@ -135,7 +135,8 @@ Route::middleware(['auth', 'verified'])
         Route::get('/{cfdi}/detalle', [SatCfdiController::class, 'detalle'])->name('detalle');
 
         //RELACIONAR UNA FACTURA CON UNA OBRA
-        Route::put('/{cfdi}/relacionar-obra', [SatCfdiController::class, 'relacionarObra'])->name('relacionarObra');
+        // Route::put('/{cfdi}/relacionar-obra', [SatCfdiController::class, 'relacionarObra'])->name('relacionarObra');
+        Route::post('/{cfdi}/relacionar', [SatCfdiController::class, 'relacionar'])->name('relacionar');
 
         /*
         |--------------------------------------------------------------------------

@@ -43,6 +43,7 @@ class SatCfdi extends Model
         'xml_path',
         'package_id',
         'obra_id',
+        'orden_compra_id',
     ];
 
     protected $casts = [
@@ -101,5 +102,10 @@ public function estadoPago()
     }
 
     return 'sin_pago';
+}
+
+public function ordenCompra()
+{
+    return $this->belongsTo(OrdenCompra::class, 'orden_compra_id');
 }
 }

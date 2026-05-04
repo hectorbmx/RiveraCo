@@ -404,17 +404,31 @@
     </button>
 @endif
                                         {{-- Relacionar / Cambiar obra --}}
-                                        <button type="button"
+                                        <!-- <button type="button"
                                             class="inline-flex items-center rounded-lg px-3 py-1 text-xs font-medium border
                                                 {{ $cfdi->obra_id 
                                                     ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' 
                                                     : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' }}"
                                             @click="openRelacionarModal(
-                                                '{{ route('sat.cfdis.relacionarObra', $cfdi->id) }}',
+                                                '{{ route('sat.cfdis.relacionar', $cfdi->id) }}',
                                                 '{{ $cfdi->uuid }}',
                                                 '{{ $cfdi->obra_id ?? '' }}'
                                             )">
                                             {{ $cfdi->obra_id ? 'Cambiar obra' : 'Relacionar' }}
+                                        </button> -->
+                                        <button type="button"
+                                            class="inline-flex items-center rounded-lg px-3 py-1 text-xs font-medium border
+                                                {{ $cfdi->obra_id || $cfdi->orden_compra_id
+                                                    ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                                                    : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' }}"
+                                            @click="openRelacionarModal(
+                                                '{{ route('sat.cfdis.relacionar', $cfdi->id) }}',
+                                                '{{ $cfdi->uuid }}',
+                                                '{{ $cfdi->rfc_emisor }}',
+                                                '{{ $cfdi->obra_id ?? '' }}',
+                                                '{{ $cfdi->orden_compra_id ?? '' }}'
+                                            )">
+                                            {{ ($cfdi->obra_id || $cfdi->orden_compra_id) ? 'Cambiar relación' : 'Relacionar' }}
                                         </button>
 
                                     </div>
@@ -635,7 +649,7 @@
     </div>
     
 </div>
-{{-- Modal relacionar CFDI con obra --}}
+<!-- {{-- Modal relacionar CFDI con obra --}}
 <div x-show="showRelacionarModal"
      x-cloak
      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
@@ -699,8 +713,94 @@
     </div>
 
 
-</div>
+</div> -->
 
+{{-- Modal relacionar CFDI --}}
+<div x-show="showRelacionarModal"
+     x-cloak
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+
+    <div class="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+
+        <div class="flex items-start justify-between border-b border-gray-200 px-6 py-4">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900"
+                    x-text="relacionTipo === 'obra' ? 'Relacionar CFDI a obra' : 'Relacionar CFDI a orden de compra'">
+                </h3>
+
+                <p class="mt-1 text-xs text-gray-500">
+                    UUID:
+                    <span class="font-mono" x-text="relacionCfdiUuid"></span>
+                </p>
+            </div>
+
+            <button type="button"
+                    class="text-gray-400 hover:text-gray-600"
+                    @click="closeRelacionarModal()">
+                ✕
+            </button>
+        </div>
+
+        <form :action="relacionFormAction" method="POST" class="px-6 py-5">
+            @csrf
+
+            {{-- SELECT OBRA --}}
+            <div x-show="relacionTipo === 'obra'">
+                <label class="mb-1 block text-sm font-medium text-gray-700">
+                    Obra
+                </label>
+
+                <select name="obra_id"
+                        x-model="relacionObraId"
+                        :required="relacionTipo === 'obra'"
+                        class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">Selecciona una obra</option>
+
+                    @foreach ($obras as $obra)
+                        <option value="{{ $obra->id }}">
+                            {{ $obra->nombre ?? $obra->Nombre ?? 'Obra #' . $obra->id }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- SELECT ORDEN COMPRA --}}
+            <div x-show="relacionTipo === 'orden_compra'">
+                <label class="mb-1 block text-sm font-medium text-gray-700">
+                    Orden de compra
+                </label>
+
+                <select name="orden_compra_id"
+                        x-model="relacionOrdenCompraId"
+                        :required="relacionTipo === 'orden_compra'"
+                        class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">Selecciona una orden de compra</option>
+
+                    @foreach ($ordenesCompra as $oc)
+                        <option value="{{ $oc->id }}">
+                            {{ $oc->folio ?? 'OC #' . $oc->id }}
+                            — {{ $oc->proveedor->nombre ?? 'Sin proveedor' }}
+                            — {{ ucfirst($oc->estado ?? 'sin estado') }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+                <button type="button"
+                        class="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        @click="closeRelacionarModal()">
+                    Cancelar
+                </button>
+
+                <button type="submit"
+                        class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+                    Relacionar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
     {{-- MODAL PAGO --}}
 <div x-show="pagoModalOpen"
      x-transition 
@@ -849,7 +949,7 @@
         </div>
     </div>
 </div>
-<script>
+    <script>
 function cfdiModal() {
     return {
         open: false,
@@ -859,7 +959,10 @@ function cfdiModal() {
         showRelacionarModal: false,
         relacionFormAction: '',
         relacionCfdiUuid: '',
+        relacionRfcEmisor: '',
+        relacionTipo: 'obra',
         relacionObraId: '',
+        relacionOrdenCompraId: '',
 
         async openCfdiModal(url) {
             this.open = true;
@@ -869,7 +972,6 @@ function cfdiModal() {
             try {
                 const res = await fetch(url);
                 const json = await res.json();
-
                 this.data = json.cfdi;
             } catch (e) {
                 console.error(e);
@@ -883,10 +985,17 @@ function cfdiModal() {
             this.data = null;
         },
 
-        openRelacionarModal(action, uuid, obraId = '') {
+        openRelacionarModal(action, uuid, rfcEmisor, obraId = '', ordenCompraId = '') {
+            const miRfc = 'RCO820921T66';
+
             this.relacionFormAction = action;
             this.relacionCfdiUuid = uuid;
+            this.relacionRfcEmisor = rfcEmisor || '';
+            this.relacionTipo = this.relacionRfcEmisor === miRfc ? 'obra' : 'orden_compra';
+
             this.relacionObraId = obraId || '';
+            this.relacionOrdenCompraId = ordenCompraId || '';
+
             this.showRelacionarModal = true;
         },
 
@@ -894,99 +1003,102 @@ function cfdiModal() {
             this.showRelacionarModal = false;
             this.relacionFormAction = '';
             this.relacionCfdiUuid = '';
+            this.relacionRfcEmisor = '';
+            this.relacionTipo = 'obra';
             this.relacionObraId = '';
+            this.relacionOrdenCompraId = '';
         }
     }
 }
 
 
-function pagoModal() {
-    return {
-        pagoModalOpen: false,
-        verPagosModalOpen: false,
+    function pagoModal() {
+        return {
+            pagoModalOpen: false,
+            verPagosModalOpen: false,
 
-        pagoForm: {
-             action: '',
-            cfdi_id: null,
-            uuid: '',
-            total: 0,
-            pagado: 0,
-            saldo: 0,
-            metodo: '',
-            fecha_pago: '',
-            monto: '',
-            metodo_pago: '',
-            referencia: '',
-        },
-
-        verPagosData: {
-            uuid: '',
-            total: 0,
-            pagado: 0,
-            saldo: 0,
-            pagos: [],
-        },
-
-        openPagoModal(data) {
-                console.log('openPagoModal llamado', data);
-                const miRfc = 'RCO820921T66'; // 🔥 luego lo pasamos dinámico
-
-                const esIngreso = data.rfc_emisor === miRfc;
-                        this.verPagosModalOpen = false;
-
-            this.pagoForm = {
-                action: data.action,
-                cfdi_id: data.id,
-                uuid: data.uuid,
-                total: Number(data.total || 0),
-                pagado: Number(data.pagado || 0),
-                saldo: Number(data.saldo || 0),
-                metodo: data.metodo || '',
+            pagoForm: {
+                action: '',
+                cfdi_id: null,
+                uuid: '',
+                total: 0,
+                pagado: 0,
+                saldo: 0,
+                metodo: '',
                 fecha_pago: '',
                 monto: '',
                 metodo_pago: '',
                 referencia: '',
-            };
-             console.log('pagoModalOpen antes:', this.pagoModalOpen);
-    this.pagoModalOpen = true;
-    console.log('pagoModalOpen después:', this.pagoModalOpen);
+            },
 
-            
-        },
+            verPagosData: {
+                uuid: '',
+                total: 0,
+                pagado: 0,
+                saldo: 0,
+                pagos: [],
+            },
 
-        openVerPagosModal(data) {
-                console.log('openVerPagosModal llamado', data);
+            openPagoModal(data) {
+                    console.log('openPagoModal llamado', data);
+                    const miRfc = 'RCO820921T66'; // 🔥 luego lo pasamos dinámico
 
-            this.pagoModalOpen = false;
+                    const esIngreso = data.rfc_emisor === miRfc;
+                            this.verPagosModalOpen = false;
 
-            this.verPagosData = {
-                uuid: data.uuid,
-                total: Number(data.total || 0),
-                pagado: Number(data.pagado || 0),
-                saldo: Number(data.saldo || 0),
-                pagos: data.pagos || [],
-            };
+                this.pagoForm = {
+                    action: data.action,
+                    cfdi_id: data.id,
+                    uuid: data.uuid,
+                    total: Number(data.total || 0),
+                    pagado: Number(data.pagado || 0),
+                    saldo: Number(data.saldo || 0),
+                    metodo: data.metodo || '',
+                    fecha_pago: '',
+                    monto: '',
+                    metodo_pago: '',
+                    referencia: '',
+                };
+                console.log('pagoModalOpen antes:', this.pagoModalOpen);
+        this.pagoModalOpen = true;
+        console.log('pagoModalOpen después:', this.pagoModalOpen);
 
-            this.verPagosModalOpen = true;
-        },
+                
+            },
 
-        closePagoModal() {
-            this.pagoModalOpen = false;
-        },
+            openVerPagosModal(data) {
+                    console.log('openVerPagosModal llamado', data);
 
-        closeVerPagosModal() {
-            this.verPagosModalOpen = false;
-        },
+                this.pagoModalOpen = false;
 
-        money(value) {
-            return Number(value || 0).toLocaleString('es-MX', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
+                this.verPagosData = {
+                    uuid: data.uuid,
+                    total: Number(data.total || 0),
+                    pagado: Number(data.pagado || 0),
+                    saldo: Number(data.saldo || 0),
+                    pagos: data.pagos || [],
+                };
+
+                this.verPagosModalOpen = true;
+            },
+
+            closePagoModal() {
+                this.pagoModalOpen = false;
+            },
+
+            closeVerPagosModal() {
+                this.verPagosModalOpen = false;
+            },
+
+            money(value) {
+                return Number(value || 0).toLocaleString('es-MX', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
         }
     }
-}
-</script>
+    </script>
 </div>
 
 @endsection

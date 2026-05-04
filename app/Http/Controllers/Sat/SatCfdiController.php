@@ -7,6 +7,7 @@ use App\Models\SatCfdi;
 use App\Models\SatEmpresa;
 use Illuminate\Http\Request;
 use App\Models\Obra;
+use App\Models\OrdenCompra;
 
 class SatCfdiController extends Controller
 {
@@ -18,6 +19,9 @@ class SatCfdiController extends Controller
 
         $empresaSeleccionada = null;
         $obras = Obra::orderBy('nombre')->get();
+        $ordenesCompra = OrdenCompra::with('proveedor')
+        ->orderByDesc('id')
+        ->get();
         $cfdis = collect();
 
         $totalGeneral = 0;
@@ -46,6 +50,7 @@ class SatCfdiController extends Controller
                 'subtotalEgresos',
                 'subtotalPagos',
                 'obras',
+                'ordenesCompra'
             ));
         }
 
@@ -65,11 +70,13 @@ class SatCfdiController extends Controller
                 'subtotalEgresos',
                 'subtotalPagos',
                 'obras',
+                'ordenesCompra'
             ));
         }
 
         // $q = SatCfdi::query()->where(function ($sub) use ($empresaSeleccionada) {
-        $q = SatCfdi::query()->with('obra')->where(function ($sub) use ($empresaSeleccionada) {
+        // $q = SatCfdi::query()->with('obra')->where(function ($sub) use ($empresaSeleccionada) {
+        $q = SatCfdi::query()->with(['obra', 'ordenCompra'])->where(function ($sub) use ($empresaSeleccionada) {
             $sub->where('rfc_emisor', $empresaSeleccionada->rfc)
                 ->orWhere('rfc_receptor', $empresaSeleccionada->rfc);
         });
@@ -132,7 +139,8 @@ class SatCfdiController extends Controller
             'subtotalEgresos',
             'subtotalPagos',
             'subtotalNominas',
-            'obras'
+            'obras',
+            'ordenesCompra'
         ));
     }
     public function show(\App\Models\SatCfdi $cfdi)
@@ -150,18 +158,36 @@ class SatCfdiController extends Controller
             ]);
         }
 
-        public function relacionarObra(Request $request, SatCfdi $cfdi)
-    {
+ public function relacionar(Request $request, SatCfdi $cfdi)
+{
+    $rfcEmpresa = 'RCO820921T66';
+
+    if ($cfdi->rfc_emisor === $rfcEmpresa) {
         $validated = $request->validate([
             'obra_id' => ['required', 'exists:obras,id'],
         ]);
 
         $cfdi->update([
             'obra_id' => $validated['obra_id'],
+            'orden_compra_id' => null,
         ]);
 
         return redirect()
             ->back()
             ->with('success', 'CFDI relacionado correctamente a la obra.');
     }
+
+    $validated = $request->validate([
+        'orden_compra_id' => ['required', 'exists:ordenes_compra,id'],
+    ]);
+
+    $cfdi->update([
+        'orden_compra_id' => $validated['orden_compra_id'],
+        'obra_id' => null,
+    ]);
+
+    return redirect()
+        ->back()
+        ->with('success', 'CFDI relacionado correctamente a la orden de compra.');
+}
 }
