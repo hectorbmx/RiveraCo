@@ -347,12 +347,25 @@
                                     @if($cfdi->obra)
                                         <span class="inline-flex max-w-[220px] truncate rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 border border-emerald-200"
                                             title="{{ $cfdi->obra->nombre ?? $cfdi->obra->Nombre ?? 'Obra #' . $cfdi->obra->id }}">
-                                            {{ $cfdi->obra->nombre ?? $cfdi->obra->Nombre ?? 'Obra #' . $cfdi->obra->id }}
+                                            Obra: {{ $cfdi->obra->nombre ?? $cfdi->obra->Nombre ?? 'Obra #' . $cfdi->obra->id }}
                                         </span>
+
+                                    @elseif($cfdi->ordenCompra)
+                                        <span class="inline-flex max-w-[220px] truncate rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 border border-blue-200"
+                                            title="{{ $cfdi->ordenCompra->folio ?? 'OC #' . $cfdi->ordenCompra->id }}">
+                                            OC: {{ $cfdi->ordenCompra->folio ?? 'OC #' . $cfdi->ordenCompra->id }}
+                                        </span>
+
                                     @else
-                                        <span class="inline-flex rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 border border-amber-200">
-                                            Sin obra
-                                        </span>
+                                        @if($cfdi->rfc_emisor === 'RCO820921T66')
+                                            <span class="inline-flex rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 border border-amber-200">
+                                                Sin obra
+                                            </span>
+                                        @else
+                                            <span class="inline-flex rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 border border-amber-200">
+                                                Sin OC
+                                            </span>
+                                        @endif
                                     @endif
                                 </td>
                               <td class="px-4 py-3">
