@@ -20,6 +20,10 @@ use App\Http\Controllers\Api\V1\Attendance\AttendanceApiController;
 use App\Http\Controllers\Api\V1\PresupuestoController;
 use App\Http\Controllers\Api\V1\PlaneacionGastosController;
 
+use App\Http\Controllers\Api\V1\Gerencial\ObraComisionesApiController;
+
+
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -66,6 +70,10 @@ Route::prefix('v1')->group(function () {
 
         //ruta para eliminar una asistencia
         Route::delete('obras/{obra}/asistencias/{asistencia}', [AsistenciasController::class, 'destroy']);
+
+        
+        Route::get('obras/{obra}/comisiones', [ObraComisionesApiController::class, 'index']);
+
 
         
         Route::get('vehiculos/km-log', [VehiculoKmController::class, 'index']);
