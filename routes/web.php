@@ -60,6 +60,9 @@ use App\Http\Controllers\Sat\SatEmpresaController;
 use App\Http\Controllers\Sat\SatCaptchaController;
 use App\Http\Controllers\Sat\SatCfdiEstadisticaController;
 use App\Http\Controllers\Sat\SatCfdiPagoController;
+use App\Http\Controllers\Sat\SatFacturacionController;
+use App\Http\Controllers\Sat\SatCatalogoController;
+use App\Http\Controllers\Sat\SatFacturaPagoController;
 
 
 
@@ -149,7 +152,47 @@ Route::middleware(['auth', 'verified'])
 
         Route::post('/pagos/{pago}/cancelar', [SatCfdiPagoController::class, 'cancelar'])->name('pagos.cancelar');
 });
+        /*
+        |--------------------------------------------------------------------------
+        | FACTURACIÓN CFDI
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('facturacion')->name('facturacion.')->group(function () {
 
+            Route::get('/', [SatFacturacionController::class, 'index'])->name('index');
+
+            Route::get('/create', [SatFacturacionController::class, 'create'])->name('create');
+
+            Route::post('/', [SatFacturacionController::class, 'store'])->name('store');
+
+            Route::get('/{factura}', [SatFacturacionController::class, 'show'])->name('show');
+            Route::get('/{factura}/xml', [SatFacturacionController::class, 'downloadXml'])->name('xml');
+
+            Route::get('/{factura}/pdf', [SatFacturacionController::class, 'downloadPdf'])->name('pdf');
+            Route::post('/{factura}/enviar', [SatFacturacionController::class, 'enviar'])->name('enviar');
+
+            Route::post('/{factura}/cancelar', [SatFacturacionController::class, 'cancelar'])->name('cancelar');
+            Route::get('/{factura}/acuse-cancelacion/{format}', [SatFacturacionController::class, 'acuseCancelacion'])->name('acuse');
+
+            Route::post('/{factura}/pagos', [SatFacturaPagoController::class, 'store'])->name('pagos.store');
+            Route::get('/pagos/{pago}', [SatFacturaPagoController::class, 'show'])->name('pagos.show');
+            Route::get('/pagos/{pago}/xml', [SatFacturaPagoController::class, 'xml'])->name('pagos.xml');
+            Route::get('/pagos/{pago}/pdf', [SatFacturaPagoController::class, 'pdf'])->name('pagos.pdf');
+            Route::post('/pagos/{pago}/cancelar', [SatFacturaPagoController::class, 'cancelar'])->name('pagos.cancelar');
+            
+
+        });
+        /*
+        |--------------------------------------------------------------------------
+        | CATÁLOGOS SAT
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('catalogos')->name('catalogos.')->group(function () {
+
+            Route::get('/conceptos', [SatCatalogoController::class, 'conceptos'])->name('conceptos');
+            Route::post('/conceptos', [SatCatalogoController::class, 'storeConcepto'])->name('conceptos.store');
+
+        });
         /*
 |--------------------------------------------------------------------------
 | SOLICITUDES DE DOCUMENTOS SAT (CAPTCHA)
@@ -439,17 +482,20 @@ Route::middleware('auth','verified')->group(function () {
     
     Route::get('ordenes-compra/partidas-obra/{obra_id}', [OrdenCompraController::class, 'partidasPorObra'])->name('ordenes_compra.partidas_obra');
 
-    Route::get('proveedores/buscar', [ProveedorController::class, 'buscar'])
-    ->name('proveedores.buscar');
+    Route::get('proveedores/buscar', [ProveedorController::class, 'buscar'])->name('proveedores.buscar');
+    
+    Route::get('proveedores/{proveedor}/facturas/{cfdi}', [ProveedorController::class, 'showFactura'])->name('proveedores.facturas.show');
+
+    Route::post('proveedores/{proveedor}/facturas/{cfdi}/relacionar',[ProveedorController::class, 'relacionarFactura'])->name('proveedores.facturas.relacionar');
+    Route::post('proveedores/{proveedor}/facturas/{cfdi}/programar-pago',[ProveedorController::class, 'programarPagoFactura'])->name('proveedores.facturas.programar-pago');
+    Route::get('proveedores-pagos-programados', [ProveedorController::class, 'pagosProgramados'])->name('proveedores.pagos-programados');
+
 
     Route::resource('proveedores', ProveedorController::class)
     ->parameters(['proveedores' => 'proveedor'])
     ->except(['destroy']);
 
-
-
-    Route::post('proveedores/{proveedor}/toggle-activo', [ProveedorController::class, 'toggleActivo'])
-    ->name('proveedores.toggleActivo');
+    Route::post('proveedores/{proveedor}/toggle-activo', [ProveedorController::class, 'toggleActivo'])->name('proveedores.toggleActivo');
 
 //productos
     Route::get('productos/buscar', [ProductoController::class, 'buscar'])

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\SatCfdi;
 
 class Proveedor extends Model
 {
@@ -79,7 +80,10 @@ class Proveedor extends Model
     {
         $this->attributes['domicilio'] = $value;
     }
-
+    public function facturasSat()
+    {
+        return $this->hasMany(SatCfdi::class, 'rfc_emisor', 'rfc');
+    }
     /**
      * codigo:
      * - Si en legacy no existe, lo exponemos como virtual.

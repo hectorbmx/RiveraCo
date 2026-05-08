@@ -17,14 +17,21 @@ class Cliente extends Model
     'rfc',
     'telefono',
     'email',
-    'direccion',     // si la sigues usando como campo libre
+    'direccion',
     'calle',
     'colonia',
     'ciudad',
     'estado',
     'pais',
+
+    // SAT / CFDI
+    'codigo_postal',
+    'regimen_fiscal',
+    'uso_cfdi_default',
+    'facturapi_customer_id',
+
     'activo',
-    ];
+];
 
     // Relación con obras (la crearemos después)
     public function obras()

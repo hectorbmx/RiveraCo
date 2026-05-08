@@ -170,7 +170,51 @@
         @enderror
     </div>
 </div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+    <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1">
+            Código postal
+        </label>
+        <input type="text"
+               name="codigo_postal"
+               value="{{ old('codigo_postal', $cliente->codigo_postal ?? '') }}"
+               class="w-full rounded-lg border-slate-300"
+               maxlength="10">
+        @error('codigo_postal')
+            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+    </div>
 
+    <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1">
+            Régimen fiscal
+        </label>
+        <input type="text"
+               name="regimen_fiscal"
+               value="{{ old('regimen_fiscal', $cliente->regimen_fiscal ?? '') }}"
+               class="w-full rounded-lg border-slate-300"
+               maxlength="10"
+               placeholder="Ej. 612, 601, 626">
+        @error('regimen_fiscal')
+            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1">
+            Uso CFDI default
+        </label>
+        <input type="text"
+               name="uso_cfdi_default"
+               value="{{ old('uso_cfdi_default', $cliente->uso_cfdi_default ?? '') }}"
+               class="w-full rounded-lg border-slate-300"
+               maxlength="10"
+               placeholder="Ej. G03, S01">
+        @error('uso_cfdi_default')
+            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+    </div>
+</div>
 
             {{-- Activo --}}
             <div class="flex items-center gap-2">

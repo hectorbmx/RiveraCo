@@ -18,32 +18,37 @@ class ClienteController extends Controller
         return view('clientes.create');
     }
 
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'nombre_comercial' => ['required', 'string', 'max:255'],
-            'razon_social'     => ['nullable', 'string', 'max:255'],
-            'rfc'              => ['nullable', 'string', 'max:13', 'unique:clientes,rfc'],
-            'telefono'         => ['nullable', 'string', 'max:20'],
-            'email'            => ['nullable', 'email', 'max:255'],
+   public function store(Request $request)
+{
+    $data = $request->validate([
+        'nombre_comercial' => ['required', 'string', 'max:255'],
+        'razon_social'     => ['nullable', 'string', 'max:255'],
+        'rfc'              => ['nullable', 'string', 'max:13', 'unique:clientes,rfc'],
+        'telefono'         => ['nullable', 'string', 'max:20'],
+        'email'            => ['nullable', 'email', 'max:255'],
 
-            'direccion'        => ['nullable', 'string', 'max:255'],
-            'calle'            => ['nullable', 'string', 'max:150'],
-            'colonia'          => ['nullable', 'string', 'max:150'],
-            'ciudad'           => ['nullable', 'string', 'max:100'],
-            'estado'           => ['nullable', 'string', 'max:100'],
-            'pais'             => ['nullable', 'string', 'max:100'],
+        'direccion'        => ['nullable', 'string', 'max:255'],
+        'calle'            => ['nullable', 'string', 'max:150'],
+        'colonia'          => ['nullable', 'string', 'max:150'],
+        'ciudad'           => ['nullable', 'string', 'max:100'],
+        'estado'           => ['nullable', 'string', 'max:100'],
+        'pais'             => ['nullable', 'string', 'max:100'],
 
-            'activo'           => ['nullable', 'boolean'],
-        ]);
+        // SAT / CFDI
+        'codigo_postal'    => ['nullable', 'string', 'max:10'],
+        'regimen_fiscal'   => ['nullable', 'string', 'max:10'],
+        'uso_cfdi_default' => ['nullable', 'string', 'max:10'],
 
-        $data['activo'] = $request->boolean('activo', true);
+        'activo'           => ['nullable', 'boolean'],
+    ]);
 
-        Cliente::create($data);
+    $data['activo'] = $request->boolean('activo', true);
 
-        return redirect()->route('clientes.index')
-            ->with('success', 'Cliente creado correctamente.');
-    }
+    Cliente::create($data);
+
+    return redirect()->route('clientes.index')
+        ->with('success', 'Cliente creado correctamente.');
+}
 
     // public function edit(Cliente $cliente)
     // {
@@ -98,31 +103,36 @@ class ClienteController extends Controller
 }
 
     public function update(Request $request, Cliente $cliente)
-    {
-        $data = $request->validate([
-            'nombre_comercial' => ['required', 'string', 'max:255'],
-            'razon_social'     => ['nullable', 'string', 'max:255'],
-            'rfc'              => ['nullable', 'string', 'max:13', 'unique:clientes,rfc,' . $cliente->id],
-            'telefono'         => ['nullable', 'string', 'max:20'],
-            'email'            => ['nullable', 'email', 'max:255'],
+{
+    $data = $request->validate([
+        'nombre_comercial' => ['required', 'string', 'max:255'],
+        'razon_social'     => ['nullable', 'string', 'max:255'],
+        'rfc'              => ['nullable', 'string', 'max:13', 'unique:clientes,rfc,' . $cliente->id],
+        'telefono'         => ['nullable', 'string', 'max:20'],
+        'email'            => ['nullable', 'email', 'max:255'],
 
-            'direccion'        => ['nullable', 'string', 'max:255'],
-            'calle'            => ['nullable', 'string', 'max:150'],
-            'colonia'          => ['nullable', 'string', 'max:150'],
-            'ciudad'           => ['nullable', 'string', 'max:100'],
-            'estado'           => ['nullable', 'string', 'max:100'],
-            'pais'             => ['nullable', 'string', 'max:100'],
+        'direccion'        => ['nullable', 'string', 'max:255'],
+        'calle'            => ['nullable', 'string', 'max:150'],
+        'colonia'          => ['nullable', 'string', 'max:150'],
+        'ciudad'           => ['nullable', 'string', 'max:100'],
+        'estado'           => ['nullable', 'string', 'max:100'],
+        'pais'             => ['nullable', 'string', 'max:100'],
 
-            'activo'           => ['nullable', 'boolean'],
-        ]);
+        // SAT / CFDI
+        'codigo_postal'    => ['nullable', 'string', 'max:10'],
+        'regimen_fiscal'   => ['nullable', 'string', 'max:10'],
+        'uso_cfdi_default' => ['nullable', 'string', 'max:10'],
 
-        $data['activo'] = $request->boolean('activo', true);
+        'activo'           => ['nullable', 'boolean'],
+    ]);
 
-        $cliente->update($data);
+    $data['activo'] = $request->boolean('activo', true);
 
-        return redirect()->route('clientes.index')
-            ->with('success', 'Cliente actualizado correctamente.');
-    }
+    $cliente->update($data);
+
+    return redirect()->route('clientes.index')
+        ->with('success', 'Cliente actualizado correctamente.');
+}
 
     public function destroy(Cliente $cliente)
     {

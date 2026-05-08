@@ -13,11 +13,40 @@
                 Gestión de proveedores (sin eliminar; solo activar/inactivar).
             </p>
         </div>
+            <a href="{{ route('proveedores.pagos-programados') }}"
+            class="group relative inline-flex items-center gap-2.5 rounded-xl border border-amber-200 bg-white px-5 py-2.5 text-sm font-bold text-amber-700 
+                    transition-all duration-300 ease-out
+                    hover:border-amber-300 hover:bg-amber-50 hover:shadow-[0_10px_20px_-10px_rgba(245,158,11,0.4)]
+                    active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-500/20">
+                
+                <svg xmlns="http://www.w3.org/2000/svg" 
+                    class="h-5 w-5 text-amber-600 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" 
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
 
-        <a href="{{ route('proveedores.create') }}"
-           class="bg-[#0B265A] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90">
-            + Nuevo proveedor
-        </a>
+                <span class="tracking-tight">Programación de pagos</span>
+
+                <div class="absolute inset-0 rounded-xl bg-gradient-to-tr from-transparent via-transparent to-amber-400/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+            </a>
+            <a href="{{ route('proveedores.create') }}"
+                class="group relative inline-flex items-center gap-2.5 rounded-xl bg-[#0B265A] px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-900/20 
+                        transition-all duration-300 ease-out
+                        hover:bg-[#12387f] hover:-translate-y-0.5 hover:shadow-[0_10px_25px_-5px_rgba(11,38,90,0.4)]
+                        active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#0B265A]/20">
+                    
+                    <div class="relative flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" 
+                            class="h-5 w-5 text-blue-200 transition-all duration-300 group-hover:rotate-90 group-hover:text-white" 
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </div>
+
+                    <span class="tracking-tight"> Nuevo proveedor</span>
+
+                    <div class="absolute inset-0 rounded-xl bg-gradient-to-tr from-white/0 via-white/5 to-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                </a>
     </div>
 
     {{-- Flash Messages --}}

@@ -96,6 +96,39 @@
                        class="w-full rounded-xl border-gray-300 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
                        required>
             </div>
+            <div class="md:col-span-2 border-t border-gray-200 pt-5 mt-2">
+    <h3 class="text-base font-semibold text-gray-900">
+        Certificados CSD para facturación
+    </h3>
+
+    <p class="text-sm text-gray-600 mt-1">
+        Archivos necesarios para timbrar facturas CFDI.
+    </p>
+</div>
+
+<div>
+    <label class="block text-sm font-medium text-gray-700 mb-1">Certificado CSD (.cer)</label>
+    <input type="file"
+           name="csd_cer_file"
+           accept=".cer"
+           class="w-full rounded-xl border-gray-300 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100">
+</div>
+
+<div>
+    <label class="block text-sm font-medium text-gray-700 mb-1">Llave CSD (.key)</label>
+    <input type="file"
+           name="csd_key_file"
+           accept=".key"
+           class="w-full rounded-xl border-gray-300 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100">
+</div>
+
+<div>
+    <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña CSD</label>
+    <input type="password"
+           name="csd_password"
+           class="w-full rounded-xl border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+           placeholder="Contraseña de la llave CSD">
+</div>
 
             <div class="md:col-span-2">
                 <label class="inline-flex items-center gap-2">

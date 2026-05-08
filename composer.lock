@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "01db4a28c8e74ef90d485d13ab3dd9a9",
+    "content-hash": "416d248fc47008c6e4d7d8bad8513e41",
     "packages": [
         {
             "name": "barryvdh/laravel-dompdf",
@@ -837,6 +837,67 @@
                 }
             ],
             "time": "2025-03-06T22:45:56+00:00"
+        },
+        {
+            "name": "facturapi/facturapi-php",
+            "version": "4.4.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/FacturAPI/facturapi-php.git",
+                "reference": "ea97ebf1874b6a46692cadb47d7b51c8d8ae677d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/FacturAPI/facturapi-php/zipball/ea97ebf1874b6a46692cadb47d7b51c8d8ae677d",
+                "reference": "ea97ebf1874b6a46692cadb47d7b51c8d8ae677d",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.9",
+                "php": ">=8.2",
+                "psr/http-client": "^1.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^11.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Facturapi\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jhonatan Laguna"
+                },
+                {
+                    "name": "Javier Rosas"
+                },
+                {
+                    "name": "Raúl Sánchez"
+                }
+            ],
+            "description": "Facturapi's PHP client library",
+            "homepage": "https://www.facturapi.io/",
+            "keywords": [
+                "api",
+                "cfdi",
+                "factura",
+                "facturapi",
+                "mexico",
+                "sat"
+            ],
+            "support": {
+                "docs": "https://www.facturapi.io/docs",
+                "email": "contacto@facturapi.io",
+                "issues": "https://github.com/facturapi/facturapi-php/issues",
+                "source": "https://github.com/facturapi/facturapi-php"
+            },
+            "time": "2026-05-05T16:11:41+00:00"
         },
         {
             "name": "fruitcake/php-cors",

@@ -1,0 +1,312 @@
+@extends('layouts.admin')
+
+@section('title', 'Conceptos SAT')
+
+@section('content')
+
+<div x-data="{ openCreate: false }" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    {{-- HEADER --}}
+    <div class="flex items-center justify-between mb-6">
+
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">
+                Catálogo de Conceptos SAT
+            </h1>
+
+            <p class="text-sm text-slate-500 mt-1">
+                Conceptos reutilizables para facturación CFDI.
+            </p>
+        </div>
+
+    <button type="button"
+            @click="openCreate = true"
+            class="inline-flex items-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800">
+        + Nuevo Concepto
+    </button>
+
+    </div>
+
+    {{-- TABLA --}}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+        <div class="overflow-x-auto">
+
+            <table class="w-full text-sm">
+
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr class="text-xs uppercase tracking-wide text-slate-500">
+
+                        <th class="px-5 py-4 text-left">
+                            Código
+                        </th>
+
+                        <th class="px-5 py-4 text-left">
+                            Descripción
+                        </th>
+
+                        <th class="px-5 py-4 text-left">
+                            Clave SAT
+                        </th>
+
+                        <th class="px-5 py-4 text-left">
+                            Unidad
+                        </th>
+
+                        <th class="px-5 py-4 text-right">
+                            Precio
+                        </th>
+
+                        <th class="px-5 py-4 text-center">
+                            IVA
+                        </th>
+
+                        <th class="px-5 py-4 text-center">
+                            Estado
+                        </th>
+
+                        <th class="px-5 py-4 text-right">
+                            Acciones
+                        </th>
+
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-slate-100">
+
+                    @forelse($conceptos as $concepto)
+
+                        <tr class="hover:bg-slate-50">
+
+                            <td class="px-5 py-4 font-medium text-slate-900">
+                                {{ $concepto->codigo ?? '—' }}
+                            </td>
+
+                            <td class="px-5 py-4">
+                                {{ $concepto->descripcion }}
+                            </td>
+
+                            <td class="px-5 py-4">
+                                {{ $concepto->clave_producto_servicio }}
+                            </td>
+
+                            <td class="px-5 py-4">
+                                {{ $concepto->clave_unidad }}
+                            </td>
+
+                            <td class="px-5 py-4 text-right">
+                                ${{ number_format($concepto->precio_unitario, 2) }}
+                            </td>
+
+                            <td class="px-5 py-4 text-center">
+                                {{ $concepto->iva_porcentaje }}%
+                            </td>
+
+                            <td class="px-5 py-4 text-center">
+
+                                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium
+                                    {{ $concepto->activo
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                        : 'bg-red-50 text-red-700 border border-red-200' }}">
+
+                                    {{ $concepto->activo ? 'Activo' : 'Inactivo' }}
+
+                                </span>
+
+                            </td>
+
+                            <td class="px-5 py-4 text-right">
+
+                                <button type="button"
+                                        class="text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                                    Editar
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                    @empty
+
+                        <tr>
+                            <td colspan="8"
+                                class="px-5 py-10 text-center text-slate-500">
+                                Aún no hay conceptos registrados.
+                            </td>
+                        </tr>
+
+                    @endforelse
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        @if($conceptos->hasPages())
+            <div class="px-5 py-4 border-t border-slate-200">
+                {{ $conceptos->links() }}
+            </div>
+        @endif
+
+    </div>
+{{-- MODAL NUEVO CONCEPTO --}}
+<div x-show="openCreate"
+     x-cloak
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+
+    <div @click.away="openCreate = false"
+         class="w-full max-w-2xl rounded-2xl bg-white shadow-xl border border-slate-200">
+
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">
+                    Nuevo concepto SAT
+                </h2>
+                <p class="text-sm text-slate-500">
+                    Captura un concepto reutilizable para facturación CFDI.
+                </p>
+            </div>
+
+            <button type="button"
+                    @click="openCreate = false"
+                    class="text-slate-400 hover:text-slate-600">
+                ✕
+            </button>
+        </div>
+
+        <form method="POST" action="{{ route('sat.catalogos.conceptos.store') }}">
+            @csrf
+
+            <div class="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Código interno
+                    </label>
+                    <input type="text"
+                           name="codigo"
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+                           placeholder="Ej. SERV-001">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Precio unitario
+                    </label>
+                    <input type="number"
+                           step="0.01"
+                           name="precio_unitario"
+                           value="0"
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Descripción
+                    </label>
+                    <input type="text"
+                           name="descripcion"
+                           required
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+                           placeholder="Ej. Servicio de construcción">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Clave producto/servicio SAT
+                    </label>
+                    <input type="text"
+                           name="clave_producto_servicio"
+                           required
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+                           placeholder="Ej. 72121400">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Clave unidad SAT
+                    </label>
+                    <input type="text"
+                           name="clave_unidad"
+                           required
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+                           placeholder="Ej. E48">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Unidad visible
+                    </label>
+                    <input type="text"
+                           name="unidad"
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+                           placeholder="Ej. Servicio">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Objeto de impuesto
+                    </label>
+                    <select name="objeto_impuesto"
+                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="02">02 - Sí objeto de impuesto</option>
+                        <option value="01">01 - No objeto de impuesto</option>
+                        <option value="03">03 - Sí objeto, no obligado al desglose</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        IVA tasa
+                    </label>
+                    <select name="iva_tasa"
+                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="0.160000">16%</option>
+                        <option value="0.080000">8%</option>
+                        <option value="0.000000">0%</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-3 pt-6">
+                    <input type="checkbox"
+                           name="incluye_iva"
+                           value="1"
+                           class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+
+                    <span class="text-sm text-slate-700">
+                        El precio ya incluye IVA
+                    </span>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Observaciones
+                    </label>
+                    <textarea name="observaciones"
+                              rows="3"
+                              class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                </div>
+
+            </div>
+
+            <div class="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-2xl">
+                <button type="button"
+                        @click="openCreate = false"
+                        class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-white">
+                    Cancelar
+                </button>
+
+                <button type="submit"
+                        class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
+                    Guardar concepto
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+</div>
+
+@endsection

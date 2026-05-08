@@ -33,6 +33,10 @@ return [
     'contpaqi' => [
       'api_key' => env('CONTPAQI_API_KEY'),
     ],
+    'facturapi' => [
+        'secret_key' => env('FACTURAPI_SECRET_KEY'),
+        'sandbox' => env('FACTURAPI_SANDBOX', true),
+    ],
     // config/services.php
     'attendance' => [
     'ingest_token' => env('ATTENDANCE_INGEST_TOKEN'),

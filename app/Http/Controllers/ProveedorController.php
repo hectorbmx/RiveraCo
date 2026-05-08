@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Proveedor;
 use Illuminate\Http\Request;
 use App\Models\OrdenCompra;
+use App\Models\SatCfdi;
+use App\Models\Obra;
+use App\Models\SatCfdiPago;
 
 class ProveedorController extends Controller
 {
@@ -77,47 +80,70 @@ class ProveedorController extends Controller
         return redirect()->route('proveedores.index')->with('success', 'Proveedor creado.');
     }
 
-    public function show(Request $request, Proveedor $proveedor)
-        {
-            $tab = $request->get('tab', 'general');
-            
+   public function show(Request $request, Proveedor $proveedor)
+{
+    $tab = $request->get('tab', 'general');
 
-            // Cargas por tab (evita cargar de más)
-            if ($tab === 'productos') {
-                $proveedor->load(['productos' => function ($q) {
-                    $q->orderBy('productos.nombre');
-                }]);
-            }
+    // Cargas por tab (evita cargar de más)
+    if ($tab === 'productos') {
+        $proveedor->load(['productos' => function ($q) {
+            $q->orderBy('productos.nombre');
+        }]);
+    }
 
-            $ordenes = null;
+    $ordenes = null;
+    $facturas = null;
 
-            if ($tab === 'ordenes') {
-                $q = OrdenCompra::query()
-                    ->with(['obra','areaCatalogo'])
-                    ->where('proveedor_id', $proveedor->id)
-                    ->orderByDesc('fecha')
-                    ->orderByDesc('id');
+    if ($tab === 'ordenes') {
+        $q = OrdenCompra::query()
+            ->with(['obra', 'areaCatalogo'])
+            ->where('proveedor_id', $proveedor->id)
+            ->orderByDesc('fecha')
+            ->orderByDesc('id');
 
-                if ($request->filled('estado')) {
-                    $estado = strtolower($request->estado);
-                    // si tu OrdenCompraController tiene estadoToLegacy, aquí puedes duplicar lógica
-                    // por ahora filtramos por estado legacy directo si viene así:
-                    $q->where('estado', $request->estado);
-                }
-
-                if ($request->filled('desde')) {
-                    $q->whereDate('fecha', '>=', $request->desde);
-                }
-
-                if ($request->filled('hasta')) {
-                    $q->whereDate('fecha', '<=', $request->hasta);
-                }
-
-                $ordenes = $q->paginate(15)->withQueryString();
-            }
-
-            return view('proveedores.show', compact('proveedor', 'tab', 'ordenes'));
+        if ($request->filled('estado')) {
+            $q->where('estado', $request->estado);
         }
+
+        if ($request->filled('desde')) {
+            $q->whereDate('fecha', '>=', $request->desde);
+        }
+
+        if ($request->filled('hasta')) {
+            $q->whereDate('fecha', '<=', $request->hasta);
+        }
+
+        $ordenes = $q->paginate(15)->withQueryString();
+    }
+
+    if ($tab === 'facturas') {
+        $q = SatCfdi::query()
+            ->where('rfc_emisor', $proveedor->rfc)
+            ->orderByDesc('fecha_emision')
+            ->orderByDesc('id');
+
+        if ($request->filled('desde')) {
+            $q->whereDate('fecha_emision', '>=', $request->desde);
+        }
+
+        if ($request->filled('hasta')) {
+            $q->whereDate('fecha_emision', '<=', $request->hasta);
+        }
+
+        // if ($request->filled('estatus_pago')) {
+        //     $q->where('estatus_pago', $request->estatus_pago);
+        // }
+
+        $facturas = $q->paginate(15)->withQueryString();
+    }
+
+    return view('proveedores.show', compact(
+        'proveedor',
+        'tab',
+        'ordenes',
+        'facturas'
+    ));
+}
     public function edit(Proveedor $proveedor)
     {
         return view('proveedores.edit', compact('proveedor'));
@@ -206,4 +232,110 @@ class ProveedorController extends Controller
 
         return response()->json($payload);
     }
+    public function showFactura(Proveedor $proveedor, SatCfdi $cfdi)
+        {
+            if ($cfdi->rfc_emisor !== $proveedor->rfc) {
+                abort(404);
+            }
+
+            $cfdi->load(['conceptos', 'obra', 'ordenCompra']);
+
+            $obras = Obra::orderBy('nombre')->get();
+
+            $ordenesCompra = OrdenCompra::where('proveedor_id', $proveedor->id)
+                ->orderByDesc('fecha')
+                ->orderByDesc('id')
+                ->get();
+
+            return view('proveedores.facturas.show', compact(
+                'proveedor',
+                'cfdi',
+                'obras',
+                'ordenesCompra'
+            ));
+        }
+
+    public function relacionarFactura(Request $request,Proveedor $proveedor,SatCfdi $cfdi)
+{
+    $request->validate([
+        'tipo' => ['required', 'in:obra,orden_compra'],
+        'obra_id' => ['nullable', 'exists:obras,id'],
+        'orden_compra_id' => ['nullable', 'exists:ordenes_compra,id'],
+    ]);
+
+    $cfdi->obra_id = null;
+    $cfdi->orden_compra_id = null;
+
+    if ($request->tipo === 'obra') {
+        $cfdi->obra_id = $request->obra_id;
+    }
+
+    if ($request->tipo === 'orden_compra') {
+        $cfdi->orden_compra_id = $request->orden_compra_id;
+    }
+
+    $cfdi->save();
+
+    return back()->with('success', 'Factura relacionada correctamente.');
+}
+
+public function programarPagoFactura(Request $request, Proveedor $proveedor, SatCfdi $cfdi)
+{
+        // dd($request->all(), $proveedor->id, $cfdi->id);
+
+    if ($cfdi->rfc_emisor !== $proveedor->rfc) {
+        abort(404);
+    }
+
+    $data = $request->validate([
+        'fecha_pago'    => ['required', 'date'],
+        'monto'         => ['required', 'numeric', 'min:0.01'],
+        'moneda'        => ['nullable', 'string', 'max:10'],
+        'metodo_pago'   => ['nullable', 'string', 'max:50'],
+        'referencia'    => ['nullable', 'string', 'max:255'],
+        'observaciones' => ['nullable', 'string'],
+    ]);
+
+    SatCfdiPago::create([
+        'sat_cfdi_id'   => $cfdi->id,
+        'cfdi_uuid'     => $cfdi->uuid,
+        'fecha_pago'    => $data['fecha_pago'],
+        'monto'         => $data['monto'],
+        'moneda'        => $data['moneda'] ?? ($cfdi->moneda ?? 'MXN'),
+        'metodo_pago'   => $data['metodo_pago'] ?? null,
+        'referencia'    => $data['referencia'] ?? null,
+        'observaciones' => $data['observaciones'] ?? null,
+        'estatus'       => 'programado',
+        'created_by'    => auth()->id(),
+    ]);
+
+    return back()->with('success', 'Pago programado correctamente.');
+}
+public function pagosProgramados(Request $request)
+{
+    $desde = $request->get('desde', now()->startOfWeek()->toDateString());
+    $hasta = now()->parse($desde)->endOfWeek()->toDateString();
+
+    $pagos = SatCfdiPago::with([
+            'cfdi',
+            'cfdi.obra',
+            'cfdi.ordenCompra',
+        ])
+        ->whereBetween('fecha_pago', [$desde, $hasta])
+        ->orderBy('fecha_pago')
+        ->get();
+
+    $totalProgramado = $pagos->where('estatus', 'programado')->sum('monto');
+    $totalPagado = $pagos->where('estatus', 'pagado')->sum('monto');
+    $totalCancelado = $pagos->where('estatus', 'cancelado')->sum('monto');
+
+    return view('proveedores.pagos-programados.index', compact(
+        'pagos',
+        'desde',
+        'hasta',
+        'totalProgramado',
+        'totalPagado',
+        'totalCancelado'
+    ));
+}
 }

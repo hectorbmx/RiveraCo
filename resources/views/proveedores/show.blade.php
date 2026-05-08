@@ -36,6 +36,7 @@
                 'general'  => 'General',
                 'productos'=> 'Productos',
                 'ordenes'  => 'Órdenes',
+                'facturas' => 'Facturas',
                 'pagado'   => 'Pagado',
             ];
         @endphp
@@ -71,6 +72,9 @@
 
         @if($tab === 'ordenes')
             @include('proveedores.partials._ordenes', ['proveedor' => $proveedor, 'ordenes' => $ordenes])
+        @endif
+        @if($tab === 'facturas')
+            @include('proveedores.partials._facturas', ['proveedor' => $proveedor, 'facturas' => $facturas])
         @endif
 
         @if($tab === 'pagado')

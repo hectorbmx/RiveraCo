@@ -32,46 +32,51 @@ class SatEmpresaController extends Controller
     {
         return view('sat.empresas.create');
     }
-
-        public function store(Request $request)
+public function store(Request $request)
 {
     $data = $request->validate([
-        'nombre' => ['required', 'string', 'max:255'],
-        'rfc' => ['required', 'string', 'max:13', 'unique:sat_empresas,rfc'],
-        'fiel_password' => ['required', 'string', 'max:255'],
-        'cer_file' => ['required', 'file', 'extensions:cer', 'max:5120'],
-        'key_file' => ['required', 'file', 'extensions:key', 'max:5120'],
-        'activo' => ['nullable', 'boolean'],
-    ], [
-        'cer_file.mimes' => 'El archivo del certificado debe ser .cer',
-        'key_file.mimes' => 'El archivo de la llave debe ser .key',
+        'nombre'       => ['required', 'string', 'max:255'],
+        'rfc'          => ['required', 'string', 'max:13', 'unique:sat_empresas,rfc'],
+        'fiel_password'=> ['required', 'string', 'max:255'],
+        'cer_file'     => ['required', 'file', 'extensions:cer', 'max:5120'],
+        'key_file'     => ['required', 'file', 'extensions:key', 'max:5120'],
+        'activo'       => ['nullable', 'boolean'],
+        // CSD — opcionales, pero si viene uno deben venir los 3
+        'csd_cer_file' => ['nullable', 'file', 'extensions:cer', 'max:5120', 'required_with:csd_key_file,csd_password'],
+        'csd_key_file' => ['nullable', 'file', 'extensions:key', 'max:5120', 'required_with:csd_cer_file,csd_password'],
+        'csd_password' => ['nullable', 'string', 'max:255',       'required_with:csd_cer_file,csd_key_file'],
     ]);
 
-    $rfc = strtoupper(trim($data['rfc']));
+    $rfc    = strtoupper(trim($data['rfc']));
     $folder = 'sat/empresas/' . $rfc;
 
-    $cerFile = $request->file('cer_file');
-    $keyFile = $request->file('key_file');
-
-    $cerName = 'fiel_' . $rfc . '.cer';
-    $keyName = 'fiel_' . $rfc . '.key';
-
-    $cerPath = $cerFile->storeAs($folder, $cerName);
-    $keyPath = $keyFile->storeAs($folder, $keyName);
+    // FIEL — igual que antes
+    $cerPath = $request->file('cer_file')->storeAs($folder, 'fiel_' . $rfc . '.cer');
+    $keyPath = $request->file('key_file')->storeAs($folder, 'fiel_' . $rfc . '.key');
 
     $fielPassword = $data['fiel_password'];
-
     if ($request->boolean('fiel_password_has_trailing_space')) {
         $fielPassword .= ' ';
     }
 
+    // CSD — solo si vienen los archivos
+    $csdCerPath = null;
+    $csdKeyPath = null;
+    if ($request->hasFile('csd_cer_file')) {
+        $csdCerPath = $request->file('csd_cer_file')->storeAs($folder, 'csd_' . $rfc . '.cer');
+        $csdKeyPath = $request->file('csd_key_file')->storeAs($folder, 'csd_' . $rfc . '.key');
+    }
+
     SatEmpresa::create([
-        'nombre' => $data['nombre'],
-        'rfc' => $rfc,
-        'cer_path' => $cerPath,
-        'key_path' => $keyPath,
-        'fiel_password' => $fielPassword,
-        'activo' => $request->boolean('activo', true),
+        'nombre'       => $data['nombre'],
+        'rfc'          => $rfc,
+        'cer_path'     => $cerPath,
+        'key_path'     => $keyPath,
+        'fiel_password'=> $fielPassword,
+        'activo'       => $request->boolean('activo', true),
+        'csd_cer_path' => $csdCerPath,
+        'csd_key_path' => $csdKeyPath,
+        'csd_password' => $data['csd_password'] ?? null,
     ]);
 
     return redirect()
@@ -110,64 +115,82 @@ public function edit(SatEmpresa $empresa)
             return view('sat.empresas.edit', compact('empresa'));
         }
 
-        public function update(Request $request, SatEmpresa $empresa)
-            {
-                $data = $request->validate([
-                    'nombre' => ['required', 'string', 'max:255'],
-                    'rfc' => ['required', 'string', 'max:13', 'unique:sat_empresas,rfc,' . $empresa->id],
-                    'fiel_password' => ['nullable', 'string', 'max:255'],
-                    'sat_password' => ['nullable', 'string', 'max:255'],
-                    'cer_file' => ['nullable', 'file', 'extensions:cer', 'max:5120'],
-                    'key_file' => ['nullable', 'file', 'extensions:key', 'max:5120'],
-                    'activo' => ['nullable', 'boolean'],
-                ]);
+public function update(Request $request, SatEmpresa $empresa)
+        {
+            $data = $request->validate([
+                'nombre'       => ['required', 'string', 'max:255'],
+                'rfc'          => ['required', 'string', 'max:13', 'unique:sat_empresas,rfc,' . $empresa->id],
+                'fiel_password'=> ['nullable', 'string', 'max:255'],
+                'sat_password' => ['nullable', 'string', 'max:255'],
+                'cer_file'     => ['nullable', 'file', 'extensions:cer', 'max:5120'],
+                'key_file'     => ['nullable', 'file', 'extensions:key', 'max:5120'],
+                'activo'       => ['nullable', 'boolean'],
+                // CSD
+                'csd_cer_file' => ['nullable', 'file', 'extensions:cer', 'max:5120', 'required_with:csd_key_file,csd_password'],
+                'csd_key_file' => ['nullable', 'file', 'extensions:key', 'max:5120', 'required_with:csd_cer_file,csd_password'],
+                'csd_password' => ['nullable', 'string', 'max:255',       'required_with:csd_cer_file,csd_key_file'],
+            ]);
 
-                $rfc = strtoupper(trim($data['rfc']));
-                $folder = 'sat/empresas/' . $rfc;
+            $rfc    = strtoupper(trim($data['rfc']));
+            $folder = 'sat/empresas/' . $rfc;
 
-                // 🔹 Password (solo si viene)
-                if (!empty($data['fiel_password'])) {
-                    $password = $data['fiel_password'];
-
-                    if ($request->boolean('fiel_password_has_trailing_space')) {
-                        $password .= ' ';
-                    }
-
-                    $empresa->fiel_password = $password;
+            // 🔹 Passwords FIEL/CIEC (solo si vienen)
+            if (!empty($data['fiel_password'])) {
+                $password = $data['fiel_password'];
+                if ($request->boolean('fiel_password_has_trailing_space')) {
+                    $password .= ' ';
                 }
-                if (!empty($data['sat_password'])) {
-                        $empresa->sat_password = $data['sat_password'];
-                    }
-
-                // 🔹 Archivos
-                if ($request->hasFile('cer_file')) {
-                    if ($empresa->cer_path && \Storage::exists($empresa->cer_path)) {
-                        \Storage::delete($empresa->cer_path);
-                    }
-
-                    $cerName = 'fiel_' . $rfc . '.cer';
-                    $empresa->cer_path = $request->file('cer_file')->storeAs($folder, $cerName);
-                }
-
-                if ($request->hasFile('key_file')) {
-                    if ($empresa->key_path && \Storage::exists($empresa->key_path)) {
-                        \Storage::delete($empresa->key_path);
-                    }
-
-                    $keyName = 'fiel_' . $rfc . '.key';
-                    $empresa->key_path = $request->file('key_file')->storeAs($folder, $keyName);
-                }
-
-                $empresa->update([
-                    'nombre' => $data['nombre'],
-                    'rfc' => $rfc,
-                    'activo' => $request->boolean('activo', true),
-                ]);
-
-                return redirect()
-                    ->route('sat.empresas.index')
-                    ->with('success', 'Empresa SAT actualizada correctamente.');
+                $empresa->fiel_password = $password;
             }
+
+            if (!empty($data['sat_password'])) {
+                $empresa->sat_password = $data['sat_password'];
+            }
+
+            // 🔹 Archivos FIEL (igual que antes)
+            if ($request->hasFile('cer_file')) {
+                if ($empresa->cer_path && \Storage::exists($empresa->cer_path)) {
+                    \Storage::delete($empresa->cer_path);
+                }
+                $empresa->cer_path = $request->file('cer_file')->storeAs($folder, 'fiel_' . $rfc . '.cer');
+            }
+
+            if ($request->hasFile('key_file')) {
+                if ($empresa->key_path && \Storage::exists($empresa->key_path)) {
+                    \Storage::delete($empresa->key_path);
+                }
+                $empresa->key_path = $request->file('key_file')->storeAs($folder, 'fiel_' . $rfc . '.key');
+            }
+
+            // 🔹 Archivos CSD (nuevo)
+            if ($request->hasFile('csd_cer_file')) {
+                if ($empresa->csd_cer_path && \Storage::exists($empresa->csd_cer_path)) {
+                    \Storage::delete($empresa->csd_cer_path);
+                }
+                $empresa->csd_cer_path = $request->file('csd_cer_file')->storeAs($folder, 'csd_' . $rfc . '.cer');
+            }
+
+            if ($request->hasFile('csd_key_file')) {
+                if ($empresa->csd_key_path && \Storage::exists($empresa->csd_key_path)) {
+                    \Storage::delete($empresa->csd_key_path);
+                }
+                $empresa->csd_key_path = $request->file('csd_key_file')->storeAs($folder, 'csd_' . $rfc . '.key');
+            }
+
+            if (!empty($data['csd_password'])) {
+                $empresa->csd_password = $data['csd_password'];
+            }
+
+            $empresa->update([
+                'nombre' => $data['nombre'],
+                'rfc'    => $rfc,
+                'activo' => $request->boolean('activo', true),
+            ]);
+
+            return redirect()
+                ->route('sat.empresas.index')
+                ->with('success', 'Empresa SAT actualizada correctamente.');
+}
 
 //    public function storeCsfRequest(SatEmpresa $empresa, CsfRequestService $csfRequestService)
 public function storeCsfRequest(SatEmpresa $empresa)
@@ -185,51 +208,6 @@ public function storeCsfRequest(SatEmpresa $empresa)
         ->route('sat.empresas.index')
         ->with('success', 'Solicitud enviada, en un momento aparecerá el captcha.');
 }
-// public function submitCaptcha(Request $request, SatDocumentRequest $documentRequest)
-// {
-//     $data = $request->validate([
-//         'captcha_answer' => ['required', 'string', 'max:50'],
-//     ]);
-
-//     $documentRequest->update([
-//         'captcha_answer' => trim($data['captcha_answer']),
-//         'status' => SatDocumentRequest::STATUS_PROCESSING,
-//         'error_message' => null,
-//     ]);
-
-//     try {
-//         \App\Jobs\Sat\ProcessSatCsfRequestJob::dispatchSync($documentRequest->id);
-//     } catch (\Throwable $e) {
-//         $documentRequest->refresh();
-
-//         return redirect()
-//             ->route('sat.empresas.index')
-//             ->with('error', $documentRequest->error_message ?: $e->getMessage());
-//     }
-
-//     $documentRequest->refresh();
-
-//     // Si falló login/captcha y quedó pendiente sin captcha_path,
-//     // volvemos a ejecutar para generar un nuevo captcha en la misma solicitud.
-//     if (
-//         $documentRequest->status === \App\Models\SatDocumentRequest::STATUS_PENDING
-//         && empty($documentRequest->captcha_path)
-//     ) {
-//         try {
-//             \App\Jobs\Sat\ProcessSatCsfRequestJob::dispatchSync($documentRequest->id);
-//         } catch (\Throwable $e) {
-//             $documentRequest->refresh();
-
-//             return redirect()
-//                 ->route('sat.empresas.index')
-//                 ->with('error', $documentRequest->error_message ?: $e->getMessage());
-//         }
-//     }
-
-//     return redirect()
-//         ->route('sat.empresas.index')
-//         ->with('success', 'Captcha enviado, procesando solicitud.');
-// }
 
 public function captchaImage(string $token)
 {

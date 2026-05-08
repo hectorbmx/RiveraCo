@@ -10,19 +10,24 @@ class SatEmpresa extends Model
     protected $table = 'sat_empresas';
 
     protected $fillable = [
-        'nombre',
-        'rfc',
-        'cer_path',
-        'key_path',
-        'fiel_password',
-        'sat_password',
-        'activo',
+    'nombre',
+    'rfc',
+    'facturapi_organization_id',
+    'cer_path',
+    'key_path',
+    'fiel_password',
+    'sat_password',
+    'activo',
+    'csd_cer_path',   // nuevo
+    'csd_key_path',   // nuevo
+    'csd_password',   // nuevo
     ];
 
     protected $casts = [
-        'activo' => 'boolean',
+        'activo'       => 'boolean',
         'fiel_password' => 'encrypted',
-         'sat_password' => 'encrypted',
+        'sat_password'  => 'encrypted',
+        'csd_password'  => 'encrypted',  // nuevo — mismo tratamiento que los otros
     ];
 
     public function documentRequests(): HasMany
