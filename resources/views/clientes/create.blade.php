@@ -1,18 +1,16 @@
 @extends('layouts.admin')
 
-@section('title', 'Nuevo Proveedor')
+@section('title', 'Nuevo Cliente')
 
 @section('content')
 
-<div class="max-w-4xl mx-auto">
+<div class="max-w-3xl mx-auto">
 
     {{-- HEADER --}}
     <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-[#0B265A]">
-            Nuevo Proveedor
-        </h1>
+        <h1 class="text-2xl font-bold text-[#0B265A]">Nuevo Cliente</h1>
 
-        <a href="{{ route('proveedores.index') }}"
+        <a href="{{ route('clientes.index') }}"
            class="text-sm text-slate-600 hover:text-slate-900">
             ← Volver a la lista
         </a>
@@ -20,137 +18,82 @@
 
     <div class="bg-white rounded-2xl shadow p-6">
 
-        {{-- ERROR GLOBAL --}}
+        {{-- MENSAJES DE ERROR GLOBAL --}}
         @if ($errors->any())
             <div class="mb-4 p-3 rounded-lg bg-red-100 text-red-700 text-sm">
                 Hay errores en el formulario, revisa la información.
             </div>
         @endif
 
-        <form action="{{ route('proveedores.store') }}"
-              method="POST"
-              class="space-y-5">
-
+        <form action="{{ route('clientes.store') }}" method="POST" class="space-y-5">
             @csrf
 
-            {{-- Nombre --}}
+            {{-- Nombre comercial --}}
             <div>
-                <label class="block text-sm font-medium text-slate-700">
-                    Nombre <span class="text-red-500">*</span>
+                <label for="nombre_comercial" class="block text-sm font-medium text-slate-700">
+                    Nombre comercial <span class="text-red-500">*</span>
                 </label>
-
-                <input type="text"
-                       name="nombre"
-                       value="{{ old('nombre') }}"
-                       required
+                <input type="text" id="nombre_comercial" name="nombre_comercial"
                        class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                              focus:border-[#FFC107] focus:ring-[#FFC107]">
-
-                @error('nombre')
+                              focus:border-[#FFC107] focus:ring-[#FFC107]"
+                       value="{{ old('nombre_comercial') }}" required>
+                @error('nombre_comercial')
                     <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                 @enderror
             </div>
 
-            {{-- Descripción --}}
+            {{-- Razón social --}}
             <div>
-                <label class="block text-sm font-medium text-slate-700">
-                    Descripción
+                <label for="razon_social" class="block text-sm font-medium text-slate-700">
+                    Razón social
                 </label>
-
-                <textarea name="descripcion"
-                          rows="3"
-                          class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                                 focus:border-[#FFC107] focus:ring-[#FFC107]">{{ old('descripcion') }}</textarea>
-
-                @error('descripcion')
+                <input type="text" id="razon_social" name="razon_social"
+                       class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                              focus:border-[#FFC107] focus:ring-[#FFC107]"
+                       value="{{ old('razon_social') }}">
+                @error('razon_social')
                     <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                 @enderror
             </div>
 
-            {{-- RFC + Fecha --}}
+            {{-- RFC --}}
+            <div>
+                <label for="rfc" class="block text-sm font-medium text-slate-700">
+                    RFC
+                </label>
+                <input type="text" id="rfc" name="rfc"
+                       class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                              focus:border-[#FFC107] focus:ring-[#FFC107]"
+                       value="{{ old('rfc') }}">
+                @error('rfc')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- Teléfono y correo (2 columnas en desktop) --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700">
-                        RFC
-                    </label>
-
-                    <input type="text"
-                           name="rfc"
-                           value="{{ old('rfc') }}"
-                           class="mt-1 block w-full uppercase rounded-xl border-slate-200 shadow-sm
-                                  focus:border-[#FFC107] focus:ring-[#FFC107]">
-
-                    @error('rfc')
-                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-slate-700">
-                        Fecha de registro
-                    </label>
-
-                    <input type="date"
-                           name="fecha_registro"
-                           value="{{ old('fecha_registro', now()->toDateString()) }}"
-                           class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                                  focus:border-[#FFC107] focus:ring-[#FFC107]">
-
-                    @error('fecha_registro')
-                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-            </div>
-
-            {{-- Domicilio --}}
-            <div>
-                <label class="block text-sm font-medium text-slate-700">
-                    Domicilio
-                </label>
-
-                <input type="text"
-                       name="domicilio"
-                       value="{{ old('domicilio') }}"
-                       class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                              focus:border-[#FFC107] focus:ring-[#FFC107]">
-
-                @error('domicilio')
-                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
-
-            {{-- Teléfono + Email --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                <div>
-                    <label class="block text-sm font-medium text-slate-700">
+                    <label for="telefono" class="block text-sm font-medium text-slate-700">
                         Teléfono
                     </label>
-
-                    <input type="text"
-                           name="telefono"
-                           value="{{ old('telefono') }}"
+                    <input type="text" id="telefono" name="telefono"
                            class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                                  focus:border-[#FFC107] focus:ring-[#FFC107]">
-
+                                  focus:border-[#FFC107] focus:ring-[#FFC107]"
+                           value="{{ old('telefono') }}">
                     @error('telefono')
                         <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700">
+                    <label for="email" class="block text-sm font-medium text-slate-700">
                         Correo electrónico
                     </label>
-
-                    <input type="email"
-                           name="email"
-                           value="{{ old('email') }}"
+                    <input type="email" id="email" name="email"
                            class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                                  focus:border-[#FFC107] focus:ring-[#FFC107]">
-
+                                  focus:border-[#FFC107] focus:ring-[#FFC107]"
+                           value="{{ old('email') }}">
                     @error('email')
                         <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                     @enderror
@@ -158,101 +101,148 @@
 
             </div>
 
-            {{-- DATOS BANCARIOS --}}
-            <div class="border-t pt-5">
+            {{-- Dirección detallada --}}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+        <label for="calle" class="block text-sm font-medium text-slate-700">
+            Calle
+        </label>
+        <input type="text" id="calle" name="calle"
+               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                      focus:border-[#FFC107] focus:ring-[#FFC107]"
+               value="{{ old('calle') }}">
+        @error('calle')
+            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+        @enderror
+    </div>
 
-                <h2 class="text-sm font-semibold text-slate-700 mb-4 uppercase tracking-wide">
-                    Datos bancarios
-                </h2>
+    <div>
+        <label for="colonia" class="block text-sm font-medium text-slate-700">
+            Colonia
+        </label>
+        <input type="text" id="colonia" name="colonia"
+               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                      focus:border-[#FFC107] focus:ring-[#FFC107]"
+               value="{{ old('colonia') }}">
+        @error('colonia')
+            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+        @enderror
+    </div>
+</div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+    <div>
+        <label for="ciudad" class="block text-sm font-medium text-slate-700">
+            Ciudad
+        </label>
+        <input type="text" id="ciudad" name="ciudad"
+               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                      focus:border-[#FFC107] focus:ring-[#FFC107]"
+               value="{{ old('ciudad') }}">
+        @error('ciudad')
+            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+        @enderror
+    </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700">
-                            Banco
-                        </label>
+    <div>
+        <label for="estado" class="block text-sm font-medium text-slate-700">
+            Estado
+        </label>
+        <input type="text" id="estado" name="estado"
+               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                      focus:border-[#FFC107] focus:ring-[#FFC107]"
+               value="{{ old('estado') }}">
+        @error('estado')
+            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+        @enderror
+    </div>
 
-                        <input type="text"
-                               name="banco"
-                               value="{{ old('banco') }}"
-                               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                                      focus:border-[#FFC107] focus:ring-[#FFC107]">
+    <div>
+        <label for="pais" class="block text-sm font-medium text-slate-700">
+            País
+        </label>
+        <input type="text" id="pais" name="pais"
+               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                      focus:border-[#FFC107] focus:ring-[#FFC107]"
+               value="{{ old('pais', 'México') }}">
+        @error('pais')
+            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+        @enderror
+    </div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+    <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1">
+            Código postal
+        </label>
+        <input type="text"
+               name="codigo_postal"
+               value="{{ old('codigo_postal', $cliente->codigo_postal ?? '') }}"
+               class="w-full rounded-lg border-slate-300"
+               maxlength="10">
+        @error('codigo_postal')
+            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+    </div>
 
-                        @error('banco')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
+    <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1">
+            Régimen fiscal
+        </label>
+        <input type="text"
+               name="regimen_fiscal"
+               value="{{ old('regimen_fiscal', $cliente->regimen_fiscal ?? '') }}"
+               class="w-full rounded-lg border-slate-300"
+               maxlength="10"
+               placeholder="Ej. 612, 601, 626">
+        @error('regimen_fiscal')
+            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+    </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700">
-                            Cuenta
-                        </label>
-
-                        <input type="text"
-                               name="cuenta"
-                               value="{{ old('cuenta') }}"
-                               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                                      focus:border-[#FFC107] focus:ring-[#FFC107]">
-
-                        @error('cuenta')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700">
-                            CLABE
-                        </label>
-
-                        <input type="text"
-                               name="clabe"
-                               value="{{ old('clabe') }}"
-                               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                                      focus:border-[#FFC107] focus:ring-[#FFC107]">
-
-                        @error('clabe')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                </div>
-            </div>
+    <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1">
+            Uso CFDI default
+        </label>
+        <input type="text"
+               name="uso_cfdi_default"
+               value="{{ old('uso_cfdi_default', $cliente->uso_cfdi_default ?? '') }}"
+               class="w-full rounded-lg border-slate-300"
+               maxlength="10"
+               placeholder="Ej. G03, S01">
+        @error('uso_cfdi_default')
+            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+    </div>
+</div>
 
             {{-- Activo --}}
-            <div class="flex items-center gap-2 pt-2">
-
-                <input type="checkbox"
-                       name="activo"
-                       value="1"
-                       id="activo"
-                       class="rounded border-slate-300 text-[#0B265A] focus:ring-[#FFC107]"
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="activo" name="activo" value="1"
+                       class="rounded border-slate-300 text-[#FFC107] shadow-sm
+                              focus:ring-[#FFC107]"
                        {{ old('activo', true) ? 'checked' : '' }}>
-
                 <label for="activo" class="text-sm text-slate-700">
-                    Proveedor activo
+                    Cliente activo
                 </label>
-
             </div>
 
             {{-- BOTONES --}}
-            <div class="pt-4 flex justify-end gap-3">
-
-                <a href="{{ route('proveedores.index') }}"
-                   class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 transition">
+            <div class="flex items-center justify-end gap-3 pt-4">
+                <a href="{{ route('clientes.index') }}"
+                   class="px-4 py-2 rounded-xl border border-slate-300 text-sm text-slate-700 hover:bg-slate-50">
                     Cancelar
                 </a>
 
                 <button type="submit"
-                        class="px-5 py-2 rounded-xl bg-[#0B265A] text-white font-medium hover:bg-[#163A7A] transition">
-                    Guardar proveedor
+                        class="px-5 py-2 rounded-xl bg-[#FFC107] text-[#0B265A] text-sm font-semibold
+                               shadow hover:bg-[#e0ac05]">
+                    Guardar Cliente
                 </button>
-
             </div>
 
         </form>
-
     </div>
-
 </div>
 
 @endsection
