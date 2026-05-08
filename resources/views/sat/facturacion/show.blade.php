@@ -54,8 +54,33 @@
                     <div><span class="text-slate-500 block">Emisor</span><p class="font-medium">{{ $factura->empresa->nombre ?? '—' }}</p></div>
                     <div><span class="text-slate-500 block">Receptor</span><p class="font-medium">{{ $factura->receptor_nombre }}</p></div>
                     <div><span class="text-slate-500 block">RFC receptor</span><p class="font-medium text-indigo-600">{{ $factura->receptor_rfc }}</p></div>
-                    <div><span class="text-slate-500 block">Uso CFDI</span><p class="font-medium">{{ $factura->uso_cfdi }}</p></div>
-                    <div><span class="text-slate-500 block">Estado</span>
+<div>
+    <span class="text-slate-500 block">Uso CFDI</span>
+    <p class="font-medium">
+        {{ $factura->uso_cfdi }}
+    </p>
+</div>
+
+<div>
+    <span class="text-slate-500 block">Método de pago</span>
+    <p class="font-medium">
+        {{ $factura->metodo_pago }}
+        <span class="text-slate-500 text-sm">
+            @if($factura->metodo_pago === 'PUE')
+                (Pago en una sola exhibición)
+            @elseif($factura->metodo_pago === 'PPD')
+                (Pago en parcialidades o diferido)
+            @endif
+        </span>
+    </p>
+</div>
+
+<div>
+    <span class="text-slate-500 block">Forma de pago</span>
+    <p class="font-medium">
+        {{ $factura->forma_pago }}
+    </p>
+</div>                    <div><span class="text-slate-500 block">Estado</span>
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $factura->estado == 'timbrada' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
                             {{ ucfirst($factura->estado) }}
                         </span>
