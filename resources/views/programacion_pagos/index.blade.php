@@ -32,7 +32,26 @@
         value="{{ request('fecha_fin', $fechaFin->format('Y-m-d')) }}"
         class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
     >
+    <select
+        name="per_page"
+        class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+    >
+        <option value="20" @selected(request('per_page', 20) == 20)>
+            20
+        </option>
 
+        <option value="50" @selected(request('per_page') == 50)>
+            50
+        </option>
+
+        <option value="100" @selected(request('per_page') == 100)>
+            100
+        </option>
+
+        <option value="all" @selected(request('per_page') == 'all')>
+            Todo
+        </option>
+    </select>
     <input
         type="text"
         name="rfc_emisor"
@@ -305,46 +324,46 @@
 
                             <td class="px-4 py-3 text-right whitespace-nowrap">
                               <button
-    type="button"
-    @click="openVerFactura({
-        id: {{ $cfdi->id }},
-        uuid: @js($cfdi->uuid),
-        fecha: @js(\Carbon\Carbon::parse($cfdi->fecha_emision)->format('d/m/Y H:i')),
-        serie: @js($cfdi->serie),
-        folio: @js($cfdi->folio),
+                                    type="button"
+                                    @click="openVerFactura({
+                                        id: {{ $cfdi->id }},
+                                        uuid: @js($cfdi->uuid),
+                                        fecha: @js(\Carbon\Carbon::parse($cfdi->fecha_emision)->format('d/m/Y H:i')),
+                                        serie: @js($cfdi->serie),
+                                        folio: @js($cfdi->folio),
 
-        emisor_nombre: @js($cfdi->emisor_nombre),
-        rfc_emisor: @js($cfdi->rfc_emisor),
-        emisor_regimen: @js($cfdi->emisor_regimen),
+                                        emisor_nombre: @js($cfdi->emisor_nombre),
+                                        rfc_emisor: @js($cfdi->rfc_emisor),
+                                        emisor_regimen: @js($cfdi->emisor_regimen),
 
-        receptor_nombre: @js($cfdi->receptor_nombre),
-        rfc_receptor: @js($cfdi->rfc_receptor),
-        receptor_regimen: @js($cfdi->receptor_regimen),
-        uso_cfdi: @js($cfdi->uso_cfdi),
+                                        receptor_nombre: @js($cfdi->receptor_nombre),
+                                        rfc_receptor: @js($cfdi->rfc_receptor),
+                                        receptor_regimen: @js($cfdi->receptor_regimen),
+                                        uso_cfdi: @js($cfdi->uso_cfdi),
 
-        forma_pago: @js($cfdi->forma_pago),
-        metodo_pago: @js($cfdi->metodo_pago),
-        moneda: @js($cfdi->moneda),
-        subtotal: {{ (float) $cfdi->subtotal }},
-        descuento: {{ (float) $cfdi->descuento }},
-        total: {{ (float) $cfdi->total }},
+                                        forma_pago: @js($cfdi->forma_pago),
+                                        metodo_pago: @js($cfdi->metodo_pago),
+                                        moneda: @js($cfdi->moneda),
+                                        subtotal: {{ (float) $cfdi->subtotal }},
+                                        descuento: {{ (float) $cfdi->descuento }},
+                                        total: {{ (float) $cfdi->total }},
 
-        conceptos: @js($cfdi->conceptos->map(function($concepto) {
-            return [
-                'cantidad' => $concepto->cantidad,
-                'clave_prod_serv' => $concepto->clave_prod_serv,
-                'clave_unidad' => $concepto->clave_unidad,
-                'descripcion' => $concepto->descripcion,
-                'valor_unitario' => $concepto->valor_unitario,
-                'importe' => $concepto->importe,
-                'descuento' => $concepto->descuento,
-            ];
-        })->values())
-    })"
-    class="text-xs font-semibold text-blue-600 hover:text-blue-800"
->
-    Ver
-</button>
+                                        conceptos: @js($cfdi->conceptos->map(function($concepto) {
+                                            return [
+                                                'cantidad' => $concepto->cantidad,
+                                                'clave_prod_serv' => $concepto->clave_prod_serv,
+                                                'clave_unidad' => $concepto->clave_unidad,
+                                                'descripcion' => $concepto->descripcion,
+                                                'valor_unitario' => $concepto->valor_unitario,
+                                                'importe' => $concepto->importe,
+                                                'descuento' => $concepto->descuento,
+                                            ];
+                                        })->values())
+                                    })"
+                                    class="text-xs font-semibold text-blue-600 hover:text-blue-800"
+                                >
+                                    Ver
+                                </button>
 
                                 <span class="mx-2 text-slate-300">|</span>
 

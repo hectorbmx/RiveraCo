@@ -15,7 +15,7 @@ class ProgramacionPagosController extends Controller
         $fechaInicio = $request->fecha_inicio
             ? \Carbon\Carbon::parse($request->fecha_inicio)->startOfDay()
             : now()->startOfWeek()->startOfDay();
-
+        $perPage = $request->per_page ?? 20;
         $fechaFin = $request->fecha_fin
             ? \Carbon\Carbon::parse($request->fecha_fin)->endOfDay()
             : now()->endOfWeek()->endOfDay();
@@ -27,36 +27,58 @@ class ProgramacionPagosController extends Controller
         
         $cfdis = SatCfdi::query()
 
-            ->with([
-                'obra',
-                'conceptos',
-                'programaciones' => function ($query) {
-                    $query->latest();
-                }
-            ])
+    ->with([
+        'obra',
+        'conceptos',
+        'programaciones' => function ($query) {
+            $query->latest();
+        }
+    ])
 
-            ->where('rfc_emisor', '!=', $rfcEmpresa)
-            ->where('rfc_receptor', $rfcEmpresa)
-            ->whereBetween('fecha_emision', [$fechaInicio, $fechaFin])
-            ->when($request->sat_empresa_id, function ($query, $satEmpresaId) {
-                $query->where('sat_empresa_id', $satEmpresaId);
-            })
-            ->when($request->rfc_emisor, function ($query, $rfcEmisor) {
-                $query->where('rfc_emisor', 'like', "%{$rfcEmisor}%");
-            })
-            ->when($request->q, function ($query, $q) {
-                $query->where(function ($sub) use ($q) {
-                    $sub->where('emisor_nombre', 'like', "%{$q}%")
-                        ->orWhere('rfc_emisor', 'like', "%{$q}%")
-                        ->orWhere('uuid', 'like', "%{$q}%");
-                });
-            })
-            ->when($request->metodo_pago, function ($query, $metodoPago) {
-                $query->where('metodo_pago', $metodoPago);
-            })
-            ->latest('fecha_emision')
-            ->paginate(20)
-            ->withQueryString();
+    ->where('rfc_emisor', '!=', $rfcEmpresa)
+
+    ->where('rfc_receptor', $rfcEmpresa)
+
+    ->whereBetween('fecha_emision', [$fechaInicio, $fechaFin])
+
+    ->when($request->sat_empresa_id, function ($query, $satEmpresaId) {
+        $query->where('sat_empresa_id', $satEmpresaId);
+    })
+
+    ->when($request->rfc_emisor, function ($query, $rfcEmisor) {
+        $query->where('rfc_emisor', 'like', "%{$rfcEmisor}%");
+    })
+
+    ->when($request->q, function ($query, $q) {
+
+        $query->where(function ($sub) use ($q) {
+
+            $sub->where('emisor_nombre', 'like', "%{$q}%")
+                ->orWhere('rfc_emisor', 'like', "%{$q}%")
+                ->orWhere('uuid', 'like', "%{$q}%");
+
+        });
+
+    })
+
+    ->when($request->metodo_pago, function ($query, $metodoPago) {
+
+        $query->where('metodo_pago', $metodoPago);
+
+    })
+
+    ->latest('fecha_emision');
+    if ($perPage === 'all') {
+
+    $cfdis = $cfdis->paginate(100000);
+
+} else {
+
+    $cfdis = $cfdis->paginate((int) $perPage);
+
+}
+
+$cfdis->withQueryString();
        return view('programacion_pagos.index', compact(
             'cfdis',
             'rfcEmpresa',
