@@ -64,6 +64,9 @@ use App\Http\Controllers\Sat\SatFacturacionController;
 use App\Http\Controllers\Sat\SatCatalogoController;
 use App\Http\Controllers\Sat\SatFacturaPagoController;
 
+use App\Http\Controllers\ProgramacionPagosController;
+
+
 
 
 
@@ -662,5 +665,16 @@ Route::middleware('auth','verified')->group(function () {
         ->name('obras.pilas.baja');
 
 });
+Route::prefix('programacion-pagos')
+    ->name('programacion-pagos.')
+    ->middleware(['auth'])
+    ->group(function () {
+
+        Route::get('/', [ProgramacionPagosController::class, 'index'])->name('index');
+        Route::post('/store', [ProgramacionPagosController::class, 'store'])->name('store');
+        Route::patch('/{programacion}/revisar', [ProgramacionPagosController::class, 'revisar'])->name('revisar');
+        Route::patch('/{programacion}/autorizar', [ProgramacionPagosController::class, 'autorizar'])->name('autorizar');
+
+    });
 
 require __DIR__.'/auth.php';

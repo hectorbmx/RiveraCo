@@ -203,6 +203,18 @@
 
 </div> -->
 <!-- @endcan -->
+     <a href="{{ route('programacion-pagos.index') }}"
+    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 transition-colors"
+    title="Programación de pagos">
+
+    <span class="flex items-center justify-center w-6 text-lg">
+        🗓️
+    </span>
+
+    <span class="sidebar-text">
+        Programación de pagos
+    </span>
+</a>
                 <a href="{{ route('ordenes_compra.index') }}"
                 class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                 title="Órdenes de compra">

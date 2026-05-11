@@ -105,8 +105,12 @@ public function estadoPago()
     return 'sin_pago';
 }
 
-public function ordenCompra()
-{
-    return $this->belongsTo(OrdenCompra::class, 'orden_compra_id');
-}
+    public function ordenCompra()
+    {
+        return $this->belongsTo(OrdenCompra::class, 'orden_compra_id');
+    }
+    public function programaciones()
+    {
+        return $this->hasMany(SatCfdiProgramacion::class, 'sat_cfdi_id');
+    }
 }
