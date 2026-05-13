@@ -18,11 +18,28 @@
     {{-- Formulario de carga --}}
     <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <h3 class="text-sm font-semibold text-slate-700 mb-4">Subir nuevo documento</h3>
-
-        <form method="POST"
-              action="{{ route('empleados.documentos.store', $empleado) }}"
-              enctype="multipart/form-data"
-              class="space-y-4">
+<div 
+    id="loadingOverlay" 
+    class="hidden fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-md transition-all duration-300"
+>
+    <div class="relative flex items-center justify-center">
+        <div class="h-20 w-20 rounded-full border-4 border-slate-200/30 border-t-blue-500 animate-spin"></div>
+        <div class="absolute text-xl">📄</div>
+    </div>
+    <h3 class="mt-6 text-xl font-black text-white tracking-widest uppercase text-center px-4">
+        Subiendo Documento
+    </h3>
+    <p class="mt-2 text-slate-300 text-sm font-medium animate-pulse">
+        Estamos procesando el archivo, espera un momento...
+    </p>
+</div>
+        <form 
+                method="POST"
+                action="{{ route('empleados.documentos.store', $empleado) }}"
+                enctype="multipart/form-data"
+                class="space-y-4"
+                onsubmit="document.getElementById('loadingOverlay').classList.remove('hidden')"
+            >
             @csrf
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -156,7 +173,24 @@
             </div>
         </form>
     </div>
-
+{{-- MODAL DE CARGA (LOADING) --}}
+<div 
+    id="loadingOverlay" 
+    class="hidden fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-md transition-all duration-300"
+>
+    {{-- Spinner Animado --}}
+    <div class="relative flex items-center justify-center">
+        <div class="h-20 w-20 rounded-full border-4 border-slate-200/30 border-t-blue-500 animate-spin"></div>
+        <div class="absolute text-xl">📄</div>
+    </div>
+    
+    <h3 class="mt-6 text-xl font-black text-white tracking-widest uppercase">
+        Guardando documento
+    </h3>
+    <p class="mt-2 text-slate-300 text-sm font-medium animate-pulse">
+        Por favor, no cierres la ventana...
+    </p>
+</div>
     {{-- Tabla de documentos --}}
     <div class="rounded-2xl border border-slate-200 overflow-hidden">
         <div class="px-4 py-3 bg-white border-b border-slate-200">
