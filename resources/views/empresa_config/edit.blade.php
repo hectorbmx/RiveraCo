@@ -48,6 +48,7 @@
                         @php
                             $tabs = [
                                 'general'   => ['label' => 'General', 'desc' => 'Datos base del sistema'],
+                                'cuentas' => ['label' => 'Cuentas banco', 'desc' => 'Cuentas para pagos y aprovisionamiento'],
                                 'vehiculos' => ['label' => 'Vehículos', 'desc' => 'Mantenimientos y alertas'],
                                 'maquinaria'=> ['label' => 'Maquinaria', 'desc' => 'Servicios por horas y tiempos'],
                                 'rrhh'      => ['label' => 'Puestos', 'desc' => 'Horas y horas extra'],
@@ -174,6 +175,234 @@
         </div>
     </form>
                 </div>
+
+    {{-- ======================    CUENTAS BANCO ======================= --}}
+<div x-show="tab === 'cuentas'" x-cloak class="space-y-6">
+
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900">
+                Cuentas bancarias de la empresa
+            </h2>
+            <p class="text-sm text-gray-600">
+                Cuentas disponibles para aprovisionar y ejecutar pagos.
+            </p>
+        </div>
+    </div>
+
+    {{-- FORM NUEVA CUENTA --}}
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5">
+        <h3 class="text-sm font-bold text-gray-800 mb-4">
+            Nueva cuenta bancaria
+        </h3>
+
+        <form method="POST" action="{{ route('empresa_config.cuentas.store') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            @csrf
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    Nombre interno
+                </label>
+                <input
+                    type="text"
+                    name="nombre"
+                    placeholder="Cuenta principal BBVA"
+                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20"
+                >
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    Banco
+                </label>
+                <input
+                    type="text"
+                    name="banco"
+                    required
+                    placeholder="BBVA, Banorte, Santander..."
+                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20"
+                >
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    Titular
+                </label>
+                <input
+                    type="text"
+                    name="titular"
+                    placeholder="Rivera Construcciones"
+                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20"
+                >
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    Moneda
+                </label>
+                <select
+                    name="moneda"
+                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20"
+                >
+                    <option value="MXN">MXN</option>
+                    <option value="USD">USD</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    Número de cuenta
+                </label>
+                <input
+                    type="text"
+                    name="numero_cuenta"
+                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20"
+                >
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">
+                    CLABE
+                </label>
+                <input
+                    type="text"
+                    name="clabe"
+                    maxlength="30"
+                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20"
+                >
+            </div>
+
+            <div class="flex items-center gap-3 pt-7">
+                <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                        type="checkbox"
+                        name="activa"
+                        value="1"
+                        checked
+                        class="rounded border-gray-300"
+                    >
+                    Activa
+                </label>
+
+                <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                        type="checkbox"
+                        name="principal"
+                        value="1"
+                        class="rounded border-gray-300"
+                    >
+                    Principal
+                </label>
+            </div>
+
+            <div class="md:col-span-4">
+                <label class="block text-sm font-medium text-gray-700">
+                    Observaciones
+                </label>
+                <textarea
+                    name="observaciones"
+                    rows="2"
+                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20"
+                ></textarea>
+            </div>
+
+            <div class="flex justify-end md:col-span-4">
+                <button class="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-gray-800">
+                    Guardar cuenta
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {{-- LISTADO --}}
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="p-4 bg-gray-50 border-b border-gray-200">
+            <h3 class="text-sm font-bold text-gray-800">
+                Cuentas registradas
+            </h3>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="p-3 border text-left">Nombre</th>
+                        <th class="p-3 border text-left">Banco</th>
+                        <th class="p-3 border text-left">Titular</th>
+                        <th class="p-3 border text-left">Cuenta</th>
+                        <th class="p-3 border text-left">CLABE</th>
+                        <th class="p-3 border text-center">Moneda</th>
+                        <th class="p-3 border text-center">Estado</th>
+                        <th class="p-3 border text-center">Principal</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @forelse($cuentasBancoEmpresa ?? [] as $cuenta)
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-3 border font-semibold text-gray-800">
+                                {{ $cuenta->nombre ?? '-' }}
+                            </td>
+
+                            <td class="p-3 border">
+                                {{ $cuenta->banco }}
+                            </td>
+
+                            <td class="p-3 border">
+                                {{ $cuenta->titular ?? '-' }}
+                            </td>
+
+                            <td class="p-3 border">
+                                {{ $cuenta->numero_cuenta ?? '-' }}
+                            </td>
+
+                            <td class="p-3 border">
+                                {{ $cuenta->clabe ?? '-' }}
+                            </td>
+
+                            <td class="p-3 border text-center">
+                                {{ $cuenta->moneda }}
+                            </td>
+
+                            <td class="p-3 border text-center">
+                                @if($cuenta->activa)
+                                    <span class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                        Activa
+                                    </span>
+                                @else
+                                    <span class="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                                        Inactiva
+                                    </span>
+                                @endif
+                            </td>
+
+                            <td class="p-3 border text-center">
+                                @if($cuenta->principal)
+                                    <span class="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                                        Principal
+                                    </span>
+                                @else
+                                    <span class="text-gray-400">-</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="8" class="p-8 text-center text-gray-400">
+                                No hay cuentas bancarias registradas.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{{-- ======================
+     TERMINA CUENTAS BANCO
+======================= --}}
+                                
 
                 {{-- ======================
                      VEHICULOS

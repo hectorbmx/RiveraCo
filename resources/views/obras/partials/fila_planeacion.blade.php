@@ -10,7 +10,13 @@
     $unidad   = $gasto->unidad ?? '-';
     $cantidad = $gasto->cantidad ?? 0;
     $tope     = (float) ($gasto->monto_programado ?? $gasto->importe ?? $gasto->total ?? 0);
+    $gastadoReal = (float) ($gastadoReposicionPorPartida[$gasto->id] ?? 0);
 
+    
+    $porcentajeGastado = $tope > 0
+    ? round(($gastadoReal / $tope) * 100, 2)
+    : 0;
+    $anchoBarra = min($porcentajeGastado, 100);
     $totalProg = 0;
 @endphp
 
@@ -29,8 +35,29 @@
     </td>
 
     {{-- Tope --}}
-    <td class="p-3 border text-right font-mono text-slate-600 bg-slate-50">
-        ${{ number_format($tope, 2) }}
+    <td class="p-3 border text-right font-mono text-slate-700 bg-slate-50 relative overflow-hidden">
+
+        {{-- Barra de gasto --}}
+      <div
+    class="absolute inset-y-0 left-0 {{ $porcentajeGastado > 100 ? 'bg-red-200/80' : 'bg-green-200/70' }}"
+    style="width: {{ $anchoBarra }}%;"
+></div>
+
+        {{-- Texto encima --}}
+        <div class="relative z-10">
+            <div class="font-bold">
+                ${{ number_format($tope, 2) }}
+            </div>
+
+            <div class="text-[10px] text-slate-500">
+                Gastado: ${{ number_format($gastadoReal, 2) }}
+            </div>
+
+           <div class="text-[10px] font-bold {{ $porcentajeGastado >= 100 ? 'text-red-600' : 'text-green-700' }}">
+    {{ number_format($porcentajeGastado, 2) }}%
+</div>
+        </div>
+
     </td>
 
     {{-- Total programado --}}

@@ -11,7 +11,8 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Models\ComisionTarifario;
 use App\Models\ComisionTarifarioDetalle;
-
+use App\Models\CuentaBancoEmpresa;
+use Illuminate\Support\Facades\DB;
 
 class EmpresaConfigController extends Controller
 {
@@ -33,64 +34,71 @@ public function index(){
     //     return view('empresa_config.edit', compact('config','maquinas'));
     // }
     public function edit()
-{
+    {
 
-    $config = EmpresaConfig::firstOrCreate(['id' => 1], [
-        'moneda_base'     => 'MXN',
-        'iva_por_defecto' => 16.00,
-        'activa'          => true,
-    ]);
-    $areas = Area::orderBy('codigo')->orderBy('nombre')->get();
-    
-    // $Catrol = CatalogoRol::orderBy('id')->orderBy('nombre')->get();
+        $config = EmpresaConfig::firstOrCreate(['id' => 1], [
+            'moneda_base'     => 'MXN',
+            'iva_por_defecto' => 16.00,
+            'activa'          => true,
+        ]);
+        $areas = Area::orderBy('codigo')->orderBy('nombre')->get();
 
-    $maquinas = Maquina::orderBy('nombre')->get();
-    $catalogoRoles = CatalogoRol::orderBy('nombre')->get();    
-    $tarifarios = ComisionTarifario::orderByDesc('vigente_desde')->orderByDesc('id')->get();
-
-    // “vigente” = el más reciente (por ahora solo 1)
-    $tarifarioVigente = $tarifarios->first();
-
-    // detalles del vigente (si existe)
-    $tarifarioDetalles = $tarifarioVigente
-        ? ComisionTarifarioDetalle::with(['rol','uom']) // rol = CatalogoRol
-            ->where('tarifario_id', $tarifarioVigente->id)
-            ->orderBy('rol_id')
-            ->orderBy('trabajo_id')
-            ->get()
-        : collect();
-
-    // ✅ Seguridad (solo para admin/super-admin)
-    $roles = collect();
-    $permissions = collect();
-    
-    $selectedRole = null;
-    $selectedRolePermissionIds = [];
-
-    if (auth()->check() && auth()->user()->hasAnyRole(['admin', 'super-admin'])) {
-
-        $roles = Role::query()
-            ->where('guard_name', 'web')
-            ->orderBy('name')
+        $cuentasBancoEmpresa = CuentaBancoEmpresa::query()
+            ->orderByDesc('principal')
+            ->orderByDesc('activa')
+            ->orderBy('banco')
+            ->orderBy('nombre')
             ->get();
-
         
+        // $Catrol = CatalogoRol::orderBy('id')->orderBy('nombre')->get();
 
-        $permissions = Permission::query()
-            ->where('guard_name', 'web')
-            ->orderBy('name')
-            ->get();
+        $maquinas = Maquina::orderBy('nombre')->get();
+        $catalogoRoles = CatalogoRol::orderBy('nombre')->get();    
+        $tarifarios = ComisionTarifario::orderByDesc('vigente_desde')->orderByDesc('id')->get();
 
-        // Selección de rol: por query (?role=ID) o el primero
-        $roleId = request()->integer('role');
-        $selectedRole = $roleId
-            ? $roles->firstWhere('id', $roleId)
-            : $roles->first();
+        // “vigente” = el más reciente (por ahora solo 1)
+        $tarifarioVigente = $tarifarios->first();
 
-        $selectedRolePermissionIds = $selectedRole
-            ? $selectedRole->permissions()->pluck('id')->toArray()
-            : [];
-    }
+        // detalles del vigente (si existe)
+        $tarifarioDetalles = $tarifarioVigente
+            ? ComisionTarifarioDetalle::with(['rol','uom']) // rol = CatalogoRol
+                ->where('tarifario_id', $tarifarioVigente->id)
+                ->orderBy('rol_id')
+                ->orderBy('trabajo_id')
+                ->get()
+            : collect();
+
+        // ✅ Seguridad (solo para admin/super-admin)
+        $roles = collect();
+        $permissions = collect();
+        
+        $selectedRole = null;
+        $selectedRolePermissionIds = [];
+
+        if (auth()->check() && auth()->user()->hasAnyRole(['admin', 'super-admin'])) {
+
+            $roles = Role::query()
+                ->where('guard_name', 'web')
+                ->orderBy('name')
+                ->get();
+
+            
+
+            $permissions = Permission::query()
+                ->where('guard_name', 'web')
+                ->orderBy('name')
+                ->get();
+
+            // Selección de rol: por query (?role=ID) o el primero
+            $roleId = request()->integer('role');
+            $selectedRole = $roleId
+                ? $roles->firstWhere('id', $roleId)
+                : $roles->first();
+
+            $selectedRolePermissionIds = $selectedRole
+                ? $selectedRole->permissions()->pluck('id')->toArray()
+                : [];
+        }
 
     return view('empresa_config.edit', compact(
         'config',
@@ -104,6 +112,7 @@ public function index(){
         'tarifarios',
         'tarifarioVigente',
         'tarifarioDetalles',
+        'cuentasBancoEmpresa',
     ));
 }
 
@@ -152,6 +161,56 @@ public function index(){
 
     return back()->with('error', 'Sección de configuración inválida.');
 }
+public function storeCuentaBanco(Request $request)
+{
+    $data = $request->validate([
 
+        'nombre'         => 'required|string|max:255',
+        'banco'          => 'required|string|max:255',
+        'titular'        => 'required|string|max:255',
+
+        'numero_cuenta'  => 'nullable|string|max:255',
+        'clabe'          => 'nullable|string|max:255',
+
+        'moneda'         => 'required|string|max:10',
+
+        'observaciones'  => 'nullable|string',
+
+    ]);
+
+    $data['activa'] = true;
+
+    // si es la primera cuenta -> principal automática
+    $data['principal'] = CuentaBancoEmpresa::count() === 0;
+
+    CuentaBancoEmpresa::create($data);
+
+    return back()->with('success', 'Cuenta bancaria registrada correctamente.');
+}
+
+public function toggleCuentaBancoActiva(CuentaBancoEmpresa $cuenta)
+{
+    $cuenta->update([
+        'activa' => !$cuenta->activa
+    ]);
+
+    return back()->with('success', 'Estado de la cuenta actualizado.');
+}
+
+public function marcarCuentaBancoPrincipal(CuentaBancoEmpresa $cuenta)
+{
+    DB::transaction(function () use ($cuenta) {
+
+        CuentaBancoEmpresa::query()->update([
+            'principal' => false
+        ]);
+
+        $cuenta->update([
+            'principal' => true
+        ]);
+    });
+
+    return back()->with('success', 'Cuenta principal actualizada.');
+}
 
 }

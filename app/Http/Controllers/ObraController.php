@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\Empleado;
 use App\Models\ObraEmpleado;
 use App\Models\ObraPlaneacionGasto;
+use App\Models\ObraReposicionGasto;
 use App\Models\gastosPlaneados;
 use App\Models\Comision;
 use App\Models\ComisionDetalle;
@@ -348,7 +349,77 @@ if ($tab === 'asistencias') {
     }
 }
 
+$reposicionesGastos = ObraReposicionGasto::with([
+             'partida',
+        'detalles',
+        'solicitadoPor',
+        'revisadoPor',
+        'aprobadoPor',
+        'pagadoPor',
+        ])
+    ->where('obra_id', $obra->id)
+    ->latest()
+    ->get();
+$reposicionesStats = [
+    'total' => $reposicionesGastos->count(),
 
+    'solicitadas' => $reposicionesGastos
+        ->where('estatus', 'solicitado')
+        ->count(),
+
+    'en_revision' => $reposicionesGastos
+        ->whereIn('estatus', [
+            'en_revision_area',
+            'programado_area',
+            'en_revision_admin',
+            'pendiente_autorizacion',
+        ])
+        ->count(),
+
+    'autorizadas' => $reposicionesGastos
+        ->whereIn('estatus', [
+            'autorizado',
+            'pagado',
+            'cerrado',
+        ])
+        ->count(),
+];
+$reposicionesMontos = [
+
+    'solicitado' => $reposicionesGastos
+        ->whereIn('estatus', [
+            'solicitado',
+            'en_revision_area',
+            'programado_area',
+            'en_revision_admin',
+            'pendiente_autorizacion',
+        ])
+        ->sum('total'),
+
+    'autorizado' => $reposicionesGastos
+        ->whereIn('estatus', [
+            'autorizado',
+            'pagado',
+            'cerrado',
+        ])
+        ->sum('total'),
+
+    'pagado' => $reposicionesGastos
+        ->whereIn('estatus', [
+            'pagado',
+            'cerrado',
+        ])
+        ->sum('total'),
+];
+$gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
+    ->whereHas('reposicion', function ($query) use ($obra) {
+        $query->where('obra_id', $obra->id)
+            ->whereNotIn('estatus', ['rechazado', 'cancelado']);
+    })
+    ->selectRaw('partida_id, SUM(monto) as total_gastado')
+    ->whereNotNull('partida_id')
+    ->groupBy('partida_id')
+    ->pluck('total_gastado', 'partida_id');
 
     $currentStatus = $obra->estatus_nuevo;
     if (!is_null($currentStatus) && !is_numeric($currentStatus)) {
@@ -566,6 +637,10 @@ if ($tab === 'general') {
 
 return view('obras.edit', [
     'obra'                        => $obra,
+    'reposicionesGastos'          => $reposicionesGastos,
+    'reposicionesStats'           => $reposicionesStats,
+    'reposicionesMontos'          => $reposicionesMontos,
+    'gastadoReposicionPorPartida' => $gastadoReposicionPorPartida,
     
     'clientes'                    => $clientes,
     'responsables'                => $responsables,

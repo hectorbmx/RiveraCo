@@ -35,6 +35,7 @@
             'presupuestos' => 'Presupuestos',
             'planeacion'   => 'Planeacion',
             'gastos'       => 'Gastos',
+            'reposicion-gastos' => 'Reposición gastos',
             'pilas'        => 'Pilas',
             'empleados'    => 'Empleados',
             'maquinaria'   => 'Maquinaria',
@@ -1078,100 +1079,898 @@
 @endif
 {{--  TERMINA TAB : PLANEACION --}}
 {{--  TAB :GASTOS --}}
-@if($tab === 'gastos')
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-    <div class="p-4 bg-slate-50 border-b border-slate-200">
-        <h3 class="text-lg font-bold text-slate-800">Gastos de la Obra</h3>
-        <p class="text-xs text-slate-500">
-            Resumen de gastos por partida presupuestal y órdenes de compra autorizadas.
+{{-- REPOSICION GASTOS --}}
+@if($tab === 'reposicion-gastos')
+
+<div 
+    x-data="reposicionGastosUI()"
+    class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+>
+
+    <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+            <h3 class="text-lg font-bold text-slate-800">
+                Reposición de gastos
+            </h3>
+            <p class="text-xs text-slate-500">
+                Solicitudes semanales de reposición por caja chica, viáticos y gastos varios.
+            </p>
+        </div>
+
+        <button
+            type="button"
+            @click="openModal()"
+            class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition"
+        >
+            + Nueva reposición
+        </button>
+    </div>
+
+    <div class="p-4 border-b border-slate-200 bg-white">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div class="rounded-xl border border-slate-200 p-4">
+                <p class="text-xs font-bold uppercase text-slate-400">Total de Reposiciones</p>
+                <p class="text-2xl font-bold text-slate-800 mt-1">
+                    {{ $reposicionesStats['total'] ?? 0 }}
+                </p>
+            </div>
+
+            <div class="rounded-xl border border-yellow-200 p-4 bg-yellow-50">
+                <p class="text-xs font-bold uppercase text-yellow-600">Solicitadas</p>
+                <p class="text-2xl font-bold text-yellow-700 mt-1">  {{ $reposicionesStats['solicitadas'] ?? 0 }}</p>
+            </div>
+
+            <div class="rounded-xl border border-blue-200 p-4 bg-blue-50">
+                <p class="text-xs font-bold uppercase text-blue-600">En revisión</p>
+                <p class="text-2xl font-bold text-blue-700 mt-1">  {{ $reposicionesStats['en_revision'] ?? 0 }}</p>
+            </div>
+
+            <div class="rounded-xl border border-green-200 p-4 bg-green-50">
+                <p class="text-xs font-bold uppercase text-green-600">Autorizadas</p>
+                <p class="text-2xl font-bold text-green-700 mt-1">  {{ $reposicionesStats['autorizadas'] ?? 0 }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+
+    {{-- MONTO SOLICITADO --}}
+    <div class="rounded-xl border border-orange-200 bg-orange-50 p-4">
+        <p class="text-xs font-bold uppercase text-orange-600">
+            Monto solicitado
+        </p>
+
+        <p class="text-2xl font-bold text-orange-700 mt-1">
+            ${{ number_format($reposicionesMontos['solicitado'] ?? 0, 2) }}
         </p>
     </div>
+
+    {{-- MONTO AUTORIZADO --}}
+    <div class="rounded-xl border border-blue-200 bg-blue-50 p-4">
+        <p class="text-xs font-bold uppercase text-blue-600">
+            Monto autorizado
+        </p>
+
+        <p class="text-2xl font-bold text-blue-700 mt-1">
+            ${{ number_format($reposicionesMontos['autorizado'] ?? 0, 2) }}
+        </p>
+    </div>
+
+    {{-- MONTO PAGADO --}}
+    <div class="rounded-xl border border-green-200 bg-green-50 p-4">
+        <p class="text-xs font-bold uppercase text-green-600">
+            Monto pagado
+        </p>
+
+        <p class="text-2xl font-bold text-green-700 mt-1">
+            ${{ number_format($reposicionesMontos['pagado'] ?? 0, 2) }}
+        </p>
+    </div>
+
+</div>
 
     <div class="overflow-x-auto">
         <table class="w-full text-sm border-collapse">
             <thead class="bg-slate-100">
                 <tr>
-                    <th class="p-3 border text-left">Partida / Concepto</th>
-                    <th class="p-3 border text-right">Tope</th>
-                    <th class="p-3 border text-right">Gastado</th>
-                    <th class="p-3 border text-right">Disponible</th>
-                    <th class="p-3 border text-center">OCs</th>
+                    <th class="p-3 border text-left">Folio</th>
+                    <th class="p-3 border text-left">Semana</th>
+                    <th class="p-3 border text-left">Tipo</th>
+                    <th class="p-3 border text-left">Partida</th>
+                    <th class="p-3 border text-right">Monto</th>
+                    <th class="p-3 border text-center">Evidencias</th>
+                    <th class="p-3 border text-center">Estatus</th>
+                    <th class="p-3 border text-right">Acciones</th>
                 </tr>
             </thead>
 
-            <tbody>
-                @forelse($gastosPorPartida as $grupo)
-                    @php
-                        $gastoBase = $grupo['gasto_base'];
-                        $disponible = $grupo['disponible'];
-                    @endphp
+        <tbody>
+    @forelse($reposicionesGastos as $reposicion)
+        <tr class="hover:bg-slate-50">
+            <td class="p-3 border font-semibold">
+                REP-{{ str_pad($reposicion->id, 5, '0', STR_PAD_LEFT) }}
+            </td>
 
-                    <tr class="bg-slate-50">
-                        <td class="p-3 border">
-                            <div class="font-bold text-slate-800">
-                                {{ $gastoBase->partida ?? 'SIN PARTIDA' }}
-                            </div>
-                            <div class="text-xs text-slate-500">
-                                {{ $gastoBase->concepto ?? '-' }}
-                            </div>
-                        </td>
+            <td class="p-3 border">
+                {{ $reposicion->semana }}
+            </td>
 
-                        <td class="p-3 border text-right">
-                            ${{ number_format($grupo['tope'], 2) }}
-                            
-                        </td>
+            <td class="p-3 border">
+                {{ str_replace('_', ' ', ucfirst($reposicion->tipo_reposicion)) }}
+            </td>
 
-                        <td class="p-3 border text-right font-semibold text-orange-700">
-                            ${{ number_format($grupo['gastado'], 2) }}
-                        </td>
+         <td class="p-3 border">
+            <div class="font-semibold text-slate-800">
+                {{ $reposicion->partida->partida ?? 'SIN PARTIDA' }}
+            </div>
 
-                        <td class="p-3 border text-right font-bold {{ $disponible < 0 ? 'text-red-600' : 'text-green-700' }}">
-                            ${{ number_format($disponible, 2) }}
-                        </td>
+            <div class="text-xs text-slate-500">
+                {{ $reposicion->partida->concepto ?? '-' }}
+            </div>
 
-                        <td class="p-3 border text-center">
-                            {{ $grupo['ordenes']->count() }}
-                        </td>
-                    </tr>
+            <div class="text-xs text-slate-400">
+                Semana {{ $reposicion->partida->numero_semana ?? '-' }}
+            </div>
+        </td>
+            <td class="p-3 border text-right font-bold">
+                ${{ number_format($reposicion->total, 2) }}
+            </td>
 
-                    @foreach($grupo['ordenes'] as $oc)
-                        <tr class="hover:bg-white">
-                            <td class="p-3 border pl-8 text-slate-600">
-                                OC: {{ $oc->folio ?? $oc->id }}
-                            </td>
+            <td class="p-3 border text-center">
+                {{ $reposicion->detalles->count() }}
+            </td>
 
-                            <td class="p-3 border text-right text-slate-400">
-                                {{ optional($oc->fecha)->format('d/m/Y') ?? $oc->fecha ?? '-' }}
-                            </td>
+            <!-- <td class="p-3 border text-center">
+                <span class="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700 font-semibold">
+                    {{ str_replace('_', ' ', $reposicion->estatus) }}
+                </span>
+            </td> -->
+            @php
+    $estatusClasses = match($reposicion->estatus) {
 
-                            <td class="p-3 border">
-                                {{ $oc->proveedor->nombre ?? $oc->proveedor->razon_social ?? '-' }}
-                            </td>
+        'borrador' =>
+            'bg-slate-100 text-slate-700 hover:bg-slate-200',
 
-                            <td class="p-3 border text-right font-medium">
-                                ${{ number_format($oc->total ?? 0, 2) }}
-                            </td>
+        'solicitado' =>
+            'bg-yellow-100 text-yellow-700 hover:bg-yellow-200',
 
-                            <td class="p-3 border text-center">
-                                <span class="px-2 py-1 rounded-full text-xs bg-green-100 text-green-700 font-semibold">
-                                    {{ $oc->estado }}
-                                </span>
-                            </td>
-                        </tr>
-                    @endforeach
-                @empty
-                    <tr>
-                        <td colspan="5" class="p-8 text-center text-slate-400">
-                            No hay gastos autorizados para esta obra.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+        'en_revision_area' =>
+            'bg-blue-100 text-blue-700 hover:bg-blue-200',
+
+        'programado_area' =>
+            'bg-indigo-100 text-indigo-700 hover:bg-indigo-200',
+
+        'en_revision_admin' =>
+            'bg-cyan-100 text-cyan-700 hover:bg-cyan-200',
+
+        'pendiente_autorizacion' =>
+            'bg-amber-100 text-amber-700 hover:bg-amber-200',
+
+        'autorizado' =>
+            'bg-green-100 text-green-700 hover:bg-green-200',
+
+        'rechazado' =>
+            'bg-red-100 text-red-700 hover:bg-red-200',
+
+        'pagado' =>
+            'bg-emerald-100 text-emerald-700 hover:bg-emerald-200',
+
+        'cerrado' =>
+            'bg-slate-800 text-white hover:bg-slate-700',
+
+        default =>
+            'bg-slate-100 text-slate-700 hover:bg-slate-200',
+    };
+@endphp
+
+<td class="p-3 border text-center">
+    <button
+        type="button"
+        onclick="document.getElementById('modalEstatusReposicion{{ $reposicion->id }}').classList.remove('hidden')"
+        class="px-3 py-1 rounded-full text-xs font-bold transition {{ $estatusClasses }}"
+    >
+        {{ str_replace('_', ' ', $reposicion->estatus) }}
+    </button>
+</td>
+
+            <td class="p-3 border text-right">
+                <!-- <button type="button" class="text-xs font-semibold text-blue-600 hover:text-blue-800">
+                    Ver
+                </button> -->
+                <a
+                    href="{{ route('obras.reposicion-gastos.show', [$obra, $reposicion]) }}"
+                    class="text-xs font-semibold text-blue-600 hover:text-blue-800"
+                >
+                    Ver
+                </a>
+            </td>
+        </tr>
+        <tr class="bg-transparent">
+    <td colspan="9" class="p-0 border-0">
+        <div
+            id="modalEstatusReposicion{{ $reposicion->id }}"
+            class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4 transition-all duration-300"
+        >
+            <div class="w-full max-w-3xl rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-200 overflow-hidden transform transition-all">
+
+                {{-- Header Elegante --}}
+                <div class="flex items-center justify-between bg-slate-50/50 border-b border-slate-100 px-8 py-6">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h3 class="text-xl font-black text-slate-900 tracking-tight">
+                                Seguimiento de reposición
+                            </h3>
+                            <span class="rounded-full bg-blue-100 px-3 py-0.5 text-xs font-bold text-blue-700 ring-1 ring-blue-200">
+                                {{ $reposicion->folio ?? 'REP-' . str_pad($reposicion->id, 4, '0', STR_PAD_LEFT) }}
+                            </span>
+                        </div>
+                        <p class="text-sm text-slate-500 mt-1 font-medium">
+                            Historial operativo, financiero y administrativo de la solicitud.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        onclick="document.getElementById('modalEstatusReposicion{{ $reposicion->id }}').classList.add('hidden')"
+                        class="group rounded-full p-2 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
+                    >
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+               {{-- Contenido con Estilo de Timeline --}}
+<div class="px-8 py-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+    <div class="relative space-y-6 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-slate-200 before:via-slate-200 before:to-transparent">
+        
+        {{-- 1. SOLICITUD --}}
+        <div class="relative flex items-start gap-6 group">
+            <div class="absolute left-0 mt-1.5 w-10 h-10 flex items-center justify-center rounded-full bg-white ring-4 ring-white shadow-md transition-all group-hover:scale-110 z-10">
+                <div class="w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-100"></div>
+            </div>
+            <div class="ml-12 flex-1 rounded-2xl border border-slate-100 bg-slate-50/30 p-5 transition-all hover:bg-slate-50">
+                <h4 class="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-3">1. Registro de Solicitud</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                    <div>
+                        <p class="text-slate-400 text-[9px] font-bold uppercase tracking-tight">Solicitante</p>
+                        <p class="text-slate-700 font-bold text-sm">{{ $reposicion->solicitadoPor->name ?? 'Sistema' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 text-[9px] font-bold uppercase tracking-tight">Estatus Inicial</p>
+                        <p class="text-slate-600 text-xs italic">Solicitud creada en sistema</p>
+                    </div>
+                    <div class="md:text-right">
+                        <span class="inline-block rounded-lg bg-white px-3 py-1 text-[11px] font-bold text-slate-500 shadow-sm ring-1 ring-slate-200">
+                            {{ optional($reposicion->solicitado_at)->format('d/m/Y H:i') ?? '---' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 2. REVISIÓN --}}
+        <div class="relative flex items-start gap-6 group">
+            <div class="absolute left-0 mt-1.5 w-10 h-10 flex items-center justify-center rounded-full bg-white ring-4 ring-white shadow-md transition-all group-hover:scale-110 z-10">
+                <div class="w-3 h-3 rounded-full {{ $reposicion->revisado_at ? 'bg-blue-500 ring-4 ring-blue-100' : 'bg-slate-300 ring-4 ring-slate-100' }}"></div>
+            </div>
+            <div class="ml-12 flex-1 rounded-2xl border border-slate-100 bg-slate-50/30 p-5 transition-all hover:bg-slate-50">
+                <h4 class="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-3">2. Primera Revisión Operativa</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                    <div>
+                        <p class="text-slate-400 text-[9px] font-bold uppercase tracking-tight">Revisó</p>
+                        <p class="text-slate-700 font-bold text-sm">{{ $reposicion->revisadoPor->name ?? '---' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 text-[9px] font-bold uppercase tracking-tight">Observaciones</p>
+                        <p class="text-slate-600 text-xs truncate italic" title="{{ $reposicion->comentarios_revision }}">
+                            {{ $reposicion->comentarios_revision ?? 'Sin observaciones' }}
+                        </p>
+                    </div>
+                    <div class="md:text-right">
+                        <span class="inline-block rounded-lg {{ $reposicion->revisado_at ? 'bg-blue-50 text-blue-600 ring-blue-100' : 'bg-slate-50 text-slate-400 ring-slate-100' }} px-3 py-1 text-[11px] font-bold shadow-sm ring-1">
+                            {{ optional($reposicion->revisado_at)->format('d/m/Y H:i') ?? 'Pendiente' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 3. APROVISIONAMIENTO --}}
+        <div class="relative flex items-start gap-6 group">
+            <div class="absolute left-0 mt-1.5 w-10 h-10 flex items-center justify-center rounded-full bg-white ring-4 ring-white shadow-md transition-all group-hover:scale-110 z-10">
+                <div class="w-3 h-3 rounded-full {{ $reposicion->aprovisionado_at ? 'bg-amber-500 ring-4 ring-amber-100' : 'bg-slate-300 ring-4 ring-slate-100' }}"></div>
+            </div>
+            <div class="ml-12 flex-1 rounded-2xl border border-slate-100 bg-slate-50/30 p-5 transition-all hover:bg-slate-50">
+                <h4 class="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-3">3. Aprovisionamiento y Tesorería</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                    <div>
+                        <p class="text-slate-400 text-[9px] font-bold uppercase tracking-tight">Asignado por</p>
+                        <p class="text-slate-700 font-bold text-sm">{{ $reposicion->aprovisionadoPor->name ?? '---' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 text-[9px] font-bold uppercase tracking-tight">Programación</p>
+                        <p class="text-amber-700 text-xs font-bold font-mono uppercase">
+                            Pago: {{ optional($reposicion->fecha_programada_pago)->format('d/M/Y') ?? 'Sin fecha' }}
+                        </p>
+                    </div>
+                    <div class="md:text-right">
+                        <span class="inline-block rounded-lg {{ $reposicion->aprovisionado_at ? 'bg-amber-50 text-amber-600 ring-amber-100' : 'bg-slate-50 text-slate-400 ring-slate-100' }} px-3 py-1 text-[11px] font-bold shadow-sm ring-1">
+                            {{ optional($reposicion->aprovisionado_at)->format('d/m/Y H:i') ?? 'Pendiente' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 4. AUTORIZACIÓN --}}
+        <div class="relative flex items-start gap-6 group">
+            <div class="absolute left-0 mt-1.5 w-10 h-10 flex items-center justify-center rounded-full bg-white ring-4 ring-white shadow-md transition-all group-hover:scale-110 z-10">
+                <div class="w-3 h-3 rounded-full {{ $reposicion->aprobado_at ? 'bg-purple-500 ring-4 ring-purple-100' : 'bg-slate-300 ring-4 ring-slate-100' }}"></div>
+            </div>
+            <div class="ml-12 flex-1 rounded-2xl border border-slate-100 bg-slate-50/30 p-5 transition-all hover:bg-slate-50">
+                <h4 class="text-[10px] font-black uppercase tracking-widest text-purple-600 mb-3">4. Autorización Final (Dirección)</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                    <div>
+                        <p class="text-slate-400 text-[9px] font-bold uppercase tracking-tight">Autorizó</p>
+                        <p class="text-slate-700 font-bold text-sm">{{ $reposicion->aprobadoPor->name ?? '---' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 text-[9px] font-bold uppercase tracking-tight">Dictamen</p>
+                        <p class="text-slate-600 text-xs italic truncate" title="{{ $reposicion->comentarios_autorizacion }}">
+                            {{ $reposicion->comentarios_autorizacion ?? 'Esperando firma electrónica' }}
+                        </p>
+                    </div>
+                    <div class="md:text-right">
+                        <span class="inline-block rounded-lg {{ $reposicion->aprobado_at ? 'bg-purple-50 text-purple-600 ring-purple-100' : 'bg-slate-50 text-slate-400 ring-slate-100' }} px-3 py-1 text-[11px] font-bold shadow-sm ring-1">
+                            {{ optional($reposicion->aprobado_at)->format('d/m/Y H:i') ?? 'Pendiente' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
+
+                {{-- Footer --}}
+                <div class="flex justify-end border-t border-slate-100 px-8 py-5 bg-slate-50/30">
+                    <button
+                        type="button"
+                        onclick="document.getElementById('modalEstatusReposicion{{ $reposicion->id }}').classList.add('hidden')"
+                        class="rounded-xl bg-slate-900 px-8 py-2.5 text-sm font-bold text-white shadow-lg shadow-slate-900/20 hover:bg-slate-800 hover:scale-[1.02] transition-all active:scale-95"
+                    >
+                        Entendido
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </td>
+</tr>
+    @empty
+        <tr>
+            <td colspan="8" class="p-8 text-center text-slate-400">
+                Aún no hay solicitudes de reposición registradas para esta obra.
+            </td>
+        </tr>
+    @endforelse
+</tbody>
+        </table>
+    </div>
+
+    {{-- MODAL --}}
+    <div
+        x-show="modalOpen"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4"
+        style="display: none;"
+    >
+        <div
+            @click.away="closeModal()"
+            class="bg-white rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden"
+        >
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-lg">
+                        Nueva reposición de gasto
+                    </h3>
+                    <p class="text-xs text-slate-500">
+                        Registra los gastos realizados en obra y adjunta evidencia.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    @click="closeModal()"
+                    class="text-slate-400 hover:text-slate-600"
+                >
+                    ✕
+                </button>
+            </div>
+
+           <form action="{{ route('obras.reposicion-gastos.store', $obra) }}" method="POST">
+                @csrf
+                    <input
+                        type="hidden"
+                        name="conceptos"
+                        :value="JSON.stringify(conceptos)"
+                    >
+                <div class="p-6 overflow-y-auto max-h-[calc(90vh-140px)] space-y-6">
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                Tipo de reposición
+                            </label>
+
+                            <select
+                                name="tipo_reposicion"
+                                x-model="tipoReposicion"
+                                class="w-full rounded-xl border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            >
+                                <option value="">Seleccionar...</option>
+                                <option value="caja_chica">Caja chica</option>
+                                <option value="viaticos">Viáticos</option>
+                                <option value="gastos_varios">Gastos varios</option>
+                            </select>
+
+                            <p x-show="tipoReposicion === 'caja_chica'" class="text-xs text-red-500 mt-2">
+                                * Caja chica requiere factura obligatoria.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                Partida de planeación
+                            </label>
+
+                            <select
+                                name="partida_id"
+                                x-model="partidaSeleccionada"
+                                class="w-full rounded-xl border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            >
+                                <option value="">Seleccionar partida...</option>
+
+                                @foreach(collect($gastosBase)->groupBy('partida') as $partidaNombre => $items)
+                                    <optgroup label="{{ $partidaNombre ?: 'SIN PARTIDA' }}">
+                                        @foreach($items as $partida)
+                                            <option value="{{ $partida->id }}">
+                                                {{ $partida->concepto ?? 'Sin concepto' }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                Semana
+                            </label>
+
+                            <input
+                                type="week"
+                                name="semana"
+                                class="w-full rounded-xl border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            >
+                        </div>
+                    </div>
+
+                    {{-- BUSCADOR FACTURAS --}}
+                    <div
+                        x-show="tipoReposicion === 'caja_chica'"
+                        class="rounded-xl border border-blue-200 bg-blue-50 p-4"
+                    >
+                        <div class="mb-4">
+                            <h4 class="font-bold text-blue-900">
+                                Buscar factura SAT
+                            </h4>
+                            <p class="text-xs text-blue-700">
+                                Busca por RFC emisor, fecha, monto exacto o últimos 4 dígitos del UUID.
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                            <input
+                                type="text"
+                                x-model="busqueda.rfc"
+                                placeholder="RFC emisor"
+                                class="rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            >
+
+                            <input
+                                type="date"
+                                x-model="busqueda.fecha"
+                                class="rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            >
+
+                            <input
+                                type="number"
+                                step="0.01"
+                                x-model="busqueda.monto"
+                                placeholder="Monto exacto"
+                                class="rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            >
+
+                            <input
+                                type="text"
+                                maxlength="4"
+                                x-model="busqueda.uuid4"
+                                placeholder="Últimos 4 UUID"
+                                class="rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            >
+
+                            <button
+                                type="button"
+                                @click="buscarCfdis()"
+                                class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                            >
+                                <span x-show="!loadingCfdi">Buscar</span>
+                                <span x-show="loadingCfdi">Buscando...</span>
+                            </button>
+                        </div>
+
+                        <div class="mt-4 rounded-xl bg-white border border-blue-100 overflow-hidden">
+                            <div class="px-4 py-3 bg-blue-100 text-xs font-bold text-blue-800 uppercase">
+                                Resultados encontrados
+                            </div>
+
+                            <div
+                                x-show="resultadosCfdi.length === 0 && !loadingCfdi"
+                                class="p-6 text-center text-sm text-slate-400"
+                            >
+                                Usa los filtros y presiona buscar para encontrar facturas SAT.
+                            </div>
+
+                            <div
+                                x-show="loadingCfdi"
+                                class="p-6 text-center text-sm text-blue-600 font-semibold"
+                            >
+                                Buscando CFDIs...
+                            </div>
+
+                            <div
+                                x-show="resultadosCfdi.length > 0"
+                                class="divide-y divide-slate-100"
+                            >
+                                <template x-for="cfdi in resultadosCfdi" :key="cfdi.id">
+                                       <button
+                                                type="button"
+                                                @click="agregarConcepto({
+                                                    sat_cfdi_id: cfdi.id,
+                                                    partida_id: partidaSeleccionada,
+                                                    tipo: 'Caja chica',
+                                                    proveedor: cfdi.emisor_nombre,
+                                                    descripcion: 'CFDI SAT',
+                                                    rfc: cfdi.rfc_emisor,
+                                                    uuid: cfdi.uuid,
+                                                    monto: cfdi.total,
+                                                    fecha: cfdi.fecha
+                                                })"
+                                                class="w-full px-4 py-3 text-left hover:bg-blue-50 flex justify-between gap-4"
+                                            >
+                                        <div>
+                                            <p class="font-semibold text-slate-800" x-text="cfdi.emisor_nombre"></p>
+                                            <p class="text-xs text-slate-500">
+                                                <span x-text="cfdi.rfc_emisor"></span>
+                                                · UUID:
+                                                <span x-text="cfdi.uuid ? cfdi.uuid.slice(-4) : '-'"></span>
+                                            </p>
+                                            <p class="text-xs text-slate-400 mt-1">
+                                                Fecha:
+                                                <span x-text="cfdi.fecha_formateada"></span>
+                                            </p>
+                                        </div>
+
+                                        <div class="text-right">
+                                            <div
+                                                class="font-bold text-slate-800"
+                                                x-text="'$' + Number(cfdi.total || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })"
+                                            ></div>
+                                            <div class="text-xs text-slate-400" x-text="cfdi.metodo_pago || '-'"></div>
+                                        </div>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- CAPTURA MANUAL --}}
+                    <div
+                        x-show="tipoReposicion !== 'caja_chica'"
+                        class="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                    >
+                        <div class="mb-4">
+                            <h4 class="font-bold text-slate-800">
+                                Agregar concepto manual
+                            </h4>
+                            <p class="text-xs text-slate-500">
+                                Para viáticos o gastos varios puedes capturar notas, tickets o evidencias.
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                            <input
+                                type="text"
+                                x-model="manual.descripcion"
+                                placeholder="Descripción"
+                                class="rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            >
+
+                            <input
+                                type="text"
+                                x-model="manual.proveedor"
+                                placeholder="Proveedor / comercio"
+                                class="rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            >
+
+                            <input
+                                type="date"
+                                x-model="manual.fecha"
+                                class="rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            >
+
+                            <input
+                                type="number"
+                                step="0.01"
+                                x-model="manual.monto"
+                                placeholder="Monto"
+                                class="rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            >
+
+                            <button
+                                type="button"
+                                @click="agregarManual()"
+                                class="rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+                            >
+                                Agregar
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- TABLA CONCEPTOS --}}
+                    <div class="rounded-xl border border-slate-200 overflow-hidden">
+                        <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                            <div>
+                                <h4 class="font-bold text-slate-800">
+                                    Conceptos agregados
+                                </h4>
+                                <p class="text-xs text-slate-500">
+                                    Detalle que formará parte de la solicitud de reposición.
+                                </p>
+                            </div>
+
+                            <div class="text-right">
+                                <p class="text-xs text-slate-400 uppercase font-bold">Total</p>
+                                <p class="text-lg font-bold text-slate-800">
+                                    $<span x-text="totalConceptos().toLocaleString('es-MX', { minimumFractionDigits: 2 })"></span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-100 text-xs uppercase text-slate-500">
+                                <tr>
+                                    <th class="p-3 text-left">Tipo</th>
+                                    <th class="p-3 text-left">Proveedor / Descripción</th>
+                                    <th class="p-3 text-left">RFC / UUID</th>
+                                    <th class="p-3 text-right">Monto</th>
+                                    <th class="p-3 text-center">Acción</th>
+                                </tr>
+                            </thead>
+
+                            <tbody class="divide-y divide-slate-100">
+                                <template x-for="(concepto, index) in conceptos" :key="index">
+                                    <tr>
+                                        <td class="p-3">
+                                            <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700" x-text="concepto.tipo"></span>
+                                        </td>
+
+                                        <td class="p-3">
+                                            <div class="font-semibold text-slate-800" x-text="concepto.proveedor || concepto.descripcion"></div>
+                                            <div class="text-xs text-slate-400" x-text="concepto.descripcion"></div>
+                                        </td>
+
+                                        <td class="p-3 text-xs text-slate-500">
+                                            <div x-text="concepto.rfc || '-'"></div>
+                                            <div x-text="concepto.uuid || '-'"></div>
+                                        </td>
+
+                                        <td class="p-3 text-right font-bold text-slate-800">
+                                            $<span x-text="Number(concepto.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })"></span>
+                                        </td>
+
+                                        <td class="p-3 text-center">
+                                            <button
+                                                type="button"
+                                                @click="conceptos.splice(index, 1)"
+                                                class="text-xs font-semibold text-red-600 hover:text-red-800"
+                                            >
+                                                Quitar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+
+                                <tr x-show="conceptos.length === 0">
+                                    <td colspan="5" class="p-8 text-center text-slate-400">
+                                        Aún no has agregado conceptos a la reposición.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                            Observaciones
+                        </label>
+
+                        <textarea
+                            name="observaciones"
+                            rows="3"
+                            class="w-full rounded-xl border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            placeholder="Comentarios para administración de área..."
+                        ></textarea>
+                    </div>
+                </div>
+
+                <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                    <button
+                        type="button"
+                        @click="closeModal()"
+                        class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-200"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="px-5 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700"
+                    >
+                        Guardar reposición
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function reposicionGastosUI() {
+        return {
+            modalOpen: false,
+            tipoReposicion: '',
+            loadingCfdi: false,
+            resultadosCfdi: [],
+            partidaSeleccionada: '',
+
+            busqueda: {
+                rfc: '',
+                fecha: '',
+                monto: '',
+                uuid4: ''
+            },
+
+            manual: {
+                descripcion: '',
+                proveedor: '',
+                fecha: '',
+                monto: ''
+            },
+
+            conceptos: [],
+
+            openModal() {
+                this.modalOpen = true;
+            },
+
+            closeModal() {
+                this.modalOpen = false;
+            },
+
+            async buscarCfdis() {
+                this.loadingCfdi = true;
+                this.resultadosCfdi = [];
+
+                try {
+                    const params = new URLSearchParams();
+
+                    if (this.busqueda.rfc) {
+                        params.append('rfc_emisor', this.busqueda.rfc);
+                    }
+
+                    if (this.busqueda.fecha) {
+                        params.append('fecha', this.busqueda.fecha);
+                    }
+
+                    if (this.busqueda.monto) {
+                        params.append('monto', this.busqueda.monto);
+                    }
+
+                    if (this.busqueda.uuid4) {
+                        params.append('uuid4', this.busqueda.uuid4);
+                    }
+
+                    const response = await fetch(
+                        "{{ route('obras.reposicion-gastos.buscar-cfdis', $obra) }}?" + params.toString(),
+                        {
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        }
+                    );
+
+                    if (!response.ok) {
+                        throw new Error('Error en la búsqueda de CFDIs');
+                    }
+
+                    const data = await response.json();
+
+                    this.resultadosCfdi = data.data || [];
+
+                } catch (error) {
+                    console.error(error);
+                    alert('Error al buscar CFDIs.');
+                } finally {
+                    this.loadingCfdi = false;
+                }
+            },
+
+            agregarConcepto(concepto) {
+                const existe = this.conceptos.some(item => item.uuid && item.uuid === concepto.uuid);
+
+                if (existe) {
+                    alert('Esta factura ya fue agregada.');
+                    return;
+                }
+
+                this.conceptos.push(concepto);
+            },
+
+            agregarManual() {
+                if (!this.manual.descripcion || !this.manual.monto) {
+                    alert('Captura descripción y monto.');
+                    return;
+                }
+                // if (!this.partidaSeleccionada) {
+                //     alert('Selecciona una partida.');
+                //     return;
+                // }
+
+                this.conceptos.push({
+                partida_id: this.partidaSeleccionada,
+
+                tipo: this.tipoReposicion === 'viaticos' ? 'Viáticos' : 'Gastos varios',
+                descripcion: this.manual.descripcion,
+                proveedor: this.manual.proveedor,
+                fecha: this.manual.fecha,
+                monto: Number(this.manual.monto || 0),
+                rfc: '',
+                uuid: ''
+            });
+
+                this.manual = {
+                    descripcion: '',
+                    proveedor: '',
+                    fecha: '',
+                    monto: ''
+                };
+            },
+
+            totalConceptos() {
+                return this.conceptos.reduce((total, item) => {
+                    return total + Number(item.monto || 0);
+                }, 0);
+            }
+        }
+    }
+</script>
+
 @endif
-{{--  TERMINA TAB :GASTOS --}}
+
+{{-- TERMINA REPOSICION GASTOS --}}
  {{-- TAB: EMPLEADOS --}}
 @if($tab === 'empleados')
     <h2 class="text-lg font-semibold mb-4">Empleados asignados a la obra</h2>

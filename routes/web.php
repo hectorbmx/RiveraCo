@@ -65,6 +65,8 @@ use App\Http\Controllers\Sat\SatCatalogoController;
 use App\Http\Controllers\Sat\SatFacturaPagoController;
 
 use App\Http\Controllers\ProgramacionPagosController;
+use App\Http\Controllers\ObraReposicionGastoController;
+use App\Http\Controllers\CajaChicaController;
 
 
 
@@ -325,6 +327,9 @@ Route::middleware('auth','verified')->group(function () {
 
         Route::get('/configuracion-empresa', [EmpresaConfigController::class, 'edit'])->name('empresa_config.edit');
         Route::put('/configuracion-empresa', [EmpresaConfigController::class, 'update'])->name('empresa_config.update');
+        Route::post('/configuracion-empresa/cuentas-banco', [EmpresaConfigController::class,'storeCuentaBanco'])->name('empresa_config.cuentas.store');
+        Route::patch('/configuracion-empresa/cuentas-banco/{cuenta}/toggle-activa', [EmpresaConfigController::class,'toggleCuentaBancoActiva'])->name('empresa_config.cuentas.toggle-activa');
+        Route::patch('/configuracion-empresa/cuentas-banco/{cuenta}/principal', [EmpresaConfigController::class,'marcarCuentaBancoPrincipal'])->name('empresa_config.cuentas.principal');
         
 
 
@@ -453,27 +458,18 @@ Route::middleware('auth','verified')->group(function () {
         ->name('obras.facturas.destroy');
 
           // NUEVAS: cambio de estado
-    Route::patch('obras/{obra}/facturas/{factura}/pagada', [ObraFacturaController::class, 'marcarPagada'])
-        ->name('obras.facturas.pagada');
-
-    Route::patch('obras/{obra}/facturas/{factura}/cancelada', [ObraFacturaController::class, 'marcarCancelada'])
-        ->name('obras.facturas.cancelada');
-
+    Route::patch('obras/{obra}/facturas/{factura}/pagada', [ObraFacturaController::class, 'marcarPagada'])->name('obras.facturas.pagada');
+    Route::patch('obras/{obra}/facturas/{factura}/cancelada', [ObraFacturaController::class, 'marcarCancelada'])->name('obras.facturas.cancelada');
     Route::get('obras/{obra}/maquinaria/{obraMaquina}/horas/create',[ObraMaquinaHorasController::class,'create'])->name('obras.horas_maquina.create');
     Route::post('obras/{obra}/maquinaria/{obraMaquina}/horas',[ObraMaquinaHorasController::class, 'store'])->name('obras.horas_maquina.store');
-        
 // routes/web.php
     Route::post('obras/{id}/vincular-presupuesto', [ObraController::class, 'vincularPresupuesto'])->name('obras.vincularPresupuesto');
     // Rutas de Obras
     Route::post('obras/{obra}/guardar-planeacion', [ObraController::class, 'guardarPlaneacion'])->name('obras.guardarPlaneacion');
 //relacionar facturas desde la vista de las obras
     Route::post('/obras/{obra}/relacionar-cfdis', [ObraController::class, 'relacionarCfdis'])->name('obras.relacionarCfdis');
-
     Route::resource('ordenes_compra', OrdenCompraController::class)->except(['show','destroy']);
-
-    Route::post('ordenes_compra/{id}/autorizar', [OrdenCompraController::class, 'autorizar']) // ->middleware('permission:ordenes_compra.autorizar')
-            ->name('ordenes_compra.autorizar');
-
+    Route::post('ordenes_compra/{id}/autorizar', [OrdenCompraController::class, 'autorizar'])->name('ordenes_compra.autorizar');
     Route::post('ordenes_compra/{id}/cancelar', [OrdenCompraController::class, 'cancelar'])->name('ordenes_compra.cancelar');
                     // Detalles anidados
     Route::post('ordenes_compra/{orden}/detalles', [OrdenCompraDetalleController::class, 'store'])->name('ordenes_compra.detalles.store');
@@ -501,21 +497,12 @@ Route::middleware('auth','verified')->group(function () {
     Route::post('proveedores/{proveedor}/toggle-activo', [ProveedorController::class, 'toggleActivo'])->name('proveedores.toggleActivo');
 
 //productos
-    Route::get('productos/buscar', [ProductoController::class, 'buscar'])
-    ->name('productos.buscar');
-
+    Route::get('productos/buscar', [ProductoController::class, 'buscar'])->name('productos.buscar');
     Route::post('productos/{producto}/toggle-activo', [ProductoController::class, 'toggleActivo'])->name('productos.toggleActivo');
-
     Route::resource('productos', ProductoController::class)->except(['destroy', 'show']);
-
-    Route::post('productos/{producto}/proveedores', [ProductoController::class, 'proveedoresAttach'])
-    ->name('productos.proveedores.attach');
-
-    Route::put('productos/{producto}/proveedores/{proveedor}', [ProductoController::class, 'proveedoresUpdate'])
-        ->name('productos.proveedores.update');
-
-    Route::delete('productos/{producto}/proveedores/{proveedor}', [ProductoController::class, 'proveedoresDetach'])
-        ->name('productos.proveedores.detach');
+    Route::post('productos/{producto}/proveedores', [ProductoController::class, 'proveedoresAttach'])->name('productos.proveedores.attach');
+    Route::put('productos/{producto}/proveedores/{proveedor}', [ProductoController::class, 'proveedoresUpdate'])->name('productos.proveedores.update');
+    Route::delete('productos/{producto}/proveedores/{proveedor}', [ProductoController::class, 'proveedoresDetach'])->name('productos.proveedores.detach');
 //mantenimiento y vehiculos
     Route::prefix('mantenimiento')->name('mantenimiento.')->group(function () {
         // Catálogo de vehículos
@@ -674,6 +661,33 @@ Route::prefix('programacion-pagos')
         Route::post('/store', [ProgramacionPagosController::class, 'store'])->name('store');
         Route::patch('/{programacion}/revisar', [ProgramacionPagosController::class, 'revisar'])->name('revisar');
         Route::patch('/{programacion}/autorizar', [ProgramacionPagosController::class, 'autorizar'])->name('autorizar');
+        
+
+    });
+
+    Route::prefix('obras')
+    ->name('obras.')
+    ->middleware(['auth'])
+    ->group(function () {
+        Route::get('/{obra}/reposicion-gastos', [ObraReposicionGastoController::class,'index'])->name('reposicion-gastos.index');
+        
+        Route::get('/{obra}/reposicion-gastos/buscar-cfdis', [ObraReposicionGastoController::class,'buscarCfdis'])->name('reposicion-gastos.buscar-cfdis');
+        Route::post('/{obra}/reposicion-gastos', [ObraReposicionGastoController::class,'store'])->name('reposicion-gastos.store');
+        Route::get('/{obra}/reposicion-gastos/{reposicion}', [ObraReposicionGastoController::class,'show'])->name('reposicion-gastos.show');
+        Route::get('/{obra}/reposicion-gastos/{reposicion}/pdf', [ObraReposicionGastoController::class,'pdf'])->name('reposicion-gastos.pdf');
+        Route::patch('/{obra}/reposicion-gastos/{reposicion}/programar', [ObraReposicionGastoController::class,'programar'])->name('reposicion-gastos.programar');
+        Route::patch('{obra}/reposicion-gastos/{reposicion}/aprovisionar',[ObraReposicionGastoController::class, 'aprovisionar'])->name('reposicion-gastos.aprovisionar');
+        Route::patch('/{obra}/reposicion-gastos/{reposicion}/autorizar',[ObraReposicionGastoController::class, 'autorizar'])->name('reposicion-gastos.autorizar');
+        Route::patch('/{obra}/reposicion-gastos/{reposicion}/rechazar',[ObraReposicionGastoController::class, 'rechazar'])->name('reposicion-gastos.rechazar');
+        
+        });
+
+        Route::prefix('cajas-chicas')
+            ->name('cajas-chicas.')
+            ->middleware(['auth'])
+            ->group(function () {
+
+                Route::get('/', [CajaChicaController::class, 'index'])->name('index');
 
     });
 
