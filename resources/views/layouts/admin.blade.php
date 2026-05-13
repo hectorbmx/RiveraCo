@@ -120,6 +120,7 @@
 <div x-data="{ openSat: false }" class="w-full">
 
     <!-- Header SAT -->
+       @can('sat.access')
     <button @click="openSat = !openSat"
         class="w-full flex items-center justify-between gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10">
         
@@ -135,6 +136,7 @@
                   d="M19 9l-7 7-7-7"></path>
         </svg>
     </button>
+    @endcan
 
     <!-- Submenu -->
     <div x-show="openSat" x-transition class="ml-10">
@@ -202,7 +204,7 @@
     </div>
 
 </div> -->
-<!-- @endcan -->
+<!-- @endcan --> @can('programacion_pagos.access')
      <a href="{{ route('programacion-pagos.index') }}"
             class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 transition-colors"
                 title="Programación de pagos">
@@ -215,6 +217,7 @@
                     Programación de pagos
                 </span>
             </a>
+            @endcan
               @can('cajas_chicas.access')
                 <a href="{{ route('cajas-chicas.index') }}"
                 class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 transition-colors"
