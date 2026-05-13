@@ -100,14 +100,14 @@
                     <span class="sidebar-text">Empleados</span>
                 </a>
                 @endcan
-                  
+                  @can('checadas.access')
                 <a href="{{ route('attendance.logs.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                    title="Empleados">
                     <span class="text-lg">👥</span>
                     <span class="sidebar-text">Checadas</span>
                 </a>
-                
+                @endcan
                 @can('nomina.access')
                 <a href="{{ route('nomina.generador.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
