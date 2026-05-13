@@ -337,31 +337,47 @@
         </div>
 
         {{-- 2. REVISIÓN --}}
-        <div class="relative flex items-start gap-6 group">
-            <div class="absolute left-0 mt-1.5 w-10 h-10 flex items-center justify-center rounded-full bg-white ring-4 ring-white shadow-md transition-all group-hover:scale-110 z-10">
-                <div class="w-3 h-3 rounded-full {{ $reposicion->revisado_at ? 'bg-blue-500 ring-4 ring-blue-100' : 'bg-slate-300 ring-4 ring-slate-100' }}"></div>
+      {{-- 2. REVISIÓN --}}
+<div class="relative flex items-start gap-6 group">
+    <div class="absolute left-0 mt-1.5 w-10 h-10 flex items-center justify-center rounded-full bg-white ring-4 ring-white shadow-md transition-all group-hover:scale-110 z-10">
+        <div class="w-3 h-3 rounded-full {{ $reposicion->revisado_at ? 'bg-blue-500 ring-4 ring-blue-100' : 'bg-slate-300 ring-4 ring-slate-100' }}"></div>
+    </div>
+    <div class="ml-12 flex-1 rounded-2xl border border-slate-100 bg-slate-50/30 p-5 transition-all hover:bg-slate-50">
+        <h4 class="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-3">2. Primera Revisión Operativa</h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+            <div>
+                <p class="text-slate-400 text-[9px] font-bold uppercase tracking-tight">Revisó</p>
+                <p class="text-slate-700 font-bold text-sm">{{ $reposicion->revisadoPor->name ?? '---' }}</p>
             </div>
-            <div class="ml-12 flex-1 rounded-2xl border border-slate-100 bg-slate-50/30 p-5 transition-all hover:bg-slate-50">
-                <h4 class="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-3">2. Primera Revisión Operativa</h4>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                    <div>
-                        <p class="text-slate-400 text-[9px] font-bold uppercase tracking-tight">Revisó</p>
-                        <p class="text-slate-700 font-bold text-sm">{{ $reposicion->revisadoPor->name ?? '---' }}</p>
-                    </div>
-                    <div>
-                        <p class="text-slate-400 text-[9px] font-bold uppercase tracking-tight">Observaciones</p>
-                        <p class="text-slate-600 text-xs truncate italic" title="{{ $reposicion->comentarios_revision }}">
-                            {{ $reposicion->comentarios_revision ?? 'Sin observaciones' }}
-                        </p>
-                    </div>
-                    <div class="md:text-right">
-                        <span class="inline-block rounded-lg {{ $reposicion->revisado_at ? 'bg-blue-50 text-blue-600 ring-blue-100' : 'bg-slate-50 text-slate-400 ring-slate-100' }} px-3 py-1 text-[11px] font-bold shadow-sm ring-1">
-                            {{ optional($reposicion->revisado_at)->format('d/m/Y H:i') ?? 'Pendiente' }}
-                        </span>
-                    </div>
-                </div>
+            
+            {{-- Sección de Programación --}}
+            <div>
+                <p class="text-slate-400 text-[9px] font-bold uppercase tracking-tight">Programación de Pago</p>
+                @if($reposicion->fecha_programada_pago)
+                    <p class="text-blue-700 font-black text-xs">
+                        🗓️ {{ \Carbon\Carbon::parse($reposicion->fecha_programada_pago)->format('d/M/Y') }}
+                    </p>
+                @else
+                    <p class="text-slate-500 text-xs italic">Pendiente de programar</p>
+                @endif
+            </div>
+
+            {{-- Columna de Fecha de Acción --}}
+            <div class="md:text-right">
+                <span class="inline-block rounded-lg {{ $reposicion->revisado_at ? 'bg-blue-50 text-blue-600 ring-blue-100' : 'bg-slate-50 text-slate-400 ring-slate-100' }} px-3 py-1 text-[11px] font-bold shadow-sm ring-1">
+                    {{ optional($reposicion->revisado_at)->format('d/m/Y H:i') ?? 'Pendiente' }}
+                </span>
             </div>
         </div>
+        
+        {{-- Comentarios en la parte inferior del bloque para no apretar las columnas --}}
+        @if($reposicion->comentarios_revision)
+            <div class="mt-3 p-2 bg-white/50 rounded-lg border border-slate-100 text-[11px] text-slate-600 italic">
+                "{{ $reposicion->comentarios_revision }}"
+            </div>
+        @endif
+    </div>
+</div>
 
         {{-- 3. APROVISIONAMIENTO --}}
         <div class="relative flex items-start gap-6 group">
