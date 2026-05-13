@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-6 py-6">
+<div class="max-w-8xl mx-auto px-6 py-6">
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
 
@@ -13,6 +13,135 @@
                 Reposiciones de gastos registradas en todas las obras.
             </p>
         </div>
+        <div class="px-6 py-5 border-b border-slate-200 bg-slate-50">
+
+    <form method="GET" action="{{ route('cajas-chicas.index') }}" class="space-y-4">
+
+        <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
+
+            <div>
+                <p class="text-sm text-slate-500">
+                    Semana mostrada:
+                    <span class="font-bold text-slate-800">
+                        {{ $fechaInicio->format('d/m/Y') }}
+                    </span>
+                    al
+                    <span class="font-bold text-slate-800">
+                        {{ $fechaFin->format('d/m/Y') }}
+                    </span>
+                </p>
+            </div>
+
+            <div class="flex flex-wrap items-end gap-3">
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">
+                        Fecha inicio
+                    </label>
+                    <input
+                        type="date"
+                        name="fecha_inicio"
+                        value="{{ $fechaInicio->format('Y-m-d') }}"
+                        class="rounded-xl border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">
+                        Fecha fin
+                    </label>
+                    <input
+                        type="date"
+                        name="fecha_fin"
+                        value="{{ $fechaFin->format('Y-m-d') }}"
+                        class="rounded-xl border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">
+                        Obra
+                    </label>
+                    <select
+                        name="obra_id"
+                        class="rounded-xl border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    >
+                        <option value="">Todas las obras</option>
+                        @foreach($obras as $obra)
+                            <option value="{{ $obra->id }}" @selected(request('obra_id') == $obra->id)>
+                                {{ $obra->nombre }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">
+                        Tipo
+                    </label>
+                    <select
+                        name="tipo_reposicion"
+                        class="rounded-xl border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    >
+                        <option value="">Todos</option>
+                        <option value="caja_chica" @selected(request('tipo_reposicion') === 'caja_chica')>
+                            Caja chica
+                        </option>
+                        <option value="viaticos" @selected(request('tipo_reposicion') === 'viaticos')>
+                            Viáticos
+                        </option>
+                        <option value="gastos_varios" @selected(request('tipo_reposicion') === 'gastos_varios')>
+                            Gastos varios
+                        </option>
+                    </select>
+                </div>
+
+                <button
+                    type="submit"
+                    class="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+                >
+                    Buscar
+                </button>
+
+            </div>
+        </div>
+    </form>
+
+    <div class="mt-4 flex flex-wrap justify-end gap-3">
+
+        <a
+            href="{{ route('cajas-chicas.index', [
+                'fecha_inicio' => $semanaAnteriorInicio,
+                'fecha_fin' => $semanaAnteriorFin,
+                'obra_id' => request('obra_id'),
+                'tipo_reposicion' => request('tipo_reposicion'),
+            ]) }}"
+            class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100"
+        >
+            ← Semana anterior
+        </a>
+
+        <a
+            href="{{ route('cajas-chicas.index') }}"
+            class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100"
+        >
+            Semana actual
+        </a>
+
+        <a
+            href="{{ route('cajas-chicas.index', [
+                'fecha_inicio' => $semanaSiguienteInicio,
+                'fecha_fin' => $semanaSiguienteFin,
+                'obra_id' => request('obra_id'),
+                'tipo_reposicion' => request('tipo_reposicion'),
+            ]) }}"
+            class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100"
+        >
+            Semana siguiente →
+        </a>
+
+    </div>
+</div>
 
         <div class="overflow-x-auto">
             <table class="w-full text-sm border-collapse">
