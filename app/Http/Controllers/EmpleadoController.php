@@ -28,7 +28,7 @@ public function index(Request $request)
         ->orderBy('nombre')
         ->get(['id', 'nombre', 'codigo']);
 
-    $empleados = Empleado::with('areaRef')
+    $empleados = Empleado::with(['areaRef', 'documentos'])  
         ->when($search, function ($q) use ($search) {
             $q->where(function($q) use ($search) {
                 $q->where('Nombre', 'like', "%{$search}%")

@@ -3,7 +3,7 @@
 @section('title', 'Empleados')
 
 @section('content')
-<div class="max-w-7xl mx-auto">
+<div class="max-w-8xl mx-auto">
 
     {{-- Header --}}
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
@@ -82,6 +82,7 @@
                     <th class="py-2 px-3">Área</th>
                     <th class="py-2 px-3">Puesto</th>
                     <th class="py-2 px-3">Sueldo</th>
+                    <th class="py-2 px-3">Documentos</th>
                     <th class="py-2 px-3">Estatus</th>
                     <th class="py-2 px-3 text-right">Acciones</th>
                 </tr>
@@ -107,6 +108,67 @@
                             @else
                                 -
                             @endif
+                        </td>
+                      @php
+    $documentosObligatorios = [
+        'INE',
+        'COMPROBANTE DOMICILIO',
+        'ACTA NACIMIENTO',
+        'CURP',
+        'RFC',
+        'NSS',
+        'CONSTANCIA FISCAL',
+        'CONTRATO',
+    ];
+
+    $documentosCargados = $emp->documentos
+        ->where('vigente', true)
+        ->pluck('tipo_documento')
+        ->unique()
+        ->toArray();
+
+    $totalObligatorios = count($documentosObligatorios);
+
+    $totalCargados = collect($documentosObligatorios)
+        ->filter(fn($doc) => in_array($doc, $documentosCargados))
+        ->count();
+
+    $porcentajeDocumentos = $totalObligatorios > 0
+        ? round(($totalCargados / $totalObligatorios) * 100)
+        : 0;
+
+    $colorBarra = match (true) {
+        $porcentajeDocumentos >= 100 => 'bg-green-500',
+        $porcentajeDocumentos >= 70 => 'bg-yellow-500',
+        $porcentajeDocumentos >= 40 => 'bg-orange-500',
+        default => 'bg-red-500',
+    };
+
+    $colorTexto = match (true) {
+        $porcentajeDocumentos >= 100 => 'text-green-700',
+        $porcentajeDocumentos >= 70 => 'text-yellow-700',
+        $porcentajeDocumentos >= 40 => 'text-orange-700',
+        default => 'text-red-700',
+    };
+@endphp
+
+                        <td class="py-2 px-3">
+                            <div class="w-36">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-xs font-semibold {{ $colorTexto }}">
+                                        {{ $porcentajeDocumentos }}%
+                                    </span>
+                                    <span class="text-[11px] text-slate-500">
+                                        {{ $totalCargados }}/{{ $totalObligatorios }}
+                                    </span>
+                                </div>
+
+                                <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                    <div class="h-2 {{ $colorBarra }} rounded-full"
+                                        style="width: {{ $porcentajeDocumentos }}%">
+                                    </div>
+                                </div>
+                            </div>
                         </td>
                        <td class="py-2 px-3">
                             @if((int)$emp->Estatus === 2)
