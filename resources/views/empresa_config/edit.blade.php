@@ -48,10 +48,12 @@
                         @php
                             $tabs = [
                                 'general'   => ['label' => 'General', 'desc' => 'Datos base del sistema'],
+                                
                                 'cuentas' => ['label' => 'Cuentas banco', 'desc' => 'Cuentas para pagos y aprovisionamiento'],
                                 'vehiculos' => ['label' => 'Vehículos', 'desc' => 'Mantenimientos y alertas'],
                                 'maquinaria'=> ['label' => 'Maquinaria', 'desc' => 'Servicios por horas y tiempos'],
                                 'rrhh'      => ['label' => 'Puestos', 'desc' => 'Horas y horas extra'],
+                                'documentos' => ['label' => 'Documentos','desc'  => 'Documentos requeridos para empleados'],
                                 'comisiones'=> ['label' => 'Comisiones', 'desc' => 'Reglas por tipo de trabajo'],
                                 'reglas'    => ['label' => 'Reglas', 'desc' => 'Políticas y flujos'],
                                 'alertas'   => ['label' => 'Alertas', 'desc' => 'Notificaciones y avisos'],
@@ -638,6 +640,227 @@
         </table>
     </div>
 
+</div>
+{{-- ====================== DOCUMENTOS EMPLEADO ======================= --}}
+<div x-show="tab === 'documentos'" x-cloak class="space-y-6">
+
+    {{-- HEADER --}}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-slate-200">
+            <h2 class="text-lg font-semibold text-slate-900">
+                Documentos de empleados
+            </h2>
+
+            <p class="text-sm text-slate-500 mt-1">
+                Configura los documentos requeridos para expedientes de empleados.
+            </p>
+        </div>
+
+        {{-- FORM NUEVO --}}
+        <div class="p-6 border-b border-slate-200 bg-slate-50">
+            <form
+                method="POST"
+                action="{{ route('empresa_config.documentos.store') }}"
+                class="grid grid-cols-1 md:grid-cols-6 gap-4"
+            >
+                @csrf
+
+                {{-- NOMBRE --}}
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Nombre
+                    </label>
+
+                    <input
+                        type="text"
+                        name="nombre"
+                        required
+                        class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500"
+                        placeholder="Ej. INE"
+                    >
+                </div>
+
+                {{-- DESCRIPCION --}}
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Descripción
+                    </label>
+
+                    <input
+                        type="text"
+                        name="descripcion"
+                        class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500"
+                        placeholder="Opcional"
+                    >
+                </div>
+
+                {{-- CHECKS --}}
+                <div class="flex flex-col justify-center gap-2 pt-6">
+                    <label class="inline-flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            name="obligatorio"
+                            value="1"
+                            class="rounded border-slate-300 text-red-600 focus:ring-red-500"
+                        >
+
+                        <span class="text-sm text-slate-700">
+                            Obligatorio
+                        </span>
+                    </label>
+
+                    <label class="inline-flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            name="requiere_vencimiento"
+                            value="1"
+                            class="rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                        >
+
+                        <span class="text-sm text-slate-700">
+                            Vencimiento
+                        </span>
+                    </label>
+                </div>
+
+                {{-- BOTON --}}
+                <div class="flex items-end">
+                    <button
+                        type="submit"
+                        class="w-full inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 transition"
+                    >
+                        Agregar
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {{-- TABLA --}}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            Documento
+                        </th>
+
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            Configuración
+                        </th>
+
+                        <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            Acciones
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-slate-100 bg-white">
+
+                    @forelse($documentosEmpleadoTipos as $documento)
+
+                        <tr class="hover:bg-slate-50 transition">
+
+                            {{-- NOMBRE --}}
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+
+                                    <div>
+                                        <p class="text-sm font-semibold text-slate-900">
+                                            {{ $documento->nombre }}
+                                        </p>
+
+                                        <p class="text-xs text-slate-500">
+                                            {{ $documento->codigo }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </td>
+
+                            {{-- CONFIG --}}
+                            <td class="px-6 py-4">
+                                <div class="flex flex-wrap gap-2">
+
+                                    @if($documento->obligatorio)
+                                        <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">
+                                            Obligatorio
+                                        </span>
+                                    @endif
+
+                                    @if($documento->requiere_vencimiento)
+                                        <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
+                                            Requiere vencimiento
+                                        </span>
+                                    @endif
+
+                                    @if($documento->activo)
+                                        <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                                            Activo
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700">
+                                            Inactivo
+                                        </span>
+                                    @endif
+
+                                </div>
+                            </td>
+
+                            {{-- ACCIONES --}}
+                            <td class="px-6 py-4">
+                                <div class="flex items-center justify-end gap-2">
+
+                                    {{-- TOGGLE --}}
+                                    <form
+                                        method="POST"
+                                        action="{{ route('empresa_config.documentos.toggle-activo', $documento) }}"
+                                    >
+                                        @csrf
+                                        @method('PATCH')
+
+                                        <button
+                                            type="submit"
+                                            class="inline-flex items-center rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                                        >
+                                            {{ $documento->activo ? 'Desactivar' : 'Activar' }}
+                                        </button>
+                                    </form>
+
+                                    {{-- DELETE --}}
+                                    <form
+                                        method="POST"
+                                        action="{{ route('empresa_config.documentos.destroy', $documento) }}"
+                                        onsubmit="return confirm('¿Eliminar documento?')"
+                                    >
+                                        @csrf
+                                        @method('DELETE')
+
+                                        <button
+                                            type="submit"
+                                            class="inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-100"
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </form>
+
+                                </div>
+                            </td>
+
+                        </tr>
+
+                    @empty
+
+                        <tr>
+                            <td colspan="3" class="px-6 py-10 text-center text-sm text-slate-500">
+                                No hay documentos configurados.
+                            </td>
+                        </tr>
+
+                    @endforelse
+
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
                {{-- ======================

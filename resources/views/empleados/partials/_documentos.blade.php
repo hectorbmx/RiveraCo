@@ -50,7 +50,7 @@
                         Tipo de documento <span class="text-red-500">*</span>
                     </label>
 
-                    <select id="tipo_documento"
+                    <!-- <select id="tipo_documento"
                             name="tipo_documento"
                             class="w-full rounded-lg border-slate-300 focus:border-[#0B265A] focus:ring-[#0B265A]">
                         <option value="">Selecciona una opción</option>
@@ -59,7 +59,23 @@
                                 {{ str_replace('_', ' ', $tipo) }}
                             </option>
                         @endforeach
-                    </select>
+                    </select> -->
+                <select id="documento_tipo_id"
+        name="documento_tipo_id"
+        class="w-full rounded-lg border-slate-300 focus:border-[#0B265A] focus:ring-[#0B265A] text-sm shadow-sm transition-all">
+
+    <option value="" class="text-slate-400">Selecciona el tipo de documento</option>
+
+    @foreach($documentosTipos as $tipo)
+        <option value="{{ $tipo->id }}"
+            {{ old('documento_tipo_id') == $tipo->id ? 'selected' : '' }}
+            class="{{ $tipo->obligatorio ? 'font-bold' : '' }}">
+
+            {{ $tipo->nombre }} {{ $tipo->obligatorio ? '— (OBLIGATORIO)' : '' }}
+
+        </option>
+    @endforeach
+</select>
 
                     @error('tipo_documento')
                         <p class="mt-1 text-xs text-red-600">{{ $message }}</p>

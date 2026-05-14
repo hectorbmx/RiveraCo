@@ -168,4 +168,9 @@ public function getAreaIdAttribute()
                 ->orderByDesc('vigente')
                 ->orderByDesc('created_at');
         }
+    public function documentosUltimos()
+        {
+            return $this->hasMany(EmpleadoDocumento::class, 'empleado_id', 'id_Empleado')
+                ->latestOfMany();
+        }
 }

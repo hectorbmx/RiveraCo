@@ -6,6 +6,8 @@ use App\Models\Empleado;
 use App\Models\Area;
 use App\Models\CatalogoRol;
 use App\Models\EmpleadoNota;
+use App\Models\EmpresaConfig;
+use App\Models\EmpresaDocumentoTipo;
 use Illuminate\Http\Request;
 use App\Services\Empleados\EmpleadoKardexService;
 
@@ -27,8 +29,17 @@ public function index(Request $request)
         ->where('activo', 1)
         ->orderBy('nombre')
         ->get(['id', 'nombre', 'codigo']);
+    $empresa = EmpresaConfig::firstOrFail();
 
-    $empleados = Empleado::with(['areaRef', 'documentos'])  
+        $documentosObligatorios = EmpresaDocumentoTipo::query()
+            ->where('empresa_config_id', $empresa->id)
+            ->where('activo', true)
+            ->where('obligatorio', true)
+            ->orderBy('orden')
+            ->orderBy('nombre')
+            ->get();
+
+    $empleados = Empleado::with(['areaRef', 'documentos.documentoTipo'])  
         ->when($search, function ($q) use ($search) {
             $q->where(function($q) use ($search) {
                 $q->where('Nombre', 'like', "%{$search}%")
@@ -60,7 +71,15 @@ public function index(Request $request)
             'area' => $area,
         ]);
 
-    return view('empleados.index', compact('empleados', 'search', 'estatus', 'areas', 'area'));
+    return view('empleados.index', 
+    compact(
+        'empleados', 
+        'search', 
+        'estatus', 
+        'areas', 
+        'area',
+        'documentosObligatorios',
+        ));
 }
 
 public function create()
@@ -180,14 +199,26 @@ public function store(Request $request)
 
         $kardex = app(EmpleadoKardexService::class)->build($empleado);
     }
+$kardex = collect();
+$documentos = collect();
+$documentosTipos = collect();
 
-    if ($tab === 'documentos') {
-        $empleado->load([
-            'documentos',
-        ]);
+if ($tab === 'documentos') {
+    $empleado->load([
+        'documentos.documentoTipo',
+    ]);
 
-        $documentos = $empleado->documentos;
-    }
+    $documentos = $empleado->documentos;
+
+    $empresa = EmpresaConfig::firstOrFail();
+
+    $documentosTipos = EmpresaDocumentoTipo::query()
+        ->where('empresa_config_id', $empresa->id)
+        ->where('activo', true)
+        ->orderBy('orden')
+        ->orderBy('nombre')
+        ->get();
+}
 
     $areas = Area::where('activo', true)
         ->orderBy('nombre')
@@ -201,7 +232,8 @@ public function store(Request $request)
         'kardex',
         'documentos',
         'areas',
-        'roles'
+        'roles',
+        'documentosTipos'
     ));
 }
 

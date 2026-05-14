@@ -109,28 +109,25 @@
                                 -
                             @endif
                         </td>
-                      @php
-    $documentosObligatorios = [
-        'INE',
-        'COMPROBANTE DOMICILIO',
-        'ACTA NACIMIENTO',
-        'CURP',
-        'RFC',
-        'NSS',
-        'CONSTANCIA FISCAL',
-        'CONTRATO',
-    ];
+@php
+    $obligatoriosIds = $documentosObligatorios
+        ->pluck('id')
+        ->toArray();
 
-    $documentosCargados = $emp->documentos
-        ->where('vigente', true)
-        ->pluck('tipo_documento')
+    $documentosUltimosPorTipo = $emp->documentos
+        ->filter(fn($doc) => $doc->documento_tipo_id)
+        ->sortByDesc('created_at')
+        ->unique('documento_tipo_id');
+
+    $documentosCargadosIds = $documentosUltimosPorTipo
+        ->pluck('documento_tipo_id')
         ->unique()
         ->toArray();
 
-    $totalObligatorios = count($documentosObligatorios);
+    $totalObligatorios = count($obligatoriosIds);
 
-    $totalCargados = collect($documentosObligatorios)
-        ->filter(fn($doc) => in_array($doc, $documentosCargados))
+    $totalCargados = collect($obligatoriosIds)
+        ->filter(fn($id) => in_array($id, $documentosCargadosIds))
         ->count();
 
     $porcentajeDocumentos = $totalObligatorios > 0

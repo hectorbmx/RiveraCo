@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\User;
+use App\Models\EmpresaDocumentoTipo;
 
 class EmpleadoDocumento extends Model
 {
@@ -14,6 +15,7 @@ class EmpleadoDocumento extends Model
 
     protected $fillable = [
         'empleado_id',
+        'documento_tipo_id',
         'tipo_documento',
         'nombre_documento',
         'archivo_path',
@@ -87,5 +89,9 @@ class EmpleadoDocumento extends Model
     public function getNombreMostrarAttribute()
     {
         return $this->nombre_documento ?: str_replace('_', ' ', $this->tipo_documento);
+    }
+    public function documentoTipo()
+    {
+        return $this->belongsTo(EmpresaDocumentoTipo::class, 'documento_tipo_id');
     }
 }

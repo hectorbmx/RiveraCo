@@ -13,6 +13,8 @@ use App\Models\ComisionTarifario;
 use App\Models\ComisionTarifarioDetalle;
 use App\Models\CuentaBancoEmpresa;
 use Illuminate\Support\Facades\DB;
+use App\Models\EmpresaDocumentoTipo;
+use Illuminate\Support\Str;
 
 class EmpresaConfigController extends Controller
 {
@@ -47,6 +49,11 @@ public function index(){
             ->orderByDesc('principal')
             ->orderByDesc('activa')
             ->orderBy('banco')
+            ->orderBy('nombre')
+            ->get();
+        $documentosEmpleadoTipos = EmpresaDocumentoTipo::query()
+            ->where('empresa_config_id', $config->id)
+            ->orderBy('orden')
             ->orderBy('nombre')
             ->get();
         
@@ -113,6 +120,7 @@ public function index(){
         'tarifarioVigente',
         'tarifarioDetalles',
         'cuentasBancoEmpresa',
+        'documentosEmpleadoTipos',
     ));
 }
 
@@ -212,5 +220,94 @@ public function marcarCuentaBancoPrincipal(CuentaBancoEmpresa $cuenta)
 
     return back()->with('success', 'Cuenta principal actualizada.');
 }
+public function storeDocumentoEmpleado(Request $request)
+{
+    $empresa = EmpresaConfig::firstOrFail();
 
+    $data = $request->validate([
+        'nombre'                 => 'required|string|max:150',
+        'descripcion'            => 'nullable|string',
+        'obligatorio'            => 'nullable|boolean',
+        'requiere_vencimiento'   => 'nullable|boolean',
+        'activo'                 => 'nullable|boolean',
+    ]);
+
+    $codigoBase = Str::upper(
+        Str::slug($data['nombre'], '_')
+    );
+
+    $codigo = $codigoBase;
+    $contador = 1;
+
+    while (
+        EmpresaDocumentoTipo::where('empresa_config_id', $empresa->id)
+            ->where('codigo', $codigo)
+            ->exists()
+    ) {
+        $codigo = $codigoBase . '_' . $contador;
+        $contador++;
+    }
+
+    $ultimoOrden = EmpresaDocumentoTipo::where('empresa_config_id', $empresa->id)
+        ->max('orden');
+
+    EmpresaDocumentoTipo::create([
+        'empresa_config_id'      => $empresa->id,
+        'codigo'                 => $codigo,
+        'nombre'                 => $data['nombre'],
+        'descripcion'            => $data['descripcion'] ?? null,
+        'obligatorio'            => $request->boolean('obligatorio'),
+        'requiere_vencimiento'   => $request->boolean('requiere_vencimiento'),
+        'activo'                 => $request->boolean('activo', true),
+        'orden'                  => ($ultimoOrden ?? 0) + 1,
+    ]);
+
+    return back()->with('success', 'Documento agregado correctamente.');
+}
+public function updateDocumentoEmpleado(
+    Request $request,
+    EmpresaDocumentoTipo $documentoTipo
+) {
+    $data = $request->validate([
+        'nombre'                 => 'required|string|max:150',
+        'descripcion'            => 'nullable|string',
+        'obligatorio'            => 'nullable|boolean',
+        'requiere_vencimiento'   => 'nullable|boolean',
+        'activo'                 => 'nullable|boolean',
+    ]);
+
+    $documentoTipo->update([
+        'nombre'                 => $data['nombre'],
+        'descripcion'            => $data['descripcion'] ?? null,
+        'obligatorio'            => $request->boolean('obligatorio'),
+        'requiere_vencimiento'   => $request->boolean('requiere_vencimiento'),
+        'activo'                 => $request->boolean('activo', true),
+    ]);
+
+    return back()->with('success', 'Documento actualizado correctamente.');
+}
+public function toggleDocumentoEmpleadoActivo(
+    EmpresaDocumentoTipo $documentoTipo
+) {
+    $documentoTipo->update([
+        'activo' => !$documentoTipo->activo
+    ]);
+
+    return back()->with(
+        'success',
+        $documentoTipo->activo
+            ? 'Documento activado.'
+            : 'Documento desactivado.'
+    );
+}
+public function destroyDocumentoEmpleado(
+    EmpresaDocumentoTipo $documentoTipo
+) {
+    $documentoTipo->delete();
+
+    return back()->with(
+        'success',
+        'Documento eliminado correctamente.'
+    );
+}
 }

@@ -330,7 +330,11 @@ Route::middleware('auth','verified')->group(function () {
         Route::post('/configuracion-empresa/cuentas-banco', [EmpresaConfigController::class,'storeCuentaBanco'])->name('empresa_config.cuentas.store');
         Route::patch('/configuracion-empresa/cuentas-banco/{cuenta}/toggle-activa', [EmpresaConfigController::class,'toggleCuentaBancoActiva'])->name('empresa_config.cuentas.toggle-activa');
         Route::patch('/configuracion-empresa/cuentas-banco/{cuenta}/principal', [EmpresaConfigController::class,'marcarCuentaBancoPrincipal'])->name('empresa_config.cuentas.principal');
-        
+        // Documentos de empleado configurables por empresa
+        Route::post('/configuracion-empresa/documentos-empleado', [EmpresaConfigController::class, 'storeDocumentoEmpleado'])->name('empresa_config.documentos.store');
+        Route::put('/configuracion-empresa/documentos-empleado/{documentoTipo}', [EmpresaConfigController::class, 'updateDocumentoEmpleado'])->name('empresa_config.documentos.update');
+        Route::patch('/configuracion-empresa/documentos-empleado/{documentoTipo}/toggle-activo', [EmpresaConfigController::class, 'toggleDocumentoEmpleadoActivo'])->name('empresa_config.documentos.toggle-activo');
+        Route::delete('/configuracion-empresa/documentos-empleado/{documentoTipo}', [EmpresaConfigController::class, 'destroyDocumentoEmpleado'])->name('empresa_config.documentos.destroy');
 
 
         Route::middleware(['role:admin|super-admin'])->prefix('configuracion-empresa')->name('empresa_config.')->group(function () {

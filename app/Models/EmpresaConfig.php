@@ -20,4 +20,8 @@ class EmpresaConfig extends Model
         'logo_path',
         'activa',
     ];
+    public function documentosTipos()
+    {
+        return $this->hasMany(EmpresaDocumentoTipo::class, 'empresa_config_id');
+    }
 }
