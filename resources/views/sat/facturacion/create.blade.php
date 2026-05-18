@@ -159,62 +159,208 @@
                             </select>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-    {{-- USO CFDI --}}
+            {{-- USO CFDI --}}
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                    Uso CFDI
+                </label>
+
+                <select name="uso_cfdi"
+                        class="w-full rounded-xl border-slate-300">
+
+                    <option value="G01">G01 - Adquisición de mercancías</option>
+                    <option value="G02">G02 - Devoluciones, descuentos o bonificaciones</option>
+                    <option value="G03" selected>G03 - Gastos en general</option>
+
+                    <option value="I01">I01 - Construcciones</option>
+                    <option value="I02">I02 - Mobiliario y equipo de oficina por inversiones</option>
+                    <option value="I03">I03 - Equipo de transporte</option>
+                    <option value="I04">I04 - Equipo de cómputo y accesorios</option>
+                    <option value="I05">I05 - Dados, troqueles, moldes, matrices y herramental</option>
+                    <option value="I06">I06 - Comunicaciones telefónicas</option>
+                    <option value="I07">I07 - Comunicaciones satelitales</option>
+                    <option value="I08">I08 - Otra maquinaria y equipo</option>
+
+                    <option value="D01">D01 - Honorarios médicos, dentales y gastos hospitalarios</option>
+                    <option value="D02">D02 - Gastos médicos por incapacidad o discapacidad</option>
+                    <option value="D03">D03 - Gastos funerales</option>
+                    <option value="D04">D04 - Donativos</option>
+                    <option value="D05">D05 - Intereses reales efectivamente pagados por créditos hipotecarios</option>
+                    <option value="D06">D06 - Aportaciones voluntarias al SAR</option>
+                    <option value="D07">D07 - Primas por seguros de gastos médicos</option>
+                    <option value="D08">D08 - Gastos de transportación escolar obligatoria</option>
+                    <option value="D09">D09 - Depósitos en cuentas para el ahorro / pensiones</option>
+                    <option value="D10">D10 - Pagos por servicios educativos</option>
+
+                    <option value="S01">S01 - Sin efectos fiscales</option>
+                    <option value="CP01">CP01 - Pagos</option>
+                    <option value="CN01">CN01 - Nómina</option>
+                </select>
+            </div>
+
+            {{-- MÉTODO DE PAGO --}}
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                    Método de pago
+                </label>
+
+                <select name="metodo_pago"
+                        class="w-full rounded-xl border-slate-300">
+
+                    <option value="PUE">PUE - Pago en una sola exhibición</option>
+                    <option value="PPD">PPD - Pago en parcialidades</option>
+
+                </select>
+            </div>
+
+            {{-- FORMA DE PAGO --}}
+            <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Forma de pago
+                    </label>
+
+                    <select name="forma_pago"
+                            class="w-full rounded-xl border-slate-300">
+
+                        <option value="03">03 - Transferencia electrónica</option>
+                        <option value="01">01 - Efectivo</option>
+                        <option value="02">02 - Cheque nominativo</option>
+                        <option value="04">04 - Tarjeta de crédito</option>
+                        <option value="28">28 - Tarjeta de débito</option>
+                        <option value="99">99 - Por definir</option>
+
+                    </select>
+                </div>
+                
+            </div>
+              {{-- IVA GLOBAL --}}
     <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">
-            Uso CFDI
+            IVA
         </label>
-
-        <select name="uso_cfdi"
-                class="w-full rounded-xl border-slate-300">
-
-            <option value="G03">G03 - Gastos en general</option>
-            <option value="P01">P01 - Por definir</option>
-
+        <select name="tipo_iva" class="w-full rounded-xl border-slate-300">
+            <option value="0.16">IVA 16%</option>
+            <option value="0.08">IVA 8% (Zona fronteriza)</option>
+            <option value="0">IVA 0% (Tasa cero)</option>
+            <option value="exento">Exento (sin traslado)</option>
+            <option value="sin_iva">Sin IVA (no objeto)</option>
         </select>
+        <p class="text-xs text-slate-400 mt-1">Se aplica a todos los conceptos</p>
+    </div>
+    
+
+     </div>
+                    {{-- Complemento Servicios Parciales de Construcción --}}
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mt-6"
+     x-data="{ usarComplementoConstruccion: false }">
+
+    <div class="flex items-start justify-between gap-4">
+        <div>
+            <h3 class="text-base font-bold text-slate-900">
+                Complemento Servicios Parciales de Construcción
+            </h3>
+            <p class="text-sm text-slate-500">
+                Úsalo solo cuando el cliente requiera este complemento en el XML.
+            </p>
+        </div>
+
+        <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+            <input type="checkbox"
+                   name="usar_complemento_construccion"
+                   value="1"
+                   x-model="usarComplementoConstruccion"
+                   class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+            Agregar complemento
+        </label>
     </div>
 
-    {{-- MÉTODO DE PAGO --}}
-    <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">
-            Método de pago
-        </label>
+    <div x-show="usarComplementoConstruccion"
+         x-cloak
+         class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
 
-        <select name="metodo_pago"
-                class="w-full rounded-xl border-slate-300">
+        <div class="md:col-span-3">
+            <label class="block text-sm font-medium text-slate-700">
+                Número de permiso, licencia o autorización
+            </label>
+            <input type="text"
+                   name="complemento_construccion[num_per_lico_aut]"
+                   value="{{ old('complemento_construccion.num_per_lico_aut') }}"
+                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                   placeholder="Ej. DEUR-1698/24">
+        </div>
 
-            <option value="PUE">PUE - Pago en una sola exhibición</option>
-            <option value="PPD">PPD - Pago en parcialidades</option>
+        <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-slate-700">Calle del inmueble</label>
+            <input type="text" name="complemento_construccion[calle]"
+                   value="{{ old('complemento_construccion.calle') }}"
+                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        </div>
 
-        </select>
+        <div>
+            <label class="block text-sm font-medium text-slate-700">Código postal</label>
+            <input type="text" name="complemento_construccion[codigo_postal]"
+                   value="{{ old('complemento_construccion.codigo_postal') }}"
+                   maxlength="5"
+                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700">No. exterior</label>
+            <input type="text" name="complemento_construccion[no_exterior]"
+                   value="{{ old('complemento_construccion.no_exterior', '.') }}"
+                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700">No. interior</label>
+            <input type="text" name="complemento_construccion[no_interior]"
+                   value="{{ old('complemento_construccion.no_interior', '.') }}"
+                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700">Colonia</label>
+            <input type="text" name="complemento_construccion[colonia]"
+                   value="{{ old('complemento_construccion.colonia', '.') }}"
+                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700">Localidad</label>
+            <input type="text" name="complemento_construccion[localidad]"
+                   value="{{ old('complemento_construccion.localidad') }}"
+                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700">Municipio</label>
+            <input type="text" name="complemento_construccion[municipio]"
+                   value="{{ old('complemento_construccion.municipio') }}"
+                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700">Estado</label>
+            <input type="text" name="complemento_construccion[estado]"
+                   value="{{ old('complemento_construccion.estado') }}"
+                   maxlength="2"
+                   placeholder="Ej. 18"
+                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        </div>
+
+        <div class="md:col-span-3">
+            <label class="block text-sm font-medium text-slate-700">Referencia</label>
+            <input type="text" name="complemento_construccion[referencia]"
+                   value="{{ old('complemento_construccion.referencia', '.') }}"
+                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        </div>
     </div>
-
-    {{-- FORMA DE PAGO --}}
-    <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">
-            Forma de pago
-        </label>
-
-        <select name="forma_pago"
-                class="w-full rounded-xl border-slate-300">
-
-            <option value="03">03 - Transferencia electrónica</option>
-            <option value="01">01 - Efectivo</option>
-            <option value="02">02 - Cheque nominativo</option>
-            <option value="04">04 - Tarjeta de crédito</option>
-            <option value="28">28 - Tarjeta de débito</option>
-            <option value="99">99 - Por definir</option>
-
-        </select>
-    </div>
-
 </div>
 
-                    </div>
-
                 </div>
+                
 
                 {{-- CONCEPTOS --}}
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
@@ -391,8 +537,6 @@
 
     </form>
     
-
-     {{-- MODAL SELECCIONAR CONCEPTO --}}
 {{-- MODAL SELECCIONAR CONCEPTO --}}
 <div x-show="openConceptos"
      x-cloak

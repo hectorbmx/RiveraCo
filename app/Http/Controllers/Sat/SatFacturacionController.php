@@ -15,6 +15,7 @@ use App\Services\Facturacion\FacturapiService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rule;
 
 use App\Mail\SatFacturaMail;
 use Illuminate\Support\Facades\Mail;
@@ -89,6 +90,10 @@ class SatFacturacionController extends Controller
    public function store(Request $request, FacturapiService $facturapiService)
 {
         // dd($request->all());
+//         dd(
+//     $request->input('usar_complemento_construccion'),
+//     $request->input('complemento_construccion')
+// );
             $data = $request->validate([
                 'sat_empresa_id' => ['required', 'exists:sat_empresas,id'],
                 'cliente_id' => ['required', 'exists:clientes,id'],
@@ -108,7 +113,33 @@ class SatFacturacionController extends Controller
                 'conceptos.*.cantidad' => ['required', 'numeric', 'min:0.000001'],
                 'conceptos.*.precio_unitario' => ['required', 'numeric', 'min:0'],
                 'conceptos.*.iva_tasa' => ['required', 'numeric', 'min:0'],
+                'tipo_iva' => ['required', 'in:0.16,0.08,0,exento,sin_iva'],
+
                 'conceptos.*.incluye_iva' => ['nullable'],
+
+                'usar_complemento_construccion' => ['nullable'],
+                'complemento_construccion' => ['nullable', 'array'],
+                'complemento_construccion.num_per_lico_aut' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:50'],
+                // 'complemento_construccion.calle' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:255'],
+             
+
+                'complemento_construccion.calle' => [
+                    Rule::requiredIf(fn() => 
+                        $request->input('usar_complemento_construccion') == 1 
+                        && !is_null($request->input('complemento_construccion.calle'))
+                    ),
+                    'nullable', 
+                    'string', 
+                    'max:255'
+                ],
+                'complemento_construccion.no_exterior' => ['nullable', 'string', 'max:50'],
+                'complemento_construccion.no_interior' => ['nullable', 'string', 'max:50'],
+                'complemento_construccion.colonia' => ['nullable', 'string', 'max:100'],
+                'complemento_construccion.localidad' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:100'],
+                'complemento_construccion.referencia' => ['nullable', 'string', 'max:255'],
+                'complemento_construccion.municipio' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:100'],
+                'complemento_construccion.estado' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:2'],
+                'complemento_construccion.codigo_postal' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:5'],
             ]);
 
     $empresa = SatEmpresa::findOrFail($data['sat_empresa_id']);
@@ -132,9 +163,9 @@ class SatFacturacionController extends Controller
         | 1. Sincronizar cliente con Facturapi si no existe
         |--------------------------------------------------------------------------
         */
-        \Log::info('ENTRO STORE FACTURACION');
+        // \Log::info('ENTRO STORE FACTURACION');
         if (!$cliente->facturapi_customer_id) {
-\Log::info('ANTES CUSTOMER');
+// \Log::info('ANTES CUSTOMER');
             $customer = $facturapi->Customers->create([
                 'legal_name' => $cliente->razon_social ?: $cliente->nombre_comercial,
                 'tax_id' => strtoupper($cliente->rfc),
@@ -159,68 +190,200 @@ class SatFacturacionController extends Controller
 
         $subtotal = 0;
         $iva = 0;
+        $tipoIva = $data['tipo_iva'];
+        $ivaTasaNum = match(true) {
+                in_array($tipoIva, ['0.16', '0.08']) => (float) $tipoIva,
+                $tipoIva === '0'                     => 0.0,
+                default                              => 0.0, // exento y sin_iva no aplica tasa
+            };
+
+
         $total = 0;
 
         foreach ($data['conceptos'] as $concepto) {
 
-            $cantidad = (float) $concepto['cantidad'];
-            $precio = (float) $concepto['precio_unitario'];
-            $ivaTasa = (float) $concepto['iva_tasa'];
-            $incluyeIva = !empty($concepto['incluye_iva']);
+    $cantidad = (float) $concepto['cantidad'];
+    $precio   = (float) $concepto['precio_unitario'];
 
-            $importeBruto = $cantidad * $precio;
+    // Cálculo de montos
+    $lineSubtotal = round($cantidad * $precio, 2);
+    $lineIva      = in_array($tipoIva, ['0.16', '0.08'])
+                        ? round($lineSubtotal * $ivaTasaNum, 2)
+                        : 0.0;
+    $lineTotal    = $lineSubtotal + $lineIva;
 
-            if ($incluyeIva && $ivaTasa > 0) {
-                $lineSubtotal = round($importeBruto / (1 + $ivaTasa), 2);
-                $lineIva = round($importeBruto - $lineSubtotal, 2);
-                $lineTotal = round($importeBruto, 2);
-            } else {
-                $lineSubtotal = round($importeBruto, 2);
-                $lineIva = round($lineSubtotal * $ivaTasa, 2);
-                $lineTotal = round($lineSubtotal + $lineIva, 2);
-            }
+    $subtotal += $lineSubtotal;
+    $iva      += $lineIva;
+    $total    += $lineTotal;
 
-            $subtotal += $lineSubtotal;
-            $iva += $lineIva;
-            $total += $lineTotal;
+    // Producto para FacturAPI
+    $product = [
+        'description' => $concepto['descripcion'],
+        'product_key' => $concepto['clave_producto_servicio'],
+        'unit_key'    => $concepto['clave_unidad'] ?: 'H87',
+        'unit_name'   => $concepto['unidad'] ?: 'Pieza',
+        'price'       => $precio,
+        'tax_included'=> false,
+        'taxability'  => $tipoIva === 'sin_iva' ? '01' : '02',
+    ];
 
-            $product = [
-                'description' => $concepto['descripcion'],
-                'product_key' => $concepto['clave_producto_servicio'],
-                'unit_key' => $concepto['clave_unidad'] ?: 'H87',
-                'unit_name' => $concepto['unidad'] ?: 'Pieza',
-                'price' => $precio,
-                'tax_included' => $incluyeIva,
-                'taxability' => $ivaTasa > 0 ? '02' : '01',
-            ];
+    $product['taxes'] = match(true) {
+        $tipoIva === 'exento'                    => [['type' => 'IVA', 'factor' => 'Exento']],
+        $tipoIva === '0'                         => [['type' => 'IVA', 'rate' => 0.0, 'factor' => 'Tasa']],
+        in_array($tipoIva, ['0.16', '0.08'])     => [['type' => 'IVA', 'rate' => $ivaTasaNum]],
+        default                                  => [], // sin_iva
+    };
 
-            if ($ivaTasa > 0) {
-                $product['taxes'] = [
-                    [
-                        'type' => 'IVA',
-                        'rate' => $ivaTasa,
-                    ],
-                ];
-            }
+    $items[] = [
+        'quantity' => $cantidad,
+        'product'  => $product,
+    ];
+}
+        // foreach ($data['conceptos'] as $concepto) {
 
-            $items[] = [
-                'quantity' => $cantidad,
-                'product' => $product,
-            ];
-        }
+        //     $cantidad = (float) $concepto['cantidad'];
+        //     $precio = (float) $concepto['precio_unitario'];
+        //     $ivaTasa = (float) $concepto['iva_tasa'];
+        //     $incluyeIva = !empty($concepto['incluye_iva']);
+
+        //     $importeBruto = $cantidad * $precio;
+
+        //     if ($incluyeIva && $ivaTasa > 0) {
+        //         $lineSubtotal = round($importeBruto / (1 + $ivaTasa), 2);
+        //         $lineIva = round($importeBruto - $lineSubtotal, 2);
+        //         $lineTotal = round($importeBruto, 2);
+        //     } else {
+        //         $lineSubtotal = round($importeBruto, 2);
+        //         $lineIva = round($lineSubtotal * $ivaTasa, 2);
+        //         $lineTotal = round($lineSubtotal + $lineIva, 2);
+        //     }
+
+        //     $subtotal += $lineSubtotal;
+        //     $iva += $lineIva;
+        //     $total += $lineTotal;
+
+        //     $product = [
+        //         'description' => $concepto['descripcion'],
+        //         'product_key' => $concepto['clave_producto_servicio'],
+        //         'unit_key' => $concepto['clave_unidad'] ?: 'H87',
+        //         'unit_name' => $concepto['unidad'] ?: 'Pieza',
+        //         'price' => $precio,
+        //         'tax_included' => $incluyeIva,
+        //         'taxability' => $ivaTasa > 0 ? '02' : '01',
+        //     ];
+
+        //     if ($ivaTasa > 0) {
+        //         $product['taxes'] = [
+        //             [
+        //                 'type' => 'IVA',
+        //                 'rate' => $ivaTasa,
+        //             ],
+        //         ];
+        //     }
+
+        //     $items[] = [
+        //         'quantity' => $cantidad,
+        //         'product' => $product,
+        //     ];
+        // }
 
         /*
         |--------------------------------------------------------------------------
         | 3. Timbrar CFDI sandbox
         |--------------------------------------------------------------------------
         */
-        $invoice = $facturapi->Invoices->create([
+        $usarComplementoConstruccion = $request->boolean('usar_complemento_construccion');
+
+$complementoConstruccionXml = null;
+$complementoConstruccionPdf = null;
+
+if ($usarComplementoConstruccion) {
+    $cc = $request->input('complemento_construccion');
+
+    $escapeXml = fn ($value) => htmlspecialchars($value ?? '.', ENT_XML1 | ENT_QUOTES, 'UTF-8');
+
+    $complementoConstruccionXml =
+    '<servicioparcial:parcialesconstruccion Version="1.0" NumPerLicoAut="'.$escapeXml($cc['num_per_lico_aut'] ?? '').'">' .
+        '<servicioparcial:Inmueble ' .
+            'Calle="'      .$escapeXml($cc['calle']        ?: '.').'" ' .  // ← cambiado
+            'NoExterior="' .$escapeXml($cc['no_exterior']  ?: '.').'" ' .
+            'NoInterior="' .$escapeXml($cc['no_interior']  ?: '.').'" ' .
+            'Colonia="'    .$escapeXml($cc['colonia']       ?: '.').'" ' .
+            'Localidad="'  .$escapeXml($cc['localidad']    ?: '.').'" ' .
+            'Referencia="' .$escapeXml($cc['referencia']   ?: '.').'" ' .
+            'Municipio="'  .$escapeXml($cc['municipio']    ?: '.').'" ' .
+            'Estado="'     .$escapeXml($cc['estado']       ?: '.').'" ' .
+            'CodigoPostal="'.$escapeXml($cc['codigo_postal'] ?: '.').'" />' .
+    '</servicioparcial:parcialesconstruccion>';
+
+    $complementoConstruccionPdf = [
+        'title' => 'Complemento Servicios Parciales de Construcción',
+        'details' => [
+            [
+                'key' => 'Permiso, licencia o autorización',
+                'value' => $cc['num_per_lico_aut'] ?? '',
+            ],
+            [
+                'key' => 'Inmueble',
+                'value' => trim(($cc['calle'] ?? '') . ', CP ' . ($cc['codigo_postal'] ?? '')),
+            ],
+            [
+                'key' => 'Ubicación',
+                'value' => trim(($cc['municipio'] ?? '') . ', Estado ' . ($cc['estado'] ?? '')),
+            ],
+        ],
+    ];
+}
+       $payload = [
             'customer' => $cliente->facturapi_customer_id,
             'items' => $items,
             'payment_form' => $data['forma_pago'] ?? '03',
             'payment_method' => $data['metodo_pago'],
             'use' => $data['uso_cfdi'],
-        ]);
+        ];
+
+if ($usarComplementoConstruccion) {
+    $payload['complements'] = [
+        [
+            'type' => 'custom',
+            'data' => $complementoConstruccionXml,
+        ],
+    ];
+
+    // ✅ pdf_custom_section debe ser un string HTML
+    $payload['pdf_custom_section'] = '
+        <div>
+            <strong>Complemento Servicios Parciales de Construcción</strong>
+            <table style="width:100%; margin-top:8px; font-size:11px;">
+                <tr>
+                    <td><strong>Permiso / Licencia / Autorización:</strong></td>
+                    <td>' . htmlspecialchars($cc['num_per_lico_aut'] ?? '', ENT_QUOTES) . '</td>
+                </tr>
+                <tr>
+                    <td><strong>Calle:</strong></td>
+                    <td>' . htmlspecialchars($cc['calle'] ?? '', ENT_QUOTES) . '</td>
+                </tr>
+                <tr>
+                    <td><strong>C.P.:</strong></td>
+                    <td>' . htmlspecialchars($cc['codigo_postal'] ?? '', ENT_QUOTES) . '</td>
+                </tr>
+                <tr>
+                    <td><strong>Municipio:</strong></td>
+                    <td>' . htmlspecialchars($cc['municipio'] ?? '', ENT_QUOTES) . '</td>
+                </tr>
+                <tr>
+                    <td><strong>Estado:</strong></td>
+                    <td>' . htmlspecialchars($cc['estado'] ?? '', ENT_QUOTES) . '</td>
+                </tr>
+            </table>
+        </div>
+    ';
+}
+
+\Log::info('PAYLOAD FACTURAPI', $payload);
+
+$invoice = $facturapi->Invoices->create($payload);
+        
 
         /*
         |--------------------------------------------------------------------------
