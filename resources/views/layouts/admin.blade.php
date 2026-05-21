@@ -10,6 +10,13 @@
 </head>
 
 <body class="bg-slate-100 text-slate-900 antialiased">
+    @php
+        $menuPermissions = auth()->user()
+            ? auth()->user()->getAllPermissions()->pluck('name')->flip()
+            : collect();
+
+        $canMenu = fn (string $permission): bool => $menuPermissions->has($permission);
+    @endphp
 
     <div class="flex min-h-screen">
 
@@ -35,46 +42,46 @@
 
             {{-- MENU --}}
             <nav class="flex-1 py-6 space-y-1">
-                 @can('dashboard.access')
+                 @if($canMenu('dashboard.access'))
                 <a href="{{ route('dashboard') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('dashboard') ? 'bg-white/10' : '' }}"
                    title="Dashboard">
                     <span class="text-lg">📊</span>
                     <span class="sidebar-text">Dashboard</span>
                 </a>
-                @endcan
-                @can('factuas.access')
+                @endif
+                @if($canMenu('factuas.access'))
                 <a href="{{ route('facturas.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->is('facturas*') ? 'bg-white/10' : '' }}"
                    title="Facturas">
                     <span class="text-lg">👥</span>
                     <span class="sidebar-text">Facturas</span>
                 </a>
-                @endcan
-                @can('clientes.access')
+                @endif
+                @if($canMenu('clientes.access'))
                 <a href="{{ route('clientes.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->is('clientes*') ? 'bg-white/10' : '' }}"
                    title="Clientes">
                     <span class="text-lg">👥</span>
                     <span class="sidebar-text">Clientes</span>
                 </a>
-                @endcan
-                @can('obras.access')
+                @endif
+                @if($canMenu('obras.access'))
                 <a href="{{ route('obras.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->is('obras*') ? 'bg-white/10' : '' }}"
                    title="Obras">
                     <span class="text-lg">🏗️</span>
                     <span class="sidebar-text">Obras</span>
                 </a>
-                @endcan
-                @can('vehiculos.access')
+                @endif
+                @if($canMenu('vehiculos.access'))
                 <a href="{{ route('mantenimiento.vehiculos.index') }}"
                 class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                 title="Vehículos">
                     <span class="text-lg">🚗</span>
                     <span class="sidebar-text">Vehículos</span>
                 </a>
-                @endcan
+                @endif
                   
                 <a href="{{ route('maquinas.index') }}"
                 class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
@@ -84,43 +91,43 @@
                 </a>
                 
 
-                @can('mantenimiento.access')
+                @if($canMenu('mantenimiento.access'))
                 <a href="{{ route ('mantenimiento.mantenimientos.index')}}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                    title="Mantenimiento">
                     <span class="text-lg">🛠️</span>
                     <span class="sidebar-text">Mantenimiento</span>
                 </a>
-                @endcan
-                @can('empleados.access')
+                @endif
+                @if($canMenu('empleados.access'))
                 <a href="{{ route('empleados.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                    title="Empleados">
                     <span class="text-lg">👥</span>
                     <span class="sidebar-text">Empleados</span>
                 </a>
-                @endcan
-                  @can('checadas.access')
+                @endif
+                  @if($canMenu('checadas.access'))
                 <a href="{{ route('attendance.logs.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                    title="Empleados">
                     <span class="text-lg">👥</span>
                     <span class="sidebar-text">Checadas</span>
                 </a>
-                @endcan
-                @can('nomina.access')
+                @endif
+                @if($canMenu('nomina.access'))
                 <a href="{{ route('nomina.generador.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                    title="Nómina">
                     <span class="text-lg">📄</span>
                     <span class="sidebar-text">Nómina</span>
                 </a>
-                @endcan
-               @can('sat.access')
+                @endif
+               @if($canMenu('sat.access'))
 <div x-data="{ openSat: false }" class="w-full">
 
     <!-- Header SAT -->
-       @can('sat.access')
+       @if($canMenu('sat.access'))
     <button @click="openSat = !openSat"
         class="w-full flex items-center justify-between gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10">
         
@@ -136,7 +143,7 @@
                   d="M19 9l-7 7-7-7"></path>
         </svg>
     </button>
-    @endcan
+    @endif
 
     <!-- Submenu -->
     <div x-show="openSat" x-transition class="ml-10">
@@ -165,7 +172,7 @@
 
     </div>
 </div>
-@endcan
+@endif
                 <!-- @can('sat.access') -->
                 
 <!-- <div x-data="{ open: false }">
@@ -204,7 +211,7 @@
     </div>
 
 </div> -->
-<!-- @endcan --> @can('programacion_pagos.access')
+<!-- @endcan --> @if($canMenu('programacion_pagos.access'))
      <a href="{{ route('programacion-pagos.index') }}"
             class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 transition-colors"
                 title="Programación de pagos">
@@ -217,8 +224,8 @@
                     Programación de pagos
                 </span>
             </a>
-            @endcan
-              @can('cajas_chicas.access')
+            @endif
+              @if($canMenu('cajas_chicas.access'))
                 <a href="{{ route('cajas-chicas.index') }}"
                 class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 transition-colors"
                 title="Cajas Chicas / Reposición">
@@ -231,14 +238,14 @@
                         Cajas chicas
                     </span>
                 </a>
-            @endcan
+            @endif
                 <a href="{{ route('ordenes_compra.index') }}"
                 class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                 title="Órdenes de compra">
                     <span class="text-lg">🛒</span>
                     <span class="sidebar-text">Órdenes de compra</span>
                 </a>
-                @can('productos.access')
+                @if($canMenu('productos.access'))
                <a href="{{ route('productos.index') }}"
                 class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                 title="Productos">
@@ -262,8 +269,8 @@
                     </ul>
                 </li>
 
-                @endcan
-                @can('proveedores.access')    
+                @endif
+                @if($canMenu('proveedores.access'))    
                  <a href="{{ route('proveedores.index') }}"
                     class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('proveedores.*') ? 'bg-white/10' : '' }}"
                     title="Proveedores">
@@ -271,32 +278,32 @@
                         <span class="text-lg">🏭</span>
                         <span class="sidebar-text">Proveedores</span>
                     </a>
-                @endcan
+                @endif
 
-                @can('reportes.access')
+                @if($canMenu('reportes.access'))
                 <a href="{{ route('reportes.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                    title="Reportes">
                     <span class="text-lg">📑</span>
                     <span class="sidebar-text">Reportes</span>
                 </a>
-                @endcan
-                @can('empresa.access')
+                @endif
+                @if($canMenu('empresa.access'))
                 <a href="{{ route('empresa_config.edit') }}"
                     class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                     title="Configuración de empresa">
                         <span class="text-lg">🏢</span>
                         <span class="sidebar-text">Empresa</span>
                     </a>
-                @endcan
-                @can('usuarios app.access')
+                @endif
+                @if($canMenu('usuarios app.access'))
                  <a href="{{ route('usuarios.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                    title="Usuarios App">
                     <span class="text-lg">👥</span>
                     <span class="sidebar-text">Usuarios App</span>
                 </a>
-                @endcan
+                @endif
 
             </nav>
 
