@@ -223,7 +223,7 @@ Route::middleware(['auth', 'verified'])
 
     });
 
-Route::get('/phpinfo', function() { phpinfo(); });
+// Route::get('/phpinfo', function() { phpinfo(); });
 
 Route::prefix('inventario')->group(function () {
     Route::get('stock', [InventarioStockController::class, 'index'])
