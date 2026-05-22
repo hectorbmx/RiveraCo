@@ -3898,7 +3898,11 @@ document.addEventListener('DOMContentLoaded', function () {
     function mostrarResultados(lista) {
         contenedor.innerHTML = '';
         if (!lista.length) {
-            limpiarResultados();
+            const item = document.createElement('div');
+            item.className = 'px-3 py-2 text-slate-500';
+            item.textContent = 'No existe un empleado con ese nombre';
+            contenedor.appendChild(item);
+            contenedor.classList.remove('hidden');
             return;
         }
 
@@ -3906,16 +3910,40 @@ document.addEventListener('DOMContentLoaded', function () {
             const apellidos = emp.Apellidos ?? '';
             const nombre    = emp.Nombre ?? '';
             const puesto    = emp.Puesto ?? '';
+            const obraAsignada = emp.obra_asignada ?? null;
+            const obraTexto = obraAsignada
+                ? ((obraAsignada.clave_obra ? obraAsignada.clave_obra + ' - ' : '') + (obraAsignada.nombre ?? '')).trim()
+                : '';
 
             const nombreCompleto = (apellidos + ' ' + nombre).trim();
             const texto = nombreCompleto + (puesto ? ' (' + puesto + ')' : '');
 
             const item = document.createElement('button');
             item.type = 'button';
-            item.className = 'w-full text-left px-3 py-2 hover:bg-slate-100';
-            item.textContent = texto;
+            item.className = emp.asignado
+                ? 'w-full text-left px-3 py-2 bg-amber-50 text-slate-500 cursor-not-allowed border-b border-amber-100 last:border-b-0'
+                : 'w-full text-left px-3 py-2 hover:bg-slate-100 border-b border-slate-100 last:border-b-0';
+            item.disabled = !!emp.asignado;
+
+            const titulo = document.createElement('div');
+            titulo.className = 'font-medium';
+            titulo.textContent = texto;
+            item.appendChild(titulo);
+
+            if (emp.asignado) {
+                const detalle = document.createElement('div');
+                detalle.className = 'mt-0.5 text-[11px] text-amber-700';
+                detalle.textContent = emp.asignado_en_esta_obra
+                    ? 'Ya está asignado en esta obra'
+                    : 'Ya está asignado en otra obra' + (obraTexto ? ': ' + obraTexto : '');
+                item.appendChild(detalle);
+            }
 
             item.addEventListener('click', function () {
+                if (emp.asignado) {
+                    return;
+                }
+
                 inputBuscar.value = nombreCompleto;
                 inputId.value = emp.id_Empleado;
                 limpiarResultados();
@@ -4166,4 +4194,3 @@ function calcularFila(idCampo) {
 //     });
 // });
 </script>
-

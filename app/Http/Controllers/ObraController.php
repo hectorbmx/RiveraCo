@@ -427,16 +427,13 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
             $currentStatus = $reverse[$currentStatus] ?? null;
         }
 
-    // Empleados que YA están asignados activamente en alguna obra
-    $empleadosOcupadosIds = ObraEmpleado::where('activo', true)
-        ->whereNull('fecha_baja')
-        ->pluck('empleado_id');
-
-
+    // Empleados activos para el buscador, incluyendo su asignacion actual si existe.
     $empleadosAsignables = Empleado::query()
+        ->with([
+            'asignacionActiva.obra:id,nombre,clave_obra',
+        ])
         ->where('Estatus', 1)
         ->whereIn('puesto_base', $puestosBaseAsignables)
-        ->whereNotIn('id_Empleado', $empleadosOcupadosIds)
         ->orderBy('Apellidos')
         ->orderBy('Nombre')
         ->get([
@@ -445,7 +442,29 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
             'Apellidos',
             'Puesto',
             'puesto_base',
-        ]);
+        ])
+        ->map(function ($empleado) use ($obra) {
+            $asignacionActiva = $empleado->asignacionActiva;
+            $obraActiva = $asignacionActiva?->obra;
+
+            return [
+                'id_Empleado' => $empleado->id_Empleado,
+                'Nombre' => $empleado->Nombre,
+                'Apellidos' => $empleado->Apellidos,
+                'Puesto' => $empleado->Puesto,
+                'puesto_base' => $empleado->puesto_base,
+                'asignado' => (bool) $asignacionActiva,
+                'asignado_en_esta_obra' => $asignacionActiva
+                    ? (int) $asignacionActiva->obra_id === (int) $obra->id
+                    : false,
+                'obra_asignada' => $obraActiva ? [
+                    'id' => $obraActiva->id,
+                    'nombre' => $obraActiva->nombre,
+                    'clave_obra' => $obraActiva->clave_obra,
+                ] : null,
+            ];
+        })
+        ->values();
 
     // Inicializamos vacíos por si no estamos en ese tab
     $maquinasAsignadasActivas    = collect();
