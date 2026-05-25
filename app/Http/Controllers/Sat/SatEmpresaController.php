@@ -209,6 +209,22 @@ public function storeCsfRequest(SatEmpresa $empresa)
         ->with('success', 'Solicitud enviada, en un momento aparecerá el captcha.');
 }
 
+public function storeD32Request(SatEmpresa $empresa)
+{
+    $documentRequest = SatDocumentRequest::create([
+        'sat_empresa_id' => $empresa->id,
+        'type'           => SatDocumentRequest::TYPE_D32,
+        'status'         => SatDocumentRequest::STATUS_PENDING,
+        'requested_by'   => auth()->id(),
+    ]);
+
+    \App\Jobs\Sat\ProcessSatCsfRequestJob::dispatch($documentRequest->id);
+
+    return redirect()
+        ->route('sat.empresas.index')
+        ->with('success', 'Solicitud D32 enviada, en un momento aparecera el captcha.');
+}
+
 public function captchaImage(string $token)
 {
     $session = \App\Models\SatCaptchaSession::where('token', $token)

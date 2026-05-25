@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class SatDocumentRequest extends Model
 {
     public const TYPE_CSF = 'csf';
+    public const TYPE_D32 = 'd32';
 
     public const STATUS_PENDING = 'pending';
     public const STATUS_PROCESSING = 'processing';

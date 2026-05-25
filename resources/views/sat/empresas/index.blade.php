@@ -115,6 +115,13 @@
                                         Solicitar CSF
                                     </button>
                                 </form>
+                                <form action="{{ route('sat.empresas.solicitar-d32', $empresa) }}" method="POST" style="display:inline;">
+                                    @csrf
+                                    <button type="submit"
+                                        class="text-violet-600 hover:text-violet-800 font-medium ml-2">
+                                        Solicitar D32
+                                    </button>
+                                </form>
                                 <a href="{{ route('sat.cfdis.estadisticas', $empresa->id) }}"
                                     class="text-sm font-medium text-emerald-600 hover:text-emerald-800">
                                         Estadísticas
@@ -161,6 +168,8 @@
             <td class="px-6 py-4 text-sm text-slate-700">
                 @if($request->type === \App\Models\SatDocumentRequest::TYPE_CSF)
                     Constancia de Situación Fiscal
+                @elseif($request->type === \App\Models\SatDocumentRequest::TYPE_D32)
+                    Opinion de cumplimiento 32-D
                 @else
                     {{ strtoupper($request->type) }}
                 @endif

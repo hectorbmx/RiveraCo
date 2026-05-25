@@ -18,6 +18,10 @@ use App\Services\Sat\Resolvers\StoreCaptchaResolver;
 
 class CsfRequestService
 {
+ public function __construct(private readonly SatCaptchaResolverFactory $captchaResolverFactory)
+ {
+ }
+
  public function handle(SatDocumentRequest $documentRequest): void
     {
         $documentRequest->update([
@@ -47,11 +51,7 @@ class CsfRequestService
 
         $documentRequest->update(['captcha_token' => $captchaToken]);
 
-        $captchaSolver = new DatabaseCaptchaResolver(
-            token: $captchaToken,
-            timeoutSeconds: 300,
-            pollIntervalSeconds: 3,
-        );
+        $captchaSolver = $this->captchaResolverFactory->make($captchaToken);
 
         $scraper = Scraper::create(
             $client,

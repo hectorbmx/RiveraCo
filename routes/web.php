@@ -107,6 +107,7 @@ Route::middleware(['auth', 'verified'])
             Route::get('/{empresa}/edit', [SatEmpresaController::class, 'edit'])->name('edit');
             Route::put('/{empresa}', [SatEmpresaController::class, 'update'])->name('update');
             Route::post('/{empresa}/solicitar-csf', [SatEmpresaController::class, 'storeCsfRequest'])->name('solicitar-csf');
+            Route::post('/{empresa}/solicitar-d32', [SatEmpresaController::class, 'storeD32Request'])->name('solicitar-d32');
         });
 
         /*

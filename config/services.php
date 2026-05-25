@@ -45,4 +45,16 @@ return [
     'key' => env('ANTI_CAPTCHA_KEY'),
 ],
 
+'sat_captcha' => [
+    // manual: usuario captura captcha; command/local: resolver interno; auto: intenta interno y cae a manual.
+    'driver' => env('SAT_CAPTCHA_DRIVER', 'auto'),
+    'command' => env('SAT_CAPTCHA_COMMAND'),
+    'local_url' => env('SAT_CAPTCHA_LOCAL_URL'),
+    'local_initial_wait' => env('SAT_CAPTCHA_LOCAL_INITIAL_WAIT', 1),
+    'local_timeout' => env('SAT_CAPTCHA_LOCAL_TIMEOUT', 30),
+    'local_sleep_ms' => env('SAT_CAPTCHA_LOCAL_SLEEP_MS', 500),
+    'manual_timeout' => env('SAT_CAPTCHA_MANUAL_TIMEOUT', 300),
+    'manual_poll_seconds' => env('SAT_CAPTCHA_MANUAL_POLL_SECONDS', 3),
+],
+
 ];

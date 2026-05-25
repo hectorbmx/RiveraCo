@@ -4,6 +4,7 @@ namespace App\Jobs\Sat;
 
 use App\Models\SatDocumentRequest;
 use App\Services\Sat\CsfRequestService;
+use App\Services\Sat\D32RequestService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -21,7 +22,7 @@ class ProcessSatCsfRequestJob implements ShouldQueue
         $this->documentRequestId = $documentRequestId;
     }
 
-   public function handle(CsfRequestService $csfRequestService): void
+   public function handle(CsfRequestService $csfRequestService, D32RequestService $d32RequestService): void
 {
     $documentRequest = SatDocumentRequest::find($this->documentRequestId);
 
@@ -30,7 +31,11 @@ class ProcessSatCsfRequestJob implements ShouldQueue
     }
 
     try {
-        $csfRequestService->handle($documentRequest);
+        if ($documentRequest->type === SatDocumentRequest::TYPE_D32) {
+            $d32RequestService->handle($documentRequest);
+        } else {
+            $csfRequestService->handle($documentRequest);
+        }
     } catch (\Throwable $e) {
 
         $documentRequest->update([
