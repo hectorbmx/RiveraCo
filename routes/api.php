@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\AsistenciasController;
 use App\Http\Controllers\Api\V1\VehiculoKmController;
 use App\Http\Controllers\Api\V1\ComisionController;
 use App\Http\Controllers\Api\V1\MaquinaRegistroController;
+use App\Http\Controllers\Api\V1\ResidenteReposicionGastoController;
 use App\Http\Controllers\Api\V1\Gerencial\ObrasGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\MaquinasGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\PersonalGerencialController;
@@ -73,6 +74,14 @@ Route::prefix('v1')->group(function () {
 
         
         Route::get('obras/{obra}/comisiones', [ObraComisionesApiController::class, 'index']);
+
+        Route::prefix('residente/reposicion-gastos')->group(function () {
+            Route::get('/', [ResidenteReposicionGastoController::class, 'index']);
+            Route::get('/catalogo', [ResidenteReposicionGastoController::class, 'catalogo']);
+            Route::get('/buscar-cfdis', [ResidenteReposicionGastoController::class, 'buscarCfdis']);
+            Route::post('/', [ResidenteReposicionGastoController::class, 'store']);
+            Route::get('/{reposicion}', [ResidenteReposicionGastoController::class, 'show']);
+        });
 
 
         

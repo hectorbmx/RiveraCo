@@ -67,6 +67,13 @@
                 </a>
                 @endif
                 @if($canMenu('obras.access'))
+                <a href="{{ route('presupuesto.index') }}"
+                   class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('presupuesto.*') ? 'bg-white/10' : '' }}"
+                   title="Presupuestos">
+                    <span class="text-lg">ðŸ“‹</span>
+                    <span class="sidebar-text">Presupuestos</span>
+                </a>
+
                 <a href="{{ route('obras.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->is('obras*') ? 'bg-white/10' : '' }}"
                    title="Obras">

@@ -15,6 +15,8 @@ use App\Models\CuentaBancoEmpresa;
 use Illuminate\Support\Facades\DB;
 use App\Models\EmpresaDocumentoTipo;
 use Illuminate\Support\Str;
+use App\Models\Empleado;
+use App\Models\EquipoComputo;
 
 class EmpresaConfigController extends Controller
 {
@@ -55,6 +57,27 @@ public function index(){
             ->where('empresa_config_id', $config->id)
             ->orderBy('orden')
             ->orderBy('nombre')
+            ->get();
+
+        $equiposComputo = EquipoComputo::query()
+            ->with([
+                'area',
+                'responsableActual',
+                'movimientos.responsableAnterior',
+                'movimientos.responsableNuevo',
+                'movimientos.areaAnterior',
+                'movimientos.areaNueva',
+                'movimientos.creador',
+            ])
+            ->orderByRaw("CASE WHEN estatus = 'baja' THEN 1 ELSE 0 END")
+            ->orderBy('codigo_inventario')
+            ->orderBy('marca')
+            ->get();
+
+        $empleadosResponsables = Empleado::query()
+            ->where('Estatus', 1)
+            ->orderBy('Nombre')
+            ->orderBy('Apellidos')
             ->get();
         
         // $Catrol = CatalogoRol::orderBy('id')->orderBy('nombre')->get();
@@ -121,6 +144,8 @@ public function index(){
         'tarifarioDetalles',
         'cuentasBancoEmpresa',
         'documentosEmpleadoTipos',
+        'equiposComputo',
+        'empleadosResponsables',
     ));
 }
 

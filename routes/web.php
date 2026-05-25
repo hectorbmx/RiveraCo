@@ -67,6 +67,7 @@ use App\Http\Controllers\Sat\SatFacturaPagoController;
 use App\Http\Controllers\ProgramacionPagosController;
 use App\Http\Controllers\ObraReposicionGastoController;
 use App\Http\Controllers\CajaChicaController;
+use App\Http\Controllers\EquipoComputoController;
 
 
 
@@ -335,6 +336,11 @@ Route::middleware('auth','verified')->group(function () {
         Route::put('/configuracion-empresa/documentos-empleado/{documentoTipo}', [EmpresaConfigController::class, 'updateDocumentoEmpleado'])->name('empresa_config.documentos.update');
         Route::patch('/configuracion-empresa/documentos-empleado/{documentoTipo}/toggle-activo', [EmpresaConfigController::class, 'toggleDocumentoEmpleadoActivo'])->name('empresa_config.documentos.toggle-activo');
         Route::delete('/configuracion-empresa/documentos-empleado/{documentoTipo}', [EmpresaConfigController::class, 'destroyDocumentoEmpleado'])->name('empresa_config.documentos.destroy');
+
+        Route::post('/configuracion-empresa/equipos-computo', [EquipoComputoController::class, 'store'])->name('empresa_config.equipos-computo.store');
+        Route::put('/configuracion-empresa/equipos-computo/{equipo}', [EquipoComputoController::class, 'update'])->name('empresa_config.equipos-computo.update');
+        Route::patch('/configuracion-empresa/equipos-computo/{equipo}/asignar', [EquipoComputoController::class, 'asignar'])->name('empresa_config.equipos-computo.asignar');
+        Route::patch('/configuracion-empresa/equipos-computo/{equipo}/baja', [EquipoComputoController::class, 'baja'])->name('empresa_config.equipos-computo.baja');
 
 
         Route::middleware(['role:admin|super-admin'])->prefix('configuracion-empresa')->name('empresa_config.')->group(function () {

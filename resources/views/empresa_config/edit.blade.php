@@ -54,6 +54,7 @@
                                 'maquinaria'=> ['label' => 'Maquinaria', 'desc' => 'Servicios por horas y tiempos'],
                                 'rrhh'      => ['label' => 'Puestos', 'desc' => 'Horas y horas extra'],
                                 'documentos' => ['label' => 'Documentos','desc'  => 'Documentos requeridos para empleados'],
+                                'equipos_computo' => ['label' => 'Equipo de computo', 'desc' => 'Inventario y responsables'],
                                 'comisiones'=> ['label' => 'Comisiones', 'desc' => 'Reglas por tipo de trabajo'],
                                 'reglas'    => ['label' => 'Reglas', 'desc' => 'Políticas y flujos'],
                                 'alertas'   => ['label' => 'Alertas', 'desc' => 'Notificaciones y avisos'],
@@ -862,6 +863,8 @@
         </div>
     </div>
 </div>
+
+@include('empresa_config.partials._equipos_computo')
 
                {{-- ======================
      COMISIONES
