@@ -3,6 +3,14 @@
 @section('title', 'Empresas SAT')
 
 @section('content')
+@php
+    $hasDocumentsWaiting = $documentRequests->contains(function ($documentRequest) {
+        return in_array($documentRequest->status, [
+            \App\Models\SatDocumentRequest::STATUS_PENDING,
+            \App\Models\SatDocumentRequest::STATUS_PROCESSING,
+        ], true) && empty($documentRequest->captcha_token);
+    });
+@endphp
 <div class="max-w-7xl mx-auto px-4 py-6">
 @if(session('error'))
     <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
@@ -306,6 +314,7 @@
                     msg.textContent = 'Respuesta enviada, procesando...';
                     msg.className = 'text-xs mt-2 text-green-600';
                     input.disabled = true;
+                    setTimeout(() => window.location.reload(), 3000);
                 } else {
                     msg.textContent = data.error ?? 'Error al enviar.';
                     msg.className = 'text-xs mt-2 text-red-500';
@@ -360,4 +369,9 @@
     </div>
 
 </div>
+@if($hasDocumentsWaiting)
+<script>
+    setTimeout(() => window.location.reload(), 5000);
+</script>
+@endif
 @endsection

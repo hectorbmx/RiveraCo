@@ -13,7 +13,6 @@
         "laravel/sanctum": "*",
         "laravel/tinker": "^2.8",
         "phpcfdi/csf-sat-scraper": "^0.1.0",
-        "phpcfdi/image-captcha-resolver-boxfactura-ai": "0.2.0",
         "phpcfdi/opinion-cumplimiento-sat-scraper": "0.1.1",
         "phpcfdi/sat-ws-descarga-masiva": "^1.1",
         "rats/zkteco": "^002.0",
@@ -47,11 +46,7 @@
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
         ],
-        "post-install-cmd": [
-            "OnnxRuntime\\Vendor::check"
-        ],
         "post-update-cmd": [
-            "OnnxRuntime\\Vendor::check",
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
         ],
         "post-root-package-install": [

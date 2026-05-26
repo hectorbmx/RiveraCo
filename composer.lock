@@ -4,52 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0e66c69920464e68bc3eda95b69d5f1a",
+    "content-hash": "37cb19083054dfe0a499e9b6f44a17e6",
     "packages": [
-        {
-            "name": "ankane/onnxruntime",
-            "version": "v0.2.9",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/ankane/onnxruntime-php.git",
-                "reference": "9fc88a89e8682a3f077817c42f26ec231832f696"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/ankane/onnxruntime-php/zipball/9fc88a89e8682a3f077817c42f26ec231832f696",
-                "reference": "9fc88a89e8682a3f077817c42f26ec231832f696",
-                "shasum": ""
-            },
-            "require": {
-                "ext-ffi": ">= 8.1",
-                "php": ">= 8.1"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "^10"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "OnnxRuntime\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Andrew Kane",
-                    "email": "andrew@ankane.org"
-                }
-            ],
-            "description": "Run ONNX models in PHP",
-            "support": {
-                "issues": "https://github.com/ankane/onnxruntime-php/issues",
-                "source": "https://github.com/ankane/onnxruntime-php"
-            },
-            "time": "2026-02-20T06:14:44+00:00"
-        },
         {
             "name": "barryvdh/laravel-dompdf",
             "version": "v3.1.2",
@@ -1487,68 +1443,6 @@
                 }
             ],
             "time": "2025-08-22T14:27:06+00:00"
-        },
-        {
-            "name": "imagine/imagine",
-            "version": "1.5.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/php-imagine/Imagine.git",
-                "reference": "f9ed796eefb77c2f0f2167e1d4e36bc2b5ed6b0c"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/php-imagine/Imagine/zipball/f9ed796eefb77c2f0f2167e1d4e36bc2b5ed6b0c",
-                "reference": "f9ed796eefb77c2f0f2167e1d4e36bc2b5ed6b0c",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=7.1"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "^4.8 || ^5.7 || ^6.5 || ^7.5 || ^8.4 || ^9.3"
-            },
-            "suggest": {
-                "ext-exif": "to read EXIF metadata",
-                "ext-gd": "to use the GD implementation",
-                "ext-gmagick": "to use the Gmagick implementation",
-                "ext-imagick": "to use the Imagick implementation"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-develop": "1.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Imagine\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Bulat Shakirzyanov",
-                    "email": "mallluhuct@gmail.com",
-                    "homepage": "http://avalanche123.com"
-                }
-            ],
-            "description": "Image processing for PHP",
-            "homepage": "http://imagine.readthedocs.org/",
-            "keywords": [
-                "drawing",
-                "graphics",
-                "image manipulation",
-                "image processing"
-            ],
-            "support": {
-                "issues": "https://github.com/php-imagine/Imagine/issues",
-                "source": "https://github.com/php-imagine/Imagine/tree/1.5.2"
-            },
-            "time": "2026-01-09T10:45:12+00:00"
         },
         {
             "name": "laravel/framework",
@@ -3205,61 +3099,6 @@
                 "source": "https://github.com/phpcfdi/image-captcha-resolver"
             },
             "time": "2025-09-13T20:00:42+00:00"
-        },
-        {
-            "name": "phpcfdi/image-captcha-resolver-boxfactura-ai",
-            "version": "v0.2.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/phpcfdi/image-captcha-resolver-boxfactura-ai.git",
-                "reference": "fd43de983ffef6e6ccfeceab68bc13311e1c42d3"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/phpcfdi/image-captcha-resolver-boxfactura-ai/zipball/fd43de983ffef6e6ccfeceab68bc13311e1c42d3",
-                "reference": "fd43de983ffef6e6ccfeceab68bc13311e1c42d3",
-                "shasum": ""
-            },
-            "require": {
-                "ankane/onnxruntime": "^0.2.3",
-                "imagine/imagine": "^1.3",
-                "php": "^8.2",
-                "phpcfdi/image-captcha-resolver": "^0.3.0",
-                "symfony/yaml": "^6.4 || ^7.1"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "^11.5",
-                "vlucas/phpdotenv": "^5.3"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "PhpCfdi\\ImageCaptchaResolver\\BoxFacturaAI\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Carlos C Soto",
-                    "email": "eclipxe13@gmail.com",
-                    "homepage": "https://eclipxe.com.mx/"
-                }
-            ],
-            "description": "Resolución de captchas del SAT usando Inteligencia Artificial",
-            "homepage": "https://github.com/phpcfdi/image-captcha-resolver-boxfactura-ai",
-            "keywords": [
-                "captcha",
-                "mexico",
-                "sat"
-            ],
-            "support": {
-                "issues": "https://github.com/phpcfdi/image-captcha-resolver-boxfactura-ai/issues",
-                "source": "https://github.com/phpcfdi/image-captcha-resolver-boxfactura-ai"
-            },
-            "time": "2025-09-13T21:09:22+00:00"
         },
         {
             "name": "phpcfdi/opinion-cumplimiento-sat-scraper",
@@ -6773,82 +6612,6 @@
             "time": "2025-09-25T15:37:27+00:00"
         },
         {
-            "name": "symfony/yaml",
-            "version": "v7.3.5",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/symfony/yaml.git",
-                "reference": "90208e2fc6f68f613eae7ca25a2458a931b1bacc"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/symfony/yaml/zipball/90208e2fc6f68f613eae7ca25a2458a931b1bacc",
-                "reference": "90208e2fc6f68f613eae7ca25a2458a931b1bacc",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=8.2",
-                "symfony/deprecation-contracts": "^2.5|^3.0",
-                "symfony/polyfill-ctype": "^1.8"
-            },
-            "conflict": {
-                "symfony/console": "<6.4"
-            },
-            "require-dev": {
-                "symfony/console": "^6.4|^7.0"
-            },
-            "bin": [
-                "Resources/bin/yaml-lint"
-            ],
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Symfony\\Component\\Yaml\\": ""
-                },
-                "exclude-from-classmap": [
-                    "/Tests/"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Fabien Potencier",
-                    "email": "fabien@symfony.com"
-                },
-                {
-                    "name": "Symfony Community",
-                    "homepage": "https://symfony.com/contributors"
-                }
-            ],
-            "description": "Loads and dumps YAML files",
-            "homepage": "https://symfony.com",
-            "support": {
-                "source": "https://github.com/symfony/yaml/tree/v7.3.5"
-            },
-            "funding": [
-                {
-                    "url": "https://symfony.com/sponsor",
-                    "type": "custom"
-                },
-                {
-                    "url": "https://github.com/fabpot",
-                    "type": "github"
-                },
-                {
-                    "url": "https://github.com/nicolas-grekas",
-                    "type": "github"
-                },
-                {
-                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
-                    "type": "tidelift"
-                }
-            ],
-            "time": "2025-09-27T09:00:46+00:00"
-        },
-        {
             "name": "thecodingmachine/safe",
             "version": "v3.4.0",
             "source": {
@@ -9702,6 +9465,82 @@
                 }
             ],
             "time": "2025-02-20T13:13:55+00:00"
+        },
+        {
+            "name": "symfony/yaml",
+            "version": "v7.3.5",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/yaml.git",
+                "reference": "90208e2fc6f68f613eae7ca25a2458a931b1bacc"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/yaml/zipball/90208e2fc6f68f613eae7ca25a2458a931b1bacc",
+                "reference": "90208e2fc6f68f613eae7ca25a2458a931b1bacc",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.2",
+                "symfony/deprecation-contracts": "^2.5|^3.0",
+                "symfony/polyfill-ctype": "^1.8"
+            },
+            "conflict": {
+                "symfony/console": "<6.4"
+            },
+            "require-dev": {
+                "symfony/console": "^6.4|^7.0"
+            },
+            "bin": [
+                "Resources/bin/yaml-lint"
+            ],
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Symfony\\Component\\Yaml\\": ""
+                },
+                "exclude-from-classmap": [
+                    "/Tests/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Fabien Potencier",
+                    "email": "fabien@symfony.com"
+                },
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://symfony.com/contributors"
+                }
+            ],
+            "description": "Loads and dumps YAML files",
+            "homepage": "https://symfony.com",
+            "support": {
+                "source": "https://github.com/symfony/yaml/tree/v7.3.5"
+            },
+            "funding": [
+                {
+                    "url": "https://symfony.com/sponsor",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/fabpot",
+                    "type": "github"
+                },
+                {
+                    "url": "https://github.com/nicolas-grekas",
+                    "type": "github"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2025-09-27T09:00:46+00:00"
         },
         {
             "name": "theseer/tokenizer",

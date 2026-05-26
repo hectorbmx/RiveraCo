@@ -18,8 +18,15 @@ class SatCaptchaResolverFactory
 
         if ($driver === 'boxfactura' || $driver === 'auto') {
             $configFile = storage_path('sat-captcha-ai-model/configs.yaml');
-            if (is_file($configFile)) {
-                $resolvers[] = BoxFacturaAIResolver::createFromConfigs($configFile);
+            if (is_file($configFile) && class_exists(BoxFacturaAIResolver::class)) {
+                try {
+                    $resolvers[] = BoxFacturaAIResolver::createFromConfigs($configFile);
+                } catch (\Throwable $e) {
+                    logger()->warning('SAT captcha BoxFactura AI no disponible; se usara captcha manual.', [
+                        'message' => $e->getMessage(),
+                        'class' => get_class($e),
+                    ]);
+                }
             }
         }
 
