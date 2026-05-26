@@ -63,11 +63,13 @@ public function index(){
             ->with([
                 'area',
                 'responsableActual',
+                'fotos',
                 'movimientos.responsableAnterior',
                 'movimientos.responsableNuevo',
                 'movimientos.areaAnterior',
                 'movimientos.areaNueva',
                 'movimientos.creador',
+                'movimientos.fotos',
             ])
             ->orderByRaw("CASE WHEN estatus = 'baja' THEN 1 ELSE 0 END")
             ->orderBy('codigo_inventario')

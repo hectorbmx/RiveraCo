@@ -57,4 +57,9 @@ class EquipoComputoMovimiento extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function fotos()
+    {
+        return $this->hasMany(EquipoComputoFoto::class, 'equipo_computo_movimiento_id');
+    }
 }

@@ -348,6 +348,7 @@ Route::middleware('auth','verified')->group(function () {
         Route::patch('/configuracion-empresa/documentos-empleado/{documentoTipo}/toggle-activo', [EmpresaConfigController::class, 'toggleDocumentoEmpleadoActivo'])->name('empresa_config.documentos.toggle-activo');
         Route::delete('/configuracion-empresa/documentos-empleado/{documentoTipo}', [EmpresaConfigController::class, 'destroyDocumentoEmpleado'])->name('empresa_config.documentos.destroy');
 
+        Route::get('/configuracion-empresa/equipos-computo/buscar-facturas', [EquipoComputoController::class, 'buscarFacturas'])->name('empresa_config.equipos-computo.buscar-facturas');
         Route::post('/configuracion-empresa/equipos-computo', [EquipoComputoController::class, 'store'])->name('empresa_config.equipos-computo.store');
         Route::put('/configuracion-empresa/equipos-computo/{equipo}', [EquipoComputoController::class, 'update'])->name('empresa_config.equipos-computo.update');
         Route::patch('/configuracion-empresa/equipos-computo/{equipo}/asignar', [EquipoComputoController::class, 'asignar'])->name('empresa_config.equipos-computo.asignar');

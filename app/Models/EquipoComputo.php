@@ -57,6 +57,12 @@ class EquipoComputo extends Model
             ->orderByDesc('created_at');
     }
 
+    public function fotos()
+    {
+        return $this->hasMany(EquipoComputoFoto::class, 'equipo_computo_id')
+            ->latest();
+    }
+
     public function getNombreAttribute(): string
     {
         return trim($this->marca . ' ' . ($this->modelo ?? ''));

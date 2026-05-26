@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\EquipoComputo;
+use App\Models\EquipoComputoFoto;
 use App\Models\EquipoComputoMovimiento;
+use App\Models\SatCfdi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +19,7 @@ class EquipoComputoController extends Controller
     public function store(Request $request)
     {
         $data = $this->validatedData($request);
+        unset($data['factura_archivo'], $data['fotos']);
         $data['responsable_actual_id'] = $data['responsable_actual_id'] ?? null;
         $data['area_id'] = $data['area_id'] ?? null;
         $data['estatus'] = $data['estatus'] ?? 'activo';
@@ -33,7 +36,7 @@ class EquipoComputoController extends Controller
         DB::transaction(function () use ($data, $request) {
             $equipo = EquipoComputo::create($data);
 
-            $this->registrarMovimiento($equipo, [
+            $movimiento = $this->registrarMovimiento($equipo, [
                 'tipo' => 'alta',
                 'responsable_nuevo_id' => $equipo->responsable_actual_id,
                 'area_nueva_id' => $equipo->area_id,
@@ -42,6 +45,8 @@ class EquipoComputoController extends Controller
                 'fecha_movimiento' => now()->toDateString(),
                 'notas' => $request->input('movimiento_notas') ?: 'Alta del equipo de computo.',
             ]);
+
+            $this->guardarFotos($request, $equipo, $movimiento);
         });
 
         return redirect()
@@ -52,6 +57,7 @@ class EquipoComputoController extends Controller
     public function update(Request $request, EquipoComputo $equipo)
     {
         $data = $this->validatedData($request, $equipo);
+        unset($data['factura_archivo'], $data['fotos']);
         $data['responsable_actual_id'] = $data['responsable_actual_id'] ?? null;
         $data['area_id'] = $data['area_id'] ?? null;
 
@@ -74,13 +80,15 @@ class EquipoComputoController extends Controller
         DB::transaction(function () use ($equipo, $data, $anterior, $request) {
             $equipo->update($data);
 
+            $movimiento = null;
+
             if (
                 (int) ($anterior['responsable_actual_id'] ?? 0) !== (int) ($equipo->responsable_actual_id ?? 0)
                 || (int) ($anterior['area_id'] ?? 0) !== (int) ($equipo->area_id ?? 0)
                 || (string) ($anterior['ubicacion'] ?? '') !== (string) ($equipo->ubicacion ?? '')
                 || (string) ($anterior['estatus'] ?? '') !== (string) ($equipo->estatus ?? '')
             ) {
-                $this->registrarMovimiento($equipo, [
+                $movimiento = $this->registrarMovimiento($equipo, [
                     'tipo' => 'actualizacion',
                     'responsable_anterior_id' => $anterior['responsable_actual_id'],
                     'responsable_nuevo_id' => $equipo->responsable_actual_id,
@@ -93,7 +101,19 @@ class EquipoComputoController extends Controller
                     'fecha_movimiento' => now()->toDateString(),
                     'notas' => $request->input('movimiento_notas') ?: 'Actualizacion de datos del equipo.',
                 ]);
+            } elseif ($request->hasFile('fotos')) {
+                $movimiento = $this->registrarMovimiento($equipo, [
+                    'tipo' => 'fotos',
+                    'responsable_nuevo_id' => $equipo->responsable_actual_id,
+                    'area_nueva_id' => $equipo->area_id,
+                    'ubicacion_nueva' => $equipo->ubicacion,
+                    'estatus_nuevo' => $equipo->estatus,
+                    'fecha_movimiento' => now()->toDateString(),
+                    'notas' => $request->input('movimiento_notas') ?: 'Evidencia fotografica del equipo.',
+                ]);
             }
+
+            $this->guardarFotos($request, $equipo, $movimiento);
         });
 
         return redirect()
@@ -109,6 +129,8 @@ class EquipoComputoController extends Controller
             'ubicacion' => ['nullable', 'string', 'max:160'],
             'fecha_movimiento' => ['required', 'date'],
             'notas' => ['nullable', 'string'],
+            'fotos' => ['nullable', 'array', 'max:3'],
+            'fotos.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
         $anterior = [
@@ -118,7 +140,7 @@ class EquipoComputoController extends Controller
             'estatus' => $equipo->estatus,
         ];
 
-        DB::transaction(function () use ($equipo, $data, $anterior) {
+        DB::transaction(function () use ($equipo, $data, $anterior, $request) {
             $equipo->update([
                 'responsable_actual_id' => $data['responsable_actual_id'],
                 'area_id' => $data['area_id'] ?? $equipo->area_id,
@@ -126,7 +148,7 @@ class EquipoComputoController extends Controller
                 'estatus' => 'asignado',
             ]);
 
-            $this->registrarMovimiento($equipo, [
+            $movimiento = $this->registrarMovimiento($equipo, [
                 'tipo' => 'cambio_responsable',
                 'responsable_anterior_id' => $anterior['responsable_actual_id'],
                 'responsable_nuevo_id' => $equipo->responsable_actual_id,
@@ -139,6 +161,8 @@ class EquipoComputoController extends Controller
                 'fecha_movimiento' => $data['fecha_movimiento'],
                 'notas' => $data['notas'] ?? null,
             ]);
+
+            $this->guardarFotos($request, $equipo, $movimiento);
         });
 
         return redirect()
@@ -151,6 +175,8 @@ class EquipoComputoController extends Controller
         $data = $request->validate([
             'fecha_movimiento' => ['required', 'date'],
             'notas' => ['nullable', 'string'],
+            'fotos' => ['nullable', 'array', 'max:3'],
+            'fotos.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
         $anterior = [
@@ -160,13 +186,13 @@ class EquipoComputoController extends Controller
             'estatus' => $equipo->estatus,
         ];
 
-        DB::transaction(function () use ($equipo, $data, $anterior) {
+        DB::transaction(function () use ($equipo, $data, $anterior, $request) {
             $equipo->update([
                 'responsable_actual_id' => null,
                 'estatus' => 'baja',
             ]);
 
-            $this->registrarMovimiento($equipo, [
+            $movimiento = $this->registrarMovimiento($equipo, [
                 'tipo' => 'baja',
                 'responsable_anterior_id' => $anterior['responsable_actual_id'],
                 'responsable_nuevo_id' => null,
@@ -179,6 +205,8 @@ class EquipoComputoController extends Controller
                 'fecha_movimiento' => $data['fecha_movimiento'],
                 'notas' => $data['notas'] ?? null,
             ]);
+
+            $this->guardarFotos($request, $equipo, $movimiento);
         });
 
         return redirect()
@@ -215,14 +243,68 @@ class EquipoComputoController extends Controller
             'estatus' => ['nullable', 'string', Rule::in($this->estatus)],
             'notas' => ['nullable', 'string'],
             'movimiento_notas' => ['nullable', 'string'],
+            'fotos' => ['nullable', 'array', 'max:3'],
+            'fotos.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
     }
 
-    private function registrarMovimiento(EquipoComputo $equipo, array $data): void
+    public function buscarFacturas(Request $request)
     {
-        EquipoComputoMovimiento::create(array_merge([
+        $data = $request->validate([
+            'q' => ['required', 'string', 'min:2', 'max:120'],
+        ]);
+
+        $term = trim($data['q']);
+
+        $cfdis = SatCfdi::query()
+            ->where(function ($query) use ($term) {
+                $query->where('uuid', 'like', "%{$term}%")
+                    ->orWhere('folio', 'like', "%{$term}%")
+                    ->orWhere('serie', 'like', "%{$term}%")
+                    ->orWhere('emisor_nombre', 'like', "%{$term}%")
+                    ->orWhere('emisor_rfc', 'like', "%{$term}%")
+                    ->orWhere('rfc_emisor', 'like', "%{$term}%");
+            })
+            ->orderByDesc('fecha_emision')
+            ->limit(12)
+            ->get();
+
+        return response()->json([
+            'data' => $cfdis->map(fn (SatCfdi $cfdi) => [
+                'id' => $cfdi->id,
+                'uuid' => $cfdi->uuid,
+                'folio' => trim(($cfdi->serie ?? '') . ' ' . ($cfdi->folio ?? '')),
+                'emisor' => $cfdi->emisor_nombre ?? $cfdi->rfc_emisor ?? $cfdi->emisor_rfc,
+                'fecha' => optional($cfdi->fecha_emision)->format('d/m/Y'),
+                'total' => (float) $cfdi->total,
+            ])->values(),
+        ]);
+    }
+
+    private function registrarMovimiento(EquipoComputo $equipo, array $data): EquipoComputoMovimiento
+    {
+        return EquipoComputoMovimiento::create(array_merge([
             'equipo_computo_id' => $equipo->id,
             'created_by' => auth()->id(),
         ], $data));
+    }
+
+    private function guardarFotos(Request $request, EquipoComputo $equipo, ?EquipoComputoMovimiento $movimiento = null): void
+    {
+        if (!$request->hasFile('fotos')) {
+            return;
+        }
+
+        foreach ($request->file('fotos', []) as $foto) {
+            $path = $foto->store('equipos-computo/fotos', 'public');
+
+            EquipoComputoFoto::create([
+                'equipo_computo_id' => $equipo->id,
+                'equipo_computo_movimiento_id' => $movimiento?->id,
+                'path' => $path,
+                'original_name' => $foto->getClientOriginalName(),
+                'uploaded_by' => auth()->id(),
+            ]);
+        }
     }
 }
