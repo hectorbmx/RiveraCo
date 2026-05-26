@@ -21,7 +21,11 @@ class SatFacturaMail extends Mailable
 
     public function build()
     {
-        $mail = $this->subject('Factura CFDI ' . $this->factura->serie . '-' . $this->factura->folio)
+        $mail = $this->from(
+                config('services.facturacion_mail.from_address', config('mail.from.address')),
+                config('services.facturacion_mail.from_name', config('mail.from.name'))
+            )
+            ->subject('Factura CFDI ' . $this->factura->serie . '-' . $this->factura->folio)
             ->view('emails.sat.factura')
             ->with([
                 'factura' => $this->factura,

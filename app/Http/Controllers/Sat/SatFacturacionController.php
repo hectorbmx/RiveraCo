@@ -772,7 +772,9 @@ public function enviar(SatFactura $factura)
 
     try {
 
-        Mail::to($email)->send(
+        Mail::mailer(config('services.facturacion_mail.mailer', config('mail.default')))
+            ->to($email)
+            ->send(
             new SatFacturaMail($factura)
         );
 

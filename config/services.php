@@ -37,6 +37,11 @@ return [
         'secret_key' => env('FACTURAPI_SECRET_KEY'),
         'sandbox' => env('FACTURAPI_SANDBOX', true),
     ],
+    'facturacion_mail' => [
+        'mailer' => env('FACTURACION_MAIL_MAILER', 'facturas'),
+        'from_address' => env('FACTURACION_MAIL_FROM_ADDRESS', env('MAIL_FROM_ADDRESS')),
+        'from_name' => env('FACTURACION_MAIL_FROM_NAME', env('MAIL_FROM_NAME', 'Rivera Construcciones')),
+    ],
     // config/services.php
     'attendance' => [
     'ingest_token' => env('ATTENDANCE_INGEST_TOKEN'),

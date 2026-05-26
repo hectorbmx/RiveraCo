@@ -46,6 +46,18 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN'),
         ],
 
+        'facturas' => [
+            'transport' => 'smtp',
+            'url' => env('FACTURACION_MAIL_URL'),
+            'host' => env('FACTURACION_MAIL_HOST', env('MAIL_HOST', 'smtp.mailgun.org')),
+            'port' => env('FACTURACION_MAIL_PORT', 465),
+            'encryption' => env('FACTURACION_MAIL_ENCRYPTION', 'ssl'),
+            'username' => env('FACTURACION_MAIL_USERNAME'),
+            'password' => env('FACTURACION_MAIL_PASSWORD'),
+            'timeout' => env('FACTURACION_MAIL_TIMEOUT', 20),
+            'local_domain' => env('FACTURACION_MAIL_EHLO_DOMAIN', env('MAIL_EHLO_DOMAIN')),
+        ],
+
         'ses' => [
             'transport' => 'ses',
         ],
@@ -133,4 +145,3 @@ return [
     'notificaciones_maquinas' => env('NOTIFICACIONES_DESTINO', 'sistemas@riveraco.com.mx'),
 
 ];
-
