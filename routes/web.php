@@ -172,6 +172,8 @@ Route::middleware(['auth', 'verified'])
 
             Route::post('/', [SatFacturacionController::class, 'store'])->name('store');
 
+            Route::get('/clientes/{cliente}', [SatFacturacionController::class, 'clienteResumen'])->name('clientes.show');
+
             Route::get('/{factura}', [SatFacturacionController::class, 'show'])->name('show');
             Route::get('/{factura}/xml', [SatFacturacionController::class, 'downloadXml'])->name('xml');
 

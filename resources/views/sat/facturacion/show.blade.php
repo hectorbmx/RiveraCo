@@ -181,9 +181,8 @@
                         </a>
                     @endif
 
-                    <form method="POST" action="{{ route('sat.facturacion.enviar', $factura) }}" @submit="loading = true">
-                        @csrf
-                   <button type="submit" 
+                    <button type="button" 
+                            @click="envioOpen = true"
                             class="group relative w-full flex items-center justify-center gap-3 rounded-xl border border-indigo-200 bg-white px-4 py-3 text-sm font-bold text-indigo-700 
                                 transition-all duration-300 ease-out
                                 hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-[0_10px_20px_-10px_rgba(79,70,229,0.4)]
@@ -203,7 +202,6 @@
                         <!-- Destello alucín índigo -->
                         <div class="absolute inset-0 rounded-xl bg-gradient-to-tr from-transparent via-transparent to-indigo-400/15 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
                     </button>
-                    </form>
                     @if($factura->metodo_pago === 'PPD' && $factura->estado !== 'cancelada' && $saldoPendiente > 0)
                         <button type="button"
                                 @click="pagoOpen = true"
@@ -535,6 +533,64 @@
     </div>
 </div>
 
+    {{-- MODAL ENVIO FACTURA --}}
+    <div x-show="envioOpen"
+         x-cloak
+         x-transition.opacity
+         class="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+        <div @click.away="envioOpen = false"
+             class="w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Enviar factura</h2>
+                    <p class="text-sm text-slate-500">XML y PDF se enviaran adjuntos.</p>
+                </div>
+                <button type="button" @click="envioOpen = false" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+            </div>
+
+            <form method="POST"
+                  action="{{ route('sat.facturacion.enviar', $factura) }}"
+                  @submit="loading = true; envioOpen = false"
+                  class="p-6 space-y-5">
+                @csrf
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Correo destino</label>
+                    <input type="email"
+                           name="email_destino"
+                           x-model="envioEmail"
+                           required
+                           class="w-full rounded-xl border-slate-200 focus:border-indigo-300 focus:ring-indigo-200">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Correo adicional</label>
+                    <input type="email"
+                           name="email_adicional"
+                           x-model="envioEmailAdicional"
+                           class="w-full rounded-xl border-slate-200 focus:border-indigo-300 focus:ring-indigo-200"
+                           placeholder="Opcional">
+                </div>
+
+                <div class="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+                    Se enviara a <strong x-text="envioEmail || 'sin correo'"></strong><template x-if="envioEmailAdicional"><span> y <strong x-text="envioEmailAdicional"></strong></span></template>.
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button type="button"
+                            @click="envioOpen = false"
+                            class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                        Cerrar
+                    </button>
+                    <button type="submit"
+                            class="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-700 shadow-md">
+                        Enviar factura
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     {{-- MODAL DE CARGA (VELO) --}}
     <div x-show="loading" x-cloak x-transition.opacity
          class="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
@@ -553,6 +609,9 @@
         return {
             cancelacionOpen: false,
             motivoCancelacion: '02',
+            envioOpen: false,
+            envioEmail: @json(old('email_destino', $factura->email_destino ?? $factura->cliente?->email ?? '')),
+            envioEmailAdicional: @json(old('email_adicional', '')),
             loading: false,
             pagoOpen: false,
         }

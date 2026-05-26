@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\SatFactura;
 use App\Models\SatEmpresa;
 use App\Models\SatFacturaConcepto;
+use App\Models\SatFacturaPago;
 use App\Models\Cliente;
 use App\Models\Obra;
 use App\Models\SatConcepto;
@@ -46,6 +47,41 @@ class SatFacturacionController extends Controller
             'timbradas',
             'pendientes',
             'canceladas'
+        ));
+    }
+
+    public function clienteResumen(Cliente $cliente)
+    {
+        $facturasVigentes = SatFactura::with(['empresa', 'obra'])
+            ->where('cliente_id', $cliente->id)
+            ->whereIn('estado', ['timbrada', 'cancelacion_solicitada'])
+            ->latest('fecha_emision')
+            ->get();
+
+        $facturasCanceladas = SatFactura::with(['empresa', 'obra'])
+            ->where('cliente_id', $cliente->id)
+            ->where('estado', 'cancelada')
+            ->latest('fecha_cancelacion')
+            ->latest('fecha_emision')
+            ->get();
+
+        $pagos = SatFacturaPago::with('factura')
+            ->whereHas('factura', fn ($query) => $query->where('cliente_id', $cliente->id))
+            ->latest('fecha_pago')
+            ->get();
+
+        $totalVigente = $facturasVigentes->sum('total');
+        $totalCancelado = $facturasCanceladas->sum('total');
+        $totalPagado = $pagos->where('estado', 'timbrado')->sum('monto');
+
+        return view('sat.facturacion.cliente', compact(
+            'cliente',
+            'facturasVigentes',
+            'facturasCanceladas',
+            'pagos',
+            'totalVigente',
+            'totalCancelado',
+            'totalPagado'
         ));
     }
 
@@ -758,22 +794,37 @@ public function acuseCancelacion(SatFactura $factura, string $format)
         );
     }
 }
-public function enviar(SatFactura $factura)
+public function enviar(Request $request, SatFactura $factura)
 {
-    if (!$factura->email_destino && !$factura->cliente?->email) {
+    $data = $request->validate([
+        'email_destino' => ['nullable', 'email', 'max:255'],
+        'email_adicional' => ['nullable', 'email', 'max:255'],
+    ]);
+
+    $email = $data['email_destino']
+        ?? $factura->email_destino
+        ?? $factura->cliente?->email;
+
+    if (!$email) {
         return back()->with(
             'error',
             'La factura no tiene correo destino.'
         );
     }
 
-    $email = $factura->email_destino
-        ?? $factura->cliente->email;
+    $destinatarios = collect([
+        $email,
+        $data['email_adicional'] ?? null,
+    ])
+        ->filter()
+        ->unique()
+        ->values()
+        ->all();
 
     try {
 
         Mail::mailer(config('services.facturacion_mail.mailer', config('mail.default')))
-            ->to($email)
+            ->to($destinatarios)
             ->send(
             new SatFacturaMail($factura)
         );

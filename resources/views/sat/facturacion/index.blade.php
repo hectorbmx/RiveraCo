@@ -95,7 +95,14 @@
                 </td>
 
                 <td class="px-5 py-4">
-                    {{ $factura->receptor_nombre ?? $factura->cliente->razon_social ?? 'Sin cliente' }}
+                    @if($factura->cliente)
+                        <a href="{{ route('sat.facturacion.clientes.show', $factura->cliente) }}"
+                           class="font-semibold text-indigo-700 hover:text-indigo-900 hover:underline">
+                            {{ $factura->receptor_nombre ?? $factura->cliente->razon_social ?? $factura->cliente->nombre_comercial }}
+                        </a>
+                    @else
+                        {{ $factura->receptor_nombre ?? 'Sin cliente' }}
+                    @endif
                 </td>
 
                 <td class="px-5 py-4">
