@@ -195,6 +195,12 @@ public function update(Request $request, SatEmpresa $empresa)
 //    public function storeCsfRequest(SatEmpresa $empresa, CsfRequestService $csfRequestService)
 public function storeCsfRequest(SatEmpresa $empresa)
 {
+    if ($this->hasActiveDocumentRequest($empresa, SatDocumentRequest::TYPE_CSF)) {
+        return redirect()
+            ->route('sat.empresas.index')
+            ->with('error', 'Ya hay una solicitud CSF pendiente o procesando para esta empresa. Termina esa solicitud antes de crear otra.');
+    }
+
     $documentRequest = SatDocumentRequest::create([
         'sat_empresa_id' => $empresa->id,
         'type'           => SatDocumentRequest::TYPE_CSF,
@@ -211,6 +217,12 @@ public function storeCsfRequest(SatEmpresa $empresa)
 
 public function storeD32Request(SatEmpresa $empresa)
 {
+    if ($this->hasActiveDocumentRequest($empresa, SatDocumentRequest::TYPE_D32)) {
+        return redirect()
+            ->route('sat.empresas.index')
+            ->with('error', 'Ya hay una solicitud D32 pendiente o procesando para esta empresa. Termina esa solicitud antes de crear otra.');
+    }
+
     $documentRequest = SatDocumentRequest::create([
         'sat_empresa_id' => $empresa->id,
         'type'           => SatDocumentRequest::TYPE_D32,
@@ -267,5 +279,43 @@ public function downloadPdf(SatDocumentRequest $documentRequest)
     }
 
     return Storage::response($documentRequest->file_path, $documentRequest->file_name);
+}
+
+public function destroyDocumentRequest(SatDocumentRequest $documentRequest)
+{
+    if ($documentRequest->status !== SatDocumentRequest::STATUS_ERROR) {
+        return redirect()
+            ->route('sat.empresas.index')
+            ->with('error', 'Solo se pueden eliminar solicitudes con estado de error.');
+    }
+
+    $documentRequest->delete();
+
+    return redirect()
+        ->route('sat.empresas.index')
+        ->with('success', 'Solicitud fallida eliminada correctamente.');
+}
+
+public function destroyFailedDocumentRequests()
+{
+    $deleted = SatDocumentRequest::query()
+        ->where('status', SatDocumentRequest::STATUS_ERROR)
+        ->delete();
+
+    return redirect()
+        ->route('sat.empresas.index')
+        ->with('success', "Solicitudes fallidas eliminadas: {$deleted}.");
+}
+
+private function hasActiveDocumentRequest(SatEmpresa $empresa, string $type): bool
+{
+    return SatDocumentRequest::query()
+        ->where('sat_empresa_id', $empresa->id)
+        ->where('type', $type)
+        ->whereIn('status', [
+            SatDocumentRequest::STATUS_PENDING,
+            SatDocumentRequest::STATUS_PROCESSING,
+        ])
+        ->exists();
 }
 }

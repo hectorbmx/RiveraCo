@@ -3,18 +3,15 @@
 @section('title', 'Empresas SAT')
 
 @section('content')
-@php
-    $hasDocumentsWaiting = $documentRequests->contains(function ($documentRequest) {
-        return in_array($documentRequest->status, [
-            \App\Models\SatDocumentRequest::STATUS_PENDING,
-            \App\Models\SatDocumentRequest::STATUS_PROCESSING,
-        ], true) && empty($documentRequest->captcha_token);
-    });
-@endphp
 <div class="max-w-7xl mx-auto px-4 py-6">
 @if(session('error'))
     <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
         {{ session('error') }}
+    </div>
+@endif
+@if(session('success'))
+    <div class="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+        {{ session('success') }}
     </div>
 @endif
  <div class="flex items-start justify-between gap-4">
@@ -116,14 +113,14 @@
                                         Eliminar
                                     </button>
                                 </form>
-                                <form action="{{ route('sat.empresas.solicitar-csf', $empresa) }}" method="POST" style="display:inline;">
+                                <form action="{{ route('sat.empresas.solicitar-csf', $empresa) }}" method="POST" style="display:inline;" data-sat-request-form>
                                     @csrf
                                     <button type="submit"
                                         class="text-indigo-600 hover:text-indigo-800 font-medium ml-2">
                                         Solicitar CSF
                                     </button>
                                 </form>
-                                <form action="{{ route('sat.empresas.solicitar-d32', $empresa) }}" method="POST" style="display:inline;">
+                                <form action="{{ route('sat.empresas.solicitar-d32', $empresa) }}" method="POST" style="display:inline;" data-sat-request-form>
                                     @csrf
                                     <button type="submit"
                                         class="text-violet-600 hover:text-violet-800 font-medium ml-2">
@@ -148,9 +145,24 @@
         </table>
         <!-- TABLA LISTA DE SOLICITUDES DE CONSTANCIAS DE SITUACION FISCAL -->
          <div class="mt-8 bg-white rounded-xl shadow-sm border border-slate-200">
-    <div class="px-6 py-4 border-b border-slate-200">
-        <h3 class="text-lg font-semibold text-slate-900">Solicitudes de documentos SAT</h3>
-        <p class="text-sm text-slate-500 mt-1">Historial reciente de solicitudes de constancia y otros documentos.</p>
+    <div class="px-6 py-4 border-b border-slate-200 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h3 class="text-lg font-semibold text-slate-900">Solicitudes de documentos SAT</h3>
+            <p class="text-sm text-slate-500 mt-1">Historial reciente de solicitudes de constancia y otros documentos.</p>
+        </div>
+
+        @if($documentRequests->contains('status', \App\Models\SatDocumentRequest::STATUS_ERROR))
+            <form method="POST"
+                  action="{{ route('sat.document-requests.failed.destroy') }}"
+                  onsubmit="return confirm('¿Eliminar todas las solicitudes fallidas del historial?');">
+                @csrf
+                @method('DELETE')
+                <button type="submit"
+                        class="inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100">
+                    Limpiar fallidas
+                </button>
+            </form>
+        @endif
     </div>
 
     <div class="overflow-x-auto">
@@ -164,6 +176,7 @@
                     <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Archivo</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Solicitado por</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Fecha</th>
+                    <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Acciones</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-slate-100">
@@ -228,11 +241,26 @@
             <td class="px-6 py-4 text-sm text-slate-700">
                 {{ $request->created_at?->format('d/m/Y H:i') }}
             </td>
+            <td class="px-6 py-4 text-right text-sm">
+                @if($request->status === \App\Models\SatDocumentRequest::STATUS_ERROR)
+                    <form method="POST"
+                          action="{{ route('sat.document-requests.destroy', $request) }}"
+                          onsubmit="return confirm('¿Eliminar esta solicitud fallida?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="text-red-600 hover:text-red-800 font-medium">
+                            Eliminar
+                        </button>
+                    </form>
+                @else
+                    <span class="text-slate-300">—</span>
+                @endif
+            </td>
         </tr>
 
 @if($request->captcha_token && $request->status === \App\Models\SatDocumentRequest::STATUS_PROCESSING)
     <tr class="bg-slate-50" id="captcha-row-{{ $request->id }}">
-        <td colspan="7" class="px-6 py-4">
+        <td colspan="8" class="px-6 py-4">
             <div class="border border-slate-200 rounded-xl bg-white p-4">
                 <div class="text-sm font-medium text-slate-800 mb-3">
                     Captcha requerido para continuar la solicitud
@@ -314,7 +342,7 @@
                     msg.textContent = 'Respuesta enviada, procesando...';
                     msg.className = 'text-xs mt-2 text-green-600';
                     input.disabled = true;
-                    setTimeout(() => window.location.reload(), 3000);
+                    setTimeout(() => window.location.reload(), 8000);
                 } else {
                     msg.textContent = data.error ?? 'Error al enviar.';
                     msg.className = 'text-xs mt-2 text-red-500';
@@ -330,32 +358,10 @@
         pollImage();
     })();
     </script>
-<script>
-(function () {
-    const processingTokens = @json(
-        $documentRequests
-            ->where('status', \App\Models\SatDocumentRequest::STATUS_PROCESSING)
-            ->whereNotNull('captcha_token')
-            ->pluck('captcha_token', 'id')
-    );
-
-    if (Object.keys(processingTokens).length === 0) return;
-
-    window._captchaReloadTimer = setInterval(() => {
-        const imgVisible = document.querySelector('[id^="captcha-img-wrap-"] img');
-        if (imgVisible) {
-            clearInterval(window._captchaReloadTimer);
-            window._captchaReloadTimer = null;
-        } else {
-            window.location.reload();
-        }
-    }, 4000);
-})();
-</script>
 @endif
 @empty
 <tr>
-            <td colspan="7" class="px-6 py-8 text-center text-sm text-slate-500">
+            <td colspan="8" class="px-6 py-8 text-center text-sm text-slate-500">
                 No hay solicitudes registradas todavía.
             </td>
         </tr>
@@ -369,9 +375,29 @@
     </div>
 
 </div>
-@if($hasDocumentsWaiting)
+<div id="sat-request-loading" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/40">
+    <div class="rounded-xl bg-white px-6 py-5 shadow-xl border border-slate-200 text-center">
+        <div class="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600"></div>
+        <div class="text-sm font-semibold text-slate-900">Enviando solicitud SAT</div>
+        <div class="mt-1 text-xs text-slate-500">Espera un momento...</div>
+    </div>
+</div>
 <script>
-    setTimeout(() => window.location.reload(), 5000);
+    document.querySelectorAll('[data-sat-request-form]').forEach((form) => {
+        form.addEventListener('submit', () => {
+            const overlay = document.getElementById('sat-request-loading');
+            const button = form.querySelector('button[type="submit"]');
+
+            if (overlay) {
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+            }
+
+            if (button) {
+                button.disabled = true;
+                button.classList.add('opacity-60', 'cursor-wait');
+            }
+        });
+    });
 </script>
-@endif
 @endsection

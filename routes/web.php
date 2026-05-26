@@ -206,10 +206,14 @@ Route::middleware(['auth', 'verified'])
 |--------------------------------------------------------------------------
 */
         Route::prefix('document-requests')->name('document-requests.')->group(function () {
+            Route::delete('/failed', [SatEmpresaController::class, 'destroyFailedDocumentRequests'])
+                ->name('failed.destroy');
             Route::post('/{documentRequest}/captcha', [SatEmpresaController::class, 'submitCaptcha'])
                 ->name('captcha');
            Route::get('/{documentRequest}/pdf', [SatEmpresaController::class, 'downloadPdf'])
         ->name('pdf');
+           Route::delete('/{documentRequest}', [SatEmpresaController::class, 'destroyDocumentRequest'])
+        ->name('destroy');
                 
         });
 
