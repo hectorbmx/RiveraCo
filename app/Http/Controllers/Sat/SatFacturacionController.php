@@ -9,7 +9,6 @@ use App\Models\SatEmpresa;
 use App\Models\SatFacturaConcepto;
 use App\Models\Cliente;
 use App\Models\Obra;
-use App\Models\OrdenCompra;
 use App\Models\SatConcepto;
 use App\Services\Facturacion\FacturapiService;
 use Illuminate\Support\Facades\DB;
@@ -66,10 +65,6 @@ class SatFacturacionController extends Controller
 
     $obras = Obra::orderBy('nombre')->get();
 
-    $ordenesCompra = OrdenCompra::latest()
-        ->limit(100)
-        ->get();
-
     // 👇 NUEVO
     $conceptos = SatConcepto::where('activo', true)
         ->orderBy('descripcion')
@@ -79,7 +74,6 @@ class SatFacturacionController extends Controller
         'empresas',
         'clientes',
         'obras',
-        'ordenesCompra',
         'conceptos'
     ));
 }
@@ -98,7 +92,6 @@ class SatFacturacionController extends Controller
                 'sat_empresa_id' => ['required', 'exists:sat_empresas,id'],
                 'cliente_id' => ['required', 'exists:clientes,id'],
                 'obra_id' => ['nullable', 'exists:obras,id'],
-                'orden_compra_id' => ['nullable', 'exists:ordenes_compra,id'],
 
                 'uso_cfdi' => ['required', 'string', 'max:10'],
                 'metodo_pago' => ['required', 'string', 'max:10'],
@@ -422,7 +415,7 @@ $invoice = $facturapi->Invoices->create($payload);
                 'sat_empresa_id' => $empresa->id,
                 'cliente_id' => $cliente->id,
                 'obra_id' => $data['obra_id'] ?? null,
-                'orden_compra_id' => $data['orden_compra_id'] ?? null,
+                'orden_compra_id' => null,
 
                 'facturapi_invoice_id' => $invoice->id,
                 'facturapi_customer_id' => $cliente->facturapi_customer_id,
@@ -572,6 +565,7 @@ public function cancelar(Request $request, SatFactura $factura)
 {
     $data = $request->validate([
         'motivo_cancelacion' => ['nullable', 'string', 'in:01,02,03,04'],
+        'sustitucion_uuid' => ['nullable', 'string', 'max:80'],
     ]);
 
     if (!$factura->facturapi_invoice_id) {
@@ -587,6 +581,11 @@ public function cancelar(Request $request, SatFactura $factura)
     }
 
     $motivo = $data['motivo_cancelacion'] ?? '02';
+    $sustitucion = trim((string) ($data['sustitucion_uuid'] ?? ''));
+
+    if ($motivo === '01' && $sustitucion === '') {
+        return back()->with('error', 'El motivo 01 requiere indicar el UUID o ID de la factura sustituta.');
+    }
 
     try {
         $factura->update([
@@ -594,11 +593,17 @@ public function cancelar(Request $request, SatFactura $factura)
             'error_message' => null,
         ]);
 
+        $query = ['motive' => $motivo];
+
+        if ($sustitucion !== '') {
+            $query['substitution'] = $sustitucion;
+        }
+
         $response = Http::withBasicAuth(config('services.facturapi.secret_key'), '')
     ->delete(
         'https://www.facturapi.io/v2/invoices/' .
         $factura->facturapi_invoice_id .
-        '?motive=' . $motivo
+        '?' . http_build_query($query)
     );
 
         if (!$response->successful()) {
@@ -616,19 +621,7 @@ public function cancelar(Request $request, SatFactura $factura)
         }
 
         $body = $response->json();
-
-        $status = $body['status'] ?? null;
-
-        $nuevoEstado = $status === 'canceled'
-            ? 'cancelada'
-            : 'cancelacion_solicitada';
-
-        $factura->update([
-            'estado' => $nuevoEstado,
-            'fecha_cancelacion' => $nuevoEstado === 'cancelada' ? now() : null,
-            'facturapi_response' => $body,
-            'error_message' => null,
-        ]);
+        $nuevoEstado = $this->actualizarEstadoLocalDesdeFacturapi($factura, $body);
 
         return back()->with(
             'success',
@@ -645,6 +638,61 @@ public function cancelar(Request $request, SatFactura $factura)
 
         return back()->with('error', 'Error al cancelar CFDI: ' . $e->getMessage());
     }
+}
+
+public function sincronizarCancelacion(SatFactura $factura)
+{
+    if (!$factura->facturapi_invoice_id) {
+        return back()->with('error', 'La factura no tiene ID de Facturapi.');
+    }
+
+    try {
+        $response = Http::withBasicAuth(config('services.facturapi.secret_key'), '')
+            ->put('https://www.facturapi.io/v2/invoices/' . $factura->facturapi_invoice_id . '/status');
+
+        if (!$response->successful()) {
+            $error = $response->json('message')
+                ?? $response->json('error')
+                ?? $response->body();
+
+            return back()->with('error', 'Error al actualizar estatus: ' . $error);
+        }
+
+        $nuevoEstado = $this->actualizarEstadoLocalDesdeFacturapi($factura, $response->json());
+
+        return back()->with(
+            'success',
+            $nuevoEstado === 'cancelada'
+                ? 'Estatus actualizado: la factura ya está cancelada.'
+                : 'Estatus actualizado desde Facturapi.'
+        );
+    } catch (\Throwable $e) {
+        return back()->with('error', 'Error al actualizar estatus: ' . $e->getMessage());
+    }
+}
+
+private function actualizarEstadoLocalDesdeFacturapi(SatFactura $factura, array $body): string
+{
+    $status = $body['status'] ?? null;
+    $cancelacion = $body['cancellation_status'] ?? null;
+
+    $nuevoEstado = match (true) {
+        $status === 'canceled' => 'cancelada',
+        in_array($cancelacion, ['pending', 'verifying'], true) => 'cancelacion_solicitada',
+        $factura->estado === 'cancelacion_solicitada' => 'timbrada',
+        default => $factura->estado,
+    };
+
+    $factura->update([
+        'estado' => $nuevoEstado,
+        'fecha_cancelacion' => $nuevoEstado === 'cancelada'
+            ? ($factura->fecha_cancelacion ?? now())
+            : null,
+        'facturapi_response' => $body,
+        'error_message' => null,
+    ]);
+
+    return $nuevoEstado;
 }
 public function acuseCancelacion(SatFactura $factura, string $format)
 {

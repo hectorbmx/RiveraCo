@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Sat;
 
 use App\Http\Controllers\Controller;
 use App\Models\SatConcepto;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
 
 
@@ -37,5 +38,47 @@ class SatCatalogoController extends Controller
     return redirect()
         ->route('sat.catalogos.conceptos')
         ->with('success', 'Concepto SAT creado correctamente.');
+}
+
+public function buscarProductosSat(Request $request)
+{
+    $data = $request->validate([
+        'q' => ['required', 'string', 'min:2', 'max:80'],
+    ]);
+
+    try {
+        $response = Http::withBasicAuth(config('services.facturapi.secret_key'), '')
+            ->acceptJson()
+            ->get('https://www.facturapi.io/v2/catalogs/products', [
+                'q' => $data['q'],
+                'limit' => 10,
+            ]);
+
+        if (!$response->successful()) {
+            return response()->json([
+                'message' => $response->json('message')
+                    ?? $response->json('error')
+                    ?? 'No se pudo consultar el catalogo SAT.',
+                'data' => [],
+            ], $response->status());
+        }
+
+        $items = collect($response->json('data', []))
+            ->map(fn ($item) => [
+                'key' => (string) ($item['key'] ?? ''),
+                'description' => (string) ($item['description'] ?? ''),
+            ])
+            ->filter(fn ($item) => $item['key'] !== '')
+            ->values();
+
+        return response()->json([
+            'data' => $items,
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'message' => 'No se pudo consultar el catalogo SAT: ' . $e->getMessage(),
+            'data' => [],
+        ], 500);
+    }
 }
 }

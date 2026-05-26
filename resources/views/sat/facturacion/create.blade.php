@@ -91,75 +91,77 @@
 
                             </select>
                         </div>
-
                         {{-- CLIENTE --}}
-                        <div>
+                        <div class="relative" @click.outside="clienteOpen = false">
                             <label class="block text-sm font-medium text-slate-700 mb-1">
                                 Cliente
                             </label>
 
-                            <select name="cliente_id"
-                                    class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                            <input type="hidden" name="cliente_id" x-model="clienteId">
+                            <input type="text"
+                                   x-model="clienteSearch"
+                                   @focus="clienteOpen = true"
+                                   @input="clienteId = ''; clienteOpen = true"
+                                   placeholder="Buscar por razon social, nombre o RFC"
+                                   autocomplete="off"
+                                   class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
 
-                                <option value="">
-                                    Seleccionar cliente
-                                </option>
-
-                                @foreach($clientes as $cliente)
-                                    <option value="{{ $cliente->id }}">
-                                        {{ $cliente->razon_social ?? $cliente->nombre_comercial }}
-                                        — {{ $cliente->rfc }}
-                                    </option>
-                                @endforeach
-
-                            </select>
+                            <div x-show="clienteOpen"
+                                 x-cloak
+                                 class="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                                <template x-for="cliente in clientesFiltrados()" :key="cliente.id">
+                                    <button type="button"
+                                            @click="selectCliente(cliente)"
+                                            class="block w-full px-4 py-3 text-left text-sm hover:bg-slate-50">
+                                        <div class="font-medium text-slate-900" x-text="cliente.nombre"></div>
+                                        <div class="text-xs text-slate-500" x-text="cliente.rfc"></div>
+                                    </button>
+                                </template>
+                                <div x-show="clientesFiltrados().length === 0" class="px-4 py-3 text-sm text-slate-500">
+                                    Sin coincidencias
+                                </div>
+                            </div>
                         </div>
 
                         {{-- OBRA --}}
-                        <div>
+                        <div class="relative" @click.outside="obraOpen = false">
                             <label class="block text-sm font-medium text-slate-700 mb-1">
                                 Obra (opcional)
                             </label>
 
-                            <select name="obra_id"
-                                    class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                            <input type="hidden" name="obra_id" x-model="obraId">
+                            <input type="text"
+                                   x-model="obraSearch"
+                                   @focus="obraOpen = true"
+                                   @input="obraId = ''; obraOpen = true"
+                                   placeholder="Buscar obra"
+                                   autocomplete="off"
+                                   class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
 
-                                <option value="">
+                            <div class="mt-1 flex justify-end">
+                                <button type="button"
+                                        @click="clearObra()"
+                                        class="text-xs font-medium text-slate-500 hover:text-slate-700">
                                     Sin obra
-                                </option>
+                                </button>
+                            </div>
 
-                                @foreach($obras as $obra)
-                                    <option value="{{ $obra->id }}">
-                                        {{ $obra->nombre ?? $obra->Nombre }}
-                                    </option>
-                                @endforeach
-
-                            </select>
+                            <div x-show="obraOpen"
+                                 x-cloak
+                                 class="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                                <template x-for="obra in obrasFiltradas()" :key="obra.id">
+                                    <button type="button"
+                                            @click="selectObra(obra)"
+                                            class="block w-full px-4 py-3 text-left text-sm hover:bg-slate-50">
+                                        <div class="font-medium text-slate-900" x-text="obra.nombre"></div>
+                                    </button>
+                                </template>
+                                <div x-show="obrasFiltradas().length === 0" class="px-4 py-3 text-sm text-slate-500">
+                                    Sin coincidencias
+                                </div>
+                            </div>
                         </div>
-
-                        {{-- OC --}}
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">
-                                Orden de compra (opcional)
-                            </label>
-
-                            <select name="orden_compra_id"
-                                    class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
-
-                                <option value="">
-                                    Sin OC
-                                </option>
-
-                                @foreach($ordenesCompra as $oc)
-                                    <option value="{{ $oc->id }}">
-                                        {{ $oc->folio ?? 'OC #'.$oc->id }}
-                                    </option>
-                                @endforeach
-
-                            </select>
-                        </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
 
             {{-- USO CFDI --}}
             <div>
@@ -651,17 +653,96 @@
 </div>
 </div>
 
-@endsection
+@php
+    $clientesBuscador = $clientes->map(function ($cliente) {
+        $nombre = $cliente->razon_social ?: $cliente->nombre_comercial;
 
+        return [
+            'id' => (string) $cliente->id,
+            'nombre' => $nombre,
+            'rfc' => $cliente->rfc,
+            'search' => trim($nombre . ' ' . $cliente->rfc),
+        ];
+    })->values();
+
+    $obrasBuscador = $obras->map(function ($obra) {
+        return [
+            'id' => (string) $obra->id,
+            'nombre' => $obra->nombre ?? $obra->Nombre ?? ('Obra #' . $obra->id),
+        ];
+    })->values();
+@endphp
 <script>
 function facturaForm() {
     return {
         openConceptos: false,
         searchConcepto: '',
         loadingTimbrar: false,
+        clienteId: @json((string) old('cliente_id', '')),
+        clienteSearch: '',
+        clienteOpen: false,
+        clientes: @json($clientesBuscador),
+        obraId: @json((string) old('obra_id', '')),
+        obraSearch: '',
+        obraOpen: false,
+        obras: @json($obrasBuscador),
         catalogoConceptos: @json($conceptos),
 
         conceptosSeleccionados: [],
+
+        init() {
+            const cliente = this.clientes.find((item) => item.id === this.clienteId);
+            if (cliente) {
+                this.clienteSearch = `${cliente.nombre} - ${cliente.rfc}`;
+            }
+
+            const obra = this.obras.find((item) => item.id === this.obraId);
+            if (obra) {
+                this.obraSearch = obra.nombre;
+            }
+        },
+
+        clientesFiltrados() {
+            const q = this.clienteSearch.toLowerCase().trim();
+
+            if (!q) {
+                return this.clientes.slice(0, 20);
+            }
+
+            return this.clientes
+                .filter((cliente) => String(cliente.search || '').toLowerCase().includes(q))
+                .slice(0, 20);
+        },
+
+        selectCliente(cliente) {
+            this.clienteId = cliente.id;
+            this.clienteSearch = `${cliente.nombre} - ${cliente.rfc}`;
+            this.clienteOpen = false;
+        },
+
+        obrasFiltradas() {
+            const q = this.obraSearch.toLowerCase().trim();
+
+            if (!q) {
+                return this.obras.slice(0, 20);
+            }
+
+            return this.obras
+                .filter((obra) => String(obra.nombre || '').toLowerCase().includes(q))
+                .slice(0, 20);
+        },
+
+        selectObra(obra) {
+            this.obraId = obra.id;
+            this.obraSearch = obra.nombre;
+            this.obraOpen = false;
+        },
+
+        clearObra() {
+            this.obraId = '';
+            this.obraSearch = '';
+            this.obraOpen = false;
+        },
 
         conceptosFiltrados() {
             const q = this.searchConcepto.toLowerCase().trim();
@@ -749,3 +830,4 @@ function facturaForm() {
     }
 }
 </script>
+@endsection

@@ -4,7 +4,7 @@
 
 @section('content')
 
-<div x-data="{ openCreate: false }" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div x-data="catalogoConceptosSat()" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
     {{-- HEADER --}}
     <div class="flex items-center justify-between mb-6">
@@ -212,15 +212,49 @@
                            placeholder="Ej. Servicio de construcción">
                 </div>
 
-                <div>
+                <div class="relative">
                     <label class="block text-sm font-medium text-slate-700 mb-1">
                         Clave producto/servicio SAT
                     </label>
-                    <input type="text"
+                    <input type="hidden"
                            name="clave_producto_servicio"
+                           :value="claveProductoServicio">
+                    <input type="text"
+                           x-model="claveProductoSearch"
+                           @input.debounce.350ms="buscarProductosSat()"
+                           @focus="claveProductoOpen = productosSat.length > 0"
+                           @keydown.escape="claveProductoOpen = false"
                            required
                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
-                           placeholder="Ej. 72121400">
+                           placeholder="Buscar por nombre o clave">
+
+                    <div x-show="claveProductoOpen"
+                         x-cloak
+                         @click.away="claveProductoOpen = false"
+                         class="absolute z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                        <div x-show="buscandoProductosSat" class="px-4 py-3 text-sm text-slate-500">
+                            Buscando...
+                        </div>
+
+                        <template x-if="!buscandoProductosSat && productosSat.length === 0 && claveProductoSearch.length >= 2">
+                            <div class="px-4 py-3 text-sm text-slate-500">
+                                Sin resultados
+                            </div>
+                        </template>
+
+                        <template x-for="producto in productosSat" :key="producto.key">
+                            <button type="button"
+                                    @click="seleccionarProductoSat(producto)"
+                                    class="block w-full px-4 py-3 text-left hover:bg-slate-50">
+                                <span class="block text-sm font-semibold text-slate-900" x-text="producto.key"></span>
+                                <span class="block text-xs text-slate-500" x-text="producto.description"></span>
+                            </button>
+                        </template>
+                    </div>
+
+                    <p x-show="errorProductosSat"
+                       x-text="errorProductosSat"
+                       class="mt-1 text-xs text-red-600"></p>
                 </div>
 
                 <div>
@@ -308,5 +342,67 @@
     </div>
 </div>
 </div>
+
+<script>
+function catalogoConceptosSat() {
+    return {
+        openCreate: false,
+        claveProductoSearch: '',
+        claveProductoServicio: '',
+        claveProductoOpen: false,
+        buscandoProductosSat: false,
+        productosSat: [],
+        errorProductosSat: '',
+
+        async buscarProductosSat() {
+            const query = this.claveProductoSearch.trim();
+
+            this.errorProductosSat = '';
+            this.claveProductoServicio = /^\d+$/.test(query) ? query : '';
+
+            if (query.length < 2) {
+                this.productosSat = [];
+                this.claveProductoOpen = false;
+                return;
+            }
+
+            this.buscandoProductosSat = true;
+            this.claveProductoOpen = true;
+
+            try {
+                const url = new URL(@json(route('sat.catalogos.productos-sat.buscar')));
+                url.searchParams.set('q', query);
+
+                const response = await fetch(url.toString(), {
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                });
+
+                const body = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(body.message || 'No se pudo consultar el catalogo SAT.');
+                }
+
+                this.productosSat = body.data || [];
+            } catch (error) {
+                this.productosSat = [];
+                this.errorProductosSat = error.message || 'No se pudo consultar el catalogo SAT.';
+            } finally {
+                this.buscandoProductosSat = false;
+            }
+        },
+
+        seleccionarProductoSat(producto) {
+            this.claveProductoServicio = producto.key;
+            this.claveProductoSearch = producto.key;
+            this.productosSat = [];
+            this.claveProductoOpen = false;
+            this.errorProductosSat = '';
+        },
+    };
+}
+</script>
 
 @endsection

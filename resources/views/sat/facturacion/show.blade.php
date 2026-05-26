@@ -212,12 +212,27 @@
                         </button>
                     @endif
                     @if($factura->estado === 'cancelada')
-                       <a href="{{ route('sat.facturacion.acuse', [$factura, 'pdf']) }}"
-                        class="w-full flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100">
-                            Descargar acuse
-                        </a>
+                        <div class="grid grid-cols-2 gap-2">
+                            <a href="{{ route('sat.facturacion.acuse', [$factura, 'pdf']) }}"
+                            class="flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100">
+                                Acuse PDF
+                            </a>
+                            <a href="{{ route('sat.facturacion.acuse', [$factura, 'xml']) }}"
+                            class="flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                                Acuse XML
+                            </a>
+                        </div>
                     @endif
-                    @if($factura->estado !== 'cancelada')
+                    @if($factura->estado === 'cancelacion_solicitada')
+                        <form method="POST" action="{{ route('sat.facturacion.sincronizar-cancelacion', $factura) }}" @submit="loading = true">
+                            @csrf
+                            <button type="submit"
+                                    class="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-100">
+                                Actualizar estatus SAT
+                            </button>
+                        </form>
+                    @endif
+                    @if($factura->estado === 'timbrada')
                         <button type="button" 
                             @click="cancelacionOpen = true"
                             class="group relative w-full flex items-center justify-center gap-3 rounded-xl border border-red-200 bg-white px-4 py-3 text-sm font-bold text-red-700 

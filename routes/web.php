@@ -179,6 +179,7 @@ Route::middleware(['auth', 'verified'])
             Route::post('/{factura}/enviar', [SatFacturacionController::class, 'enviar'])->name('enviar');
 
             Route::post('/{factura}/cancelar', [SatFacturacionController::class, 'cancelar'])->name('cancelar');
+            Route::post('/{factura}/sincronizar-cancelacion', [SatFacturacionController::class, 'sincronizarCancelacion'])->name('sincronizar-cancelacion');
             Route::get('/{factura}/acuse-cancelacion/{format}', [SatFacturacionController::class, 'acuseCancelacion'])->name('acuse');
 
             Route::post('/{factura}/pagos', [SatFacturaPagoController::class, 'store'])->name('pagos.store');
@@ -198,6 +199,7 @@ Route::middleware(['auth', 'verified'])
 
             Route::get('/conceptos', [SatCatalogoController::class, 'conceptos'])->name('conceptos');
             Route::post('/conceptos', [SatCatalogoController::class, 'storeConcepto'])->name('conceptos.store');
+            Route::get('/productos-sat/buscar', [SatCatalogoController::class, 'buscarProductosSat'])->name('productos-sat.buscar');
 
         });
         /*
