@@ -109,6 +109,10 @@
                 <input type="file" name="factura_archivo" accept=".pdf,.xml,.jpg,.jpeg,.png" class="w-full text-sm">
             </div>
             <div>
+                <label class="block text-xs text-slate-600 mb-1">Resguardo firmado</label>
+                <input type="file" name="resguardo_archivo" accept=".pdf,.jpg,.jpeg,.png" class="w-full text-sm">
+            </div>
+            <div>
                 <label class="block text-xs text-slate-600 mb-1">Ubicacion</label>
                 <input type="text" name="ubicacion" class="w-full rounded-xl border-slate-300">
             </div>
@@ -210,6 +214,9 @@
                             @if($equipo->factura_path)
                                 <a href="{{ asset('storage/'.$equipo->factura_path) }}" target="_blank" class="text-xs text-blue-600 hover:underline">Ver archivo</a>
                             @endif
+                            @if($equipo->resguardo_path)
+                                <div><a href="{{ asset('storage/'.$equipo->resguardo_path) }}" target="_blank" class="text-xs text-indigo-600 hover:underline">Ver resguardo</a></div>
+                            @endif
                         </td>
                         <td class="px-4 py-3">
                             <span class="inline-flex px-2 py-1 rounded-full text-xs {{ $estatusBadge($equipo->estatus) }}">
@@ -217,12 +224,28 @@
                             </span>
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <details class="text-left">
-                                <summary class="inline-flex cursor-pointer px-3 py-1.5 rounded-lg text-xs bg-slate-100 text-slate-800 hover:bg-slate-200">
+                            <div class="text-left">
+                                <button type="button"
+                                        @click="gestionEquipo = {{ $equipo->id }}"
+                                        class="inline-flex cursor-pointer px-3 py-1.5 rounded-lg text-xs bg-slate-100 text-slate-800 hover:bg-slate-200">
                                     Gestionar
-                                </summary>
+                                </button>
 
-                                <div class="mt-4 p-4 rounded-xl border border-slate-200 bg-white space-y-5 min-w-[760px]">
+                                <div x-show="gestionEquipo === {{ $equipo->id }}"
+                                     x-cloak
+                                     x-transition.opacity
+                                     class="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-slate-900/50 px-4 py-8 backdrop-blur-sm">
+                                    <div @click.away="gestionEquipo = null"
+                                         class="w-full max-w-6xl rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                                        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                                            <div>
+                                                <h3 class="text-lg font-semibold text-slate-900">Gestionar equipo {{ $equipo->codigo_inventario ?: '#'.$equipo->id }}</h3>
+                                                <p class="text-sm text-slate-500">{{ $equipo->nombre }} · {{ $equipo->numero_serie ?: 'Sin serie' }}</p>
+                                            </div>
+                                            <button type="button" @click="gestionEquipo = null" class="text-2xl leading-none text-slate-400 hover:text-slate-700">&times;</button>
+                                        </div>
+
+                                <div class="p-5 space-y-5">
                                     <form method="POST" action="{{ route('empresa_config.equipos-computo.update', $equipo) }}" enctype="multipart/form-data"
                                           x-init="initResponsable('edit-{{ $equipo->id }}', @json($equipo->responsable_actual_id), @json($equipo->responsableActual?->nombre_completo)); initFactura('edit-{{ $equipo->id }}', @json($equipo->factura_uuid))"
                                           class="grid grid-cols-1 md:grid-cols-6 gap-3">
@@ -261,6 +284,13 @@
                                             </div>
                                         </div>
                                         <input type="file" name="factura_archivo" accept=".pdf,.xml,.jpg,.jpeg,.png" class="text-xs">
+                                        <label class="text-xs text-slate-600">
+                                            Resguardo firmado
+                                            <input type="file" name="resguardo_archivo" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block w-full text-xs">
+                                            @if($equipo->resguardo_path)
+                                                <a href="{{ asset('storage/'.$equipo->resguardo_path) }}" target="_blank" class="mt-1 inline-block text-indigo-600 hover:underline">Ver actual</a>
+                                            @endif
+                                        </label>
                                         <input type="text" name="ubicacion" value="{{ $equipo->ubicacion }}" class="rounded-lg border-slate-300 text-sm" placeholder="Ubicacion">
                                         <select name="area_id" class="rounded-lg border-slate-300 text-sm">
                                             <option value="">Sin area</option>
@@ -338,6 +368,10 @@
                                                 Fotos del cambio (maximo 3)
                                                 <input type="file" name="fotos[]" accept="image/*" multiple @change="validarFotos($event)" class="mt-1 block w-full text-xs">
                                             </label>
+                                            <label class="block text-xs text-slate-600">
+                                                Resguardo firmado
+                                                <input type="file" name="resguardo_archivo" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block w-full text-xs">
+                                            </label>
                                             <button type="submit" class="px-4 py-2 rounded-lg bg-blue-700 text-white text-sm hover:bg-blue-800">Registrar asignacion</button>
                                         </form>
 
@@ -406,7 +440,9 @@
                                         </table>
                                     </div>
                                 </div>
-                            </details>
+                                    </div>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -439,6 +475,7 @@ function equipoComputoUi() {
         facturaOpen: { create: false },
         facturaLoading: { create: false },
         facturaResultados: { create: [] },
+        gestionEquipo: null,
 
         initResponsable(key, id, nombre) {
             this.responsableSelected[key] = id ? { id, nombre: nombre || '' } : null;

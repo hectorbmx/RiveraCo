@@ -28,6 +28,7 @@ class EquipoComputo extends Model
         'factura_folio',
         'factura_uuid',
         'factura_path',
+        'resguardo_path',
         'ubicacion',
         'area_id',
         'responsable_actual_id',

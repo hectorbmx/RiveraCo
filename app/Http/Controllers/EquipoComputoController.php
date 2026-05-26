@@ -19,7 +19,7 @@ class EquipoComputoController extends Controller
     public function store(Request $request)
     {
         $data = $this->validatedData($request);
-        unset($data['factura_archivo'], $data['fotos']);
+        unset($data['factura_archivo'], $data['resguardo_archivo'], $data['fotos']);
         $data['responsable_actual_id'] = $data['responsable_actual_id'] ?? null;
         $data['area_id'] = $data['area_id'] ?? null;
         $data['estatus'] = $data['estatus'] ?? 'activo';
@@ -31,6 +31,11 @@ class EquipoComputoController extends Controller
         if ($request->hasFile('factura_archivo')) {
             $data['factura_path'] = $request->file('factura_archivo')
                 ->store('equipos-computo/facturas', 'public');
+        }
+
+        if ($request->hasFile('resguardo_archivo')) {
+            $data['resguardo_path'] = $request->file('resguardo_archivo')
+                ->store('equipos-computo/resguardos', 'public');
         }
 
         DB::transaction(function () use ($data, $request) {
@@ -57,7 +62,7 @@ class EquipoComputoController extends Controller
     public function update(Request $request, EquipoComputo $equipo)
     {
         $data = $this->validatedData($request, $equipo);
-        unset($data['factura_archivo'], $data['fotos']);
+        unset($data['factura_archivo'], $data['resguardo_archivo'], $data['fotos']);
         $data['responsable_actual_id'] = $data['responsable_actual_id'] ?? null;
         $data['area_id'] = $data['area_id'] ?? null;
 
@@ -75,6 +80,15 @@ class EquipoComputoController extends Controller
 
             $data['factura_path'] = $request->file('factura_archivo')
                 ->store('equipos-computo/facturas', 'public');
+        }
+
+        if ($request->hasFile('resguardo_archivo')) {
+            if ($equipo->resguardo_path && Storage::disk('public')->exists($equipo->resguardo_path)) {
+                Storage::disk('public')->delete($equipo->resguardo_path);
+            }
+
+            $data['resguardo_path'] = $request->file('resguardo_archivo')
+                ->store('equipos-computo/resguardos', 'public');
         }
 
         DB::transaction(function () use ($equipo, $data, $anterior, $request) {
@@ -129,6 +143,7 @@ class EquipoComputoController extends Controller
             'ubicacion' => ['nullable', 'string', 'max:160'],
             'fecha_movimiento' => ['required', 'date'],
             'notas' => ['nullable', 'string'],
+            'resguardo_archivo' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
             'fotos' => ['nullable', 'array', 'max:3'],
             'fotos.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
@@ -141,11 +156,24 @@ class EquipoComputoController extends Controller
         ];
 
         DB::transaction(function () use ($equipo, $data, $anterior, $request) {
-            $equipo->update([
+            $equipoUpdate = [
                 'responsable_actual_id' => $data['responsable_actual_id'],
                 'area_id' => $data['area_id'] ?? $equipo->area_id,
                 'ubicacion' => $data['ubicacion'] ?? $equipo->ubicacion,
                 'estatus' => 'asignado',
+            ];
+
+            if ($request->hasFile('resguardo_archivo')) {
+                if ($equipo->resguardo_path && Storage::disk('public')->exists($equipo->resguardo_path)) {
+                    Storage::disk('public')->delete($equipo->resguardo_path);
+                }
+
+                $equipoUpdate['resguardo_path'] = $request->file('resguardo_archivo')
+                    ->store('equipos-computo/resguardos', 'public');
+            }
+
+            $equipo->update([
+                ...$equipoUpdate,
             ]);
 
             $movimiento = $this->registrarMovimiento($equipo, [
@@ -237,6 +265,7 @@ class EquipoComputoController extends Controller
             'factura_folio' => ['nullable', 'string', 'max:120'],
             'factura_uuid' => ['nullable', 'string', 'max:80'],
             'factura_archivo' => ['nullable', 'file', 'mimes:pdf,xml,jpg,jpeg,png', 'max:10240'],
+            'resguardo_archivo' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
             'ubicacion' => ['nullable', 'string', 'max:160'],
             'area_id' => ['nullable', 'integer', 'exists:areas,id'],
             'responsable_actual_id' => ['nullable', 'integer', 'exists:empleados,id_Empleado'],
