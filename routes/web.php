@@ -212,6 +212,8 @@ Route::middleware(['auth', 'verified'])
                 ->name('captcha');
            Route::get('/{documentRequest}/pdf', [SatEmpresaController::class, 'downloadPdf'])
         ->name('pdf');
+           Route::patch('/{documentRequest}/cancel', [SatEmpresaController::class, 'cancelDocumentRequest'])
+        ->name('cancel');
            Route::delete('/{documentRequest}', [SatEmpresaController::class, 'destroyDocumentRequest'])
         ->name('destroy');
                 

@@ -252,6 +252,19 @@
                             Eliminar
                         </button>
                     </form>
+                @elseif(in_array($request->status, [
+                    \App\Models\SatDocumentRequest::STATUS_PENDING,
+                    \App\Models\SatDocumentRequest::STATUS_PROCESSING,
+                ], true))
+                    <form method="POST"
+                          action="{{ route('sat.document-requests.cancel', $request) }}"
+                          onsubmit="return confirm('¿Cancelar esta solicitud? Si el proceso quedó esperando captcha, esto liberará la empresa para crear una nueva.');">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="text-amber-600 hover:text-amber-800 font-medium">
+                            Cancelar
+                        </button>
+                    </form>
                 @else
                     <span class="text-slate-300">—</span>
                 @endif
@@ -300,6 +313,7 @@
         const reqId   = {{ $request->id }};
         const imgUrl  = '{{ route("sat.captcha.image", ":token") }}'.replace(':token', token);
         const postUrl = '{{ route("sat.captcha.submit", ":token") }}'.replace(':token', token);
+        let attempts = 0;
 
         function pollImage() {
             fetch(imgUrl)
@@ -311,10 +325,24 @@
                             class="border rounded-lg bg-white p-2 max-h-24" 
                             alt="Captcha SAT">`;
                     } else {
+                        attempts++;
+                        if (attempts >= 10) {
+                            const wrap = document.getElementById('captcha-img-wrap-' + reqId);
+                            wrap.innerHTML = '<span class="text-xs text-red-500">No se pudo cargar la imagen. Cancela esta solicitud y crea una nueva.</span>';
+                            return;
+                        }
                         setTimeout(pollImage, 3000);
                     }
                 })
-                .catch(() => setTimeout(pollImage, 3000));
+                .catch(() => {
+                    attempts++;
+                    if (attempts >= 10) {
+                        const wrap = document.getElementById('captcha-img-wrap-' + reqId);
+                        wrap.innerHTML = '<span class="text-xs text-red-500">No se pudo cargar la imagen. Cancela esta solicitud y crea una nueva.</span>';
+                        return;
+                    }
+                    setTimeout(pollImage, 3000);
+                });
         }
 
         function submitCaptcha(token, reqId) {

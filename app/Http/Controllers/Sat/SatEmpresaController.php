@@ -281,6 +281,35 @@ public function downloadPdf(SatDocumentRequest $documentRequest)
     return Storage::response($documentRequest->file_path, $documentRequest->file_name);
 }
 
+public function cancelDocumentRequest(SatDocumentRequest $documentRequest)
+{
+    if (! in_array($documentRequest->status, [
+        SatDocumentRequest::STATUS_PENDING,
+        SatDocumentRequest::STATUS_PROCESSING,
+    ], true)) {
+        return redirect()
+            ->route('sat.empresas.index')
+            ->with('error', 'Solo se pueden cancelar solicitudes pendientes o procesando.');
+    }
+
+    if ($documentRequest->captcha_token) {
+        \App\Models\SatCaptchaSession::where('token', $documentRequest->captcha_token)->delete();
+    }
+
+    $documentRequest->update([
+        'status' => SatDocumentRequest::STATUS_ERROR,
+        'error_message' => 'Solicitud cancelada por el usuario.',
+        'captcha_token' => null,
+        'captcha_path' => null,
+        'captcha_answer' => null,
+        'captcha_requested_at' => null,
+    ]);
+
+    return redirect()
+        ->route('sat.empresas.index')
+        ->with('success', 'Solicitud cancelada. Ya puedes crear una nueva.');
+}
+
 public function destroyDocumentRequest(SatDocumentRequest $documentRequest)
 {
     if ($documentRequest->status !== SatDocumentRequest::STATUS_ERROR) {
