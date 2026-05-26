@@ -310,6 +310,30 @@ class EquipoComputoController extends Controller
         ]);
     }
 
+    public function verFoto(EquipoComputoFoto $foto)
+    {
+        if (!Storage::disk('public')->exists($foto->path)) {
+            abort(404, 'Foto no encontrada.');
+        }
+
+        return response()->file(Storage::disk('public')->path($foto->path));
+    }
+
+    public function verArchivo(EquipoComputo $equipo, string $tipo)
+    {
+        $path = match ($tipo) {
+            'factura' => $equipo->factura_path,
+            'resguardo' => $equipo->resguardo_path,
+            default => null,
+        };
+
+        if (!$path || !Storage::disk('public')->exists($path)) {
+            abort(404, 'Archivo no encontrado.');
+        }
+
+        return response()->file(Storage::disk('public')->path($path));
+    }
+
     private function registrarMovimiento(EquipoComputo $equipo, array $data): EquipoComputoMovimiento
     {
         return EquipoComputoMovimiento::create(array_merge([

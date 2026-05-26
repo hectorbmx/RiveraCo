@@ -196,8 +196,8 @@
                             @if($equipo->fotos->count())
                                 <div class="mt-2 flex gap-1">
                                     @foreach($equipo->fotos->take(3) as $foto)
-                                        <a href="{{ asset('storage/'.$foto->path) }}" target="_blank">
-                                            <img src="{{ asset('storage/'.$foto->path) }}" alt="Foto equipo" class="h-10 w-10 rounded-lg object-cover border border-slate-200">
+                                        <a href="{{ route('empresa_config.equipos-computo.fotos.show', $foto) }}" target="_blank">
+                                            <img src="{{ route('empresa_config.equipos-computo.fotos.show', $foto) }}" alt="Foto equipo" class="h-10 w-10 rounded-lg object-cover border border-slate-200">
                                         </a>
                                     @endforeach
                                 </div>
@@ -212,10 +212,10 @@
                         <td class="px-4 py-3 text-slate-700">
                             <div>{{ $equipo->factura_folio ?: ($equipo->factura_uuid ?: '-') }}</div>
                             @if($equipo->factura_path)
-                                <a href="{{ asset('storage/'.$equipo->factura_path) }}" target="_blank" class="text-xs text-blue-600 hover:underline">Ver archivo</a>
+                                <a href="{{ route('empresa_config.equipos-computo.archivo', [$equipo, 'factura']) }}" target="_blank" class="text-xs text-blue-600 hover:underline">Ver archivo</a>
                             @endif
                             @if($equipo->resguardo_path)
-                                <div><a href="{{ asset('storage/'.$equipo->resguardo_path) }}" target="_blank" class="text-xs text-indigo-600 hover:underline">Ver resguardo</a></div>
+                                <div><a href="{{ route('empresa_config.equipos-computo.archivo', [$equipo, 'resguardo']) }}" target="_blank" class="text-xs text-indigo-600 hover:underline">Ver resguardo</a></div>
                             @endif
                         </td>
                         <td class="px-4 py-3">
@@ -288,7 +288,7 @@
                                             Resguardo firmado
                                             <input type="file" name="resguardo_archivo" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block w-full text-xs">
                                             @if($equipo->resguardo_path)
-                                                <a href="{{ asset('storage/'.$equipo->resguardo_path) }}" target="_blank" class="mt-1 inline-block text-indigo-600 hover:underline">Ver actual</a>
+                                                <a href="{{ route('empresa_config.equipos-computo.archivo', [$equipo, 'resguardo']) }}" target="_blank" class="mt-1 inline-block text-indigo-600 hover:underline">Ver actual</a>
                                             @endif
                                         </label>
                                         <input type="text" name="ubicacion" value="{{ $equipo->ubicacion }}" class="rounded-lg border-slate-300 text-sm" placeholder="Ubicacion">
@@ -420,8 +420,8 @@
                                                             @if($mov->fotos->count())
                                                                 <div class="flex gap-1">
                                                                     @foreach($mov->fotos as $foto)
-                                                                        <a href="{{ asset('storage/'.$foto->path) }}" target="_blank">
-                                                                            <img src="{{ asset('storage/'.$foto->path) }}" alt="Foto movimiento" class="h-9 w-9 rounded-md object-cover border border-slate-200">
+                                                                        <a href="{{ route('empresa_config.equipos-computo.fotos.show', $foto) }}" target="_blank">
+                                                                            <img src="{{ route('empresa_config.equipos-computo.fotos.show', $foto) }}" alt="Foto movimiento" class="h-9 w-9 rounded-md object-cover border border-slate-200">
                                                                         </a>
                                                                     @endforeach
                                                                 </div>
