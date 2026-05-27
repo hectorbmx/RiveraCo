@@ -369,7 +369,11 @@ public function print(OrdenCompra $orden_compra)
         return $valor === '0' ? '' : $valor;
     };
     $proveedorBanco = $datoBancario($oc->proveedor->banco ?? '');
-    $proveedorCuenta = $datoBancario($oc->proveedor->cuenta ?? '') ?: $datoBancario($oc->proveedor->clabe ?? '');
+    $proveedorCuenta = $datoBancario($oc->proveedor->cuenta ?? '');
+    $proveedorClabe = $datoBancario($oc->proveedor->clabe ?? '');
+    $proveedorCuentaLabel = $proveedorCuenta
+        ? 'CUENTA: ' . $proveedorCuenta
+        : ($proveedorClabe ? 'CLABE: ' . $proveedorClabe : 'CUENTA: -');
 
     // ====== HEADER (logo + titulo + lineas azules + datos empresa) ======
     $pdf->SetXY($X0, $Y);
@@ -466,7 +470,7 @@ public function print(OrdenCompra $orden_compra)
 
     $pdf->SetXY($midX + 2, $Y + 26);
     $pdf->SetFont('Arial', '', 7.5);
-    $pdf->Cell(0, 6, $utf8('BANCO: ') . $utf8($proveedorBanco ?: '-') . $utf8('   CTA: ') . $utf8($proveedorCuenta ?: '-'), 0, 0, 'L');
+    $pdf->MultiCell($X0 + $W - $midX - 4, 3.5, $utf8('BANCO: ') . $utf8($proveedorBanco ?: '-') . "\n" . $utf8($proveedorCuentaLabel), 0, 'L');
 
     // ====== TABLA DETALLES (header azul) ======
     $Y += $boxH + 6;

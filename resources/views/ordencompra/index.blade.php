@@ -39,7 +39,16 @@
         @foreach($ordenes as $oc)
             <tr class="border-b">
                 <td class="p-2 text-center">{{ $oc->folio }}</td>
-                <td class="p-2 text-center">{{ $oc->proveedor->nombre ?? '-' }}</td>
+                <td class="p-2 text-center">
+                    @if($oc->proveedor)
+                        <a href="{{ route('proveedores.show', ['proveedor' => $oc->proveedor->id, 'tab' => 'general']) }}"
+                           class="font-medium text-blue-700 hover:text-blue-900 hover:underline">
+                            {{ $oc->proveedor->nombre }}
+                        </a>
+                    @else
+                        -
+                    @endif
+                </td>
                 
                 <td class="p-2 text-center">{{ $oc->areaCatalogo->nombre ?? $oc->area }}</td>
                 <td class="p-2 text-center">{{ $oc->fecha }}</td>
