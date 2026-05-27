@@ -8,6 +8,7 @@ use App\Models\Area;
 use App\Models\Proveedor;
 use App\Models\Obra;
 use App\Models\OrdenCompra;
+use App\Models\CentroCosto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +22,7 @@ class OrdenCompraController extends Controller
     public function index(Request $request)
     {
         $q = OrdenCompra::query()
-            ->with(['proveedor','obra','areaCatalogo','detalles'])
+            ->with(['proveedor','obra','centroCosto','areaCatalogo','detalles','pagoProveedorActivo'])
             ->orderByDesc('fecha')
             ->orderByDesc('id');
 
@@ -31,6 +32,7 @@ class OrdenCompraController extends Controller
 
     $areas = Area::orderBy('nombre')->get();
     $obras = Obra::orderBy('nombre')->get();
+    $centrosCosto = CentroCosto::where('activo', true)->orderBy('nombre')->get();
 
         if ($request->filled('estado')) {
             // aceptamos programada/autorizada/cancelada y lo mapeamos a legacy
@@ -71,7 +73,7 @@ class OrdenCompraController extends Controller
         }
 
         // return view('rdenes_compra.index', compact('ordenes'));
-        return view('ordencompra.index', compact('ordenes','areas','obras','proveedores'));
+        return view('ordencompra.index', compact('ordenes','areas','obras','proveedores','centrosCosto'));
     }
 
    public function create()
@@ -83,8 +85,9 @@ class OrdenCompraController extends Controller
     $areas = Area::orderBy('nombre')->get();
 
     $obras = Obra::orderBy('nombre')->get();
+    $centrosCosto = CentroCosto::where('activo', true)->orderBy('nombre')->get();
 
-    return view('ordencompra.create', compact('proveedores','areas','obras'));
+    return view('ordencompra.create', compact('proveedores','areas','obras','centrosCosto'));
 }
 
     /**
@@ -101,7 +104,8 @@ class OrdenCompraController extends Controller
             $oc->folio        = $this->generarFolioPorArea($area); // folio por área
             $oc->proveedor_id = (int) $request->proveedor_id;
             $oc->obra_id      = $request->obra_id ? (int)$request->obra_id : null;
-            $oc->planeacion_gasto_id = $request->planeacion_gasto_id ? (int)$request->planeacion_gasto_id : null;
+            $oc->centro_costo_id = $request->centro_costo_id ? (int)$request->centro_costo_id : null;
+            $oc->planeacion_gasto_id = $oc->obra_id && $request->planeacion_gasto_id ? (int)$request->planeacion_gasto_id : null;
 
             // nuevo
             $oc->area_id      = (int) $request->area_id;
@@ -143,8 +147,11 @@ class OrdenCompraController extends Controller
 
 public function edit($id)
 {
-    $oc = OrdenCompra::with(['detalles.producto','proveedor','obra','areaCatalogo'])->findOrFail($id);
+    $oc = OrdenCompra::with(['detalles.producto','proveedor','obra','centroCosto','areaCatalogo'])->findOrFail($id);
     $areas = Area::where('activo', 1)->orderBy('nombre')->get();
+    $proveedores = Proveedor::where('activo', 1)->orderBy('nombre')->get();
+    $obras = Obra::orderBy('nombre')->get();
+    $centrosCosto = CentroCosto::where('activo', true)->orderBy('nombre')->get();
 
     $subtotalGeneral = 0;
     $ivaMontoGeneral = 0;
@@ -163,7 +170,7 @@ public function edit($id)
     $oc->iva_monto_calc = $ivaMontoGeneral;
     $oc->total_calc = $subtotalGeneral + $ivaMontoGeneral + ((float)($oc->otros_impuestos ?? 0));
 
-    return view('ordencompra.edit', compact('oc','areas'));
+    return view('ordencompra.edit', compact('oc','areas','proveedores','obras','centrosCosto'));
 }
 
 
@@ -187,6 +194,8 @@ public function edit($id)
 
             $oc->proveedor_id = (int) $request->proveedor_id;
             $oc->obra_id      = $request->obra_id ? (int)$request->obra_id : null;
+            $oc->centro_costo_id = $request->centro_costo_id ? (int)$request->centro_costo_id : null;
+            $oc->planeacion_gasto_id = $oc->obra_id && $request->planeacion_gasto_id ? (int)$request->planeacion_gasto_id : null;
 
             $oc->area_id      = (int) $request->area_id;
             $oc->moneda       = $request->moneda;
@@ -331,7 +340,7 @@ public function print(OrdenCompra $orden_compra)
         abort(403, 'No tienes permiso para imprimir órdenes de compra.');
     }
 
-    $oc = $orden_compra->load(['proveedor', 'obra', 'areaCatalogo', 'detalles']);
+    $oc = $orden_compra->load(['proveedor', 'obra', 'centroCosto', 'areaCatalogo', 'detalles']);
 
     $pdf = new \FPDF('P', 'mm', 'Letter');
     $pdf->AddPage();
@@ -360,10 +369,13 @@ public function print(OrdenCompra $orden_compra)
 
     $proveedorNombre = $oc->proveedor->nombre ?? '-';
     $area = $oc->areaCatalogo->nombre ?? ($oc->area ?? '-');
+    $centroCostoNombre = $oc->centroCosto
+        ? trim(($oc->centroCosto->codigo ? $oc->centroCosto->codigo . ' - ' : '') . $oc->centroCosto->nombre)
+        : null;
     $obraNombre = $oc->obra
         ? trim(($oc->obra->clave_obra ? $oc->obra->clave_obra . ' - ' : '') . ($oc->obra->nombre ?? ''))
-        : 'Compra general';
-    $obraFolio = $oc->obra->clave_obra ?? 'Compra general';
+        : ($centroCostoNombre ? 'Compra general / ' . $centroCostoNombre : 'Compra general');
+    $obraFolio = $oc->obra->clave_obra ?? ($centroCostoNombre ?: 'Compra general');
     $datoBancario = function ($valor): string {
         $valor = trim((string) $valor);
         return $valor === '0' ? '' : $valor;

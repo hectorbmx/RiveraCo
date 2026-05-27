@@ -17,6 +17,7 @@ class StoreOrdenCompraRequest extends FormRequest
        return [
         'proveedor_id'         => ['required', 'integer', 'exists:proveedores,id'],
         'obra_id'              => ['nullable', 'integer', 'exists:obras,id'],
+        'centro_costo_id'      => ['nullable', 'integer', 'exists:centros_costo,id'],
         'planeacion_gasto_id'  => ['nullable', 'integer', 'exists:obra_planeacion_gastos,id'],  // NUEVO
  
         'area_id'              => ['required', 'integer', 'exists:areas,id'],
@@ -42,6 +43,14 @@ class StoreOrdenCompraRequest extends FormRequest
 
             if ($moneda !== 'MXN' && (is_null($tc) || (float)$tc <= 0)) {
                 $v->errors()->add('tipo_cambio', 'Tipo de cambio es obligatorio y debe ser mayor a 0 cuando la moneda no es MXN.');
+            }
+
+            if ($this->filled('obra_id') && $this->filled('centro_costo_id')) {
+                $v->errors()->add('centro_costo_id', 'Selecciona obra o centro de costo, no ambos.');
+            }
+
+            if ($this->filled('centro_costo_id') && $this->filled('planeacion_gasto_id')) {
+                $v->errors()->add('planeacion_gasto_id', 'La partida presupuestal solo aplica cuando la orden pertenece a una obra.');
             }
         });
     }

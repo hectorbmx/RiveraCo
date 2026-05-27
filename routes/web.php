@@ -65,6 +65,7 @@ use App\Http\Controllers\Sat\SatCatalogoController;
 use App\Http\Controllers\Sat\SatFacturaPagoController;
 
 use App\Http\Controllers\ProgramacionPagosController;
+use App\Http\Controllers\PagoProveedorController;
 use App\Http\Controllers\ObraReposicionGastoController;
 use App\Http\Controllers\CajaChicaController;
 use App\Http\Controllers\EquipoComputoController;
@@ -689,6 +690,18 @@ Route::prefix('programacion-pagos')
         Route::patch('/{programacion}/autorizar', [ProgramacionPagosController::class, 'autorizar'])->name('autorizar');
         
 
+    });
+
+Route::prefix('pagos-proveedores')
+    ->name('pagos-proveedores.')
+    ->middleware(['auth'])
+    ->group(function () {
+        Route::get('/', [PagoProveedorController::class, 'index'])->name('index');
+        Route::get('/create', [PagoProveedorController::class, 'create'])->name('create');
+        Route::post('/', [PagoProveedorController::class, 'store'])->name('store');
+        Route::patch('/{pago}/autorizar', [PagoProveedorController::class, 'autorizar'])->name('autorizar');
+        Route::patch('/{pago}/pagar', [PagoProveedorController::class, 'pagar'])->name('pagar');
+        Route::patch('/{pago}/cancelar', [PagoProveedorController::class, 'cancelar'])->name('cancelar');
     });
 
     Route::prefix('obras')

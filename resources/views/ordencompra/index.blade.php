@@ -29,6 +29,7 @@
             <th class="p-2 border">Folio</th>
             <th class="p-2 border">Proveedor</th>
             <th class="p-2 border">Área</th>
+            <th class="p-2 border">Destino</th>
             <th class="p-2 border">Fecha</th>
             <th class="p-2 border">Estado</th>
             <th class="p-2 border">Total</th>
@@ -51,6 +52,15 @@
                 </td>
                 
                 <td class="p-2 text-center">{{ $oc->areaCatalogo->nombre ?? $oc->area }}</td>
+                <td class="p-2 text-center">
+                    @if($oc->obra)
+                        {{ $oc->obra->nombre }}
+                    @elseif($oc->centroCosto)
+                        {{ $oc->centroCosto->codigo ? $oc->centroCosto->codigo . ' - ' : '' }}{{ $oc->centroCosto->nombre }}
+                    @else
+                        Compra general
+                    @endif
+                </td>
                 <td class="p-2 text-center">{{ $oc->fecha }}</td>
                 <td class="p-2 text-center">
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border {{ $estadoBadge($oc->estado_normalizado) }}">
@@ -80,6 +90,13 @@
                         class="text-blue-600 hover:underline">
                             Abrir
                         </a>
+
+                        @if($oc->estado_normalizado === 'autorizada' && !$oc->pagoProveedorActivo)
+                            <a href="{{ route('pagos-proveedores.create', ['orden_compra_id' => $oc->id]) }}"
+                               class="text-amber-700 hover:underline">
+                                Programar pago
+                            </a>
+                        @endif
 
                         @php
                             $estadoNorm = strtolower(trim((string) ($oc->estado ?? 'borrador')));

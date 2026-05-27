@@ -252,6 +252,12 @@
                     <span class="text-lg">🛒</span>
                     <span class="sidebar-text">Órdenes de compra</span>
                 </a>
+                <a href="{{ route('pagos-proveedores.index') }}"
+                class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('pagos-proveedores.*') ? 'bg-white/10' : '' }}"
+                title="Pagos a proveedores">
+                    <span class="text-lg">ðŸ’³</span>
+                    <span class="sidebar-text">Pagos a proveedores</span>
+                </a>
                 @if($canMenu('productos.access'))
                <a href="{{ route('productos.index') }}"
                 class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"

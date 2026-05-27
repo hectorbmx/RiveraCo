@@ -78,6 +78,21 @@
 </div>
  
 {{-- Select de partidas — se muestra solo cuando hay obra seleccionada --}}
+<div>
+    <label class="block text-sm font-medium mb-1">Centro de costo</label>
+    <select name="centro_costo_id" id="centro_costo_id" class="w-full border p-2 rounded">
+        <option value="">Sin centro de costo</option>
+        @foreach($centrosCosto as $centro)
+            <option value="{{ $centro->id }}" {{ old('centro_costo_id') == $centro->id ? 'selected' : '' }}>
+                {{ $centro->codigo ? $centro->codigo . ' - ' : '' }}{{ $centro->nombre }}
+            </option>
+        @endforeach
+    </select>
+    @error('centro_costo_id')
+        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+    @enderror
+</div>
+
 <div id="partidas_wrapper" class="{{ old('obra_id') ? '' : 'hidden' }}">
     <label class="block text-sm font-medium mb-1">Partida presupuestal</label>
     <select
@@ -101,6 +116,7 @@
     const partidasWrapper = document.getElementById('partidas_wrapper');
     const partidaSelect   = document.getElementById('partida_select');
     const hiddenPartida   = document.getElementById('planeacion_gasto_id');
+    const centroCostoSelect = document.getElementById('centro_costo_id');
     const msgCargando     = document.getElementById('partidas_cargando');
     const msgSinDatos     = document.getElementById('partidas_sin_datos');
  
@@ -188,6 +204,9 @@
     // Al cambiar la obra
     obraSelect.addEventListener('change', function () {
         const obraId = this.value;
+        if (obraId && centroCostoSelect) {
+            centroCostoSelect.value = '';
+        }
  
         if (!obraId) {
             partidasWrapper.classList.add('hidden');
@@ -201,6 +220,13 @@
     // Al cambiar la partida seleccionada
     partidaSelect.addEventListener('change', function () {
         hiddenPartida.value = this.value || '';
+    });
+
+    centroCostoSelect?.addEventListener('change', function () {
+        if (!this.value) return;
+        obraSelect.value = '';
+        partidasWrapper.classList.add('hidden');
+        limpiarPartidas();
     });
  
     // Si al cargar la página ya hay una obra seleccionada (old input / edit)

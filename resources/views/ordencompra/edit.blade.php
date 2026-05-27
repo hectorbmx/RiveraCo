@@ -25,7 +25,7 @@
           </button>
 
             @if(!$bloqueado)
-                <form method="POST" action="{{ route('ordenes_compra.update', $oc->id) }}" class="inline">
+                <form method="POST" action="{{ route('ordenes_compra.update', $oc->id) }}" id="formEncabezadoOc" class="inline">
                     @csrf
                     @method('PUT')
 
@@ -215,6 +215,114 @@
 })();
 </script>
 
+
+    <div class="bg-white border rounded-xl p-4 mb-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Proveedor</label>
+            <select form="formEncabezadoOc" name="proveedor_id" class="w-full border p-2 rounded" @disabled($bloqueado)>
+                @foreach($proveedores as $p)
+                    <option value="{{ $p->id }}" @selected(old('proveedor_id', $oc->proveedor_id) == $p->id)>{{ $p->nombre }}</option>
+                @endforeach
+            </select>
+            @error('proveedor_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Area</label>
+            <select form="formEncabezadoOc" name="area_id" class="w-full border p-2 rounded" @disabled($bloqueado)>
+                @foreach($areas as $a)
+                    <option value="{{ $a->id }}" @selected(old('area_id', $oc->area_id) == $a->id)>{{ $a->nombre }}</option>
+                @endforeach
+            </select>
+            @error('area_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Obra</label>
+            <select form="formEncabezadoOc" name="obra_id" id="edit_obra_id" class="w-full border p-2 rounded" @disabled($bloqueado)>
+                <option value="">Compra general</option>
+                @foreach($obras as $o)
+                    <option value="{{ $o->id }}" @selected(old('obra_id', $oc->obra_id) == $o->id)>{{ $o->nombre }}</option>
+                @endforeach
+            </select>
+            @error('obra_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Centro de costo</label>
+            <select form="formEncabezadoOc" name="centro_costo_id" id="edit_centro_costo_id" class="w-full border p-2 rounded" @disabled($bloqueado)>
+                <option value="">Sin centro de costo</option>
+                @foreach($centrosCosto as $centro)
+                    <option value="{{ $centro->id }}" @selected(old('centro_costo_id', $oc->centro_costo_id) == $centro->id)>
+                        {{ $centro->codigo ? $centro->codigo . ' - ' : '' }}{{ $centro->nombre }}
+                    </option>
+                @endforeach
+            </select>
+            @error('centro_costo_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha</label>
+            <input form="formEncabezadoOc" type="date" name="fecha" value="{{ old('fecha', optional($oc->fecha)->format('Y-m-d')) }}" class="w-full border p-2 rounded" @disabled($bloqueado)>
+            @error('fecha')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Moneda</label>
+            <select form="formEncabezadoOc" name="moneda" class="w-full border p-2 rounded" @disabled($bloqueado)>
+                @foreach(['MXN','USD','EUR'] as $moneda)
+                    <option value="{{ $moneda }}" @selected(old('moneda', $oc->moneda ?? 'MXN') === $moneda)>{{ $moneda }}</option>
+                @endforeach
+            </select>
+            @error('moneda')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de cambio</label>
+            <input form="formEncabezadoOc" type="number" step="0.0001" name="tipo_cambio" value="{{ old('tipo_cambio', $oc->tipo_cambio) }}" class="w-full border p-2 rounded" @disabled($bloqueado)>
+            @error('tipo_cambio')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Cotizacion</label>
+            <input form="formEncabezadoOc" name="cotizacion" value="{{ old('cotizacion', $oc->cotizacion) }}" class="w-full border p-2 rounded" @disabled($bloqueado)>
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Atencion</label>
+            <input form="formEncabezadoOc" name="atencion" value="{{ old('atencion', $oc->atencion) }}" class="w-full border p-2 rounded" @disabled($bloqueado)>
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo pago</label>
+            <input form="formEncabezadoOc" name="tipo_pago" value="{{ old('tipo_pago', $oc->tipo_pago) }}" class="w-full border p-2 rounded" @disabled($bloqueado)>
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Forma pago</label>
+            <input form="formEncabezadoOc" name="forma_pago" value="{{ old('forma_pago', $oc->forma_pago) }}" class="w-full border p-2 rounded" @disabled($bloqueado)>
+        </div>
+
+        <div class="md:col-span-4">
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Comentarios</label>
+            <textarea form="formEncabezadoOc" name="comentarios" rows="2" class="w-full border p-2 rounded" @disabled($bloqueado)>{{ old('comentarios', $oc->comentarios) }}</textarea>
+        </div>
+
+        <input form="formEncabezadoOc" type="hidden" name="planeacion_gasto_id" value="{{ old('planeacion_gasto_id', $oc->planeacion_gasto_id) }}">
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const obra = document.getElementById('edit_obra_id');
+        const centro = document.getElementById('edit_centro_costo_id');
+        obra?.addEventListener('change', () => {
+            if (obra.value && centro) centro.value = '';
+        });
+        centro?.addEventListener('change', () => {
+            if (centro.value && obra) obra.value = '';
+        });
+    });
+    </script>
 
     {{-- Totales --}}
     <div class="grid grid-cols-4 gap-4 mb-4">

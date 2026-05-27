@@ -13,6 +13,7 @@ class OrdenCompra extends Model
         'folio',
         'proveedor_id',
         'obra_id',
+        'centro_costo_id',
         'area_id',
         'area',
         'cotizacion',
@@ -65,6 +66,11 @@ class OrdenCompra extends Model
         return $this->belongsTo(Obra::class, 'obra_id');
     }
 
+    public function centroCosto()
+    {
+        return $this->belongsTo(CentroCosto::class, 'centro_costo_id');
+    }
+
     public function areaCatalogo()
     {
         return $this->belongsTo(Area::class, 'area_id');
@@ -73,6 +79,18 @@ class OrdenCompra extends Model
     public function detalles()
     {
         return $this->hasMany(OrdenCompraDetalle::class, 'orden_compra_id');
+    }
+
+    public function pagosProveedor()
+    {
+        return $this->hasMany(PagoProveedor::class, 'orden_compra_id');
+    }
+
+    public function pagoProveedorActivo()
+    {
+        return $this->hasOne(PagoProveedor::class, 'orden_compra_id')
+            ->whereIn('estatus', ['programado', 'autorizado', 'pagado'])
+            ->latestOfMany();
     }
     public function partida()
     {
