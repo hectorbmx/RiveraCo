@@ -18,6 +18,7 @@ use Illuminate\Support\Str;
 use App\Models\Empleado;
 use App\Models\EquipoComputo;
 use App\Models\CentroCosto;
+use App\Models\TipoIva;
 
 class EmpresaConfigController extends Controller
 {
@@ -87,6 +88,11 @@ public function index(){
             ->orderByDesc('activo')
             ->orderBy('nombre')
             ->get();
+
+        $tiposIva = TipoIva::query()
+            ->orderByDesc('activo')
+            ->orderBy('porcentaje')
+            ->get();
         
         // $Catrol = CatalogoRol::orderBy('id')->orderBy('nombre')->get();
 
@@ -155,6 +161,7 @@ public function index(){
         'equiposComputo',
         'empleadosResponsables',
         'centrosCosto',
+        'tiposIva',
     ));
 }
 
@@ -371,5 +378,54 @@ public function toggleCentroCosto(CentroCosto $centroCosto)
     return redirect()
         ->route('empresa_config.edit', ['tab' => 'centros_costo'])
         ->with('success', 'Estado del centro de costo actualizado.');
+}
+
+public function storeTipoIva(Request $request)
+{
+    $data = $request->validate([
+        'nombre' => ['required', 'string', 'max:80'],
+        'porcentaje' => ['required', 'numeric', 'min:0', 'max:100'],
+        'default' => ['nullable', 'boolean'],
+    ]);
+
+    DB::transaction(function () use ($request, $data) {
+        if ($request->boolean('default')) {
+            TipoIva::query()->update(['default' => false]);
+        }
+
+        TipoIva::create([
+            'nombre' => $data['nombre'],
+            'porcentaje' => $data['porcentaje'],
+            'activo' => true,
+            'default' => $request->boolean('default'),
+        ]);
+    });
+
+    return redirect()
+        ->route('empresa_config.edit', ['tab' => 'iva'])
+        ->with('success', 'Tipo de IVA registrado.');
+}
+
+public function toggleTipoIva(TipoIva $tipoIva)
+{
+    $tipoIva->update([
+        'activo' => !$tipoIva->activo,
+    ]);
+
+    return redirect()
+        ->route('empresa_config.edit', ['tab' => 'iva'])
+        ->with('success', 'Estado del tipo de IVA actualizado.');
+}
+
+public function marcarTipoIvaDefault(TipoIva $tipoIva)
+{
+    DB::transaction(function () use ($tipoIva) {
+        TipoIva::query()->update(['default' => false]);
+        $tipoIva->update(['default' => true, 'activo' => true]);
+    });
+
+    return redirect()
+        ->route('empresa_config.edit', ['tab' => 'iva'])
+        ->with('success', 'IVA por defecto actualizado.');
 }
 }

@@ -29,8 +29,8 @@ class UpdateOrdenCompraRequest extends FormRequest
 
             'cotizacion'   => ['nullable','string','max:50'],
             'atencion'     => ['nullable','string','max:100'],
-            'tipo_pago'    => ['nullable','string','max:50'],
-            'forma_pago'   => ['nullable','string','max:50'],
+            'tipo_pago'    => ['nullable', Rule::in(['PUE', 'PPD'])],
+            'forma_pago'   => ['nullable', Rule::in(['01', '02', '03', '04', '28', '99'])],
             'comentarios'  => ['nullable','string'],
         ];
     }

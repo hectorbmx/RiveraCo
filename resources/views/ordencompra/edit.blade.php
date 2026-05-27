@@ -295,12 +295,28 @@
 
         <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo pago</label>
-            <input form="formEncabezadoOc" name="tipo_pago" value="{{ old('tipo_pago', $oc->tipo_pago) }}" class="w-full border p-2 rounded" @disabled($bloqueado)>
+            <select form="formEncabezadoOc" name="tipo_pago" class="w-full border p-2 rounded" @disabled($bloqueado)>
+                <option value="">Selecciona metodo</option>
+                <option value="PUE" @selected(old('tipo_pago', $oc->tipo_pago) === 'PUE')>PUE - Pago en una sola exhibicion</option>
+                <option value="PPD" @selected(old('tipo_pago', $oc->tipo_pago) === 'PPD')>PPD - Pago en parcialidades o diferido</option>
+            </select>
         </div>
 
         <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Forma pago</label>
-            <input form="formEncabezadoOc" name="forma_pago" value="{{ old('forma_pago', $oc->forma_pago) }}" class="w-full border p-2 rounded" @disabled($bloqueado)>
+            <select form="formEncabezadoOc" name="forma_pago" class="w-full border p-2 rounded" @disabled($bloqueado)>
+                <option value="">Selecciona forma</option>
+                @foreach([
+                    '01' => '01 - Efectivo',
+                    '02' => '02 - Cheque nominativo',
+                    '03' => '03 - Transferencia electronica de fondos',
+                    '04' => '04 - Tarjeta de credito',
+                    '28' => '28 - Tarjeta de debito',
+                    '99' => '99 - Por definir',
+                ] as $clave => $label)
+                    <option value="{{ $clave }}" @selected(old('forma_pago', $oc->forma_pago) == $clave)>{{ $label }}</option>
+                @endforeach
+            </select>
         </div>
 
         <div class="md:col-span-4">
@@ -343,6 +359,7 @@
         <input id="descProducto" name="descripcion" class="w-full border p-2 rounded" placeholder="Descripción / buscar producto..." autocomplete="off">
         <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">Descripción del Producto</span>
         
+        <div id="producto_meta" class="text-[11px] text-slate-400 mt-1 ml-1 leading-tight"></div>
         <div id="sugerenciasProductos" class="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow hidden max-h-60 overflow-auto"></div>
     </div>
 
@@ -373,7 +390,13 @@
 
     <!-- IVA -->
     <div>
-        <input name="iva" type="number" step="0.01" placeholder="0" class="w-full border p-2 rounded">
+        <select name="iva" class="w-full border p-2 rounded">
+            @foreach($tiposIva as $tipo)
+                <option value="{{ (float) $tipo->porcentaje }}" @selected($tipo->default)>
+                    {{ $tipo->nombre }} ({{ number_format((float) $tipo->porcentaje, 2) }}%)
+                </option>
+            @endforeach
+        </select>
         <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">% IVA</span>
     </div>
         <div class="flex flex-col">
@@ -403,7 +426,17 @@
         @foreach($oc->detalles as $d)
         
             <tr>
-                <td class="p-2 text-center">{{ $d->descripcion }}</td>
+                <td class="p-2 text-center">
+                    <div>{{ $d->descripcion }}</div>
+                    @if($d->producto)
+                        <div class="mt-1 text-[11px] text-slate-400">
+                            SKU: {{ $d->producto->sku ?: '-' }}
+                            @if($d->producto->descripcion)
+                                · {{ $d->producto->descripcion }}
+                            @endif
+                        </div>
+                    @endif
+                </td>
                 <td class="p-2 text-center">{{ $d->cantidad }}</td>
                 <td class="p-2 text-center">${{ number_format($d->precio_unitario,2) }}</td>
                 <td class="p-2 text-center">${{ number_format($d->precio_unitario*$d->cantidad,2) }}</td>
@@ -434,6 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const productoId = document.getElementById('detalle_producto_id') || document.getElementById('producto_id');
     const legacyId   = document.getElementById('detalle_legacy_prod_id') || document.getElementById('legacy_prod_id');
     const unidad     = document.getElementById('detalle_unidad') || document.getElementById('unidad');
+    const meta        = document.getElementById('producto_meta');
 
     if (!input || !box || !productoId) {
         console.warn('Autocomplete: Faltan elementos esenciales en el DOM');
@@ -453,6 +487,7 @@ document.addEventListener('DOMContentLoaded', () => {
             box.innerHTML = '';
             productoId.value = '';
             if(legacyId) legacyId.value = '';
+            if(meta) meta.innerText = '';
             return;
         }
 
@@ -488,11 +523,14 @@ document.addEventListener('DOMContentLoaded', () => {
                          data-id="${p.id}"
                          data-legacy="${p.legacy_prod_id ?? ''}"
                          data-nombre="${(p.nombre ?? '').replace(/"/g,'&quot;')}"
-                         data-unidad="${p.unidad ?? ''}">
+                         data-unidad="${p.unidad ?? ''}"
+                         data-sku="${(p.sku ?? '').replace(/"/g,'&quot;')}"
+                         data-descripcion="${(p.descripcion ?? '').replace(/"/g,'&quot;')}">
                         <div class="font-semibold text-slate-800">${p.nombre}</div>
                         <div class="text-xs text-slate-500">
                             SKU: ${p.sku ?? '-'} · Unidad: ${p.unidad ?? '-'}
                         </div>
+                        ${p.descripcion ? `<div class="text-xs text-slate-400">${p.descripcion}</div>` : ``}
                     </div>
                 `).join('');
 
@@ -507,6 +545,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         if(unidad)   unidad.value   = item.dataset.unidad || '';
                         
                         input.value = item.dataset.nombre || input.value;
+                        if(meta) {
+                            const sku = item.dataset.sku || '-';
+                            const descripcion = item.dataset.descripcion || '';
+                            meta.innerText = descripcion ? `SKU: ${sku} · ${descripcion}` : `SKU: ${sku}`;
+                        }
 
                         box.classList.add('hidden');
                         box.innerHTML = '';

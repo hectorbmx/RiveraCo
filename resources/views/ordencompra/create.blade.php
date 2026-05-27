@@ -252,15 +252,39 @@
             <div>
             <label>IVA base (%)</label>
                     <select name="iva" class="w-full border p-2">
-                        <option value="0">0%</option>
-                        <option value="12">12%</option>
-                        <option value="16" selected>16%</option>
+                        @foreach($tiposIva as $tipo)
+                            <option value="{{ (float) $tipo->porcentaje }}" @selected($tipo->default)>
+                                {{ $tipo->nombre }} ({{ number_format((float) $tipo->porcentaje, 2) }}%)
+                            </option>
+                        @endforeach
                     </select>
                 </div>
 
             <div>
                 <label>Tipo de cambio</label>
                 <input type="number" step="0.0001" name="tipo_cambio" class="w-full border p-2">
+            </div>
+
+            <div>
+                <label>Tipo de pago</label>
+                <select name="tipo_pago" class="w-full border p-2">
+                    <option value="">Selecciona metodo</option>
+                    <option value="PUE">PUE - Pago en una sola exhibicion</option>
+                    <option value="PPD">PPD - Pago en parcialidades o diferido</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Forma de pago</label>
+                <select name="forma_pago" class="w-full border p-2">
+                    <option value="">Selecciona forma</option>
+                    <option value="01">01 - Efectivo</option>
+                    <option value="02">02 - Cheque nominativo</option>
+                    <option value="03">03 - Transferencia electronica de fondos</option>
+                    <option value="04">04 - Tarjeta de credito</option>
+                    <option value="28">28 - Tarjeta de debito</option>
+                    <option value="99">99 - Por definir</option>
+                </select>
             </div>
         </div>
 

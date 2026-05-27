@@ -354,12 +354,13 @@ public function proveedoresUpdate(Request $request, Producto $producto, Proveedo
                 })
                 ->orderBy('nombre')
                 ->limit(15)
-                ->get(['id','legacy_prod_id','nombre','unidad','sku']);
+                ->get(['id','legacy_prod_id','nombre','descripcion','unidad','sku']);
 
             return response()->json($productos->map(fn($p) => [
                 'id' => $p->id,
                 'legacy_prod_id' => $p->legacy_prod_id,
                 'nombre' => $p->nombre,
+                'descripcion' => $p->descripcion,
                 'unidad' => $p->unidad,
                 'sku' => $p->sku,
             ]));

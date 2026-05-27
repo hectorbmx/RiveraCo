@@ -348,8 +348,11 @@ Route::middleware('auth','verified')->group(function () {
         Route::put('/configuracion-empresa/documentos-empleado/{documentoTipo}', [EmpresaConfigController::class, 'updateDocumentoEmpleado'])->name('empresa_config.documentos.update');
         Route::patch('/configuracion-empresa/documentos-empleado/{documentoTipo}/toggle-activo', [EmpresaConfigController::class, 'toggleDocumentoEmpleadoActivo'])->name('empresa_config.documentos.toggle-activo');
         Route::delete('/configuracion-empresa/documentos-empleado/{documentoTipo}', [EmpresaConfigController::class, 'destroyDocumentoEmpleado'])->name('empresa_config.documentos.destroy');
-        Route::post('/configuracion-empresa/centros-costo', [EmpresaConfigController::class, 'storeCentroCosto'])->name('empresa_config.centros-costo.store');
-        Route::patch('/configuracion-empresa/centros-costo/{centroCosto}/toggle-activo', [EmpresaConfigController::class, 'toggleCentroCosto'])->name('empresa_config.centros-costo.toggle-activo');
+    Route::post('/configuracion-empresa/centros-costo', [EmpresaConfigController::class, 'storeCentroCosto'])->name('empresa_config.centros-costo.store');
+    Route::patch('/configuracion-empresa/centros-costo/{centroCosto}/toggle-activo', [EmpresaConfigController::class, 'toggleCentroCosto'])->name('empresa_config.centros-costo.toggle-activo');
+    Route::post('/configuracion-empresa/tipos-iva', [EmpresaConfigController::class, 'storeTipoIva'])->name('empresa_config.tipos-iva.store');
+    Route::patch('/configuracion-empresa/tipos-iva/{tipoIva}/toggle-activo', [EmpresaConfigController::class, 'toggleTipoIva'])->name('empresa_config.tipos-iva.toggle-activo');
+    Route::patch('/configuracion-empresa/tipos-iva/{tipoIva}/default', [EmpresaConfigController::class, 'marcarTipoIvaDefault'])->name('empresa_config.tipos-iva.default');
 
         Route::get('/configuracion-empresa/equipos-computo/buscar-facturas', [EquipoComputoController::class, 'buscarFacturas'])->name('empresa_config.equipos-computo.buscar-facturas');
         Route::get('/configuracion-empresa/equipos-computo/fotos/{foto}', [EquipoComputoController::class, 'verFoto'])->name('empresa_config.equipos-computo.fotos.show');

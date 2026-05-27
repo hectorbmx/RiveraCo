@@ -24,13 +24,14 @@ class StoreOrdenCompraRequest extends FormRequest
  
         'moneda'               => ['required', Rule::in(['MXN', 'USD', 'EUR'])],
         'tipo_cambio'          => ['nullable', 'numeric', 'min:0'],
+        'iva'                  => ['nullable', 'numeric', 'min:0', 'max:100'],
  
         'fecha'                => ['required', 'date'],
  
         'cotizacion'           => ['nullable', 'string', 'max:50'],
         'atencion'             => ['nullable', 'string', 'max:100'],
-        'tipo_pago'            => ['nullable', 'string', 'max:50'],
-        'forma_pago'           => ['nullable', 'string', 'max:50'],
+        'tipo_pago'            => ['nullable', Rule::in(['PUE', 'PPD'])],
+        'forma_pago'           => ['nullable', Rule::in(['01', '02', '03', '04', '28', '99'])],
         'comentarios'          => ['nullable', 'string'],
     ];
     }

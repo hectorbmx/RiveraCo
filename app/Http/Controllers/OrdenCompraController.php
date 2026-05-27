@@ -9,6 +9,7 @@ use App\Models\Proveedor;
 use App\Models\Obra;
 use App\Models\OrdenCompra;
 use App\Models\CentroCosto;
+use App\Models\TipoIva;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -86,8 +87,9 @@ class OrdenCompraController extends Controller
 
     $obras = Obra::orderBy('nombre')->get();
     $centrosCosto = CentroCosto::where('activo', true)->orderBy('nombre')->get();
+    $tiposIva = TipoIva::where('activo', true)->orderBy('porcentaje')->get();
 
-    return view('ordencompra.create', compact('proveedores','areas','obras','centrosCosto'));
+    return view('ordencompra.create', compact('proveedores','areas','obras','centrosCosto','tiposIva'));
 }
 
     /**
@@ -152,6 +154,7 @@ public function edit($id)
     $proveedores = Proveedor::where('activo', 1)->orderBy('nombre')->get();
     $obras = Obra::orderBy('nombre')->get();
     $centrosCosto = CentroCosto::where('activo', true)->orderBy('nombre')->get();
+    $tiposIva = TipoIva::where('activo', true)->orderBy('porcentaje')->get();
 
     $subtotalGeneral = 0;
     $ivaMontoGeneral = 0;
@@ -170,7 +173,7 @@ public function edit($id)
     $oc->iva_monto_calc = $ivaMontoGeneral;
     $oc->total_calc = $subtotalGeneral + $ivaMontoGeneral + ((float)($oc->otros_impuestos ?? 0));
 
-    return view('ordencompra.edit', compact('oc','areas','proveedores','obras','centrosCosto'));
+    return view('ordencompra.edit', compact('oc','areas','proveedores','obras','centrosCosto','tiposIva'));
 }
 
 

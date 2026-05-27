@@ -56,6 +56,7 @@
                                 'documentos' => ['label' => 'Documentos','desc'  => 'Documentos requeridos para empleados'],
                                 'equipos_computo' => ['label' => 'Equipo de computo', 'desc' => 'Inventario y responsables'],
                                 'centros_costo' => ['label' => 'Centros de costo', 'desc' => 'Gastos fuera de obra'],
+                                'iva' => ['label' => 'IVA', 'desc' => 'Tipos de IVA utilizables'],
                                 'comisiones'=> ['label' => 'Comisiones', 'desc' => 'Reglas por tipo de trabajo'],
                                 'reglas'    => ['label' => 'Reglas', 'desc' => 'Políticas y flujos'],
                                 'alertas'   => ['label' => 'Alertas', 'desc' => 'Notificaciones y avisos'],
@@ -867,6 +868,7 @@
 
 @include('empresa_config.partials._equipos_computo')
 @include('empresa_config.partials._centros_costo')
+@include('empresa_config.partials._tipos_iva')
 
                 {{-- ======================
      COMISIONES
