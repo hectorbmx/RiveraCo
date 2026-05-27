@@ -331,7 +331,7 @@ public function print(OrdenCompra $orden_compra)
         abort(403, 'No tienes permiso para imprimir órdenes de compra.');
     }
 
-    $oc = $orden_compra->load(['proveedor', 'areaCatalogo', 'detalles']);
+    $oc = $orden_compra->load(['proveedor', 'obra', 'areaCatalogo', 'detalles']);
 
     $pdf = new \FPDF('P', 'mm', 'Letter');
     $pdf->AddPage();
@@ -360,6 +360,16 @@ public function print(OrdenCompra $orden_compra)
 
     $proveedorNombre = $oc->proveedor->nombre ?? '-';
     $area = $oc->areaCatalogo->nombre ?? ($oc->area ?? '-');
+    $obraNombre = $oc->obra
+        ? trim(($oc->obra->clave_obra ? $oc->obra->clave_obra . ' - ' : '') . ($oc->obra->nombre ?? ''))
+        : 'Compra general';
+    $obraFolio = $oc->obra->clave_obra ?? 'Compra general';
+    $datoBancario = function ($valor): string {
+        $valor = trim((string) $valor);
+        return $valor === '0' ? '' : $valor;
+    };
+    $proveedorBanco = $datoBancario($oc->proveedor->banco ?? '');
+    $proveedorCuenta = $datoBancario($oc->proveedor->cuenta ?? '') ?: $datoBancario($oc->proveedor->clabe ?? '');
 
     // ====== HEADER (logo + titulo + lineas azules + datos empresa) ======
     $pdf->SetXY($X0, $Y);
@@ -403,7 +413,7 @@ public function print(OrdenCompra $orden_compra)
     $pdf->SetXY($X0 + 125, $Y - 4);
     $pdf->Cell(71, 6, $utf8('NO. DE ORDEN: ') . $utf8($oc->folio), 1, 1, 'L');
     $pdf->SetXY($X0 + 125, $Y + 2);
-    $pdf->Cell(71, 6, $utf8('NO. DE OBRA: ') . $utf8($oc->obra_folio ?? ''), 1, 1, 'L'); // ajusta si existe
+    $pdf->Cell(71, 6, $utf8('NO. DE OBRA: ') . $utf8($obraFolio), 1, 1, 'L');
 
     // Reset azul para cuadros
     $setBlue();
@@ -441,7 +451,7 @@ public function print(OrdenCompra $orden_compra)
 
     $pdf->SetXY($X0 + 2, $Y + 26);
     $pdf->SetFont('Arial', '', 8);
-    $pdf->Cell(0, 5, $utf8('RFC: ') . $utf8($oc->proveedor->rfc ?? '') . $utf8('   CTA: ') . $utf8($oc->proveedor->cta ?? ''), 0, 0, 'L');
+    $pdf->Cell($midX - $X0 - 4, 5, $utf8('RFC: ') . $utf8($oc->proveedor->rfc ?? ''), 0, 0, 'L');
 
     // Columna derecha
     $pdf->SetFont('Arial', 'B', 9);
@@ -452,10 +462,11 @@ public function print(OrdenCompra $orden_compra)
     $pdf->Cell(0, 6, $utf8('AREA: ') . $utf8($area), 0, 0, 'L');
 
     $pdf->SetXY($midX + 2, $Y + 18);
-    $pdf->Cell(0, 6, $utf8('OBRA: ') . $utf8($oc->obra_nombre ?? ''), 0, 0, 'L'); // ajusta si existe
+    $pdf->Cell(0, 6, $utf8('OBRA: ') . $utf8($obraNombre), 0, 0, 'L');
 
     $pdf->SetXY($midX + 2, $Y + 26);
-    $pdf->Cell(0, 6, $utf8(auth()->user()->name ?? ''), 0, 0, 'L');
+    $pdf->SetFont('Arial', '', 7.5);
+    $pdf->Cell(0, 6, $utf8('BANCO: ') . $utf8($proveedorBanco ?: '-') . $utf8('   CTA: ') . $utf8($proveedorCuenta ?: '-'), 0, 0, 'L');
 
     // ====== TABLA DETALLES (header azul) ======
     $Y += $boxH + 6;
