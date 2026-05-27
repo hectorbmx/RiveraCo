@@ -55,6 +55,7 @@
                                 'rrhh'      => ['label' => 'Puestos', 'desc' => 'Horas y horas extra'],
                                 'documentos' => ['label' => 'Documentos','desc'  => 'Documentos requeridos para empleados'],
                                 'equipos_computo' => ['label' => 'Equipo de computo', 'desc' => 'Inventario y responsables'],
+                                'centros_costo' => ['label' => 'Centros de costo', 'desc' => 'Gastos fuera de obra'],
                                 'comisiones'=> ['label' => 'Comisiones', 'desc' => 'Reglas por tipo de trabajo'],
                                 'reglas'    => ['label' => 'Reglas', 'desc' => 'Políticas y flujos'],
                                 'alertas'   => ['label' => 'Alertas', 'desc' => 'Notificaciones y avisos'],
@@ -865,8 +866,9 @@
 </div>
 
 @include('empresa_config.partials._equipos_computo')
+@include('empresa_config.partials._centros_costo')
 
-               {{-- ======================
+                {{-- ======================
      COMISIONES
 ======================= --}}
 <div x-show="tab === 'comisiones'" x-cloak class="space-y-6">

@@ -15,11 +15,17 @@ class Proveedor extends Model
     protected $fillable = [
         'legacy_id',
         'nombre',
+        'razon_social',
         'descripcion',
         'rfc',
         'domicilio',
+        'codigo_postal',
+        'regimen_fiscal',
+        'uso_cfdi_default',
         'telefono',
         'email',
+        'nombre_contacto',
+        'telefono_contacto',
         'banco',
         'clabe',
         'cuenta',
@@ -107,11 +113,25 @@ class Proveedor extends Model
      * Los exponemos como NULL o default para no reventar vistas/forms.
      * Más adelante puedes migrarlos si decides.
      */
-    public function getRazonSocialAttribute(): ?string { return null; }
-    public function setRazonSocialAttribute($value): void { /* noop */ }
+    public function getRazonSocialAttribute(): ?string
+    {
+        return $this->attributes['razon_social'] ?? null;
+    }
 
-    public function getContactoNombreAttribute(): ?string { return null; }
-    public function setContactoNombreAttribute($value): void { /* noop */ }
+    public function setRazonSocialAttribute($value): void
+    {
+        $this->attributes['razon_social'] = $value;
+    }
+
+    public function getContactoNombreAttribute(): ?string
+    {
+        return $this->attributes['nombre_contacto'] ?? null;
+    }
+
+    public function setContactoNombreAttribute($value): void
+    {
+        $this->attributes['nombre_contacto'] = $value;
+    }
 
     public function getDiasCreditoAttribute(): int { return 0; }
     public function setDiasCreditoAttribute($value): void { /* noop */ }

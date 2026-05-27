@@ -34,21 +34,39 @@
             @csrf
 
             {{-- Nombre --}}
-            <div>
-                <label class="block text-sm font-medium text-slate-700">
-                    Nombre <span class="text-red-500">*</span>
-                </label>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">
+                        Nombre <span class="text-red-500">*</span>
+                    </label>
 
-                <input type="text"
-                       name="nombre"
-                       value="{{ old('nombre') }}"
-                       required
-                       class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                              focus:border-[#FFC107] focus:ring-[#FFC107]">
+                    <input type="text"
+                           name="nombre"
+                           value="{{ old('nombre') }}"
+                           required
+                           class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                                  focus:border-[#FFC107] focus:ring-[#FFC107]">
 
-                @error('nombre')
-                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                @enderror
+                    @error('nombre')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">
+                        Razon social
+                    </label>
+
+                    <input type="text"
+                           name="razon_social"
+                           value="{{ old('razon_social') }}"
+                           class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                                  focus:border-[#FFC107] focus:ring-[#FFC107]">
+
+                    @error('razon_social')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
             </div>
 
             {{-- Descripción --}}
@@ -121,6 +139,73 @@
                 @enderror
             </div>
 
+            {{-- Datos fiscales --}}
+            <div class="border-t pt-5">
+                <h2 class="text-sm font-semibold text-slate-700 mb-4 uppercase tracking-wide">
+                    Datos fiscales
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">
+                            Codigo postal
+                        </label>
+
+                        <input type="text"
+                               name="codigo_postal"
+                               value="{{ old('codigo_postal') }}"
+                               class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                                      focus:border-[#FFC107] focus:ring-[#FFC107]">
+
+                        @error('codigo_postal')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">
+                            Regimen fiscal
+                        </label>
+
+                        <select name="regimen_fiscal"
+                                class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                                       focus:border-[#FFC107] focus:ring-[#FFC107]">
+                            <option value="">Selecciona regimen</option>
+                            @foreach($regimenesFiscales as $clave => $nombre)
+                                <option value="{{ $clave }}" @selected(old('regimen_fiscal') == $clave)>
+                                    {{ $nombre }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        @error('regimen_fiscal')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">
+                            Uso CFDI default
+                        </label>
+
+                        <select name="uso_cfdi_default"
+                                class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                                       focus:border-[#FFC107] focus:ring-[#FFC107]">
+                            <option value="">Selecciona uso CFDI</option>
+                            @foreach($usosCfdi as $clave => $nombre)
+                                <option value="{{ $clave }}" @selected(old('uso_cfdi_default') == $clave)>
+                                    {{ $nombre }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        @error('uso_cfdi_default')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
             {{-- Teléfono + Email --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
@@ -156,6 +241,41 @@
                     @enderror
                 </div>
 
+            </div>
+
+            {{-- Contacto --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">
+                        Nombre de contacto
+                    </label>
+
+                    <input type="text"
+                           name="nombre_contacto"
+                           value="{{ old('nombre_contacto') }}"
+                           class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                                  focus:border-[#FFC107] focus:ring-[#FFC107]">
+
+                    @error('nombre_contacto')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">
+                        Telefono de contacto
+                    </label>
+
+                    <input type="text"
+                           name="telefono_contacto"
+                           value="{{ old('telefono_contacto') }}"
+                           class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                                  focus:border-[#FFC107] focus:ring-[#FFC107]">
+
+                    @error('telefono_contacto')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
             </div>
 
             {{-- DATOS BANCARIOS --}}
@@ -207,6 +327,12 @@
                         <input type="text"
                                name="clabe"
                                value="{{ old('clabe') }}"
+                               inputmode="numeric"
+                               minlength="18"
+                               maxlength="18"
+                               pattern="[0-9]{18}"
+                               title="La CLABE debe tener exactamente 18 digitos"
+                               oninput="this.value = this.value.replace(/\D/g, '').slice(0, 18)"
                                class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
                                       focus:border-[#FFC107] focus:ring-[#FFC107]">
 

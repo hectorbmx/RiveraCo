@@ -18,9 +18,29 @@
         <p class="text-slate-900">{{ $proveedor->rfc ?? '-' }}</p>
     </div>
 
+    <div>
+        <p class="text-xs font-semibold text-slate-500">Razon social</p>
+        <p class="text-slate-900">{{ $proveedor->razon_social ?? '-' }}</p>
+    </div>
+
     <div class="md:col-span-2">
         <p class="text-xs font-semibold text-slate-500">Domicilio</p>
         <p class="text-slate-900">{{ $proveedor->domicilio ?? '-' }}</p>
+    </div>
+
+    <div>
+        <p class="text-xs font-semibold text-slate-500">Codigo postal</p>
+        <p class="text-slate-900">{{ $proveedor->codigo_postal ?? '-' }}</p>
+    </div>
+
+    <div>
+        <p class="text-xs font-semibold text-slate-500">Regimen fiscal</p>
+        <p class="text-slate-900">{{ $proveedor->regimen_fiscal ?? '-' }}</p>
+    </div>
+
+    <div>
+        <p class="text-xs font-semibold text-slate-500">Uso CFDI default</p>
+        <p class="text-slate-900">{{ $proveedor->uso_cfdi_default ?? '-' }}</p>
     </div>
 
     <div>
@@ -31,6 +51,16 @@
     <div>
         <p class="text-xs font-semibold text-slate-500">Email</p>
         <p class="text-slate-900">{{ $proveedor->email ?? '-' }}</p>
+    </div>
+
+    <div>
+        <p class="text-xs font-semibold text-slate-500">Contacto</p>
+        <p class="text-slate-900">{{ $proveedor->nombre_contacto ?? '-' }}</p>
+    </div>
+
+    <div>
+        <p class="text-xs font-semibold text-slate-500">Telefono de contacto</p>
+        <p class="text-slate-900">{{ $proveedor->telefono_contacto ?? '-' }}</p>
     </div>
 
     <div>

@@ -17,6 +17,7 @@ use App\Models\EmpresaDocumentoTipo;
 use Illuminate\Support\Str;
 use App\Models\Empleado;
 use App\Models\EquipoComputo;
+use App\Models\CentroCosto;
 
 class EmpresaConfigController extends Controller
 {
@@ -80,6 +81,11 @@ public function index(){
             ->where('Estatus', 1)
             ->orderBy('Nombre')
             ->orderBy('Apellidos')
+            ->get();
+
+        $centrosCosto = CentroCosto::query()
+            ->orderByDesc('activo')
+            ->orderBy('nombre')
             ->get();
         
         // $Catrol = CatalogoRol::orderBy('id')->orderBy('nombre')->get();
@@ -148,6 +154,7 @@ public function index(){
         'documentosEmpleadoTipos',
         'equiposComputo',
         'empleadosResponsables',
+        'centrosCosto',
     ));
 }
 
@@ -336,5 +343,33 @@ public function destroyDocumentoEmpleado(
         'success',
         'Documento eliminado correctamente.'
     );
+}
+
+public function storeCentroCosto(Request $request)
+{
+    $data = $request->validate([
+        'codigo' => ['nullable', 'string', 'max:40', 'unique:centros_costo,codigo'],
+        'nombre' => ['required', 'string', 'max:160', 'unique:centros_costo,nombre'],
+        'descripcion' => ['nullable', 'string'],
+    ]);
+
+    $data['activo'] = true;
+
+    CentroCosto::create($data);
+
+    return redirect()
+        ->route('empresa_config.edit', ['tab' => 'centros_costo'])
+        ->with('success', 'Centro de costo creado correctamente.');
+}
+
+public function toggleCentroCosto(CentroCosto $centroCosto)
+{
+    $centroCosto->update([
+        'activo' => !$centroCosto->activo,
+    ]);
+
+    return redirect()
+        ->route('empresa_config.edit', ['tab' => 'centros_costo'])
+        ->with('success', 'Estado del centro de costo actualizado.');
 }
 }

@@ -8,6 +8,7 @@ use App\Models\OrdenCompra;
 use App\Models\SatCfdi;
 use App\Models\Obra;
 use App\Models\SatCfdiPago;
+use Illuminate\Validation\Rule;
 
 class ProveedorController extends Controller
 {
@@ -39,23 +40,11 @@ class ProveedorController extends Controller
 
     public function create()
     {
-        return view('proveedores.create');
+        return view('proveedores.create', $this->satCatalogos());
     }
       public function store(Request $request)
     {
-        $data = $request->validate([
-            'nombre'     => ['required','string','max:100'],
-            'descripcion'=> ['nullable','string','max:255'],
-            'rfc'        => ['nullable','string','max:20'],
-            'domicilio'  => ['nullable','string','max:255'],
-            'telefono'   => ['nullable','string','max:30'],
-            'email'      => ['nullable','email','max:150'],
-            'banco'      => ['nullable','string','max:100'],
-            'clabe'      => ['nullable','string','max:25'],
-            'cuenta'     => ['nullable','string','max:50'],
-            'activo'     => ['nullable','boolean'],
-            'fecha_registro' => ['nullable','date'],
-        ]);
+        $data = $request->validate($this->rulesProveedor(), $this->messagesProveedor());
 
         // ✅ Bloquear RFC + domicilio duplicado
         $rfc = $data['rfc'] ?? null;
@@ -78,6 +67,46 @@ class ProveedorController extends Controller
         Proveedor::create($data);
 
         return redirect()->route('proveedores.index')->with('success', 'Proveedor creado.');
+    }
+
+    private function satCatalogos(): array
+    {
+        return [
+            'regimenesFiscales' => config('sat_catalogs.regimenes_fiscales', []),
+            'usosCfdi' => config('sat_catalogs.usos_cfdi', []),
+        ];
+    }
+
+    private function rulesProveedor(): array
+    {
+        return [
+            'nombre'     => ['required','string','max:100'],
+            'razon_social' => ['nullable','string','max:255'],
+            'descripcion'=> ['nullable','string','max:255'],
+            'rfc'        => ['nullable','string','max:20'],
+            'domicilio'  => ['nullable','string','max:255'],
+            'codigo_postal' => ['nullable','string','max:10'],
+            'regimen_fiscal' => ['nullable','string','max:10', Rule::in(array_keys(config('sat_catalogs.regimenes_fiscales', [])))],
+            'uso_cfdi_default' => ['nullable','string','max:10', Rule::in(array_keys(config('sat_catalogs.usos_cfdi', [])))],
+            'telefono'   => ['nullable','string','max:30'],
+            'email'      => ['nullable','email','max:150'],
+            'nombre_contacto' => ['nullable','string','max:150'],
+            'telefono_contacto' => ['nullable','string','max:30'],
+            'banco'      => ['nullable','string','max:100'],
+            'clabe'      => ['nullable','regex:/^[0-9]{18}$/'],
+            'cuenta'     => ['nullable','string','max:50'],
+            'activo'     => ['nullable','boolean'],
+            'fecha_registro' => ['nullable','date'],
+        ];
+    }
+
+    private function messagesProveedor(): array
+    {
+        return [
+            'regimen_fiscal.in' => 'Selecciona un regimen fiscal valido del catalogo SAT.',
+            'uso_cfdi_default.in' => 'Selecciona un uso de CFDI valido del catalogo SAT.',
+            'clabe.regex' => 'La CLABE debe tener exactamente 18 digitos y no debe incluir letras.',
+        ];
     }
 
    public function show(Request $request, Proveedor $proveedor)
@@ -146,24 +175,15 @@ class ProveedorController extends Controller
 }
     public function edit(Proveedor $proveedor)
     {
-        return view('proveedores.edit', compact('proveedor'));
+        return view('proveedores.edit', array_merge(
+            compact('proveedor'),
+            $this->satCatalogos()
+        ));
     }
 
     public function update(Request $request, Proveedor $proveedor)
     {
-        $data = $request->validate([
-            'nombre'     => ['required','string','max:100'],
-            'descripcion'=> ['nullable','string','max:255'],
-            'rfc'        => ['nullable','string','max:20'],
-            'domicilio'  => ['nullable','string','max:255'],
-            'telefono'   => ['nullable','string','max:30'],
-            'email'      => ['nullable','email','max:150'],
-            'banco'      => ['nullable','string','max:100'],
-            'clabe'      => ['nullable','string','max:25'],
-            'cuenta'     => ['nullable','string','max:50'],
-            'activo'     => ['nullable','boolean'],
-            'fecha_registro' => ['nullable','date'],
-        ]);
+        $data = $request->validate($this->rulesProveedor(), $this->messagesProveedor());
 
         // ✅ Bloquear RFC + domicilio duplicado (ignorando el mismo registro)
         $rfc = $data['rfc'] ?? null;
@@ -181,6 +201,8 @@ class ProveedorController extends Controller
                     ->withErrors(['rfc' => 'Ya existe otro proveedor con este RFC y el mismo domicilio.']);
             }
         }
+
+        $data['activo'] = (bool) ($data['activo'] ?? false);
 
         $proveedor->update($data);
 
