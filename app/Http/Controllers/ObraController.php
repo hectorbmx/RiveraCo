@@ -605,6 +605,11 @@ if ($tab === 'horas-maquina') {
         'kg_acero'    => 0.0,
         'bentonita'   => 0.0,
         'concreto'    => 0.0,
+        'pilas'       => [
+            'programadas' => 0,
+            'ejecutadas'  => 0,
+            'detalle'     => collect(),
+        ],
     ];
 
      if ($tab === 'general') {
@@ -625,6 +630,30 @@ if ($tab === 'horas-maquina') {
         $avanceObra['kg_acero']    = (float) $totales->total_kg_acero;
         $avanceObra['bentonita']   = (float) $totales->total_vol_bentonita;
         $avanceObra['concreto']    = (float) $totales->total_vol_concreto;
+
+        $pilasAvance = $obra->pilas()
+            ->withSum('detallesComision as cantidad_ejecutada', 'cantidad')
+            ->where('activo', true)
+            ->get()
+            ->groupBy(fn ($pila) => $pila->tipo ?: 'Sin tipo')
+            ->map(function ($items, $tipo) {
+                $programadas = (int) $items->sum('cantidad_programada');
+                $ejecutadas = (float) $items->sum(fn ($pila) => $pila->cantidad_ejecutada ?? 0);
+
+                return [
+                    'tipo' => $tipo,
+                    'programadas' => $programadas,
+                    'ejecutadas' => $ejecutadas,
+                    'faltan' => max($programadas - $ejecutadas, 0),
+                ];
+            })
+            ->values();
+
+        $avanceObra['pilas'] = [
+            'programadas' => (int) $pilasAvance->sum('programadas'),
+            'ejecutadas'  => (float) $pilasAvance->sum('ejecutadas'),
+            'detalle'     => $pilasAvance,
+        ];
     }
         // Facturas de la obra (para el tab de facturación)
         $facturas = $obra->facturas()

@@ -367,6 +367,18 @@
     $maxConcreto = (float) ($obra->concreto_total ?? 0);
     $avConcreto  = (float) ($avanceObra['concreto'] ?? 0);
     $pctConcreto = $maxConcreto > 0 ? min(100, round(($avConcreto / $maxConcreto) * 100)) : 0;
+
+    $pilasAvance = $avanceObra['pilas'] ?? ['programadas' => 0, 'ejecutadas' => 0, 'detalle' => collect()];
+    $pilasProgramadas = (float) ($pilasAvance['programadas'] ?? 0);
+    $pilasEjecutadas = (float) ($pilasAvance['ejecutadas'] ?? 0);
+    $pctPilas = $pilasProgramadas > 0 ? min(100, round(($pilasEjecutadas / $pilasProgramadas) * 100)) : 0;
+    $detallePilas = collect($pilasAvance['detalle'] ?? []);
+    $tooltipPilas = $detallePilas->map(function ($item) {
+        return ($item['tipo'] ?? 'Sin tipo') . ': '
+            . number_format((float) ($item['ejecutadas'] ?? 0), 0)
+            . '/'
+            . number_format((float) ($item['programadas'] ?? 0), 0);
+    })->implode(' | ');
 @endphp
 
 
@@ -711,6 +723,18 @@
             $maxConcreto = (float) ($obra->concreto_total ?? 0);
             $avConcreto  = (float) ($avanceObra['concreto'] ?? 0);
             $pctConcreto = $maxConcreto > 0 ? min(100, round(($avConcreto / $maxConcreto) * 100)) : 0;
+
+            $pilasAvance = $avanceObra['pilas'] ?? ['programadas' => 0, 'ejecutadas' => 0, 'detalle' => collect()];
+            $pilasProgramadas = (float) ($pilasAvance['programadas'] ?? 0);
+            $pilasEjecutadas = (float) ($pilasAvance['ejecutadas'] ?? 0);
+            $pctPilas = $pilasProgramadas > 0 ? min(100, round(($pilasEjecutadas / $pilasProgramadas) * 100)) : 0;
+            $detallePilas = collect($pilasAvance['detalle'] ?? []);
+            $tooltipPilas = $detallePilas->map(function ($item) {
+                return ($item['tipo'] ?? 'Sin tipo') . ': '
+                    . number_format((float) ($item['ejecutadas'] ?? 0), 0)
+                    . '/'
+                    . number_format((float) ($item['programadas'] ?? 0), 0);
+            })->implode(' | ');
         @endphp
 
         {{-- CARD 5: Panel de Monitoreo --}}
@@ -759,6 +783,19 @@
                     </div>
                 </div>
 
+                {{-- Bentonita --}}
+                <div class="space-y-2 p-3 bg-slate-50/60 rounded-xl border border-slate-100">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="font-semibold text-slate-700">Bentonita Utilizada</span>
+                        <span class="text-slate-500 font-mono">
+                            {{ number_format($avBentonita, 2) }} / {{ number_format($maxBentonita, 2) }} m³ ({{ $pctBentonita }}%)
+                        </span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-[#0B265A] rounded-full transition-all duration-500" style="width: {{ $pctBentonita }}%"></div>
+                    </div>
+                </div>
+
                 {{-- Concreto --}}
                 <div class="space-y-2 p-3 bg-slate-50/60 rounded-xl border border-slate-100">
                     <div class="flex justify-between items-center text-xs">
@@ -770,6 +807,25 @@
                     <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                         <div class="h-full bg-[#0B265A] rounded-full transition-all duration-500" style="width: {{ $pctConcreto }}%"></div>
                     </div>
+                </div>
+
+                {{-- Pilas --}}
+                <div class="space-y-2 p-3 bg-slate-50/60 rounded-xl border border-slate-100 cursor-help"
+                     title="{{ $tooltipPilas ?: 'Sin pilas programadas' }}">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="font-semibold text-slate-700">Pilas Ejecutadas</span>
+                        <span class="text-slate-500 font-mono">
+                            {{ number_format($pilasEjecutadas, 0) }} / {{ number_format($pilasProgramadas, 0) }} pilas ({{ $pctPilas }}%)
+                        </span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-[#0B265A] rounded-full transition-all duration-500" style="width: {{ $pctPilas }}%"></div>
+                    </div>
+                    @if($tooltipPilas)
+                        <p class="text-[10px] text-slate-400 truncate">
+                            {{ $tooltipPilas }}
+                        </p>
+                    @endif
                 </div>
             </div>
         </div>
