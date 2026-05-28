@@ -1051,7 +1051,13 @@
                 </thead>
                 <tbody>
                         @php
-                            $gruposGastos = $gastosBase->groupBy('partida');
+                            $gastosPlaneacionVisibles = $gastosBase->filter(function ($gasto) {
+                                $tope = (float) ($gasto->monto_programado ?? $gasto->importe ?? $gasto->total ?? 0);
+
+                                return $tope > 0;
+                            });
+
+                            $gruposGastos = $gastosPlaneacionVisibles->groupBy('partida');
                         @endphp
 
                         @forelse($gruposGastos as $partida => $items)
@@ -2234,6 +2240,15 @@
                 class="text-sm text-gray-500 hover:text-gray-700 underline"
             >
                 Limpiar
+            </a>
+
+            <a
+                href="{{ route('obras.asistencias.reporte', ['obra' => $obra->id, 'asist_desde' => $asist_desde, 'asist_hasta' => $asist_hasta]) }}"
+                target="_blank"
+                rel="noopener"
+                class="inline-flex items-center px-4 py-2 rounded-md bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 transition"
+            >
+                Generar reporte de asistencia
             </a>
         </div>
     </div>

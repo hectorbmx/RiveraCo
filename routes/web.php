@@ -455,6 +455,8 @@ Route::middleware('auth','verified')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::resource('clientes', ClienteController::class)->except(['show']);
     Route::resource('obras', ObraController::class)->except(['show']);
+    Route::get('obras/{obra}/asistencias/reporte', [ObraController::class, 'reporteAsistencias'])
+        ->name('obras.asistencias.reporte');
 
     // Route::resource('obras', ObraController::class)->except(['show']);
 

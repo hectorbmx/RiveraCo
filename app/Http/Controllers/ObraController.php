@@ -722,6 +722,123 @@ return view('obras.edit', [
 }
 
 
+public function reporteAsistencias(Request $request, Obra $obra)
+{
+    $desde = $request->query('asist_desde');
+    $hasta = $request->query('asist_hasta');
+
+    if (!$desde && !$hasta) {
+        $start = Carbon::now('America/Mexico_City')->startOfWeek(Carbon::MONDAY);
+        $end = Carbon::now('America/Mexico_City')->endOfWeek(Carbon::SUNDAY);
+        $desde = $start->toDateString();
+        $hasta = $end->toDateString();
+    }
+
+    $request->validate([
+        'asist_desde' => ['nullable', 'date'],
+        'asist_hasta' => ['nullable', 'date', 'after_or_equal:asist_desde'],
+    ]);
+
+    $desde = $desde ?: $hasta;
+    $hasta = $hasta ?: $desde;
+
+    $start = Carbon::parse($desde, 'America/Mexico_City')->startOfDay();
+    $end = Carbon::parse($hasta, 'America/Mexico_City')->startOfDay();
+    $daysCount = $start->diffInDays($end) + 1;
+
+    if ($daysCount !== 7) {
+        return redirect()
+            ->route('obras.edit', [
+                'obra' => $obra->id,
+                'tab' => 'asistencias',
+                'asist_desde' => $desde,
+                'asist_hasta' => $hasta,
+            ])
+            ->withErrors(['asist_desde' => 'El reporte de asistencia se genera con un rango semanal de 7 dias.']);
+    }
+
+    $obra->load(['cliente', 'responsable']);
+
+    $weekDays = collect();
+    for ($i = 0; $i < 7; $i++) {
+        $day = $start->copy()->addDays($i);
+        $weekDays->push([
+            'date' => $day->toDateString(),
+            'day' => $day->format('d'),
+            'dow' => mb_strtoupper($day->isoFormat('dd')),
+        ]);
+    }
+
+    $raw = ObraAsistencia::query()
+        ->where('obra_id', $obra->id)
+        ->whereBetween('checked_date', [$desde, $hasta])
+        ->with('empleado')
+        ->orderBy('checked_date')
+        ->orderBy('checked_at')
+        ->get();
+
+    $index = $raw->groupBy(function ($row) {
+        $empleadoId = $row->empleado?->id_Empleado ?? $row->empleado_id;
+
+        return $empleadoId . '|' . Carbon::parse($row->checked_date)->toDateString();
+    });
+
+    $empleados = $raw
+        ->map(fn ($row) => $row->empleado)
+        ->filter()
+        ->unique(fn ($empleado) => $empleado->id_Empleado)
+        ->sortBy(fn ($empleado) => trim(($empleado->Apellidos ?? '') . ' ' . ($empleado->Nombre ?? '')))
+        ->values();
+
+    $rows = $empleados->map(function ($empleado) use ($weekDays, $index) {
+        $dias = [];
+        $totalDias = 0;
+
+        foreach ($weekDays as $day) {
+            $items = $index->get($empleado->id_Empleado . '|' . $day['date'], collect());
+            $entrada = $items->firstWhere('tipo', 'entrada');
+            $salida = $items->firstWhere('tipo', 'salida');
+            $presente = (bool) ($entrada || $salida);
+
+            if ($presente) {
+                $totalDias++;
+            }
+
+            $dias[$day['date']] = [
+                'presente' => $presente,
+                'entrada' => $entrada?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
+                'salida' => $salida?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
+            ];
+        }
+
+        $sueldoSemanal = (float) ($empleado->Sueldo ?: $empleado->Sueldo_real ?: 0);
+        $sueldoDiario = $sueldoSemanal > 0 ? round($sueldoSemanal / 7, 2) : 0;
+        $descuentoInfonavit = (float) ($empleado->infonavit ?? 0);
+        $sueldoPeriodo = round($sueldoDiario * $totalDias, 2);
+
+        return (object) [
+            'empleado' => $empleado,
+            'dias' => $dias,
+            'total_dias' => $totalDias,
+            'sueldo_semanal' => $sueldoSemanal,
+            'sueldo_diario' => $sueldoDiario,
+            'sueldo_periodo' => $sueldoPeriodo,
+            'descuento_infonavit' => $descuentoInfonavit,
+            'total_pagar' => max(0, $sueldoPeriodo - $descuentoInfonavit),
+        ];
+    });
+
+    return view('obras.asistencias.reporte', [
+        'obra' => $obra,
+        'weekDays' => $weekDays,
+        'rows' => $rows,
+        'desde' => $start,
+        'hasta' => $end,
+        'generadoPor' => auth()->user()?->name ?? '',
+    ]);
+}
+
+
    public function update(Request $request, Obra $obra)
 {
   
