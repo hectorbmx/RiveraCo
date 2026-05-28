@@ -11,12 +11,26 @@
     $cantidad = $gasto->cantidad ?? 0;
     $tope     = (float) ($gasto->monto_programado ?? $gasto->importe ?? $gasto->total ?? 0);
     $gastadoReal = (float) ($gastadoReposicionPorPartida[$gasto->id] ?? 0);
+    $totalProgramadoGuardado = 0;
+
+    for ($semana = 1; $semana <= $semanas; $semana++) {
+        $totalProgramadoGuardado += (float) ($planeacion[$gasto->id][$semana]->monto_programado ?? 0);
+    }
 
     
     $porcentajeGastado = $tope > 0
     ? round(($gastadoReal / $tope) * 100, 2)
     : 0;
-    $anchoBarra = min($porcentajeGastado, 100);
+    $porcentajeProgramado = $tope > 0
+        ? round(($totalProgramadoGuardado / $tope) * 100, 2)
+        : 0;
+    $anchoBarraProgramado = min($porcentajeProgramado, 100);
+    $colorBarraProgramado = $porcentajeProgramado >= 90
+        ? 'bg-red-300/80'
+        : ($porcentajeProgramado >= 50 ? 'bg-amber-300/80' : 'bg-emerald-300/80');
+    $colorTextoProgramado = $porcentajeProgramado >= 90
+        ? 'text-red-700'
+        : ($porcentajeProgramado >= 50 ? 'text-amber-700' : 'text-emerald-700');
     $totalProg = 0;
 @endphp
 
@@ -37,11 +51,12 @@
     {{-- Tope --}}
     <td class="p-3 border text-right font-mono text-slate-700 bg-slate-50 relative overflow-hidden">
 
-        {{-- Barra de gasto --}}
-      <div
-    class="absolute inset-y-0 left-0 {{ $porcentajeGastado > 100 ? 'bg-red-200/80' : 'bg-green-200/70' }}"
-    style="width: {{ $anchoBarra }}%;"
-></div>
+        {{-- Indicador de programado contra tope --}}
+        <div
+            id="prog_bar_{{ $id_campo }}"
+            class="absolute inset-y-0 left-0 {{ $colorBarraProgramado }} transition-all duration-300"
+            style="width: {{ $anchoBarraProgramado }}%;"
+        ></div>
 
         {{-- Texto encima --}}
         <div class="relative z-10">
@@ -49,13 +64,13 @@
                 ${{ number_format($tope, 2) }}
             </div>
 
+            <div id="prog_label_{{ $id_campo }}" class="text-[10px] font-bold {{ $colorTextoProgramado }}">
+                Programado: {{ number_format($porcentajeProgramado, 2) }}%
+            </div>
+
             <div class="text-[10px] text-slate-500">
                 Gastado: ${{ number_format($gastadoReal, 2) }}
             </div>
-
-           <div class="text-[10px] font-bold {{ $porcentajeGastado >= 100 ? 'text-red-600' : 'text-green-700' }}">
-    {{ number_format($porcentajeGastado, 2) }}%
-</div>
         </div>
 
     </td>
@@ -85,6 +100,9 @@
                 placeholder="0.00"
                 data-tope="{{ $tope }}"
                 data-id="{{ $id_campo }}"
+                oninput="calcularFila('{{ $id_campo }}')"
+                onfocus="limpiarFormato(this)"
+                onblur="aplicarFormato(this); calcularFila('{{ $id_campo }}')"
                 class="input-semana input-semana-{{ $id_campo }} w-full p-1 text-right text-xs border border-transparent focus:border-blue-400 focus:ring-1 focus:ring-blue-200 rounded bg-transparent hover:bg-white transition-all"
             >
         </td>

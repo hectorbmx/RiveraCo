@@ -34,7 +34,7 @@
             'planos'       => 'Planos',
             'presupuestos' => 'Presupuestos',
             'planeacion'   => 'Planeacion',
-            'gastos'       => 'Gastos',
+            // 'gastos'       => 'Gastos',
             'reposicion-gastos' => 'Reposición gastos',
             'pilas'        => 'Pilas',
             'empleados'    => 'Empleados',
@@ -4188,9 +4188,30 @@ function calcularFila(idCampo) {
     });
 
     const diferencia = tope - totalProgramado;
+    const porcentajeProgramado = tope > 0 ? (totalProgramado / tope) * 100 : 0;
+    const porcentajeLimitado = Math.min(Math.max(porcentajeProgramado, 0), 100);
+    const barraProgramado = document.getElementById(`prog_bar_${idCampo}`);
+    const labelProgramado = document.getElementById(`prog_label_${idCampo}`);
 
     displayTotal.innerText = '$' + totalProgramado.toLocaleString('en-US', {minimumFractionDigits: 2});
     displayDiff.innerText = '$' + diferencia.toLocaleString('en-US', {minimumFractionDigits: 2});
+
+    if (barraProgramado && labelProgramado) {
+        const colorBarra = porcentajeProgramado >= 90
+            ? 'bg-red-300/80'
+            : (porcentajeProgramado >= 50 ? 'bg-amber-300/80' : 'bg-emerald-300/80');
+        const colorTexto = porcentajeProgramado >= 90
+            ? 'text-red-700'
+            : (porcentajeProgramado >= 50 ? 'text-amber-700' : 'text-emerald-700');
+
+        barraProgramado.className = `absolute inset-y-0 left-0 ${colorBarra} transition-all duration-300`;
+        barraProgramado.style.width = `${porcentajeLimitado}%`;
+        labelProgramado.className = `text-[10px] font-bold ${colorTexto}`;
+        labelProgramado.innerText = `Programado: ${porcentajeProgramado.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        })}%`;
+    }
 
     // Colores de alerta
     if (diferencia < 0) {
