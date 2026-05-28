@@ -22,11 +22,13 @@ class CatalogoRolController extends Controller
             'rol_key'      => ['required','string','max:64','unique:catalogo_roles,rol_key'],
             'nombre'       => ['required','string','max:120'],
             'comisionable' => ['nullable','boolean'],
+            'activo'       => ['nullable','boolean'],
             
         ]);
 
         $data['rol_key'] = Str::upper(trim($data['rol_key']));
         $data['comisionable'] = (bool)($data['comisionable'] ?? false);
+        $data['activo'] = (bool)($data['activo'] ?? true);
         
 
         CatalogoRol::create($data);

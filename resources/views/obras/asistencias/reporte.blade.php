@@ -4,17 +4,19 @@
     <meta charset="UTF-8">
     <title>Reporte de asistencia - {{ $obra->nombre }}</title>
     <style>
-        @page { size: landscape; margin: 8mm; }
+        @page { size: Letter landscape; margin: 7mm; }
         * { box-sizing: border-box; }
         body {
             margin: 0;
             font-family: Arial, Helvetica, sans-serif;
             color: #111827;
             background: #fff;
-            font-size: 11px;
+            font-size: 8px;
         }
         .page {
-            min-height: 100vh;
+            width: 265mm;
+            min-height: 198mm;
+            margin: 0 auto;
             border: 3px solid #0b3b96;
             padding: 0;
         }
@@ -39,23 +41,23 @@
             grid-template-columns: 32% 43% 25%;
             align-items: start;
             gap: 12px;
-            padding: 10px 12px 16px;
+            padding: 9mm 10mm 8mm;
             border-bottom: 2px solid #111827;
         }
         .logo {
             display: flex;
             align-items: center;
             gap: 12px;
-            min-height: 72px;
+            min-height: 50px;
         }
         .logo img {
-            max-height: 66px;
-            max-width: 230px;
+            max-height: 45px;
+            max-width: 170px;
             object-fit: contain;
         }
         .logo-fallback {
             color: #0b3b96;
-            font-size: 28px;
+            font-size: 20px;
             font-weight: 900;
             letter-spacing: 1px;
             line-height: .9;
@@ -65,14 +67,14 @@
             grid-template-columns: 90px 1fr;
             align-items: end;
             gap: 10px;
-            margin: 6px 0;
-            font-size: 13px;
+            margin: 4px 0;
+            font-size: 10px;
             font-weight: 700;
         }
         .meta-row span:first-child { color: #0b3b96; }
         .line-value {
             border-bottom: 2px solid #333;
-            min-height: 18px;
+            min-height: 14px;
             text-align: center;
             padding: 0 8px 2px;
         }
@@ -86,15 +88,15 @@
         .nomina-label {
             background: #0b3b96;
             color: #fff;
-            font-size: 18px;
+            font-size: 12px;
             font-weight: 900;
             text-align: center;
-            padding: 10px 8px;
+            padding: 6px 8px;
         }
         .right-lines .line-value {
-            margin: 7px 0;
+            margin: 5px 0;
             font-weight: 700;
-            font-size: 12px;
+            font-size: 9px;
         }
         table {
             width: 100%;
@@ -103,42 +105,51 @@
         }
         th, td {
             border: 1px solid #222;
-            padding: 4px 3px;
+            padding: 2px 2px;
             vertical-align: middle;
+            line-height: 1.05;
         }
         th {
             background: #0b3b96;
             color: #fff;
             font-weight: 900;
             text-align: center;
+            font-size: 7px;
+            letter-spacing: 0;
+            overflow-wrap: anywhere;
         }
-        .name-col { width: 255px; }
-        .cat-col { width: 115px; }
-        .money-col { width: 88px; }
-        .day-col { width: 26px; }
-        .total-days-col { width: 62px; }
-        .obs-col { width: 150px; }
+        td { font-size: 7px; }
+        .col-no { width: 7mm; }
+        .col-name { width: 47mm; }
+        .col-cat { width: 22mm; }
+        .col-sueldo { width: 19mm; }
+        .col-day { width: 5mm; }
+        .col-total-days { width: 13mm; }
+        .col-day-pay { width: 18mm; }
+        .col-pay { width: 22mm; }
+        .col-discount { width: 20mm; }
+        .col-total { width: 22mm; }
+        .col-obs { width: 35mm; }
         .text-left { text-align: left; }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .currency {
-            display: grid;
-            grid-template-columns: 14px 1fr;
-            gap: 3px;
-            align-items: center;
+            display: block;
+            white-space: nowrap;
+            text-align: right;
         }
         .yellow-total {
             background: #ffc000;
             color: #0b3b96;
             font-weight: 900;
-            font-size: 14px;
+            font-size: 9px;
             text-align: center;
         }
         .signatures {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 120px;
-            padding: 90px 36px 0;
+            padding: 28mm 28mm 0;
             text-align: center;
             font-weight: 800;
         }
@@ -149,7 +160,10 @@
         }
         @media print {
             .toolbar { display: none; }
-            .page { min-height: auto; }
+            .page {
+                width: 265mm;
+                min-height: 198mm;
+            }
         }
     </style>
 </head>
@@ -202,33 +216,48 @@
     </header>
 
     <table>
+        <colgroup>
+            <col class="col-no">
+            <col class="col-name">
+            <col class="col-cat">
+            <col class="col-sueldo">
+            @foreach($weekDays as $day)
+                <col class="col-day">
+            @endforeach
+            <col class="col-total-days">
+            <col class="col-day-pay">
+            <col class="col-pay">
+            <col class="col-discount">
+            <col class="col-total">
+            <col class="col-obs">
+        </colgroup>
         <thead>
             <tr>
-                <th rowspan="3" style="width: 34px;">NO.</th>
-                <th rowspan="3" class="name-col">N O M B R E</th>
-                <th rowspan="3" class="cat-col">CATEGORIA</th>
-                <th rowspan="3" class="money-col">SUELDO</th>
+                <th rowspan="3">NO.</th>
+                <th rowspan="3">N O M B R E</th>
+                <th rowspan="3">CATEGORIA</th>
+                <th rowspan="3">SUELDO</th>
                 <th colspan="7">SEMANA</th>
-                <th rowspan="3" class="total-days-col">TOTAL<br>DIAS</th>
+                <th rowspan="3">TOTAL<br>DIAS</th>
                 <th colspan="1">SUELDO</th>
                 <th colspan="3">I M P O R T E S</th>
-                <th rowspan="3" class="obs-col">OBSERVACIONES</th>
+                <th rowspan="3">OBSERVACIONES</th>
             </tr>
             <tr>
                 @foreach($weekDays as $day)
-                    <th class="day-col">{{ $day['day'] }}</th>
+                    <th>{{ $day['day'] }}</th>
                 @endforeach
-                <th class="money-col">X</th>
-                <th class="money-col" rowspan="2">SUELDO</th>
-                <th class="money-col" rowspan="2">DESCUENTO<br>INFONAVIT</th>
-                <th class="money-col">TOTAL</th>
+                <th>X</th>
+                <th rowspan="2">SUELDO</th>
+                <th rowspan="2">DESC.<br>INFONAVIT</th>
+                <th>TOTAL</th>
             </tr>
             <tr>
                 @foreach(['L', 'M', 'M', 'J', 'V', 'S', 'D'] as $dow)
-                    <th class="day-col">{{ $dow }}</th>
+                    <th>{{ $dow }}</th>
                 @endforeach
-                <th class="money-col">DIA</th>
-                <th class="money-col">A PAGAR:</th>
+                <th>DIA</th>
+                <th>A PAGAR:</th>
             </tr>
         </thead>
         <tbody>
@@ -237,15 +266,15 @@
                     <td class="text-center">{{ $loop->iteration }}</td>
                     <td class="text-left">{{ mb_strtoupper(trim(($row->empleado->Apellidos ?? '') . ' ' . ($row->empleado->Nombre ?? ''))) }}</td>
                     <td class="text-left">{{ mb_strtoupper($row->empleado->puesto_base ?? $row->empleado->Puesto ?? '-') }}</td>
-                    <td class="text-right"><div class="currency"><span>$</span><span>{{ $fmt($row->sueldo_semanal) }}</span></div></td>
+                    <td class="text-right"><div class="currency">$ {{ $fmt($row->sueldo_semanal) }}</div></td>
                     @foreach($weekDays as $day)
                         <td class="text-center">{{ ($row->dias[$day['date']]['presente'] ?? false) ? '1' : '' }}</td>
                     @endforeach
                     <td class="text-center">{{ $row->total_dias }}</td>
-                    <td class="text-right"><div class="currency"><span>$</span><span>{{ $fmt($row->sueldo_diario) }}</span></div></td>
-                    <td class="text-right"><div class="currency"><span>$</span><span>{{ $fmt($row->sueldo_periodo) }}</span></div></td>
+                    <td class="text-right"><div class="currency">$ {{ $fmt($row->sueldo_diario) }}</div></td>
+                    <td class="text-right"><div class="currency">$ {{ $fmt($row->sueldo_periodo) }}</div></td>
                     <td class="text-right">{{ $row->descuento_infonavit > 0 ? '$ '.$fmt($row->descuento_infonavit) : '' }}</td>
-                    <td class="text-right"><div class="currency"><span>$</span><span>{{ $fmt($row->total_pagar) }}</span></div></td>
+                    <td class="text-right"><div class="currency">$ {{ $fmt($row->total_pagar) }}</div></td>
                     <td></td>
                 </tr>
             @empty
