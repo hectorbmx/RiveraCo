@@ -4,7 +4,7 @@
 
 @section('content')
 
-<div class="max-w-6xl mx-auto">
+<div class="max-w-8xl mx-auto">
 
     {{-- HEADER --}}
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
