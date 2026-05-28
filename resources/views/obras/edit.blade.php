@@ -65,7 +65,7 @@
     <div class="bg-white rounded-2xl shadow p-6">
 
         {{-- TAB: INFORMACIÓN GENERAL --}}
-        @if($tab === 'general')
+        <!-- @if($tab === 'general')
             <h2 class="text-lg font-semibold mb-4">Información general</h2>
 
             <form action="{{ route('obras.update', $obra) }}" method="POST" class="space-y-5">
@@ -460,7 +460,330 @@
                 </div>
 
             </form>
-        @endif
+        @endif -->
+        @if($tab === 'general')
+    <h2 class="text-xl font-bold text-slate-800 mb-6 tracking-tight">Información general</h2>
+
+    <form action="{{ route('obras.update', $obra) }}" method="POST" class="space-y-6">
+        @csrf
+        @method('PUT')
+
+        {{-- CARD 1: Datos Identificadores --}}
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
+                <span class="w-1.5 h-3 bg-blue-500 rounded-full"></span> Identificación de la Obra
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label for="cliente_id" class="block text-xs font-semibold text-slate-600 mb-1">
+                        Cliente
+                    </label>
+                    <select id="cliente_id" name="cliente_id"
+                            class="block w-full rounded-xl border-slate-200 bg-white text-sm shadow-sm transition duration-150 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10">
+                        @foreach($clientes as $cliente)
+                            <option value="{{ $cliente->id }}" @selected(old('cliente_id', $obra->cliente_id) == $cliente->id)>
+                                {{ $cliente->nombre_comercial }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('cliente_id')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="clave_obra" class="block text-xs font-semibold text-slate-600 mb-1">
+                        Clave de obra
+                    </label>
+                    <input type="text" id="clave_obra" name="clave_obra"
+                           class="block w-full rounded-xl border-slate-200 bg-white text-sm shadow-sm transition duration-150 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                           value="{{ old('clave_obra', $obra->clave_obra) }}">
+                    @error('clave_obra')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="nombre" class="block text-xs font-semibold text-slate-600 mb-1">
+                        Nombre de la obra
+                    </label>
+                    <input type="text" id="nombre" name="nombre"
+                           class="block w-full rounded-xl border-slate-200 bg-white text-sm shadow-sm transition duration-150 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                           value="{{ old('nombre', $obra->nombre) }}">
+                    @error('nombre')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="ubicacion" class="block text-xs font-semibold text-slate-600 mb-1">
+                        Ubicación
+                    </label>
+                    <input type="text" id="ubicacion" name="ubicacion"
+                           class="block w-full rounded-xl border-slate-200 bg-white text-sm shadow-sm transition duration-150 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                           value="{{ old('ubicacion', $obra->ubicacion) }}">
+                    @error('ubicacion')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+        </div>
+
+        {{-- CARD 2: Operación y Montos --}}
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
+                <span class="w-1.5 h-3 bg-blue-500 rounded-full"></span> Operación Financiera y Control
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div>
+                    <label for="tipo_obra" class="block text-xs font-semibold text-slate-600 mb-1">
+                        Tipo de obra
+                    </label>
+                    <input type="text" id="tipo_obra" name="tipo_obra"
+                           class="block w-full rounded-xl border-slate-200 bg-white text-sm shadow-sm transition duration-150 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                           value="{{ old('tipo_obra', $obra->tipo_obra) }}">
+                    @error('tipo_obra')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="estatus_nuevo" class="block text-xs font-semibold text-slate-600 mb-1">
+                        Status
+                    </label>
+                    @php
+                        $statuses = ['planeacion','ejecucion','suspendida','terminada','cancelada'];
+                    @endphp
+                    <select id="estatus_nuevo" name="estatus_nuevo"
+                            class="block w-full rounded-xl border-slate-200 bg-white text-sm shadow-sm transition duration-150 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10">
+                        @foreach($statuses as $value => $label)
+                            <option value="{{ $value }}" @selected(old('estatus_nuevo', $currentStatus ?? '') == $value)>
+                                {{ ucfirst($label) }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('status')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="responsable_id" class="block text-xs font-semibold text-slate-600 mb-1">
+                        Responsable
+                    </label>
+                    <select id="responsable_id" name="responsable_id"
+                            class="block w-full rounded-xl border-slate-200 bg-white text-sm shadow-sm transition duration-150 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10">
+                        <option value="">-- Sin asignar --</option>
+                        @foreach($responsables as $user)
+                            <option value="{{ $user->id }}" @selected(old('responsable_id', $obra->responsable_id) == $user->id)>
+                                {{ $user->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('responsable_id')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="monto_contratado" class="block text-xs font-semibold text-slate-600 mb-1">
+                        Monto contratado
+                    </label>
+                    <div class="relative rounded-xl shadow-sm">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <span class="text-slate-400 text-sm">$</span>
+                        </div>
+                        <input type="number" step="0.01" id="monto_contratado" name="monto_contratado"
+                               class="block w-full rounded-xl border-slate-200 pl-7 bg-white text-sm transition duration-150 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                               value="{{ old('monto_contratado', $obra->monto_contratado) }}">
+                    </div>
+                    @error('monto_contratado')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="monto_modificado" class="block text-xs font-semibold text-slate-600 mb-1">
+                        Monto modificado
+                    </label>
+                    <div class="relative rounded-xl shadow-sm">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <span class="text-slate-400 text-sm">$</span>
+                        </div>
+                        <input type="number" step="0.01" id="monto_modificado" name="monto_modificado"
+                               class="block w-full rounded-xl border-slate-200 pl-7 bg-white text-sm transition duration-150 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                               value="{{ old('monto_modificado', $obra->monto_modificado) }}">
+                    </div>
+                    @error('monto_modificado')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+        </div>
+
+        {{-- FILA DE CARDS COMPARTIDAS (Fechas y Métricas) --}}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {{-- CARD 3: Cronograma --}}
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
+                    <span class="w-1.5 h-3 bg-blue-500 rounded-full"></span> Cronograma de Fechas
+                </h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="fecha_inicio_programada" class="block text-xs font-semibold text-slate-600 mb-1">Inicio prog.</label>
+                        <input type="date" id="fecha_inicio_programada" name="fecha_inicio_programada"
+                               class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                               value="{{ old('fecha_inicio_programada', optional($obra->fecha_inicio_programada)->format('Y-m-d')) }}">
+                    </div>
+                    <div>
+                        <label for="fecha_inicio_real" class="block text-xs font-semibold text-slate-600 mb-1">Inicio real</label>
+                        <input type="date" id="fecha_inicio_real" name="fecha_inicio_real"
+                               class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                               value="{{ old('fecha_inicio_real', optional($obra->fecha_inicio_real)->format('Y-m-d')) }}">
+                    </div>
+                    <div>
+                        <label for="fecha_fin_programada" class="block text-xs font-semibold text-slate-600 mb-1">Fin prog.</label>
+                        <input type="date" id="fecha_fin_programada" name="fecha_fin_programada"
+                               class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                               value="{{ old('fecha_fin_programada', optional($obra->fecha_fin_programada)->format('Y-m-d')) }}">
+                    </div>
+                    <div>
+                        <label for="fecha_fin_real" class="block text-xs font-semibold text-slate-600 mb-1">Fin real</label>
+                        <input type="date" id="fecha_fin_real" name="fecha_fin_real"
+                               class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                               value="{{ old('fecha_fin_real', optional($obra->fecha_fin_real)->format('Y-m-d')) }}">
+                    </div>
+                </div>
+            </div>
+
+            {{-- CARD 4: Volúmenes Técnicos --}}
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
+                    <span class="w-1.5 h-3 bg-blue-500 rounded-full"></span> Volúmenes Totales
+                </h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="profundidad_total" class="block text-xs font-semibold text-slate-600 mb-1">Profundidad (m)</label>
+                        <input type="number" step="0.01" id="profundidad_total" name="profundidad_total"
+                               class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                               value="{{ old('profundidad_total', $obra->profundidad_total) }}">
+                    </div>
+                    <div>
+                        <label for="kg_acero_total" class="block text-xs font-semibold text-slate-600 mb-1">KG Acero</label>
+                        <input type="number" step="0.01" id="kg_acero_total" name="kg_acero_total"
+                               class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                               value="{{ old('kg_acero_total', $obra->kg_acero_total) }}">
+                    </div>
+                    <div>
+                        <label for="bentonita_total" class="block text-xs font-semibold text-slate-600 mb-1">Bentonita (m³)</label>
+                        <input type="number" step="0.01" id="bentonita_total" name="bentonita_total"
+                               class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                               value="{{ old('bentonita_total', $obra->bentonita_total) }}">
+                    </div>
+                    <div>
+                        <label for="concreto_total" class="block text-xs font-semibold text-slate-600 mb-1">Concreto (m³)</label>
+                        <input type="number" step="0.01" id="concreto_total" name="concreto_total"
+                               class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                               value="{{ old('concreto_total', $obra->concreto_total) }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- LÓGICA DE AVANCES --}}
+        @php
+            $montoBase = $obra->monto_modificado ?? $obra->monto_contratado ?? 0;
+            $cobrado   = $avanceCobrado ?? 0;
+            $pctCobrado = $montoBase > 0 ? min(100, round(($cobrado / $montoBase) * 100)) : 0;
+
+            $maxProfundidad = (float) ($obra->profundidad_total ?? 0);
+            $avProfundidad  = (float) ($avanceObra['profundidad'] ?? 0);
+            $pctProfundidad = $maxProfundidad > 0 ? min(100, round(($avProfundidad / $maxProfundidad) * 100)) : 0;
+
+            $maxAcero = (float) ($obra->kg_acero_total ?? 0);
+            $avAcero  = (float) ($avanceObra['kg_acero'] ?? 0);
+            $pctAcero = $maxAcero > 0 ? min(100, round(($avAcero / $maxAcero) * 100)) : 0;
+
+            $maxBentonita = (float) ($obra->bentonita_total ?? 0);
+            $avBentonita  = (float) ($avanceObra['bentonita'] ?? 0);
+            $pctBentonita = $maxBentonita > 0 ? min(100, round(($avBentonita / $maxBentonita) * 100)) : 0;
+
+            $maxConcreto = (float) ($obra->concreto_total ?? 0);
+            $avConcreto  = (float) ($avanceObra['concreto'] ?? 0);
+            $pctConcreto = $maxConcreto > 0 ? min(100, round(($avConcreto / $maxConcreto) * 100)) : 0;
+        @endphp
+
+        {{-- CARD 5: Panel de Monitoreo --}}
+        <div class="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-5">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                <span class="w-1.5 h-3 bg-emerald-500 rounded-full animate-pulse"></span> Monitoreo y Avances Existentes
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {{-- Avance Financiero --}}
+                <div class="space-y-2 p-3 bg-slate-50/60 rounded-xl border border-slate-100">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="font-semibold text-slate-700">Avance de Cobro</span>
+                        <span class="text-slate-500 font-mono">
+                            ${{ number_format($cobrado, 2) }} / ${{ number_format($montoBase, 2) }} ({{ $pctCobrado }}%)
+                        </span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-emerald-600 rounded-full transition-all duration-500" style="width: {{ $pctCobrado }}%"></div>
+                    </div>
+                </div>
+
+                {{-- Profundidad --}}
+                <div class="space-y-2 p-3 bg-slate-50/60 rounded-xl border border-slate-100">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="font-semibold text-slate-700">Profundidad Ejecutada</span>
+                        <span class="text-slate-500 font-mono">
+                            {{ number_format($avProfundidad, 2) }} / {{ number_format($maxProfundidad, 2) }} m ({{ $pctProfundidad }}%)
+                        </span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-[#0B265A] rounded-full transition-all duration-500" style="width: {{ $pctProfundidad }}%"></div>
+                    </div>
+                </div>
+
+                {{-- Acero --}}
+                <div class="space-y-2 p-3 bg-slate-50/60 rounded-xl border border-slate-100">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="font-semibold text-slate-700">Acero Colocado</span>
+                        <span class="text-slate-500 font-mono">
+                            {{ number_format($avAcero, 2) }} / {{ number_format($maxAcero, 2) }} kg ({{ $pctAcero }}%)
+                        </span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-[#0B265A] rounded-full transition-all duration-500" style="width: {{ $pctAcero }}%"></div>
+                    </div>
+                </div>
+
+                {{-- Concreto --}}
+                <div class="space-y-2 p-3 bg-slate-50/60 rounded-xl border border-slate-100">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="font-semibold text-slate-700">Concreto Colado</span>
+                        <span class="text-slate-500 font-mono">
+                            {{ number_format($avConcreto, 2) }} / {{ number_format($maxConcreto, 2) }} m³ ({{ $pctConcreto }}%)
+                        </span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-[#0B265A] rounded-full transition-all duration-500" style="width: {{ $pctConcreto }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- BOTONERA DE ACCIÓN --}}
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+            <button type="submit"
+                    class="px-6 py-2.5 rounded-xl bg-[#FFC107] text-[#0B265A] text-sm font-bold shadow-md transition duration-200 hover:bg-[#e0ac05] hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-[#FFC107]/20">
+                Guardar cambios
+            </button>
+        </div>
+
+    </form>
+@endif
 
        
        {{-- TAB: CONTRATOS --}}
