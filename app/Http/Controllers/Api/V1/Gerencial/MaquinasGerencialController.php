@@ -57,6 +57,13 @@ class MaquinasGerencialController extends Controller
             }
         }
 
+        if ($request->boolean('en_uso')) {
+            $q->whereHas('asignacionActiva', function ($asignacion) {
+                $asignacion->where('estado', 'activa')
+                    ->whereNull('fecha_fin');
+            });
+        }
+
         $perPage = min(max((int) $request->get('per_page', 20), 1), 50);
         $rows = $q->paginate($perPage)->withQueryString();
 

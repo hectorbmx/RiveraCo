@@ -4,12 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Vehiculo;
 use App\Models\VehiculoEmpleado;
+use App\Models\VehiculoAsignacionFoto;
 use App\Models\Empleado;
 use App\Models\SeguroVehiculo;
 use App\Models\Mantenimiento;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Intervention\Image\ImageManager;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+
 
 class VehiculoController extends Controller
 {
@@ -106,9 +111,11 @@ public function index()
             ->orderByDesc('fecha_asignacion')
             ->first();
 
+          
+
         // Historial completo
         $historialAsignaciones = $vehiculo->asignaciones()
-            ->with('empleado')
+            ->with('empleado','fotos')
             ->orderByDesc('fecha_asignacion')
             ->get();
 
@@ -185,64 +192,147 @@ public function index()
 }
     
 
+// public function asignar(Request $request, Vehiculo $vehiculo)
+// {
+//     $validated = $request->validate([
+//         'empleado_id'      => 'required|integer|exists:empleados,id_Empleado',
+//         'fecha_asignacion' => 'nullable|date',
+//         'km_inicial'       => 'nullable|integer|min:0',
+//         'notas'            => 'nullable|string',
+//     ]);
+
+//     DB::transaction(function () use ($vehiculo, $validated) {
+//         $fechaAsignacion = $validated['fecha_asignacion'] ?? now()->toDateString();
+
+//         // Asignación activa previa
+//         $asignacionActiva = $vehiculo->asignaciones()
+//             ->whereNull('fecha_fin')
+//             ->latest('fecha_asignacion')
+//             ->first();
+
+//         // Resolver km inicial
+//         $kmInicial = $validated['km_inicial'] ?? null;
+
+//         if ($kmInicial === null) {
+//             $kmInicial = $this->resolverKmInicialAsignacion($vehiculo, $asignacionActiva);
+//         }
+
+//         // Fallback final duro
+//         if ($kmInicial === null) {
+//             $kmInicial = 0;
+//         }
+
+//         // Cerrar asignación previa si existe
+//         if ($asignacionActiva) {
+//             // Si no tiene km_final, intentar cerrarla con el km resuelto
+//             if ($asignacionActiva->km_final === null) {
+//                 $asignacionActiva->km_final = $kmInicial;
+//             }
+
+//             $asignacionActiva->fecha_fin = $fechaAsignacion;
+//             $asignacionActiva->save();
+//         }
+
+//         // Crear nueva asignación
+//         VehiculoEmpleado::create([
+//             'vehiculo_id'      => $vehiculo->id,
+//             'empleado_id'      => $validated['empleado_id'],
+//             'fecha_asignacion' => $fechaAsignacion,
+//             'km_inicial'       => $kmInicial,
+//             'notas'            => $validated['notas'] ?? null,
+//         ]);
+//     });
+
+//     return redirect()
+//         ->route('mantenimiento.vehiculos.edit', [
+//             'vehiculo' => $vehiculo->id,
+//             'tab' => 'asignacion',
+//         ])
+//         ->with('success', 'Vehículo asignado correctamente al empleado.');
+// }
+//nuevo metodo asignar que incluye la logica para las fotos de asignacion
 public function asignar(Request $request, Vehiculo $vehiculo)
 {
+    // dd($request->hasFile('fotos'), $request->files->all());
+
     $validated = $request->validate([
         'empleado_id'      => 'required|integer|exists:empleados,id_Empleado',
         'fecha_asignacion' => 'nullable|date',
         'km_inicial'       => 'nullable|integer|min:0',
         'notas'            => 'nullable|string',
+        'fotos'            => 'nullable|array|max:6',
+        'fotos.*'          => 'image|max:10240', // 10 MB por foto antes de comprimir
     ]);
 
-    DB::transaction(function () use ($vehiculo, $validated) {
+    DB::transaction(function () use ($vehiculo, $validated, $request) {
         $fechaAsignacion = $validated['fecha_asignacion'] ?? now()->toDateString();
 
-        // Asignación activa previa
         $asignacionActiva = $vehiculo->asignaciones()
             ->whereNull('fecha_fin')
             ->latest('fecha_asignacion')
             ->first();
 
-        // Resolver km inicial
         $kmInicial = $validated['km_inicial'] ?? null;
 
         if ($kmInicial === null) {
             $kmInicial = $this->resolverKmInicialAsignacion($vehiculo, $asignacionActiva);
         }
 
-        // Fallback final duro
         if ($kmInicial === null) {
             $kmInicial = 0;
         }
 
-        // Cerrar asignación previa si existe
         if ($asignacionActiva) {
-            // Si no tiene km_final, intentar cerrarla con el km resuelto
             if ($asignacionActiva->km_final === null) {
                 $asignacionActiva->km_final = $kmInicial;
             }
-
             $asignacionActiva->fecha_fin = $fechaAsignacion;
             $asignacionActiva->save();
         }
 
-        // Crear nueva asignación
-        VehiculoEmpleado::create([
+        $nuevaAsignacion = VehiculoEmpleado::create([
             'vehiculo_id'      => $vehiculo->id,
             'empleado_id'      => $validated['empleado_id'],
             'fecha_asignacion' => $fechaAsignacion,
             'km_inicial'       => $kmInicial,
             'notas'            => $validated['notas'] ?? null,
         ]);
+
+        // Procesar y guardar fotos
+        if ($request->hasFile('fotos')) {
+            $imageManager = ImageManager::gd();
+
+            foreach ($request->file('fotos') as $orden => $archivo) {
+                // Redimensionar a máx 1200px ancho, convertir a WebP calidad 75
+                $imagen = $imageManager->read($archivo->getRealPath())
+                    ->scaleDown(width: 1200)
+                    ->toWebp(quality: 75);
+
+                $nombreArchivo = 'asignaciones/'
+                    . $nuevaAsignacion->id
+                    . '_' . ($orden + 1)
+                    . '_' . Str::random(6)
+                    . '.webp';
+
+                Storage::disk('public')->put($nombreArchivo, $imagen);
+
+                VehiculoAsignacionFoto::create([
+                    'vehiculo_empleado_id' => $nuevaAsignacion->id,
+                    'url'                  => $nombreArchivo,
+                    'orden'                => $orden,
+                ]);
+            }
+        }
     });
 
     return redirect()
         ->route('mantenimiento.vehiculos.edit', [
             'vehiculo' => $vehiculo->id,
-            'tab' => 'asignacion',
+            'tab'      => 'asignacion',
         ])
         ->with('success', 'Vehículo asignado correctamente al empleado.');
 }
+
 
 /**
  * Obtiene el mejor km disponible para iniciar una nueva asignación.

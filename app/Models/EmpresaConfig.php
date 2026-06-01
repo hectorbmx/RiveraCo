@@ -19,6 +19,9 @@ class EmpresaConfig extends Model
         'iva_por_defecto',
         'logo_path',
         'activa',
+        'maquinaria_servicio_horas',
+        'maquinaria_servicio_meses',
+        'maquinaria_alerta_horas',
     ];
     public function documentosTipos()
     {

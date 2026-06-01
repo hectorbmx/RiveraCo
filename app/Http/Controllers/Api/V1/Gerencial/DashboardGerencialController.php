@@ -11,8 +11,8 @@ class DashboardGerencialController extends Controller
     public function index(Request $request)
     {
         // ✅ Proyectos activos (mismo criterio que acordamos)
-        $proyectosActivos = (int) DB::table('obras')
-            ->whereIn('estatus_nuevo', [2, 3])
+        $obrasActivas = (int) DB::table('obras')
+            ->whereIn('estatus_nuevo', [1, 2])
             ->count();
 
         // ✅ Empleados presentes (AJUSTA el criterio según tu negocio)
@@ -25,6 +25,7 @@ class DashboardGerencialController extends Controller
         // ✅ Maquinaria en uso (usa tu tabla obra_maquina + scope "activas" equivalente)
         // Ajusta condiciones: aquí asumo "fecha_fin is null" como activa
         $maquinariaEnUso = (int) DB::table('obra_maquina')
+            ->where('estado', 'activa')
             ->whereNull('fecha_fin')
             ->count();
 
@@ -44,7 +45,8 @@ class DashboardGerencialController extends Controller
         return response()->json([
             'ok' => true,
             'data' => [
-                'proyectos_activos' => $proyectosActivos,
+                'proyectos_activos' => $obrasActivas,
+                'obras_activas' => $obrasActivas,
                 'empleados_presentes' => $empleadosActivosEnObra, // renómbralo si quieres precisión
                 'maquinaria_en_uso' => $maquinariaEnUso,
                 'inventario_stock_pct' => $inventarioStockPct,

@@ -35,4 +35,9 @@ class VehiculoEmpleado extends Model
     {
         return $this->belongsTo(Empleado::class, 'empleado_id', 'id_Empleado');
     }
+    public function fotos()
+    {
+        return $this->hasMany(VehiculoAsignacionFoto::class, 'vehiculo_empleado_id')
+                    ->orderBy('orden');
+    }
 }

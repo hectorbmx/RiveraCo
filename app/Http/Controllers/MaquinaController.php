@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Maquina;
 use App\Services\Maquinas\MaquinaService;
+use App\Models\EmpresaConfig;
+use App\Services\Maquinas\PreventivoMaquinaService;
 
 
 class MaquinaController extends Controller
 {
     //
-   public function index()
+public function index(PreventivoMaquinaService $preventivoService)
 {
     // KPIs
     $total = Maquina::count();
@@ -32,11 +34,15 @@ class MaquinaController extends Controller
         ->orderBy('nombre')
         ->get();
 
+    $config = EmpresaConfig::first();
+    $preventivos = $preventivoService->calcularParaColeccion($maquinas, $config);
+
     return view('maquinas.index', compact(
         'maquinas',
         'total',
         'porUbicacion',
-        'asignadas'
+        'asignadas',
+        'preventivos'
     ));
 }
 public function show(Request $request, Maquina $maquina)

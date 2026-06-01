@@ -10,12 +10,14 @@ class Mantenimiento extends Model
 
     protected $fillable = [
         'vehiculo_id',
+        'maquina_id',
         'obra_id',
         'tipo',
         'categoria_mantenimiento',
         'descripcion',
         'km_actuales',
         'km_proximo_servicio',
+        'horometro',
         'fecha_programada',
         'fecha_inicio',
         'fecha_fin',
@@ -38,6 +40,11 @@ class Mantenimiento extends Model
     public function vehiculo()
     {
         return $this->belongsTo(Vehiculo::class, 'vehiculo_id');
+    }
+
+    public function maquina()
+    {
+        return $this->belongsTo(Maquina::class, 'maquina_id');
     }
 
     public function obra()

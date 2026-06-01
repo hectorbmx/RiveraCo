@@ -63,6 +63,7 @@
                         <th class="text-left px-4 py-3">Estado</th>
                         <th class="text-left px-4 py-3">Ubicación</th>
                         <th class="text-left px-4 py-3">Obra actual</th>
+                        <th class="text-left px-4 py-3">Servicio preventivo</th>
                         <th class="text-left px-4 py-3">Detalles</th>
                     </tr>
                 </thead>
@@ -137,6 +138,9 @@
                                     <span class="text-slate-500">—</span>
                                 @endif
                             </td>
+                            <td class="px-4 py-3">
+                                @include('maquinas.partials._preventivo_badge', ['preventivo' => $preventivos[$m->id] ?? null])
+                            </td>
                           <td class="px-4 py-3">
                             <a href="{{ route('maquinas.show', ['maquina' => $m->id, 'tab' => 'general']) }}"
                                 class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium
@@ -147,7 +151,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-6 text-center text-slate-500">
+                            <td colspan="8" class="px-4 py-6 text-center text-slate-500">
                                 No hay máquinas registradas.
                             </td>
                         </tr>

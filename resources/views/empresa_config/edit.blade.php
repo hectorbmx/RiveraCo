@@ -466,19 +466,19 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Servicio cada (horas)</label>
-                            <input type="number" name="servicio_horas" value="250"
+                            <input type="number" name="maquinaria_servicio_horas" value="{{ old('maquinaria_servicio_horas', $config->maquinaria_servicio_horas ?? 250) }}"
                                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Servicio cada (meses)</label>
-                            <input type="number" name="servicio_meses" value="6"
+                            <input type="number" name="maquinaria_servicio_meses" value="{{ old('maquinaria_servicio_meses', $config->maquinaria_servicio_meses ?? 6) }}"
                                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Alerta antes (horas)</label>
-                            <input type="number" name="alerta_horas" value="20"
+                            <input type="number" name="maquinaria_alerta_horas" value="{{ old('maquinaria_alerta_horas', $config->maquinaria_alerta_horas ?? 20) }}"
                                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
                         </div>
 
@@ -517,6 +517,7 @@
                     <th class="text-left px-4 py-3">Placas</th>
                     <th class="text-left px-4 py-3">Color</th>
                     <th class="text-left px-4 py-3">Horómetro base</th>
+                    <th class="text-left px-4 py-3">Servicio preventivo</th>
                     <th class="text-left px-4 py-3">Estado</th>
                     <th class="text-left px-4 py-3">Acciones</th>
                 </tr>
@@ -534,6 +535,9 @@
                         <td class="px-4 py-3 text-gray-700">{{ $m->placas ?? '—' }}</td>
                         <td class="px-4 py-3 text-gray-700">{{ $m->color ?? '—' }}</td>
                         <td class="px-4 py-3 text-gray-700">{{ $m->horometro_base ?? '—' }}</td>
+                        <td class="px-4 py-3 text-gray-700">
+                            @include('maquinas.partials._preventivo_badge', ['preventivo' => $preventivosMaquinaria[$m->id] ?? null])
+                        </td>
                         <td class="px-4 py-3 text-gray-700">
                             @if(isset($m->estado))
                                 <span class="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700">

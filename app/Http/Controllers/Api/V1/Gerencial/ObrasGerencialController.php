@@ -28,7 +28,9 @@ class ObrasGerencialController extends Controller
             ->with(['cliente:id,nombre_comercial'])
             ->orderByDesc('id');
 
-        if ($request->filled('estatus')) {
+        if ($request->boolean('solo_activas')) {
+            $q->whereIn('estatus_nuevo', [1, 2]);
+        } elseif ($request->filled('estatus')) {
             $q->where('estatus_nuevo', $request->estatus);
         }
 

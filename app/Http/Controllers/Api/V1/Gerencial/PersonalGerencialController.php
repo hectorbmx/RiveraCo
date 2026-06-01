@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Gerencial;
 
 use App\Http\Controllers\Controller;
 use App\Models\Empleado; // AJUSTA: este es el modelo de tu tabla empleados
+use App\Models\ObraAsistencia;
 use App\Models\ObraEmpleado;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -187,6 +188,34 @@ public function show(Empleado $empleado)
             ]),
         ];
     }
+
+    $asistencias = ObraAsistencia::query()
+        ->where('empleado_id', $empleado->id_Empleado)
+        ->with('registradoPor:id,name')
+        ->orderByDesc('checked_at')
+        ->limit(50)
+        ->get()
+        ->map(function ($asistencia) {
+            return [
+                'id' => (int) $asistencia->id,
+                'obra_id' => (int) $asistencia->obra_id,
+                'tipo' => $asistencia->tipo,
+                'checked_date' => optional($asistencia->checked_date)->toDateString(),
+                'checked_at' => optional($asistencia->checked_at)
+                    ? $asistencia->checked_at->timezone('America/Mexico_City')->toDateTimeString()
+                    : null,
+                'hora' => optional($asistencia->checked_at)
+                    ? $asistencia->checked_at->timezone('America/Mexico_City')->format('H:i')
+                    : null,
+                'ubicacion_texto' => $asistencia->ubicacion_texto,
+                'registrado_por' => $asistencia->registradoPor?->name,
+                'photo_url' => $asistencia->photo_path
+                    ? asset('storage/' . ltrim($asistencia->photo_path, '/'))
+                    : null,
+            ];
+        })
+        ->values();
+
     return response()->json([
         'ok' => true,
         'data' => [
@@ -232,6 +261,7 @@ public function show(Empleado $empleado)
                         'notas' => $contacto->notas,
                     ];
                 })->values(),
+            'asistencias' => $asistencias,
         ]
     ]);
 }

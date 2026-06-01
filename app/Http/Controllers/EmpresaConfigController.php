@@ -19,6 +19,7 @@ use App\Models\Empleado;
 use App\Models\EquipoComputo;
 use App\Models\CentroCosto;
 use App\Models\TipoIva;
+use App\Services\Maquinas\PreventivoMaquinaService;
 
 class EmpresaConfigController extends Controller
 {
@@ -39,7 +40,7 @@ public function index(){
 
     //     return view('empresa_config.edit', compact('config','maquinas'));
     // }
-    public function edit()
+    public function edit(PreventivoMaquinaService $preventivoService)
     {
 
         $config = EmpresaConfig::firstOrCreate(['id' => 1], [
@@ -97,6 +98,7 @@ public function index(){
         // $Catrol = CatalogoRol::orderBy('id')->orderBy('nombre')->get();
 
         $maquinas = Maquina::orderBy('nombre')->get();
+        $preventivosMaquinaria = $preventivoService->calcularParaColeccion($maquinas, $config);
         $catalogoRoles = CatalogoRol::orderBy('nombre')->get();    
         $tarifarios = ComisionTarifario::orderByDesc('vigente_desde')->orderByDesc('id')->get();
 
@@ -162,6 +164,7 @@ public function index(){
         'empleadosResponsables',
         'centrosCosto',
         'tiposIva',
+        'preventivosMaquinaria',
     ));
 }
 
@@ -198,7 +201,21 @@ public function index(){
      *
      * Aquí después conectamos a tabla meta o a tablas específicas.
      */
-    if (in_array($section, ['vehiculos', 'maquinaria', 'rrhh', 'comisiones', 'reglas', 'alertas'], true)) {
+    if ($section === 'maquinaria') {
+        $data = $request->validate([
+            'maquinaria_servicio_horas' => ['required', 'integer', 'min:1', 'max:100000'],
+            'maquinaria_servicio_meses' => ['required', 'integer', 'min:1', 'max:120'],
+            'maquinaria_alerta_horas' => ['required', 'integer', 'min:0', 'max:100000'],
+        ]);
+
+        $config->update($data);
+
+        return redirect()
+            ->route('empresa_config.edit', ['tab' => 'maquinaria'])
+            ->with('success', 'ConfiguraciÃ³n de maquinaria guardada.');
+    }
+
+    if (in_array($section, ['vehiculos', 'rrhh', 'comisiones', 'reglas', 'alertas'], true)) {
         // Validación opcional mínima para que no aceptes basura (puedes ajustar)
         $request->validate([
             // ejemplos (opcionales). Si todavía no guardarás, puedes dejar vacío.

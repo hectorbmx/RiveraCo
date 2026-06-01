@@ -122,7 +122,7 @@
 <div class="mt-4 pt-4 border-t">
     <div class="text-sm font-semibold text-slate-800 mb-2">Acciones</div>
 
-    <form method="POST" action="{{ route('maquinas.cambiarEstado', $maquina) }}" class="space-y-3">
+    <form id="form_cambio_estado_maquina" method="POST" action="{{ route('maquinas.cambiarEstado', $maquina) }}" class="space-y-3">
     @csrf
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -171,6 +171,7 @@
     </div>
 
     <button type="submit"
+            id="btn_cambio_estado_maquina"
             class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium
                    bg-[#0B265A] text-white hover:opacity-90 disabled:bg-slate-200 disabled:text-slate-600"
             @disabled(empty($opciones))>
@@ -189,9 +190,15 @@
 
     @if($tab === 'servicios')
         <div class="rounded-xl border bg-white overflow-hidden">
-            <div class="px-4 py-3 border-b">
-                <div class="text-sm font-semibold text-slate-800">Servicios realizados</div>
+            <div class="px-4 py-3 border-b flex items-center justify-between gap-3">
+                <div>
+                    <div class="text-sm font-semibold text-slate-800">Servicios realizados</div>
                 <div class="text-xs text-slate-500">Mantenimientos ligados a esta máquina.</div>
+                </div>
+                <a href="{{ route('mantenimiento.mantenimientos.create', ['maquina_id' => $maquina->id]) }}"
+                   class="inline-flex items-center px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+                    + Programar servicio
+                </a>
             </div>
 
             <div class="overflow-x-auto">
@@ -450,5 +457,50 @@
 </div>
 @endif
 
+<div id="modal_cargando_cambio_estado"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 px-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="modal_cargando_cambio_estado_titulo">
+    <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+        <div class="flex items-center gap-4">
+            <div class="h-11 w-11 flex-shrink-0 rounded-full border-4 border-slate-200 border-t-[#0B265A] animate-spin"></div>
+
+            <div>
+                <h2 id="modal_cargando_cambio_estado_titulo" class="text-sm font-semibold text-slate-900">
+                    Aplicando cambio de estado
+                </h2>
+                <p class="mt-1 text-sm text-slate-500">
+                    Guardando movimiento de la maquina...
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('form_cambio_estado_maquina');
+    const modal = document.getElementById('modal_cargando_cambio_estado');
+    const button = document.getElementById('btn_cambio_estado_maquina');
+
+    if (!form || !modal) {
+        return;
+    }
+
+    form.addEventListener('submit', function () {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        if (button) {
+            button.disabled = true;
+            button.textContent = 'Aplicando...';
+        }
+    });
+});
+</script>
+@endpush
