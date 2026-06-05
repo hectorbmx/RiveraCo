@@ -617,7 +617,7 @@ public function print(OrdenCompra $orden_compra)
     $pdf->SetXY($X0 + 5, $Y + 13);
     $pdf->Cell(50, 5, $utf8(auth()->user()->name ?? ''), 0, 0, 'C');
     $pdf->SetXY($X0 + 60, $Y + 13);
-    $pdf->Cell(50, 5, $utf8($oc->autoriza_nombre ?? ''), 0, 0, 'C');
+    $pdf->Cell(50, 5, $utf8($oc->usuario_autoriza  ?? ''), 0, 0, 'C');
     $pdf->SetXY($X0 + 115, $Y + 13);
     $pdf->Cell(50, 5, $utf8(''), 0, 0, 'C');
     $pdf->SetXY($X0 + 170, $Y + 13);
