@@ -17,6 +17,9 @@ class Comision extends Model
         'trabajo_id',
         'tarifario_id',
         'fecha',
+        'estado',
+        'cerrada_at',
+        'cancelada_at',
         'residente_id',
         // 'residente_id' => ['nullable', 'exists:empleados,id_Empleado'],
 
@@ -29,6 +32,8 @@ class Comision extends Model
 
     protected $casts = [
         'fecha'      => 'date',
+        'cerrada_at' => 'datetime',
+        'cancelada_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -72,6 +77,13 @@ class Comision extends Model
     public function perforaciones()
     {
         return $this->hasMany(ComisionPerforacion::class, 'comision_id');
+    }
+
+    public function etapas()
+    {
+        return $this->hasMany(ComisionEtapa::class, 'comision_id')
+            ->orderBy('orden')
+            ->orderBy('id');
     }
        public function catalogoPila()
     {

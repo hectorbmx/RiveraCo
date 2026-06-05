@@ -103,15 +103,18 @@
                         @endphp
                         {{-- Autorizar (solo si NO está autorizada y NO está cancelada) --}}
                     @if(!in_array($estadoNorm, ['autorizada','autorizado','cancelada','cancelado']))
-                        @if(auth()->user()->hasRole('super-admin') || auth()->user()->hasRole('compras'))
-                            <form method="POST" action="{{ route('ordenes_compra.autorizar', $oc->id) }}" class="inline">
-                                @csrf
-                                <button type="submit"
-                                        class="text-green-700 hover:underline"
-                                        onclick="return confirm('¿Autorizar la orden {{ $oc->folio }}?');">
-                                    Autorizar
-                                </button>
-                            </form>
+                        {{-- Autorizar (solo si NO está autorizada y NO está cancelada) --}}
+                        @if(!in_array($estadoNorm, ['autorizada','autorizado','cancelada','cancelado']))
+                            @can('ordenes_compra.autorizar')
+                                <form method="POST" action="{{ route('ordenes_compra.autorizar', $oc->id) }}" class="inline">
+                                    @csrf
+                                    <button type="submit"
+                                            class="text-green-700 hover:underline"
+                                            onclick="return confirm('¿Autorizar la orden {{ $oc->folio }}?');">
+                                        Autorizar
+                                    </button>
+                                </form>
+                            @endcan
                         @endif
                     @endif
 

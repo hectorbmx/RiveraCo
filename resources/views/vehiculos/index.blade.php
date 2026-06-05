@@ -70,6 +70,7 @@
         <td class="px-4 py-2 text-center text-slate-700">
             @if($vehiculo->asignacionActual && $vehiculo->asignacionActual->empleado)
                 {{ $vehiculo->asignacionActual->empleado->Nombre }}
+                {{ $vehiculo->asignacionActual->empleado->Apellidos }}
             @else
                 <span class="text-slate-400 text-xs">No asignado</span>
             @endif

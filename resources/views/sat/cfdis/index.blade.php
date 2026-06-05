@@ -652,12 +652,33 @@
         </div>
 
         <!-- Footer -->
-        <div class="px-6 py-3 border-t text-right">
-            <button @click="close()"
-                    class="px-4 py-2 text-sm rounded-lg border hover:bg-gray-50">
-                Cerrar
-            </button>
-        </div>
+      <!-- Footer -->
+<div class="px-6 py-3 border-t flex justify-between">
+
+    <div class="space-x-2">
+
+        <a
+            :href="`/sat/cfdis/${data?.id}/xml`"
+            target="_blank"
+            class="px-4 py-2 text-sm rounded-lg border border-blue-300 text-blue-700 hover:bg-blue-50">
+            XML
+        </a>
+
+        <a
+            :href="`/sat/cfdis/${data?.id}/pdf`"
+            target="_blank"
+            class="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+            Generar PDF
+        </a>
+
+    </div>
+
+    <button @click="close()"
+            class="px-4 py-2 text-sm rounded-lg border hover:bg-gray-50">
+        Cerrar
+    </button>
+
+</div>
 
     </div>
     

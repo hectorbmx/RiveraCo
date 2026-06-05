@@ -180,16 +180,14 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($comision->personales as $pers)
+            @forelse($personalFormato as $pers)
                 @php
-                    $asig = $pers->asignacionEmpleado;
-                    $emp  = $asig?->empleado;
-                    $comidaHoras = $pers->comida_min ? $pers->comida_min / 60 : 0;
+                    $comidaHoras = $pers->comida_horas ?? 0;
                 @endphp
                 <tr>
                     <td class="text-center">
                         {{-- puedes poner aquí el rol si quieres --}}
-                        {{ $emp?->Puesto ?? $emp?->puesto_base ?? 'TRABAJADOR' }}
+                        {{ $pers->puesto ?? 'TRABAJADOR' }}
                     </td>
                     <td class="text-center">{{ $pers->hora_inicio ?? '––' }}</td>
                     <td class="text-center">{{ $pers->hora_fin ?? '––' }}</td>
@@ -203,9 +201,10 @@
                         {{ number_format($pers->tiempo_extra ?? 0, 2) }}
                     </td>
                     <td>
-                        @if($emp)
+                        {{ $pers->empleado ?? 'N/D' }}
+                        @if(false)
                             {{ $emp->Nombre }} {{ $emp->Apellidos }}
-                        @else
+                        @elseif(false)
                             –
                         @endif
                     </td>
@@ -226,8 +225,8 @@
 
 @php
     // Emparejamos perforaciones con detalles por índice (mismo orden de guardado)
-    $detalles      = $comision->detalles->values();
-    $perforaciones = $comision->perforaciones->sortBy('id')->values();
+    $detalles      = $detallesFormato;
+    $perforaciones = $perforacionesFormato;
 
     $totProf   = 0;
     $totMetros = 0;
@@ -267,7 +266,7 @@
                 {{-- Pila: código/tipo desde la cabecera (ajusta al mismo campo que usas en el show) --}}
                 <td class="text-center">
                     <!-- {{ $comision->pila->codigo ?? $comision->pila->numero_pila ?? '––' }} -->
-                    {{ optional($comision->pila->catalogo ?? null)->codigo ?? optional($comision->pila)->tipo ?? '—' }}
+                    {{ optional($pilaFormato->catalogo ?? null)->codigo ?? optional($pilaFormato)->tipo ?? optional($pilaFormato)->numero_pila ?? 'N/D' }}
 
                 </td>
 
@@ -346,7 +345,7 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($comision->perforaciones as $perf)
+            @forelse($perforacionesFormato as $perf)
                 <tr>
                     <td class="text-center">{{ $perf->hora_inicio ?? '––' }}</td>
                     <td class="text-center">{{ $perf->hora_termino ?? '––' }}</td>

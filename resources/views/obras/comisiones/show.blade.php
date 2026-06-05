@@ -81,6 +81,176 @@
         @endif
     </div>
 
+    @php
+        $etapasVisibles = $comision->etapas
+            ->where('estado', '!=', 'no_aplica')
+            ->values();
+    @endphp
+
+    {{-- MOVIMIENTOS POR ETAPA (APP MOVIL) --}}
+    <div class="bg-white border rounded-xl shadow-sm p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-slate-700">
+                Movimientos por etapa
+            </h2>
+            <span class="text-xs text-slate-500">
+                {{ $etapasVisibles->count() }} etapas
+            </span>
+        </div>
+
+        @if($etapasVisibles->isEmpty())
+            <p class="text-sm text-slate-500">
+                No hay movimientos por etapa registrados desde la app movil.
+            </p>
+        @else
+            @php
+                $etapaLabels = [
+                    'perforacion' => 'Perforacion',
+                    'bentonita' => 'Bentonita',
+                    'ademe' => 'Ademe',
+                    'acero' => 'Colocacion de acero',
+                    'colado' => 'Colado',
+                ];
+
+                $estadoLabels = [
+                    'pendiente' => 'Pendiente',
+                    'en_proceso' => 'En proceso',
+                    'completada' => 'Completada',
+                    'no_aplica' => 'No aplica',
+                ];
+
+                $estadoClases = [
+                    'pendiente' => 'bg-orange-50 text-orange-700 border-orange-100',
+                    'en_proceso' => 'bg-blue-50 text-blue-700 border-blue-100',
+                    'completada' => 'bg-emerald-50 text-emerald-700 border-emerald-100',
+                    'no_aplica' => 'bg-slate-100 text-slate-600 border-slate-200',
+                ];
+            @endphp
+
+            <div class="space-y-4">
+                @foreach($etapasVisibles as $etapa)
+                    @php
+                        $estado = $etapa->estado ?? 'pendiente';
+                        $horaInicio = $etapa->hora_inicio ? substr((string) $etapa->hora_inicio, 0, 5) : null;
+                        $horaFin = $etapa->hora_fin ? substr((string) $etapa->hora_fin, 0, 5) : null;
+                    @endphp
+
+                    <div class="border border-slate-200 rounded-xl p-4">
+                        <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                            <div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h3 class="text-base font-semibold text-slate-800">
+                                        {{ $etapaLabels[$etapa->etapa] ?? ucfirst($etapa->etapa) }}
+                                    </h3>
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full border text-[11px] font-semibold {{ $estadoClases[$estado] ?? 'bg-slate-100 text-slate-600 border-slate-200' }}">
+                                        {{ $estadoLabels[$estado] ?? $estado }}
+                                    </span>
+                                </div>
+
+                                <div class="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-600">
+                                    <span>
+                                        Horario:
+                                        <strong class="text-slate-800">
+                                            {{ $horaInicio && $horaFin ? $horaInicio . ' - ' . $horaFin : '--:-- - --:--' }}
+                                        </strong>
+                                    </span>
+                                    <span>
+                                        Pila:
+                                        <strong class="text-slate-800">
+                                            {{ $etapa->pila->numero_pila ?? $comision->pila->numero_pila ?? 'N/D' }}
+                                        </strong>
+                                    </span>
+                                    <span>Fotos: <strong class="text-slate-800">{{ $etapa->fotos->count() }}</strong></span>
+                                    <span>Personal: <strong class="text-slate-800">{{ $etapa->personal->count() }}</strong></span>
+                                </div>
+
+                                @if($etapa->observaciones)
+                                    <p class="mt-3 text-sm text-slate-700 whitespace-pre-line">
+                                        {{ $etapa->observaciones }}
+                                    </p>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div>
+                                <div class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold mb-2">
+                                    Fotos
+                                </div>
+
+                                @if($etapa->fotos->isEmpty())
+                                    <p class="text-sm text-slate-500">Sin fotos registradas.</p>
+                                @else
+                                    <div class="flex flex-wrap gap-3">
+                                        @foreach($etapa->fotos as $foto)
+                                            @php $fotoUrl = asset('storage/' . ltrim($foto->path, '/')); @endphp
+                                            <a href="{{ $fotoUrl }}" target="_blank" class="block group">
+                                                <img src="{{ $fotoUrl }}"
+                                                     alt="Foto {{ $etapaLabels[$etapa->etapa] ?? $etapa->etapa }}"
+                                                     class="h-24 w-24 rounded-lg object-cover border border-slate-200 group-hover:ring-2 group-hover:ring-slate-300">
+                                                @if($foto->size)
+                                                    <div class="mt-1 text-[11px] text-slate-500 text-center">
+                                                        {{ number_format($foto->size / 1024, 0) }} KB
+                                                    </div>
+                                                @endif
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+
+                            <div>
+                                <div class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold mb-2">
+                                    Personal involucrado
+                                </div>
+
+                                @if($etapa->personal->isEmpty())
+                                    <p class="text-sm text-slate-500">Sin personal registrado.</p>
+                                @else
+                                    <div class="overflow-x-auto border border-slate-100 rounded-lg">
+                                        <table class="min-w-full text-xs md:text-sm">
+                                            <thead class="bg-slate-50 text-slate-500">
+                                                <tr>
+                                                    <th class="px-3 py-2 text-left">Empleado</th>
+                                                    <th class="px-3 py-2 text-left">Rol</th>
+                                                    <th class="px-3 py-2 text-left">Actividad</th>
+                                                    <th class="px-3 py-2 text-right">Importe</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-slate-100">
+                                                @foreach($etapa->personal as $persona)
+                                                    @php
+                                                        $empleado = $persona->empleado ?? $persona->asignacionEmpleado?->empleado;
+                                                        $rol = $persona->rol ?? $persona->asignacionEmpleado?->rol;
+                                                    @endphp
+                                                    <tr>
+                                                        <td class="px-3 py-2 font-medium text-slate-800">
+                                                            {{ $empleado?->nombre_completo ?? 'N/D' }}
+                                                        </td>
+                                                        <td class="px-3 py-2 text-slate-600">
+                                                            {{ $rol?->nombre ?? 'N/D' }}
+                                                        </td>
+                                                        <td class="px-3 py-2 text-slate-600">
+                                                            {{ $persona->actividad?->nombre ?? ($persona->comisiona ? 'Comisiona' : 'No comisiona') }}
+                                                        </td>
+                                                        <td class="px-3 py-2 text-right text-slate-700">
+                                                            ${{ number_format((float) ($persona->importe_calculado ?? $persona->importe_comision), 2) }}
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </div>
+
+    @if(false)
     {{-- PERSONAL EN LA OBRA --}}
     <div class="bg-white border rounded-xl shadow-sm p-6 mb-6">
         <h2 class="text-sm font-semibold text-slate-700 mb-3">
@@ -137,6 +307,8 @@
             </div>
         @endif
     </div>
+
+    @endif
 
     {{-- DETALLE DE PERFORACIÓN (DIÁMETROS / VOLÚMENES) --}}
     <div class="bg-white border rounded-xl shadow-sm p-6 mb-6">
@@ -223,7 +395,7 @@
                 <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Empleado</th>
                 <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Rol</th>
 
-                @foreach($columnas as $key => $label)
+                @foreach(($columnas ?? []) as $key => $label)
                     <th class="px-4 py-2 text-right text-xs font-semibold text-slate-500">{{ $label }}</th>
                 @endforeach
 
@@ -233,12 +405,12 @@
         </thead>
 
         <tbody class="divide-y divide-slate-100">
-            @forelse($matriz as $r)
+            @forelse(($matriz ?? []) as $r)
                 <tr>
                     <td class="px-4 py-2 whitespace-nowrap">{{ $r['empleado'] }}</td>
                     <td class="px-4 py-2 whitespace-nowrap text-slate-600">{{ $r['rol'] }}</td>
 
-                    @foreach($columnas as $key => $label)
+                    @foreach(($columnas ?? []) as $key => $label)
                         <td class="px-4 py-2 text-right">
                            ${{ number_format($r['conceptos'][$key] ?? 0, 2) }}
                         </td>
@@ -249,19 +421,19 @@
                 </tr>
             @empty
                 <tr>
-                    <td class="px-4 py-6 text-center text-slate-500" colspan="{{ 4 + count($conceptos) }}">
+                    <td class="px-4 py-6 text-center text-slate-500" colspan="{{ 4 + count($columnas ?? []) }}">
                         No hay personal registrado en esta comisión.
                     </td>
                 </tr>
             @endforelse
         </tbody>
 
-        @if(count($matriz))
+        @if(count($matriz ?? []))
             <tfoot class="bg-slate-50 border-t border-slate-200">
                 <tr>
                     <td class="px-4 py-2 font-semibold text-slate-700" colspan="2">Totales</td>
 
-                    @foreach($columnas as $key => $label)
+                    @foreach(($columnas ?? []) as $key => $label)
                         <td class="px-4 py-2 text-right font-semibold">
                             {{ number_format($totalesCols[$key] ?? 0, 2) }}
                         </td>

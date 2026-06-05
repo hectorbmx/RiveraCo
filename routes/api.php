@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\AsistenciasController;
 use App\Http\Controllers\Api\V1\VehiculoKmController;
 use App\Http\Controllers\Api\V1\ComisionController;
 use App\Http\Controllers\Api\V1\MaquinaRegistroController;
+use App\Http\Controllers\Api\V1\ResidenteComisionController;
 use App\Http\Controllers\Api\V1\ResidenteReposicionGastoController;
 use App\Http\Controllers\Api\V1\Gerencial\ObrasGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\MaquinasGerencialController;
@@ -74,6 +75,12 @@ Route::prefix('v1')->group(function () {
 
         
         Route::get('obras/{obra}/comisiones', [ObraComisionesApiController::class, 'index']);
+
+        Route::get('residente/comisiones', [ResidenteComisionController::class, 'index']);
+        Route::post('residente/comisiones', [ResidenteComisionController::class, 'store']);
+        Route::get('residente/comisiones/{comision}', [ResidenteComisionController::class, 'show']);
+        Route::patch('residente/comisiones/{comision}/etapas/{etapa}', [ResidenteComisionController::class, 'updateEtapa']);
+        Route::post('residente/comisiones/{comision}/etapas/{etapa}/fotos', [ResidenteComisionController::class, 'storeFoto']);
 
         Route::prefix('residente/reposicion-gastos')->group(function () {
             Route::get('/', [ResidenteReposicionGastoController::class, 'index']);

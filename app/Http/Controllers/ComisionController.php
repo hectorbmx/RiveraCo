@@ -664,6 +664,13 @@ public function show(Obra $obra, Comision $comision)
         'personales.asignacionEmpleado.rol',
         'personales.actividades',          // many-to-many a catalogo_actividades_comision
         'perforaciones',                   // solo horarios/info
+        'etapas.pila',
+        'etapas.fotos.usuario',
+        'etapas.personal.empleado',
+        'etapas.personal.asignacionEmpleado.empleado',
+        'etapas.personal.asignacionEmpleado.rol',
+        'etapas.personal.rol',
+        'etapas.personal.actividad',
         'detalles',                        // aquí está la producción
     ]);
 
@@ -677,6 +684,29 @@ public function show(Obra $obra, Comision $comision)
         $detalle->hora_inicio_perf = $perf->hora_inicio ?? null;
         $detalle->hora_fin_perf    = $perf->hora_termino ?? null;
     }
+
+    if ($detalles->isEmpty() && $comision->etapas->isNotEmpty()) {
+        $etapaPerforacion = $comision->etapas->firstWhere('etapa', 'perforacion');
+        $pilaDetalle = $etapaPerforacion?->pila ?? $comision->pila;
+
+        if ($etapaPerforacion) {
+            $detalles = collect([(object) [
+                'hora_inicio_perf' => $etapaPerforacion->hora_inicio,
+                'hora_fin_perf' => $etapaPerforacion->hora_fin,
+                'diametro' => $pilaDetalle?->diametro_proyecto,
+                'cantidad' => 1,
+                'profundidad' => $pilaDetalle?->profundidad_proyecto,
+                'metros_sujetos_comision' => $pilaDetalle?->profundidad_proyecto,
+                'kg_acero' => 0,
+                'vol_bentonita' => 0,
+                'vol_concreto' => 0,
+                'ml_ademe_bauer' => 0,
+                'campana_pzas' => 0,
+                'adicional' => null,
+            ]]);
+        }
+    }
+
     $comision->setRelation('detalles', $detalles);
 
     // =========================
@@ -687,6 +717,7 @@ public function show(Obra $obra, Comision $comision)
         'kg_acero'                => (float) $detalles->sum('kg_acero'),
         'vol_bentonita'           => (float) $detalles->sum('vol_bentonita'),
         'vol_concreto'            => (float) $detalles->sum('vol_concreto'),
+        'ml_ademe_bauer'          => (float) $detalles->sum('ml_ademe_bauer'),
         'campana_pzas'            => (float) $detalles->sum('campana_pzas'),
     ];
 
@@ -697,7 +728,17 @@ public function show(Obra $obra, Comision $comision)
         'kg_acero'                => 'Acero',
         'vol_bentonita'           => 'Bentonita',
         'vol_concreto'            => 'Concreto',
+        'ml_ademe_bauer'          => 'Ademe',
         'campana_pzas'            => 'Campana',
+    ];
+
+    $variablePorEtapa = [
+        'perforacion' => 'metros_sujetos_comision',
+        'bentonita' => 'vol_bentonita',
+        'ademe' => 'ml_ademe_bauer',
+        'acero' => 'kg_acero',
+        'colado' => 'vol_concreto',
+        'campana' => 'campana_pzas',
     ];
 
     // =========================
@@ -717,12 +758,38 @@ public function show(Obra $obra, Comision $comision)
         }
     }
 
+    foreach ($comision->etapas as $etapa) {
+        $varOrigen = $variablePorEtapa[$etapa->etapa] ?? null;
+        $recalculaImporte = $varOrigen && array_key_exists($varOrigen, $columnas);
+
+        foreach ($etapa->personal as $persona) {
+            $rol = $persona->rol ?? $persona->asignacionEmpleado?->rol;
+            $rolId = $rol?->id ?? $persona->rol_id;
+            $importe = (float) $persona->importe_comision;
+
+            if ($recalculaImporte) {
+                $tarifa = (float) ($tarifas[$rolId][$varOrigen] ?? 0);
+                $importe = $persona->comisiona
+                    ? ((float) ($totales[$varOrigen] ?? 0)) * $tarifa
+                    : 0.0;
+            }
+
+            $persona->setAttribute('importe_calculado', $importe);
+        }
+    }
+
     // =========================
     // MATRIZ POR EMPLEADO
     // =========================
     $matriz = [];
+    $usaPersonalEtapas = $comision->etapas
+        ->flatMap(fn ($etapa) => $etapa->personal)
+        ->isNotEmpty();
 
     foreach ($comision->personales as $p) {
+        if ($usaPersonalEtapas) {
+            continue;
+        }
 
         $empleado = $p->asignacionEmpleado?->empleado;
         $rol      = $p->asignacionEmpleado?->rol;
@@ -771,6 +838,47 @@ public function show(Obra $obra, Comision $comision)
         $row['total'] += $row['importe_extra'];
 
         $matriz[] = $row;
+    }
+
+    if ($usaPersonalEtapas) {
+        $rowsEtapas = [];
+
+        foreach ($comision->etapas as $etapa) {
+            $varOrigen = $variablePorEtapa[$etapa->etapa] ?? null;
+
+            if (! $varOrigen || ! array_key_exists($varOrigen, $columnas)) {
+                continue;
+            }
+
+            foreach ($etapa->personal as $persona) {
+                if (! $persona->comisiona) {
+                    continue;
+                }
+
+                $empleado = $persona->empleado ?? $persona->asignacionEmpleado?->empleado;
+                $rol = $persona->rol ?? $persona->asignacionEmpleado?->rol;
+                $rolId = $rol?->id;
+                $key = $persona->obra_empleado_id ?: ('empleado_' . ($persona->empleado_id ?? $persona->id));
+
+                if (! isset($rowsEtapas[$key])) {
+                    $rowsEtapas[$key] = [
+                        'empleado' => $empleado?->nombre_completo ?? 'N/D',
+                        'rol' => $rol?->nombre ?? 'N/D',
+                        'conceptos' => array_fill_keys(array_keys($columnas), 0.0),
+                        'importe_extra' => 0.0,
+                        'total' => 0.0,
+                    ];
+                }
+
+                $tarifa = (float) ($tarifas[$rolId][$varOrigen] ?? 0);
+                $importe = ((float) ($totales[$varOrigen] ?? 0)) * $tarifa;
+
+                $rowsEtapas[$key]['conceptos'][$varOrigen] += $importe;
+                $rowsEtapas[$key]['total'] += $importe;
+            }
+        }
+
+        $matriz = array_values($rowsEtapas);
     }
 
     // Totales por columna
@@ -1020,14 +1128,92 @@ public function show(Obra $obra, Comision $comision)
             'pila',
             'obra',
             'personales.asignacionEmpleado.empleado',
+            'personales.asignacionEmpleado.rol',
             'personales.asignacionMaquina.maquina',
             'detalles.asignacionMaquina.maquina',
             'perforaciones',
+            'etapas.pila',
+            'etapas.personal.empleado',
+            'etapas.personal.asignacionEmpleado.empleado',
+            'etapas.personal.asignacionEmpleado.rol',
+            'etapas.personal.rol',
         ]);
 
+        $pilaFormato = $comision->pila
+            ?? $comision->etapas->first(fn ($etapa) => $etapa->pila)?->pila;
+
+        $personalFormato = $comision->personales->map(function ($pers) {
+            $asig = $pers->asignacionEmpleado;
+            $emp = $asig?->empleado;
+            $rol = $asig?->rol;
+
+            return (object) [
+                'puesto' => $rol?->nombre ?? $emp?->Puesto ?? $emp?->puesto_base ?? 'TRABAJADOR',
+                'hora_inicio' => $pers->hora_inicio,
+                'hora_fin' => $pers->hora_fin,
+                'comida_horas' => $pers->comida_min ? $pers->comida_min / 60 : 0,
+                'horas_laboradas' => $pers->horas_laboradas ?? 0,
+                'tiempo_extra' => $pers->tiempo_extra ?? 0,
+                'empleado' => $emp ? trim(($emp->Nombre ?? '') . ' ' . ($emp->Apellidos ?? '')) : null,
+            ];
+        });
+
+        if ($personalFormato->isEmpty() && $comision->etapas->isNotEmpty()) {
+            $personalFormato = $comision->etapas
+                ->flatMap(function ($etapa) {
+                    return $etapa->personal->map(function ($persona) use ($etapa) {
+                        $emp = $persona->empleado ?? $persona->asignacionEmpleado?->empleado;
+                        $rol = $persona->rol ?? $persona->asignacionEmpleado?->rol;
+
+                        return (object) [
+                            'puesto' => $rol?->nombre ?? $emp?->Puesto ?? $emp?->puesto_base ?? 'TRABAJADOR',
+                            'hora_inicio' => $etapa->hora_inicio,
+                            'hora_fin' => $etapa->hora_fin,
+                            'comida_horas' => 0,
+                            'horas_laboradas' => 0,
+                            'tiempo_extra' => 0,
+                            'empleado' => $emp ? trim(($emp->Nombre ?? '') . ' ' . ($emp->Apellidos ?? '')) : null,
+                        ];
+                    });
+                })
+                ->unique(fn ($row) => ($row->empleado ?? '') . '|' . ($row->puesto ?? '') . '|' . ($row->hora_inicio ?? '') . '|' . ($row->hora_fin ?? ''))
+                ->values();
+        }
+
+        $detallesFormato = $comision->detalles->values();
+        $perforacionesFormato = $comision->perforaciones->sortBy('id')->values();
+
+        if ($detallesFormato->isEmpty() && $comision->etapas->isNotEmpty()) {
+            $etapaPerforacion = $comision->etapas->firstWhere('etapa', 'perforacion');
+            $pilaDetalle = $etapaPerforacion?->pila ?? $pilaFormato;
+
+            if ($etapaPerforacion) {
+                $detallesFormato = collect([(object) [
+                    'diametro' => $pilaDetalle?->diametro_proyecto,
+                    'cantidad' => 1,
+                    'profundidad' => $pilaDetalle?->profundidad_proyecto,
+                    'metros_sujetos_comision' => $pilaDetalle?->profundidad_proyecto,
+                    'kg_acero' => 0,
+                    'vol_bentonita' => 0,
+                    'vol_concreto' => 0,
+                    'adicional' => null,
+                ]]);
+
+                $perforacionesFormato = collect([(object) [
+                    'hora_inicio' => $etapaPerforacion->hora_inicio,
+                    'hora_termino' => $etapaPerforacion->hora_fin,
+                    'informacion_pila' => $etapaPerforacion->observaciones ?: ($pilaDetalle?->tipo ?? $pilaDetalle?->numero_pila),
+                ]]);
+            }
+        }
+
         return view('obras.comisiones.print', [
-            'obra'     => $obra,
+            'obra' => $obra,
             'comision' => $comision,
+            'pilaFormato' => $pilaFormato,
+            'personalFormato' => $personalFormato,
+            'detallesFormato' => $detallesFormato,
+            'perforacionesFormato' => $perforacionesFormato,
         ]);
     }
     

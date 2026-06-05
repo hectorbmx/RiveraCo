@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use App\Models\Obra;
 use App\Models\OrdenCompra;
 
+use Barryvdh\DomPDF\Facade\Pdf;
+
 class SatCfdiController extends Controller
 {
     public function index(Request $request)
@@ -190,4 +192,36 @@ class SatCfdiController extends Controller
         ->back()
         ->with('success', 'CFDI relacionado correctamente a la orden de compra.');
 }
+
+public function pdf(SatCfdi $cfdi)
+{
+    if (!$cfdi->xml_path || !file_exists($cfdi->xml_path)) {
+        abort(404, 'No se encontró el XML físico del CFDI.');
+    }
+
+    $xmlString = file_get_contents($cfdi->xml_path);
+    $xmlString = preg_replace('/^\xEF\xBB\xBF/', '', $xmlString);
+
+    $xml = simplexml_load_string($xmlString);
+
+    $xml->registerXPathNamespace('cfdi', 'http://www.sat.gob.mx/cfd/4');
+    $xml->registerXPathNamespace('tfd', 'http://www.sat.gob.mx/TimbreFiscalDigital');
+
+    $emisor = $xml->xpath('//cfdi:Emisor')[0] ?? null;
+    $receptor = $xml->xpath('//cfdi:Receptor')[0] ?? null;
+    $conceptos = $xml->xpath('//cfdi:Concepto') ?? [];
+    $timbre = $xml->xpath('//tfd:TimbreFiscalDigital')[0] ?? null;
+
+    $pdf = Pdf::loadView('sat.cfdis.pdf', compact(
+        'cfdi',
+        'xml',
+        'emisor',
+        'receptor',
+        'conceptos',
+        'timbre'
+    ));
+
+    return $pdf->stream("CFDI-{$cfdi->uuid}.pdf");
+}
+
 }

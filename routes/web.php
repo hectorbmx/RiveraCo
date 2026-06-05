@@ -84,7 +84,12 @@ use App\Http\Controllers\EquipoComputoController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
-
+Route::get('/test-xsl', function () {
+    return [
+        'extension_loaded' => extension_loaded('xsl'),
+        'class_exists' => class_exists('XSLTProcessor'),
+    ];
+});
 Route::get('/', function () {
     // return view('welcome');
       return redirect()->route('login');
@@ -144,6 +149,9 @@ Route::middleware(['auth', 'verified'])
         Route::get('/', [SatCfdiController::class, 'index'])->name('index');
         Route::get('/{cfdi}', [SatCfdiController::class, 'show'])->name('show');
         Route::get('/{cfdi}/detalle', [SatCfdiController::class, 'detalle'])->name('detalle');
+        // Route::get('/sat/cfdis/{cfdi}/pdf',[SatCfdiController::class, 'pdf'])->name('sat.cfdis.pdf');
+        Route::get('/{cfdi}/pdf',[SatCfdiController::class, 'pdf'])->name('pdf');
+
 
         //RELACIONAR UNA FACTURA CON UNA OBRA
         // Route::put('/{cfdi}/relacionar-obra', [SatCfdiController::class, 'relacionarObra'])->name('relacionarObra');
@@ -211,16 +219,11 @@ Route::middleware(['auth', 'verified'])
 |--------------------------------------------------------------------------
 */
         Route::prefix('document-requests')->name('document-requests.')->group(function () {
-            Route::delete('/failed', [SatEmpresaController::class, 'destroyFailedDocumentRequests'])
-                ->name('failed.destroy');
-            Route::post('/{documentRequest}/captcha', [SatEmpresaController::class, 'submitCaptcha'])
-                ->name('captcha');
-           Route::get('/{documentRequest}/pdf', [SatEmpresaController::class, 'downloadPdf'])
-        ->name('pdf');
-           Route::patch('/{documentRequest}/cancel', [SatEmpresaController::class, 'cancelDocumentRequest'])
-        ->name('cancel');
-           Route::delete('/{documentRequest}', [SatEmpresaController::class, 'destroyDocumentRequest'])
-        ->name('destroy');
+            Route::delete('/failed', [SatEmpresaController::class, 'destroyFailedDocumentRequests'])->name('failed.destroy');
+            Route::post('/{documentRequest}/captcha', [SatEmpresaController::class, 'submitCaptcha'])->name('captcha');
+           Route::get('/{documentRequest}/pdf', [SatEmpresaController::class, 'downloadPdf'])->name('pdf');
+           Route::patch('/{documentRequest}/cancel', [SatEmpresaController::class, 'cancelDocumentRequest'])->name('cancel');
+           Route::delete('/{documentRequest}', [SatEmpresaController::class, 'destroyDocumentRequest']) ->name('destroy');
                 
         });
 
