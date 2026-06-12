@@ -95,6 +95,10 @@ class SatCfdiController extends Controller
             $q->where('rfc_emisor', 'like', '%' . $request->rfc_emisor . '%');
         }
 
+        if ($request->filled('emisor_nombre')) {
+            $q->where('emisor_nombre', 'like', '%' . $request->emisor_nombre . '%');
+        }
+
         if ($request->filled('rfc_receptor')) {
             $q->where('rfc_receptor', 'like', '%' . $request->rfc_receptor . '%');
         }
