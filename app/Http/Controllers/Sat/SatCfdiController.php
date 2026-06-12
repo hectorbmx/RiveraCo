@@ -103,6 +103,10 @@ class SatCfdiController extends Controller
             $q->where('rfc_receptor', 'like', '%' . $request->rfc_receptor . '%');
         }
 
+        if ($request->filled('receptor_nombre')) {
+            $q->where('receptor_nombre', 'like', '%' . $request->receptor_nombre . '%');
+        }
+
         if ($request->filled('tipo_comprobante')) {
             $q->where('tipo_comprobante', $request->tipo_comprobante);
         }

@@ -59,7 +59,7 @@
             <form method="GET" action="{{ route('sat.cfdis.index') }}" class="flex flex-col gap-4">
                 <input type="hidden" name="sat_empresa_id" value="{{ $empresaSeleccionada->id }}">
 
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-7 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-xs font-medium text-gray-500 mb-1">UUID</label>
                         <input type="text"
@@ -94,6 +94,15 @@
                                value="{{ request('rfc_receptor') }}"
                                class="w-full rounded-xl border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
                                placeholder="RFC receptor">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Razón social receptor</label>
+                        <input type="text"
+                               name="receptor_nombre"
+                               value="{{ request('receptor_nombre') }}"
+                               class="w-full rounded-xl border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                               placeholder="Nombre del receptor">
                     </div>
 
                     <div>
