@@ -22,8 +22,22 @@ class OrdenCompraController extends Controller
      */
     public function index(Request $request)
     {
+        $search = $request->query('search');
+        $estado = $request->query('estado');
+
         $q = OrdenCompra::query()
             ->with(['proveedor','obra','centroCosto','areaCatalogo','detalles','pagoProveedorActivo'])
+            ->when($search, function ($query, $search) {
+                $query->whereHas('proveedor', function ($q) use ($search) {
+                    $q->where('nombre', 'like', "%{$search}%")
+                      ->orWhere('razon_social', 'like', "%{$search}%")
+                      ->orWhere('rfc', 'like', "%{$search}%");
+                });
+            })
+            ->when($estado, function ($query, $estado) {
+                $legacyStatus = $this->estadoToLegacy($estado);
+                $query->where('estado', $legacyStatus);
+            })
             ->orderByDesc('fecha')
             ->orderByDesc('id');
 
@@ -34,12 +48,6 @@ class OrdenCompraController extends Controller
     $areas = Area::orderBy('nombre')->get();
     $obras = Obra::orderBy('nombre')->get();
     $centrosCosto = CentroCosto::where('activo', true)->orderBy('nombre')->get();
-
-        if ($request->filled('estado')) {
-            // aceptamos programada/autorizada/cancelada y lo mapeamos a legacy
-            $estado = strtolower($request->estado);
-            $q->where('estado', $this->estadoToLegacy($estado));
-        }
 
         if ($request->filled('proveedor_id')) {
             $q->where('proveedor_id', $request->proveedor_id);
@@ -53,7 +61,7 @@ class OrdenCompraController extends Controller
             $q->where('obra_id', $request->obra_id);
         }
 
-        $ordenes = $q->paginate(20);
+        $ordenes = $q->paginate(20)->withQueryString();
 
         foreach ($ordenes as $oc) {
             $subtotal = 0;
@@ -73,8 +81,7 @@ class OrdenCompraController extends Controller
             $oc->total = $subtotal + $iva + $oc->otros_impuestos;
         }
 
-        // return view('rdenes_compra.index', compact('ordenes'));
-        return view('ordencompra.index', compact('ordenes','areas','obras','proveedores','centrosCosto'));
+        return view('ordencompra.index', compact('ordenes','areas','obras','proveedores','centrosCosto', 'search', 'estado'));
     }
 
    public function create()

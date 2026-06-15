@@ -5,8 +5,33 @@
 @section('content')
 
 {{-- ENCABEZADO --}}
-<div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold text-[#0B265A]"></h1>
+<div class="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
+    <h1 class="text-2xl font-bold text-[#0B265A]">Clientes</h1>
+
+    <div class="flex flex-1 w-full md:max-w-md">
+        <form action="{{ route('clientes.index') }}" method="GET" class="w-full flex gap-2">
+            <div class="relative flex-1">
+                <input type="text" 
+                       name="search" 
+                       value="{{ $search ?? '' }}"
+                       placeholder="Buscar por nombre, razón social o RFC..." 
+                       class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0B265A] focus:border-transparent transition text-sm">
+                <div class="absolute left-3 top-2.5 text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+            </div>
+            <button type="submit" class="bg-[#0B265A] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#163a7a] transition">
+                Buscar
+            </button>
+            @if(request('search'))
+                <a href="{{ route('clientes.index') }}" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-300 transition">
+                    Limpiar
+                </a>
+            @endif
+        </form>
+    </div>
 
     <a href="{{ route('clientes.create') }}"
        class="bg-[#FFC107] text-[#0B265A] font-semibold px-4 py-2 rounded-xl shadow hover:bg-[#e0ac05] transition">
