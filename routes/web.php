@@ -727,6 +727,13 @@ Route::prefix('pagos-proveedores')
         Route::patch('/{obra}/reposicion-gastos/{reposicion}/autorizar',[ObraReposicionGastoController::class, 'autorizar'])->name('reposicion-gastos.autorizar');
         Route::patch('/{obra}/reposicion-gastos/{reposicion}/rechazar',[ObraReposicionGastoController::class, 'rechazar'])->name('reposicion-gastos.rechazar');
         
+        // SOLICITUDES DE GASTO
+        Route::get('/{obra}/solicitudes-gastos/create', [\App\Http\Controllers\ObraSolicitudGastoController::class, 'create'])->name('solicitudes-gastos.create');
+        Route::post('/{obra}/solicitudes-gastos', [\App\Http\Controllers\ObraSolicitudGastoController::class, 'store'])->name('solicitudes-gastos.store');
+        Route::get('/{obra}/solicitudes-gastos/{solicitud}', [\App\Http\Controllers\ObraSolicitudGastoController::class, 'show'])->name('solicitudes-gastos.show');
+        Route::post('/{obra}/solicitudes-gastos/{solicitud}/autorizar', [\App\Http\Controllers\ObraSolicitudGastoController::class, 'autorizar'])->name('solicitudes-gastos.autorizar');
+        Route::post('/{obra}/solicitudes-gastos/{solicitud}/rechazar', [\App\Http\Controllers\ObraSolicitudGastoController::class, 'rechazar'])->name('solicitudes-gastos.rechazar');
+        
         });
 
         Route::prefix('cajas-chicas')

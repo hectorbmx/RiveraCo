@@ -90,9 +90,25 @@
      @php
             $valorGuardado = $planeacion[$gasto->id][$i]->monto_programado ?? 0;
             $totalProg += $valorGuardado;
+            
+            $montoSolicitado = (float) ($montosSolicitadosMap[$gasto->id][$i] ?? 0);
+            $estaCompleto = ($montoSolicitado >= $valorGuardado && $valorGuardado > 0);
+            $esParcial = ($montoSolicitado > 0 && $montoSolicitado < $valorGuardado);
         @endphp
 
-        <td class="p-2 border">
+        <td class="p-2 border relative group/cell {{ $estaCompleto ? 'bg-green-50' : ($esParcial ? 'bg-amber-50' : '') }}">
+            @if($montoSolicitado > 0)
+                <div class="absolute top-0 right-0 p-0.5 flex flex-col items-end" title="Solicitado: ${{ number_format($montoSolicitado, 2) }}">
+                    @if($estaCompleto)
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                    @else
+                        <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+                    @endif
+                </div>
+            @endif
+            
             <input
                 type="text"
                 name="plan[{{ $gasto->id }}][{{ $i }}]"
@@ -100,11 +116,18 @@
                 placeholder="0.00"
                 data-tope="{{ $tope }}"
                 data-id="{{ $id_campo }}"
+                {{ $estaCompleto ? 'readonly' : '' }}
                 oninput="calcularFila('{{ $id_campo }}')"
                 onfocus="limpiarFormato(this)"
                 onblur="aplicarFormato(this); calcularFila('{{ $id_campo }}')"
-                class="input-semana input-semana-{{ $id_campo }} w-full p-1 text-right text-xs border border-transparent focus:border-blue-400 focus:ring-1 focus:ring-blue-200 rounded bg-transparent hover:bg-white transition-all"
+                class="input-semana input-semana-{{ $id_campo }} w-full p-1 text-right text-xs border border-transparent focus:border-blue-400 focus:ring-1 focus:ring-blue-200 rounded transition-all
+                {{ $estaCompleto ? 'text-green-800 cursor-not-allowed font-semibold' : ($esParcial ? 'text-amber-800 font-semibold' : 'bg-transparent hover:bg-white') }}"
             >
+            @if($esParcial)
+                <div class="text-[9px] text-amber-600 text-right mt-0.5 leading-tight">
+                    Sol: ${{ number_format($montoSolicitado, 2) }}
+                </div>
+            @endif
         </td>
     @endfor
 </tr>

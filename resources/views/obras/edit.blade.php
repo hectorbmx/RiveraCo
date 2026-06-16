@@ -34,6 +34,7 @@
             'planos'       => 'Planos',
             'presupuestos' => 'Presupuestos',
             'planeacion'   => 'Planeacion',
+            'solicitudes-gastos' => 'Solicitudes',
             // 'gastos'       => 'Gastos',
             'reposicion-gastos' => 'Reposición gastos',
             'pilas'        => 'Pilas',
@@ -1463,6 +1464,84 @@
 </div>
 @endif
 {{--  TERMINA TAB : PLANEACION --}}
+
+{{-- TAB: SOLICITUDES DE GASTO --}}
+@if($tab === 'solicitudes-gastos')
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+            <div>
+                <h3 class="text-lg font-bold text-slate-800">Solicitudes de Gasto (Anticipos)</h3>
+                <p class="text-xs text-slate-500">Solicita fondos basados en lo planeado para la semana.</p>
+            </div>
+            <a href="{{ route('obras.solicitudes-gastos.create', $obra->id) }}" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-sm transition-all">
+                + Nueva Solicitud
+            </a>
+        </div>
+
+        <div class="p-4 border-b border-slate-200 bg-white">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div class="rounded-xl border border-slate-200 p-4">
+                    <p class="text-xs font-bold uppercase text-slate-400">Total Solicitudes</p>
+                    <p class="text-2xl font-bold text-slate-800 mt-1">{{ $solicitudesStats['total'] }}</p>
+                </div>
+                <div class="rounded-xl border border-yellow-200 p-4 bg-yellow-50">
+                    <p class="text-xs font-bold uppercase text-yellow-600">Pendientes</p>
+                    <p class="text-2xl font-bold text-yellow-700 mt-1">{{ $solicitudesStats['solicitadas'] }}</p>
+                </div>
+                <div class="rounded-xl border border-blue-200 p-4 bg-blue-50">
+                    <p class="text-xs font-bold uppercase text-blue-600">Autorizadas</p>
+                    <p class="text-2xl font-bold text-blue-700 mt-1">{{ $solicitudesStats['autorizadas'] }}</p>
+                </div>
+                <div class="rounded-xl border border-green-200 p-4 bg-green-50">
+                    <p class="text-xs font-bold uppercase text-green-600">Pagadas</p>
+                    <p class="text-2xl font-bold text-green-700 mt-1">{{ $solicitudesStats['pagadas'] }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-slate-50 border-b text-slate-500 font-medium">
+                        <th class="py-3 px-4 text-center">ID</th>
+                        <th class="py-3 px-4 text-center">Semana</th>
+                        <th class="py-3 px-4 text-center">Fecha</th>
+                        <th class="py-3 px-4 text-center">Estatus</th>
+                        <th class="py-3 px-4 text-right">Total</th>
+                        <th class="py-3 px-4 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($solicitudesGastos as $solicitud)
+                        <tr class="border-b hover:bg-slate-50">
+                            <td class="py-3 px-4 text-center">#{{ $solicitud->id }}</td>
+                            <td class="py-3 px-4 text-center">Semana {{ $solicitud->semana }}</td>
+                            <td class="py-3 px-4 text-center">{{ $solicitud->created_at->format('d/m/Y') }}</td>
+                            <td class="py-3 px-4 text-center">
+                                <span class="px-2 py-1 rounded-full text-xs font-bold 
+                                    {{ $solicitud->estatus === 'solicitado' ? 'bg-yellow-100 text-yellow-700' : '' }}
+                                    {{ $solicitud->estatus === 'autorizado' ? 'bg-blue-100 text-blue-700' : '' }}
+                                    {{ $solicitud->estatus === 'pagado' ? 'bg-green-100 text-green-700' : '' }}
+                                    {{ $solicitud->estatus === 'rechazado' ? 'bg-red-100 text-red-700' : '' }}
+                                ">
+                                    {{ ucfirst($solicitud->estatus) }}
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 text-right font-bold">${{ number_format($solicitud->total, 2) }}</td>
+                            <td class="py-3 px-4 text-center">
+                                <a href="{{ route('obras.solicitudes-gastos.show', ['obra' => $obra->id, 'solicitud' => $solicitud->id]) }}" class="text-blue-600 hover:underline">Ver detalle</a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-slate-400">No hay solicitudes registradas.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+@endif
 {{--  TAB :GASTOS --}}
 {{-- REPOSICION GASTOS --}}
 @if($tab === 'reposicion-gastos')

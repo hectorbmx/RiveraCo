@@ -35,13 +35,40 @@ use App\Models\OrdenCompra;
 
 class ObraController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $obras = Obra::with(['cliente', 'responsable'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+        $search = $request->query('search');
+        $status = $request->query('status');
 
-        return view('obras.index', compact('obras'));
+        $statusMap = [
+            'planeacion' => 1,
+            'ejecucion'  => 2,
+            'suspendida' => 3,
+            'terminada'  => 4,
+            'cancelada'  => 5,
+        ];
+
+        $obras = Obra::with(['cliente', 'responsable'])
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('nombre', 'like', "%{$search}%")
+                      ->orWhere('clave_obra', 'like', "%{$search}%")
+                      ->orWhereHas('cliente', function ($q2) use ($search) {
+                          $q2->where('nombre_comercial', 'like', "%{$search}%")
+                             ->orWhere('razon_social', 'like', "%{$search}%");
+                      });
+                });
+            })
+            ->when($status, function ($query, $status) use ($statusMap) {
+                if (isset($statusMap[$status])) {
+                    $query->where('estatus_nuevo', $statusMap[$status]);
+                }
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('obras.index', compact('obras', 'search', 'status'));
     }
 
     public function create()
@@ -411,6 +438,44 @@ $reposicionesMontos = [
         ])
         ->sum('total'),
 ];
+
+    // --- SOLICITUDES DE GASTO (NUEVO) ---
+    $solicitudesGastos = \App\Models\ObraSolicitudGasto::with([
+            'detalles.planeacionGasto',
+            'solicitadoPor',
+            'autorizadoPor',
+            'pagadoPor'
+        ])
+        ->where('obra_id', $obra->id)
+        ->latest()
+        ->get();
+
+    $solicitudesStats = [
+        'total' => $solicitudesGastos->count(),
+        'solicitadas' => $solicitudesGastos->where('estatus', 'solicitado')->count(),
+        'autorizadas' => $solicitudesGastos->where('estatus', 'autorizado')->count(),
+        'pagadas'     => $solicitudesGastos->where('estatus', 'pagado')->count(),
+    ];
+
+    $solicitudesMontos = [
+        'solicitado' => $solicitudesGastos->where('estatus', 'solicitado')->sum('total'),
+        'autorizado' => $solicitudesGastos->where('estatus', 'autorizado')->sum('total'),
+        'pagado'     => $solicitudesGastos->where('estatus', 'pagado')->sum('total'),
+    ];
+
+    // Crear mapa de montos solicitados/autorizados por semana para Planeación
+    $montosSolicitadosMap = [];
+    foreach ($solicitudesGastos as $sol) {
+        if ($sol->estatus !== 'rechazado') {
+            foreach ($sol->detalles as $det) {
+                if (!isset($montosSolicitadosMap[$det->planeacion_gasto_id][$sol->semana])) {
+                    $montosSolicitadosMap[$det->planeacion_gasto_id][$sol->semana] = 0;
+                }
+                $montosSolicitadosMap[$det->planeacion_gasto_id][$sol->semana] += (float) $det->monto_solicitado;
+            }
+        }
+    }
+    // ------------------------------------
 $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
     ->whereHas('reposicion', function ($query) use ($obra) {
         $query->where('obra_id', $obra->id)
@@ -746,6 +811,11 @@ return view('obras.edit', [
     'gastosPorPartida' => $gastosPorPartida,
 
     'cfdisDisponibles' => $cfdisDisponibles,
+
+    'solicitudesGastos' => $solicitudesGastos,
+    'solicitudesStats' => $solicitudesStats,
+    'solicitudesMontos' => $solicitudesMontos,
+    'montosSolicitadosMap' => $montosSolicitadosMap,
 
     ]);
 }
