@@ -10,6 +10,8 @@ use App\Models\ObraPlaneacionSemanal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Notifications\SolicitudGastoCreada;
+use App\Models\User;
 
 class ObraSolicitudGastoController extends Controller
 {
@@ -79,6 +81,12 @@ class ObraSolicitudGastoController extends Controller
             }
 
             $solicitud->update(['total' => $total]);
+
+            // NOTIFICACIÓN: Enviar a administradores (ajustar roles según sea necesario)
+            $admins = User::role('administrador')->get();
+            if ($admins->isNotEmpty()) {
+                \Illuminate\Support\Facades\Notification::send($admins, new SolicitudGastoCreada($solicitud));
+            }
 
             DB::commit();
 

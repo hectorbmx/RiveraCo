@@ -359,6 +359,73 @@
                 </div>
 
                 <div class="flex items-center gap-4">
+                    
+                    {{-- NOTIFICACIONES --}}
+                    <div class="relative" x-data="{ openNotifications: false }">
+                        <button @click="openNotifications = !openNotifications" class="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                            <span class="text-xl">🔔</span>
+                            @if(auth()->user()->unreadNotifications->count() > 0)
+                                <span class="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-600 rounded-full">
+                                    {{ auth()->user()->unreadNotifications->count() }}
+                                </span>
+                            @endif
+                        </button>
+
+                        {{-- Panel de notificaciones --}}
+                        <div x-show="openNotifications" 
+                             @click.away="openNotifications = false"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             class="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                            
+                            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <h3 class="font-semibold text-sm">Notificaciones</h3>
+                                <a href="{{ route('notifications.index') }}" class="text-xs text-blue-600 hover:underline">Ver todas</a>
+                            </div>
+
+                            <div class="max-h-96 overflow-y-auto">
+                                @forelse(auth()->user()->unreadNotifications->take(5) as $notification)
+                                    <a href="{{ route('notifications.read', $notification->id) }}" class="block p-4 hover:bg-slate-50 border-b border-slate-50 transition-colors">
+                                        <div class="flex gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 text-sm">
+                                                @switch($notification->data['tipo'] ?? '')
+                                                    @case('solicitud_gasto') 💰 @break
+                                                    @case('orden_compra') 🛒 @break
+                                                    @case('vencimiento_seguro') 🛡️ @break
+                                                    @default 🔔
+                                                @endswitch
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-xs font-medium text-slate-900 line-clamp-2">
+                                                    {{ $notification->data['mensaje'] ?? 'Nueva notificación' }}
+                                                </p>
+                                                <p class="text-[10px] text-slate-400 mt-1">
+                                                    {{ $notification->created_at->diffForHumans() }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                @empty
+                                    <div class="p-8 text-center">
+                                        <p class="text-sm text-slate-400 italic">No tienes notificaciones pendientes</p>
+                                    </div>
+                                @endforelse
+                            </div>
+
+                            @if(auth()->user()->unreadNotifications->count() > 0)
+                                <div class="p-3 bg-slate-50 text-center border-t border-slate-100">
+                                    <form action="{{ route('notifications.markAllRead') }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="text-xs text-slate-500 hover:text-slate-700 font-medium">
+                                            Marcar todas como leídas
+                                        </button>
+                                    </form>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
                     <span class="text-sm font-medium">{{ auth()->user()->name }}</span>
 
                     <div class="w-9 h-9 rounded-full bg-[#0B265A] text-white flex items-center justify-center">

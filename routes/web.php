@@ -245,8 +245,15 @@ Route::prefix('inventario')->group(function () {
     Route::get('stock', [InventarioStockController::class, 'index'])
         ->name('inventario.stock.index.temp');
 });
-Route::middleware(['auth', 'verified'])
-    ->prefix('usuarios')
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Notificaciones
+    Route::prefix('notificaciones')->name('notifications.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\NotificationController::class, 'index'])->name('index');
+        Route::get('/{id}/read', [\App\Http\Controllers\NotificationController::class, 'read'])->name('read');
+        Route::post('/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('markAllRead');
+    });
+
+    Route::prefix('usuarios')
     ->name('usuarios.')
     ->group(function () {
 
@@ -744,5 +751,7 @@ Route::prefix('pagos-proveedores')
                 Route::get('/', [CajaChicaController::class, 'index'])->name('index');
 
     });
+
+});
 
 require __DIR__.'/auth.php';
