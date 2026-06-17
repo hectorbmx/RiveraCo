@@ -17,6 +17,7 @@ use App\Models\InventarioMovimiento;
 use App\Models\ObraAsistencia;
 use App\Models\MaquinaMovimiento;
 use App\Models\EmpleadoNota;
+use App\Models\Comision;
 
 class UsuarioController extends Controller
 {
@@ -280,12 +281,27 @@ public function edit(User $usuario)
         ->limit(20)
         ->get();
 
+    // 5. Pilas (Comisiones)
+    $pilas = \App\Models\Comision::where('created_by', $usuario->id)
+        ->with(['obra', 'pila'])
+        ->latest()
+        ->limit(20)
+        ->get()
+        ->map(fn($item) => [
+            'obra' => $item->obra?->nombre ?? 'N/A',
+            'pila' => $item->pila?->numero_pila ?? 'N/A',
+            'fecha' => $item->fecha,
+            'folio' => $item->numero_formato,
+            'estado' => $item->estado
+        ]);
+
     return view('usuarios.edit', compact(
         'usuario', 
         'autorizaciones', 
         'comprasGastos', 
         'operaciones', 
-        'bitacora'
+        'bitacora',
+        'pilas'
     ));
 }
 

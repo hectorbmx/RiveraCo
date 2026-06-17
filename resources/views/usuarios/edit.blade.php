@@ -131,6 +131,11 @@
                             class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
                         📝 Bitácora
                     </button>
+                    <button @click="tab = 'pilas'" 
+                            :class="tab === 'pilas' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                            class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
+                        🏗️ Pilas (Comisiones)
+                    </button>
                 </div>
 
                 {{-- TABS CONTENT --}}
@@ -252,6 +257,46 @@
                             @empty
                                 <div class="py-8 text-center text-gray-400 italic border rounded">El usuario no ha registrado notas en la bitácora.</div>
                             @endforelse
+                        </div>
+                    {{-- TAB: PILAS (COMISIONES) --}}
+                    <div x-show="tab === 'pilas'" x-transition>
+                        <h3 class="font-semibold text-gray-800 mb-4">Registro de Pilas Culminadas (Comisiones)</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left border">
+                                <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                                    <tr>
+                                        <th class="px-4 py-2 border-b">Obra</th>
+                                        <th class="px-4 py-2 border-b">Pila</th>
+                                        <th class="px-4 py-2 border-b">Folio / Formato</th>
+                                        <th class="px-4 py-2 border-b text-center">Fecha</th>
+                                        <th class="px-4 py-2 border-b text-center">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($pilas as $pila)
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-2 border-b font-medium text-gray-700">{{ $pila['obra'] }}</td>
+                                            <td class="px-4 py-2 border-b">
+                                                <span class="font-bold text-blue-700">{{ $pila['pila'] }}</span>
+                                            </td>
+                                            <td class="px-4 py-2 border-b text-gray-600 font-mono text-xs">{{ $pila['folio'] ?? 'S/F' }}</td>
+                                            <td class="px-4 py-2 border-b text-center text-gray-500">
+                                                {{ $pila['fecha'] ? \Carbon\Carbon::parse($pila['fecha'])->format('d/m/Y') : '-' }}
+                                            </td>
+                                            <td class="px-4 py-2 border-b text-center">
+                                                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase
+                                                    {{ ($pila['estado'] ?? '') === 'cerrada' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700' }}">
+                                                    {{ $pila['estado'] ?? 'Abierta' }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="5" class="px-4 py-8 text-center text-gray-400 italic">No se han registrado culminaciones de pilas.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
