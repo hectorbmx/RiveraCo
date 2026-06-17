@@ -10,8 +10,13 @@ use Spatie\Permission\Models\Role;
 use App\Models\User;
 use App\Models\Empleado;
 use App\Models\UsuarioApp;
-
-
+use App\Models\OrdenCompra;
+use App\Models\ObraSolicitudGasto;
+use App\Models\ObraReposicionGasto;
+use App\Models\InventarioMovimiento;
+use App\Models\ObraAsistencia;
+use App\Models\MaquinaMovimiento;
+use App\Models\EmpleadoNota;
 
 class UsuarioController extends Controller
 {
@@ -78,7 +83,7 @@ class UsuarioController extends Controller
         return response()->json(['data' => $data]);
     }
 
-    
+
  public function store(Request $request)
     {
         $data = $request->validate([
@@ -134,12 +139,154 @@ class UsuarioController extends Controller
         return redirect()->route('usuarios.index')->with('ok', 'Usuario creado correctamente.');
     }
 
-   
+
 public function edit(User $usuario)
 {
     $usuario->load(['usuarioApp.empleado']);
 
-    return view('usuarios.edit', compact('usuario'));
+    // 1. Autorizaciones
+    $autorizaciones = collect();
+
+    // OCs autorizadas
+    $ocs_auth = OrdenCompra::where('usuario_autoriza', $usuario->name)
+        ->latest('fecha_autorizacion')
+        ->limit(10)
+        ->get()
+        ->map(fn($item) => [
+            'tipo' => 'Orden de Compra',
+            'referencia' => $item->folio,
+            'fecha' => $item->fecha_autorizacion,
+            'monto' => $item->total,
+            'status' => $item->estado
+        ]);
+    $autorizaciones = $autorizaciones->concat($ocs_auth);
+
+    // Solicitudes Gasto autorizadas
+    $gastos_auth = ObraSolicitudGasto::where('autorizado_por', $usuario->id)
+        ->latest('autorizado_at')
+        ->limit(10)
+        ->get()
+        ->map(fn($item) => [
+            'tipo' => 'Solicitud Gasto',
+            'referencia' => "Semana {$item->semana} - {$item->obra?->nombre}",
+            'fecha' => $item->autorizado_at,
+            'monto' => $item->total,
+            'status' => $item->estatus
+        ]);
+    $autorizaciones = $autorizaciones->concat($gastos_auth);
+
+    // Reposiciones aprobadas
+    $repos_auth = ObraReposicionGasto::where('aprobado_por', $usuario->id)
+        ->latest('aprobado_at')
+        ->limit(10)
+        ->get()
+        ->map(fn($item) => [
+            'tipo' => 'Reposición Gasto',
+            'referencia' => "Semana {$item->semana} - {$item->obra?->nombre}",
+            'fecha' => $item->aprobado_at,
+            'monto' => $item->total,
+            'status' => $item->estatus
+        ]);
+    $autorizaciones = $autorizaciones->concat($repos_auth);
+
+    // 2. Compras y Gastos (Creados por él)
+    $comprasGastos = collect();
+
+    $ocs_created = OrdenCompra::where('usuario_registro', $usuario->name)
+        ->latest()
+        ->limit(10)
+        ->get()
+        ->map(fn($item) => [
+            'tipo' => 'Orden de Compra',
+            'referencia' => $item->folio,
+            'fecha' => $item->fecha,
+            'monto' => $item->total,
+            'status' => $item->estado
+        ]);
+    $comprasGastos = $comprasGastos->concat($ocs_created);
+
+    $gastos_created = ObraSolicitudGasto::where('solicitado_por', $usuario->id)
+        ->latest('solicitado_at')
+        ->limit(10)
+        ->get()
+        ->map(fn($item) => [
+            'tipo' => 'Solicitud Gasto',
+            'referencia' => "Semana {$item->semana}",
+            'fecha' => $item->solicitado_at,
+            'monto' => $item->total,
+            'status' => $item->estatus
+        ]);
+    $comprasGastos = $comprasGastos->concat($gastos_created);
+
+    $repos_created = ObraReposicionGasto::where('solicitado_por', $usuario->id)
+        ->latest('solicitado_at')
+        ->limit(10)
+        ->get()
+        ->map(fn($item) => [
+            'tipo' => 'Reposición Gasto',
+            'referencia' => "Semana {$item->semana}",
+            'fecha' => $item->solicitado_at,
+            'monto' => $item->total,
+            'status' => $item->estatus
+        ]);
+    $comprasGastos = $comprasGastos->concat($repos_created);
+
+    // 3. Operaciones
+    $operaciones = collect();
+
+    $maquina_movs = MaquinaMovimiento::where('user_id', $usuario->id)
+        ->with(['maquina', 'obra'])
+        ->latest()
+        ->limit(10)
+        ->get()
+        ->map(fn($item) => [
+            'tipo' => 'Maquinaria',
+            'referencia' => "Movimiento: " . ($item->maquina?->economico ?? 'Máquina'),
+            'fecha' => $item->created_at,
+            'detalle' => "Hacia: " . ($item->obra?->nombre ?? 'N/A'),
+        ]);
+    $operaciones = $operaciones->concat($maquina_movs);
+
+    $inv_movs = InventarioMovimiento::where('creado_por', $usuario->id)
+        ->with(['producto', 'almacen'])
+        ->latest()
+        ->limit(15)
+        ->get()
+        ->map(fn($item) => [
+            'tipo' => 'Inventario',
+            'referencia' => ($item->tipo_movimiento == 'in' ? 'Entrada: ' : 'Salida: ') . ($item->producto?->nombre ?? 'Producto'),
+            'fecha' => $item->fecha,
+            'detalle' => "{$item->cantidad} unidades en {$item->almacen?->nombre}",
+        ]);
+    $operaciones = $operaciones->concat($inv_movs);
+
+    $asistencias = ObraAsistencia::where('registrado_por_user_id', $usuario->id)
+        ->with('empleado')
+        ->latest('checked_at')
+        ->limit(15)
+        ->get()
+        ->map(fn($item) => [
+            'tipo' => 'Asistencia',
+            'referencia' => "Pase de lista: " . ($item->empleado?->Nombre ?? 'Empleado'),
+            'fecha' => $item->checked_at,
+            'detalle' => "Tipo: {$item->tipo}",
+        ]);
+    $operaciones = $operaciones->concat($asistencias);
+
+    // 4. Bitácora
+    $bitacora = EmpleadoNota::where('user_id', $usuario->id)
+        ->with('empleado')
+        ->latest()
+        ->limit(20)
+        ->get();
+
+    return view('usuarios.edit', compact(
+        'usuario', 
+        'autorizaciones', 
+        'comprasGastos', 
+        'operaciones', 
+        'bitacora'
+    ));
 }
 
   public function update(Request $request, User $usuario)
