@@ -18,6 +18,7 @@ use App\Models\ObraAsistencia;
 use App\Models\MaquinaMovimiento;
 use App\Models\EmpleadoNota;
 use App\Models\Comision;
+use App\Models\ComisionEtapa;
 
 class UsuarioController extends Controller
 {
@@ -274,17 +275,54 @@ public function edit(User $usuario)
         ]);
     $operaciones = $operaciones->concat($asistencias);
 
-    // 4. Bitácora
-    $bitacora = EmpleadoNota::where('user_id', $usuario->id)
+    // 4. Bitácora (Combinada: Notas + Pasos de Pilas)
+    $notas = EmpleadoNota::where('user_id', $usuario->id)
         ->with('empleado')
         ->latest()
         ->limit(20)
-        ->get();
+        ->get()
+        ->map(fn($n) => (object)[
+            'tipo' => 'nota',
+            'titulo' => "Nota sobre: " . ($n->empleado?->Nombre ?? 'Empleado'),
+            'contenido' => $n->nota,
+            'fecha' => $n->created_at,
+            'color' => 'blue'
+        ]);
 
-    // 5. Pilas (Comisiones)
-    $pilas = \App\Models\Comision::where('created_by', $usuario->id)
+    $pasos = ComisionEtapa::where('updated_by', $usuario->id)
         ->with(['obra', 'pila'])
-        ->latest()
+        ->latest('updated_at')
+        ->limit(20)
+        ->get()
+        ->map(fn($p) => (object)[
+            'tipo' => 'pila',
+            'titulo' => "Paso: " . ucfirst($p->etapa) . " - Pila: " . ($p->pila?->numero_pila ?? 'N/A'),
+            'contenido' => "Obra: " . ($p->obra?->nombre ?? 'N/A') . ". Estado: " . ucfirst($p->estado),
+            'fecha' => $p->updated_at,
+            'color' => 'green'
+        ]);
+
+    $bitacora = $notas->concat($pasos)->sortByDesc('fecha')->take(20);
+
+    // 5. Pilas (Comisiones) - Búsqueda más inclusiva
+    $empleado_id = $usuario->usuarioApp?->empleado_id;
+
+    $pilas = Comision::query()
+        ->where(function($q) use ($usuario, $empleado_id) {
+            $q->where('created_by', $usuario->id)
+              ->orWhere('updated_by', $usuario->id);
+            if ($empleado_id) {
+                $q->orWhere('residente_id', $empleado_id);
+            }
+        })
+        ->orWhereIn('id', function($q) use ($usuario) {
+            $q->select('comision_id')
+              ->from('comision_etapas')
+              ->where('updated_by', $usuario->id)
+              ->orWhere('created_by', $usuario->id);
+        })
+        ->with(['obra', 'pila'])
+        ->latest('updated_at')
         ->limit(20)
         ->get()
         ->map(fn($item) => [

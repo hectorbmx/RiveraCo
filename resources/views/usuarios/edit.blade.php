@@ -244,20 +244,25 @@
 
                     {{-- TAB: BITÁCORA --}}
                     <div x-show="tab === 'bitacora'" x-transition>
-                        <h3 class="font-semibold text-gray-800 mb-4">Notas registradas por el usuario</h3>
+                        <h3 class="font-semibold text-gray-800 mb-4">Notas y actividad registrada por el usuario</h3>
                         <div class="space-y-4">
-                            @forelse($bitacora as $nota)
-                                <div class="bg-gray-50 p-4 rounded border-l-4 border-blue-400 relative">
+                            @forelse($bitacora as $item)
+                                <div class="bg-gray-50 p-4 rounded border-l-4 {{ $item->tipo === 'nota' ? 'border-blue-400' : 'border-green-400' }} relative">
                                     <div class="flex justify-between items-start mb-2">
-                                        <span class="text-xs font-bold text-blue-600 uppercase">Nota sobre: {{ $nota->empleado?->Nombre }}</span>
-                                        <span class="text-[10px] text-gray-400">{{ $nota->created_at->format('d/m/Y H:i') }}</span>
+                                        <span class="text-xs font-bold {{ $item->tipo === 'nota' ? 'text-blue-600' : 'text-green-600' }} uppercase">
+                                            {{ $item->titulo }}
+                                        </span>
+                                        <span class="text-[10px] text-gray-400">
+                                            {{ \Carbon\Carbon::parse($item->fecha)->format('d/m/Y H:i') }}
+                                        </span>
                                     </div>
-                                    <p class="text-sm text-gray-700 leading-relaxed">{{ $nota->nota }}</p>
+                                    <p class="text-sm text-gray-700 leading-relaxed">{{ $item->contenido }}</p>
                                 </div>
                             @empty
-                                <div class="py-8 text-center text-gray-400 italic border rounded">El usuario no ha registrado notas en la bitácora.</div>
+                                <div class="py-8 text-center text-gray-400 italic border rounded">El usuario no ha registrado notas o actividad reciente en la bitácora.</div>
                             @endforelse
                         </div>
+                    </div>
                     {{-- TAB: PILAS (COMISIONES) --}}
                     <div x-show="tab === 'pilas'" x-transition>
                         <h3 class="font-semibold text-gray-800 mb-4">Registro de Pilas Culminadas (Comisiones)</h3>
