@@ -1064,18 +1064,25 @@ public function relacionarCfdis(Request $request, Obra $obra)
 {
     $validated = $request->validate([
         'cfdis' => ['required', 'array', 'min:1'],
-        'cfdis.*' => ['integer', 'exists:sat_cfdis,id'],
+        'cfdis.*' => ['string'], // Ahora recibimos UUIDs
     ]);
 
-    SatCfdi::whereIn('id', $validated['cfdis'])
+    $uuids = $validated['cfdis'];
+
+    \App\Models\SatCfdi::whereIn('uuid', $uuids)
+        ->update([
+            'obra_id' => $obra->id,
+        ]);
+
+    \App\Models\SatFactura::whereIn('uuid', $uuids)
         ->update([
             'obra_id' => $obra->id,
         ]);
 
     return response()->json([
         'ok' => true,
-        'message' => 'CFDIs relacionados correctamente.',
-        'total' => count($validated['cfdis']),
+        'message' => 'Facturas relacionadas correctamente.',
+        'total' => count($uuids),
     ]);
 }
 }

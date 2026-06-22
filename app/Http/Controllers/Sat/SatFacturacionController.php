@@ -146,6 +146,10 @@ class SatFacturacionController extends Controller
 
                 'conceptos.*.incluye_iva' => ['nullable'],
 
+                'usar_relacion' => ['nullable'],
+                'relacion_tipo' => ['required_if:usar_relacion,1', 'nullable', 'string', 'max:2'],
+                'relacion_uuids' => ['required_if:usar_relacion,1', 'nullable', 'string'],
+
                 'usar_complemento_construccion' => ['nullable'],
                 'complemento_construccion' => ['nullable', 'array'],
                 'complemento_construccion.num_per_lico_aut' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:50'],
@@ -370,6 +374,16 @@ if ($usarComplementoConstruccion) {
             'payment_method' => $data['metodo_pago'],
             'use' => $data['uso_cfdi'],
         ];
+
+        if ($request->boolean('usar_relacion') && !empty($data['relacion_uuids'])) {
+            $uuids = array_map('trim', explode(',', $data['relacion_uuids']));
+            $payload['related'] = [
+                [
+                    'relation' => $data['relacion_tipo'],
+                    'receipts' => array_values(array_filter($uuids))
+                ]
+            ];
+        }
 
 if ($usarComplementoConstruccion) {
     $payload['complements'] = [

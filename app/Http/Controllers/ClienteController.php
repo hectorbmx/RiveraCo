@@ -26,6 +26,27 @@ class ClienteController extends Controller
         return view('clientes.index', compact('clientes', 'search'));
     }
 
+    public function checkDuplicate(Request $request)
+    {
+        $rfc = $request->query('rfc');
+        $razon_social = $request->query('razon_social');
+        
+        $query = Cliente::query();
+        
+        if ($rfc) {
+            $query->where('rfc', $rfc);
+        } elseif ($razon_social) {
+            $query->where('razon_social', 'like', "%{$razon_social}%")
+                  ->orWhere('nombre_comercial', 'like', "%{$razon_social}%");
+        } else {
+            return response()->json(['matches' => []]);
+        }
+
+        $matches = $query->limit(5)->get(['id', 'nombre_comercial', 'razon_social', 'rfc']);
+        
+        return response()->json(['matches' => $matches]);
+    }
+
     public function create()
     {
         return view('clientes.create');

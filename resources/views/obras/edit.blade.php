@@ -3837,6 +3837,9 @@
 
                     <td class="px-3 py-2">
                         <span class="font-mono text-xs" x-text="cfdi.uuid"></span>
+                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium"
+                              :class="cfdi.origen === 'FacturAPI' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'"
+                              x-text="cfdi.origen"></span>
                     </td>
 
                     <td class="px-3 py-2 text-right font-medium">
@@ -3906,14 +3909,51 @@
 </div>
 </div>
    @php
-    $cfdisDisponiblesJson = $cfdisDisponibles->map(function ($cfdi) {
-        return [
-            'id' => $cfdi->id,
-            'uuid' => $cfdi->uuid,
-            'fecha_emision' => optional($cfdi->fecha_emision)->format('Y-m-d'),
-            'total' => (float) $cfdi->total,
-        ];
-    })->values();
+    $rfcCliente = $obra->cliente->rfc ?? '';
+
+    // SAT / Scraper
+    $cfdisSAT = \App\Models\SatCfdi::whereNull('obra_id')
+        ->where('emisor_rfc', 'RCO820921T66')
+        ->where('receptor_rfc', $rfcCliente)
+        ->orderByDesc('fecha_emision')
+        ->get();
+
+    // FacturAPI
+    $facturasAPI = \App\Models\SatFactura::whereNull('obra_id')
+        ->where('receptor_rfc', $rfcCliente)
+        ->orderByDesc('fecha_emision')
+        ->get();
+
+    $disponibles = collect();
+    $seenUuids = [];
+
+    foreach ($facturasAPI as $f) {
+        if ($f->uuid && !in_array($f->uuid, $seenUuids)) {
+            $disponibles->push([
+                'id' => $f->uuid, // Usamos UUID como identificador
+                'uuid' => $f->uuid,
+                'fecha_emision' => optional($f->fecha_emision)->format('Y-m-d'),
+                'total' => (float) $f->total,
+                'origen' => 'FacturAPI'
+            ]);
+            $seenUuids[] = $f->uuid;
+        }
+    }
+
+    foreach ($cfdisSAT as $c) {
+        if ($c->uuid && !in_array($c->uuid, $seenUuids)) {
+            $disponibles->push([
+                'id' => $c->uuid, // Usamos UUID como identificador
+                'uuid' => $c->uuid,
+                'fecha_emision' => optional($c->fecha_emision)->format('Y-m-d'),
+                'total' => (float) $c->total,
+                'origen' => 'SAT'
+            ]);
+            $seenUuids[] = $c->uuid;
+        }
+    }
+
+    $cfdisDisponiblesJson = $disponibles->sortByDesc('fecha_emision')->values();
 @endphp
 <script>
 function relacionFacturasModal() {

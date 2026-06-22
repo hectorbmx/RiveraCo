@@ -254,6 +254,59 @@
     
 
      </div>
+      {{-- FACTURAS RELACIONADAS --}}
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mt-6"
+     x-data="{ usarRelacion: false }">
+
+    <div class="flex items-start justify-between gap-4">
+        <div>
+            <h3 class="text-base font-bold text-slate-900">
+                Facturas Relacionadas
+            </h3>
+            <p class="text-sm text-slate-500">
+                Relaciona este CFDI con facturas emitidas anteriormente.
+            </p>
+        </div>
+
+        <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+            <input type="checkbox"
+                   name="usar_relacion"
+                   value="1"
+                   x-model="usarRelacion"
+                   class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+            Relacionar CFDI
+        </label>
+    </div>
+
+    <div x-show="usarRelacion"
+         x-cloak
+         class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700">
+                Tipo de Relación
+            </label>
+            <select name="relacion_tipo" class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                <option value="04">04 - Sustitución de los CFDI previos</option>
+                <option value="01">01 - Nota de crédito de los documentos relacionados</option>
+                <option value="02">02 - Nota de débito de los documentos relacionados</option>
+                <option value="03">03 - Devolución de mercancía sobre facturas o traslados previos</option>
+                <option value="05">05 - Traslados de mercancias facturados previamente</option>
+                <option value="06">06 - Factura generada por los traslados previos</option>
+                <option value="07">07 - CFDI por aplicación de anticipo</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700">UUIDs Relacionados</label>
+            <input type="text" name="relacion_uuids"
+                   value="{{ old('relacion_uuids') }}"
+                   placeholder="Ej. 12345678-1234-... (separar con comas)"
+                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
+    </div>
+</div>
+
                     {{-- Complemento Servicios Parciales de Construcción --}}
 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mt-6"
      x-data="{ usarComplementoConstruccion: false }">
@@ -409,17 +462,25 @@
         <tr class="border-b border-slate-100">
             <td class="px-4 py-3">
                 <input type="hidden" :name="`conceptos[${index}][sat_concepto_id]`" :value="item.id">
-                <input type="hidden" :name="`conceptos[${index}][descripcion]`" :value="item.descripcion">
                 <input type="hidden" :name="`conceptos[${index}][clave_producto_servicio]`" :value="item.clave_producto_servicio">
                 <input type="hidden" :name="`conceptos[${index}][clave_unidad]`" :value="item.clave_unidad">
                 <input type="hidden" :name="`conceptos[${index}][unidad]`" :value="item.unidad">
                 <input type="hidden" :name="`conceptos[${index}][iva_tasa]`" :value="item.iva_tasa">
                 <input type="hidden" :name="`conceptos[${index}][incluye_iva]`" :value="item.incluye_iva ? 1 : 0">
+                <input type="hidden" :name="`conceptos[${index}][descripcion]`" :value="item.descripcion">
 
-                <div class="font-medium text-slate-900" x-text="item.descripcion"></div>
-                <div class="text-xs text-slate-500">
-                    SAT: <span x-text="item.clave_producto_servicio"></span> /
-                    Unidad: <span x-text="item.clave_unidad"></span>
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="font-medium text-slate-900" x-text="item.nombre_catalogo"></div>
+                        <div class="text-sm text-slate-600 mt-1" x-show="item.descripcion !== item.nombre_catalogo" x-text="item.descripcion.length > 50 ? item.descripcion.substring(0, 50) + '...' : item.descripcion"></div>
+                        <div class="text-xs text-slate-500 mt-1">
+                            SAT: <span x-text="item.clave_producto_servicio"></span> /
+                            Unidad: <span x-text="item.clave_unidad"></span>
+                        </div>
+                    </div>
+                    <button type="button" @click="editDescripcion(index)" class="text-indigo-600 hover:text-indigo-800 p-1 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors ml-2" title="Editar Detalles">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    </button>
                 </div>
             </td>
 
@@ -620,6 +681,68 @@
     </div>
     
 </div>
+
+{{-- MODAL EDITAR DESCRIPCION --}}
+<div x-show="openEditDesc"
+     x-cloak
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+
+    <div @click.away="closeEditDesc()"
+         class="w-full max-w-2xl rounded-2xl bg-white shadow-xl border border-slate-200 flex flex-col">
+
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">
+                    Detalles del Concepto
+                </h2>
+                <p class="text-sm text-slate-500">
+                    Edita o agrega información a la descripción del concepto.
+                </p>
+            </div>
+
+            <button type="button"
+                    @click="closeEditDesc()"
+                    class="text-slate-400 hover:text-slate-600">
+                ✕
+            </button>
+        </div>
+
+        <div class="p-6">
+            <div class="mb-4">
+                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Concepto Base:</span>
+                <div class="text-sm text-slate-900 font-medium mt-1" x-text="descToEditName"></div>
+            </div>
+
+            <label class="block text-sm font-medium text-slate-700 mb-2">
+                Descripción (Texto Plano)
+            </label>
+            <textarea x-model="descToEditText"
+                      rows="8"
+                      class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono text-sm"
+                      placeholder="Escribe los detalles aquí..."></textarea>
+            
+            <div class="mt-2 text-xs text-slate-500 flex items-center">
+                <svg class="w-4 h-4 mr-1 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                Recuerda que no se permiten etiquetas de diseño (HTML). Usa saltos de línea normales.
+            </div>
+        </div>
+        
+        <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-3 bg-slate-50 rounded-b-2xl">
+            <button type="button"
+                    @click="closeEditDesc()"
+                    class="px-4 py-2 rounded-xl border border-slate-300 text-sm text-slate-700 hover:bg-white">
+                Cancelar
+            </button>
+            <button type="button"
+                    @click="saveEditDesc()"
+                    class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow hover:bg-indigo-700">
+                Guardar Detalles
+            </button>
+        </div>
+
+    </div>
+</div>
+
 <div x-show="loadingTimbrar"
      x-transition.opacity
      class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -689,6 +812,11 @@ function facturaForm() {
         catalogoConceptos: @json($conceptos),
 
         conceptosSeleccionados: [],
+
+        openEditDesc: false,
+        descToEditIndex: null,
+        descToEditName: '',
+        descToEditText: '',
 
         init() {
             const cliente = this.clientes.find((item) => item.id === this.clienteId);
@@ -763,6 +891,7 @@ function facturaForm() {
             this.conceptosSeleccionados.push({
                 id: concepto.id,
                 codigo: concepto.codigo,
+                nombre_catalogo: concepto.descripcion,
                 descripcion: concepto.descripcion,
                 clave_producto_servicio: concepto.clave_producto_servicio,
                 clave_unidad: concepto.clave_unidad,
@@ -780,6 +909,27 @@ function facturaForm() {
 
         removeConcepto(index) {
             this.conceptosSeleccionados.splice(index, 1);
+        },
+
+        editDescripcion(index) {
+            this.descToEditIndex = index;
+            this.descToEditName = this.conceptosSeleccionados[index].nombre_catalogo;
+            this.descToEditText = this.conceptosSeleccionados[index].descripcion;
+            this.openEditDesc = true;
+        },
+
+        closeEditDesc() {
+            this.openEditDesc = false;
+            this.descToEditIndex = null;
+            this.descToEditName = '';
+            this.descToEditText = '';
+        },
+
+        saveEditDesc() {
+            if (this.descToEditIndex !== null) {
+                this.conceptosSeleccionados[this.descToEditIndex].descripcion = this.descToEditText;
+            }
+            this.closeEditDesc();
         },
 
         subtotalItem(item) {
