@@ -107,15 +107,65 @@ class ClienteController extends Controller
     }
 
     if ($tab === 'facturas') {
-        // placeholder hasta que exista relación/modelo
-        // $facturas = $cliente->facturas()->latest()->paginate(10)->withQueryString();
-    }
+        // Buscamos en ambas tablas usando el RFC del cliente (si lo tiene)
+        if ($cliente->rfc) {
+            $rfc = $cliente->rfc;
 
-      if ($tab === 'facturas' && $cliente->rfc) {
-        $facturas = $cliente->facturas()
-            ->orderByDesc('fecha_emision')
-            ->paginate(15)
-            ->withQueryString();
+            $deSatFactura = \App\Models\SatFactura::where('receptor_rfc', $rfc)
+                ->orderByDesc('fecha_emision')
+                ->get()
+                ->map(function ($f) {
+                    return [
+                        'origen'        => 'FacturAPI',
+                        'fecha'         => optional($f->fecha_emision)->format('Y-m-d'),
+                        'serie_folio'   => trim($f->serie . ' ' . $f->folio),
+                        'uuid'          => $f->uuid,
+                        'moneda'        => $f->moneda,
+                        'total'         => (float) $f->total,
+                        'estado'        => $f->estado,
+                        'obra_id'       => $f->obra_id,
+                        'pdf_path'      => $f->pdf_path,
+                    ];
+                });
+
+            $deSatCfdi = \App\Models\SatCfdi::where('receptor_rfc', $rfc)
+                ->where('emisor_rfc', 'RCO820921T66')
+                ->orderByDesc('fecha_emision')
+                ->get()
+                ->map(function ($c) {
+                    return [
+                        'origen'        => 'SAT',
+                        'fecha'         => optional($c->fecha_emision)->format('Y-m-d'),
+                        'serie_folio'   => trim($c->serie . ' ' . $c->folio),
+                        'uuid'          => $c->uuid,
+                        'moneda'        => $c->moneda,
+                        'total'         => (float) $c->total,
+                        'estado'        => null,
+                        'obra_id'       => $c->obra_id,
+                        'pdf_path'      => null,
+                    ];
+                });
+
+            // Unir, deduplicar por UUID (FacturAPI tiene prioridad), ordenar por fecha
+            $seenUuids = [];
+            $merged = collect();
+            foreach ($deSatFactura as $item) {
+                if ($item['uuid'] && !in_array($item['uuid'], $seenUuids)) {
+                    $merged->push($item);
+                    $seenUuids[] = $item['uuid'];
+                }
+            }
+            foreach ($deSatCfdi as $item) {
+                if ($item['uuid'] && !in_array($item['uuid'], $seenUuids)) {
+                    $merged->push($item);
+                    $seenUuids[] = $item['uuid'];
+                }
+            }
+
+            $facturas = $merged->sortByDesc('fecha')->values();
+        } else {
+            $facturas = collect();
+        }
     }
 
 

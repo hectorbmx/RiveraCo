@@ -149,7 +149,7 @@
             'msg'   => 'Este cliente aún no tiene obras registradas (o falta conectar la relación/listado).'
           ])
         @endif
-<!-- TAB DE FACTURAS -->
+      <!-- TAB DE FACTURAS -->
       @elseif($currentTab === 'facturas')
 
   <div class="flex items-center justify-between mb-4">
@@ -157,88 +157,90 @@
       Facturas del cliente
     </h2>
     @if(!$cliente->rfc)
-      <span class="text-xs text-red-600">
-        El cliente no tiene RFC asignado.
+      <span class="text-xs text-amber-600 font-medium">
+        ⚠ El cliente no tiene RFC asignado — agrega el RFC en la pestaña General para ver facturas.
       </span>
     @endif
   </div>
 
   @if(!$cliente->rfc)
-      <div class="p-4 bg-yellow-50 border rounded text-yellow-700">
-        No se pueden buscar facturas porque el cliente no tiene RFC.
+      <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm">
+        <strong>Sin RFC:</strong> No se pueden buscar facturas porque el cliente no tiene RFC registrado.
+        <a href="{{ route('clientes.edit', $cliente) }}?tab=general" class="underline ml-1">Editar cliente</a>
       </div>
 
   @elseif($facturas && $facturas->count())
 
-      {{-- KPIs rápidos --}}
+      {{-- KPIs --}}
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="bg-slate-50 p-4 rounded border">
-          <div class="text-xs text-slate-500">Total facturado</div>
-          <div class="text-xl font-bold">
+        <div class="bg-slate-50 p-4 rounded-xl border">
+          <div class="text-xs text-slate-500 uppercase tracking-wide">Total facturado</div>
+          <div class="text-xl font-bold text-slate-800 mt-1">
             ${{ number_format($facturas->sum('total'), 2) }}
           </div>
         </div>
-
-        <div class="bg-slate-50 p-4 rounded border">
-          <div class="text-xs text-slate-500">Facturas emitidas</div>
-          <div class="text-xl font-bold">
-            {{ $facturas->total() }}
-          </div>
+        <div class="bg-slate-50 p-4 rounded-xl border">
+          <div class="text-xs text-slate-500 uppercase tracking-wide">Facturas emitidas</div>
+          <div class="text-xl font-bold text-slate-800 mt-1">{{ $facturas->count() }}</div>
         </div>
-
-        <div class="bg-slate-50 p-4 rounded border">
-          <div class="text-xs text-slate-500">Canceladas</div>
-          <div class="text-xl font-bold text-red-600">
-            {{ $facturas->where('status','cancelada')->count() }}
+        <div class="bg-slate-50 p-4 rounded-xl border">
+          <div class="text-xs text-slate-500 uppercase tracking-wide">Canceladas</div>
+          <div class="text-xl font-bold text-red-600 mt-1">
+            {{ $facturas->where('estado', 'cancelled')->count() }}
           </div>
         </div>
       </div>
 
       {{-- Tabla --}}
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto rounded-xl border border-slate-200">
         <table class="min-w-full text-sm">
-          <thead class="bg-slate-50 text-slate-600">
+          <thead class="bg-slate-50 text-slate-600 text-xs font-semibold uppercase tracking-wide">
             <tr>
+              <th class="text-left px-4 py-3">Origen</th>
               <th class="text-left px-4 py-3">Fecha</th>
               <th class="text-left px-4 py-3">Serie/Folio</th>
               <th class="text-left px-4 py-3">UUID</th>
               <th class="text-left px-4 py-3">Moneda</th>
               <th class="text-right px-4 py-3">Total</th>
-              <th class="text-left px-4 py-3">Status</th>
+              <th class="text-center px-4 py-3">Obra</th>
+              <th class="text-center px-4 py-3">Estado</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="divide-y divide-slate-100">
             @foreach($facturas as $f)
-              <tr class="border-t">
+              <tr class="hover:bg-slate-50">
                 <td class="px-4 py-3">
-                  {{ optional($f->fecha_emision)->format('Y-m-d') }}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold
+                    {{ $f['origen'] === 'FacturAPI' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700' }}">
+                    {{ $f['origen'] }}
+                  </span>
                 </td>
-
-                <td class="px-4 py-3 font-medium">
-                  {{ $f->serie }} {{ $f->folio }}
+                <td class="px-4 py-3 text-slate-600">{{ $f['fecha'] }}</td>
+                <td class="px-4 py-3 font-medium">{{ $f['serie_folio'] ?: '—' }}</td>
+                <td class="px-4 py-3 font-mono text-[11px] text-slate-500">
+                  {{ Str::limit($f['uuid'], 28) }}
                 </td>
-
-                <td class="px-4 py-3 text-xs text-slate-500">
-                  {{ Str::limit($f->uuid, 25) }}
-                </td>
-
-                <td class="px-4 py-3">
-                  {{ $f->moneda }}
-                </td>
-
+                <td class="px-4 py-3">{{ $f['moneda'] ?? 'MXN' }}</td>
                 <td class="px-4 py-3 text-right font-semibold">
-                  ${{ number_format($f->total, 2) }}
+                  ${{ number_format($f['total'], 2) }}
                 </td>
-
-                <td class="px-4 py-3">
-                  @if($f->status === 'cancelada')
-                    <span class="inline-flex px-2 py-1 rounded-full text-xs bg-red-100 text-red-700">
-                      Cancelada
-                    </span>
+                <td class="px-4 py-3 text-center">
+                  @if($f['obra_id'])
+                    <a href="{{ route('obras.edit', $f['obra_id']) }}"
+                       class="text-[11px] text-[#0B265A] hover:underline font-medium">
+                      Ver obra
+                    </a>
                   @else
-                    <span class="inline-flex px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
-                      Activa
-                    </span>
+                    <span class="text-[11px] text-slate-400">Sin asignar</span>
+                  @endif
+                </td>
+                <td class="px-4 py-3 text-center">
+                  @if($f['estado'] === 'cancelled')
+                    <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] bg-red-100 text-red-700">Cancelada</span>
+                  @elseif($f['estado'])
+                    <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] bg-emerald-100 text-emerald-700">{{ ucfirst($f['estado']) }}</span>
+                  @else
+                    <span class="text-slate-400 text-[11px]">—</span>
                   @endif
                 </td>
               </tr>
@@ -247,16 +249,10 @@
         </table>
       </div>
 
-      <div class="mt-4">
-        {{ $facturas->links() }}
-      </div>
-
   @else
-
-      <div class="p-4 bg-slate-50 border rounded text-slate-600">
-        No se encontraron facturas para este RFC.
+      <div class="p-4 bg-slate-50 border rounded-lg text-slate-600 text-sm">
+        No se encontraron facturas emitidas por Rivera Construcciones a este cliente.
       </div>
-
   @endif
         <!-- TERMINA TAB FACTURAS -->
       @elseif($currentTab === 'pagos')
