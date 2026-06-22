@@ -3909,18 +3909,26 @@
 </div>
 </div>
    @php
-    $rfcCliente = $obra->cliente->rfc ?? '';
+    $rfcCliente    = $obra->cliente->rfc ?? '';
+    $clienteId     = $obra->cliente_id;
 
-    // SAT / Scraper
+    // SAT / Scraper — solo por RFC (la tabla no tiene cliente_id)
     $cfdisSAT = \App\Models\SatCfdi::whereNull('obra_id')
         ->where('emisor_rfc', 'RCO820921T66')
-        ->where('receptor_rfc', $rfcCliente)
+        ->when($rfcCliente, fn($q) => $q->where('receptor_rfc', $rfcCliente))
         ->orderByDesc('fecha_emision')
         ->get();
 
-    // FacturAPI
+    // FacturAPI — buscar por RFC O por cliente_id (cubre casos donde uno de los dos no está guardado)
     $facturasAPI = \App\Models\SatFactura::whereNull('obra_id')
-        ->where('receptor_rfc', $rfcCliente)
+        ->where(function($q) use ($rfcCliente, $clienteId) {
+            if ($rfcCliente) {
+                $q->where('receptor_rfc', $rfcCliente);
+            }
+            if ($clienteId) {
+                $q->orWhere('cliente_id', $clienteId);
+            }
+        })
         ->orderByDesc('fecha_emision')
         ->get();
 
@@ -3928,28 +3936,28 @@
     $seenUuids = [];
 
     foreach ($facturasAPI as $f) {
-        if ($f->uuid && !in_array($f->uuid, $seenUuids)) {
+        if ($f->uuid && !in_array(strtoupper($f->uuid), $seenUuids)) {
             $disponibles->push([
-                'id' => $f->uuid, // Usamos UUID como identificador
-                'uuid' => $f->uuid,
+                'id'            => $f->uuid,
+                'uuid'          => $f->uuid,
                 'fecha_emision' => optional($f->fecha_emision)->format('Y-m-d'),
-                'total' => (float) $f->total,
-                'origen' => 'FacturAPI'
+                'total'         => (float) $f->total,
+                'origen'        => 'FacturAPI'
             ]);
-            $seenUuids[] = $f->uuid;
+            $seenUuids[] = strtoupper($f->uuid);
         }
     }
 
     foreach ($cfdisSAT as $c) {
-        if ($c->uuid && !in_array($c->uuid, $seenUuids)) {
+        if ($c->uuid && !in_array(strtoupper($c->uuid), $seenUuids)) {
             $disponibles->push([
-                'id' => $c->uuid, // Usamos UUID como identificador
-                'uuid' => $c->uuid,
+                'id'            => $c->uuid,
+                'uuid'          => $c->uuid,
                 'fecha_emision' => optional($c->fecha_emision)->format('Y-m-d'),
-                'total' => (float) $c->total,
-                'origen' => 'SAT'
+                'total'         => (float) $c->total,
+                'origen'        => 'SAT'
             ]);
-            $seenUuids[] = $c->uuid;
+            $seenUuids[] = strtoupper($c->uuid);
         }
     }
 

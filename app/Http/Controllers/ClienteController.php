@@ -111,7 +111,10 @@ class ClienteController extends Controller
         if ($cliente->rfc) {
             $rfc = $cliente->rfc;
 
-            $deSatFactura = \App\Models\SatFactura::where('receptor_rfc', $rfc)
+            $deSatFactura = \App\Models\SatFactura::where(function($q) use ($rfc, $cliente) {
+                    $q->where('receptor_rfc', $rfc)
+                      ->orWhere('cliente_id', $cliente->id);
+                })
                 ->orderByDesc('fecha_emision')
                 ->get()
                 ->map(function ($f) {
@@ -150,15 +153,15 @@ class ClienteController extends Controller
             $seenUuids = [];
             $merged = collect();
             foreach ($deSatFactura as $item) {
-                if ($item['uuid'] && !in_array($item['uuid'], $seenUuids)) {
+                if ($item['uuid'] && !in_array(strtoupper($item['uuid']), $seenUuids)) {
                     $merged->push($item);
-                    $seenUuids[] = $item['uuid'];
+                    $seenUuids[] = strtoupper($item['uuid']);
                 }
             }
             foreach ($deSatCfdi as $item) {
-                if ($item['uuid'] && !in_array($item['uuid'], $seenUuids)) {
+                if ($item['uuid'] && !in_array(strtoupper($item['uuid']), $seenUuids)) {
                     $merged->push($item);
-                    $seenUuids[] = $item['uuid'];
+                    $seenUuids[] = strtoupper($item['uuid']);
                 }
             }
 
