@@ -214,6 +214,7 @@ Route::middleware(['auth', 'verified'])
 
             Route::get('/conceptos', [SatCatalogoController::class, 'conceptos'])->name('conceptos');
             Route::post('/conceptos', [SatCatalogoController::class, 'storeConcepto'])->name('conceptos.store');
+            Route::put('/conceptos/{concepto}', [SatCatalogoController::class, 'updateConcepto'])->name('conceptos.update');
             Route::get('/productos-sat/buscar', [SatCatalogoController::class, 'buscarProductosSat'])->name('productos-sat.buscar');
 
         });

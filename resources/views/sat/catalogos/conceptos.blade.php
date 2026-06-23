@@ -118,6 +118,20 @@
                             <td class="px-5 py-4 text-right">
 
                                 <button type="button"
+                                        @click="openEditConcepto(@js([
+                                            'id' => $concepto->id,
+                                            'codigo' => $concepto->codigo,
+                                            'clave_producto_servicio' => $concepto->clave_producto_servicio,
+                                            'clave_unidad' => $concepto->clave_unidad,
+                                            'descripcion' => $concepto->descripcion,
+                                            'unidad' => $concepto->unidad,
+                                            'objeto_impuesto' => $concepto->objeto_impuesto,
+                                            'iva_tasa' => (string) $concepto->iva_tasa,
+                                            'incluye_iva' => (bool) $concepto->incluye_iva,
+                                            'precio_unitario' => (string) $concepto->precio_unitario,
+                                            'activo' => (bool) $concepto->activo,
+                                            'observaciones' => $concepto->observaciones,
+                                        ]))"
                                         class="text-sm font-medium text-indigo-600 hover:text-indigo-800">
                                     Editar
                                 </button>
@@ -339,6 +353,183 @@
 
         </form>
 
+</div>
+</div>
+
+{{-- MODAL EDITAR CONCEPTO --}}
+<div x-show="openEdit"
+     x-cloak
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+
+    <div @click.away="openEdit = false"
+         class="w-full max-w-2xl rounded-2xl bg-white shadow-xl border border-slate-200">
+
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">
+                    Editar concepto SAT
+                </h2>
+                <p class="text-sm text-slate-500">
+                    Ajusta los datos del concepto reutilizable.
+                </p>
+            </div>
+
+            <button type="button"
+                    @click="openEdit = false"
+                    class="text-slate-400 hover:text-slate-600">
+                x
+            </button>
+        </div>
+
+        <form method="POST" :action="editAction">
+            @csrf
+            @method('PUT')
+
+            <div class="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Codigo interno
+                    </label>
+                    <input type="text"
+                           name="codigo"
+                           x-model="editConcepto.codigo"
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+                           placeholder="Ej. SERV-001">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Precio unitario
+                    </label>
+                    <input type="number"
+                           step="0.01"
+                           name="precio_unitario"
+                           x-model="editConcepto.precio_unitario"
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Descripcion
+                    </label>
+                    <input type="text"
+                           name="descripcion"
+                           x-model="editConcepto.descripcion"
+                           required
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+                           placeholder="Ej. Servicio de construccion">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Clave producto/servicio SAT
+                    </label>
+                    <input type="text"
+                           name="clave_producto_servicio"
+                           x-model="editConcepto.clave_producto_servicio"
+                           required
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Clave unidad SAT
+                    </label>
+                    <input type="text"
+                           name="clave_unidad"
+                           x-model="editConcepto.clave_unidad"
+                           required
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+                           placeholder="Ej. E48">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Unidad visible
+                    </label>
+                    <input type="text"
+                           name="unidad"
+                           x-model="editConcepto.unidad"
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+                           placeholder="Ej. Servicio">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Objeto de impuesto
+                    </label>
+                    <select name="objeto_impuesto"
+                            x-model="editConcepto.objeto_impuesto"
+                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="02">02 - Si objeto de impuesto</option>
+                        <option value="01">01 - No objeto de impuesto</option>
+                        <option value="03">03 - Si objeto, no obligado al desglose</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        IVA tasa
+                    </label>
+                    <select name="iva_tasa"
+                            x-model="editConcepto.iva_tasa"
+                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="0.160000">16%</option>
+                        <option value="0.080000">8%</option>
+                        <option value="0.000000">0%</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-3 pt-6">
+                    <input type="checkbox"
+                           name="incluye_iva"
+                           value="1"
+                           x-model="editConcepto.incluye_iva"
+                           class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+
+                    <span class="text-sm text-slate-700">
+                        El precio ya incluye IVA
+                    </span>
+                </div>
+
+                <div class="flex items-center gap-3 pt-6">
+                    <input type="checkbox"
+                           name="activo"
+                           value="1"
+                           x-model="editConcepto.activo"
+                           class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+
+                    <span class="text-sm text-slate-700">
+                        Concepto activo
+                    </span>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Observaciones
+                    </label>
+                    <textarea name="observaciones"
+                              rows="3"
+                              x-model="editConcepto.observaciones"
+                              class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                </div>
+
+            </div>
+
+            <div class="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-2xl">
+                <button type="button"
+                        @click="openEdit = false"
+                        class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-white">
+                    Cancelar
+                </button>
+
+                <button type="submit"
+                        class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
+                    Guardar cambios
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 </div>
@@ -347,12 +538,48 @@
 function catalogoConceptosSat() {
     return {
         openCreate: false,
+        openEdit: false,
+        editBaseUrl: @json(url('/sat/catalogos/conceptos')),
+        editAction: '',
+        editConcepto: {
+            id: null,
+            codigo: '',
+            clave_producto_servicio: '',
+            clave_unidad: '',
+            descripcion: '',
+            unidad: '',
+            objeto_impuesto: '02',
+            iva_tasa: '0.160000',
+            incluye_iva: false,
+            precio_unitario: '0.00',
+            activo: true,
+            observaciones: '',
+        },
         claveProductoSearch: '',
         claveProductoServicio: '',
         claveProductoOpen: false,
         buscandoProductosSat: false,
         productosSat: [],
         errorProductosSat: '',
+
+        openEditConcepto(concepto) {
+            this.editConcepto = {
+                id: concepto.id,
+                codigo: concepto.codigo || '',
+                clave_producto_servicio: concepto.clave_producto_servicio || '',
+                clave_unidad: concepto.clave_unidad || '',
+                descripcion: concepto.descripcion || '',
+                unidad: concepto.unidad || '',
+                objeto_impuesto: concepto.objeto_impuesto || '02',
+                iva_tasa: concepto.iva_tasa || '0.160000',
+                incluye_iva: !!concepto.incluye_iva,
+                precio_unitario: concepto.precio_unitario || '0.00',
+                activo: !!concepto.activo,
+                observaciones: concepto.observaciones || '',
+            };
+            this.editAction = `${this.editBaseUrl}/${concepto.id}`;
+            this.openEdit = true;
+        },
 
         async buscarProductosSat() {
             const query = this.claveProductoSearch.trim();
