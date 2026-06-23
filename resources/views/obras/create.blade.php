@@ -105,8 +105,9 @@
                             class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
                                    focus:border-[#FFC107] focus:ring-[#FFC107]">
                         <option value="">Selecciona tipo</option>
-                        <option value="PILAS">Pilas</option>
-                        <option value="POZOS">Pozos</option>
+                        @foreach($tiposObraDisponibles as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
                     </select>
                     @error('tipo_obra')
                         <p class="mt-1 text-xs text-red-600">{{ $message }}</p>

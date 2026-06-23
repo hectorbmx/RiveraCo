@@ -552,9 +552,14 @@
                     <label for="tipo_obra" class="block text-xs font-semibold text-slate-600 mb-1">
                         Tipo de obra
                     </label>
-                    <input type="text" id="tipo_obra" name="tipo_obra"
-                           class="block w-full rounded-xl border-slate-200 bg-white text-sm shadow-sm transition duration-150 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                           value="{{ old('tipo_obra', $obra->tipo_obra) }}">
+                    <select id="tipo_obra" name="tipo_obra"
+                            class="block w-full rounded-xl border-slate-200 bg-white text-sm shadow-sm transition duration-150 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10">
+                        @foreach($tiposObraDisponibles as $value => $label)
+                            <option value="{{ $value }}" @selected(old('tipo_obra', $obra->tipo_obra) === $value)>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
                     @error('tipo_obra')
                         <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                     @enderror

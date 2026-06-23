@@ -33,6 +33,7 @@ class Obra extends Model
         'clave_obra',
         'descripcion',
         'tipo_obra',
+        'area_id',
         'estatus_nuevo',
         'fecha_inicio_programada',
         'fecha_inicio_real',
@@ -66,6 +67,10 @@ class Obra extends Model
     public function responsable()
     {
         return $this->belongsTo(Empleado::class, 'responsable_id', 'id_Empleado');
+    }
+    public function area()
+    {
+        return $this->belongsTo(Area::class, 'area_id');
     }
     public function contratos()
     {

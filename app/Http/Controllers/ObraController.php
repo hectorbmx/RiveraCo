@@ -14,6 +14,7 @@ use App\Models\CuentaBancoEmpresa;
 use App\Models\MetodoPagoEmpresa;
 use App\Models\User;
 use App\Models\Empleado;
+use App\Models\Area;
 use App\Models\ObraEmpleado;
 use App\Models\ObraPlaneacionGasto;
 use App\Models\ObraReposicionGasto;
@@ -46,6 +47,11 @@ class ObraController extends Controller
         'POZOS' => 'PO',
     ];
 
+    private const TIPOS_OBRA_AREA = [
+        'PILAS' => ['PILAS', 'PI'],
+        'POZOS' => ['POZOS', 'PO'],
+    ];
+
     public function index(Request $request)
     {
         $search = $request->query('search');
@@ -59,7 +65,10 @@ class ObraController extends Controller
             'cancelada'  => 5,
         ];
 
-        $obras = Obra::with(['cliente', 'responsable'])
+        $areaUsuarioId = $this->areaUsuarioActualId();
+
+        $obras = Obra::with(['cliente', 'responsable', 'area'])
+            ->when($areaUsuarioId, fn ($query) => $query->where('area_id', $areaUsuarioId))
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('nombre', 'like', "%{$search}%")
@@ -89,14 +98,15 @@ class ObraController extends Controller
             ->orderBy('Nombre')
             ->orderBy('Apellidos')
             ->get();
+        $tiposObraDisponibles = $this->tiposObraDisponibles();
 
-        return view('obras.create', compact('clientes', 'responsables'));
+        return view('obras.create', compact('clientes', 'responsables', 'tiposObraDisponibles'));
     }
 
     public function folioSiguiente(Request $request)
     {
         $data = $request->validate([
-            'tipo_obra' => ['required', 'string', 'in:PILAS,POZOS'],
+            'tipo_obra' => ['required', 'string', 'in:' . implode(',', array_keys($this->tiposObraDisponibles()))],
         ]);
 
         $anio = (int) Carbon::now('America/Mexico_City')->format('Y');
@@ -115,7 +125,7 @@ class ObraController extends Controller
         'nombre'                   => ['required', 'string', 'max:255'],
         'clave_obra'               => ['nullable', 'string', 'max:100'],
         'descripcion'              => ['nullable', 'string'],
-        'tipo_obra'                => ['nullable', 'string', 'in:PILAS,POZOS'],
+        'tipo_obra'                => ['required', 'string', 'in:' . implode(',', array_keys($this->tiposObraDisponibles()))],
         'estatus_nuevo'            => ['required', 'numeric', 'in:1,2,3,4,5'],
         'fecha_inicio_programada'  => ['nullable', 'date'],
         'fecha_inicio_real'        => ['nullable', 'date'],
@@ -133,6 +143,7 @@ class ObraController extends Controller
 
     $obra = DB::transaction(function () use ($data) {
         $data['clave_obra'] = $this->resolverClaveObra($data['tipo_obra'] ?? null, $data['clave_obra'] ?? null);
+        $data['area_id'] = $this->areaIdParaTipoObra($data['tipo_obra']);
 
         if ($data['clave_obra'] === '' || Obra::where('clave_obra', $data['clave_obra'])->exists()) {
             throw ValidationException::withMessages([
@@ -145,6 +156,58 @@ class ObraController extends Controller
 
     return redirect()->route('obras.edit', $obra)
         ->with('success', 'Obra creada correctamente.');
+}
+
+private function areaUsuarioActualId(): ?int
+{
+    $user = auth()->user();
+
+    if (!$user || $user->hasRole('super-admin')) {
+        return null;
+    }
+
+    return $user->empleado?->area_id ? (int) $user->empleado->area_id : null;
+}
+
+private function tiposObraDisponibles(): array
+{
+    $tipos = [
+        'PILAS' => 'Pilas',
+        'POZOS' => 'Pozos',
+    ];
+
+    $areaUsuarioId = $this->areaUsuarioActualId();
+
+    if (!$areaUsuarioId) {
+        return $tipos;
+    }
+
+    return collect($tipos)
+        ->filter(fn ($label, $tipo) => $this->areaIdParaTipoObra($tipo) === $areaUsuarioId)
+        ->all();
+}
+
+private function areaIdParaTipoObra(string $tipoObra): ?int
+{
+    $tipoObra = strtoupper($tipoObra);
+    $codigos = self::TIPOS_OBRA_AREA[$tipoObra] ?? [];
+
+    return Area::query()
+        ->where(function ($query) use ($codigos, $tipoObra) {
+            $query->whereIn('codigo', $codigos)
+                ->orWhere('nombre', 'like', "%{$tipoObra}%")
+                ->orWhere('nombre', 'like', '%' . ucfirst(strtolower($tipoObra)) . '%');
+        })
+        ->value('id');
+}
+
+private function abortarSiObraFueraDeArea(Obra $obra): void
+{
+    $areaUsuarioId = $this->areaUsuarioActualId();
+
+    if ($areaUsuarioId && (int) $obra->area_id !== $areaUsuarioId) {
+        abort(403);
+    }
 }
 
 private function resolverClaveObra(?string $tipoObra, ?string $claveActual): string
@@ -230,6 +293,7 @@ private function formatearFolio(string $prefijo, int $anio, int $consecutivo): s
 
 public function edit(Request $request, Obra $obra)
 {
+    $this->abortarSiObraFueraDeArea($obra);
 
     $roles = \DB::table('catalogo_roles')->orderBy('nombre')->get();
     $clientes     = Cliente::orderBy('nombre_comercial')->get();
@@ -237,6 +301,7 @@ public function edit(Request $request, Obra $obra)
         ->orderBy('Nombre')
         ->orderBy('Apellidos')
         ->get();
+    $tiposObraDisponibles = $this->tiposObraDisponibles();
 
     $desde =$request->query('asist_desde');
     $hasta =$request->query('asist_hasta');
@@ -904,6 +969,7 @@ return view('obras.edit', [
     
     'clientes'                    => $clientes,
     'responsables'                => $responsables,
+    'tiposObraDisponibles'        => $tiposObraDisponibles,
     'tab'                         => $tab,
     'asignaciones'                => $asignaciones,
     'asignacionesActivas'         => $asignacionesActivas,
@@ -974,6 +1040,8 @@ return view('obras.edit', [
 
 public function reporteAsistencias(Request $request, Obra $obra)
 {
+    $this->abortarSiObraFueraDeArea($obra);
+
     $desde = $request->query('asist_desde');
     $hasta = $request->query('asist_hasta');
 
@@ -1091,6 +1159,7 @@ public function reporteAsistencias(Request $request, Obra $obra)
 
    public function update(Request $request, Obra $obra)
 {
+    $this->abortarSiObraFueraDeArea($obra);
   
     // 2) Validar
     $data = $request->validate([
@@ -1098,7 +1167,7 @@ public function reporteAsistencias(Request $request, Obra $obra)
         'nombre'                   => ['required', 'string', 'max:255'],
         'clave_obra'               => ['required', 'string', 'max:100', 'unique:obras,clave_obra,' . $obra->id],
         'descripcion'              => ['nullable', 'string'],
-        'tipo_obra'                => ['nullable', 'string', 'max:100'],
+        'tipo_obra'                => ['required', 'string', 'in:' . implode(',', array_keys($this->tiposObraDisponibles()))],
         'estatus_nuevo'            => ['required', 'numeric', 'in:1,2,3,4,5'],
         'fecha_inicio_programada'  => ['nullable', 'date'],
         'fecha_inicio_real'        => ['nullable', 'date'],
@@ -1118,6 +1187,8 @@ public function reporteAsistencias(Request $request, Obra $obra)
     // dd($data);
 
     // 4) (Esto NO se va a ejecutar mientras esté el dd)
+    $data['area_id'] = $this->areaIdParaTipoObra($data['tipo_obra']);
+
     $obra->update($data);
 
     return redirect()->route('obras.index')
@@ -1128,6 +1199,8 @@ public function reporteAsistencias(Request $request, Obra $obra)
 
     public function destroy(Obra $obra)
     {
+        $this->abortarSiObraFueraDeArea($obra);
+
         $obra->delete();
 
         return redirect()->route('obras.index')
