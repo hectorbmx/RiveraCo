@@ -9,6 +9,9 @@ use App\Models\Obra;
 use App\Models\Cliente;
 use App\Models\SatCfdi;
 use App\Models\SatFactura;
+use App\Models\ObraFacturaPago;
+use App\Models\CuentaBancoEmpresa;
+use App\Models\MetodoPagoEmpresa;
 use App\Models\User;
 use App\Models\Empleado;
 use App\Models\ObraEmpleado;
@@ -739,15 +742,24 @@ if ($tab === 'horas-maquina') {
 
         $facturasSatObra = $this->facturasSatObra($obra);
         $facturasDisponiblesRelacionar = $this->facturasDisponiblesParaObra($rfcCliente, $clienteId);
+        $cuentasBanco = CuentaBancoEmpresa::where('activa', true)
+            ->orderByDesc('principal')
+            ->orderBy('banco')
+            ->orderBy('nombre')
+            ->get();
+        $metodosPago = MetodoPagoEmpresa::where('activo', true)
+            ->orderBy('nombre')
+            ->get();
 
         $totalFacturadoSat = (float) $facturasSatObra
             ->where('estado', '!=', 'cancelada')
             ->sum('total');
+        $totalPagadoSat = (float) $facturasSatObra->sum('pagado');
 
         if ($facturasSatObra->isNotEmpty()) {
             $totalFacturado = $totalFacturadoSat;
-            $totalPagado = 0;
-            $totalPendiente = $totalFacturadoSat;
+            $totalPagado = $totalPagadoSat;
+            $totalPendiente = max(0, $totalFacturadoSat - $totalPagadoSat);
         }
 
 // Totales de facturación (para resumen y barras)
@@ -805,6 +817,8 @@ return view('obras.edit', [
     'facturas'                    => $facturas,
     'facturasSatObra'             => $facturasSatObra,
     'facturasDisponiblesRelacionar' => $facturasDisponiblesRelacionar,
+    'cuentasBanco'                => $cuentasBanco,
+    'metodosPago'                 => $metodosPago,
 
     // NUEVO: totales para el resumen de facturación
     'totalFacturado'              => $totalFacturado,
@@ -1086,6 +1100,12 @@ private function normalizeRfc(?string $rfc): string
 
 private function facturasSatObra(Obra $obra): Collection
 {
+    $pagosPorUuid = ObraFacturaPago::with(['cuentaBanco', 'metodoPago', 'registradoPor'])
+        ->where('obra_id', $obra->id)
+        ->orderByDesc('fecha_pago')
+        ->get()
+        ->groupBy(fn (ObraFacturaPago $pago) => strtoupper($pago->factura_uuid));
+
     $facturasApi = SatFactura::with(['empresa', 'cliente'])
         ->where('obra_id', $obra->id)
         ->whereNotNull('uuid')
@@ -1105,6 +1125,7 @@ private function facturasSatObra(Obra $obra): Collection
             'total' => (float) $factura->total,
             'moneda' => $factura->moneda ?? 'MXN',
             'estado' => $factura->estado,
+            'metodo_pago' => $factura->metodo_pago,
             'pdf_route' => route('sat.facturacion.pdf', $factura),
         ]);
 
@@ -1126,6 +1147,7 @@ private function facturasSatObra(Obra $obra): Collection
             'total' => (float) $cfdi->total,
             'moneda' => $cfdi->moneda ?? 'MXN',
             'estado' => null,
+            'metodo_pago' => $cfdi->metodo_pago,
             'pdf_route' => route('sat.cfdis.pdf', $cfdi),
         ]);
 
@@ -1133,6 +1155,22 @@ private function facturasSatObra(Obra $obra): Collection
         ->concat($cfdisSat)
         ->filter(fn ($factura) => !empty($factura['uuid']))
         ->unique(fn ($factura) => strtoupper($factura['uuid']))
+        ->map(function (array $factura) use ($pagosPorUuid) {
+            $pagos = $pagosPorUuid->get(strtoupper($factura['uuid']), collect())->values();
+            $pagado = (float) $pagos->sum('monto');
+            $total = (float) $factura['total'];
+            $saldo = max(0, round($total - $pagado, 2));
+
+            $factura['pagos'] = $pagos;
+            $factura['pagado'] = $pagado;
+            $factura['saldo'] = $saldo;
+            $factura['estado_pago'] = $saldo <= 0
+                ? 'pagada'
+                : ($pagado > 0 ? 'parcial' : 'pendiente');
+            $factura['requiere_complemento_pago'] = strtoupper((string) ($factura['metodo_pago'] ?? '')) === 'PPD';
+
+            return $factura;
+        })
         ->sortByDesc(fn ($factura) => $factura['fecha_emision'] ?? '')
         ->values();
 }
@@ -1191,6 +1229,64 @@ private function facturasDisponiblesParaObra(string $rfcCliente, ?int $clienteId
         ->unique(fn ($factura) => strtoupper($factura['uuid']))
         ->sortByDesc(fn ($factura) => $factura['fecha_emision'] ?? '')
         ->values();
+}
+
+public function storeFacturaPago(Request $request, Obra $obra)
+{
+    $data = $request->validate([
+        'factura_uuid' => ['required', 'string', 'max:80'],
+        'factura_source' => ['nullable', 'string', 'max:30'],
+        'monto' => ['required', 'numeric', 'min:0.01'],
+        'fecha_pago' => ['required', 'date'],
+        'cuenta_banco_empresa_id' => ['nullable', 'exists:cuentas_banco_empresa,id'],
+        'metodo_pago_empresa_id' => ['nullable', 'exists:metodos_pago_empresa,id'],
+        'referencia' => ['nullable', 'string', 'max:120'],
+        'observaciones' => ['nullable', 'string'],
+    ]);
+
+    $uuid = trim($data['factura_uuid']);
+    $factura = SatFactura::where('obra_id', $obra->id)->where('uuid', $uuid)->first();
+    $cfdi = $factura ? null : SatCfdi::where('obra_id', $obra->id)->where('uuid', $uuid)->first();
+
+    if (!$factura && !$cfdi) {
+        return back()->with('error', 'La factura no esta ligada a esta obra.');
+    }
+
+    $totalFactura = (float) ($factura?->total ?? $cfdi?->total ?? 0);
+    $pagadoActual = (float) ObraFacturaPago::where('obra_id', $obra->id)
+        ->where('factura_uuid', $uuid)
+        ->sum('monto');
+    $saldo = max(0, round($totalFactura - $pagadoActual, 2));
+    $monto = round((float) $data['monto'], 2);
+
+    if ($monto > $saldo) {
+        return back()
+            ->withInput()
+            ->with('error', 'El monto del pago no puede ser mayor al saldo pendiente de la factura.');
+    }
+
+    $metodoPagoCfdi = strtoupper((string) ($factura?->metodo_pago ?? $cfdi?->metodo_pago ?? ''));
+
+    ObraFacturaPago::create([
+        'obra_id' => $obra->id,
+        'factura_uuid' => $uuid,
+        'factura_source' => $data['factura_source'] ?? ($factura ? 'sat_facturas' : 'sat_cfdis'),
+        'monto' => $monto,
+        'fecha_pago' => $data['fecha_pago'],
+        'cuenta_banco_empresa_id' => $data['cuenta_banco_empresa_id'] ?? null,
+        'metodo_pago_empresa_id' => $data['metodo_pago_empresa_id'] ?? null,
+        'referencia' => $data['referencia'] ?? null,
+        'observaciones' => $data['observaciones'] ?? null,
+        'requiere_complemento_pago' => $metodoPagoCfdi === 'PPD',
+        'registrado_por' => auth()->id(),
+        'registrado_at' => now(),
+    ]);
+
+    return redirect()
+        ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'facturacion'])
+        ->with('success', $metodoPagoCfdi === 'PPD'
+            ? 'Pago registrado. Esta factura requiere complemento de pago timbrado.'
+            : 'Pago registrado correctamente.');
 }
 
 public function relacionarCfdis(Request $request, Obra $obra)

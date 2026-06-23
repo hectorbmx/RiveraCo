@@ -4153,7 +4153,11 @@ function relacionFacturasModal() {
                     <th class="px-3 py-2 text-left">Receptor</th>
                     <th class="px-3 py-2 text-left">UUID</th>
                     <th class="px-3 py-2 text-right">Monto</th>
+                    <th class="px-3 py-2 text-right">Pagado</th>
+                    <th class="px-3 py-2 text-right">Saldo</th>
+                    <th class="px-3 py-2 text-center">Estado pago</th>
                     <th class="px-3 py-2 text-center">PDF</th>
+                    <th class="px-3 py-2 text-center">Acciones</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -4183,12 +4187,53 @@ function relacionFacturasModal() {
                         <td class="px-3 py-2 text-right">
                             $ {{ number_format($factura['total'], 2) }}
                         </td>
+                        <td class="px-3 py-2 text-right text-emerald-700 font-semibold">
+                            $ {{ number_format($factura['pagado'], 2) }}
+                            @if($factura['pagos']->isNotEmpty())
+                                @php($ultimoPago = $factura['pagos']->first())
+                                <div class="mt-1 text-[10px] font-normal text-slate-500">
+                                    {{ $factura['pagos']->count() }} pago(s)
+                                    @if($ultimoPago->referencia)
+                                        / {{ $ultimoPago->referencia }}
+                                    @endif
+                                </div>
+                            @endif
+                        </td>
+                        <td class="px-3 py-2 text-right {{ $factura['saldo'] > 0 ? 'text-amber-700' : 'text-slate-600' }}">
+                            $ {{ number_format($factura['saldo'], 2) }}
+                        </td>
+                        <td class="px-3 py-2 text-center">
+                            <span class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold
+                                {{ $factura['estado_pago'] === 'pagada'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : ($factura['estado_pago'] === 'parcial'
+                                        ? 'bg-blue-100 text-blue-800'
+                                        : 'bg-amber-100 text-amber-800') }}">
+                                {{ ucfirst($factura['estado_pago']) }}
+                            </span>
+                            @if($factura['requiere_complemento_pago'] && $factura['pagado'] > 0)
+                                <div class="mt-1 text-[10px] font-semibold text-amber-700">
+                                    Requiere complemento
+                                </div>
+                            @endif
+                        </td>
                         <td class="px-3 py-2 text-center">
                             <a href="{{ $factura['pdf_route'] }}"
                                target="_blank"
                                class="text-xs text-[#0B265A] font-semibold hover:underline">
                                 Ver PDF
                             </a>
+                        </td>
+                        <td class="px-3 py-2 text-center">
+                            @if($factura['saldo'] > 0)
+                                <button type="button"
+                                        @click="openPagoModal(@js($factura))"
+                                        class="text-xs font-semibold text-emerald-700 hover:underline">
+                                    Registrar pago
+                                </button>
+                            @else
+                                <span class="text-xs text-slate-400">Sin saldo</span>
+                            @endif
                         </td>
                     </tr>
                 @endforeach
@@ -4309,6 +4354,127 @@ function relacionFacturasModal() {
     </div>
 </div>
 
+{{-- MODAL REGISTRAR PAGO --}}
+<div x-show="openPago"
+     x-cloak
+     class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+
+    <div class="bg-white w-full max-w-2xl rounded-xl p-6 shadow-xl">
+        <div class="flex items-start justify-between gap-4 mb-4">
+            <div>
+                <h3 class="text-lg font-semibold">Registrar pago</h3>
+                <p class="text-sm text-slate-500">
+                    <span x-text="pagoFactura?.uuid || ''"></span>
+                </p>
+            </div>
+            <button type="button" @click="closePagoModal()" class="text-slate-400 hover:text-slate-600">x</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                <div class="text-[11px] font-semibold text-slate-500 uppercase">Total</div>
+                <div class="text-sm font-semibold" x-text="money(pagoFactura?.total || 0)"></div>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                <div class="text-[11px] font-semibold text-slate-500 uppercase">Pagado</div>
+                <div class="text-sm font-semibold text-emerald-700" x-text="money(pagoFactura?.pagado || 0)"></div>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                <div class="text-[11px] font-semibold text-slate-500 uppercase">Saldo</div>
+                <div class="text-sm font-semibold text-amber-700" x-text="money(pagoFactura?.saldo || 0)"></div>
+            </div>
+        </div>
+
+        <div x-show="pagoFactura?.requiere_complemento_pago"
+             class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Esta factura es PPD. El pago interno quedara registrado, pero despues requiere complemento de pago timbrado.
+        </div>
+
+        <form method="POST" action="{{ route('obras.facturas-sat.pagos.store', $obra) }}" class="space-y-4">
+            @csrf
+            <input type="hidden" name="factura_uuid" :value="pagoFactura?.uuid || ''">
+            <input type="hidden" name="factura_source" :value="pagoFactura?.source || ''">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha de pago</label>
+                    <input type="date"
+                           name="fecha_pago"
+                           x-model="pagoForm.fecha_pago"
+                           required
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Monto</label>
+                    <input type="number"
+                           name="monto"
+                           step="0.01"
+                           min="0.01"
+                           :max="pagoFactura?.saldo || null"
+                           x-model="pagoForm.monto"
+                           required
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Cuenta banco</label>
+                    <select name="cuenta_banco_empresa_id"
+                            x-model="pagoForm.cuenta_banco_empresa_id"
+                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="">Sin cuenta</option>
+                        @foreach($cuentasBanco as $cuenta)
+                            <option value="{{ $cuenta->id }}">
+                                {{ $cuenta->banco }} - {{ $cuenta->nombre }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Metodo de cobro</label>
+                    <select name="metodo_pago_empresa_id"
+                            x-model="pagoForm.metodo_pago_empresa_id"
+                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="">Sin metodo</option>
+                        @foreach($metodosPago as $metodo)
+                            <option value="{{ $metodo->id }}">
+                                {{ $metodo->nombre }}{{ $metodo->clave ? ' - '.$metodo->clave : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Referencia</label>
+                    <input type="text"
+                           name="referencia"
+                           x-model="pagoForm.referencia"
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+                           placeholder="Transferencia, ficha, SPEI, folio interno...">
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Observaciones</label>
+                    <textarea name="observaciones"
+                              rows="3"
+                              x-model="pagoForm.observaciones"
+                              class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button type="button" @click="closePagoModal()" class="px-4 py-2 border rounded">
+                    Cancelar
+                </button>
+                <button type="submit" class="bg-emerald-600 text-white px-4 py-2 rounded">
+                    Guardar pago
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {{-- FORM NUEVA FACTURA --}}
 <div id="factura-form-container" class="hidden">
     <div class="mt-4 pt-4 border-t border-slate-100">
@@ -4423,9 +4589,19 @@ function relacionFacturasModal() {
         function relacionFacturasObra(cfdisDisponibles) {
             return {
                 open: false,
+                openPago: false,
                 cfdis: cfdisDisponibles || [],
                 filteredCfdis: [],
                 selected: [],
+                pagoFactura: null,
+                pagoForm: {
+                    fecha_pago: '',
+                    monto: '',
+                    cuenta_banco_empresa_id: '',
+                    metodo_pago_empresa_id: '',
+                    referencia: '',
+                    observaciones: '',
+                },
                 filters: {
                     fecha: '',
                     uuid: '',
@@ -4455,6 +4631,31 @@ function relacionFacturasModal() {
                     this.selected = [];
                     this.filteredCfdis = this.cfdis;
                     this.currentPage = 1;
+                },
+
+                openPagoModal(factura) {
+                    this.pagoFactura = factura;
+                    this.pagoForm = {
+                        fecha_pago: new Date().toISOString().slice(0, 10),
+                        monto: Number(factura.saldo || 0).toFixed(2),
+                        cuenta_banco_empresa_id: '',
+                        metodo_pago_empresa_id: '',
+                        referencia: '',
+                        observaciones: '',
+                    };
+                    this.openPago = true;
+                },
+
+                closePagoModal() {
+                    this.openPago = false;
+                    this.pagoFactura = null;
+                },
+
+                money(value) {
+                    return new Intl.NumberFormat('es-MX', {
+                        style: 'currency',
+                        currency: 'MXN'
+                    }).format(value || 0);
                 },
 
                 applyFilters() {
