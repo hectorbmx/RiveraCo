@@ -179,6 +179,10 @@ Route::middleware(['auth', 'verified'])
 
             Route::get('/create', [SatFacturacionController::class, 'create'])->name('create');
 
+            Route::get('/relacionables', [SatFacturacionController::class, 'relacionables'])->name('relacionables');
+
+            Route::post('/preview', [SatFacturacionController::class, 'preview'])->name('preview');
+
             Route::post('/', [SatFacturacionController::class, 'store'])->name('store');
 
             Route::get('/clientes/{cliente}', [SatFacturacionController::class, 'clienteResumen'])->name('clientes.show');

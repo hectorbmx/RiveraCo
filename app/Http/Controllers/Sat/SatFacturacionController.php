@@ -11,7 +11,9 @@ use App\Models\SatFacturaPago;
 use App\Models\Cliente;
 use App\Models\Obra;
 use App\Models\SatConcepto;
+use App\Models\SatCfdi;
 use App\Services\Facturacion\FacturapiService;
+use Facturapi\Exceptions\FacturapiException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
@@ -112,6 +114,309 @@ class SatFacturacionController extends Controller
         'obras',
         'conceptos'
     ));
+}
+
+public function relacionables(Request $request)
+{
+    $data = $request->validate([
+        'q' => ['nullable', 'string', 'max:120'],
+        'cliente_id' => ['nullable', 'exists:clientes,id'],
+        'sat_empresa_id' => ['nullable', 'exists:sat_empresas,id'],
+    ]);
+
+    $q = trim((string) ($data['q'] ?? ''));
+    $cliente = !empty($data['cliente_id']) ? Cliente::find($data['cliente_id']) : null;
+    $empresa = !empty($data['sat_empresa_id']) ? SatEmpresa::find($data['sat_empresa_id']) : null;
+    $clienteRfc = $cliente ? $this->normalizeRfc($cliente->rfc) : null;
+    $empresaRfc = $empresa ? $this->normalizeRfc($empresa->rfc) : null;
+
+    $facturas = SatFactura::query()
+        ->with(['empresa', 'cliente'])
+        ->whereNotNull('uuid')
+        ->where('uuid', '!=', '')
+        ->whereIn('estado', ['timbrada', 'cancelacion_solicitada'])
+        ->when($cliente, fn ($query) => $query->where('cliente_id', $cliente->id))
+        ->when($empresa, fn ($query) => $query->where('sat_empresa_id', $empresa->id))
+        ->when($q !== '', function ($query) use ($q) {
+            $query->where(function ($subquery) use ($q) {
+                $subquery
+                    ->where('uuid', 'like', "%{$q}%")
+                    ->orWhere('serie', 'like', "%{$q}%")
+                    ->orWhere('folio', 'like', "%{$q}%")
+                    ->orWhere('receptor_rfc', 'like', "%{$q}%")
+                    ->orWhere('receptor_nombre', 'like', "%{$q}%");
+            });
+        })
+        ->latest('fecha_emision')
+        ->limit(30)
+        ->get()
+        ->map(fn (SatFactura $factura) => [
+            'source' => 'sat_facturas',
+            'source_label' => 'Facturapi',
+            'id' => $factura->id,
+            'uuid' => $factura->uuid,
+            'serie' => $factura->serie,
+            'folio' => $factura->folio,
+            'fecha' => optional($factura->fecha_emision)->format('Y-m-d'),
+            'fecha_formateada' => optional($factura->fecha_emision)->format('d/m/Y'),
+            'emisor_rfc' => $factura->empresa?->rfc,
+            'emisor_nombre' => $factura->empresa?->nombre,
+            'receptor_rfc' => $factura->receptor_rfc,
+            'receptor_nombre' => $factura->receptor_nombre,
+            'tipo_comprobante' => $factura->tipo_comprobante,
+            'subtotal' => (float) $factura->subtotal,
+            'total' => (float) $factura->total,
+            'moneda' => $factura->moneda ?? 'MXN',
+            'estado' => $factura->estado,
+        ]);
+
+    $cfdis = SatCfdi::query()
+        ->whereNotNull('uuid')
+        ->where('uuid', '!=', '')
+        ->when($clienteRfc, function ($query) use ($clienteRfc) {
+            $query->where(function ($subquery) use ($clienteRfc) {
+                $subquery
+                    ->where('receptor_rfc', $clienteRfc)
+                    ->orWhere('rfc_receptor', $clienteRfc);
+            });
+        })
+        ->when($empresaRfc, function ($query) use ($empresaRfc) {
+            $query->where(function ($subquery) use ($empresaRfc) {
+                $subquery
+                    ->where('rfc_emisor', $empresaRfc)
+                    ->orWhere('emisor_rfc', $empresaRfc);
+            });
+        })
+        ->when($q !== '', function ($query) use ($q) {
+            $query->where(function ($subquery) use ($q) {
+                $subquery
+                    ->where('uuid', 'like', "%{$q}%")
+                    ->orWhere('serie', 'like', "%{$q}%")
+                    ->orWhere('folio', 'like', "%{$q}%")
+                    ->orWhere('receptor_rfc', 'like', "%{$q}%")
+                    ->orWhere('receptor_nombre', 'like', "%{$q}%")
+                    ->orWhere('emisor_rfc', 'like', "%{$q}%")
+                    ->orWhere('emisor_nombre', 'like', "%{$q}%");
+            });
+        })
+        ->latest('fecha_emision')
+        ->limit(30)
+        ->get()
+        ->map(fn (SatCfdi $cfdi) => [
+            'source' => 'sat_cfdis',
+            'source_label' => 'SAT',
+            'id' => $cfdi->id,
+            'uuid' => $cfdi->uuid,
+            'serie' => $cfdi->serie,
+            'folio' => $cfdi->folio,
+            'fecha' => optional($cfdi->fecha_emision)->format('Y-m-d'),
+            'fecha_formateada' => optional($cfdi->fecha_emision)->format('d/m/Y'),
+            'emisor_rfc' => $cfdi->emisor_rfc ?: $cfdi->rfc_emisor,
+            'emisor_nombre' => $cfdi->emisor_nombre,
+            'receptor_rfc' => $cfdi->receptor_rfc ?: $cfdi->rfc_receptor,
+            'receptor_nombre' => $cfdi->receptor_nombre,
+            'tipo_comprobante' => $cfdi->tipo_comprobante,
+            'subtotal' => (float) $cfdi->subtotal,
+            'total' => (float) $cfdi->total,
+            'moneda' => $cfdi->moneda ?? 'MXN',
+            'estado' => null,
+        ]);
+
+    $items = $facturas
+        ->concat($cfdis)
+        ->filter(fn ($item) => !empty($item['uuid']))
+        ->unique(fn ($item) => strtoupper($item['uuid']))
+        ->sortByDesc(fn ($item) => $item['fecha'] ?? '')
+        ->take(30)
+        ->values();
+
+    return response()->json([
+        'ok' => true,
+        'data' => $items,
+    ]);
+}
+
+public function preview(Request $request, FacturapiService $facturapiService)
+{
+    $data = $request->validate([
+        'sat_empresa_id' => ['required', 'exists:sat_empresas,id'],
+        'cliente_id' => ['required', 'exists:clientes,id'],
+        'obra_id' => ['nullable', 'exists:obras,id'],
+
+        'uso_cfdi' => ['required', 'string', 'max:10'],
+        'metodo_pago' => ['required', 'string', 'max:10'],
+        'forma_pago' => ['nullable', 'string', 'max:10'],
+        'tipo_iva' => ['required', 'in:0.16,0.08,0,exento,sin_iva'],
+
+        'conceptos' => ['required', 'array', 'min:1'],
+        'conceptos.*.descripcion' => ['required', 'string', 'max:255'],
+        'conceptos.*.clave_producto_servicio' => ['required', 'string', 'max:20'],
+        'conceptos.*.clave_unidad' => ['required', 'string', 'max:20'],
+        'conceptos.*.unidad' => ['nullable', 'string', 'max:100'],
+        'conceptos.*.cantidad' => ['required', 'numeric', 'min:0.000001'],
+        'conceptos.*.precio_unitario' => ['required', 'numeric', 'min:0'],
+
+        'usar_relacion' => ['nullable'],
+        'relacion_tipo' => ['required_if:usar_relacion,1', 'nullable', 'string', 'max:2'],
+        'relacion_uuids' => ['required_if:usar_relacion,1', 'nullable', 'string'],
+
+        'usar_complemento_construccion' => ['nullable'],
+        'complemento_construccion' => ['nullable', 'array'],
+        'complemento_construccion.num_per_lico_aut' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:50'],
+        'complemento_construccion.calle' => ['nullable', 'string', 'max:255'],
+        'complemento_construccion.no_exterior' => ['nullable', 'string', 'max:50'],
+        'complemento_construccion.no_interior' => ['nullable', 'string', 'max:50'],
+        'complemento_construccion.colonia' => ['nullable', 'string', 'max:100'],
+        'complemento_construccion.localidad' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:100'],
+        'complemento_construccion.referencia' => ['nullable', 'string', 'max:255'],
+        'complemento_construccion.municipio' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:100'],
+        'complemento_construccion.estado' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:2'],
+        'complemento_construccion.codigo_postal' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:5'],
+    ]);
+
+    $cliente = Cliente::findOrFail($data['cliente_id']);
+
+    if (!$cliente->regimen_fiscal) {
+        throw new \RuntimeException('El cliente no tiene regimen fiscal configurado.');
+    }
+
+    if (!$cliente->codigo_postal) {
+        throw new \RuntimeException('El cliente no tiene codigo postal fiscal configurado.');
+    }
+
+    try {
+        $rfc = $this->normalizeRfc($cliente->rfc);
+
+        if (!$rfc) {
+            throw new \RuntimeException('El cliente no tiene RFC fiscal configurado.');
+        }
+
+        $payload = $this->buildFacturapiPreviewPayload($request, $data, $cliente, $rfc);
+        $pdf = $facturapiService->client()->Invoices->previewPdf($payload);
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="preview-factura-cfdi.pdf"',
+        ]);
+    } catch (FacturapiException $e) {
+        $rfc = isset($rfc) && $rfc ? " RFC enviado: {$rfc}." : '';
+
+        return back()
+            ->withInput()
+            ->with('error', 'Error al generar previsualizacion CFDI: ' . $e->getMessage() . $rfc);
+    } catch (\Throwable $e) {
+        return back()
+            ->withInput()
+            ->with('error', 'Error al generar previsualizacion CFDI: ' . $e->getMessage());
+    }
+}
+
+private function normalizeRfc(?string $rfc): string
+{
+    return preg_replace('/[^A-Z0-9&Ñ]/u', '', strtoupper(trim((string) $rfc))) ?? '';
+}
+
+private function buildFacturapiPreviewPayload(Request $request, array $data, Cliente $cliente, string $rfc): array
+{
+    $tipoIva = $data['tipo_iva'];
+    $ivaTasaNum = match (true) {
+        in_array($tipoIva, ['0.16', '0.08'], true) => (float) $tipoIva,
+        default => 0.0,
+    };
+
+    $items = [];
+
+    foreach ($data['conceptos'] as $concepto) {
+        $product = [
+            'description' => $concepto['descripcion'],
+            'product_key' => $concepto['clave_producto_servicio'],
+            'unit_key' => $concepto['clave_unidad'] ?: 'H87',
+            'unit_name' => $concepto['unidad'] ?: 'Pieza',
+            'price' => (float) $concepto['precio_unitario'],
+            'tax_included' => false,
+            'taxability' => $tipoIva === 'sin_iva' ? '01' : '02',
+        ];
+
+        $product['taxes'] = match (true) {
+            $tipoIva === 'exento' => [['type' => 'IVA', 'factor' => 'Exento']],
+            $tipoIva === '0' => [['type' => 'IVA', 'rate' => 0.0, 'factor' => 'Tasa']],
+            in_array($tipoIva, ['0.16', '0.08'], true) => [['type' => 'IVA', 'rate' => $ivaTasaNum]],
+            default => [],
+        };
+
+        $items[] = [
+            'quantity' => (float) $concepto['cantidad'],
+            'product' => $product,
+        ];
+    }
+
+    $payload = [
+        'customer' => [
+            'legal_name' => $cliente->razon_social ?: $cliente->nombre_comercial,
+            'tax_id' => $rfc,
+            'tax_system' => $cliente->regimen_fiscal,
+            'email' => $cliente->email ?: 'facturacion@example.com',
+            'address' => [
+                'zip' => $cliente->codigo_postal,
+            ],
+        ],
+        'items' => $items,
+        'payment_form' => $data['forma_pago'] ?? '03',
+        'payment_method' => $data['metodo_pago'],
+        'use' => $data['uso_cfdi'],
+    ];
+
+    if ($request->boolean('usar_relacion') && !empty($data['relacion_uuids'])) {
+        $uuids = array_values(array_filter(array_map('trim', explode(',', $data['relacion_uuids']))));
+
+        if ($uuids) {
+            $payload['related'] = [
+                [
+                    'relation' => $data['relacion_tipo'],
+                    'receipts' => $uuids,
+                ],
+            ];
+        }
+    }
+
+    if ($request->boolean('usar_complemento_construccion')) {
+        $cc = $request->input('complemento_construccion', []);
+        $escapeXml = fn ($value) => htmlspecialchars($value ?? '.', ENT_XML1 | ENT_QUOTES, 'UTF-8');
+
+        $payload['complements'] = [
+            [
+                'type' => 'custom',
+                'data' =>
+                    '<servicioparcial:parcialesconstruccion Version="1.0" NumPerLicoAut="'.$escapeXml($cc['num_per_lico_aut'] ?? '').'">' .
+                        '<servicioparcial:Inmueble ' .
+                            'Calle="'.$escapeXml(($cc['calle'] ?? null) ?: '.').'" ' .
+                            'NoExterior="'.$escapeXml(($cc['no_exterior'] ?? null) ?: '.').'" ' .
+                            'NoInterior="'.$escapeXml(($cc['no_interior'] ?? null) ?: '.').'" ' .
+                            'Colonia="'.$escapeXml(($cc['colonia'] ?? null) ?: '.').'" ' .
+                            'Localidad="'.$escapeXml(($cc['localidad'] ?? null) ?: '.').'" ' .
+                            'Referencia="'.$escapeXml(($cc['referencia'] ?? null) ?: '.').'" ' .
+                            'Municipio="'.$escapeXml(($cc['municipio'] ?? null) ?: '.').'" ' .
+                            'Estado="'.$escapeXml(($cc['estado'] ?? null) ?: '.').'" ' .
+                            'CodigoPostal="'.$escapeXml(($cc['codigo_postal'] ?? null) ?: '.').'" />' .
+                    '</servicioparcial:parcialesconstruccion>',
+            ],
+        ];
+
+        $payload['pdf_custom_section'] = '
+            <div>
+                <strong>Complemento Servicios Parciales de Construccion</strong>
+                <table style="width:100%; margin-top:8px; font-size:11px;">
+                    <tr><td><strong>Permiso / Licencia / Autorizacion:</strong></td><td>' . htmlspecialchars($cc['num_per_lico_aut'] ?? '', ENT_QUOTES) . '</td></tr>
+                    <tr><td><strong>Calle:</strong></td><td>' . htmlspecialchars($cc['calle'] ?? '', ENT_QUOTES) . '</td></tr>
+                    <tr><td><strong>C.P.:</strong></td><td>' . htmlspecialchars($cc['codigo_postal'] ?? '', ENT_QUOTES) . '</td></tr>
+                    <tr><td><strong>Municipio:</strong></td><td>' . htmlspecialchars($cc['municipio'] ?? '', ENT_QUOTES) . '</td></tr>
+                    <tr><td><strong>Estado:</strong></td><td>' . htmlspecialchars($cc['estado'] ?? '', ENT_QUOTES) . '</td></tr>
+                </table>
+            </div>
+        ';
+    }
+
+    return $payload;
 }
 
     /**

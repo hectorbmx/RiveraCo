@@ -52,7 +52,8 @@
     </div>
 
     <form method="POST"
-          action="{{ route('sat.facturacion.store') }}"  @submit="loadingTimbrar = true">
+          action="{{ route('sat.facturacion.store') }}"
+          @submit="if ($event.submitter?.dataset.action === 'timbrar') loadingTimbrar = true">
 
         @csrf
 
@@ -77,6 +78,7 @@
                             </label>
 
                             <select name="sat_empresa_id"
+                                    x-model="satEmpresaId"
                                     class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
 
                                 <option value="">
@@ -256,7 +258,7 @@
      </div>
       {{-- FACTURAS RELACIONADAS --}}
 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mt-6"
-     x-data="{ usarRelacion: false }">
+     >
 
     <div class="flex items-start justify-between gap-4">
         <div>
@@ -273,6 +275,7 @@
                    name="usar_relacion"
                    value="1"
                    x-model="usarRelacion"
+                   @change="if (usarRelacion) openRelacionModal(); else clearRelacionadas()"
                    class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
             Relacionar CFDI
         </label>
@@ -298,11 +301,29 @@
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-slate-700">UUIDs Relacionados</label>
-            <input type="text" name="relacion_uuids"
-                   value="{{ old('relacion_uuids') }}"
-                   placeholder="Ej. 12345678-1234-... (separar con comas)"
-                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            <label class="block text-sm font-medium text-slate-700">Facturas seleccionadas</label>
+            <input type="hidden" name="relacion_uuids" :value="selectedRelacionUuids().join(',')">
+
+            <div class="mt-1 rounded-xl border border-slate-200 bg-slate-50 p-3 min-h-[46px]">
+                <div x-show="selectedRelacionadas.length === 0" class="text-sm text-slate-500">
+                    Sin facturas relacionadas.
+                </div>
+
+                <div x-show="selectedRelacionadas.length > 0" class="flex flex-wrap gap-2">
+                    <template x-for="factura in selectedRelacionadas" :key="factura.uuid">
+                        <span class="inline-flex items-center gap-2 rounded-full bg-white border border-slate-200 px-3 py-1 text-xs text-slate-700">
+                            <span class="font-mono" x-text="shortUuid(factura.uuid)"></span>
+                            <button type="button" @click="removeRelacionada(factura.uuid)" class="font-semibold text-slate-400 hover:text-red-600">x</button>
+                        </span>
+                    </template>
+                </div>
+            </div>
+
+            <button type="button"
+                    @click="openRelacionModal()"
+                    class="mt-3 inline-flex items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100">
+                Buscar facturas
+            </button>
         </div>
     </div>
 </div>
@@ -563,9 +584,19 @@
 
                     </div>
 
+                    <button type="submit"
+                            formaction="{{ route('sat.facturacion.preview') }}"
+                            formmethod="POST"
+                            formtarget="_blank"
+                            :disabled="loadingTimbrar"
+                            class="w-full mt-6 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Previsualizar PDF
+                    </button>
+
                       <button type="submit"
+        data-action="timbrar"
         :disabled="loadingTimbrar"
-        class="w-full mt-6 inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        class="w-full mt-3 inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
 
     <span x-show="!loadingTimbrar">
         Timbrar CFDI
@@ -680,6 +711,131 @@
 
     </div>
     
+</div>
+
+{{-- MODAL FACTURAS RELACIONADAS --}}
+<div x-show="openRelacion"
+     x-cloak
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+
+    <div @click.away="closeRelacionModal()"
+         class="w-full max-w-5xl rounded-2xl bg-white shadow-xl border border-slate-200">
+
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">
+                    Seleccionar facturas relacionadas
+                </h2>
+                <p class="text-sm text-slate-500">
+                    Busca CFDI emitidos desde Facturapi o descargados del SAT.
+                </p>
+            </div>
+
+            <button type="button"
+                    @click="closeRelacionModal()"
+                    class="text-slate-400 hover:text-slate-600">
+                x
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <div class="flex flex-col md:flex-row gap-3">
+                <input type="text"
+                       x-model="relacionSearch"
+                       @input.debounce.350ms="fetchRelacionables()"
+                       placeholder="Buscar por UUID, RFC, cliente, serie, folio..."
+                       class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+
+                <button type="button"
+                        @click="fetchRelacionables()"
+                        class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+                    Buscar
+                </button>
+            </div>
+
+            <div class="min-h-[260px] max-h-[430px] overflow-y-auto border border-slate-200 rounded-xl">
+                <div x-show="relacionLoading" class="px-4 py-6 text-sm text-slate-500">
+                    Buscando facturas...
+                </div>
+
+                <div x-show="!relacionLoading && relacionResults.length === 0" class="px-4 py-6 text-sm text-slate-500">
+                    Sin facturas disponibles para relacionar.
+                </div>
+
+                <table x-show="!relacionLoading && relacionResults.length > 0" class="w-full text-sm">
+                    <thead class="bg-slate-50 sticky top-0">
+                        <tr class="text-xs uppercase text-slate-500">
+                            <th class="px-4 py-3 text-left">Factura</th>
+                            <th class="px-4 py-3 text-left">Receptor</th>
+                            <th class="px-4 py-3 text-left">UUID</th>
+                            <th class="px-4 py-3 text-right">Total</th>
+                            <th class="px-4 py-3 text-right">Accion</th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="divide-y divide-slate-100">
+                        <template x-for="factura in relacionResults" :key="`${factura.source}-${factura.id}`">
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-4 py-3">
+                                    <div class="font-medium text-slate-900">
+                                        <span x-text="factura.serie || 'S/S'"></span>-<span x-text="factura.folio || factura.id"></span>
+                                    </div>
+                                    <div class="text-xs text-slate-500">
+                                        <span x-text="factura.fecha_formateada || factura.fecha || '-'"></span>
+                                        <span class="mx-1">/</span>
+                                        <span x-text="factura.source_label"></span>
+                                    </div>
+                                </td>
+
+                                <td class="px-4 py-3">
+                                    <div class="font-medium text-slate-900" x-text="factura.receptor_nombre || '-'"></div>
+                                    <div class="text-xs text-slate-500" x-text="factura.receptor_rfc || '-'"></div>
+                                </td>
+
+                                <td class="px-4 py-3">
+                                    <div class="font-mono text-xs text-slate-600 break-all" x-text="factura.uuid"></div>
+                                </td>
+
+                                <td class="px-4 py-3 text-right">
+                                    <div class="font-semibold text-slate-900" x-text="money(factura.total || 0)"></div>
+                                    <div class="text-xs text-slate-500" x-text="factura.moneda || 'MXN'"></div>
+                                </td>
+
+                                <td class="px-4 py-3 text-right">
+                                    <button type="button"
+                                            @click="toggleRelacionada(factura)"
+                                            class="rounded-lg px-3 py-1.5 text-xs font-semibold"
+                                            :class="isRelacionada(factura.uuid) ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-indigo-600 text-white hover:bg-indigo-700'">
+                                        <span x-text="isRelacionada(factura.uuid) ? 'Seleccionada' : 'Seleccionar'"></span>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex items-center justify-between gap-4">
+                <div class="text-sm text-slate-500">
+                    <span x-text="selectedRelacionadas.length"></span>
+                    factura(s) seleccionada(s)
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button type="button"
+                            @click="clearRelacionadas()"
+                            class="rounded-xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                        Limpiar
+                    </button>
+                    <button type="button"
+                            @click="closeRelacionModal()"
+                            class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+                        Usar seleccionadas
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 {{-- MODAL EDITAR DESCRIPCION --}}
@@ -801,6 +957,7 @@ function facturaForm() {
         openConceptos: false,
         searchConcepto: '',
         loadingTimbrar: false,
+        satEmpresaId: @json((string) old('sat_empresa_id', '')),
         clienteId: @json((string) old('cliente_id', '')),
         clienteSearch: '',
         clienteOpen: false,
@@ -812,6 +969,14 @@ function facturaForm() {
         catalogoConceptos: @json($conceptos),
 
         conceptosSeleccionados: [],
+        usarRelacion: @json((bool) old('usar_relacion')),
+        openRelacion: false,
+        relacionSearch: '',
+        relacionLoading: false,
+        relacionResults: [],
+        selectedRelacionadas: [],
+        relacionablesUrl: @json(route('sat.facturacion.relacionables')),
+        oldRelacionUuids: @json(old('relacion_uuids', '')),
 
         openEditDesc: false,
         descToEditIndex: null,
@@ -828,6 +993,17 @@ function facturaForm() {
             if (obra) {
                 this.obraSearch = obra.nombre;
             }
+
+            this.selectedRelacionadas = String(this.oldRelacionUuids || '')
+                .split(',')
+                .map((uuid) => uuid.trim())
+                .filter(Boolean)
+                .map((uuid) => ({
+                    uuid,
+                    source: 'old',
+                    source_label: 'Seleccionada',
+                    total: 0,
+                }));
         },
 
         clientesFiltrados() {
@@ -846,6 +1022,10 @@ function facturaForm() {
             this.clienteId = cliente.id;
             this.clienteSearch = `${cliente.nombre} - ${cliente.rfc}`;
             this.clienteOpen = false;
+
+            if (this.openRelacion) {
+                this.fetchRelacionables();
+            }
         },
 
         obrasFiltradas() {
@@ -870,6 +1050,88 @@ function facturaForm() {
             this.obraId = '';
             this.obraSearch = '';
             this.obraOpen = false;
+        },
+
+        openRelacionModal() {
+            this.usarRelacion = true;
+            this.openRelacion = true;
+            this.fetchRelacionables();
+        },
+
+        closeRelacionModal() {
+            this.openRelacion = false;
+        },
+
+        selectedRelacionUuids() {
+            return this.selectedRelacionadas
+                .map((factura) => String(factura.uuid || '').trim())
+                .filter(Boolean);
+        },
+
+        isRelacionada(uuid) {
+            const normalized = String(uuid || '').toUpperCase();
+            return this.selectedRelacionadas.some((factura) => String(factura.uuid || '').toUpperCase() === normalized);
+        },
+
+        toggleRelacionada(factura) {
+            if (this.isRelacionada(factura.uuid)) {
+                this.removeRelacionada(factura.uuid);
+                return;
+            }
+
+            this.selectedRelacionadas.push(factura);
+        },
+
+        removeRelacionada(uuid) {
+            const normalized = String(uuid || '').toUpperCase();
+            this.selectedRelacionadas = this.selectedRelacionadas
+                .filter((factura) => String(factura.uuid || '').toUpperCase() !== normalized);
+        },
+
+        clearRelacionadas() {
+            this.selectedRelacionadas = [];
+        },
+
+        shortUuid(uuid) {
+            const value = String(uuid || '');
+            return value.length > 16 ? `...${value.slice(-12)}` : value;
+        },
+
+        async fetchRelacionables() {
+            this.relacionLoading = true;
+
+            const params = new URLSearchParams();
+
+            if (this.relacionSearch.trim()) {
+                params.set('q', this.relacionSearch.trim());
+            }
+
+            if (this.clienteId) {
+                params.set('cliente_id', this.clienteId);
+            }
+
+            if (this.satEmpresaId) {
+                params.set('sat_empresa_id', this.satEmpresaId);
+            }
+
+            try {
+                const response = await fetch(`${this.relacionablesUrl}?${params.toString()}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error('No se pudieron cargar las facturas.');
+                }
+
+                const payload = await response.json();
+                this.relacionResults = payload.data || [];
+            } catch (error) {
+                this.relacionResults = [];
+            } finally {
+                this.relacionLoading = false;
+            }
         },
 
         conceptosFiltrados() {
