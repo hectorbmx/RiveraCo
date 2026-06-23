@@ -61,6 +61,7 @@
                                 'reglas'    => ['label' => 'Reglas', 'desc' => 'Políticas y flujos'],
                                 'alertas'   => ['label' => 'Alertas', 'desc' => 'Notificaciones y avisos'],
                                 'areas'   => ['label' => 'Areas', 'desc' => 'Areas de la empresa'],
+                                'folios'   => ['label' => 'Folios', 'desc' => 'Consecutivos de obras'],
                             ];
                              if (auth()->check() && auth()->user()->hasAnyRole(['admin','super-admin'])) {
                                 $tabs['roles']    = ['label' => 'Roles', 'desc' => 'Perfiles de acceso'];
@@ -1119,6 +1120,101 @@
 
             </div>
         </div>
+         {{-- ======================
+     FOLIOS DE OBRA
+======================= --}}
+<div x-show="tab === 'folios'" x-cloak class="space-y-6">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900">Folios de obra</h2>
+            <p class="text-sm text-gray-600">Controla el siguiente consecutivo para Pilas y Pozos.</p>
+        </div>
+
+        <form method="GET" action="{{ route('empresa_config.edit') }}" class="flex items-end gap-2">
+            <input type="hidden" name="tab" value="folios">
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">Año</label>
+                <input type="number"
+                       name="folio_anio"
+                       min="2020"
+                       max="2100"
+                       value="{{ $anioFoliosObra }}"
+                       class="w-28 rounded-xl border-slate-300 text-sm focus:border-slate-500 focus:ring-0">
+            </div>
+            <button class="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm hover:bg-slate-800">
+                Consultar
+            </button>
+        </form>
+    </div>
+
+    <div class="bg-white border rounded-2xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-slate-50 text-slate-600">
+                    <tr>
+                        <th class="text-left font-semibold px-4 py-3">Tipo</th>
+                        <th class="text-left font-semibold px-4 py-3">Prefijo</th>
+                        <th class="text-left font-semibold px-4 py-3">Último usado</th>
+                        <th class="text-left font-semibold px-4 py-3">Siguiente folio</th>
+                        <th class="text-left font-semibold px-4 py-3">Mínimo permitido</th>
+                        <th class="text-right font-semibold px-4 py-3">Acción</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                @forelse($foliosObra as $folio)
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3 font-medium text-slate-900">
+                            {{ ucfirst(strtolower($folio->tipo_obra)) }}
+                        </td>
+                        <td class="px-4 py-3 font-mono text-xs text-slate-700">
+                            {{ $folio->prefijo }}-{{ $folio->anio }}
+                        </td>
+                        <td class="px-4 py-3">
+                            <form id="folio-obra-{{ $folio->id }}"
+                                  method="POST"
+                                  action="{{ route('empresa_config.folios-obra.update', $folio) }}"
+                                  class="flex items-center gap-2">
+                                @csrf
+                                @method('PATCH')
+                                <input type="number"
+                                       name="ultimo_consecutivo"
+                                       min="{{ $folio->minimo_consecutivo }}"
+                                       max="999999"
+                                       value="{{ old('ultimo_consecutivo', $folio->ultimo_consecutivo) }}"
+                                       class="w-28 rounded-xl border-slate-300 text-sm focus:border-slate-500 focus:ring-0">
+                            </form>
+                        </td>
+                        <td class="px-4 py-3 font-mono text-slate-900">
+                            {{ $folio->siguiente_folio }}
+                        </td>
+                        <td class="px-4 py-3 text-slate-600">
+                            {{ $folio->minimo_consecutivo }}
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <button type="submit"
+                                    form="folio-obra-{{ $folio->id }}"
+                                    class="px-3 py-1.5 rounded-lg text-xs bg-slate-900 text-white hover:bg-slate-800">
+                                Guardar
+                            </button>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" class="px-4 py-10 text-center text-slate-500">
+                            No hay folios configurados para este año.
+                        </td>
+                    </tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        El valor editable es el último consecutivo usado. El siguiente folio se genera sumando uno.
+    </div>
+</div>
+
          {{-- ======================
      AREAS
 ======================= --}}

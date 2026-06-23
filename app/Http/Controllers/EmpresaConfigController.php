@@ -19,10 +19,16 @@ use App\Models\Empleado;
 use App\Models\EquipoComputo;
 use App\Models\CentroCosto;
 use App\Models\TipoIva;
+use App\Models\Obra;
+use App\Models\ObraFolio;
 use App\Services\Maquinas\PreventivoMaquinaService;
 
 class EmpresaConfigController extends Controller
 {
+private const TIPOS_OBRA_FOLIO = [
+    'PILAS' => 'PI',
+    'POZOS' => 'PO',
+];
 
 public function index(){
       $areas = Area::orderBy('codigo')->orderBy('nombre')->get();
@@ -94,6 +100,28 @@ public function index(){
             ->orderByDesc('activo')
             ->orderBy('porcentaje')
             ->get();
+
+        $anioFoliosObra = (int) request()->integer('folio_anio', now('America/Mexico_City')->year);
+        foreach (self::TIPOS_OBRA_FOLIO as $tipoObra => $prefijo) {
+            ObraFolio::firstOrCreate(
+                ['tipo_obra' => $tipoObra, 'anio' => $anioFoliosObra],
+                [
+                    'prefijo' => $prefijo,
+                    'ultimo_consecutivo' => $this->ultimoConsecutivoObraExistente($prefijo, $anioFoliosObra),
+                ]
+            );
+        }
+
+        $foliosObra = ObraFolio::query()
+            ->where('anio', $anioFoliosObra)
+            ->orderBy('tipo_obra')
+            ->get()
+            ->map(function (ObraFolio $folio) {
+                $folio->minimo_consecutivo = $this->ultimoConsecutivoObraExistente($folio->prefijo, $folio->anio);
+                $folio->siguiente_folio = $this->formatearFolioObra($folio->prefijo, $folio->anio, $folio->ultimo_consecutivo + 1);
+
+                return $folio;
+            });
         
         // $Catrol = CatalogoRol::orderBy('id')->orderBy('nombre')->get();
 
@@ -164,6 +192,8 @@ public function index(){
         'empleadosResponsables',
         'centrosCosto',
         'tiposIva',
+        'foliosObra',
+        'anioFoliosObra',
         'preventivosMaquinaria',
     ));
 }
@@ -227,6 +257,50 @@ public function index(){
 
     return back()->with('error', 'Sección de configuración inválida.');
 }
+public function updateFolioObra(Request $request, ObraFolio $folio)
+{
+    $data = $request->validate([
+        'ultimo_consecutivo' => ['required', 'integer', 'min:0', 'max:999999'],
+    ]);
+
+    $minimo = $this->ultimoConsecutivoObraExistente($folio->prefijo, $folio->anio);
+
+    if ((int) $data['ultimo_consecutivo'] < $minimo) {
+        return back()
+            ->withErrors([
+                'ultimo_consecutivo' => "El consecutivo no puede ser menor a {$minimo}; ya existen obras con ese folio.",
+            ])
+            ->withInput();
+    }
+
+    $folio->update([
+        'ultimo_consecutivo' => (int) $data['ultimo_consecutivo'],
+    ]);
+
+    return redirect()
+        ->route('empresa_config.edit', ['tab' => 'folios', 'folio_anio' => $folio->anio])
+        ->with('success', 'Consecutivo de obra actualizado.');
+}
+
+private function ultimoConsecutivoObraExistente(string $prefijo, int $anio): int
+{
+    return Obra::where('clave_obra', 'like', "{$prefijo}-{$anio}-%")
+        ->pluck('clave_obra')
+        ->map(function ($clave) use ($prefijo, $anio) {
+            if (preg_match('/^' . preg_quote($prefijo, '/') . '-' . $anio . '-(\d+)$/', $clave, $matches)) {
+                return (int) $matches[1];
+            }
+
+            return 0;
+        })
+        ->max() ?? 0;
+}
+
+private function formatearFolioObra(string $prefijo, int $anio, int $consecutivo): string
+{
+    return "{$prefijo}-{$anio}-{$consecutivo}";
+}
+
 public function storeCuentaBanco(Request $request)
 {
     $data = $request->validate([

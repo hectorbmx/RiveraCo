@@ -210,7 +210,7 @@
             </div>
             <div class="right-lines">
                 <div class="line-value">{{ now('America/Mexico_City')->format('d/m/Y') }}</div>
-                <div class="line-value">{{ mb_strtoupper($obra->responsable->name ?? $generadoPor ?: '') }}</div>
+                <div class="line-value">{{ mb_strtoupper($obra->responsable->nombre_completo ?? $generadoPor ?: '') }}</div>
             </div>
         </div>
     </header>
@@ -297,7 +297,7 @@
         </div>
         <div class="signature-line">
             REVISO<br>
-            {{ mb_strtoupper($obra->responsable->name ?? ' ') }}
+            {{ mb_strtoupper($obra->responsable->nombre_completo ?? ' ') }}
         </div>
     </section>
 </div>

@@ -27,11 +27,13 @@ use App\Models\Presupuesto;
 use App\Models\ObraPila;
 use App\Models\CatalogoPila;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use App\Models\ObraMaquinaRegistro;
 use App\Models\CatalogoActividadComision;
 use App\Models\ObraAsistencia;
 use Carbon\Carbon;
 use App\Models\OrdenCompra;
+use App\Models\ObraFolio;
 
 
 
@@ -39,6 +41,11 @@ use App\Models\OrdenCompra;
 
 class ObraController extends Controller
 {
+    private const TIPOS_OBRA_FOLIO = [
+        'PILAS' => 'PI',
+        'POZOS' => 'PO',
+    ];
+
     public function index(Request $request)
     {
         $search = $request->query('search');
@@ -78,9 +85,27 @@ class ObraController extends Controller
     public function create()
     {
         $clientes = Cliente::orderBy('nombre_comercial')->get();
-        $responsables = User::orderBy('name')->get(); // luego podemos filtrar por rol "jefe-obra"
+        $responsables = Empleado::where('Estatus', 1)
+            ->orderBy('Nombre')
+            ->orderBy('Apellidos')
+            ->get();
 
         return view('obras.create', compact('clientes', 'responsables'));
+    }
+
+    public function folioSiguiente(Request $request)
+    {
+        $data = $request->validate([
+            'tipo_obra' => ['required', 'string', 'in:PILAS,POZOS'],
+        ]);
+
+        $anio = (int) Carbon::now('America/Mexico_City')->format('Y');
+        $folio = $this->folioPreview($data['tipo_obra'], $anio);
+
+        return response()->json([
+            'folio' => $folio,
+            'anio' => $anio,
+        ]);
     }
 
     public function store(Request $request)
@@ -88,9 +113,9 @@ class ObraController extends Controller
     $data = $request->validate([
         'cliente_id'               => ['required', 'exists:clientes,id'],
         'nombre'                   => ['required', 'string', 'max:255'],
-        'clave_obra'               => ['required', 'string', 'max:100', 'unique:obras,clave_obra'],
+        'clave_obra'               => ['nullable', 'string', 'max:100'],
         'descripcion'              => ['nullable', 'string'],
-        'tipo_obra'                => ['nullable', 'string', 'max:100'],
+        'tipo_obra'                => ['nullable', 'string', 'in:PILAS,POZOS'],
         'estatus_nuevo'            => ['required', 'numeric', 'in:1,2,3,4,5'],
         'fecha_inicio_programada'  => ['nullable', 'date'],
         'fecha_inicio_real'        => ['nullable', 'date'],
@@ -98,7 +123,7 @@ class ObraController extends Controller
         'fecha_fin_real'           => ['nullable', 'date'],
         'monto_contratado'         => ['nullable', 'numeric'],
         'monto_modificado'         => ['nullable', 'numeric'],
-        'responsable_id'           => ['nullable', 'exists:users,id'],
+        'responsable_id'           => ['nullable', 'exists:empleados,id_Empleado'],
         'ubicacion'                => ['nullable', 'string', 'max:255'],
         'profundidad_total'        => ['nullable', 'numeric', 'min:0'],
         'kg_acero_total'           => ['nullable', 'numeric', 'min:0'],
@@ -106,10 +131,100 @@ class ObraController extends Controller
         'concreto_total'           => ['nullable', 'numeric', 'min:0'],
     ]);
 
-    $obra = Obra::create($data);
+    $obra = DB::transaction(function () use ($data) {
+        $data['clave_obra'] = $this->resolverClaveObra($data['tipo_obra'] ?? null, $data['clave_obra'] ?? null);
+
+        if ($data['clave_obra'] === '' || Obra::where('clave_obra', $data['clave_obra'])->exists()) {
+            throw ValidationException::withMessages([
+                'clave_obra' => 'No se pudo generar una clave de obra disponible.',
+            ]);
+        }
+
+        return Obra::create($data);
+    });
 
     return redirect()->route('obras.edit', $obra)
         ->with('success', 'Obra creada correctamente.');
+}
+
+private function resolverClaveObra(?string $tipoObra, ?string $claveActual): string
+{
+    $tipoObra = $tipoObra ? strtoupper($tipoObra) : null;
+    $claveActual = trim((string) $claveActual);
+
+    if (!$tipoObra || !isset(self::TIPOS_OBRA_FOLIO[$tipoObra])) {
+        return $claveActual;
+    }
+
+    $anio = (int) Carbon::now('America/Mexico_City')->format('Y');
+    $prefijo = self::TIPOS_OBRA_FOLIO[$tipoObra];
+    $patronAuto = '/^' . preg_quote($prefijo, '/') . '-' . $anio . '-\d+$/';
+
+    if ($claveActual !== '' && !preg_match($patronAuto, $claveActual)) {
+        return $claveActual;
+    }
+
+    return $this->reservarFolio($tipoObra, $anio);
+}
+
+private function folioPreview(string $tipoObra, int $anio): string
+{
+    $folio = $this->folioBase($tipoObra, $anio);
+
+    return $this->formatearFolio($folio->prefijo, $folio->anio, $folio->ultimo_consecutivo + 1);
+}
+
+private function reservarFolio(string $tipoObra, int $anio): string
+{
+    $folio = $this->folioBase($tipoObra, $anio, true);
+    $folio->ultimo_consecutivo++;
+    $folio->save();
+
+    return $this->formatearFolio($folio->prefijo, $folio->anio, $folio->ultimo_consecutivo);
+}
+
+private function folioBase(string $tipoObra, int $anio, bool $lock = false): ObraFolio
+{
+    $tipoObra = strtoupper($tipoObra);
+    $prefijo = self::TIPOS_OBRA_FOLIO[$tipoObra];
+
+    $query = ObraFolio::where('tipo_obra', $tipoObra)->where('anio', $anio);
+
+    if ($lock) {
+        $query->lockForUpdate();
+    }
+
+    $folio = $query->first();
+
+    if ($folio) {
+        return $folio;
+    }
+
+    return ObraFolio::create([
+        'tipo_obra' => $tipoObra,
+        'prefijo' => $prefijo,
+        'anio' => $anio,
+        'ultimo_consecutivo' => $this->ultimoConsecutivoExistente($prefijo, $anio),
+    ]);
+}
+
+private function ultimoConsecutivoExistente(string $prefijo, int $anio): int
+{
+    return Obra::where('clave_obra', 'like', "{$prefijo}-{$anio}-%")
+        ->pluck('clave_obra')
+        ->map(function ($clave) use ($prefijo, $anio) {
+            if (preg_match('/^' . preg_quote($prefijo, '/') . '-' . $anio . '-(\d+)$/', $clave, $matches)) {
+                return (int) $matches[1];
+            }
+
+            return 0;
+        })
+        ->max() ?? 0;
+}
+
+private function formatearFolio(string $prefijo, int $anio, int $consecutivo): string
+{
+    return "{$prefijo}-{$anio}-{$consecutivo}";
 }
 
 
@@ -118,7 +233,10 @@ public function edit(Request $request, Obra $obra)
 
     $roles = \DB::table('catalogo_roles')->orderBy('nombre')->get();
     $clientes     = Cliente::orderBy('nombre_comercial')->get();
-    $responsables = User::orderBy('name')->get();
+    $responsables = Empleado::where('Estatus', 1)
+        ->orderBy('Nombre')
+        ->orderBy('Apellidos')
+        ->get();
 
     $desde =$request->query('asist_desde');
     $hasta =$request->query('asist_hasta');
@@ -988,7 +1106,7 @@ public function reporteAsistencias(Request $request, Obra $obra)
         'fecha_fin_real'           => ['nullable', 'date'],
         'monto_contratado'         => ['nullable', 'numeric'],
         'monto_modificado'         => ['nullable', 'numeric'],
-        'responsable_id'           => ['nullable', 'exists:users,id'],
+        'responsable_id'           => ['nullable', 'exists:empleados,id_Empleado'],
         'ubicacion'                => ['nullable', 'string', 'max:255'],
         'profundidad_total'        => ['nullable', 'numeric', 'min:0'],
         'kg_acero_total'           => ['nullable', 'numeric', 'min:0'],

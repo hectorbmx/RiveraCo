@@ -62,10 +62,10 @@ class Obra extends Model
         return $this->belongsTo(Cliente::class);
     }
 
-    // Relación con User (responsable)
+    // Relación con Empleado (responsable)
     public function responsable()
     {
-        return $this->belongsTo(User::class, 'responsable_id');
+        return $this->belongsTo(Empleado::class, 'responsable_id', 'id_Empleado');
     }
     public function contratos()
     {

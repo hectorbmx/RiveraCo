@@ -368,6 +368,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::post('/configuracion-empresa/tipos-iva', [EmpresaConfigController::class, 'storeTipoIva'])->name('empresa_config.tipos-iva.store');
     Route::patch('/configuracion-empresa/tipos-iva/{tipoIva}/toggle-activo', [EmpresaConfigController::class, 'toggleTipoIva'])->name('empresa_config.tipos-iva.toggle-activo');
     Route::patch('/configuracion-empresa/tipos-iva/{tipoIva}/default', [EmpresaConfigController::class, 'marcarTipoIvaDefault'])->name('empresa_config.tipos-iva.default');
+    Route::patch('/configuracion-empresa/folios-obra/{folio}', [EmpresaConfigController::class, 'updateFolioObra'])->name('empresa_config.folios-obra.update');
 
         Route::get('/configuracion-empresa/equipos-computo/buscar-facturas', [EquipoComputoController::class, 'buscarFacturas'])->name('empresa_config.equipos-computo.buscar-facturas');
         Route::get('/configuracion-empresa/equipos-computo/fotos/{foto}', [EquipoComputoController::class, 'verFoto'])->name('empresa_config.equipos-computo.fotos.show');
@@ -470,6 +471,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('clientes/check-duplicate', [ClienteController::class, 'checkDuplicate'])->name('clientes.checkDuplicate');
     Route::resource('clientes', ClienteController::class)->except(['show']);
+    Route::get('obras/folio-siguiente', [ObraController::class, 'folioSiguiente'])->name('obras.folio-siguiente');
     Route::resource('obras', ObraController::class)->except(['show']);
     Route::get('obras/{obra}/asistencias/reporte', [ObraController::class, 'reporteAsistencias'])
         ->name('obras.asistencias.reporte');

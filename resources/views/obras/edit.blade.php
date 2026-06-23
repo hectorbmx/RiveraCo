@@ -167,9 +167,9 @@
                                 class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
                                        focus:border-[#FFC107] focus:ring-[#FFC107]">
                             <option value="">-- Sin asignar --</option>
-                            @foreach($responsables as $user)
-                                <option value="{{ $user->id }}" @selected(old('responsable_id', $obra->responsable_id) == $user->id)>
-                                    {{ $user->name }}
+                            @foreach($responsables as $empleado)
+                                <option value="{{ $empleado->id_Empleado }}" @selected(old('responsable_id', $obra->responsable_id) == $empleado->id_Empleado)>
+                                    {{ $empleado->nombre_completo }}
                                 </option>
                             @endforeach
                         </select>
@@ -587,9 +587,9 @@
                     <select id="responsable_id" name="responsable_id"
                             class="block w-full rounded-xl border-slate-200 bg-white text-sm shadow-sm transition duration-150 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10">
                         <option value="">-- Sin asignar --</option>
-                        @foreach($responsables as $user)
-                            <option value="{{ $user->id }}" @selected(old('responsable_id', $obra->responsable_id) == $user->id)>
-                                {{ $user->name }}
+                        @foreach($responsables as $empleado)
+                            <option value="{{ $empleado->id_Empleado }}" @selected(old('responsable_id', $obra->responsable_id) == $empleado->id_Empleado)>
+                                {{ $empleado->nombre_completo }}
                             </option>
                         @endforeach
                     </select>

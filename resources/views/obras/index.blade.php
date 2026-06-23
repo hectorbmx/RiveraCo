@@ -135,7 +135,7 @@
                         </td>
 
                         <td class="py-3 px-2">
-                            {{ $obra->responsable->name ?? '-' }}
+                            {{ $obra->responsable->nombre_completo ?? '-' }}
                         </td>
 
                         <td class="py-3 px-2 text-right space-x-2">
