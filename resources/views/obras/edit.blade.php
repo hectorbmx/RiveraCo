@@ -4077,20 +4077,30 @@ function relacionFacturasModal() {
 @if ($tab === 'facturacion')
     <h2 class="text-lg font-semibold mb-4">Facturación de la obra</h2>
 
-    <div class="bg-white border rounded-xl p-4 shadow-sm space-y-6" id="facturacion-tab">
+    <div x-data="relacionFacturasObra(@js($facturasDisponiblesRelacionar))"
+         class="bg-white border rounded-xl p-4 shadow-sm space-y-6" id="facturacion-tab">
 
         {{-- Encabezado y botón --}}
         <div class="flex justify-between items-center">
             <h3 class="text-sm font-semibold text-slate-700">
-                Facturas registradas
+                Facturas ligadas a la obra
             </h3>
 
-            <button type="button"
-                    id="btn-toggle-factura-form"
-                    class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg
-                           bg-[#0B265A] text-white shadow-sm hover:bg-[#0d3278] transition">
-                + Registrar nueva factura
-            </button>
+            <div class="flex items-center gap-2">
+                <button type="button"
+                        @click="openModal()"
+                        class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg
+                               bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition">
+                    + Relacionar facturas
+                </button>
+
+                <button type="button"
+                        id="btn-toggle-factura-form"
+                        class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg
+                               border border-slate-200 text-slate-600 hover:bg-slate-50 transition">
+                    Registro manual
+                </button>
+            </div>
         </div>
         @php
         $fmtTotalFacturado = '$' . number_format($totalFacturado, 2);
@@ -4129,120 +4139,175 @@ function relacionFacturasModal() {
 
 
        {{-- Tabla de facturas --}}
-@if($facturas->isEmpty())
+@if($facturasSatObra->isEmpty())
     <div class="border border-dashed border-slate-200 rounded-lg p-4 text-sm text-slate-500">
-        No hay facturas registradas para esta obra.
+        No hay facturas ligadas a esta obra.
     </div>
 @else
     <div class="border border-slate-200 rounded-lg overflow-hidden">
         <table class="min-w-full text-sm">
             <thead class="bg-slate-50 text-xs font-semibold text-slate-600">
                 <tr>
-                    <th class="px-3 py-2 text-left">Fecha factura</th>
-                    <th class="px-3 py-2 text-left">Fecha pago</th>
+                    <th class="px-3 py-2 text-left">Fecha</th>
+                    <th class="px-3 py-2 text-left">Factura</th>
+                    <th class="px-3 py-2 text-left">Receptor</th>
+                    <th class="px-3 py-2 text-left">UUID</th>
                     <th class="px-3 py-2 text-right">Monto</th>
-                    <th class="px-3 py-2 text-right">Estado</th>
                     <th class="px-3 py-2 text-center">PDF</th>
-                    <th class="px-3 py-2 text-center">Acciones</th>
                 </tr>
             </thead>
-           <tbody class="divide-y divide-slate-100">
-                @foreach($facturas as $factura)
+            <tbody class="divide-y divide-slate-100">
+                @foreach($facturasSatObra as $factura)
                     <tr>
                         <td class="px-3 py-2">
-                            {{ optional($factura->fecha_factura)->format('d/m/Y') }}
+                            {{ $factura['fecha_formateada'] ?? ($factura['fecha_emision'] ?? '-') }}
                         </td>
                         <td class="px-3 py-2">
-                            {{ $factura->fecha_pago ? $factura->fecha_pago->format('d/m/Y') : '—' }}
+                            <div class="font-semibold text-slate-800">
+                                {{ $factura['serie'] ?: 'S/S' }}-{{ $factura['folio'] ?: $factura['id'] }}
+                            </div>
+                            <span class="inline-flex mt-1 rounded-full px-2 py-0.5 text-[10px] font-semibold
+                                {{ $factura['source'] === 'sat_facturas'
+                                    ? 'bg-blue-50 text-blue-700 border border-blue-100'
+                                    : 'bg-slate-100 text-slate-700 border border-slate-200' }}">
+                                {{ $factura['source_label'] }}
+                            </span>
+                        </td>
+                        <td class="px-3 py-2">
+                            <div class="text-slate-800">{{ $factura['receptor_nombre'] ?: '-' }}</div>
+                            <div class="text-xs text-slate-500">{{ $factura['receptor_rfc'] ?: '-' }}</div>
+                        </td>
+                        <td class="px-3 py-2">
+                            <span class="font-mono text-xs break-all">{{ $factura['uuid'] }}</span>
                         </td>
                         <td class="px-3 py-2 text-right">
-                            $ {{ number_format($factura->monto, 2) }}
+                            $ {{ number_format($factura['total'], 2) }}
                         </td>
-
-                        {{-- NUEVO: Estado --}}
-                       <td class="px-3 py-2 text-center">
-                            @if($factura->estado === 'pagada')
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold
-                                            bg-emerald-100 text-emerald-800">
-                                    Pagada
-                                </span>
-                            @elseif($factura->estado === 'pendiente')
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold
-                                            bg-amber-100 text-amber-800">
-                                    Pendiente
-                                </span>
-                            @elseif($factura->estado === 'cancelada')
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold
-                                            bg-rose-100 text-rose-800">
-                                    Cancelada
-                                </span>
-                            @endif
-                        </td>
-
-
                         <td class="px-3 py-2 text-center">
-                            @if($factura->pdf_path)
-                                <a href="{{ asset('storage/'.$factura->pdf_path) }}"
-                                target="_blank"
-                                class="text-xs text-[#0B265A] font-semibold hover:underline">
-                                    Ver PDF
-                                </a>
-                            @else
-                                <span class="text-xs text-slate-400">Sin archivo</span>
-                            @endif
+                            <a href="{{ $factura['pdf_route'] }}"
+                               target="_blank"
+                               class="text-xs text-[#0B265A] font-semibold hover:underline">
+                                Ver PDF
+                            </a>
                         </td>
-
-                        <td class="px-3 py-2 text-center">
-                            <div class="flex items-center justify-center gap-2">
-
-                                @if($factura->estado === 'pendiente')
-                                    {{-- Marcar como pagada --}}
-                                    <form method="POST"
-                                        action="{{ route('obras.facturas.pagada', ['obra' => $obra, 'factura' => $factura]) }}">
-                                        @csrf
-                                        @method('PATCH')
-                                        {{-- Si deseas capturar fecha_pago, puedes añadir un input type="date" aquí --}}
-                                        <button type="submit"
-                                                class="text-[11px] text-emerald-700 hover:underline">
-                                            Marcar pagada
-                                        </button>
-                                    </form>
-
-                                    {{-- Marcar como cancelada --}}
-                                    <form method="POST"
-                                        action="{{ route('obras.facturas.cancelada', ['obra' => $obra, 'factura' => $factura]) }}"
-                                        onsubmit="return confirm('¿Marcar esta factura como cancelada?');">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit"
-                                                class="text-[11px] text-rose-700 hover:underline">
-                                            Cancelar
-                                        </button>
-                                    </form>
-                                @endif
-
-                                {{-- Eliminar (opcional, solo para admin) --}}
-                                <form method="POST"
-                                    action="{{ route('obras.facturas.destroy', ['obra' => $obra, 'factura' => $factura]) }}"
-                                    onsubmit="return confirm('¿Eliminar definitivamente esta factura?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                            class="text-[11px] text-red-600 hover:underline">
-                                        Eliminar
-                                    </button>
-                                </form>
-
-                            </div>
-                        </td>
-
                     </tr>
                 @endforeach
-                </tbody>
-
+            </tbody>
         </table>
     </div>
 @endif
+
+{{-- MODAL RELACIONAR FACTURAS --}}
+<div x-show="open"
+     x-cloak
+     class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+
+    <div class="bg-white w-full max-w-3xl rounded-xl p-6 shadow-xl">
+
+        <div class="flex items-start justify-between gap-4 mb-4">
+            <div>
+                <h3 class="text-lg font-semibold">Relacionar facturas a la obra</h3>
+                <p class="text-sm text-slate-500">Selecciona facturas de Facturapi o CFDI descargados del SAT.</p>
+            </div>
+            <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-600">x</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <input type="date"
+                   x-model="filters.fecha"
+                   @input="applyFilters()"
+                   class="rounded-lg border-gray-300 text-sm">
+
+            <input type="text"
+                   x-model="filters.uuid"
+                   @input="applyFilters()"
+                   class="rounded-lg border-gray-300 text-sm"
+                   placeholder="Buscar UUID">
+
+            <input type="text"
+                   x-model="filters.monto"
+                   @input="applyFilters()"
+                   class="rounded-lg border-gray-300 text-sm"
+                   placeholder="Buscar monto">
+        </div>
+
+        <div class="max-h-96 overflow-y-auto border rounded-lg">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-50 sticky top-0">
+                    <tr>
+                        <th class="px-3 py-2 text-left">Fecha</th>
+                        <th class="px-3 py-2 text-left">UUID</th>
+                        <th class="px-3 py-2 text-left">Receptor</th>
+                        <th class="px-3 py-2 text-right">Monto</th>
+                        <th class="px-3 py-2 text-center">Seleccionar</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <template x-for="cfdi in paginatedCfdis" :key="cfdi.uuid">
+                        <tr class="border-t hover:bg-gray-50">
+                            <td class="px-3 py-2" x-text="cfdi.fecha_emision || '-'"></td>
+
+                            <td class="px-3 py-2">
+                                <span class="font-mono text-xs" x-text="cfdi.uuid"></span>
+                                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium"
+                                      :class="cfdi.origen === 'FacturAPI' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'"
+                                      x-text="cfdi.origen"></span>
+                            </td>
+
+                            <td class="px-3 py-2">
+                                <div x-text="cfdi.receptor_nombre || '-'"></div>
+                                <div class="text-xs text-slate-500" x-text="cfdi.receptor_rfc || '-'"></div>
+                            </td>
+
+                            <td class="px-3 py-2 text-right font-medium">
+                                $<span x-text="Number(cfdi.total || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })"></span>
+                            </td>
+
+                            <td class="px-3 py-2 text-center">
+                                <input type="checkbox"
+                                       :value="cfdi.uuid"
+                                       x-model="selected"
+                                       class="rounded border-gray-300">
+                            </td>
+                        </tr>
+                    </template>
+
+                    <tr x-show="filteredCfdis.length === 0">
+                        <td colspan="5" class="px-3 py-6 text-center text-gray-400">
+                            No se encontraron facturas disponibles.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-4 flex items-center justify-between text-sm">
+            <div class="text-gray-500">
+                Mostrando <span x-text="paginatedCfdis.length"></span> de <span x-text="filteredCfdis.length"></span>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button type="button" @click="prevPage()" :disabled="currentPage === 1"
+                        class="rounded-lg border px-3 py-1 disabled:opacity-40">Anterior</button>
+                <span class="text-gray-600">Pagina <span x-text="currentPage"></span> de <span x-text="totalPages"></span></span>
+                <button type="button" @click="nextPage()" :disabled="currentPage === totalPages"
+                        class="rounded-lg border px-3 py-1 disabled:opacity-40">Siguiente</button>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-4">
+            <button type="button" @click="closeModal()" class="px-4 py-2 border rounded">
+                Cancelar
+            </button>
+
+            <button type="button" @click="relacionar()"
+                    class="bg-green-600 text-white px-4 py-2 rounded">
+                Relacionar seleccionadas
+            </button>
+        </div>
+    </div>
+</div>
 
 {{-- FORM NUEVA FACTURA --}}
 <div id="factura-form-container" class="hidden">
@@ -4355,6 +4420,99 @@ function relacionFacturasModal() {
 
     {{-- Script sencillo para mostrar/ocultar el formulario --}}
     <script>
+        function relacionFacturasObra(cfdisDisponibles) {
+            return {
+                open: false,
+                cfdis: cfdisDisponibles || [],
+                filteredCfdis: [],
+                selected: [],
+                filters: {
+                    fecha: '',
+                    uuid: '',
+                    monto: '',
+                },
+                currentPage: 1,
+                perPage: 10,
+
+                get totalPages() {
+                    return Math.max(1, Math.ceil(this.filteredCfdis.length / this.perPage));
+                },
+
+                get paginatedCfdis() {
+                    const start = (this.currentPage - 1) * this.perPage;
+                    return this.filteredCfdis.slice(start, start + this.perPage);
+                },
+
+                openModal() {
+                    this.open = true;
+                    this.filteredCfdis = this.cfdis;
+                    this.currentPage = 1;
+                },
+
+                closeModal() {
+                    this.open = false;
+                    this.filters = { fecha: '', uuid: '', monto: '' };
+                    this.selected = [];
+                    this.filteredCfdis = this.cfdis;
+                    this.currentPage = 1;
+                },
+
+                applyFilters() {
+                    const fecha = this.filters.fecha;
+                    const uuid = this.filters.uuid.toLowerCase().trim();
+                    const monto = this.filters.monto.replace(',', '').trim();
+
+                    this.filteredCfdis = this.cfdis.filter(cfdi => {
+                        const matchFecha = !fecha || String(cfdi.fecha_emision ?? '').includes(fecha);
+                        const matchUuid = !uuid || String(cfdi.uuid ?? '').toLowerCase().includes(uuid);
+                        const matchMonto = !monto || String(cfdi.total ?? '').includes(monto);
+
+                        return matchFecha && matchUuid && matchMonto;
+                    });
+
+                    this.currentPage = 1;
+                },
+
+                nextPage() {
+                    if (this.currentPage < this.totalPages) {
+                        this.currentPage++;
+                    }
+                },
+
+                prevPage() {
+                    if (this.currentPage > 1) {
+                        this.currentPage--;
+                    }
+                },
+
+                async relacionar() {
+                    if (this.selected.length === 0) {
+                        alert('Selecciona al menos una factura.');
+                        return;
+                    }
+
+                    const res = await fetch(`{{ route('obras.relacionarCfdis', $obra->id) }}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            cfdis: this.selected
+                        })
+                    });
+
+                    if (!res.ok) {
+                        alert('Error al relacionar facturas.');
+                        return;
+                    }
+
+                    location.reload();
+                },
+            };
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const btnToggle = document.getElementById('btn-toggle-factura-form');
             const formContainer = document.getElementById('factura-form-container');
@@ -4364,7 +4522,7 @@ function relacionFacturasModal() {
 
             const closeForm = () => {
                 formContainer.classList.add('hidden');
-                btnToggle.textContent = '+ Registrar nueva factura';
+                btnToggle.textContent = 'Registro manual';
             };
 
             const openForm = () => {

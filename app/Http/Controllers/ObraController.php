@@ -8,6 +8,7 @@ use Illuminate\Support\Collection;
 use App\Models\Obra;
 use App\Models\Cliente;
 use App\Models\SatCfdi;
+use App\Models\SatFactura;
 use App\Models\User;
 use App\Models\Empleado;
 use App\Models\ObraEmpleado;
@@ -733,6 +734,22 @@ if ($tab === 'horas-maquina') {
             ->sum('monto');
         $totalPendiente = max(0, $totalFacturado - $totalPagado);
 
+        $rfcCliente = $this->normalizeRfc($obra->cliente?->rfc);
+        $clienteId = $obra->cliente_id;
+
+        $facturasSatObra = $this->facturasSatObra($obra);
+        $facturasDisponiblesRelacionar = $this->facturasDisponiblesParaObra($rfcCliente, $clienteId);
+
+        $totalFacturadoSat = (float) $facturasSatObra
+            ->where('estado', '!=', 'cancelada')
+            ->sum('total');
+
+        if ($facturasSatObra->isNotEmpty()) {
+            $totalFacturado = $totalFacturadoSat;
+            $totalPagado = 0;
+            $totalPendiente = $totalFacturadoSat;
+        }
+
 // Totales de facturación (para resumen y barras)
 // $totalFacturado = (float) $obra->facturas()->sum('monto');                         // todas las facturas emitidas
 // $totalPagado    = (float) $obra->facturas()->whereNotNull('fecha_pago')->sum('monto'); // solo las pagadas
@@ -786,6 +803,8 @@ return view('obras.edit', [
     'avanceObra'                  => $avanceObra,
 
     'facturas'                    => $facturas,
+    'facturasSatObra'             => $facturasSatObra,
+    'facturasDisponiblesRelacionar' => $facturasDisponiblesRelacionar,
 
     // NUEVO: totales para el resumen de facturación
     'totalFacturado'              => $totalFacturado,
@@ -1060,6 +1079,120 @@ public function guardarPlaneacion(Request $request, $id)
         return redirect()->back()->with('error', 'Ocurrió un error al guardar los datos.');
     }
 }
+private function normalizeRfc(?string $rfc): string
+{
+    return preg_replace('/[^A-Z0-9&Ñ]/u', '', strtoupper(trim((string) $rfc))) ?? '';
+}
+
+private function facturasSatObra(Obra $obra): Collection
+{
+    $facturasApi = SatFactura::with(['empresa', 'cliente'])
+        ->where('obra_id', $obra->id)
+        ->whereNotNull('uuid')
+        ->orderByDesc('fecha_emision')
+        ->get()
+        ->map(fn (SatFactura $factura) => [
+            'source' => 'sat_facturas',
+            'source_label' => 'Facturapi',
+            'id' => $factura->id,
+            'uuid' => $factura->uuid,
+            'serie' => $factura->serie,
+            'folio' => $factura->folio,
+            'fecha_emision' => optional($factura->fecha_emision)->format('Y-m-d'),
+            'fecha_formateada' => optional($factura->fecha_emision)->format('d/m/Y'),
+            'receptor_nombre' => $factura->receptor_nombre,
+            'receptor_rfc' => $factura->receptor_rfc,
+            'total' => (float) $factura->total,
+            'moneda' => $factura->moneda ?? 'MXN',
+            'estado' => $factura->estado,
+            'pdf_route' => route('sat.facturacion.pdf', $factura),
+        ]);
+
+    $cfdisSat = SatCfdi::where('obra_id', $obra->id)
+        ->whereNotNull('uuid')
+        ->orderByDesc('fecha_emision')
+        ->get()
+        ->map(fn (SatCfdi $cfdi) => [
+            'source' => 'sat_cfdis',
+            'source_label' => 'SAT',
+            'id' => $cfdi->id,
+            'uuid' => $cfdi->uuid,
+            'serie' => $cfdi->serie,
+            'folio' => $cfdi->folio,
+            'fecha_emision' => optional($cfdi->fecha_emision)->format('Y-m-d'),
+            'fecha_formateada' => optional($cfdi->fecha_emision)->format('d/m/Y'),
+            'receptor_nombre' => $cfdi->receptor_nombre,
+            'receptor_rfc' => $cfdi->receptor_rfc ?: $cfdi->rfc_receptor,
+            'total' => (float) $cfdi->total,
+            'moneda' => $cfdi->moneda ?? 'MXN',
+            'estado' => null,
+            'pdf_route' => route('sat.cfdis.pdf', $cfdi),
+        ]);
+
+    return $facturasApi
+        ->concat($cfdisSat)
+        ->filter(fn ($factura) => !empty($factura['uuid']))
+        ->unique(fn ($factura) => strtoupper($factura['uuid']))
+        ->sortByDesc(fn ($factura) => $factura['fecha_emision'] ?? '')
+        ->values();
+}
+
+private function facturasDisponiblesParaObra(string $rfcCliente, ?int $clienteId): Collection
+{
+    $facturasApi = SatFactura::whereNull('obra_id')
+        ->whereNotNull('uuid')
+        ->where(function ($query) use ($rfcCliente, $clienteId) {
+            if ($rfcCliente !== '') {
+                $query->where('receptor_rfc', $rfcCliente);
+            }
+
+            if ($clienteId) {
+                $query->orWhere('cliente_id', $clienteId);
+            }
+        })
+        ->orderByDesc('fecha_emision')
+        ->limit(300)
+        ->get()
+        ->map(fn (SatFactura $factura) => [
+            'id' => $factura->uuid,
+            'uuid' => $factura->uuid,
+            'fecha_emision' => optional($factura->fecha_emision)->format('Y-m-d'),
+            'total' => (float) $factura->total,
+            'origen' => 'FacturAPI',
+            'receptor_nombre' => $factura->receptor_nombre,
+            'receptor_rfc' => $factura->receptor_rfc,
+        ]);
+
+    $cfdisSat = SatCfdi::whereNull('obra_id')
+        ->whereNotNull('uuid')
+        ->when($rfcCliente !== '', function ($query) use ($rfcCliente) {
+            $query->where(function ($subquery) use ($rfcCliente) {
+                $subquery
+                    ->where('receptor_rfc', $rfcCliente)
+                    ->orWhere('rfc_receptor', $rfcCliente);
+            });
+        })
+        ->orderByDesc('fecha_emision')
+        ->limit(300)
+        ->get()
+        ->map(fn (SatCfdi $cfdi) => [
+            'id' => $cfdi->uuid,
+            'uuid' => $cfdi->uuid,
+            'fecha_emision' => optional($cfdi->fecha_emision)->format('Y-m-d'),
+            'total' => (float) $cfdi->total,
+            'origen' => 'SAT',
+            'receptor_nombre' => $cfdi->receptor_nombre,
+            'receptor_rfc' => $cfdi->receptor_rfc ?: $cfdi->rfc_receptor,
+        ]);
+
+    return $facturasApi
+        ->concat($cfdisSat)
+        ->filter(fn ($factura) => !empty($factura['uuid']))
+        ->unique(fn ($factura) => strtoupper($factura['uuid']))
+        ->sortByDesc(fn ($factura) => $factura['fecha_emision'] ?? '')
+        ->values();
+}
+
 public function relacionarCfdis(Request $request, Obra $obra)
 {
     $validated = $request->validate([
