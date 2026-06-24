@@ -141,7 +141,7 @@
                             Status
                         </label>
                         @php
-                            $statuses = ['planeacion','ejecucion','suspendida','terminada','cancelada'];
+                            $statuses = \App\Models\Obra::estatusLabels();
                         @endphp
                        <select id="estatus_nuevo" name="estatus_nuevo"
                                 class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
@@ -149,7 +149,7 @@
                             @foreach($statuses as $value => $label)
                                 <option value="{{ $value }}"
                                     @selected(old('estatus_nuevo', $currentStatus) == $value)>
-                                    {{ ucfirst($label) }}
+                                    {{ $label }}
                                 </option>
                             @endforeach
                         </select>
@@ -570,13 +570,13 @@
                         Status
                     </label>
                     @php
-                        $statuses = ['planeacion','ejecucion','suspendida','terminada','cancelada'];
+                        $statuses = \App\Models\Obra::estatusLabels();
                     @endphp
                     <select id="estatus_nuevo" name="estatus_nuevo"
                             class="block w-full rounded-xl border-slate-200 bg-white text-sm shadow-sm transition duration-150 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10">
                         @foreach($statuses as $value => $label)
                             <option value="{{ $value }}" @selected(old('estatus_nuevo', $currentStatus ?? '') == $value)>
-                                {{ ucfirst($label) }}
+                                {{ $label }}
                             </option>
                         @endforeach
                     </select>

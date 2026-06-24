@@ -369,6 +369,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::patch('/configuracion-empresa/tipos-iva/{tipoIva}/toggle-activo', [EmpresaConfigController::class, 'toggleTipoIva'])->name('empresa_config.tipos-iva.toggle-activo');
     Route::patch('/configuracion-empresa/tipos-iva/{tipoIva}/default', [EmpresaConfigController::class, 'marcarTipoIvaDefault'])->name('empresa_config.tipos-iva.default');
     Route::patch('/configuracion-empresa/folios-obra/{folio}', [EmpresaConfigController::class, 'updateFolioObra'])->name('empresa_config.folios-obra.update');
+    Route::patch('/configuracion-empresa/tipos-obra/{tipo}', [EmpresaConfigController::class, 'updateTipoObraConfiguracion'])->name('empresa_config.tipos-obra.update');
 
         Route::get('/configuracion-empresa/equipos-computo/buscar-facturas', [EquipoComputoController::class, 'buscarFacturas'])->name('empresa_config.equipos-computo.buscar-facturas');
         Route::get('/configuracion-empresa/equipos-computo/fotos/{foto}', [EquipoComputoController::class, 'verFoto'])->name('empresa_config.equipos-computo.fotos.show');

@@ -23,6 +23,61 @@ class Obra extends Model
     const ESTATUS_SUSPENDIDA = 3;
     const ESTATUS_TERMINADA  = 4;
     const ESTATUS_CANCELADA  = 5;
+
+    public static function estatusLabels(): array
+    {
+        return [
+            self::ESTATUS_PLANEACION => 'Planeación',
+            self::ESTATUS_EJECUCION => 'En ejecución',
+            self::ESTATUS_SUSPENDIDA => 'Suspendida',
+            self::ESTATUS_TERMINADA => 'Terminada',
+            self::ESTATUS_CANCELADA => 'Cancelada',
+        ];
+    }
+
+    public static function estatusSlugs(): array
+    {
+        return [
+            'planeacion' => self::ESTATUS_PLANEACION,
+            'ejecucion' => self::ESTATUS_EJECUCION,
+            'suspendida' => self::ESTATUS_SUSPENDIDA,
+            'terminada' => self::ESTATUS_TERMINADA,
+            'cancelada' => self::ESTATUS_CANCELADA,
+        ];
+    }
+
+    public static function estatusBadgeClasses(): array
+    {
+        return [
+            self::ESTATUS_PLANEACION => 'bg-slate-100 text-slate-700',
+            self::ESTATUS_EJECUCION => 'bg-blue-100 text-blue-700',
+            self::ESTATUS_SUSPENDIDA => 'bg-yellow-100 text-yellow-700',
+            self::ESTATUS_TERMINADA => 'bg-green-100 text-green-700',
+            self::ESTATUS_CANCELADA => 'bg-red-100 text-red-700',
+        ];
+    }
+
+    public static function estatusFilterClasses(): array
+    {
+        return [
+            self::ESTATUS_PLANEACION => 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100',
+            self::ESTATUS_EJECUCION => 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
+            self::ESTATUS_SUSPENDIDA => 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100',
+            self::ESTATUS_TERMINADA => 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100',
+            self::ESTATUS_CANCELADA => 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100',
+        ];
+    }
+
+    public static function estatusFilterActiveClasses(): array
+    {
+        return [
+            self::ESTATUS_PLANEACION => 'bg-slate-600 text-white border-slate-600',
+            self::ESTATUS_EJECUCION => 'bg-blue-600 text-white border-blue-600',
+            self::ESTATUS_SUSPENDIDA => 'bg-yellow-600 text-white border-yellow-600',
+            self::ESTATUS_TERMINADA => 'bg-green-600 text-white border-green-600',
+            self::ESTATUS_CANCELADA => 'bg-red-600 text-white border-red-600',
+        ];
+    }
     
 
     use HasFactory;
@@ -116,13 +171,7 @@ class Obra extends Model
 
     public function getEstatusLabelAttribute(): string
     {
-        return match ($this->estatus) {
-            1 => 'Planeación',
-            2 => 'En curso',
-            3 => 'Terminada',
-            4 => 'Cancelada',
-            default => 'Desconocido',
-        };
+        return self::estatusLabels()[(int) ($this->estatus_nuevo ?? self::ESTATUS_PLANEACION)] ?? 'Desconocido';
     }
     public function facturas()
     {

@@ -38,6 +38,43 @@
     </a>
 </div>
 
+@if($kpisObras)
+    @php
+        $money = fn ($value) => '$' . number_format((float) $value, 2);
+    @endphp
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 mb-6">
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <div class="text-xs font-semibold text-slate-500 uppercase">Obras en ejecución</div>
+            <div class="mt-2 text-2xl font-bold text-[#0B265A]">{{ number_format($kpisObras['obras_ejecucion']) }}</div>
+            <div class="mt-1 text-xs text-slate-500">Activas actualmente</div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <div class="text-xs font-semibold text-slate-500 uppercase">Monto vendido</div>
+            <div class="mt-2 text-2xl font-bold text-[#0B265A]">{{ $money($kpisObras['monto_vendido']) }}</div>
+            <div class="mt-1 text-xs text-slate-500">Obras en ejecución</div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <div class="text-xs font-semibold text-slate-500 uppercase">Facturado</div>
+            <div class="mt-2 text-2xl font-bold text-[#0B265A]">{{ $money($kpisObras['monto_facturado']) }}</div>
+            <div class="mt-1 text-xs text-slate-500">Facturas ligadas a obra</div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <div class="text-xs font-semibold text-slate-500 uppercase">Cobrado</div>
+            <div class="mt-2 text-2xl font-bold text-emerald-700">{{ $money($kpisObras['monto_cobrado']) }}</div>
+            <div class="mt-1 text-xs text-slate-500">Pagos registrados</div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <div class="text-xs font-semibold text-slate-500 uppercase">Pendiente por cobrar</div>
+            <div class="mt-2 text-2xl font-bold text-amber-700">{{ $money($kpisObras['pendiente_cobrar']) }}</div>
+            <div class="mt-1 text-xs text-slate-500">Facturado menos cobrado</div>
+        </div>
+    </div>
+@endif
+
 {{-- FILTROS POR STATUS --}}
 <div class="flex flex-wrap gap-2 mb-6">
     @php
@@ -66,11 +103,19 @@
         ];
     @endphp
 
+    @php
+        $availableStatuses = \App\Models\Obra::estatusSlugs();
+        $statusLabels = \App\Models\Obra::estatusLabels();
+        $statusClasses = \App\Models\Obra::estatusFilterClasses();
+        $statusActiveClasses = \App\Models\Obra::estatusFilterActiveClasses();
+    @endphp
+
     <span class="text-sm font-medium text-slate-500 self-center mr-2">Estatus:</span>
 
-    @foreach($availableStatuses as $key => $label)
+    @foreach($availableStatuses as $key => $value)
+        @php $label = $statusLabels[$value] ?? $key; @endphp
         <a href="{{ route('obras.index', array_merge(request()->query(), ['status' => $key])) }}" 
-           class="px-4 py-1.5 rounded-full text-xs font-semibold border transition {{ (request('status') == $key) ? ($statusActiveClasses[$key] ?? 'bg-blue-600 text-white') : ($statusClasses[$key] ?? 'bg-slate-50 text-slate-700 border-slate-200') }}">
+           class="px-4 py-1.5 rounded-full text-xs font-semibold border transition {{ (request('status') == $key) ? ($statusActiveClasses[$value] ?? 'bg-blue-600 text-white') : ($statusClasses[$value] ?? 'bg-slate-50 text-slate-700 border-slate-200') }}">
             {{ $label }}
         </a>
     @endforeach
@@ -122,8 +167,8 @@
                                     5 => 'Cancelada',
                                 ];
                                 $val = (int)($obra->estatus_nuevo ?? 1);
-                                $cls = $statusColors[$val] ?? 'bg-slate-100 text-slate-700';
-                                $lbl = $statusLabels[$val] ?? 'Desconocido';
+                                $cls = \App\Models\Obra::estatusBadgeClasses()[$val] ?? 'bg-slate-100 text-slate-700';
+                                $lbl = $obra->estatus_label;
                             @endphp
                             <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $cls }}">
                                 {{ $lbl }}

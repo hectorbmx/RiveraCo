@@ -21,6 +21,7 @@ use App\Models\CentroCosto;
 use App\Models\TipoIva;
 use App\Models\Obra;
 use App\Models\ObraFolio;
+use App\Models\ObraTipoConfiguracion;
 use App\Services\Maquinas\PreventivoMaquinaService;
 
 class EmpresaConfigController extends Controller
@@ -122,6 +123,11 @@ public function index(){
 
                 return $folio;
             });
+
+        $tiposObraConfiguraciones = ObraTipoConfiguracion::query()
+            ->with('area')
+            ->orderBy('tipo_obra')
+            ->get();
         
         // $Catrol = CatalogoRol::orderBy('id')->orderBy('nombre')->get();
 
@@ -193,6 +199,7 @@ public function index(){
         'centrosCosto',
         'tiposIva',
         'foliosObra',
+        'tiposObraConfiguraciones',
         'anioFoliosObra',
         'preventivosMaquinaria',
     ));
@@ -280,6 +287,29 @@ public function updateFolioObra(Request $request, ObraFolio $folio)
     return redirect()
         ->route('empresa_config.edit', ['tab' => 'folios', 'folio_anio' => $folio->anio])
         ->with('success', 'Consecutivo de obra actualizado.');
+}
+
+public function updateTipoObraConfiguracion(Request $request, ObraTipoConfiguracion $tipo)
+{
+    $data = $request->validate([
+        'area_id' => ['nullable', 'exists:areas,id'],
+        'activo' => ['nullable', 'boolean'],
+    ]);
+
+    $tipo->update([
+        'area_id' => $data['area_id'] ?? null,
+        'activo' => $request->boolean('activo'),
+    ]);
+
+    if ($tipo->area_id) {
+        Obra::where('tipo_obra', $tipo->tipo_obra)->update([
+            'area_id' => $tipo->area_id,
+        ]);
+    }
+
+    return redirect()
+        ->route('empresa_config.edit', ['tab' => 'folios'])
+        ->with('success', 'Configuración de tipo de obra actualizada.');
 }
 
 private function ultimoConsecutivoObraExistente(string $prefijo, int $anio): int

@@ -15,6 +15,7 @@ use App\Models\MetodoPagoEmpresa;
 use App\Models\User;
 use App\Models\Empleado;
 use App\Models\Area;
+use App\Models\ObraTipoConfiguracion;
 use App\Models\ObraEmpleado;
 use App\Models\ObraPlaneacionGasto;
 use App\Models\ObraReposicionGasto;
@@ -56,19 +57,14 @@ class ObraController extends Controller
     {
         $search = $request->query('search');
         $status = $request->query('status');
+        $kpisObras = auth()->user()?->hasRole('super-admin')
+            ? $this->kpisObrasEjecutivos()
+            : null;
 
-        $statusMap = [
-            'planeacion' => 1,
-            'ejecucion'  => 2,
-            'suspendida' => 3,
-            'terminada'  => 4,
-            'cancelada'  => 5,
-        ];
-
-        $areaUsuarioId = $this->areaUsuarioActualId();
+        $statusMap = Obra::estatusSlugs();
 
         $obras = Obra::with(['cliente', 'responsable', 'area'])
-            ->when($areaUsuarioId, fn ($query) => $query->where('area_id', $areaUsuarioId))
+            ->tap(fn ($query) => $this->aplicarVisibilidadObras($query))
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('nombre', 'like', "%{$search}%")
@@ -88,7 +84,7 @@ class ObraController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return view('obras.index', compact('obras', 'search', 'status'));
+        return view('obras.index', compact('obras', 'search', 'status', 'kpisObras'));
     }
 
     public function create()
@@ -126,7 +122,7 @@ class ObraController extends Controller
         'clave_obra'               => ['nullable', 'string', 'max:100'],
         'descripcion'              => ['nullable', 'string'],
         'tipo_obra'                => ['required', 'string', 'in:' . implode(',', array_keys($this->tiposObraDisponibles()))],
-        'estatus_nuevo'            => ['required', 'numeric', 'in:1,2,3,4,5'],
+        'estatus_nuevo'            => ['required', 'numeric', 'in:' . implode(',', array_keys(Obra::estatusLabels()))],
         'fecha_inicio_programada'  => ['nullable', 'date'],
         'fecha_inicio_real'        => ['nullable', 'date'],
         'fecha_fin_programada'     => ['nullable', 'date'],
@@ -160,25 +156,86 @@ class ObraController extends Controller
 
 private function areaUsuarioActualId(): ?int
 {
+    return $this->empleadoUsuarioActual()?->area_id
+        ? (int) $this->empleadoUsuarioActual()->area_id
+        : null;
+}
+
+private function empleadoUsuarioActual(): ?Empleado
+{
+    return auth()->user()?->empleado;
+}
+
+private function usuarioActualEsResidente(): bool
+{
+    $empleado = $this->empleadoUsuarioActual();
+
+    if (!$empleado) {
+        return false;
+    }
+
+    $puesto = mb_strtoupper(trim(($empleado->puesto_base ?: $empleado->Puesto) ?? ''));
+
+    return str_contains($puesto, 'RESIDENTE');
+}
+
+private function aplicarVisibilidadObras($query): void
+{
     $user = auth()->user();
 
     if (!$user || $user->hasRole('super-admin')) {
-        return null;
+        return;
     }
 
-    return $user->empleado?->area_id ? (int) $user->empleado->area_id : null;
-}
+    $empleado = $this->empleadoUsuarioActual();
 
-private function tiposObraDisponibles(): array
-{
-    $tipos = [
-        'PILAS' => 'Pilas',
-        'POZOS' => 'Pozos',
-    ];
+    if (!$empleado) {
+        $query->whereRaw('1 = 0');
+        return;
+    }
+
+    if ($this->usuarioActualEsResidente()) {
+        $empleadoId = $empleado->id_Empleado;
+
+        $query->where(function ($q) use ($empleadoId) {
+            $q->where('responsable_id', $empleadoId)
+                ->orWhereHas('empleadosAsignados', function ($asignacion) use ($empleadoId) {
+                    $asignacion->where('empleado_id', $empleadoId)
+                        ->where('activo', true);
+                });
+        });
+
+        return;
+    }
 
     $areaUsuarioId = $this->areaUsuarioActualId();
 
-    if (!$areaUsuarioId) {
+    if ($areaUsuarioId) {
+        $query->where('area_id', $areaUsuarioId);
+        return;
+    }
+
+    $query->whereRaw('1 = 0');
+}
+
+    private function tiposObraDisponibles(): array
+    {
+    $tipos = ObraTipoConfiguracion::query()
+        ->where('activo', true)
+        ->orderBy('tipo_obra')
+        ->pluck('label', 'tipo_obra')
+        ->all();
+
+    if (!$tipos) {
+        $tipos = [
+            'PILAS' => 'Pilas',
+            'POZOS' => 'Pozos',
+        ];
+    }
+
+    $areaUsuarioId = $this->areaUsuarioActualId();
+
+    if (!$areaUsuarioId || $this->usuarioActualEsResidente()) {
         return $tipos;
     }
 
@@ -190,6 +247,13 @@ private function tiposObraDisponibles(): array
 private function areaIdParaTipoObra(string $tipoObra): ?int
 {
     $tipoObra = strtoupper($tipoObra);
+
+    $areaConfigurada = ObraTipoConfiguracion::where('tipo_obra', $tipoObra)->value('area_id');
+
+    if ($areaConfigurada) {
+        return (int) $areaConfigurada;
+    }
+
     $codigos = self::TIPOS_OBRA_AREA[$tipoObra] ?? [];
 
     return Area::query()
@@ -203,9 +267,35 @@ private function areaIdParaTipoObra(string $tipoObra): ?int
 
 private function abortarSiObraFueraDeArea(Obra $obra): void
 {
+    $user = auth()->user();
+
+    if (!$user || $user->hasRole('super-admin')) {
+        return;
+    }
+
+    $empleado = $this->empleadoUsuarioActual();
+
+    if (!$empleado) {
+        abort(403);
+    }
+
+    if ($this->usuarioActualEsResidente()) {
+        $esResponsable = (int) $obra->responsable_id === (int) $empleado->id_Empleado;
+        $estaAsignado = $obra->empleadosAsignados()
+            ->where('empleado_id', $empleado->id_Empleado)
+            ->where('activo', true)
+            ->exists();
+
+        if (!$esResponsable && !$estaAsignado) {
+            abort(403);
+        }
+
+        return;
+    }
+
     $areaUsuarioId = $this->areaUsuarioActualId();
 
-    if ($areaUsuarioId && (int) $obra->area_id !== $areaUsuarioId) {
+    if (!$areaUsuarioId || (int) $obra->area_id !== $areaUsuarioId) {
         abort(403);
     }
 }
@@ -288,6 +378,58 @@ private function ultimoConsecutivoExistente(string $prefijo, int $anio): int
 private function formatearFolio(string $prefijo, int $anio, int $consecutivo): string
 {
     return "{$prefijo}-{$anio}-{$consecutivo}";
+}
+
+private function kpisObrasEjecutivos(): array
+{
+    $obrasEjecucion = Obra::where('estatus_nuevo', Obra::ESTATUS_EJECUCION)->get([
+        'id',
+        'monto_contratado',
+        'monto_modificado',
+    ]);
+
+    $montoVendido = $obrasEjecucion->sum(function (Obra $obra) {
+        $montoModificado = (float) ($obra->monto_modificado ?? 0);
+
+        return $montoModificado > 0
+            ? $montoModificado
+            : (float) ($obra->monto_contratado ?? 0);
+    });
+
+    $facturasFacturapi = SatFactura::query()
+        ->whereNotNull('obra_id')
+        ->where(function ($query) {
+            $query->whereNull('estado')
+                ->orWhere('estado', '!=', 'cancelada');
+        })
+        ->get(['id', 'uuid', 'total'])
+        ->map(fn (SatFactura $factura) => [
+            'key' => $factura->uuid ? 'uuid:' . strtoupper($factura->uuid) : 'sat_factura:' . $factura->id,
+            'total' => (float) ($factura->total ?? 0),
+        ]);
+
+    $facturasSat = SatCfdi::query()
+        ->whereNotNull('obra_id')
+        ->get(['id', 'uuid', 'total'])
+        ->map(fn (SatCfdi $cfdi) => [
+            'key' => $cfdi->uuid ? 'uuid:' . strtoupper($cfdi->uuid) : 'sat_cfdi:' . $cfdi->id,
+            'total' => (float) ($cfdi->total ?? 0),
+        ]);
+
+    $montoFacturado = $facturasFacturapi
+        ->concat($facturasSat)
+        ->unique('key')
+        ->sum('total');
+
+    $montoCobrado = (float) ObraFacturaPago::sum('monto');
+
+    return [
+        'obras_ejecucion' => $obrasEjecucion->count(),
+        'monto_vendido' => $montoVendido,
+        'monto_facturado' => $montoFacturado,
+        'monto_cobrado' => $montoCobrado,
+        'pendiente_cobrar' => max(0, $montoFacturado - $montoCobrado),
+    ];
 }
 
 
@@ -396,13 +538,7 @@ $presupuestosDisponibles = Presupuesto::whereDoesntHave('obras', function($query
     $asignacionesActivas    = $asignaciones->where('activo', true);
     $asignacionesHistoricas = $asignaciones->where('activo', false);
 
-     $statuses = [
-        1 => 'planeacion',
-        2 => 'ejecucion',
-        3 => 'detenida',
-        4 => 'terminada',
-        5 => 'cancelada',
-    ];
+     $statuses = Obra::estatusLabels();
     $asistencias = collect();
     $weekDays = collect();
     $asistenciasSemana = collect();
@@ -1168,7 +1304,7 @@ public function reporteAsistencias(Request $request, Obra $obra)
         'clave_obra'               => ['required', 'string', 'max:100', 'unique:obras,clave_obra,' . $obra->id],
         'descripcion'              => ['nullable', 'string'],
         'tipo_obra'                => ['required', 'string', 'in:' . implode(',', array_keys($this->tiposObraDisponibles()))],
-        'estatus_nuevo'            => ['required', 'numeric', 'in:1,2,3,4,5'],
+        'estatus_nuevo'            => ['required', 'numeric', 'in:' . implode(',', array_keys(Obra::estatusLabels()))],
         'fecha_inicio_programada'  => ['nullable', 'date'],
         'fecha_inicio_real'        => ['nullable', 'date'],
         'fecha_fin_programada'     => ['nullable', 'date'],

@@ -1148,6 +1148,76 @@
     </div>
 
     <div class="bg-white border rounded-2xl overflow-hidden">
+        <div class="px-4 py-3 border-b bg-slate-50">
+            <h3 class="text-sm font-semibold text-slate-900">Tipos de obra y áreas</h3>
+            <p class="text-xs text-slate-500">Define qué área corresponde a cada tipo de obra.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-white text-slate-600">
+                    <tr>
+                        <th class="text-left font-semibold px-4 py-3">Tipo</th>
+                        <th class="text-left font-semibold px-4 py-3">Prefijo</th>
+                        <th class="text-left font-semibold px-4 py-3">Área asignada</th>
+                        <th class="text-left font-semibold px-4 py-3">Activo</th>
+                        <th class="text-right font-semibold px-4 py-3">Acción</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    @forelse($tiposObraConfiguraciones as $tipo)
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-4 py-3 font-medium text-slate-900">
+                                {{ $tipo->label }}
+                            </td>
+                            <td class="px-4 py-3 font-mono text-xs text-slate-700">
+                                {{ $tipo->prefijo }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <form id="tipo-obra-{{ $tipo->id }}"
+                                      method="POST"
+                                      action="{{ route('empresa_config.tipos-obra.update', $tipo) }}"
+                                      class="flex items-center gap-2">
+                                    @csrf
+                                    @method('PATCH')
+                                    <select name="area_id"
+                                            class="min-w-56 rounded-xl border-slate-300 text-sm focus:border-slate-500 focus:ring-0">
+                                        <option value="">Sin área</option>
+                                        @foreach($areas as $area)
+                                            <option value="{{ $area->id }}" @selected(old('area_id', $tipo->area_id) == $area->id)>
+                                                {{ $area->codigo ? $area->codigo . ' - ' : '' }}{{ $area->nombre }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                            </td>
+                            <td class="px-4 py-3">
+                                    <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                                        <input type="checkbox" name="activo" value="1" @checked(old('activo', $tipo->activo))
+                                               class="rounded border-slate-300">
+                                        Activo
+                                    </label>
+                                </form>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <button type="submit"
+                                        form="tipo-obra-{{ $tipo->id }}"
+                                        class="px-3 py-1.5 rounded-lg text-xs bg-slate-900 text-white hover:bg-slate-800">
+                                    Guardar
+                                </button>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="px-4 py-10 text-center text-slate-500">
+                                No hay tipos de obra configurados.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-white border rounded-2xl overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead class="bg-slate-50 text-slate-600">

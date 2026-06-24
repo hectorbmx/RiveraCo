@@ -123,7 +123,7 @@
         class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
                focus:border-[#FFC107] focus:ring-[#FFC107]">
 
-        @foreach(\App\Models\Obra::$estatusLabels as $value => $label)
+        @foreach(\App\Models\Obra::estatusLabels() as $value => $label)
             <option value="{{ $value }}"
                 @selected(old('estatus_nuevo', $obra->estatus_nuevo ?? 1) == $value)>
                 {{ $label }}
