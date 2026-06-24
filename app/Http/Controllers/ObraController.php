@@ -1584,6 +1584,7 @@ public function storeFacturaPago(Request $request, Obra $obra)
         'metodo_pago_empresa_id' => ['nullable', 'exists:metodos_pago_empresa,id'],
         'referencia' => ['nullable', 'string', 'max:120'],
         'observaciones' => ['nullable', 'string'],
+        'comprobante' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
     ]);
 
     $uuid = trim($data['factura_uuid']);
@@ -1608,6 +1609,16 @@ public function storeFacturaPago(Request $request, Obra $obra)
     }
 
     $metodoPagoCfdi = strtoupper((string) ($factura?->metodo_pago ?? $cfdi?->metodo_pago ?? ''));
+    $comprobantePath = null;
+    $comprobanteNombreOriginal = null;
+    $comprobanteMime = null;
+
+    if ($request->hasFile('comprobante')) {
+        $comprobante = $request->file('comprobante');
+        $comprobantePath = $comprobante->store("obras/{$obra->id}/pagos-facturas", 'public');
+        $comprobanteNombreOriginal = $comprobante->getClientOriginalName();
+        $comprobanteMime = $comprobante->getClientMimeType();
+    }
 
     ObraFacturaPago::create([
         'obra_id' => $obra->id,
@@ -1619,6 +1630,9 @@ public function storeFacturaPago(Request $request, Obra $obra)
         'metodo_pago_empresa_id' => $data['metodo_pago_empresa_id'] ?? null,
         'referencia' => $data['referencia'] ?? null,
         'observaciones' => $data['observaciones'] ?? null,
+        'comprobante_path' => $comprobantePath,
+        'comprobante_nombre_original' => $comprobanteNombreOriginal,
+        'comprobante_mime' => $comprobanteMime,
         'requiere_complemento_pago' => $metodoPagoCfdi === 'PPD',
         'registrado_por' => auth()->id(),
         'registrado_at' => now(),
