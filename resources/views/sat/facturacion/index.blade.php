@@ -111,7 +111,11 @@
 
                 <td class="px-5 py-4">
                     @if($factura->obra)
-                        Obra: {{ $factura->obra->nombre ?? $factura->obra->Nombre ?? 'Obra #' . $factura->obra->id }}
+                        Obra:
+                        <a href="{{ route('obras.edit', $factura->obra) }}"
+                           class="font-semibold text-indigo-700 hover:text-indigo-900 hover:underline">
+                            {{ $factura->obra->nombre ?? $factura->obra->Nombre ?? 'Obra #' . $factura->obra->id }}
+                        </a>
                     @elseif($factura->ordenCompra)
                         OC: {{ $factura->ordenCompra->folio ?? 'OC #' . $factura->ordenCompra->id }}
                     @else

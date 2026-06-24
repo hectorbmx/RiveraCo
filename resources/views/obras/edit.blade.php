@@ -554,6 +554,9 @@
                     </label>
                     <select id="tipo_obra" name="tipo_obra"
                             class="block w-full rounded-xl border-slate-200 bg-white text-sm shadow-sm transition duration-150 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10">
+                        @if(empty($tiposObraDisponibles))
+                            <option value="">Sin tipo configurado</option>
+                        @endif
                         @foreach($tiposObraDisponibles as $value => $label)
                             <option value="{{ $value }}" @selected(old('tipo_obra', $obra->tipo_obra) === $value)>
                                 {{ $label }}

@@ -244,6 +244,19 @@ private function aplicarVisibilidadObras($query): void
         ->all();
 }
 
+private function tiposObraDisponiblesConActual(?string $tipoActual): array
+{
+    $tipos = $this->tiposObraDisponibles();
+    $tipoActual = $tipoActual ? strtoupper(trim($tipoActual)) : null;
+
+    if ($tipoActual && !array_key_exists($tipoActual, $tipos)) {
+        $config = ObraTipoConfiguracion::where('tipo_obra', $tipoActual)->first();
+        $tipos = [$tipoActual => $config?->label ?? ucfirst(strtolower($tipoActual))] + $tipos;
+    }
+
+    return $tipos;
+}
+
 private function areaIdParaTipoObra(string $tipoObra): ?int
 {
     $tipoObra = strtoupper($tipoObra);
@@ -443,7 +456,7 @@ public function edit(Request $request, Obra $obra)
         ->orderBy('Nombre')
         ->orderBy('Apellidos')
         ->get();
-    $tiposObraDisponibles = $this->tiposObraDisponibles();
+    $tiposObraDisponibles = $this->tiposObraDisponiblesConActual($obra->tipo_obra);
 
     $desde =$request->query('asist_desde');
     $hasta =$request->query('asist_hasta');
@@ -1303,7 +1316,7 @@ public function reporteAsistencias(Request $request, Obra $obra)
         'nombre'                   => ['required', 'string', 'max:255'],
         'clave_obra'               => ['required', 'string', 'max:100', 'unique:obras,clave_obra,' . $obra->id],
         'descripcion'              => ['nullable', 'string'],
-        'tipo_obra'                => ['required', 'string', 'in:' . implode(',', array_keys($this->tiposObraDisponibles()))],
+        'tipo_obra'                => ['required', 'string', 'in:' . implode(',', array_keys($this->tiposObraDisponiblesConActual($obra->tipo_obra)))],
         'estatus_nuevo'            => ['required', 'numeric', 'in:' . implode(',', array_keys(Obra::estatusLabels()))],
         'fecha_inicio_programada'  => ['nullable', 'date'],
         'fecha_inicio_real'        => ['nullable', 'date'],
