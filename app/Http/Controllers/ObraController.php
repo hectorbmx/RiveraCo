@@ -411,6 +411,7 @@ private function kpisObrasEjecutivos(): array
 
     $facturasFacturapi = SatFactura::query()
         ->whereNotNull('obra_id')
+        ->whereHas('obra')
         ->where(function ($query) {
             $query->whereNull('estado')
                 ->orWhere('estado', '!=', 'cancelada');
@@ -423,6 +424,7 @@ private function kpisObrasEjecutivos(): array
 
     $facturasSat = SatCfdi::query()
         ->whereNotNull('obra_id')
+        ->whereHas('obra')
         ->get(['id', 'uuid', 'total'])
         ->map(fn (SatCfdi $cfdi) => [
             'key' => $cfdi->uuid ? 'uuid:' . strtoupper($cfdi->uuid) : 'sat_cfdi:' . $cfdi->id,
@@ -434,7 +436,7 @@ private function kpisObrasEjecutivos(): array
         ->unique('key')
         ->sum('total');
 
-    $montoCobrado = (float) ObraFacturaPago::sum('monto');
+    $montoCobrado = (float) ObraFacturaPago::whereHas('obra')->sum('monto');
 
     return [
         'obras_ejecucion' => $obrasEjecucion->count(),
