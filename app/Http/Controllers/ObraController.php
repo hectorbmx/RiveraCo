@@ -185,7 +185,7 @@ private function aplicarVisibilidadObras($query): void
 {
     $user = auth()->user();
 
-    if (!$user || $user->hasRole('super-admin')) {
+    if (!$user || $user->hasRole('super-admin','admin-rivera')) {
         return;
     }
 
