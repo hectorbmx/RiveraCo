@@ -17,6 +17,12 @@ class ProveedorController extends Controller
     public function index(Request $request)
         {
             $proveedor = Proveedor::query()->orderBy('nombre');
+            $perPageOpciones = [10, 20, 50, 100];
+            $perPage = (int) $request->input('per_page', 20);
+
+            if (!in_array($perPage, $perPageOpciones, true)) {
+                $perPage = 20;
+            }
 
             if ($request->filled('q')) {
                 $term = trim((string) $request->q);
@@ -32,9 +38,9 @@ class ProveedorController extends Controller
                 $proveedor->where('activo', (int) $request->activo);
             }
 
-            $proveedores = $proveedor->paginate(20)->withQueryString();
+            $proveedores = $proveedor->paginate($perPage)->withQueryString();
 
-            return view('proveedores.index', compact('proveedores'));
+            return view('proveedores.index', compact('proveedores', 'perPage', 'perPageOpciones'));
         }
 
 

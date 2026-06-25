@@ -63,7 +63,7 @@
 
     {{-- Filtros --}}
     <div class="bg-white rounded-2xl shadow p-4 mb-4">
-        <form method="GET" action="{{ route('proveedores.index') }}" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <form method="GET" action="{{ route('proveedores.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1">Buscar</label>
                 <input type="text" name="q" value="{{ request('q') }}"
@@ -78,6 +78,19 @@
                     <option value="">Todos</option>
                     <option value="1" {{ request('activo') === '1' ? 'selected' : '' }}>Activos</option>
                     <option value="0" {{ request('activo') === '0' ? 'selected' : '' }}>Inactivos</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Mostrar</label>
+                <select name="per_page"
+                        onchange="this.form.submit()"
+                        class="w-full rounded-lg border-slate-300 focus:border-[#0B265A] focus:ring-[#0B265A]">
+                    @foreach($perPageOpciones as $opcion)
+                        <option value="{{ $opcion }}" @selected((int) ($perPage ?? 20) === $opcion)>
+                            {{ $opcion }} elementos
+                        </option>
+                    @endforeach
                 </select>
             </div>
 
