@@ -4107,7 +4107,7 @@ function relacionFacturasModal() {
                     + Relacionar facturas
                 </button>
 
-                @can('obra_factura_borradores.create')
+                @can('obra_factura_borradores.create.access')
                     <button type="button"
                             @click="openBorradorModal()"
                             class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg
