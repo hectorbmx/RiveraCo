@@ -13,146 +13,211 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class SatCfdiController extends Controller
 {
-    public function index(Request $request)
-    {
-        $empresas = SatEmpresa::where('activo', true)
-            ->orderBy('nombre')
+        public function index(Request $request)
+        {
+            $empresas = SatEmpresa::where('activo', true)
+                ->orderBy('nombre')
+                ->get();
+
+            $empresaSeleccionada = null;
+            $obras = Obra::orderBy('nombre')->get();
+            $ordenesCompra = OrdenCompra::with('proveedor')
+            ->orderByDesc('id')
             ->get();
+            $cfdis = collect();
 
+            $totalGeneral = 0;
+            $totalFiltrado = 0;
+
+            $resumenIngresos = 0;
+            $resumenEgresos = 0;
+            $resumenPagos = 0;
+
+            $subtotalIngresos = 0;
+            $subtotalEgresos = 0;
+            $subtotalPagos = 0;
+
+             $perPageOpciones = [10, 20, 50, 100];
+                $perPage = (int) $request->input('per_page', 20);
+                if (!in_array($perPage, $perPageOpciones)) {
+                    $perPage = 20;
+                }
+
+            // Si no hay empresa seleccionada, no cargamos nada
+            if (! $request->filled('sat_empresa_id')) {
+                return view('sat.cfdis.index', compact(
+                    'empresas',
+                    'empresaSeleccionada',
+                    'cfdis',
+                    'totalGeneral',
+                    'totalFiltrado',
+                    'resumenIngresos',
+                    'resumenEgresos',
+                    'resumenPagos',
+                    'subtotalIngresos',
+                    'subtotalEgresos',
+                    'subtotalPagos',
+                    'obras',
+                    'ordenesCompra',
+                      'perPage',
+        'perPageOpciones'
+                ));
+            }
+
+            $empresaSeleccionada = SatEmpresa::find($request->sat_empresa_id);
+
+            if (! $empresaSeleccionada) {
+                return view('sat.cfdis.index', compact(
+                    'empresas',
+                    'empresaSeleccionada',
+                    'cfdis',
+                    'totalGeneral',
+                    'totalFiltrado',
+                    'resumenIngresos',
+                    'resumenEgresos',
+                    'resumenPagos',
+                    'subtotalIngresos',
+                    'subtotalEgresos',
+                    'subtotalPagos',
+                    'obras',
+                    'ordenesCompra',
+                      'perPage',
+        'perPageOpciones'
+                ));
+            }
+
+            // $q = SatCfdi::query()->where(function ($sub) use ($empresaSeleccionada) {
+            // $q = SatCfdi::query()->with('obra')->where(function ($sub) use ($empresaSeleccionada) {
+            $q = SatCfdi::query()->with(['obra', 'ordenCompra'])->where(function ($sub) use ($empresaSeleccionada) {
+                $sub->where('rfc_emisor', $empresaSeleccionada->rfc)
+                    ->orWhere('rfc_receptor', $empresaSeleccionada->rfc);
+            });
+
+            // Total de esa empresa antes de filtros adicionales
+            $totalGeneral = (clone $q)->count();
+
+            // Filtros adicionales
+            if ($request->filled('uuid')) {
+                $q->where('uuid', 'like', '%' . $request->uuid . '%');
+            }
+
+            if ($request->filled('rfc_emisor')) {
+                $q->where('rfc_emisor', 'like', '%' . $request->rfc_emisor . '%');
+            }
+
+            if ($request->filled('emisor_nombre')) {
+                $q->where('emisor_nombre', 'like', '%' . $request->emisor_nombre . '%');
+            }
+
+            if ($request->filled('rfc_receptor')) {
+                $q->where('rfc_receptor', 'like', '%' . $request->rfc_receptor . '%');
+            }
+
+            if ($request->filled('receptor_nombre')) {
+                $q->where('receptor_nombre', 'like', '%' . $request->receptor_nombre . '%');
+            }
+
+            if ($request->filled('tipo_comprobante')) {
+                $q->where('tipo_comprobante', $request->tipo_comprobante);
+            }
+
+            if ($request->filled('fecha_inicio')) {
+                $q->whereDate('fecha_emision', '>=', $request->fecha_inicio);
+            }
+
+            if ($request->filled('fecha_fin')) {
+                $q->whereDate('fecha_emision', '<=', $request->fecha_fin);
+            }
+
+            $totalFiltrado = (clone $q)->count();
+
+            $resumenIngresos = (clone $q)->where('tipo_comprobante', 'I')->count();
+            $resumenEgresos = (clone $q)->where('tipo_comprobante', 'E')->count();
+            $resumenPagos = (clone $q)->where('tipo_comprobante', 'P')->count();
+            $resumenNominas = (clone $q)->where('tipo_comprobante', 'N')->count();
+
+            $subtotalIngresos = (clone $q)->where('tipo_comprobante', 'I')->sum('total');
+            $subtotalEgresos = (clone $q)->where('tipo_comprobante', 'E')->sum('total');
+            $subtotalPagos = (clone $q)->where('tipo_comprobante', 'P')->sum('total');
+            $subtotalNominas = (clone $q)->where('tipo_comprobante', 'N')->sum('total');
+
+            $cfdis = $q->orderByDesc('fecha_emision')
+                ->paginate(20)
+                ->withQueryString();
+            
+            return view('sat.cfdis.index', compact(
+                'empresas',
+                'empresaSeleccionada',
+                'cfdis',
+                'totalGeneral',
+                'totalFiltrado',
+                'resumenIngresos',
+                'resumenEgresos',
+                'resumenPagos',
+                'resumenNominas',
+                'subtotalIngresos',
+                'subtotalEgresos',
+                'subtotalPagos',
+                'subtotalNominas',
+                'obras',
+                'ordenesCompra',
+                  'perPage',
+        'perPageOpciones'
+            ));
+        }
+
+    public function emisor(Request $request, string $rfc)
+    {
+        $rfc = strtoupper(trim($rfc));
         $empresaSeleccionada = null;
-        $obras = Obra::orderBy('nombre')->get();
-        $ordenesCompra = OrdenCompra::with('proveedor')
-        ->orderByDesc('id')
-        ->get();
-        $cfdis = collect();
 
-        $totalGeneral = 0;
-        $totalFiltrado = 0;
+        $query = SatCfdi::query()
+            ->with(['obra', 'ordenCompra'])
+            ->where('rfc_emisor', $rfc);
 
-        $resumenIngresos = 0;
-        $resumenEgresos = 0;
-        $resumenPagos = 0;
+        if ($request->filled('sat_empresa_id')) {
+            $empresaSeleccionada = SatEmpresa::find($request->sat_empresa_id);
 
-        $subtotalIngresos = 0;
-        $subtotalEgresos = 0;
-        $subtotalPagos = 0;
-
-        // Si no hay empresa seleccionada, no cargamos nada
-        if (! $request->filled('sat_empresa_id')) {
-            return view('sat.cfdis.index', compact(
-                'empresas',
-                'empresaSeleccionada',
-                'cfdis',
-                'totalGeneral',
-                'totalFiltrado',
-                'resumenIngresos',
-                'resumenEgresos',
-                'resumenPagos',
-                'subtotalIngresos',
-                'subtotalEgresos',
-                'subtotalPagos',
-                'obras',
-                'ordenesCompra'
-            ));
+            if ($empresaSeleccionada) {
+                $query->where(function ($sub) use ($empresaSeleccionada) {
+                    $sub->where('rfc_emisor', $empresaSeleccionada->rfc)
+                        ->orWhere('rfc_receptor', $empresaSeleccionada->rfc);
+                });
+            }
         }
 
-        $empresaSeleccionada = SatEmpresa::find($request->sat_empresa_id);
+        $baseQuery = clone $query;
+        $emisorNombre = (clone $baseQuery)
+            ->whereNotNull('emisor_nombre')
+            ->orderByDesc('fecha_emision')
+            ->value('emisor_nombre');
 
-        if (! $empresaSeleccionada) {
-            return view('sat.cfdis.index', compact(
-                'empresas',
-                'empresaSeleccionada',
-                'cfdis',
-                'totalGeneral',
-                'totalFiltrado',
-                'resumenIngresos',
-                'resumenEgresos',
-                'resumenPagos',
-                'subtotalIngresos',
-                'subtotalEgresos',
-                'subtotalPagos',
-                'obras',
-                'ordenesCompra'
-            ));
-        }
+        $inicioMes = now()->startOfMonth();
+        $inicioAnio = now()->startOfYear();
 
-        // $q = SatCfdi::query()->where(function ($sub) use ($empresaSeleccionada) {
-        // $q = SatCfdi::query()->with('obra')->where(function ($sub) use ($empresaSeleccionada) {
-        $q = SatCfdi::query()->with(['obra', 'ordenCompra'])->where(function ($sub) use ($empresaSeleccionada) {
-            $sub->where('rfc_emisor', $empresaSeleccionada->rfc)
-                ->orWhere('rfc_receptor', $empresaSeleccionada->rfc);
-        });
+        $kpis = [
+            'cantidad' => (clone $baseQuery)->count(),
+            'total' => (clone $baseQuery)->sum('total'),
+            'cantidad_mes' => (clone $baseQuery)->whereDate('fecha_emision', '>=', $inicioMes)->count(),
+            'total_mes' => (clone $baseQuery)->whereDate('fecha_emision', '>=', $inicioMes)->sum('total'),
+            'cantidad_anio' => (clone $baseQuery)->whereDate('fecha_emision', '>=', $inicioAnio)->count(),
+            'total_anio' => (clone $baseQuery)->whereDate('fecha_emision', '>=', $inicioAnio)->sum('total'),
+        ];
 
-        // Total de esa empresa antes de filtros adicionales
-        $totalGeneral = (clone $q)->count();
-
-        // Filtros adicionales
-        if ($request->filled('uuid')) {
-            $q->where('uuid', 'like', '%' . $request->uuid . '%');
-        }
-
-        if ($request->filled('rfc_emisor')) {
-            $q->where('rfc_emisor', 'like', '%' . $request->rfc_emisor . '%');
-        }
-
-        if ($request->filled('emisor_nombre')) {
-            $q->where('emisor_nombre', 'like', '%' . $request->emisor_nombre . '%');
-        }
-
-        if ($request->filled('rfc_receptor')) {
-            $q->where('rfc_receptor', 'like', '%' . $request->rfc_receptor . '%');
-        }
-
-        if ($request->filled('receptor_nombre')) {
-            $q->where('receptor_nombre', 'like', '%' . $request->receptor_nombre . '%');
-        }
-
-        if ($request->filled('tipo_comprobante')) {
-            $q->where('tipo_comprobante', $request->tipo_comprobante);
-        }
-
-        if ($request->filled('fecha_inicio')) {
-            $q->whereDate('fecha_emision', '>=', $request->fecha_inicio);
-        }
-
-        if ($request->filled('fecha_fin')) {
-            $q->whereDate('fecha_emision', '<=', $request->fecha_fin);
-        }
-
-        $totalFiltrado = (clone $q)->count();
-
-        $resumenIngresos = (clone $q)->where('tipo_comprobante', 'I')->count();
-        $resumenEgresos = (clone $q)->where('tipo_comprobante', 'E')->count();
-        $resumenPagos = (clone $q)->where('tipo_comprobante', 'P')->count();
-        $resumenNominas = (clone $q)->where('tipo_comprobante', 'N')->count();
-
-        $subtotalIngresos = (clone $q)->where('tipo_comprobante', 'I')->sum('total');
-        $subtotalEgresos = (clone $q)->where('tipo_comprobante', 'E')->sum('total');
-        $subtotalPagos = (clone $q)->where('tipo_comprobante', 'P')->sum('total');
-        $subtotalNominas = (clone $q)->where('tipo_comprobante', 'N')->sum('total');
-
-        $cfdis = $q->orderByDesc('fecha_emision')
-            ->paginate(20)
+        $cfdis = $query
+            ->orderByDesc('fecha_emision')
+            ->paginate(25)
             ->withQueryString();
-        
-        return view('sat.cfdis.index', compact(
-            'empresas',
-            'empresaSeleccionada',
+
+        return view('sat.cfdis.emisor', compact(
             'cfdis',
-            'totalGeneral',
-            'totalFiltrado',
-            'resumenIngresos',
-            'resumenEgresos',
-            'resumenPagos',
-            'resumenNominas',
-            'subtotalIngresos',
-            'subtotalEgresos',
-            'subtotalPagos',
-            'subtotalNominas',
-            'obras',
-            'ordenesCompra'
+            'empresaSeleccionada',
+            'emisorNombre',
+            'kpis',
+            'rfc'
         ));
     }
+
     public function show(\App\Models\SatCfdi $cfdi)
     {
         $cfdi->load('conceptos');

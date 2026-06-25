@@ -135,6 +135,7 @@
                 </div>
 
                 <div class="flex flex-wrap items-center justify-between gap-3">
+                    
                     <div class="flex flex-wrap items-center gap-2">
                         <button type="submit"
                                 class="inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
@@ -286,6 +287,7 @@
         {{-- Tabla --}}
         <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
+                
                 <table class="min-w-full text-sm">
                     <thead class="bg-indigo-50 text-gray-700">
                         <tr>
@@ -347,7 +349,14 @@
                                 </td>
 
                                 <td class="px-4 py-3 text-gray-700">
-                                    {{ $cfdi->rfc_emisor }}
+                                    @if($cfdi->rfc_emisor)
+                                        <a href="{{ route('sat.cfdis.emisor', ['rfc' => $cfdi->rfc_emisor, 'sat_empresa_id' => $empresaSeleccionada?->id]) }}"
+                                           class="font-semibold text-indigo-700 hover:text-indigo-900 hover:underline">
+                                            {{ $cfdi->rfc_emisor }}
+                                        </a>
+                                    @else
+                                        -
+                                    @endif
                                 </td>
 
                                 <td class="px-4 py-3 text-gray-700">
