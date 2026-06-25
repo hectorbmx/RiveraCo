@@ -38,6 +38,11 @@ class Cliente extends Model
     {
         return $this->hasMany(Obra::class);
     }
+    public function facturaBorradores()
+    {
+        return $this->hasMany(ObraFacturaBorrador::class);
+    }
+
     public function facturas()
 {
     return $this->hasMany(Factura::class,

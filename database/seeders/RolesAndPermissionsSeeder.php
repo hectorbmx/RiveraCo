@@ -42,6 +42,15 @@ class RolesAndPermissionsSeeder extends Seeder
             'obra-detalles.create',
             'obra-detalles.edit',
             'obra-detalles.delete',
+
+            // Borradores de factura de obra
+            'obra_factura_borradores.view',
+            'obra_factura_borradores.create',
+            'obra_factura_borradores.edit',
+            'obra_factura_borradores.print',
+            'obra_factura_borradores.authorize',
+            'obra_factura_borradores.reject',
+            'obra_factura_borradores.invoice',
         ];
 
         foreach ($permisos as $p) {
@@ -78,6 +87,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'obra-detalles.create',
             'obra-detalles.edit',
             'obra-detalles.delete',
+
+            'obra_factura_borradores.view',
+            'obra_factura_borradores.print',
+            'obra_factura_borradores.authorize',
+            'obra_factura_borradores.reject',
+            'obra_factura_borradores.invoice',
         ]);
 
         // Jefe de obra
@@ -90,6 +105,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'obra-detalles.view',
             'obra-detalles.create',
             'obra-detalles.edit',
+
+            'obra_factura_borradores.view',
+            'obra_factura_borradores.create',
+            'obra_factura_borradores.edit',
+            'obra_factura_borradores.print',
         ]);
 
         // Supervisor de obra

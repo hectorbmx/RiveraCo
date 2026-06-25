@@ -49,4 +49,18 @@ return [
         'CP01' => 'CP01 - Pagos',
         'CN01' => 'CN01 - Nomina',
     ],
+
+    'metodos_pago' => [
+        'PUE' => 'PUE - Pago en una sola exhibicion',
+        'PPD' => 'PPD - Pago en parcialidades',
+    ],
+
+    'formas_pago' => [
+        '03' => '03 - Transferencia electronica',
+        '01' => '01 - Efectivo',
+        '02' => '02 - Cheque nominativo',
+        '04' => '04 - Tarjeta de credito',
+        '28' => '28 - Tarjeta de debito',
+        '99' => '99 - Por definir',
+    ],
 ];

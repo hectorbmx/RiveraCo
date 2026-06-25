@@ -4085,7 +4085,12 @@ function relacionFacturasModal() {
 @if ($tab === 'facturacion')
     <h2 class="text-lg font-semibold mb-4">Facturación de la obra</h2>
 
-    <div x-data="relacionFacturasObra(@js($facturasDisponiblesRelacionar))"
+    <div x-data="relacionFacturasObra(@js($facturasDisponiblesRelacionar), @js($satConceptos->map(fn($concepto) => [
+            'id' => $concepto->id,
+            'descripcion' => $concepto->descripcion,
+            'precio_unitario' => (float) $concepto->precio_unitario,
+            'iva_tasa' => (float) $concepto->iva_tasa,
+        ])->values()))"
          class="bg-white border rounded-xl p-4 shadow-sm space-y-6" id="facturacion-tab">
 
         {{-- Encabezado y botón --}}
@@ -4102,12 +4107,14 @@ function relacionFacturasModal() {
                     + Relacionar facturas
                 </button>
 
-                <button type="button"
-                        id="btn-toggle-factura-form"
-                        class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg
-                               border border-slate-200 text-slate-600 hover:bg-slate-50 transition">
-                    Registro manual
-                </button>
+                @can('obra_factura_borradores.create')
+                    <button type="button"
+                            @click="openBorradorModal()"
+                            class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg
+                                   border border-slate-200 text-slate-600 hover:bg-slate-50 transition">
+                        Crear borrador
+                    </button>
+                @endcan
             </div>
         </div>
         @php
@@ -4145,6 +4152,74 @@ function relacionFacturasModal() {
     </div>
 </div>
 
+
+{{-- Borradores de factura --}}
+<div class="border border-slate-200 rounded-lg overflow-hidden">
+    <div class="bg-slate-50 px-3 py-2 border-b border-slate-200 flex items-center justify-between">
+        <h4 class="text-xs font-semibold text-slate-700 uppercase tracking-wide">Borradores de factura</h4>
+        <span class="text-xs text-slate-500">{{ $facturaBorradores->count() }} registro(s)</span>
+    </div>
+
+    @if($facturaBorradores->isEmpty())
+        <div class="p-4 text-sm text-slate-500">
+            Aun no hay borradores de factura para esta obra.
+        </div>
+    @else
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-white text-xs font-semibold text-slate-600">
+                    <tr>
+                        <th class="px-3 py-2 text-left">Fecha</th>
+                        <th class="px-3 py-2 text-left">Concepto</th>
+                        <th class="px-3 py-2 text-right">Subtotal</th>
+                        <th class="px-3 py-2 text-right">IVA</th>
+                        <th class="px-3 py-2 text-right">Retenciones</th>
+                        <th class="px-3 py-2 text-right">Descuentos</th>
+                        <th class="px-3 py-2 text-right">Total</th>
+                        <th class="px-3 py-2 text-center">Estatus</th>
+                        <th class="px-3 py-2 text-left">Creado por</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach($facturaBorradores as $borrador)
+                        <tr>
+                            <td class="px-3 py-2">{{ optional($borrador->fecha)->format('d/m/Y') }}</td>
+                            <td class="px-3 py-2">
+                                <div class="font-semibold text-slate-800">{{ $borrador->concepto_descripcion }}</div>
+                                <div class="text-[11px] text-slate-500">{{ $borrador->conceptoSat?->codigo ?: $borrador->conceptoSat?->clave_producto_servicio }}</div>
+                            </td>
+                            <td class="px-3 py-2 text-right">$ {{ number_format((float) $borrador->subtotal, 2) }}</td>
+                            <td class="px-3 py-2 text-right">$ {{ number_format((float) $borrador->iva, 2) }}</td>
+                            <td class="px-3 py-2 text-right">$ {{ number_format((float) $borrador->retenciones, 2) }}</td>
+                            <td class="px-3 py-2 text-right">$ {{ number_format((float) $borrador->descuentos, 2) }}</td>
+                            <td class="px-3 py-2 text-right font-semibold text-slate-900">$ {{ number_format((float) $borrador->total, 2) }}</td>
+                            <td class="px-3 py-2 text-center">
+                                <div class="inline-flex items-center justify-center gap-2">
+                                    <span class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold
+                                        {{ $borrador->estatus === 'autorizado'
+                                            ? 'bg-emerald-100 text-emerald-800'
+                                            : ($borrador->estatus === 'rechazado'
+                                                ? 'bg-red-100 text-red-800'
+                                                : 'bg-amber-100 text-amber-800') }}">
+                                        {{ \App\Models\ObraFacturaBorrador::estatusLabels()[$borrador->estatus] ?? ucfirst($borrador->estatus) }}
+                                    </span>
+                                    @can('obra_factura_borradores.print')
+                                        <a href="{{ route('obras.factura-borradores.print', [$obra, $borrador]) }}"
+                                           target="_blank"
+                                           class="text-[11px] font-semibold text-[#0B265A] hover:underline">
+                                            Imprimir
+                                        </a>
+                                    @endcan
+                                </div>
+                            </td>
+                            <td class="px-3 py-2">{{ $borrador->creador?->name ?: '-' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+</div>
 
        {{-- Tabla de facturas --}}
 @if($facturasSatObra->isEmpty())
@@ -4256,6 +4331,173 @@ function relacionFacturasModal() {
         </table>
     </div>
 @endif
+
+{{-- MODAL CREAR BORRADOR --}}
+<div x-show="openBorrador"
+     x-cloak
+     class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+
+    <div class="bg-white w-full max-w-4xl rounded-xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-start justify-between gap-4 mb-4">
+            <div>
+                <h3 class="text-lg font-semibold">Crear borrador de factura</h3>
+                <p class="text-sm text-slate-500">
+                    {{ $obra->cliente?->razon_social ?: $obra->cliente?->nombre_comercial ?: 'Cliente sin nombre' }}
+                </p>
+            </div>
+            <button type="button" @click="closeBorradorModal()" class="text-slate-400 hover:text-slate-600">x</button>
+        </div>
+
+        <form method="POST" action="{{ route('obras.factura-borradores.store', $obra) }}" class="space-y-4">
+            @csrf
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha</label>
+                    <input type="date"
+                           name="fecha"
+                           x-model="borradorForm.fecha"
+                           required
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Forma de pago</label>
+                    <select name="forma_pago"
+                            x-model="borradorForm.forma_pago"
+                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        @foreach($formasPagoCfdi as $clave => $label)
+                            <option value="{{ $clave }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Metodo de pago</label>
+                    <select name="metodo_pago"
+                            x-model="borradorForm.metodo_pago"
+                            required
+                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        @foreach($metodosPagoCfdi as $clave => $label)
+                            <option value="{{ $clave }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Uso CFDI</label>
+                    <select name="uso_cfdi"
+                            x-model="borradorForm.uso_cfdi"
+                            required
+                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        @foreach($usosCfdi as $clave => $label)
+                            <option value="{{ $clave }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Regimen fiscal del cliente</label>
+                    <div class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                        {{ $regimenesFiscales[$obra->cliente?->regimen_fiscal] ?? ($obra->cliente?->regimen_fiscal ?: 'Sin regimen fiscal capturado') }}
+                    </div>
+                </div>
+
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Concepto SAT</label>
+                    <select name="sat_concepto_id"
+                            x-model="borradorForm.sat_concepto_id"
+                            @change="selectBorradorConcepto()"
+                            required
+                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="">Selecciona un concepto</option>
+                        @foreach($satConceptos as $concepto)
+                            <option value="{{ $concepto->id }}">
+                                {{ $concepto->codigo ? $concepto->codigo . ' - ' : '' }}{{ $concepto->descripcion }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Concepto editado</label>
+                    <input type="text"
+                           name="concepto_descripcion"
+                           x-model="borradorForm.concepto_descripcion"
+                           required
+                           maxlength="255"
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Cantidad</label>
+                    <input type="number"
+                           name="cantidad"
+                           step="0.000001"
+                           min="0.000001"
+                           x-model.number="borradorForm.cantidad"
+                           required
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Subtotal</label>
+                    <input type="number"
+                           name="subtotal"
+                           step="0.01"
+                           min="0"
+                           x-model.number="borradorForm.subtotal"
+                           required
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">IVA</label>
+                    <input type="number"
+                           name="iva"
+                           step="0.01"
+                           min="0"
+                           x-model.number="borradorForm.iva"
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Retenciones</label>
+                    <input type="number"
+                           name="retenciones"
+                           step="0.01"
+                           min="0"
+                           x-model.number="borradorForm.retenciones"
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Descuentos</label>
+                    <input type="number"
+                           name="descuentos"
+                           step="0.01"
+                           min="0"
+                           x-model.number="borradorForm.descuentos"
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+
+                <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                    <div class="text-[11px] font-semibold text-slate-500 uppercase">Total automatico</div>
+                    <div class="text-lg font-semibold text-slate-900" x-text="money(totalBorrador())"></div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" @click="closeBorradorModal()" class="px-4 py-2 border rounded">
+                    Cancelar
+                </button>
+                <button type="submit" class="bg-[#0B265A] text-white px-4 py-2 rounded">
+                    Guardar borrador
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 {{-- MODAL RELACIONAR FACTURAS --}}
 <div x-show="open"
@@ -4615,14 +4857,29 @@ function relacionFacturasModal() {
 
     {{-- Script sencillo para mostrar/ocultar el formulario --}}
     <script>
-        function relacionFacturasObra(cfdisDisponibles) {
+        function relacionFacturasObra(cfdisDisponibles, conceptosSat) {
             return {
                 open: false,
                 openPago: false,
+                openBorrador: false,
                 cfdis: cfdisDisponibles || [],
+                conceptosSat: conceptosSat || [],
                 filteredCfdis: [],
                 selected: [],
                 pagoFactura: null,
+                borradorForm: {
+                    fecha: '',
+                    forma_pago: '03',
+                    metodo_pago: 'PUE',
+                    uso_cfdi: @js($obra->cliente?->uso_cfdi_default ?: 'G03'),
+                    sat_concepto_id: '',
+                    concepto_descripcion: '',
+                    cantidad: 1,
+                    subtotal: 0,
+                    iva: 0,
+                    retenciones: 0,
+                    descuentos: 0,
+                },
                 pagoForm: {
                     fecha_pago: '',
                     monto: '',
@@ -4678,6 +4935,52 @@ function relacionFacturasModal() {
                 closePagoModal() {
                     this.openPago = false;
                     this.pagoFactura = null;
+                },
+
+                openBorradorModal() {
+                    this.borradorForm = {
+                        fecha: new Date().toISOString().slice(0, 10),
+                        forma_pago: '03',
+                        metodo_pago: 'PUE',
+                        uso_cfdi: @js($obra->cliente?->uso_cfdi_default ?: 'G03'),
+                        sat_concepto_id: '',
+                        concepto_descripcion: '',
+                        cantidad: 1,
+                        subtotal: 0,
+                        iva: 0,
+                        retenciones: 0,
+                        descuentos: 0,
+                    };
+                    this.openBorrador = true;
+                },
+
+                closeBorradorModal() {
+                    this.openBorrador = false;
+                },
+
+                selectBorradorConcepto() {
+                    const concepto = this.conceptosSat.find(item => String(item.id) === String(this.borradorForm.sat_concepto_id));
+
+                    if (!concepto) {
+                        return;
+                    }
+
+                    const cantidad = Number(this.borradorForm.cantidad || 1);
+                    const precio = Number(concepto.precio_unitario || 0);
+                    const subtotal = Number((cantidad * precio).toFixed(2));
+
+                    this.borradorForm.concepto_descripcion = concepto.descripcion || '';
+                    this.borradorForm.subtotal = subtotal;
+                    this.borradorForm.iva = Number((subtotal * Number(concepto.iva_tasa || 0)).toFixed(2));
+                },
+
+                totalBorrador() {
+                    const subtotal = Number(this.borradorForm.subtotal || 0);
+                    const iva = Number(this.borradorForm.iva || 0);
+                    const retenciones = Number(this.borradorForm.retenciones || 0);
+                    const descuentos = Number(this.borradorForm.descuentos || 0);
+
+                    return Math.max(0, subtotal + iva - retenciones - descuentos);
                 },
 
                 money(value) {

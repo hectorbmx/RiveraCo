@@ -35,8 +35,71 @@ class VehiculoController extends Controller
 public function index()
 {
     $vehiculos = Vehiculo::with([
-        'asignacionActual.empleado'
+        'asignacionActual.empleado',
+        'seguros',
+        'documentoTarjetaCirculacionVigente',
     ])->orderBy('id', 'desc')->paginate(20);
+
+    $hoy = Carbon::today();
+    $limiteVencimiento = $hoy->copy()->addDays(30);
+
+    $vehiculos->getCollection()->transform(function (Vehiculo $vehiculo) use ($hoy, $limiteVencimiento) {
+        $seguros = $vehiculo->seguros
+            ->filter(fn ($seguro) => $seguro->estatus !== 'cancelada');
+
+        $seguroVigente = $seguros->first(function ($seguro) use ($hoy) {
+            return $seguro->vigencia_desde
+                && $seguro->vigencia_hasta
+                && $seguro->vigencia_desde->lte($hoy)
+                && $seguro->vigencia_hasta->gte($hoy);
+        });
+
+        $ultimoSeguro = $seguros->first();
+        $tarjeta = $vehiculo->documentoTarjetaCirculacionVigente;
+        $alertas = [];
+        $nivel = 'ok';
+
+        if (! $seguroVigente) {
+            $alertas[] = [
+                'texto' => $ultimoSeguro && $ultimoSeguro->vigencia_hasta && $ultimoSeguro->vigencia_hasta->lt($hoy)
+                    ? 'Seguro vencido'
+                    : 'Sin seguro',
+                'clase' => 'bg-red-100 text-red-700 border-red-200',
+            ];
+            $nivel = 'danger';
+        } elseif ($seguroVigente->vigencia_hasta && $seguroVigente->vigencia_hasta->lte($limiteVencimiento)) {
+            $alertas[] = [
+                'texto' => 'Seguro por vencer ' . $seguroVigente->vigencia_hasta->format('d/m/Y'),
+                'clase' => 'bg-amber-100 text-amber-800 border-amber-200',
+            ];
+            $nivel = 'warning';
+        }
+
+        if (! $tarjeta) {
+            $alertas[] = [
+                'texto' => 'Sin tarjeta',
+                'clase' => 'bg-red-100 text-red-700 border-red-200',
+            ];
+            $nivel = 'danger';
+        } elseif ($tarjeta->fecha_vencimiento && $tarjeta->fecha_vencimiento->lt($hoy)) {
+            $alertas[] = [
+                'texto' => 'Tarjeta vencida',
+                'clase' => 'bg-red-100 text-red-700 border-red-200',
+            ];
+            $nivel = 'danger';
+        } elseif ($tarjeta->fecha_vencimiento && $tarjeta->fecha_vencimiento->lte($limiteVencimiento)) {
+            $alertas[] = [
+                'texto' => 'Tarjeta por vencer ' . $tarjeta->fecha_vencimiento->format('d/m/Y'),
+                'clase' => 'bg-amber-100 text-amber-800 border-amber-200',
+            ];
+            $nivel = $nivel === 'danger' ? 'danger' : 'warning';
+        }
+
+        $vehiculo->documentos_alertas = $alertas;
+        $vehiculo->documentos_nivel = $nivel;
+
+        return $vehiculo;
+    });
 
     return view('vehiculos.index', compact('vehiculos'));
 }

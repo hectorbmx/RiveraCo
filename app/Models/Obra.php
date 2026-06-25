@@ -120,6 +120,11 @@ class Obra extends Model
     }
 
     // Relación con Empleado (responsable)
+    public function facturaBorradores()
+    {
+        return $this->hasMany(ObraFacturaBorrador::class);
+    }
+
     public function responsable()
     {
         return $this->belongsTo(Empleado::class, 'responsable_id', 'id_Empleado');

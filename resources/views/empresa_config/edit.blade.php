@@ -3,7 +3,7 @@
 @section('title', 'Configuración de la Empresa')
 
 @section('content')
-    <div class="max-w-7xl mx-auto px-4 py-6"
+    <div class="max-w-8xl mx-auto px-4 py-6"
          x-data="{
             tab: new URLSearchParams(window.location.search).get('tab') || 'general',
             setTab(t){

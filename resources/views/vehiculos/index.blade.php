@@ -38,6 +38,7 @@
                         <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Serie</th>
                         <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Tipo</th>
                         <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">KM</th>
+                        <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">AtenciÃ³n</th>
                         <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Estatus</th>
                         <th class="px-4 py-2 text-right text-xs font-semibold text-slate-500">Acciones</th>
                     </tr>
@@ -101,6 +102,23 @@
             </td>
 
 
+        {{-- AtenciÃ³n documental --}}
+        <td class="px-4 py-2 text-center">
+            @if(!empty($vehiculo->documentos_alertas))
+                <div class="flex flex-col items-center gap-1">
+                    @foreach($vehiculo->documentos_alertas as $alerta)
+                        <span class="inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold {{ $alerta['clase'] }}">
+                            {{ $alerta['texto'] }}
+                        </span>
+                    @endforeach
+                </div>
+            @else
+                <span class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
+                    Documentos OK
+                </span>
+            @endif
+        </td>
+
         {{-- Estatus --}}
         <td class="px-4 py-2 text-center">
             @php
@@ -134,7 +152,7 @@
     </tr>
 @empty
     <tr>
-        <td colspan="8" class="px-4 py-6 text-center text-sm text-slate-500">
+        <td colspan="11" class="px-4 py-6 text-center text-sm text-slate-500">
             No hay vehículos registrados.
         </td>
     </tr>

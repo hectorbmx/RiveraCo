@@ -521,6 +521,8 @@ Route::middleware('auth','verified')->group(function () {
 //relacionar facturas desde la vista de las obras
     Route::post('/obras/{obra}/relacionar-cfdis', [ObraController::class, 'relacionarCfdis'])->name('obras.relacionarCfdis');
     Route::post('/obras/{obra}/facturas-sat/pagos', [ObraController::class, 'storeFacturaPago'])->name('obras.facturas-sat.pagos.store');
+    Route::post('/obras/{obra}/factura-borradores', [ObraController::class, 'storeFacturaBorrador'])->name('obras.factura-borradores.store');
+    Route::get('/obras/{obra}/factura-borradores/{borrador}/imprimir', [ObraController::class, 'printFacturaBorrador'])->name('obras.factura-borradores.print');
     Route::resource('ordenes_compra', OrdenCompraController::class)->except(['show','destroy']);
     Route::post('ordenes_compra/{id}/autorizar', [OrdenCompraController::class, 'autorizar'])->name('ordenes_compra.autorizar');
     Route::post('ordenes_compra/{id}/cancelar', [OrdenCompraController::class, 'cancelar'])->name('ordenes_compra.cancelar');

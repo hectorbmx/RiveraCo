@@ -48,4 +48,8 @@ class SatConcepto extends Model
     {
         return (float) $this->iva_tasa * 100;
     }
+    public function facturaBorradores()
+    {
+        return $this->hasMany(ObraFacturaBorrador::class, 'sat_concepto_id');
+    }
 }

@@ -10,8 +10,10 @@ use App\Models\Cliente;
 use App\Models\SatCfdi;
 use App\Models\SatFactura;
 use App\Models\ObraFacturaPago;
+use App\Models\ObraFacturaBorrador;
 use App\Models\CuentaBancoEmpresa;
 use App\Models\MetodoPagoEmpresa;
+use App\Models\SatConcepto;
 use App\Models\User;
 use App\Models\Empleado;
 use App\Models\Area;
@@ -1084,6 +1086,17 @@ if ($tab === 'horas-maquina') {
         $metodosPago = MetodoPagoEmpresa::where('activo', true)
             ->orderBy('nombre')
             ->get();
+        $facturaBorradores = $obra->facturaBorradores()
+            ->with(['conceptoSat', 'creador', 'autorizador'])
+            ->latest()
+            ->get();
+        $satConceptos = SatConcepto::where('activo', true)
+            ->orderBy('descripcion')
+            ->get();
+        $usosCfdi = config('sat_catalogs.usos_cfdi', []);
+        $metodosPagoCfdi = config('sat_catalogs.metodos_pago', []);
+        $formasPagoCfdi = config('sat_catalogs.formas_pago', []);
+        $regimenesFiscales = config('sat_catalogs.regimenes_fiscales', []);
 
         $totalFacturadoSat = (float) $facturasSatObra
             ->where('estado', '!=', 'cancelada')
@@ -1154,6 +1167,12 @@ return view('obras.edit', [
     'facturasDisponiblesRelacionar' => $facturasDisponiblesRelacionar,
     'cuentasBanco'                => $cuentasBanco,
     'metodosPago'                 => $metodosPago,
+    'facturaBorradores'           => $facturaBorradores,
+    'satConceptos'                => $satConceptos,
+    'usosCfdi'                    => $usosCfdi,
+    'metodosPagoCfdi'             => $metodosPagoCfdi,
+    'formasPagoCfdi'              => $formasPagoCfdi,
+    'regimenesFiscales'           => $regimenesFiscales,
 
     // NUEVO: totales para el resumen de facturación
     'totalFacturado'              => $totalFacturado,
@@ -1643,6 +1662,87 @@ public function storeFacturaPago(Request $request, Obra $obra)
         ->with('success', $metodoPagoCfdi === 'PPD'
             ? 'Pago registrado. Esta factura requiere complemento de pago timbrado.'
             : 'Pago registrado correctamente.');
+}
+
+public function storeFacturaBorrador(Request $request, Obra $obra)
+{
+    $this->abortarSiObraFueraDeArea($obra);
+    abort_unless(auth()->user()?->can('obra_factura_borradores.create'), 403);
+
+    $formasPago = array_keys(config('sat_catalogs.formas_pago', []));
+    $metodosPago = array_keys(config('sat_catalogs.metodos_pago', []));
+    $usosCfdi = array_keys(config('sat_catalogs.usos_cfdi', []));
+
+    $data = $request->validate([
+        'fecha' => ['required', 'date'],
+        'forma_pago' => ['nullable', 'string', 'in:' . implode(',', $formasPago)],
+        'metodo_pago' => ['required', 'string', 'in:' . implode(',', $metodosPago)],
+        'uso_cfdi' => ['required', 'string', 'in:' . implode(',', $usosCfdi)],
+        'sat_concepto_id' => ['required', 'exists:sat_conceptos,id'],
+        'concepto_descripcion' => ['required', 'string', 'max:255'],
+        'cantidad' => ['required', 'numeric', 'min:0.000001'],
+        'subtotal' => ['required', 'numeric', 'min:0'],
+        'iva' => ['nullable', 'numeric', 'min:0'],
+        'retenciones' => ['nullable', 'numeric', 'min:0'],
+        'descuentos' => ['nullable', 'numeric', 'min:0'],
+    ]);
+
+    $cliente = $obra->cliente;
+
+    if (! $cliente) {
+        return back()->withInput()->with('error', 'La obra no tiene cliente asignado.');
+    }
+
+    $subtotal = round((float) $data['subtotal'], 2);
+    $iva = round((float) ($data['iva'] ?? 0), 2);
+    $retenciones = round((float) ($data['retenciones'] ?? 0), 2);
+    $descuentos = round((float) ($data['descuentos'] ?? 0), 2);
+    $total = round(max(0, $subtotal + $iva - $retenciones - $descuentos), 2);
+
+    ObraFacturaBorrador::create([
+        'obra_id' => $obra->id,
+        'cliente_id' => $cliente->id,
+        'fecha' => $data['fecha'],
+        'forma_pago' => $data['forma_pago'] ?? null,
+        'metodo_pago' => $data['metodo_pago'],
+        'uso_cfdi' => $data['uso_cfdi'],
+        'regimen_fiscal' => $cliente->regimen_fiscal,
+        'sat_concepto_id' => $data['sat_concepto_id'],
+        'concepto_descripcion' => $data['concepto_descripcion'],
+        'cantidad' => $data['cantidad'],
+        'subtotal' => $subtotal,
+        'iva' => $iva,
+        'retenciones' => $retenciones,
+        'descuentos' => $descuentos,
+        'total' => $total,
+        'estatus' => ObraFacturaBorrador::ESTATUS_PENDIENTE_REVISION,
+        'creado_por' => auth()->id(),
+    ]);
+
+    return redirect()
+        ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'facturacion'])
+        ->with('success', 'Borrador de factura creado correctamente.');
+}
+
+public function printFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrador)
+{
+    $this->abortarSiObraFueraDeArea($obra);
+    abort_unless(auth()->user()?->can('obra_factura_borradores.print'), 403);
+
+    if ((int) $borrador->obra_id !== (int) $obra->id) {
+        abort(404);
+    }
+
+    $borrador->load(['obra.cliente', 'conceptoSat', 'creador', 'autorizador']);
+
+    return view('obras.factura-borradores.print', [
+        'obra' => $obra,
+        'borrador' => $borrador,
+        'regimenesFiscales' => config('sat_catalogs.regimenes_fiscales', []),
+        'usosCfdi' => config('sat_catalogs.usos_cfdi', []),
+        'metodosPagoCfdi' => config('sat_catalogs.metodos_pago', []),
+        'formasPagoCfdi' => config('sat_catalogs.formas_pago', []),
+    ]);
 }
 
 public function relacionarCfdis(Request $request, Obra $obra)
