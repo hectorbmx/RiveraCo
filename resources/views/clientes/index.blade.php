@@ -8,8 +8,8 @@
 <div class="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
     <h1 class="text-2xl font-bold text-[#0B265A]">Clientes</h1>
 
-    <div class="flex flex-1 w-full md:max-w-md">
-        <form action="{{ route('clientes.index') }}" method="GET" class="w-full flex gap-2">
+    <div class="flex flex-1 w-full md:max-w-4xl">
+        <form action="{{ route('clientes.index') }}" method="GET" class="w-full grid grid-cols-1 md:grid-cols-[1fr_150px_130px_auto_auto] gap-2">
             <div class="relative flex-1">
                 <input type="text" 
                        name="search" 
@@ -22,10 +22,26 @@
                     </svg>
                 </div>
             </div>
+            <select name="activo"
+                    onchange="this.form.submit()"
+                    class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B265A] focus:border-transparent transition">
+                <option value="todos" @selected(($activo ?? 'todos') === 'todos')>Todos</option>
+                <option value="1" @selected(($activo ?? 'todos') === '1')>Activos</option>
+                <option value="0" @selected(($activo ?? 'todos') === '0')>Inactivos</option>
+            </select>
+            <select name="per_page"
+                    onchange="this.form.submit()"
+                    class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B265A] focus:border-transparent transition">
+                @foreach($perPageOpciones as $opcion)
+                    <option value="{{ $opcion }}" @selected((int) ($perPage ?? 10) === $opcion)>
+                        {{ $opcion }} filas
+                    </option>
+                @endforeach
+            </select>
             <button type="submit" class="bg-[#0B265A] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#163a7a] transition">
                 Buscar
             </button>
-            @if(request('search'))
+            @if(request('search') || request('activo', 'todos') !== 'todos' || (int) request('per_page', 10) !== 10)
                 <a href="{{ route('clientes.index') }}" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-300 transition">
                     Limpiar
                 </a>

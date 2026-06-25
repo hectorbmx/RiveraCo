@@ -10,6 +10,13 @@ class ClienteController extends Controller
     public function index(Request $request)
     {
         $search = $request->query('search');
+        $activo = $request->query('activo', 'todos');
+        $perPageOpciones = [10, 20, 50, 100];
+        $perPage = (int) $request->query('per_page', 10);
+
+        if (!in_array($perPage, $perPageOpciones, true)) {
+            $perPage = 10;
+        }
 
         $clientes = Cliente::query()
             ->when($search, function ($query, $search) {
@@ -19,11 +26,14 @@ class ClienteController extends Controller
                       ->orWhere('rfc', 'like', "%{$search}%");
                 });
             })
+            ->when($activo !== 'todos', function ($query) use ($activo) {
+                $query->where('activo', (int) $activo);
+            })
             ->orderBy('nombre_comercial')
-            ->paginate(10)
+            ->paginate($perPage)
             ->withQueryString();
 
-        return view('clientes.index', compact('clientes', 'search'));
+        return view('clientes.index', compact('clientes', 'search', 'activo', 'perPage', 'perPageOpciones'));
     }
 
     public function checkDuplicate(Request $request)
