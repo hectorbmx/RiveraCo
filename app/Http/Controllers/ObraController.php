@@ -185,7 +185,7 @@ private function aplicarVisibilidadObras($query): void
 {
     $user = auth()->user();
 
-    if (!$user || $user->hasRole('super-admin')) {
+    if (!$user || $user->hasAnyRole(['super-admin', 'admin-rivera'])) {
         return;
     }
 
@@ -237,7 +237,7 @@ private function aplicarVisibilidadObras($query): void
 
     $areaUsuarioId = $this->areaUsuarioActualId();
 
-    if (!$areaUsuarioId || $this->usuarioActualEsResidente()) {
+    if (!$areaUsuarioId || auth()->user()?->hasRole('admin-rivera') || $this->usuarioActualEsResidente()) {
         return $tipos;
     }
 
@@ -284,7 +284,7 @@ private function abortarSiObraFueraDeArea(Obra $obra): void
 {
     $user = auth()->user();
 
-    if (!$user || $user->hasRole('super-admin')) {
+    if (!$user || $user->hasAnyRole(['super-admin', 'admin-rivera'])) {
         return;
     }
 
@@ -1667,7 +1667,7 @@ public function storeFacturaPago(Request $request, Obra $obra)
 public function storeFacturaBorrador(Request $request, Obra $obra)
 {
     $this->abortarSiObraFueraDeArea($obra);
-    abort_unless(auth()->user()?->can('obra_factura_borradores.create'), 403);
+    abort_unless(auth()->user()?->can('obra_factura_borradores.create.access'), 403);
 
     $formasPago = array_keys(config('sat_catalogs.formas_pago', []));
     $metodosPago = array_keys(config('sat_catalogs.metodos_pago', []));
@@ -1727,7 +1727,7 @@ public function storeFacturaBorrador(Request $request, Obra $obra)
 public function printFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrador)
 {
     $this->abortarSiObraFueraDeArea($obra);
-    abort_unless(auth()->user()?->can('obra_factura_borradores.print'), 403);
+    abort_unless(auth()->user()?->can('obra_factura_borradores.print.access'), 403);
 
     if ((int) $borrador->obra_id !== (int) $obra->id) {
         abort(404);

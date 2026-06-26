@@ -4203,7 +4203,7 @@ function relacionFacturasModal() {
                                                 : 'bg-amber-100 text-amber-800') }}">
                                         {{ \App\Models\ObraFacturaBorrador::estatusLabels()[$borrador->estatus] ?? ucfirst($borrador->estatus) }}
                                     </span>
-                                    @can('obra_factura_borradores.print')
+                                    @can('obra_factura_borradores.print.access')
                                         <a href="{{ route('obras.factura-borradores.print', [$obra, $borrador]) }}"
                                            target="_blank"
                                            class="text-[11px] font-semibold text-[#0B265A] hover:underline">

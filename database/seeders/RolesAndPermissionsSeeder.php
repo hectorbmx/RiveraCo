@@ -44,13 +44,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'obra-detalles.delete',
 
             // Borradores de factura de obra
-            'obra_factura_borradores.view',
-            'obra_factura_borradores.create',
-            'obra_factura_borradores.edit',
-            'obra_factura_borradores.print',
-            'obra_factura_borradores.authorize',
-            'obra_factura_borradores.reject',
-            'obra_factura_borradores.invoice',
+            'obra_factura_borradores.view.access',
+            'obra_factura_borradores.create.access',
+            'obra_factura_borradores.edit.access',
+            'obra_factura_borradores.print.access',
+            'obra_factura_borradores.authorize.access',
+            'obra_factura_borradores.reject.access',
+            'obra_factura_borradores.invoice.access',
         ];
 
         foreach ($permisos as $p) {
@@ -88,11 +88,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'obra-detalles.edit',
             'obra-detalles.delete',
 
-            'obra_factura_borradores.view',
-            'obra_factura_borradores.print',
-            'obra_factura_borradores.authorize',
-            'obra_factura_borradores.reject',
-            'obra_factura_borradores.invoice',
+            'obra_factura_borradores.view.access',
+            'obra_factura_borradores.create.access',
+            'obra_factura_borradores.edit.access',
+            'obra_factura_borradores.print.access',
+            'obra_factura_borradores.authorize.access',
+            'obra_factura_borradores.reject.access',
+            'obra_factura_borradores.invoice.access',
         ]);
 
         // Jefe de obra
@@ -106,10 +108,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'obra-detalles.create',
             'obra-detalles.edit',
 
-            'obra_factura_borradores.view',
-            'obra_factura_borradores.create',
-            'obra_factura_borradores.edit',
-            'obra_factura_borradores.print',
+            'obra_factura_borradores.view.access',
+            'obra_factura_borradores.create.access',
+            'obra_factura_borradores.edit.access',
+            'obra_factura_borradores.print.access',
         ]);
 
         // Supervisor de obra
