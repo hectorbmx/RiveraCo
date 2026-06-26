@@ -390,6 +390,9 @@
                                         <div class="flex gap-3">
                                             <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 text-sm">
                                                 @switch($notification->data['tipo'] ?? '')
+                                                    @case('factura_borrador') BF @break
+                                                    @case('factura_borrador_autorizado') OK @break
+                                                    @case('factura_borrador_rechazado') NO @break
                                                     @case('solicitud_gasto') 💰 @break
                                                     @case('orden_compra') 🛒 @break
                                                     @case('vencimiento_seguro') 🛡️ @break

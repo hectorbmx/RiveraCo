@@ -186,7 +186,7 @@ Decision confirmada:
 Evento al crear borrador:
 
 - Mensaje: `Borrador de factura creado para obra {clave/nombre}`
-- Destinatarios: usuarios con rol Spatie `admin-rivera`.
+- Destinatarios: usuarios con rol Spatie `admin-rivera` y `super-admin`.
 
 Evento al autorizar:
 
@@ -367,7 +367,7 @@ Decisiones cerradas despues de Fase 1:
 
 - `admin-rivera` representa al gerente administrativo.
 - El creador si puede editar despues de enviarlo a revision.
-- La notificacion de borrador creado se enviara a usuarios con rol `admin-rivera`.
+- La notificacion de borrador creado se enviara a usuarios con rol `admin-rivera` y `super-admin`.
 
 ### Fase 2: Base de datos y modelo
 
@@ -482,18 +482,18 @@ Validaciones ejecutadas:
 
 ### Fase 4: Listado de borradores
 
-- [ ] Agregar tabla/listado de borradores en tab facturacion.
-- [ ] Mostrar badges de estatus.
-- [ ] Mostrar auditoria basica: creado por, autorizado por.
-- [ ] Agregar accion `Imprimir`.
+- [x] Agregar tabla/listado de borradores en tab facturacion.
+- [x] Mostrar badges de estatus.
+- [x] Mostrar auditoria basica: creado por, autorizado por.
+- [x] Agregar accion `Imprimir`.
 
 ### Fase 5: Impresion
 
-- [ ] Crear ruta de impresion.
-- [ ] Crear vista imprimible.
-- [ ] Incluir datos de obra, cliente, regimen fiscal, forma/metodo/uso CFDI.
-- [ ] Incluir concepto e importes.
-- [ ] Incluir estatus y firmas/datos de autorizacion si existen.
+- [x] Crear ruta de impresion.
+- [x] Crear vista imprimible.
+- [x] Incluir datos de obra, cliente, regimen fiscal, forma/metodo/uso CFDI.
+- [x] Incluir concepto e importes.
+- [x] Incluir estatus y firmas/datos de autorizacion si existen.
 
 ### Fase 6: Autorizacion y rechazo
 
@@ -537,10 +537,55 @@ Validaciones ejecutadas:
 
 ### Fase 7: Notificaciones
 
-- [ ] Crear notificacion al guardar borrador.
-- [ ] Crear notificacion al autorizar.
-- [ ] Crear notificacion al rechazar.
-- [ ] Confirmar destinatarios reales por rol/permiso.
+- [x] Crear notificacion al guardar borrador.
+- [x] Crear notificacion al autorizar.
+- [x] Crear notificacion al rechazar.
+- [x] Confirmar destinatarios reales por rol/permiso.
+
+#### Hallazgos Fase 7
+
+Fecha de ejecucion: 2026-06-26.
+
+Implementado:
+
+- Notificacion:
+  - `App\Notifications\FacturaBorradorCreado`
+  - `App\Notifications\FacturaBorradorAutorizado`
+  - `App\Notifications\FacturaBorradorRechazado`
+- Canal:
+  - `database`
+- Destinatarios al crear:
+  - Usuarios con rol `admin-rivera`
+  - Usuarios con rol `super-admin`
+- Destinatario al autorizar/rechazar:
+  - Creador del borrador.
+- Disparos:
+  - Al crear borrador desde `ObraController@storeFacturaBorrador`.
+  - Al autorizar borrador desde `ObraController@autorizarFacturaBorrador`.
+  - Al rechazar borrador desde `ObraController@rechazarFacturaBorrador`.
+- Datos incluidos:
+  - `tipo`: `factura_borrador`
+  - `obra_id`
+  - `obra_nombre`
+  - `obra_clave`
+  - `cliente`
+  - `total`
+  - `creado_por_name`
+  - `mensaje`
+  - `url` al tab `facturacion` de la obra.
+- UI:
+  - Se agrego identificador `BF` en campana y centro de notificaciones.
+  - El centro de notificaciones muestra obra, cliente y total.
+  - Se agregaron identificadores `OK` y `NO` para autorizacion y rechazo.
+  - El rechazo muestra observaciones de revision cuando existen.
+
+Validaciones ejecutadas:
+
+- `php -l app/Notifications/FacturaBorradorCreado.php`
+- `php -l app/Notifications/FacturaBorradorAutorizado.php`
+- `php -l app/Notifications/FacturaBorradorRechazado.php`
+- `php -l app/Http/Controllers/ObraController.php`
+- `php artisan view:cache`
 
 ### Fase 8: Conexion con facturacion real
 

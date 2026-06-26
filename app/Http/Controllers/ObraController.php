@@ -38,6 +38,10 @@ use App\Models\ObraAsistencia;
 use Carbon\Carbon;
 use App\Models\OrdenCompra;
 use App\Models\ObraFolio;
+use App\Notifications\FacturaBorradorAutorizado;
+use App\Notifications\FacturaBorradorCreado;
+use App\Notifications\FacturaBorradorRechazado;
+use Illuminate\Support\Facades\Notification;
 
 
 
@@ -1699,7 +1703,7 @@ public function storeFacturaBorrador(Request $request, Obra $obra)
     $descuentos = round((float) ($data['descuentos'] ?? 0), 2);
     $total = round(max(0, $subtotal + $iva - $retenciones - $descuentos), 2);
 
-    ObraFacturaBorrador::create([
+    $borrador = ObraFacturaBorrador::create([
         'obra_id' => $obra->id,
         'cliente_id' => $cliente->id,
         'fecha' => $data['fecha'],
@@ -1718,6 +1722,13 @@ public function storeFacturaBorrador(Request $request, Obra $obra)
         'estatus' => ObraFacturaBorrador::ESTATUS_PENDIENTE_REVISION,
         'creado_por' => auth()->id(),
     ]);
+
+    $borrador->load(['obra', 'cliente', 'creador']);
+    $revisores = User::role(['admin-rivera', 'super-admin'])->get();
+
+    if ($revisores->isNotEmpty()) {
+        Notification::send($revisores, new FacturaBorradorCreado($borrador));
+    }
 
     return redirect()
         ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'facturacion'])
@@ -1761,6 +1772,9 @@ public function autorizarFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrad
         'observaciones_revision' => null,
     ]);
 
+    $borrador->load(['obra', 'cliente', 'creador', 'autorizador']);
+    $borrador->creador?->notify(new FacturaBorradorAutorizado($borrador));
+
     return redirect()
         ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'facturacion'])
         ->with('success', 'Borrador autorizado correctamente.');
@@ -1785,6 +1799,9 @@ public function rechazarFacturaBorrador(Request $request, Obra $obra, ObraFactur
         'autorizado_por' => null,
         'autorizado_at' => null,
     ]);
+
+    $borrador->load(['obra', 'cliente', 'creador', 'rechazador']);
+    $borrador->creador?->notify(new FacturaBorradorRechazado($borrador));
 
     return redirect()
         ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'facturacion'])

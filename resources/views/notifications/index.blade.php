@@ -24,6 +24,9 @@
                     <div class="flex gap-4">
                         <div class="w-12 h-12 rounded-2xl {{ $notification->unread() ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400' }} flex items-center justify-center flex-shrink-0 text-xl">
                             @switch($notification->data['tipo'] ?? '')
+                                @case('factura_borrador') BF @break
+                                @case('factura_borrador_autorizado') OK @break
+                                @case('factura_borrador_rechazado') NO @break
                                 @case('solicitud_gasto') 💰 @break
                                 @case('orden_compra') 🛒 @break
                                 @case('vencimiento_seguro') 🛡️ @break
@@ -53,6 +56,21 @@
                                 @elseif(($notification->data['tipo'] ?? '') === 'vencimiento_seguro')
                                     Vence el: <span class="font-medium text-slate-700">{{ $notification->data['vence'] }}</span> | 
                                     {{ $notification->data['asegurable_nombre'] }}
+                                @elseif(($notification->data['tipo'] ?? '') === 'factura_borrador')
+                                    Obra: <span class="font-medium text-slate-700">{{ $notification->data['obra_nombre'] }}</span> | 
+                                    Cliente: <span class="font-medium text-slate-700">{{ $notification->data['cliente'] }}</span> | 
+                                    Total: <span class="font-medium text-slate-700">${{ number_format($notification->data['total'], 2) }}</span>
+                                @elseif(($notification->data['tipo'] ?? '') === 'factura_borrador_autorizado')
+                                    Obra: <span class="font-medium text-slate-700">{{ $notification->data['obra_nombre'] }}</span> | 
+                                    Total: <span class="font-medium text-slate-700">${{ number_format($notification->data['total'], 2) }}</span> | 
+                                    Autorizo: <span class="font-medium text-slate-700">{{ $notification->data['autorizado_por_name'] }}</span>
+                                @elseif(($notification->data['tipo'] ?? '') === 'factura_borrador_rechazado')
+                                    Obra: <span class="font-medium text-slate-700">{{ $notification->data['obra_nombre'] }}</span> | 
+                                    Total: <span class="font-medium text-slate-700">${{ number_format($notification->data['total'], 2) }}</span> | 
+                                    Rechazo: <span class="font-medium text-slate-700">{{ $notification->data['rechazado_por_name'] }}</span>
+                                    @if(!empty($notification->data['observaciones_revision']))
+                                        <div class="mt-1 text-slate-500">{{ $notification->data['observaciones_revision'] }}</div>
+                                    @endif
                                 @endif
                             </div>
 
