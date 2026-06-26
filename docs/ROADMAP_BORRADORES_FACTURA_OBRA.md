@@ -497,12 +497,43 @@ Validaciones ejecutadas:
 
 ### Fase 6: Autorizacion y rechazo
 
-- [ ] Crear rutas `autorizar` y `rechazar`.
-- [ ] Validar permisos.
-- [ ] Guardar `autorizado_por` y `autorizado_at`.
-- [ ] Guardar `rechazado_por`, `rechazado_at` y `observaciones_revision`.
-- [ ] Bloquear autorizacion doble.
-- [ ] Bloquear cambios indebidos si ya esta facturado.
+- [x] Crear rutas `autorizar` y `rechazar`.
+- [x] Validar permisos.
+- [x] Guardar `autorizado_por` y `autorizado_at`.
+- [x] Guardar `rechazado_por`, `rechazado_at` y `observaciones_revision`.
+- [x] Bloquear autorizacion doble.
+- [x] Bloquear cambios indebidos si ya esta facturado.
+
+#### Hallazgos Fase 6
+
+Fecha de ejecucion: 2026-06-26.
+
+Implementado:
+
+- Rutas:
+  - `POST /obras/{obra}/factura-borradores/{borrador}/autorizar`
+  - `POST /obras/{obra}/factura-borradores/{borrador}/rechazar`
+- Metodos:
+  - `ObraController@autorizarFacturaBorrador`
+  - `ObraController@rechazarFacturaBorrador`
+- Permisos:
+  - `obra_factura_borradores.authorize.access`
+  - `obra_factura_borradores.reject.access`
+- Vista:
+  - Se agrego columna `Revision` en la tabla de borradores.
+  - Boton `Autorizar`.
+  - Boton `Rechazar` con captura simple de observacion mediante prompt.
+- Reglas:
+  - El borrador debe pertenecer a la obra.
+  - No se puede autorizar/rechazar si esta `facturado` o `cancelado`.
+  - Autorizar limpia rechazo previo.
+  - Rechazar limpia autorizacion previa.
+
+Validaciones ejecutadas:
+
+- `php -l app/Http/Controllers/ObraController.php`
+- `php artisan route:list --name=obras.factura-borradores`
+- `php artisan view:cache`
 
 ### Fase 7: Notificaciones
 

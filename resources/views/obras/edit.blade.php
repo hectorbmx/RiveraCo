@@ -4178,6 +4178,7 @@ function relacionFacturasModal() {
                         <th class="px-3 py-2 text-right">Total</th>
                         <th class="px-3 py-2 text-center">Estatus</th>
                         <th class="px-3 py-2 text-left">Creado por</th>
+                        <th class="px-3 py-2 text-center">Revision</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -4213,6 +4214,44 @@ function relacionFacturasModal() {
                                 </div>
                             </td>
                             <td class="px-3 py-2">{{ $borrador->creador?->name ?: '-' }}</td>
+                            <td class="px-3 py-2 text-center">
+                                <div class="flex flex-wrap items-center justify-center gap-2">
+                                    @can('obra_factura_borradores.authorize.access')
+                                        @if(!in_array($borrador->estatus, ['facturado', 'cancelado'], true))
+                                            <form method="POST"
+                                                  action="{{ route('obras.factura-borradores.autorizar', [$obra, $borrador]) }}"
+                                                  onsubmit="return confirm('Autorizar este borrador de factura?');">
+                                                @csrf
+                                                <button type="submit"
+                                                        class="text-[11px] font-semibold rounded-lg bg-emerald-50 px-2.5 py-1 text-emerald-700 border border-emerald-200 hover:bg-emerald-100">
+                                                    Autorizar
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @endcan
+
+                                    @can('obra_factura_borradores.reject.access')
+                                        @if(!in_array($borrador->estatus, ['facturado', 'cancelado'], true))
+                                            <form method="POST"
+                                                  action="{{ route('obras.factura-borradores.rechazar', [$obra, $borrador]) }}"
+                                                  onsubmit="const obs = prompt('Motivo del rechazo (opcional):'); if (obs === null) return false; this.querySelector('[name=observaciones_revision]').value = obs; return true;">
+                                                @csrf
+                                                <input type="hidden" name="observaciones_revision" value="">
+                                                <button type="submit"
+                                                        class="text-[11px] font-semibold rounded-lg bg-red-50 px-2.5 py-1 text-red-700 border border-red-200 hover:bg-red-100">
+                                                    Rechazar
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @endcan
+
+                                    @if($borrador->observaciones_revision)
+                                        <span class="text-[11px] text-slate-500" title="{{ $borrador->observaciones_revision }}">
+                                            Con observacion
+                                        </span>
+                                    @endif
+                                </div>
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>

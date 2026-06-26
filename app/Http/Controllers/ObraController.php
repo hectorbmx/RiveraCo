@@ -1745,6 +1745,69 @@ public function printFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrador)
     ]);
 }
 
+public function autorizarFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrador)
+{
+    $this->abortarSiObraFueraDeArea($obra);
+    abort_unless(auth()->user()?->can('obra_factura_borradores.authorize.access'), 403);
+    $this->validarBorradorPerteneceAObra($obra, $borrador);
+    $this->abortarSiBorradorCerrado($borrador);
+
+    $borrador->update([
+        'estatus' => ObraFacturaBorrador::ESTATUS_AUTORIZADO,
+        'autorizado_por' => auth()->id(),
+        'autorizado_at' => now(),
+        'rechazado_por' => null,
+        'rechazado_at' => null,
+        'observaciones_revision' => null,
+    ]);
+
+    return redirect()
+        ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'facturacion'])
+        ->with('success', 'Borrador autorizado correctamente.');
+}
+
+public function rechazarFacturaBorrador(Request $request, Obra $obra, ObraFacturaBorrador $borrador)
+{
+    $this->abortarSiObraFueraDeArea($obra);
+    abort_unless(auth()->user()?->can('obra_factura_borradores.reject.access'), 403);
+    $this->validarBorradorPerteneceAObra($obra, $borrador);
+    $this->abortarSiBorradorCerrado($borrador);
+
+    $data = $request->validate([
+        'observaciones_revision' => ['nullable', 'string', 'max:1000'],
+    ]);
+
+    $borrador->update([
+        'estatus' => ObraFacturaBorrador::ESTATUS_RECHAZADO,
+        'rechazado_por' => auth()->id(),
+        'rechazado_at' => now(),
+        'observaciones_revision' => $data['observaciones_revision'] ?? null,
+        'autorizado_por' => null,
+        'autorizado_at' => null,
+    ]);
+
+    return redirect()
+        ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'facturacion'])
+        ->with('success', 'Borrador rechazado correctamente.');
+}
+
+private function validarBorradorPerteneceAObra(Obra $obra, ObraFacturaBorrador $borrador): void
+{
+    if ((int) $borrador->obra_id !== (int) $obra->id) {
+        abort(404);
+    }
+}
+
+private function abortarSiBorradorCerrado(ObraFacturaBorrador $borrador): void
+{
+    if (in_array($borrador->estatus, [
+        ObraFacturaBorrador::ESTATUS_FACTURADO,
+        ObraFacturaBorrador::ESTATUS_CANCELADO,
+    ], true)) {
+        abort(422, 'Este borrador ya no puede cambiar de estatus.');
+    }
+}
+
 public function relacionarCfdis(Request $request, Obra $obra)
 {
     $validated = $request->validate([
