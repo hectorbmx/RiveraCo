@@ -120,6 +120,16 @@
             padding-top: 8px;
             text-align: center;
         }
+        .signature .name {
+            color: #172033;
+            font-weight: 700;
+            margin-top: 6px;
+        }
+        .signature .role {
+            color: #64748b;
+            font-size: 11px;
+            margin-top: 2px;
+        }
         @media print {
             .toolbar { display: none; }
             .page { padding: 0; }
@@ -204,8 +214,20 @@
         </section>
 
         <section class="signatures">
-            <div class="signature">Solicita</div>
-            <div class="signature">Autoriza</div>
+            <div class="signature">
+                Solicita
+                @if($borrador->estatus === \App\Models\ObraFacturaBorrador::ESTATUS_AUTORIZADO)
+                    <div class="name">{{ $borrador->creador?->name ?: '-' }}</div>
+                    <div class="role">Solicitante</div>
+                @endif
+            </div>
+            <div class="signature">
+                Autoriza
+                @if($borrador->estatus === \App\Models\ObraFacturaBorrador::ESTATUS_AUTORIZADO)
+                    <div class="name">{{ $borrador->autorizador?->name ?: '-' }}</div>
+                    <div class="role">Autorizador</div>
+                @endif
+            </div>
         </section>
     </main>
 </body>
