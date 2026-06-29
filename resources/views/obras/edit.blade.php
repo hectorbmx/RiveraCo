@@ -4341,9 +4341,22 @@ function relacionFacturasModal() {
                                 {{ ucfirst($factura['estado_pago']) }}
                             </span>
                             @if($factura['requiere_complemento_pago'] && $factura['pagado'] > 0)
-                                <div class="mt-1 text-[10px] font-semibold text-amber-700">
-                                    Requiere complemento
-                                </div>
+                                @php
+                                    $pagosConComplemento = $factura['pagos']->filter(fn ($pago) => filled($pago->sat_factura_pago_id));
+                                    $pagosSinComplemento = $factura['pagos']->filter(fn ($pago) => blank($pago->sat_factura_pago_id));
+                                @endphp
+
+                                @if($pagosSinComplemento->isNotEmpty())
+                                    <div class="mt-1 text-[10px] font-semibold text-amber-700">
+                                        Requiere complemento
+                                    </div>
+                                @endif
+
+                                @if($pagosConComplemento->isNotEmpty())
+                                    <div class="mt-1 text-[10px] font-semibold text-emerald-700">
+                                        Complemento timbrado
+                                    </div>
+                                @endif
                             @endif
                         </td>
                         <td class="px-3 py-2 text-center">

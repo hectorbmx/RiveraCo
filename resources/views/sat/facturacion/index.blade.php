@@ -16,11 +16,18 @@
             </p>
         </div>
 
-        <a href="{{ route('sat.facturacion.create') }}"
-           class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800">
-            <span>+</span>
-            Nueva Factura
-        </a>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('sat.complementos-pago.index') }}"
+               class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                Complementos de pago
+            </a>
+
+            <a href="{{ route('sat.facturacion.create') }}"
+               class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800">
+                <span>+</span>
+                Nueva Factura
+            </a>
+        </div>
     </div>
 
     {{-- ACCESOS --}}

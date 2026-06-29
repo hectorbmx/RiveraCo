@@ -53,4 +53,9 @@ class ObraFacturaPago extends Model
     {
         return $this->belongsTo(User::class, 'registrado_por');
     }
+
+    public function complementoPago()
+    {
+        return $this->belongsTo(SatFacturaPago::class, 'sat_factura_pago_id');
+    }
 }

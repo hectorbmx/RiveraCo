@@ -1465,7 +1465,7 @@ private function normalizeRfc(?string $rfc): string
 
 private function facturasSatObra(Obra $obra): Collection
 {
-    $pagosPorUuid = ObraFacturaPago::with(['cuentaBanco', 'metodoPago', 'registradoPor'])
+    $pagosPorUuid = ObraFacturaPago::with(['cuentaBanco', 'metodoPago', 'registradoPor', 'complementoPago'])
         ->where('obra_id', $obra->id)
         ->orderByDesc('fecha_pago')
         ->get()

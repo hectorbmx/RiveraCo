@@ -13,6 +13,20 @@ use Illuminate\Support\Str;
 class SatFacturaPagoController extends Controller
 {
     //
+    public function show(SatFacturaPago $pago)
+    {
+        $pago->load([
+            'factura.cliente',
+            'factura.obra',
+            'pagosInternosObra.obra',
+            'pagosInternosObra.cuentaBanco',
+            'pagosInternosObra.metodoPago',
+            'pagosInternosObra.registradoPor',
+        ]);
+
+        return view('sat.facturacion.pagos.show', compact('pago'));
+    }
+
     public function store(Request $request, SatFactura $factura)
 {
     $data = $request->validate([
@@ -186,6 +200,85 @@ public function pdf(SatFacturaPago $pago)
             'Content-Type' => 'application/pdf',
         ]
     );
+}
+
+public function cancelar(Request $request, SatFacturaPago $pago)
+{
+    $data = $request->validate([
+        'motivo_cancelacion' => ['nullable', 'string', 'in:01,02,03,04'],
+        'sustitucion_uuid' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    if (!$pago->facturapi_invoice_id) {
+        return back()->with('error', 'El complemento no tiene ID de Facturapi.');
+    }
+
+    if ($pago->estado === 'cancelado') {
+        return back()->with('error', 'Este complemento ya esta cancelado.');
+    }
+
+    if ($pago->estado !== 'timbrado') {
+        return back()->with('error', 'Solo se pueden cancelar complementos timbrados.');
+    }
+
+    $motivo = $data['motivo_cancelacion'] ?? '02';
+    $sustitucion = trim((string) ($data['sustitucion_uuid'] ?? ''));
+
+    if ($motivo === '01' && $sustitucion === '') {
+        return back()->with('error', 'El motivo 01 requiere indicar el UUID del CFDI sustituto.');
+    }
+
+    try {
+        $query = ['motive' => $motivo];
+
+        if ($sustitucion !== '') {
+            $query['substitution'] = $sustitucion;
+        }
+
+        $response = Http::withBasicAuth(config('services.facturapi.secret_key'), '')
+            ->delete(
+                'https://www.facturapi.io/v2/invoices/' .
+                $pago->facturapi_invoice_id .
+                '?' . http_build_query($query)
+            );
+
+        if (!$response->successful()) {
+            $error = $response->json('message')
+                ?? $response->json('error')
+                ?? $response->body();
+
+            $pago->update([
+                'error_message' => $error,
+                'facturapi_response' => $response->json(),
+            ]);
+
+            return back()->with('error', 'Error al cancelar complemento: ' . $error);
+        }
+
+        $pago->update([
+            'estado' => 'cancelado',
+            'fecha_cancelacion' => now(),
+            'cancelado_por' => auth()->id(),
+            'motivo_cancelacion' => $motivo,
+            'sustitucion_uuid' => $sustitucion !== '' ? $sustitucion : null,
+            'facturapi_response' => $response->json(),
+            'error_message' => null,
+        ]);
+
+        $pago->pagosInternosObra()->update([
+            'sat_factura_pago_id' => null,
+        ]);
+
+        return redirect()
+            ->route('sat.facturacion.pagos.show', $pago)
+            ->with('success', 'Complemento cancelado correctamente.');
+    } catch (\Throwable $e) {
+        $pago->update([
+            'error_message' => $e->getMessage(),
+        ]);
+
+        return back()->with('error', 'Error al cancelar complemento: ' . $e->getMessage());
+    }
 }
 
 }

@@ -32,6 +32,10 @@ class SatFacturaPago extends Model
 
         // Estado
         'estado',
+        'fecha_cancelacion',
+        'cancelado_por',
+        'motivo_cancelacion',
+        'sustitucion_uuid',
 
         // Archivos
         'xml_path',
@@ -45,6 +49,7 @@ class SatFacturaPago extends Model
     protected $casts = [
 
         'fecha_pago' => 'datetime',
+        'fecha_cancelacion' => 'datetime',
 
         'monto' => 'decimal:2',
         'saldo_anterior' => 'decimal:2',
@@ -63,5 +68,15 @@ class SatFacturaPago extends Model
     public function factura()
     {
         return $this->belongsTo(SatFactura::class, 'sat_factura_id');
+    }
+
+    public function pagosInternosObra()
+    {
+        return $this->hasMany(ObraFacturaPago::class, 'sat_factura_pago_id');
+    }
+
+    public function canceladoPor()
+    {
+        return $this->belongsTo(User::class, 'cancelado_por');
     }
 }

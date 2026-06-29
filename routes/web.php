@@ -63,6 +63,7 @@ use App\Http\Controllers\Sat\SatCfdiPagoController;
 use App\Http\Controllers\Sat\SatFacturacionController;
 use App\Http\Controllers\Sat\SatCatalogoController;
 use App\Http\Controllers\Sat\SatFacturaPagoController;
+use App\Http\Controllers\Sat\SatComplementoPagoController;
 
 use App\Http\Controllers\ProgramacionPagosController;
 use App\Http\Controllers\PagoProveedorController;
@@ -206,6 +207,13 @@ Route::middleware(['auth', 'verified'])
             
 
         });
+
+        Route::prefix('complementos-pago')->name('complementos-pago.')->group(function () {
+            Route::get('/', [SatComplementoPagoController::class, 'index'])->name('index');
+            Route::get('/create', [SatComplementoPagoController::class, 'create'])->name('create');
+            Route::post('/', [SatComplementoPagoController::class, 'store'])->name('store');
+        });
+
         /*
         |--------------------------------------------------------------------------
         | CATÁLOGOS SAT
