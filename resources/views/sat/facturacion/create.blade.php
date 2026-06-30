@@ -57,10 +57,10 @@
 
         @csrf
 
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
 
             {{-- COLUMNA IZQUIERDA --}}
-            <div class="xl:col-span-2 space-y-6">
+            <div class="xl:col-span-8 space-y-6">
 
                 {{-- DATOS CFDI --}}
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
@@ -244,7 +244,7 @@
         <label class="block text-sm font-medium text-slate-700 mb-1">
             IVA
         </label>
-        <select name="tipo_iva" class="w-full rounded-xl border-slate-300">
+        <select name="tipo_iva" x-model="tipoIva" class="w-full rounded-xl border-slate-300">
             <option value="0.16">IVA 16%</option>
             <option value="0.08">IVA 8% (Zona fronteriza)</option>
             <option value="0">IVA 0% (Tasa cero)</option>
@@ -548,80 +548,181 @@
 
                 </div>
 
+                {{-- AJUSTES --}}
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                    <div class="flex items-start justify-between gap-4 mb-5">
+                        <div>
+                            <h2 class="text-lg font-semibold text-slate-900">Ajustes</h2>
+                            <p class="text-sm text-slate-500">Captura amortizacion, descuentos y retenciones aplicables a la factura.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Amortizacion</label>
+                            <input type="number"
+                                   min="0"
+                                   step="0.01"
+                                   name="amortizacion"
+                                   x-model.number="amortizacion"
+                                   class="w-full rounded-xl border-slate-300 text-right focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Descuentos</label>
+                            <input type="number"
+                                   min="0"
+                                   step="0.01"
+                                   name="descuento"
+                                   x-model.number="descuento"
+                                   class="w-full rounded-xl border-slate-300 text-right focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Retenciones</label>
+                            <input type="number"
+                                   min="0"
+                                   step="0.01"
+                                   name="retenciones"
+                                   x-model.number="retenciones"
+                                   class="w-full rounded-xl border-slate-300 text-right focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             {{-- SIDEBAR --}}
-            <div class="space-y-6">
+            <div class="xl:col-span-4 space-y-6 xl:sticky xl:top-6">
 
                 {{-- RESUMEN --}}
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                <div class="overflow-hidden rounded-2xl border border-slate-900 bg-slate-950 shadow-xl shadow-slate-900/10">
 
-                    <h2 class="text-lg font-semibold text-slate-900 mb-5">
-                        Resumen
-                    </h2>
+                    <div class="h-2 bg-amber-400"></div>
 
-                    <div class="space-y-3 text-sm">
+                    <div class="bg-slate-800 px-6 py-7">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-400/10 text-amber-300">
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M5 7v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7M8 11h8M8 15h5" />
+                                </svg>
+                            </div>
 
-                        <div class="flex items-center justify-between">
-                            <span class="text-slate-500">Subtotal</span>
-                            <span class="font-medium">$0.00</span>
+                            <div>
+                                <h2 class="text-xl font-bold text-white">
+                                    Resumen de Factura
+                                </h2>
+                                <p class="mt-1 text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
+                                    Totales en MXN
+                                </p>
+                            </div>
                         </div>
-
-                        <div class="flex items-center justify-between">
-                            <span class="text-slate-500">IVA</span>
-                            <span class="font-medium">$0.00</span>
-                        </div>
-
-                        <div class="border-t border-slate-200 pt-3 flex items-center justify-between">
-                            <span class="font-semibold text-slate-900">
-                                Total
-                            </span>
-
-                            <span class="text-lg font-bold text-slate-900">
-                                $0.00
-                            </span>
-                        </div>
-
                     </div>
 
-                    <button type="submit"
-                            formaction="{{ route('sat.facturacion.preview') }}"
-                            formmethod="POST"
-                            formtarget="_blank"
-                            :disabled="loadingTimbrar"
-                            class="w-full mt-6 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                        Previsualizar PDF
-                    </button>
+                    <div class="px-6 py-7">
+                        <div class="space-y-5 text-sm">
 
-                      <button type="submit"
-        data-action="timbrar"
-        :disabled="loadingTimbrar"
-        class="w-full mt-3 inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <div class="flex items-center justify-between gap-4">
+                                <span class="font-bold uppercase tracking-wider text-slate-400">Subtotal</span>
+                                <span class="text-lg font-bold tabular-nums text-white" x-text="money(subtotal())"></span>
+                            </div>
 
-    <span x-show="!loadingTimbrar">
-        Timbrar CFDI
-    </span>
+                            <div class="border-t border-white/10"></div>
 
-    <span x-show="loadingTimbrar" class="flex items-center gap-2">
-        <svg class="animate-spin h-5 w-5 text-white"
-             xmlns="http://www.w3.org/2000/svg"
-             fill="none"
-             viewBox="0 0 24 24">
-            <circle class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"></circle>
+                            <div class="flex items-center justify-between gap-4">
+                                <span class="font-bold uppercase tracking-wider text-slate-400">IVA</span>
+                                <span class="text-lg font-bold tabular-nums text-white" x-text="money(iva())"></span>
+                            </div>
 
-            <path class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v8H4z"></path>
-        </svg>
+                            <div class="border-t border-white/10"></div>
 
-        Timbrando...
-    </span>
-</button>
+                            <div class="flex items-center justify-between gap-4">
+                                <span class="font-medium text-slate-400">Amortizacion</span>
+                                <span class="font-semibold tabular-nums text-amber-300">- <span x-text="money(amortizacion || 0)"></span></span>
+                            </div>
+
+                            <div class="flex items-center justify-between gap-4">
+                                <span class="font-medium text-slate-400">Descuentos</span>
+                                <span class="font-semibold tabular-nums text-amber-300">- <span x-text="money(descuento || 0)"></span></span>
+                            </div>
+
+                            <div class="flex items-center justify-between gap-4">
+                                <span class="font-medium text-slate-400">Retenciones</span>
+                                <span class="font-semibold tabular-nums text-amber-300">- <span x-text="money(retenciones || 0)"></span></span>
+                            </div>
+
+                            <div class="border-t border-white/10 pt-5">
+                                <div class="flex items-center justify-between gap-4">
+                                    <div>
+                                        <span class="block text-xs font-bold uppercase tracking-[0.24em] text-amber-300">
+                                            Total neto
+                                        </span>
+                                        <span class="mt-1 block text-4xl font-black leading-none tabular-nums text-white" x-text="money(total())"></span>
+                                    </div>
+
+                                    <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-400/10 text-amber-300">
+                                        <svg class="h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-7 space-y-3">
+                            <button type="submit"
+                                    data-action="timbrar"
+                                    :disabled="loadingTimbrar"
+                                    class="w-full inline-flex items-center justify-center rounded-lg bg-amber-400 px-5 py-4 text-sm font-bold uppercase tracking-[0.18em] text-slate-950 shadow-sm hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed">
+
+                                <span x-show="!loadingTimbrar" class="inline-flex items-center gap-2">
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m13 10 4-7-9 9h6l-4 9 9-11h-6Z" />
+                                    </svg>
+                                    Timbrar CFDI
+                                </span>
+
+                                <span x-show="loadingTimbrar" class="flex items-center gap-2">
+                                    <svg class="animate-spin h-5 w-5 text-slate-950"
+                                         xmlns="http://www.w3.org/2000/svg"
+                                         fill="none"
+                                         viewBox="0 0 24 24">
+                                        <circle class="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                stroke-width="4"></circle>
+
+                                        <path class="opacity-75"
+                                              fill="currentColor"
+                                              d="M4 12a8 8 0 018-8v8H4z"></path>
+                                    </svg>
+
+                                    Timbrando...
+                                </span>
+                            </button>
+
+                            <button type="submit"
+                                    formaction="{{ route('sat.facturacion.preview') }}"
+                                    formmethod="POST"
+                                    formtarget="_blank"
+                                    :disabled="loadingTimbrar"
+                                    class="w-full inline-flex items-center justify-center rounded-lg border border-slate-600 bg-slate-900 px-5 py-4 text-sm font-bold text-white shadow-sm hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span class="inline-flex items-center gap-2">
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                    </svg>
+                                    Previsualizar PDF
+                                </span>
+                            </button>
+                        </div>
+
+                        <div class="mt-7 rounded-lg border border-white/10 bg-slate-900/70 p-4 text-xs leading-5 text-slate-400">
+                            Al timbrar esta factura, se generara el archivo XML y PDF oficial ante el SAT. Asegurate de que los datos sean correctos.
+                        </div>
+                    </div>
 
                 </div>
 
@@ -969,6 +1070,10 @@ function facturaForm() {
         catalogoConceptos: @json($conceptos),
 
         conceptosSeleccionados: [],
+        amortizacion: Number(@json(old('amortizacion', 0))) || 0,
+        descuento: Number(@json(old('descuento', 0))) || 0,
+        retenciones: Number(@json(old('retenciones', 0))) || 0,
+        tipoIva: @json(old('tipo_iva', '0.16')),
         usarRelacion: @json((bool) old('usar_relacion')),
         openRelacion: false,
         relacionSearch: '',
@@ -1206,11 +1311,11 @@ function facturaForm() {
         },
 
         ivaItem(item) {
-            if (item.objeto_impuesto === '01') {
+            if (this.tipoIva === 'sin_iva' || item.objeto_impuesto === '01') {
                 return 0;
             }
 
-            return this.subtotalItem(item) * parseFloat(item.iva_tasa || 0);
+            return this.subtotalItem(item) * this.ivaTasa();
         },
 
         totalItem(item) {
@@ -1225,12 +1330,30 @@ function facturaForm() {
             return this.conceptosSeleccionados.reduce((sum, item) => sum + this.subtotalItem(item), 0);
         },
 
+        baseGravable() {
+            return Math.max(0, this.subtotal()
+                - Math.max(0, parseFloat(this.amortizacion || 0))
+                - Math.max(0, parseFloat(this.descuento || 0)));
+        },
+
+        ivaTasa() {
+            return ['0.16', '0.08'].includes(this.tipoIva)
+                ? parseFloat(this.tipoIva)
+                : 0;
+        },
+
         iva() {
-            return this.conceptosSeleccionados.reduce((sum, item) => sum + this.ivaItem(item), 0);
+            return this.baseGravable() * this.ivaTasa();
+        },
+
+        ajusteTotal() {
+            return Math.max(0, parseFloat(this.amortizacion || 0))
+                + Math.max(0, parseFloat(this.descuento || 0))
+                + Math.max(0, parseFloat(this.retenciones || 0));
         },
 
         total() {
-            return this.conceptosSeleccionados.reduce((sum, item) => sum + this.totalItem(item), 0);
+            return Math.max(0, this.baseGravable() + this.iva() - Math.max(0, parseFloat(this.retenciones || 0)));
         },
 
         money(value) {

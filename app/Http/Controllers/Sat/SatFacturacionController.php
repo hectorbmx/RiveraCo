@@ -247,6 +247,9 @@ public function preview(Request $request, FacturapiService $facturapiService)
         'metodo_pago' => ['required', 'string', 'max:10'],
         'forma_pago' => ['nullable', 'string', 'max:10'],
         'tipo_iva' => ['required', 'in:0.16,0.08,0,exento,sin_iva'],
+        'amortizacion' => ['nullable', 'numeric', 'min:0'],
+        'descuento' => ['nullable', 'numeric', 'min:0'],
+        'retenciones' => ['nullable', 'numeric', 'min:0'],
 
         'conceptos' => ['required', 'array', 'min:1'],
         'conceptos.*.descripcion' => ['required', 'string', 'max:255'],
@@ -325,8 +328,24 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
     };
 
     $items = [];
+    $subtotalBase = collect($data['conceptos'])->sum(function ($concepto) {
+        return (float) $concepto['cantidad'] * (float) $concepto['precio_unitario'];
+    });
+    $descuentoGlobal = round((float) ($data['descuento'] ?? 0) + (float) ($data['amortizacion'] ?? 0), 2);
+    $descuentoAplicado = 0.0;
+    $conceptosCount = count($data['conceptos']);
 
-    foreach ($data['conceptos'] as $concepto) {
+    foreach ($data['conceptos'] as $index => $concepto) {
+        $lineSubtotal = (float) $concepto['cantidad'] * (float) $concepto['precio_unitario'];
+        $lineDiscount = 0.0;
+
+        if ($descuentoGlobal > 0 && $subtotalBase > 0) {
+            $lineDiscount = $index === $conceptosCount - 1
+                ? round($descuentoGlobal - $descuentoAplicado, 2)
+                : round($descuentoGlobal * ($lineSubtotal / $subtotalBase), 2);
+            $descuentoAplicado += $lineDiscount;
+        }
+
         $product = [
             'description' => $concepto['descripcion'],
             'product_key' => $concepto['clave_producto_servicio'],
@@ -346,6 +365,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
 
         $items[] = [
             'quantity' => (float) $concepto['cantidad'],
+            'discount' => $lineDiscount,
             'product' => $product,
         ];
     }
@@ -437,6 +457,9 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
                 'uso_cfdi' => ['required', 'string', 'max:10'],
                 'metodo_pago' => ['required', 'string', 'max:10'],
                 'forma_pago' => ['nullable', 'string', 'max:10'],
+                'amortizacion' => ['nullable', 'numeric', 'min:0'],
+                'descuento' => ['nullable', 'numeric', 'min:0'],
+                'retenciones' => ['nullable', 'numeric', 'min:0'],
 
                 'conceptos' => ['required', 'array', 'min:1'],
                 'conceptos.*.sat_concepto_id' => ['nullable', 'exists:sat_conceptos,id'],
@@ -528,6 +551,15 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
 
         $subtotal = 0;
         $iva = 0;
+        $descuentoGlobal = round((float) ($data['descuento'] ?? 0), 2);
+        $amortizacion = round((float) ($data['amortizacion'] ?? 0), 2);
+        $retenciones = round((float) ($data['retenciones'] ?? 0), 2);
+        $descuentoFacturapi = round($descuentoGlobal + $amortizacion, 2);
+        $subtotalBase = collect($data['conceptos'])->sum(function ($concepto) {
+            return (float) $concepto['cantidad'] * (float) $concepto['precio_unitario'];
+        });
+        $descuentoAplicado = 0.0;
+        $conceptosCount = count($data['conceptos']);
         $tipoIva = $data['tipo_iva'];
         $ivaTasaNum = match(true) {
                 in_array($tipoIva, ['0.16', '0.08']) => (float) $tipoIva,
@@ -538,13 +570,23 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
 
         $total = 0;
 
-        foreach ($data['conceptos'] as $concepto) {
+        foreach ($data['conceptos'] as $index => $concepto) {
 
     $cantidad = (float) $concepto['cantidad'];
     $precio   = (float) $concepto['precio_unitario'];
 
     // Cálculo de montos
-    $lineSubtotal = round($cantidad * $precio, 2);
+    $lineSubtotalBruto = round($cantidad * $precio, 2);
+    $lineDiscount = 0.0;
+
+    if ($descuentoFacturapi > 0 && $subtotalBase > 0) {
+        $lineDiscount = $index === $conceptosCount - 1
+            ? round($descuentoFacturapi - $descuentoAplicado, 2)
+            : round($descuentoFacturapi * ($lineSubtotalBruto / $subtotalBase), 2);
+        $descuentoAplicado += $lineDiscount;
+    }
+
+    $lineSubtotal = max(0, round($lineSubtotalBruto - $lineDiscount, 2));
     $lineIva      = in_array($tipoIva, ['0.16', '0.08'])
                         ? round($lineSubtotal * $ivaTasaNum, 2)
                         : 0.0;
@@ -574,6 +616,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
 
     $items[] = [
         'quantity' => $cantidad,
+        'discount' => $lineDiscount,
         'product'  => $product,
     ];
 }
@@ -763,9 +806,18 @@ $invoice = $facturapi->Invoices->create($payload);
             $pdfPath,
             $subtotal,
             $iva,
-            $total
+            $total,
+            $descuentoGlobal,
+            $amortizacion,
+            $retenciones,
+            $descuentoFacturapi,
+            $subtotalBase,
+            $tipoIva,
+            $ivaTasaNum
         ) {
 \Log::info('ANTES INVOICE');
+            $totalFactura = max(0, round($total - $retenciones, 2));
+
             $factura = SatFactura::create([
                 'sat_empresa_id' => $empresa->id,
                 'cliente_id' => $cliente->id,
@@ -793,8 +845,11 @@ $invoice = $facturapi->Invoices->create($payload);
                 'tipo_cambio' => $invoice->exchange ?? 1,
 
                 'subtotal' => round($subtotal, 2),
+                'descuento' => $descuentoGlobal,
+                'amortizacion' => $amortizacion,
                 'iva' => round($iva, 2),
-                'total' => round($total, 2),
+                'retenciones' => $retenciones,
+                'total' => $totalFactura,
 
                 'estado' => 'timbrada',
                 'fecha_emision' => isset($invoice->date) ? Carbon::parse($invoice->date) : now(),
@@ -806,23 +861,37 @@ $invoice = $facturapi->Invoices->create($payload);
                 'facturapi_response' => json_decode(json_encode($invoice), true),
             ]);
 
-            foreach ($data['conceptos'] as $concepto) {
+            $descuentoAplicadoConceptos = 0.0;
+            $retencionAplicadaConceptos = 0.0;
+            $conceptosCount = count($data['conceptos']);
+
+            foreach ($data['conceptos'] as $index => $concepto) {
                 $cantidad = (float) $concepto['cantidad'];
                 $precio = (float) $concepto['precio_unitario'];
-                $ivaTasa = (float) $concepto['iva_tasa'];
-                $incluyeIva = !empty($concepto['incluye_iva']);
+                $importeBruto = round($cantidad * $precio, 2);
+                $lineDiscount = 0.0;
+                $lineRetencion = 0.0;
 
-                $importeBruto = $cantidad * $precio;
-
-                if ($incluyeIva && $ivaTasa > 0) {
-                    $lineSubtotal = round($importeBruto / (1 + $ivaTasa), 2);
-                    $lineIva = round($importeBruto - $lineSubtotal, 2);
-                    $lineTotal = round($importeBruto, 2);
-                } else {
-                    $lineSubtotal = round($importeBruto, 2);
-                    $lineIva = round($lineSubtotal * $ivaTasa, 2);
-                    $lineTotal = round($lineSubtotal + $lineIva, 2);
+                if ($descuentoFacturapi > 0 && $subtotalBase > 0) {
+                    $lineDiscount = $index === $conceptosCount - 1
+                        ? round($descuentoFacturapi - $descuentoAplicadoConceptos, 2)
+                        : round($descuentoFacturapi * ($importeBruto / $subtotalBase), 2);
+                    $descuentoAplicadoConceptos += $lineDiscount;
                 }
+
+                $lineSubtotal = max(0, round($importeBruto - $lineDiscount, 2));
+                $lineIva = in_array($tipoIva, ['0.16', '0.08'])
+                    ? round($lineSubtotal * $ivaTasaNum, 2)
+                    : 0.0;
+
+                if ($retenciones > 0 && $subtotal > 0) {
+                    $lineRetencion = $index === $conceptosCount - 1
+                        ? round($retenciones - $retencionAplicadaConceptos, 2)
+                        : round($retenciones * ($lineSubtotal / $subtotal), 2);
+                    $retencionAplicadaConceptos += $lineRetencion;
+                }
+
+                $lineTotal = max(0, round($lineSubtotal + $lineIva - $lineRetencion, 2));
 
                 SatFacturaConcepto::create([
                     'sat_factura_id' => $factura->id,
@@ -835,19 +904,21 @@ $invoice = $facturapi->Invoices->create($payload);
                     'clave_unidad' => $concepto['clave_unidad'],
 
                     'precio_unitario' => $precio,
-                    'descuento' => 0,
+                    'descuento' => $lineDiscount,
 
                     'subtotal' => $lineSubtotal,
                     'iva' => $lineIva,
-                    'retenciones' => 0,
+                    'retenciones' => $lineRetencion,
                     'total' => $lineTotal,
 
-                    'taxes' => $ivaTasa > 0 ? [
-                        [
-                            'type' => 'IVA',
-                            'rate' => $ivaTasa,
-                        ],
-                    ] : null,
+                    'taxes' => in_array($tipoIva, ['0.16', '0.08', '0'])
+                        ? [
+                            [
+                                'type' => 'IVA',
+                                'rate' => $ivaTasaNum,
+                            ],
+                        ]
+                        : null,
 
                     'facturapi_payload' => $concepto,
                 ]);

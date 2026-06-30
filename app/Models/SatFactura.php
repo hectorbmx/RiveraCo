@@ -47,6 +47,7 @@ class SatFactura extends Model
         // Importes
         'subtotal',
         'descuento',
+        'amortizacion',
         'iva',
         'retenciones',
         'total',
@@ -78,6 +79,7 @@ class SatFactura extends Model
 
         'subtotal' => 'decimal:2',
         'descuento' => 'decimal:2',
+        'amortizacion' => 'decimal:2',
         'iva' => 'decimal:2',
         'retenciones' => 'decimal:2',
         'total' => 'decimal:2',
