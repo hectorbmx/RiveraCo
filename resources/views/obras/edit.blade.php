@@ -4312,7 +4312,9 @@ function relacionFacturasModal() {
                         <td class="px-3 py-2 text-right text-emerald-700 font-semibold">
                             $ {{ number_format($factura['pagado'], 2) }}
                             @if($factura['pagos']->isNotEmpty())
-                                @php($ultimoPago = $factura['pagos']->first())
+                                @php
+                                    $ultimoPago = $factura['pagos']->first();
+                                @endphp
                                 <div class="mt-1 text-[10px] font-normal text-slate-500">
                                     {{ $factura['pagos']->count() }} pago(s)
                                     @if($ultimoPago->referencia)
