@@ -36,6 +36,8 @@ class ObraFacturaBorrador extends Model
         'autorizado_at',
         'rechazado_por',
         'rechazado_at',
+        'facturado_por',
+        'facturado_at',
         'observaciones_revision',
         'sat_factura_id',
         'sat_cfdi_id',
@@ -51,6 +53,7 @@ class ObraFacturaBorrador extends Model
         'total' => 'decimal:2',
         'autorizado_at' => 'datetime',
         'rechazado_at' => 'datetime',
+        'facturado_at' => 'datetime',
     ];
 
     public static function estatusLabels(): array
@@ -92,6 +95,11 @@ class ObraFacturaBorrador extends Model
     public function rechazador()
     {
         return $this->belongsTo(User::class, 'rechazado_por');
+    }
+
+    public function facturador()
+    {
+        return $this->belongsTo(User::class, 'facturado_por');
     }
 
     public function satFactura()

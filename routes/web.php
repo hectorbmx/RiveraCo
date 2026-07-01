@@ -263,8 +263,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Notificaciones
     Route::prefix('notificaciones')->name('notifications.')->group(function () {
         Route::get('/', [\App\Http\Controllers\NotificationController::class, 'index'])->name('index');
+        Route::post('/{id}/mark-read-json', [\App\Http\Controllers\NotificationController::class, 'markReadJson'])->name('markReadJson');
         Route::get('/{id}/read', [\App\Http\Controllers\NotificationController::class, 'read'])->name('read');
         Route::post('/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('markAllRead');
+        Route::get('/unread-json', [\App\Http\Controllers\NotificationController::class, 'unreadJson'])->name('unreadJson');
     });
 
     Route::prefix('usuarios')
@@ -530,6 +532,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::post('/obras/{obra}/relacionar-cfdis', [ObraController::class, 'relacionarCfdis'])->name('obras.relacionarCfdis');
     Route::post('/obras/{obra}/facturas-sat/pagos', [ObraController::class, 'storeFacturaPago'])->name('obras.facturas-sat.pagos.store');
     Route::post('/obras/{obra}/factura-borradores', [ObraController::class, 'storeFacturaBorrador'])->name('obras.factura-borradores.store');
+    Route::get('/obras/{obra}/factura-borradores/{borrador}', [ObraController::class, 'showFacturaBorrador'])->name('obras.factura-borradores.show');
     Route::get('/obras/{obra}/factura-borradores/{borrador}/imprimir', [ObraController::class, 'printFacturaBorrador'])->name('obras.factura-borradores.print');
     Route::post('/obras/{obra}/factura-borradores/{borrador}/autorizar', [ObraController::class, 'autorizarFacturaBorrador'])->name('obras.factura-borradores.autorizar');
     Route::post('/obras/{obra}/factura-borradores/{borrador}/rechazar', [ObraController::class, 'rechazarFacturaBorrador'])->name('obras.factura-borradores.rechazar');

@@ -1,0 +1,110 @@
+Walkthrough — Implementación Fase 1
+Hemos completado e integrado exitosamente la Fase 1: Endpoints Laravel para el Agente.
+
+Cambios Realizados
+Backend Laravel (rivera-v2)
+Controlador de Autenticación (AgentAuthController.php):
+Creado en 
+AgentAuthController.php
+.
+Gestiona el inicio y cierre de sesión de cualquier usuario estándar mediante Laravel Sanctum.
+Controlador de Notificaciones (AgentNotificationController.php):
+Creado en 
+AgentNotificationController.php
+.
+Expone endpoints para listar notificaciones pendientes (unread) y marcarlas como leídas (markRead).
+Registro de Rutas (routes/api.php):
+Modificado 
+api.php
+ para añadir el grupo agent:
+php
+
+Route::prefix('agent')->group(function () {
+    Route::post('login', [\App\Http\Controllers\Api\Agent\AgentAuthController::class, 'login']);
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('notifications/unread', [\App\Http\Controllers\Api\Agent\AgentNotificationController::class, 'unread']);
+        Route::post('notifications/{id}/read', [\App\Http\Controllers\Api\Agent\AgentNotificationController::class, 'markRead']);
+        Route::post('logout', [\App\Http\Controllers\Api\Agent\AgentAuthController::class, 'logout']);
+    });
+});
+Verificación de Resultados
+Realizamos pruebas de integración de punta a punta ejecutando un script de scratch que interactúa con la base de datos de desarrollo y el servidor local en http://127.0.0.1:8000:
+
+Inicio de sesión (Login):
+Entrada: Credenciales válidas del usuario hectorbmx@gmail.com.
+Resultado: 200 OK con un Bearer Token válido (132|0a9qeR84lm...).
+Obtención de notificaciones pendientes (Unread):
+Inyectamos una notificación de prueba en la tabla notifications.
+Entrada: Petición GET con cabecera Authorization: Bearer <token>.
+Resultado: 200 OK retornando la notificación con su respectiva estructura (ID, título, mensaje, URL, icono, prioridad, fecha).
+Marcación como leída (Mark Read):
+Entrada: Petición POST a /api/agent/notifications/<id>/read con cabecera Bearer.
+Resultado: 200 OK indicando que fue procesada correctamente.
+Cierre de sesión (Logout):
+Entrada: Petición POST a /api/agent/logout.
+Resultado: 200 OK, eliminando el token de acceso actual en base de datos.
+Walkthrough — Implementación Fase 2
+Hemos completado y compilado exitosamente la Fase 2: Ajustar ApiService en C# con Bearer Token.
+
+Cambios Realizados
+Agente de Escritorio (Sirico.Agent)
+Modelo de Respuesta de Inicio de Sesión (LoginResponse.cs):
+Creado en 
+LoginResponse.cs
+.
+Mapea la respuesta JSON del servidor (ok, token, user).
+Actualización de ApiService.cs:
+Modificado 
+ApiService.cs
+.
+Implementa LoginAsync(serverUrl, email, password) para solicitar un Bearer Token.
+Modifica GetUnreadNotificationsAsync(serverUrl, token) para requerir e inyectar el Bearer Token en las cabeceras HTTP (Authorization: Bearer <token> y Accept: application/json).
+Implementa MarkNotificationAsReadAsync(serverUrl, token, notificationId) para enviar peticiones POST a la API de Laravel y marcar notificaciones como leídas.
+Ajuste en TrayApplication.cs:
+Modificado 
+TrayApplication.cs
+ para incluir temporalmente la firma actualizada de GetUnreadNotificationsAsync y garantizar que el proyecto compile de forma limpia.
+Verificación de Resultados
+Compilación del Proyecto:
+Detuvimos el proceso activo Sirico.Agent que bloqueaba el ejecutable.
+Ejecutamos dotnet build en la solución y compiló con 0 errores y 0 advertencias.
+Walkthrough — Implementación Fase 3
+Hemos completado y validado la Fase 3: Almacenamiento seguro del Token en C# (DPAPI).
+
+Cambios Realizados
+Agente de Escritorio (Sirico.Agent)
+Instalación de Paquete NuGet:
+Instalamos System.Security.Cryptography.ProtectedData (versión 10.0.9) en el proyecto Sirico.Agent para poder cifrar datos a nivel del sistema operativo.
+Servicio de Almacenamiento Seguro (TokenStorageService.cs):
+Creado en 
+TokenStorageService.cs
+.
+Implementa el cifrado del token usando la API DPAPI de Windows con alcance de usuario (DataProtectionScope.CurrentUser).
+Guarda los datos binarios cifrados en %APPDATA%\Sirico\session.dat de forma que solo puedan ser leídos por el mismo usuario de Windows en esta máquina.
+Proporciona métodos para guardar (SaveToken), cargar (LoadToken), verificar (HasToken) y limpiar (ClearToken) la sesión del agente.
+Verificación de Resultados
+Compilación:
+Ejecutamos dotnet build y el proyecto compiló correctamente con 0 errores y 0 advertencias.
+Walkthrough — Implementación Fase 4
+Hemos completado y validado la Fase 4: Diseñar SettingsForm (UI de Login y Configuración).
+
+Cambios Realizados
+Agente de Escritorio (Sirico.Agent)
+Interfaz de Usuario del Formulario (SettingsForm.Designer.cs):
+Rediseñado en 
+SettingsForm.Designer.cs
+.
+Añadidos controles para configurar la URL del servidor, intervalo de consulta y nombre del equipo.
+Añadidos campos para ingresar correo y contraseña con protección de caracteres para contraseña (*).
+Añadidos controles visuales de estado (ej. "Conectado" o "No conectado") y un checkbox para habilitar el inicio con Windows.
+Lógica de Configuración y Autenticación (SettingsForm.cs):
+Implementado en 
+SettingsForm.cs
+.
+Integra ConfigService para leer y guardar la configuración local.
+Integra TokenStorageService para verificar la existencia del token Bearer y encriptarlo de forma segura en disco tras un login exitoso.
+Llama a ApiService.LoginAsync de forma asíncrona para validar credenciales y obtener el token.
+Configura el registro de inicio automático con Windows escribiendo en la clave HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run.
+Verificación de Resultados
+Compilación:
+Ejecutamos dotnet build y el proyecto compiló correctamente con 0 errores y 0 advertencias.

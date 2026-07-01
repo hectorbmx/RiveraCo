@@ -39,7 +39,10 @@ class FacturaBorradorAutorizado extends Notification
             'total' => $this->borrador->total,
             'autorizado_por_name' => $this->borrador->autorizador?->name ?? 'N/A',
             'mensaje' => "Borrador de factura autorizado: {$this->borrador->obra?->nombre}",
-            'url' => route('obras.edit', ['obra' => $this->borrador->obra_id, 'tab' => 'facturacion']),
+            'url' => route('obras.factura-borradores.show', [
+                'obra' => $this->borrador->obra_id,
+                'borrador' => $this->borrador->id,
+            ]),
         ];
     }
 }

@@ -589,11 +589,75 @@ Validaciones ejecutadas:
 
 ### Fase 8: Conexion con facturacion real
 
+- [x] Crear pantalla de detalle del borrador para abrir desde notificaciones.
+- [x] Apuntar notificacion de borrador creado al detalle del borrador.
+- [x] Enviar notificacion a usuarios con permiso `obra_factura_borradores.authorize.access`.
+- [x] Agregar acciones de autorizacion/rechazo desde el detalle.
+- [x] Notificar a usuarios con permiso `obra_factura_borradores.invoice.access` cuando el borrador queda autorizado.
+- [x] Mostrar flujo operativo en detalle: solicita, autoriza y factura.
 - [ ] Agregar boton `Facturar` para borradores autorizados.
 - [ ] Prellenar pantalla de Facturapi con datos del borrador.
 - [ ] Al timbrar, vincular CFDI real con el borrador.
 - [ ] Cambiar estatus a `facturado`.
 - [ ] Mantener relacion con obra como ya ocurre.
+
+#### Hallazgos Fase 8 - Paso 1
+
+Fecha de ejecucion: 2026-06-30.
+
+Implementado:
+
+- Ruta:
+  - `GET /obras/{obra}/factura-borradores/{borrador}`
+  - Nombre: `obras.factura-borradores.show`
+- Metodo:
+  - `ObraController@showFacturaBorrador`
+- Vista:
+  - `resources/views/obras/factura-borradores/show.blade.php`
+- La vista muestra:
+  - folio interno del borrador.
+  - estatus.
+  - obra y cliente.
+  - solicitado por y autorizacion.
+  - datos fiscales.
+  - concepto.
+  - resumen de importes.
+  - acciones `Ver obra` e `Imprimir`.
+- La notificacion `FacturaBorradorCreado` ahora apunta al detalle del borrador.
+- Los destinatarios de la notificacion de creacion ahora se obtienen por permiso:
+  - `obra_factura_borradores.authorize.access`
+
+Pendiente inmediato:
+
+- Agregar `Facturar` solo para borradores autorizados.
+
+#### Hallazgos Fase 8 - Paso 2
+
+Fecha de ejecucion: 2026-06-30.
+
+Implementado:
+
+- En el detalle del borrador se agrego tarjeta `Flujo del borrador`:
+  - solicita.
+  - autoriza.
+  - factura.
+- En el detalle se agregaron acciones:
+  - `Autorizar borrador` para usuarios con `obra_factura_borradores.authorize.access`.
+  - `Rechazar borrador` para usuarios con `obra_factura_borradores.reject.access`.
+- Al autorizar:
+  - se mantiene notificacion al creador.
+  - se agrega notificacion a usuarios con `obra_factura_borradores.invoice.access`.
+- Nueva notificacion:
+  - `App\Notifications\FacturaBorradorListoParaFacturar`
+- Las notificaciones de autorizado/rechazado ahora apuntan al detalle del borrador.
+- La campana y el centro de notificaciones reconocen el tipo:
+  - `factura_borrador_listo_facturar`
+
+Pendiente inmediato:
+
+- Crear campos `facturado_por` y `facturado_at`.
+- Agregar boton `Facturar` en el detalle cuando el borrador este autorizado.
+- Prellenar `/sat/facturacion/create` con `borrador_id`.
 
 ## Primer paso recomendado al retomar
 

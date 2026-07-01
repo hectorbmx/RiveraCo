@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Sat;
 
 use App\Http\Controllers\Controller;

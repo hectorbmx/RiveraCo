@@ -40,7 +40,10 @@ class FacturaBorradorRechazado extends Notification
             'rechazado_por_name' => $this->borrador->rechazador?->name ?? 'N/A',
             'observaciones_revision' => $this->borrador->observaciones_revision,
             'mensaje' => "Borrador de factura rechazado: {$this->borrador->obra?->nombre}",
-            'url' => route('obras.edit', ['obra' => $this->borrador->obra_id, 'tab' => 'facturacion']),
+            'url' => route('obras.factura-borradores.show', [
+                'obra' => $this->borrador->obra_id,
+                'borrador' => $this->borrador->id,
+            ]),
         ];
     }
 }

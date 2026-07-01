@@ -21,3 +21,16 @@ Pendientes:
 
 - Agregar exportador Excel de documentos filtrados.
 - Agregar selector de elementos a mostrar al inicio de la tabla.
+
+### Usuarios y roles
+
+Vista:
+
+- `http://127.0.0.1:8000/usuarios/{usuario}/edit`
+
+Pendientes:
+
+- Agregar selector de rol en la edicion de usuarios.
+- Permitir que `super-admin` pueda cambiar el rol de un usuario.
+- Crear permiso granular para esta accion, siguiendo el patron `.access`.
+- Proteger el guardado del rol con el nuevo permiso.

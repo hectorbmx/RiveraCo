@@ -392,6 +392,7 @@
                                                 @switch($notification->data['tipo'] ?? '')
                                                     @case('factura_borrador') BF @break
                                                     @case('factura_borrador_autorizado') OK @break
+                                                    @case('factura_borrador_listo_facturar') FAC @break
                                                     @case('factura_borrador_rechazado') NO @break
                                                     @case('solicitud_gasto') 💰 @break
                                                     @case('orden_compra') 🛒 @break

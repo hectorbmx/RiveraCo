@@ -127,3 +127,13 @@ Route::prefix('v1')->group(function () {
 
     });
 });
+
+Route::prefix('agent')->group(function () {
+    Route::post('login', [\App\Http\Controllers\Api\Agent\AgentAuthController::class, 'login']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('notifications/unread', [\App\Http\Controllers\Api\Agent\AgentNotificationController::class, 'unread']);
+        Route::post('notifications/{id}/read', [\App\Http\Controllers\Api\Agent\AgentNotificationController::class, 'markRead']);
+        Route::post('logout', [\App\Http\Controllers\Api\Agent\AgentAuthController::class, 'logout']);
+    });
+});

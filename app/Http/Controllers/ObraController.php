@@ -40,6 +40,7 @@ use App\Models\OrdenCompra;
 use App\Models\ObraFolio;
 use App\Notifications\FacturaBorradorAutorizado;
 use App\Notifications\FacturaBorradorCreado;
+use App\Notifications\FacturaBorradorListoParaFacturar;
 use App\Notifications\FacturaBorradorRechazado;
 use Illuminate\Support\Facades\Notification;
 
@@ -1724,7 +1725,7 @@ public function storeFacturaBorrador(Request $request, Obra $obra)
     ]);
 
     $borrador->load(['obra', 'cliente', 'creador']);
-    $revisores = User::role(['admin-rivera', 'super-admin'])->get();
+    $revisores = User::permission('obra_factura_borradores.authorize.access')->get();
 
     if ($revisores->isNotEmpty()) {
         Notification::send($revisores, new FacturaBorradorCreado($borrador));
@@ -1735,9 +1736,34 @@ public function storeFacturaBorrador(Request $request, Obra $obra)
         ->with('success', 'Borrador de factura creado correctamente.');
 }
 
+public function showFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrador)
+{
+    abort_unless(auth()->user()?->can('obra_factura_borradores.view.access'), 403);
+    $this->validarBorradorPerteneceAObra($obra, $borrador);
+
+    $borrador->load([
+        'obra.cliente',
+        'cliente',
+        'conceptoSat',
+        'creador',
+        'autorizador',
+        'rechazador',
+        'satFactura',
+        'satCfdi',
+    ]);
+
+    return view('obras.factura-borradores.show', [
+        'obra' => $obra,
+        'borrador' => $borrador,
+        'regimenesFiscales' => config('sat_catalogs.regimenes_fiscales', []),
+        'usosCfdi' => config('sat_catalogs.usos_cfdi', []),
+        'metodosPagoCfdi' => config('sat_catalogs.metodos_pago', []),
+        'formasPagoCfdi' => config('sat_catalogs.formas_pago', []),
+    ]);
+}
+
 public function printFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrador)
 {
-    $this->abortarSiObraFueraDeArea($obra);
     abort_unless(auth()->user()?->can('obra_factura_borradores.print.access'), 403);
 
     if ((int) $borrador->obra_id !== (int) $obra->id) {
@@ -1758,7 +1784,6 @@ public function printFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrador)
 
 public function autorizarFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrador)
 {
-    $this->abortarSiObraFueraDeArea($obra);
     abort_unless(auth()->user()?->can('obra_factura_borradores.authorize.access'), 403);
     $this->validarBorradorPerteneceAObra($obra, $borrador);
     $this->abortarSiBorradorCerrado($borrador);
@@ -1774,15 +1799,21 @@ public function autorizarFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrad
 
     $borrador->load(['obra', 'cliente', 'creador', 'autorizador']);
     $borrador->creador?->notify(new FacturaBorradorAutorizado($borrador));
+    $facturadores = User::permission('obra_factura_borradores.invoice.access')
+        ->whereKeyNot($borrador->creado_por)
+        ->get();
+
+    if ($facturadores->isNotEmpty()) {
+        Notification::send($facturadores, new FacturaBorradorListoParaFacturar($borrador));
+    }
 
     return redirect()
-        ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'facturacion'])
+        ->route('obras.factura-borradores.show', [$obra, $borrador])
         ->with('success', 'Borrador autorizado correctamente.');
 }
 
 public function rechazarFacturaBorrador(Request $request, Obra $obra, ObraFacturaBorrador $borrador)
 {
-    $this->abortarSiObraFueraDeArea($obra);
     abort_unless(auth()->user()?->can('obra_factura_borradores.reject.access'), 403);
     $this->validarBorradorPerteneceAObra($obra, $borrador);
     $this->abortarSiBorradorCerrado($borrador);
@@ -1804,7 +1835,7 @@ public function rechazarFacturaBorrador(Request $request, Obra $obra, ObraFactur
     $borrador->creador?->notify(new FacturaBorradorRechazado($borrador));
 
     return redirect()
-        ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'facturacion'])
+        ->route('obras.factura-borradores.show', [$obra, $borrador])
         ->with('success', 'Borrador rechazado correctamente.');
 }
 

@@ -6,7 +6,7 @@ use App\Models\ObraFacturaBorrador;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
-class FacturaBorradorCreado extends Notification
+class FacturaBorradorListoParaFacturar extends Notification
 {
     use Queueable;
 
@@ -28,7 +28,7 @@ class FacturaBorradorCreado extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'tipo' => 'factura_borrador',
+            'tipo' => 'factura_borrador_listo_facturar',
             'id' => $this->borrador->id,
             'obra_id' => $this->borrador->obra_id,
             'obra_nombre' => $this->borrador->obra?->nombre ?? 'Obra N/A',
@@ -37,8 +37,8 @@ class FacturaBorradorCreado extends Notification
                 ?: $this->borrador->cliente?->nombre_comercial
                 ?: 'Cliente N/A',
             'total' => $this->borrador->total,
-            'creado_por_name' => $this->borrador->creador?->name ?? 'N/A',
-            'mensaje' => "Hay un borrador nuevo: {$this->borrador->obra?->nombre}",
+            'autorizado_por_name' => $this->borrador->autorizador?->name ?? 'N/A',
+            'mensaje' => "Borrador autorizado y listo para facturar: {$this->borrador->obra?->nombre}",
             'url' => route('obras.factura-borradores.show', [
                 'obra' => $this->borrador->obra_id,
                 'borrador' => $this->borrador->id,

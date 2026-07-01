@@ -40,4 +40,41 @@ class NotificationController extends Controller
         Auth::user()->unreadNotifications->markAsRead();
         return back()->with('success', 'Todas las notificaciones marcadas como leídas.');
     }
+public function unreadJson()
+{
+    $notifications = Auth::user()
+        ->unreadNotifications()
+        ->latest()
+        ->limit(10)
+        ->get()
+        ->map(function ($notification) {
+            $data = $notification->data;
+
+            return [
+                'id' => $notification->id,
+                'title' => $data['title'] ?? $data['titulo'] ?? 'SIRICO',
+                'message' => $data['message'] ?? $data['mensaje'] ?? 'Tienes una nueva notificación.',
+                'url' => $data['url'] ?? null,
+                'icon' => $data['icon'] ?? 'info',
+                'priority' => $data['priority'] ?? 'normal',
+                'created_at' => $notification->created_at?->toDateTimeString(),
+            ];
+        });
+
+    return response()->json([
+        'ok' => true,
+        'count' => $notifications->count(),
+        'notifications' => $notifications,
+    ]);
+}
+public function markReadJson($id)
+{
+    $notification = Auth::user()->notifications()->findOrFail($id);
+    $notification->markAsRead();
+
+    return response()->json([
+        'ok' => true,
+        'id' => $notification->id,
+    ]);
+}
 }
