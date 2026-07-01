@@ -15,25 +15,31 @@ class AgentAuthController extends Controller
      */
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['nullable', 'string', 'required_without:password_b64'],
-            'password_b64' => ['nullable', 'string', 'required_without:password'],
-        ]);
+        $email = $request->input('email', $request->input('e'));
+        $secret = $request->input('password', $request->input('password_b64', $request->input('s')));
+        $secretIsEncoded = $request->filled('password_b64') || $request->filled('s');
 
-        $password = $request->input('password');
-        if (!$password && $request->filled('password_b64')) {
-            $decodedPassword = base64_decode((string) $request->input('password_b64'), true);
+        validator([
+            'email' => $email,
+            'secret' => $secret,
+        ], [
+            'email' => ['required', 'email'],
+            'secret' => ['required', 'string'],
+        ])->validate();
+
+        $password = (string) $secret;
+        if ($secretIsEncoded) {
+            $decodedPassword = base64_decode($password, true);
             if ($decodedPassword === false) {
                 throw ValidationException::withMessages([
-                    'password' => ['La contrasena enviada por el agente no tiene un formato valido.'],
+                    'secret' => ['La credencial enviada por el agente no tiene un formato valido.'],
                 ]);
             }
 
             $password = $decodedPassword;
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $email)->first();
 
         if (!$user || !Hash::check((string) $password, $user->password)) {
             throw ValidationException::withMessages([
