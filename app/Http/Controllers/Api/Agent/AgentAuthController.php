@@ -11,20 +11,33 @@ use Illuminate\Validation\ValidationException;
 class AgentAuthController extends Controller
 {
     /**
-     * Iniciar sesión desde el agente y obtener Bearer Token.
+     * Iniciar sesion desde el agente y obtener Bearer Token.
      */
     public function login(Request $request)
     {
         $request->validate([
             'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
+            'password' => ['nullable', 'string', 'required_without:password_b64'],
+            'password_b64' => ['nullable', 'string', 'required_without:password'],
         ]);
+
+        $password = $request->input('password');
+        if (!$password && $request->filled('password_b64')) {
+            $decodedPassword = base64_decode((string) $request->input('password_b64'), true);
+            if ($decodedPassword === false) {
+                throw ValidationException::withMessages([
+                    'password' => ['La contrasena enviada por el agente no tiene un formato valido.'],
+                ]);
+            }
+
+            $password = $decodedPassword;
+        }
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!$user || !Hash::check((string) $password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Credenciales inválidas.'],
+                'email' => ['Credenciales invalidas.'],
             ]);
         }
 
@@ -43,7 +56,7 @@ class AgentAuthController extends Controller
     }
 
     /**
-     * Cerrar sesión del agente (revocar token actual).
+     * Cerrar sesion del agente (revocar token actual).
      */
     public function logout(Request $request)
     {
@@ -51,7 +64,8 @@ class AgentAuthController extends Controller
 
         return response()->json([
             'ok' => true,
-            'message' => 'Sesión cerrada correctamente.'
+            'message' => 'Sesion cerrada correctamente.'
         ]);
     }
 }
+
