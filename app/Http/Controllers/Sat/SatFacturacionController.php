@@ -11,12 +11,14 @@ use App\Models\Cliente;
 use App\Models\Obra;
 use App\Models\SatConcepto;
 use App\Models\SatCfdi;
+use App\Models\ObraFacturaBorrador;
 use App\Services\Facturacion\FacturapiService;
 use Facturapi\Exceptions\FacturapiException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
+
 
 use App\Mail\SatFacturaMail;
 use Illuminate\Support\Facades\Mail;
@@ -89,7 +91,7 @@ class SatFacturacionController extends Controller
     /**
      * Formulario para nueva factura.
      */
-  public function create()
+  public function create(Request $request)
 {
     $empresas = SatEmpresa::where('activo', true)
         ->orderBy('nombre')

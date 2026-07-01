@@ -569,7 +569,7 @@ public function print(OrdenCompra $orden_compra)
     $pdf->SetXY($X0, $Y);
     $pdf->Cell(15, 6, $utf8('NOTAS:'), 0, 0, 'L');
     $pdf->SetFont('Arial', '', 9);
-    $pdf->MultiCell(130, 6, $utf8($oc->notas ?? ''), 0, 'L');
+    $pdf->MultiCell(130, 6, $utf8($oc->comentarios ?? ''), 0, 'L');
 
     // Totales caja derecha
     $totX = $X0 + 120;
