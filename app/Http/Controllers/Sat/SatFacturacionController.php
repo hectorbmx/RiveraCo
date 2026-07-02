@@ -109,11 +109,67 @@ class SatFacturacionController extends Controller
         ->orderBy('descripcion')
         ->get();
 
+    $borrador = null;
+    $prefill = [];
+
+    if ($request->filled('borrador_id')) {
+        abort_unless(auth()->user()?->can('obra_factura_borradores.invoice.access'), 403);
+
+        $borrador = ObraFacturaBorrador::with(['obra', 'cliente', 'conceptoSat'])
+            ->findOrFail($request->integer('borrador_id'));
+
+        if (
+            $borrador->estatus !== ObraFacturaBorrador::ESTATUS_AUTORIZADO
+            || $borrador->sat_factura_id
+        ) {
+            return redirect()
+                ->route('obras.factura-borradores.show', [$borrador->obra_id, $borrador->id])
+                ->with('error', 'Solo se pueden facturar borradores autorizados y sin factura ligada.');
+        }
+
+        $cantidad = max((float) $borrador->cantidad, 0.000001);
+        $precioUnitario = round((float) $borrador->subtotal / $cantidad, 2);
+        $ivaTasa = (float) $borrador->subtotal > 0
+            ? round((float) $borrador->iva / (float) $borrador->subtotal, 2)
+            : 0.16;
+
+        $prefill = [
+            'obra_factura_borrador_id' => (string) $borrador->id,
+            'cliente_id' => (string) $borrador->cliente_id,
+            'obra_id' => (string) $borrador->obra_id,
+            'uso_cfdi' => $borrador->uso_cfdi ?: 'G03',
+            'metodo_pago' => $borrador->metodo_pago ?: 'PUE',
+            'forma_pago' => $borrador->forma_pago ?: '03',
+            'tipo_iva' => in_array((string) $ivaTasa, ['0.16', '0.08', '0'], true)
+                ? (string) $ivaTasa
+                : ((float) $borrador->iva > 0 ? '0.16' : '0'),
+            'amortizacion' => 0,
+            'descuento' => (float) $borrador->descuentos,
+            'retenciones' => (float) $borrador->retenciones,
+            'conceptos' => [[
+                'id' => $borrador->sat_concepto_id,
+                'codigo' => $borrador->conceptoSat?->codigo,
+                'nombre_catalogo' => $borrador->conceptoSat?->descripcion ?: $borrador->concepto_descripcion,
+                'descripcion' => $borrador->concepto_descripcion,
+                'clave_producto_servicio' => $borrador->conceptoSat?->clave_producto_servicio ?: '84111506',
+                'clave_unidad' => $borrador->conceptoSat?->clave_unidad ?: 'ACT',
+                'unidad' => $borrador->conceptoSat?->unidad ?: 'Actividad',
+                'objeto_impuesto' => $borrador->conceptoSat?->objeto_impuesto ?: '02',
+                'iva_tasa' => $ivaTasa,
+                'incluye_iva' => false,
+                'cantidad' => (float) $borrador->cantidad,
+                'precio_unitario' => $precioUnitario,
+            ]],
+        ];
+    }
+
     return view('sat.facturacion.create', compact(
         'empresas',
         'clientes',
         'obras',
-        'conceptos'
+        'conceptos',
+        'borrador',
+        'prefill'
     ));
 }
 
@@ -454,6 +510,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
                 'sat_empresa_id' => ['required', 'exists:sat_empresas,id'],
                 'cliente_id' => ['required', 'exists:clientes,id'],
                 'obra_id' => ['nullable', 'exists:obras,id'],
+                'obra_factura_borrador_id' => ['nullable', 'exists:obra_factura_borradores,id'],
 
                 'uso_cfdi' => ['required', 'string', 'max:10'],
                 'metodo_pago' => ['required', 'string', 'max:10'],
@@ -503,6 +560,35 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
                 'complemento_construccion.estado' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:2'],
                 'complemento_construccion.codigo_postal' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:5'],
             ]);
+
+    $borrador = null;
+
+    if (!empty($data['obra_factura_borrador_id'])) {
+        abort_unless(auth()->user()?->can('obra_factura_borradores.invoice.access'), 403);
+
+        $borrador = ObraFacturaBorrador::findOrFail($data['obra_factura_borrador_id']);
+
+        if (
+            $borrador->estatus !== ObraFacturaBorrador::ESTATUS_AUTORIZADO
+            || $borrador->sat_factura_id
+        ) {
+            return back()
+                ->withInput()
+                ->with('error', 'Solo se pueden timbrar borradores autorizados y sin factura ligada.');
+        }
+
+        if ((int) $borrador->cliente_id !== (int) $data['cliente_id']) {
+            return back()
+                ->withInput()
+                ->with('error', 'El cliente no coincide con el borrador autorizado.');
+        }
+
+        if ((int) $borrador->obra_id !== (int) ($data['obra_id'] ?? 0)) {
+            return back()
+                ->withInput()
+                ->with('error', 'La obra no coincide con el borrador autorizado.');
+        }
+    }
 
     $empresa = SatEmpresa::findOrFail($data['sat_empresa_id']);
     $cliente = Cliente::findOrFail($data['cliente_id']);
@@ -814,7 +900,8 @@ $invoice = $facturapi->Invoices->create($payload);
             $descuentoFacturapi,
             $subtotalBase,
             $tipoIva,
-            $ivaTasaNum
+            $ivaTasaNum,
+            $borrador
         ) {
 \Log::info('ANTES INVOICE');
             $totalFactura = max(0, round($total - $retenciones, 2));
@@ -861,6 +948,15 @@ $invoice = $facturapi->Invoices->create($payload);
 
                 'facturapi_response' => json_decode(json_encode($invoice), true),
             ]);
+
+            if ($borrador) {
+                $borrador->update([
+                    'sat_factura_id' => $factura->id,
+                    'estatus' => ObraFacturaBorrador::ESTATUS_FACTURADO,
+                    'facturado_por' => auth()->id(),
+                    'facturado_at' => now(),
+                ]);
+            }
 
             $descuentoAplicadoConceptos = 0.0;
             $retencionAplicadaConceptos = 0.0;

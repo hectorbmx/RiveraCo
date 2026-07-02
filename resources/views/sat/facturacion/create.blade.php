@@ -51,11 +51,27 @@
 
     </div>
 
+    @php
+        $selectedUsoCfdi = old('uso_cfdi', $prefill['uso_cfdi'] ?? 'G03');
+        $selectedMetodoPago = old('metodo_pago', $prefill['metodo_pago'] ?? 'PUE');
+        $selectedFormaPago = old('forma_pago', $prefill['forma_pago'] ?? '03');
+    @endphp
+
     <form method="POST"
           action="{{ route('sat.facturacion.store') }}"
           @submit="if ($event.submitter?.dataset.action === 'timbrar') loadingTimbrar = true">
 
         @csrf
+
+        @if(!empty($prefill['obra_factura_borrador_id']))
+            <input type="hidden" name="obra_factura_borrador_id" value="{{ old('obra_factura_borrador_id', $prefill['obra_factura_borrador_id']) }}">
+        @endif
+
+        @if(!empty($borrador))
+            <div class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Facturando borrador BF-{{ str_pad($borrador->id, 5, '0', STR_PAD_LEFT) }} de la obra {{ $borrador->obra?->nombre ?? $borrador->obra?->Nombre ?? ('#' . $borrador->obra_id) }}.
+            </div>
+        @endif
 
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
 
@@ -174,33 +190,33 @@
                 <select name="uso_cfdi"
                         class="w-full rounded-xl border-slate-300">
 
-                    <option value="G01">G01 - Adquisición de mercancías</option>
-                    <option value="G02">G02 - Devoluciones, descuentos o bonificaciones</option>
-                    <option value="G03" selected>G03 - Gastos en general</option>
+                    <option value="G01" @selected($selectedUsoCfdi === 'G01')>G01 - Adquisición de mercancías</option>
+                    <option value="G02" @selected($selectedUsoCfdi === 'G02')>G02 - Devoluciones, descuentos o bonificaciones</option>
+                    <option value="G03" @selected($selectedUsoCfdi === 'G03')>G03 - Gastos en general</option>
 
-                    <option value="I01">I01 - Construcciones</option>
-                    <option value="I02">I02 - Mobiliario y equipo de oficina por inversiones</option>
-                    <option value="I03">I03 - Equipo de transporte</option>
-                    <option value="I04">I04 - Equipo de cómputo y accesorios</option>
-                    <option value="I05">I05 - Dados, troqueles, moldes, matrices y herramental</option>
-                    <option value="I06">I06 - Comunicaciones telefónicas</option>
-                    <option value="I07">I07 - Comunicaciones satelitales</option>
-                    <option value="I08">I08 - Otra maquinaria y equipo</option>
+                    <option value="I01" @selected($selectedUsoCfdi === 'I01')>I01 - Construcciones</option>
+                    <option value="I02" @selected($selectedUsoCfdi === 'I02')>I02 - Mobiliario y equipo de oficina por inversiones</option>
+                    <option value="I03" @selected($selectedUsoCfdi === 'I03')>I03 - Equipo de transporte</option>
+                    <option value="I04" @selected($selectedUsoCfdi === 'I04')>I04 - Equipo de cómputo y accesorios</option>
+                    <option value="I05" @selected($selectedUsoCfdi === 'I05')>I05 - Dados, troqueles, moldes, matrices y herramental</option>
+                    <option value="I06" @selected($selectedUsoCfdi === 'I06')>I06 - Comunicaciones telefónicas</option>
+                    <option value="I07" @selected($selectedUsoCfdi === 'I07')>I07 - Comunicaciones satelitales</option>
+                    <option value="I08" @selected($selectedUsoCfdi === 'I08')>I08 - Otra maquinaria y equipo</option>
 
-                    <option value="D01">D01 - Honorarios médicos, dentales y gastos hospitalarios</option>
-                    <option value="D02">D02 - Gastos médicos por incapacidad o discapacidad</option>
-                    <option value="D03">D03 - Gastos funerales</option>
-                    <option value="D04">D04 - Donativos</option>
-                    <option value="D05">D05 - Intereses reales efectivamente pagados por créditos hipotecarios</option>
-                    <option value="D06">D06 - Aportaciones voluntarias al SAR</option>
-                    <option value="D07">D07 - Primas por seguros de gastos médicos</option>
-                    <option value="D08">D08 - Gastos de transportación escolar obligatoria</option>
-                    <option value="D09">D09 - Depósitos en cuentas para el ahorro / pensiones</option>
-                    <option value="D10">D10 - Pagos por servicios educativos</option>
+                    <option value="D01" @selected($selectedUsoCfdi === 'D01')>D01 - Honorarios médicos, dentales y gastos hospitalarios</option>
+                    <option value="D02" @selected($selectedUsoCfdi === 'D02')>D02 - Gastos médicos por incapacidad o discapacidad</option>
+                    <option value="D03" @selected($selectedUsoCfdi === 'D03')>D03 - Gastos funerales</option>
+                    <option value="D04" @selected($selectedUsoCfdi === 'D04')>D04 - Donativos</option>
+                    <option value="D05" @selected($selectedUsoCfdi === 'D05')>D05 - Intereses reales efectivamente pagados por créditos hipotecarios</option>
+                    <option value="D06" @selected($selectedUsoCfdi === 'D06')>D06 - Aportaciones voluntarias al SAR</option>
+                    <option value="D07" @selected($selectedUsoCfdi === 'D07')>D07 - Primas por seguros de gastos médicos</option>
+                    <option value="D08" @selected($selectedUsoCfdi === 'D08')>D08 - Gastos de transportación escolar obligatoria</option>
+                    <option value="D09" @selected($selectedUsoCfdi === 'D09')>D09 - Depósitos en cuentas para el ahorro / pensiones</option>
+                    <option value="D10" @selected($selectedUsoCfdi === 'D10')>D10 - Pagos por servicios educativos</option>
 
-                    <option value="S01">S01 - Sin efectos fiscales</option>
-                    <option value="CP01">CP01 - Pagos</option>
-                    <option value="CN01">CN01 - Nómina</option>
+                    <option value="S01" @selected($selectedUsoCfdi === 'S01')>S01 - Sin efectos fiscales</option>
+                    <option value="CP01" @selected($selectedUsoCfdi === 'CP01')>CP01 - Pagos</option>
+                    <option value="CN01" @selected($selectedUsoCfdi === 'CN01')>CN01 - Nómina</option>
                 </select>
             </div>
 
@@ -213,8 +229,8 @@
                 <select name="metodo_pago"
                         class="w-full rounded-xl border-slate-300">
 
-                    <option value="PUE">PUE - Pago en una sola exhibición</option>
-                    <option value="PPD">PPD - Pago en parcialidades</option>
+                    <option value="PUE" @selected($selectedMetodoPago === 'PUE')>PUE - Pago en una sola exhibicion</option>
+                    <option value="PPD" @selected($selectedMetodoPago === 'PPD')>PPD - Pago en parcialidades</option>
 
                 </select>
             </div>
@@ -228,12 +244,12 @@
                     <select name="forma_pago"
                             class="w-full rounded-xl border-slate-300">
 
-                        <option value="03">03 - Transferencia electrónica</option>
-                        <option value="01">01 - Efectivo</option>
-                        <option value="02">02 - Cheque nominativo</option>
-                        <option value="04">04 - Tarjeta de crédito</option>
-                        <option value="28">28 - Tarjeta de débito</option>
-                        <option value="99">99 - Por definir</option>
+                        <option value="03" @selected($selectedFormaPago === '03')>03 - Transferencia electronica</option>
+                        <option value="01" @selected($selectedFormaPago === '01')>01 - Efectivo</option>
+                        <option value="02" @selected($selectedFormaPago === '02')>02 - Cheque nominativo</option>
+                        <option value="04" @selected($selectedFormaPago === '04')>04 - Tarjeta de credito</option>
+                        <option value="28" @selected($selectedFormaPago === '28')>28 - Tarjeta de debito</option>
+                        <option value="99" @selected($selectedFormaPago === '99')>99 - Por definir</option>
 
                     </select>
                 </div>
@@ -1058,22 +1074,22 @@ function facturaForm() {
         openConceptos: false,
         searchConcepto: '',
         loadingTimbrar: false,
-        satEmpresaId: @json((string) old('sat_empresa_id', '')),
-        clienteId: @json((string) old('cliente_id', '')),
+        satEmpresaId: @json((string) old('sat_empresa_id', $prefill['sat_empresa_id'] ?? '')),
+        clienteId: @json((string) old('cliente_id', $prefill['cliente_id'] ?? '')),
         clienteSearch: '',
         clienteOpen: false,
         clientes: @json($clientesBuscador),
-        obraId: @json((string) old('obra_id', '')),
+        obraId: @json((string) old('obra_id', $prefill['obra_id'] ?? '')),
         obraSearch: '',
         obraOpen: false,
         obras: @json($obrasBuscador),
         catalogoConceptos: @json($conceptos),
 
-        conceptosSeleccionados: [],
-        amortizacion: Number(@json(old('amortizacion', 0))) || 0,
-        descuento: Number(@json(old('descuento', 0))) || 0,
-        retenciones: Number(@json(old('retenciones', 0))) || 0,
-        tipoIva: @json(old('tipo_iva', '0.16')),
+        conceptosSeleccionados: @json(old('conceptos', $prefill['conceptos'] ?? [])),
+        amortizacion: Number(@json(old('amortizacion', $prefill['amortizacion'] ?? 0))) || 0,
+        descuento: Number(@json(old('descuento', $prefill['descuento'] ?? 0))) || 0,
+        retenciones: Number(@json(old('retenciones', $prefill['retenciones'] ?? 0))) || 0,
+        tipoIva: @json(old('tipo_iva', $prefill['tipo_iva'] ?? '0.16')),
         usarRelacion: @json((bool) old('usar_relacion')),
         openRelacion: false,
         relacionSearch: '',
@@ -1089,6 +1105,21 @@ function facturaForm() {
         descToEditText: '',
 
         init() {
+            this.conceptosSeleccionados = (this.conceptosSeleccionados || []).map((item) => ({
+                id: item.id ?? item.sat_concepto_id ?? null,
+                codigo: item.codigo ?? '',
+                nombre_catalogo: item.nombre_catalogo ?? item.descripcion ?? '',
+                descripcion: item.descripcion ?? '',
+                clave_producto_servicio: item.clave_producto_servicio ?? '',
+                clave_unidad: item.clave_unidad ?? '',
+                unidad: item.unidad ?? '',
+                objeto_impuesto: item.objeto_impuesto ?? '02',
+                iva_tasa: parseFloat(item.iva_tasa || 0),
+                incluye_iva: item.incluye_iva === true || item.incluye_iva === 1 || item.incluye_iva === '1',
+                cantidad: parseFloat(item.cantidad || 1),
+                precio_unitario: parseFloat(item.precio_unitario || 0),
+            }));
+
             const cliente = this.clientes.find((item) => item.id === this.clienteId);
             if (cliente) {
                 this.clienteSearch = `${cliente.nombre} - ${cliente.rfc}`;
