@@ -29,7 +29,9 @@ class OrdenCompra extends Model
         'fecha',
         'estado',
         'usuario_registro',
+        'registrado_por',
         'usuario_autoriza',
+        'autorizado_por',
         'fecha_autorizacion',
         'comentarios',
     ];
@@ -79,6 +81,16 @@ class OrdenCompra extends Model
     public function detalles()
     {
         return $this->hasMany(OrdenCompraDetalle::class, 'orden_compra_id');
+    }
+
+    public function registradoPor()
+    {
+        return $this->belongsTo(User::class, 'registrado_por');
+    }
+
+    public function autorizadoPor()
+    {
+        return $this->belongsTo(User::class, 'autorizado_por');
     }
 
     public function pagosProveedor()

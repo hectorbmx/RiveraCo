@@ -130,7 +130,7 @@
                     <td class="py-3 px-4">
                         <div class="flex items-center justify-end gap-3">
                         {{-- Imprimir --}}
-                                @can('ordenes_compra.imprimir')
+                                @canany(['ordenes_compra.print.access', 'ordenes_compra.imprimir'])
                                     <a href="{{ route('ordenes_compra.print', $oc->id) }}"
                                     target="_blank"
                                     class="text-slate-400 hover:text-slate-600 transition"
@@ -141,7 +141,7 @@
                                                 d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6v-8z" />
                                         </svg>
                                     </a>
-                                @endcan
+                                @endcanany
 
                             {{-- Abrir --}}
                             <a href="{{ route('ordenes_compra.edit',$oc->id) }}"
@@ -149,7 +149,7 @@
                                 Editar
                             </a>
 
-                            @if($oc->estado_normalizado === 'autorizada' && !$oc->pagoProveedorActivo)
+                            @if($oc->estado_normalizado === 'autorizada' && !$oc->pagoProveedorActivo && auth()->user()?->can('pagos_proveedores.schedule.access'))
                                 <a href="{{ route('pagos-proveedores.create', ['orden_compra_id' => $oc->id]) }}"
                                    class="text-amber-600 hover:text-amber-800 font-medium text-sm transition">
                                     Pagar
@@ -161,7 +161,7 @@
                             @endphp
 
                             @if(!in_array($estadoNorm, ['autorizada','autorizado','cancelada','cancelado']))
-                                @can('ordenes_compra.autorizar')
+                                @canany(['ordenes_compra.authorize.access', 'ordenes_compra.autorizar'])
                                     <form method="POST" action="{{ route('ordenes_compra.autorizar', $oc->id) }}" class="inline">
                                         @csrf
                                         <button type="submit"
@@ -170,11 +170,11 @@
                                             Autorizar
                                         </button>
                                     </form>
-                                @endcan
+                                @endcanany
                             @endif
 
                             {{-- Cancelar (solo si NO está cancelada) --}}
-                            @if(!in_array($oc->estado_normalizado, ['cancelada','cancelado']))
+                            @if(!in_array($oc->estado_normalizado, ['cancelada','cancelado']) && auth()->user()?->can('ordenes_compra.cancel.access'))
                                 <form method="POST" action="{{ route('ordenes_compra.cancelar', $oc->id) }}" class="inline">
                                     @csrf
                                     <button type="submit"

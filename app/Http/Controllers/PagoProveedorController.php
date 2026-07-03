@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\CuentaBancoEmpresa;
 use App\Models\OrdenCompra;
 use App\Models\PagoProveedor;
+use App\Services\OrdenCompraNotificationService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 
 class PagoProveedorController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorizePermission('pagos_proveedores.view.access');
         $fechaInicio = $request->fecha_inicio
             ? now()->parse($request->fecha_inicio)->startOfDay()
             : now()->startOfWeek()->startOfDay();
@@ -41,6 +44,7 @@ class PagoProveedorController extends Controller
 
     public function create(Request $request)
     {
+        $this->authorizePermission('pagos_proveedores.schedule.access');
         $ordenes = $this->ordenesProgramables()->get();
         $ordenSeleccionada = $request->orden_compra_id
             ? $ordenes->firstWhere('id', (int) $request->orden_compra_id)
@@ -54,8 +58,9 @@ class PagoProveedorController extends Controller
         return view('pagos_proveedores.create', compact('ordenes', 'ordenSeleccionada', 'cuentasBanco'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, OrdenCompraNotificationService $notifications)
     {
+        $this->authorizePermission('pagos_proveedores.schedule.access');
         $data = $request->validate([
             'orden_compra_id' => ['required', 'integer', 'exists:ordenes_compra,id'],
             'fecha_programada' => ['required', 'date'],
@@ -78,7 +83,7 @@ class PagoProveedorController extends Controller
             return back()->withInput()->with('error', 'Esta orden ya tiene un pago activo o pagado.');
         }
 
-        PagoProveedor::create([
+        $pago = PagoProveedor::create([
             'orden_compra_id' => $oc->id,
             'proveedor_id' => $oc->proveedor_id,
             'cuenta_banco_empresa_id' => $data['cuenta_banco_empresa_id'] ?? null,
@@ -92,11 +97,14 @@ class PagoProveedorController extends Controller
             'programado_by' => auth()->id(),
         ]);
 
+        $notifications->pagoProgramado($pago);
+
         return redirect()->route('pagos-proveedores.index')->with('success', 'Pago programado correctamente.');
     }
 
     public function autorizar(PagoProveedor $pago)
     {
+        $this->authorizePermission('pagos_proveedores.authorize.access');
         if ($pago->estatus !== 'programado') {
             return back()->with('error', 'Solo se pueden autorizar pagos programados.');
         }
@@ -112,6 +120,7 @@ class PagoProveedorController extends Controller
 
     public function pagar(Request $request, PagoProveedor $pago)
     {
+        $this->authorizePermission('pagos_proveedores.pay.access');
         if ($pago->estatus !== 'autorizado') {
             return back()->with('error', 'Solo se pueden ejecutar pagos autorizados.');
         }
@@ -134,6 +143,7 @@ class PagoProveedorController extends Controller
 
     public function cancelar(PagoProveedor $pago)
     {
+        $this->authorizePermission('pagos_proveedores.cancel.access');
         if ($pago->estatus === 'pagado') {
             return back()->with('error', 'No se puede cancelar un pago ya ejecutado.');
         }
@@ -141,6 +151,16 @@ class PagoProveedorController extends Controller
         $pago->update(['estatus' => 'cancelado']);
 
         return back()->with('success', 'Programacion cancelada.');
+    }
+
+
+    private function authorizePermission(string $permission, string $message = 'No tienes permiso para realizar esta accion.'): void
+    {
+        $user = auth()->user();
+
+        if (!$user || !$user->can($permission)) {
+            throw new AuthorizationException($message);
+        }
     }
 
     private function ordenesProgramables()

@@ -10,6 +10,8 @@ use App\Models\Obra;
 use App\Models\OrdenCompra;
 use App\Models\CentroCosto;
 use App\Models\TipoIva;
+use App\Services\OrdenCompraNotificationService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -22,6 +24,7 @@ class OrdenCompraController extends Controller
      */
     public function index(Request $request)
     {
+        $this->authorizeAny(['ordenes_compra.view.access', 'ordenes de compra.access']);
         $search = $request->query('search');
         $estado = $request->query('estado');
 
@@ -86,6 +89,7 @@ class OrdenCompraController extends Controller
 
    public function create()
 {
+    $this->authorizeAny(['ordenes_compra.create.access', 'ordenes de compra.access']);
     $proveedores = Proveedor::where('activo', 1)
         ->orderBy('nombre')
         ->get();
@@ -102,9 +106,10 @@ class OrdenCompraController extends Controller
     /**
      * Guardar OC (estado inicial: programada -> legacy BORRADOR)
      */
-    public function store(StoreOrdenCompraRequest $request)
+    public function store(StoreOrdenCompraRequest $request, OrdenCompraNotificationService $notifications)
     {
-        return DB::transaction(function () use ($request) {
+        $this->authorizeAny(['ordenes_compra.create.access', 'ordenes de compra.access']);
+        return DB::transaction(function () use ($request, $notifications) {
 
             $area = Area::findOrFail($request->area_id);
 
@@ -136,6 +141,7 @@ class OrdenCompraController extends Controller
 
             // Usuario registro (si hay auth)
             $oc->usuario_registro = $this->usuarioActualNombre();
+            $oc->registrado_por = auth()->id();
 
             // Totales iniciales (0). Se recalcularán al guardar detalles.
             $oc->subtotal = 0;
@@ -148,6 +154,8 @@ class OrdenCompraController extends Controller
 
             $oc->save();
 
+            $notifications->creada($oc);
+
             return redirect()
                 ->route('ordenes_compra.edit', $oc->id)
                 ->with('success', 'Orden de compra creada (programada).');
@@ -156,6 +164,7 @@ class OrdenCompraController extends Controller
 
 public function edit($id)
 {
+    $this->authorizeAny(['ordenes_compra.edit.access', 'ordenes de compra.access']);
     $oc = OrdenCompra::with(['detalles.producto','proveedor','obra','centroCosto','areaCatalogo'])->findOrFail($id);
     $areas = Area::where('activo', 1)->orderBy('nombre')->get();
     $proveedores = Proveedor::where('activo', 1)->orderBy('nombre')->get();
@@ -190,6 +199,7 @@ public function edit($id)
      */
     public function update(UpdateOrdenCompraRequest $request, $id)
     {
+        $this->authorizeAny(['ordenes_compra.edit.access', 'ordenes de compra.access']);
         $oc = OrdenCompra::findOrFail($id);
 
         // Regla: si ya está autorizada o cancelada, no se edita encabezado
@@ -285,11 +295,9 @@ public function edit($id)
 //     return back()->with('success', 'Orden autorizada.');
 // }
 //nueva funcion autorizar con la parte de las partidas
-public function autorizar($id)
+public function autorizar($id, OrdenCompraNotificationService $notifications)
 {
-    if (!auth()->user()->can('ordenes_compra.autorizar')) {
-        abort(403, 'No tienes permiso para autorizar órdenes de compra.');
-    }
+    $this->authorizeAny(['ordenes_compra.authorize.access', 'ordenes_compra.autorizar'], 'No tienes permiso para autorizar ordenes de compra.');
  
     $oc = OrdenCompra::findOrFail($id);
  
@@ -336,7 +344,10 @@ public function autorizar($id)
     $oc->estado             = 'AUTORIZADA';
     $oc->fecha_autorizacion = now()->toDateString();
     $oc->usuario_autoriza   = $this->usuarioActualNombre();
+    $oc->autorizado_por     = auth()->id();
     $oc->save();
+
+    $notifications->autorizada($oc);
  
     return back()->with('success', 'Orden autorizada.');
 }
@@ -346,9 +357,7 @@ public function autorizar($id)
  */
 public function print(OrdenCompra $orden_compra)
 {
-    if (!auth()->user()->can('ordenes_compra.imprimir')) {
-        abort(403, 'No tienes permiso para imprimir órdenes de compra.');
-    }
+    $this->authorizeAny(['ordenes_compra.print.access', 'ordenes_compra.imprimir'], 'No tienes permiso para imprimir ordenes de compra.');
 
     $oc = $orden_compra->load(['proveedor', 'obra', 'centroCosto', 'areaCatalogo', 'detalles']);
 
@@ -832,6 +841,16 @@ public function print(OrdenCompra $orden_compra)
             'cancelada'  => 'CANCELADA',
             default      => strtoupper($estado),
         };
+    }
+
+
+    private function authorizeAny(array $permissions, string $message = 'No tienes permiso para realizar esta accion.'): void
+    {
+        $user = auth()->user();
+
+        if (!$user || !$user->canAny($permissions)) {
+            throw new AuthorizationException($message);
+        }
     }
 
     private function usuarioActualNombre(): ?string

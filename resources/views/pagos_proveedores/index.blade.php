@@ -9,9 +9,11 @@
             <h1 class="text-2xl font-bold text-[#0B265A]">Pagos a proveedores</h1>
             <p class="text-sm text-slate-500">Programacion semanal de pagos ligados a ordenes de compra.</p>
         </div>
-        <a href="{{ route('pagos-proveedores.create') }}" class="rounded-xl bg-[#0B265A] px-5 py-2 text-sm font-semibold text-white">
-            Programar pago
-        </a>
+        @can('pagos_proveedores.schedule.access')
+            <a href="{{ route('pagos-proveedores.create') }}" class="rounded-xl bg-[#0B265A] px-5 py-2 text-sm font-semibold text-white">
+                Programar pago
+            </a>
+        @endcan
     </div>
 
     @if(session('success'))
@@ -141,21 +143,27 @@
                                     Ver
                                 </button>
                                 @if($pago->estatus === 'programado')
+                                    @can('pagos_proveedores.authorize.access')
                                     <form method="POST" action="{{ route('pagos-proveedores.autorizar', $pago) }}">
                                         @csrf @method('PATCH')
                                         <button class="text-green-700 hover:underline">Autorizar</button>
                                     </form>
+                                    @endcan
+                                    @can('pagos_proveedores.cancel.access')
                                     <form method="POST" action="{{ route('pagos-proveedores.cancelar', $pago) }}">
                                         @csrf @method('PATCH')
                                         <button class="text-red-700 hover:underline">Cancelar</button>
                                     </form>
+                                    @endcan
                                 @elseif($pago->estatus === 'autorizado')
+                                    @can('pagos_proveedores.pay.access')
                                     <form method="POST" action="{{ route('pagos-proveedores.pagar', $pago) }}" class="flex items-center gap-2">
                                         @csrf @method('PATCH')
                                         <input type="date" name="fecha_pago" value="{{ now()->toDateString() }}" class="w-36 rounded-lg border-slate-300 text-xs">
                                         <input name="referencia" placeholder="Referencia" class="w-32 rounded-lg border-slate-300 text-xs">
                                         <button class="text-blue-700 hover:underline">Pagar</button>
                                     </form>
+                                    @endcan
                                 @else
                                     <span class="text-slate-400">-</span>
                                 @endif

@@ -54,6 +54,11 @@
                                     Folio: <span class="font-medium text-slate-700">{{ $notification->data['folio'] }}</span> | 
                                     Obra: <span class="font-medium text-slate-700">{{ $notification->data['obra_nombre'] }}</span> | 
                                     Total: <span class="font-medium text-slate-700">${{ number_format($notification->data['total'], 2) }}</span>
+                                    @if(($notification->data['evento'] ?? '') === 'pago_programado')
+                                        | Fecha pago: <span class="font-medium text-slate-700">{{ $notification->data['fecha_programada_formatted'] ?? $notification->data['fecha_programada'] ?? 'N/A' }}</span>
+                                        | Autorizo: <span class="font-medium text-slate-700">{{ $notification->data['autorizado_por_name'] ?? 'N/A' }}</span>
+                                        | Programo: <span class="font-medium text-slate-700">{{ $notification->data['programado_por_name'] ?? 'N/A' }}</span>
+                                    @endif
                                 @elseif(($notification->data['tipo'] ?? '') === 'vencimiento_seguro')
                                     Vence el: <span class="font-medium text-slate-700">{{ $notification->data['vence'] }}</span> | 
                                     {{ $notification->data['asegurable_nombre'] }}
