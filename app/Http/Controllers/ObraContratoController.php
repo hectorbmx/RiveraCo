@@ -17,7 +17,7 @@ class ObraContratoController extends Controller
             'descripcion'    => ['nullable', 'string'],
             'monto_contrato' => ['nullable', 'numeric'],
             'fecha_firma'    => ['nullable', 'date'],
-            'archivo'        => ['required', 'file', 'mimes:pdf', 'max:5120'], // 5MB
+            'archivo'        => ['required', 'file', 'mimes:pdf', 'max:20480'], // 5MB
         ]);
 
         // Guardar archivo en storage/app/public/contratos
