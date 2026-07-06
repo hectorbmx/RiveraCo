@@ -148,6 +148,7 @@ Route::middleware(['auth', 'verified'])
 
 
         Route::get('/', [SatCfdiController::class, 'index'])->name('index');
+        Route::get('/export', [SatCfdiController::class, 'export'])->name('export');
         Route::get('/emisor/{rfc}', [SatCfdiController::class, 'emisor'])->name('emisor');
         Route::get('/{cfdi}', [SatCfdiController::class, 'show'])->name('show');
         Route::get('/{cfdi}/detalle', [SatCfdiController::class, 'detalle'])->name('detalle');

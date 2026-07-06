@@ -278,9 +278,39 @@
                 </p>
             </div>
 
-            <div class="text-sm text-gray-600">
-                Resultado actual:
-                <span class="font-semibold text-gray-900">{{ number_format($totalFiltrado) }}</span>
+            <div class="flex flex-col items-start gap-2 text-sm text-gray-600 lg:items-end">
+                <div>
+                    Resultado actual:
+                    <span class="font-semibold text-gray-900">{{ number_format($totalFiltrado) }}</span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <form method="GET" action="{{ route('sat.cfdis.index') }}" class="flex items-center gap-2">
+                        @foreach(request()->except('per_page', 'page') as $key => $value)
+                            @if(is_array($value))
+                                @foreach($value as $item)
+                                    <input type="hidden" name="{{ $key }}[]" value="{{ $item }}">
+                                @endforeach
+                            @else
+                                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                            @endif
+                        @endforeach
+
+                        <label for="per_page" class="text-xs font-medium text-gray-500">Mostrar</label>
+                        <select id="per_page" name="per_page"
+                                class="rounded-lg border-gray-300 py-1.5 text-xs focus:border-indigo-500 focus:ring-indigo-500"
+                                onchange="this.form.submit()">
+                            @foreach($perPageOpciones as $opcion)
+                                <option value="{{ $opcion }}" @selected((int) $perPage === (int) $opcion)>{{ $opcion }}</option>
+                            @endforeach
+                        </select>
+                    </form>
+
+                    <a href="{{ route('sat.cfdis.export', request()->query()) }}"
+                       class="inline-flex items-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">
+                        Exportar Excel
+                    </a>
+                </div>
             </div>
         </div>
 

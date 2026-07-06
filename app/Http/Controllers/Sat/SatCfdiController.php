@@ -10,6 +10,7 @@ use App\Models\Obra;
 use App\Models\OrdenCompra;
 
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Builder;
 
 class SatCfdiController extends Controller
 {
@@ -142,7 +143,7 @@ class SatCfdiController extends Controller
             $subtotalNominas = (clone $q)->where('tipo_comprobante', 'N')->sum('total');
 
             $cfdis = $q->orderByDesc('fecha_emision')
-                ->paginate(20)
+                ->paginate($perPage)
                 ->withQueryString();
             
             return view('sat.cfdis.index', compact(
@@ -165,6 +166,111 @@ class SatCfdiController extends Controller
         'perPageOpciones'
             ));
         }
+
+    public function export(Request $request)
+    {
+        $empresa = $request->filled('sat_empresa_id')
+            ? SatEmpresa::find($request->sat_empresa_id)
+            : null;
+
+        if (! $empresa) {
+            return redirect()
+                ->route('sat.cfdis.index')
+                ->with('error', 'Selecciona una empresa SAT para exportar CFDIs.');
+        }
+
+        $query = SatCfdi::query()
+            ->with(['obra', 'ordenCompra'])
+            ->where(function ($sub) use ($empresa) {
+                $sub->where('rfc_emisor', $empresa->rfc)
+                    ->orWhere('rfc_receptor', $empresa->rfc);
+            });
+
+        $this->applyIndexFilters($query, $request);
+
+        $filename = 'cfdis_' . $empresa->rfc . '_' . now()->format('Ymd_His') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        return response()->streamDownload(function () use ($query) {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+
+            fputcsv($handle, [
+                'UUID',
+                'Fecha emision',
+                'Tipo comprobante',
+                'RFC emisor',
+                'Emisor',
+                'RFC receptor',
+                'Receptor',
+                'Moneda',
+                'Subtotal',
+                'Total',
+                'Obra',
+                'Orden compra',
+            ]);
+
+            $query->orderByDesc('fecha_emision')
+                ->chunk(1000, function ($cfdis) use ($handle) {
+                    foreach ($cfdis as $cfdi) {
+                        fputcsv($handle, [
+                            $cfdi->uuid,
+                            optional($cfdi->fecha_emision)->format('Y-m-d H:i:s'),
+                            $cfdi->tipo_comprobante,
+                            $cfdi->rfc_emisor,
+                            $cfdi->emisor_nombre,
+                            $cfdi->rfc_receptor,
+                            $cfdi->receptor_nombre,
+                            $cfdi->moneda,
+                            (float) $cfdi->subtotal,
+                            (float) $cfdi->total,
+                            $cfdi->obra?->nombre ?? $cfdi->obra?->Nombre,
+                            $cfdi->ordenCompra?->folio,
+                        ]);
+                    }
+                });
+
+            fclose($handle);
+        }, $filename, $headers);
+    }
+
+    private function applyIndexFilters(Builder $query, Request $request): void
+    {
+        if ($request->filled('uuid')) {
+            $query->where('uuid', 'like', '%' . $request->uuid . '%');
+        }
+
+        if ($request->filled('rfc_emisor')) {
+            $query->where('rfc_emisor', 'like', '%' . $request->rfc_emisor . '%');
+        }
+
+        if ($request->filled('emisor_nombre')) {
+            $query->where('emisor_nombre', 'like', '%' . $request->emisor_nombre . '%');
+        }
+
+        if ($request->filled('rfc_receptor')) {
+            $query->where('rfc_receptor', 'like', '%' . $request->rfc_receptor . '%');
+        }
+
+        if ($request->filled('receptor_nombre')) {
+            $query->where('receptor_nombre', 'like', '%' . $request->receptor_nombre . '%');
+        }
+
+        if ($request->filled('tipo_comprobante')) {
+            $query->where('tipo_comprobante', $request->tipo_comprobante);
+        }
+
+        if ($request->filled('fecha_inicio')) {
+            $query->whereDate('fecha_emision', '>=', $request->fecha_inicio);
+        }
+
+        if ($request->filled('fecha_fin')) {
+            $query->whereDate('fecha_emision', '<=', $request->fecha_fin);
+        }
+    }
 
     public function emisor(Request $request, string $rfc)
     {
