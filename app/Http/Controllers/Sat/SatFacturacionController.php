@@ -17,6 +17,7 @@ use Facturapi\Exceptions\FacturapiException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
 
 
@@ -26,6 +27,7 @@ use Illuminate\Support\Facades\Mail;
 
 
 use Carbon\Carbon;
+use ZipArchive;
 
 class SatFacturacionController extends Controller
 {
@@ -1055,7 +1057,26 @@ $invoice = $facturapi->Invoices->create($payload);
         'conceptos',
     ]);
 
-    return view('sat.facturacion.show', compact('factura'));
+    $zipUrl = URL::temporarySignedRoute(
+        'sat.facturacion.zip',
+        now()->addMinutes(30),
+        ['factura' => $factura->id]
+    );
+
+    $folio = trim(($factura->serie ? $factura->serie . '-' : '') . ($factura->folio ?? $factura->id));
+    $whatsappMessage = implode("\n", [
+        'Factura ' . $folio,
+        'Cliente: ' . ($factura->receptor_nombre ?? 'N/A'),
+        'Total: MXN ' . number_format((float) $factura->total, 2),
+        'Descarga PDF y XML aqui:',
+        $zipUrl,
+        '',
+        'Este enlace expira en 30 minutos.',
+    ]);
+
+    $whatsappUrl = 'https://wa.me/?text=' . rawurlencode($whatsappMessage);
+
+    return view('sat.facturacion.show', compact('factura', 'zipUrl', 'whatsappUrl'));
 }
 
 public function downloadXml(SatFactura $factura)
@@ -1082,6 +1103,45 @@ public function downloadPdf(SatFactura $factura)
     return Storage::download($factura->pdf_path, $filename, [
         'Content-Type' => 'application/pdf',
     ]);
+}
+
+public function downloadZip(SatFactura $factura)
+{
+    if (!$factura->xml_path || !Storage::exists($factura->xml_path)) {
+        abort(404, 'XML no encontrado.');
+    }
+
+    if (!$factura->pdf_path || !Storage::exists($factura->pdf_path)) {
+        abort(404, 'PDF no encontrado.');
+    }
+
+    if (!class_exists(ZipArchive::class)) {
+        abort(500, 'El servidor no tiene habilitada la extension ZIP.');
+    }
+
+    $baseName = preg_replace('/[^A-Za-z0-9_-]+/', '-', trim(($factura->serie ? $factura->serie . '-' : '') . ($factura->folio ?? $factura->id)));
+    $baseName = trim($baseName, '-') ?: 'factura-' . $factura->id;
+
+    $tempDir = storage_path('app/temp');
+    if (!is_dir($tempDir)) {
+        mkdir($tempDir, 0755, true);
+    }
+
+    $zipName = $baseName . '.zip';
+    $zipPath = $tempDir . DIRECTORY_SEPARATOR . uniqid($baseName . '-', true) . '.zip';
+
+    $zip = new ZipArchive();
+    if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        abort(500, 'No se pudo generar el ZIP de la factura.');
+    }
+
+    $zip->addFile(Storage::path($factura->xml_path), $baseName . '.xml');
+    $zip->addFile(Storage::path($factura->pdf_path), $baseName . '.pdf');
+    $zip->close();
+
+    return response()
+        ->download($zipPath, $zipName, ['Content-Type' => 'application/zip'])
+        ->deleteFileAfterSend(true);
 }
 
 public function cancelar(Request $request, SatFactura $factura)

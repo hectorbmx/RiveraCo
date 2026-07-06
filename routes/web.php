@@ -194,6 +194,7 @@ Route::middleware(['auth', 'verified'])
             Route::get('/{factura}/xml', [SatFacturacionController::class, 'downloadXml'])->name('xml');
 
             Route::get('/{factura}/pdf', [SatFacturacionController::class, 'downloadPdf'])->name('pdf');
+            Route::get('/{factura}/zip', [SatFacturacionController::class, 'downloadZip'])->name('zip')->middleware('signed');
             Route::post('/{factura}/enviar', [SatFacturacionController::class, 'enviar'])->name('enviar');
 
             Route::post('/{factura}/cancelar', [SatFacturacionController::class, 'cancelar'])->name('cancelar');

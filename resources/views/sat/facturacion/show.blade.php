@@ -116,7 +116,7 @@
                 </div>
             </div>
         </div>
-        
+
 
         {{-- RESUMEN Y ACCIONES --}}
         <div class="space-y-6">
@@ -140,15 +140,15 @@
                 <h2 class="text-lg font-semibold text-slate-900 mb-4">Archivos y Acciones</h2>
                 <div class="space-y-3">
                     @if($factura->xml_path)
-                        <a href="{{ route('sat.facturacion.xml', $factura) }}" 
-                        class="group relative flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 
+                        <a href="{{ route('sat.facturacion.xml', $factura) }}"
+                        class="group relative flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700
                                 transition-all duration-300 ease-out
                                 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 hover:shadow-[0_10px_20px_-10px_rgba(59,130,246,0.3)]
                                 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
-                            
+
                             <!-- Icono de Código / XML con animación de expansión -->
-                            <svg xmlns="http://www.w3.org/2000/svg" 
-                                class="h-5 w-5 text-blue-500 transition-transform duration-300 group-hover:scale-110" 
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                class="h-5 w-5 text-blue-500 transition-transform duration-300 group-hover:scale-110"
                                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                             </svg>
@@ -161,14 +161,14 @@
                     @endif
                    @if($factura->pdf_path)
                         <a href="{{ route('sat.facturacion.pdf', $factura) }}"
-                        class="group relative flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 
+                        class="group relative flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700
                                 transition-all duration-300 ease-out
                                 hover:border-red-200 hover:bg-red-50 hover:text-red-700 hover:shadow-[0_10px_20px_-10px_rgba(239,68,68,0.3)]
                                 active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-500/20">
-                            
+
                             <!-- Icono de PDF con animación de rebote sutil al pasar el mouse -->
-                            <svg xmlns="http://www.w3.org/2000/svg" 
-                                class="h-5 w-5 text-red-500 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3" 
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                class="h-5 w-5 text-red-500 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3"
                                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 9h1.5m1.5 0H13m-4 4h1.5m1.5 0H13m-4 4h1.5m1.5 0H13" />
@@ -181,16 +181,16 @@
                         </a>
                     @endif
 
-                    <button type="button" 
+                    <button type="button"
                             @click="envioOpen = true"
-                            class="group relative w-full flex items-center justify-center gap-3 rounded-xl border border-indigo-200 bg-white px-4 py-3 text-sm font-bold text-indigo-700 
+                            class="group relative w-full flex items-center justify-center gap-3 rounded-xl border border-indigo-200 bg-white px-4 py-3 text-sm font-bold text-indigo-700
                                 transition-all duration-300 ease-out
                                 hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-[0_10px_20px_-10px_rgba(79,70,229,0.4)]
                                 active:scale-95 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
-                        
+
                         <!-- Icono de Avión de Papel con animación de traslación -->
-                        <svg xmlns="http://www.w3.org/2000/svg" 
-                            class="h-5 w-5 text-indigo-600 transition-all duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:scale-110" 
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5 text-indigo-600 transition-all duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:scale-110"
                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3 10l19-9-9 19-2-9-8-2z" />
                         </svg>
@@ -202,6 +202,28 @@
                         <!-- Destello alucín índigo -->
                         <div class="absolute inset-0 rounded-xl bg-gradient-to-tr from-transparent via-transparent to-indigo-400/15 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
                     </button>
+                    <a href="{{ $whatsappUrl }}"
+        target="_blank"
+        rel="noopener"
+        class="group relative w-full flex items-center justify-center gap-3 rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm font-bold text-emerald-700
+            transition-all duration-300 ease-out
+            hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-[0_10px_20px_-10px_rgba(16,185,129,0.4)]
+            active:scale-95 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+
+    <!-- Icono de WhatsApp con animación -->
+    <svg xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5 text-emerald-600 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6"
+        viewBox="0 0 24 24" fill="currentColor">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+        <path d="M12.004 2c-5.522 0-10 4.477-10 10 0 1.766.464 3.484 1.343 5.006L2 22l5.13-1.345A9.955 9.955 0 0012.004 22c5.523 0 10-4.477 10-10s-4.477-10-10-10zm0 18.176a8.152 8.152 0 01-4.155-1.14l-.298-.177-3.045.799.813-2.97-.194-.306a8.156 8.156 0 01-1.253-4.382c0-4.507 3.667-8.176 8.177-8.176 4.51 0 8.177 3.669 8.177 8.176 0 4.508-3.667 8.176-8.177 8.176z"/>
+    </svg>
+
+    <span class="tracking-tight">
+        {{ $factura->whatsapp_enviado_at ? 'Reenviar por WhatsApp' : 'Enviar por WhatsApp' }}
+    </span>
+
+    <div class="absolute inset-0 rounded-xl bg-gradient-to-tr from-transparent via-transparent to-emerald-400/15 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+</a>
                     @if($factura->metodo_pago === 'PPD' && $factura->estado !== 'cancelada' && $saldoPendiente > 0)
                         <button type="button"
                                 @click="pagoOpen = true"
@@ -231,16 +253,16 @@
                         </form>
                     @endif
                     @if($factura->estado === 'timbrada')
-                        <button type="button" 
+                        <button type="button"
                             @click="cancelacionOpen = true"
-                            class="group relative w-full flex items-center justify-center gap-3 rounded-xl border border-red-200 bg-white px-4 py-3 text-sm font-bold text-red-700 
+                            class="group relative w-full flex items-center justify-center gap-3 rounded-xl border border-red-200 bg-white px-4 py-3 text-sm font-bold text-red-700
                                 transition-all duration-300 ease-out
                                 hover:border-red-300 hover:bg-red-50 hover:text-red-800 hover:shadow-[0_10px_20px_-10px_rgba(220,38,38,0.4)]
                                 active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-500/20">
-                        
+
                         <!-- Icono de Advertencia / Cancelar con animación de rotación -->
-                        <svg xmlns="http://www.w3.org/2000/svg" 
-                            class="h-5 w-5 text-red-600 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" 
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5 text-red-600 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110"
                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -374,14 +396,14 @@
     </div>
 @endif
     {{-- MODAL DE CANCELACIÓN (Dentro del x-data) --}}
-    <div x-show="cancelacionOpen" 
+    <div x-show="cancelacionOpen"
          x-cloak
          x-transition.opacity
          class="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-        
-        <div @click.away="cancelacionOpen = false" 
+
+        <div @click.away="cancelacionOpen = false"
              class="w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
-            
+
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                 <h2 class="text-lg font-semibold text-slate-900">Cancelar CFDI</h2>
                 <button @click="cancelacionOpen = false" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
@@ -391,7 +413,7 @@
                 @csrf
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">Motivo de cancelación SAT</label>
-                    <select name="motivo_cancelacion" x-model="motivoCancelacion" 
+                    <select name="motivo_cancelacion" x-model="motivoCancelacion"
                             class="w-full rounded-xl border-slate-200 focus:border-red-300 focus:ring-red-200">
                         <option value="01">01 - Comprobante emitido con errores con relación</option>
                         <option value="02">02 - Comprobante emitido con errores sin relación</option>
