@@ -947,7 +947,8 @@
             <form action="{{ route('obras.contratos.store', $obra->id) }}"
                   method="POST"
                   enctype="multipart/form-data"
-                  class="space-y-4">
+                  class="space-y-4"
+                  data-contrato-upload-form>
                 @csrf
 
                 <div>
@@ -1027,7 +1028,7 @@
                         <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                     @enderror
                     <p class="mt-1 text-[11px] text-slate-400">
-                        Solo PDF, máximo 5 MB.
+                        Solo PDF, maximo 20 MB.
                     </p>
                 </div>
 
@@ -1040,6 +1041,28 @@
                 </div>
 
             </form>
+
+            <div id="contratoUploadOverlay" class="fixed inset-0 z-[9999] hidden bg-slate-950/60 backdrop-blur-sm">
+                <div class="flex min-h-screen items-center justify-center p-4">
+                    <div class="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
+                        <div class="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-[#FFC107]"></div>
+                        <h3 class="text-base font-semibold text-slate-900">Subiendo contrato</h3>
+                        <p class="mt-2 text-sm text-slate-500">Espera un momento mientras se carga el PDF.</p>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const form = document.querySelector('[data-contrato-upload-form]');
+                const overlay = document.getElementById('contratoUploadOverlay');
+
+                form?.addEventListener('submit', () => {
+                    overlay?.classList.remove('hidden');
+                    form.querySelector('button[type="submit"]')?.setAttribute('disabled', 'disabled');
+                });
+            });
+            </script>
         </div>
     </div>
 @endif

@@ -340,6 +340,7 @@ public function proveedoresUpdate(Request $request, Producto $producto, Proveedo
     public function buscar(Request $request)
         {
             $term = trim((string) $request->get('q', ''));
+            $proveedorId = (int) $request->get('proveedor_id');
 
             if (mb_strlen($term) < 2) {
                 return response()->json([]);
@@ -356,13 +357,53 @@ public function proveedoresUpdate(Request $request, Producto $producto, Proveedo
                 ->limit(15)
                 ->get(['id','legacy_prod_id','nombre','descripcion','unidad','sku']);
 
-            return response()->json($productos->map(fn($p) => [
-                'id' => $p->id,
-                'legacy_prod_id' => $p->legacy_prod_id,
-                'nombre' => $p->nombre,
-                'descripcion' => $p->descripcion,
-                'unidad' => $p->unidad,
-                'sku' => $p->sku,
-            ]));
+            $preciosPorProducto = collect();
+
+            if ($proveedorId && $productos->isNotEmpty()) {
+                $productoIds = $productos->pluck('id');
+
+                if (DB::getSchemaBuilder()->hasTable('producto_proveedor_precios')) {
+                    $ultimosIds = DB::table('producto_proveedor_precios')
+                        ->where('proveedor_id', $proveedorId)
+                        ->whereIn('producto_id', $productoIds)
+                        ->selectRaw('MAX(id) as id')
+                        ->groupBy('producto_id')
+                        ->pluck('id');
+
+                    if ($ultimosIds->isNotEmpty()) {
+                        $preciosPorProducto = DB::table('producto_proveedor_precios')
+                            ->whereIn('id', $ultimosIds)
+                            ->get()
+                            ->keyBy('producto_id');
+                    }
+                }
+
+                $faltantes = $productoIds->diff($preciosPorProducto->keys());
+
+                if ($faltantes->isNotEmpty()) {
+                    $preciosPivot = DB::table('producto_proveedor')
+                        ->where('proveedor_id', $proveedorId)
+                        ->whereIn('producto_id', $faltantes)
+                        ->get(['producto_id', 'precio_lista as precio', 'moneda'])
+                        ->keyBy('producto_id');
+
+                    $preciosPorProducto = $preciosPorProducto->union($preciosPivot);
+                }
+            }
+
+            return response()->json($productos->map(function ($p) use ($preciosPorProducto) {
+                $precio = $preciosPorProducto->get($p->id);
+
+                return [
+                    'id' => $p->id,
+                    'legacy_prod_id' => $p->legacy_prod_id,
+                    'nombre' => $p->nombre,
+                    'descripcion' => $p->descripcion,
+                    'unidad' => $p->unidad,
+                    'sku' => $p->sku,
+                    'ultimo_precio' => $precio ? (float) $precio->precio : null,
+                    'moneda_precio' => $precio->moneda ?? null,
+                ];
+            }));
         }
 }

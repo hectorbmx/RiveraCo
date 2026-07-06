@@ -219,7 +219,7 @@
     <div class="bg-white border rounded-xl p-4 mb-4 grid grid-cols-1 md:grid-cols-4 gap-3">
         <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Proveedor</label>
-            <select form="formEncabezadoOc" name="proveedor_id" class="w-full border p-2 rounded" @disabled($bloqueado)>
+            <select form="formEncabezadoOc" name="proveedor_id" id="oc_proveedor_id" class="w-full border p-2 rounded" @disabled($bloqueado)>
                 @foreach($proveedores as $p)
                     <option value="{{ $p->id }}" @selected(old('proveedor_id', $oc->proveedor_id) == $p->id)>{{ $p->nombre }}</option>
                 @endforeach
@@ -384,7 +384,7 @@
 
     <!-- Precio -->
     <div>
-        <input name="precio_unitario" type="number" step="0.0001" placeholder="0.00" class="w-full border p-2 rounded">
+        <input name="precio_unitario" id="precio_unitario" type="number" step="0.0001" placeholder="0.00" class="w-full border p-2 rounded">
         <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">Precio Unit.</span>
     </div>
 
@@ -468,6 +468,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const legacyId   = document.getElementById('detalle_legacy_prod_id') || document.getElementById('legacy_prod_id');
     const unidad     = document.getElementById('detalle_unidad') || document.getElementById('unidad');
     const meta        = document.getElementById('producto_meta');
+    const proveedor   = document.getElementById('oc_proveedor_id');
+    const precioInput = document.getElementById('precio_unitario');
 
     if (!input || !box || !productoId) {
         console.warn('Autocomplete: Faltan elementos esenciales en el DOM');
@@ -488,6 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
             productoId.value = '';
             if(legacyId) legacyId.value = '';
             if(meta) meta.innerText = '';
+            if(precioInput) precioInput.value = '';
             return;
         }
 
@@ -500,7 +503,10 @@ document.addEventListener('DOMContentLoaded', () => {
                  */
                 const urlBusqueda = "{{ route('productos.buscar') }}";
                 
-                const res = await fetch(`${urlBusqueda}?q=${encodeURIComponent(q)}`, {
+                const params = new URLSearchParams({ q });
+                if (proveedor?.value) params.set('proveedor_id', proveedor.value);
+
+                const res = await fetch(`${urlBusqueda}?${params.toString()}`, {
                     headers: { 
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
@@ -525,10 +531,12 @@ document.addEventListener('DOMContentLoaded', () => {
                          data-nombre="${(p.nombre ?? '').replace(/"/g,'&quot;')}"
                          data-unidad="${p.unidad ?? ''}"
                          data-sku="${(p.sku ?? '').replace(/"/g,'&quot;')}"
-                         data-descripcion="${(p.descripcion ?? '').replace(/"/g,'&quot;')}">
+                         data-descripcion="${(p.descripcion ?? '').replace(/"/g,'&quot;')}"
+                         data-precio="${p.ultimo_precio ?? ''}"
+                         data-moneda="${p.moneda_precio ?? ''}">
                         <div class="font-semibold text-slate-800">${p.nombre}</div>
                         <div class="text-xs text-slate-500">
-                            SKU: ${p.sku ?? '-'} · Unidad: ${p.unidad ?? '-'}
+                            SKU: ${p.sku ?? '-'} - Unidad: ${p.unidad ?? '-'}${p.ultimo_precio !== null && p.ultimo_precio !== undefined ? ` - Ultimo precio: ${Number(p.ultimo_precio).toFixed(2)} ${p.moneda_precio ?? ''}` : ''}
                         </div>
                         ${p.descripcion ? `<div class="text-xs text-slate-400">${p.descripcion}</div>` : ``}
                     </div>
@@ -543,12 +551,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         productoId.value = item.dataset.id;
                         if(legacyId) legacyId.value = item.dataset.legacy || '';
                         if(unidad)   unidad.value   = item.dataset.unidad || '';
+                        if(precioInput) precioInput.value = item.dataset.precio !== '' ? Number(item.dataset.precio).toFixed(4) : '';
                         
                         input.value = item.dataset.nombre || input.value;
                         if(meta) {
                             const sku = item.dataset.sku || '-';
                             const descripcion = item.dataset.descripcion || '';
-                            meta.innerText = descripcion ? `SKU: ${sku} · ${descripcion}` : `SKU: ${sku}`;
+                            const precio = item.dataset.precio !== '' ? ` - Ultimo precio: ${Number(item.dataset.precio).toFixed(2)} ${item.dataset.moneda || ''}` : '';
+                            meta.innerText = descripcion ? `SKU: ${sku} - ${descripcion}${precio}` : `SKU: ${sku}${precio}`;
                         }
 
                         box.classList.add('hidden');
