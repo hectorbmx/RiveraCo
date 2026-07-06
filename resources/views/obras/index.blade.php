@@ -186,7 +186,7 @@
                         <td class="py-3 px-2 text-right space-x-2">
                             <a href="{{ route('obras.edit', $obra) }}"
                                class="text-blue-600 hover:text-blue-800 font-medium text-sm">
-                                Editar
+                                Detalles
                             </a>
 
                             <form action="{{ route('obras.destroy', $obra) }}"
