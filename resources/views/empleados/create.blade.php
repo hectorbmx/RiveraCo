@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+﻿@extends('layouts.admin')
 
 @section('title', 'Nuevo empleado')
 
@@ -8,7 +8,7 @@
 
     @if($errors->any())
         <div class="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
-            Hay errores en el formulario, revisa la información.
+            Hay errores en el formulario, revisa la informaciÃ³n.
         </div>
     @endif
 
@@ -19,3 +19,4 @@
     </div>
 </div>
 @endsection
+

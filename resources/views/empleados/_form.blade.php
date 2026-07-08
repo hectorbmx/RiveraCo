@@ -1,4 +1,4 @@
-@csrf
+﻿@csrf
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
@@ -21,15 +21,15 @@
         @error('Apellidos') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
     </div>
 
-    {{-- Área y Puesto --}}
-   {{-- Área --}}
+    {{-- Ãrea y Puesto --}}
+   {{-- Ãrea --}}
 <div>
-  <label class="block text-xs font-medium text-slate-700">Área</label>
+  <label class="block text-xs font-medium text-slate-700">Ãrea</label>
 
   <select name="Area"
     class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
            focus:border-[#FFC107] focus:ring-[#FFC107]">
-    <option value="">-- Seleccionar área --</option>
+    <option value="">-- Seleccionar Ã¡rea --</option>
 
     @foreach($areas as $a)
       <option value="{{ $a->id }}"
@@ -42,6 +42,22 @@
   @error('Area') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
 </div>
 
+
+<div>
+  <label class="block text-xs font-medium text-slate-700">Lista de raya principal</label>
+  <select name="lista_raya_principal_id"
+    class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+           focus:border-[#FFC107] focus:ring-[#FFC107]">
+    <option value="">-- Sin lista principal --</option>
+    @foreach(($listasRaya ?? collect()) as $lista)
+      <option value="{{ $lista->id }}"
+        @selected((string)old('lista_raya_principal_id', $empleado->lista_raya_principal_id ?? '') === (string)$lista->id)>
+        {{ $lista->nombre }}
+      </option>
+    @endforeach
+  </select>
+  @error('lista_raya_principal_id') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+</div>
    <div>
     <label class="block text-xs font-medium text-slate-700">Puesto</label>
     @php
@@ -165,3 +181,4 @@
         Guardar
     </button>
 </div>
+

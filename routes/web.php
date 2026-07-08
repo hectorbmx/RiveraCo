@@ -31,6 +31,7 @@ use App\Http\Controllers\EmpleadoDocumentoController;
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Admin\EmpresaSecurityController;
 use App\Http\Controllers\Admin\EmpresaConfigAreaController;
+use App\Http\Controllers\Admin\EmpresaConfigListaRayaController;
 
 use App\Http\Controllers\EmpresaConfigController;
 use App\Http\Controllers\ObraMaquinaHorasController;
@@ -138,7 +139,7 @@ Route::middleware(['auth', 'verified'])
 
         /*
         |----------------------------------------------------------------------
-        | ESTADÍSTICAS CFDI
+        | ESTADÃSTICAS CFDI
         |----------------------------------------------------------------------
         */
         Route::get('/estadisticas', [SatCfdiEstadisticaController::class, 'index'])->name('estadisticas');
@@ -173,7 +174,7 @@ Route::middleware(['auth', 'verified'])
 });
         /*
         |--------------------------------------------------------------------------
-        | FACTURACIÓN CFDI
+        | FACTURACIÃ“N CFDI
         |--------------------------------------------------------------------------
         */
         Route::prefix('facturacion')->name('facturacion.')->group(function () {
@@ -218,7 +219,7 @@ Route::middleware(['auth', 'verified'])
 
         /*
         |--------------------------------------------------------------------------
-        | CATÁLOGOS SAT
+        | CATÃLOGOS SAT
         |--------------------------------------------------------------------------
         */
         Route::prefix('catalogos')->name('catalogos.')->group(function () {
@@ -278,7 +279,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [UsuarioController::class, 'index'])->name('index');
         Route::get('/create', [UsuarioController::class, 'create'])->name('create');
 
-        // 🔎 buscador empleados legacy (JSON)
+        // ðŸ”Ž buscador empleados legacy (JSON)
         Route::get('/empleados/search', [UsuarioController::class, 'searchEmpleados'])->name('empleados.search');
 
         Route::post('/', [UsuarioController::class, 'store'])->name('store');
@@ -297,6 +298,7 @@ Route::middleware(['auth','verified'])
         Route::get('corridas/{corrida}',[NominaCorridaController::class, 'show'])->name('corridas.show');
         Route::post('corridas/{corrida}/recibos/generar',[NominaCorridaController::class, 'generarRecibos'])->name('corridas.recibos.generar');
         Route::post('corridas/{corrida}/recibos/guardar',[NominaCorridaController::class, 'guardarRecibos'])->name('corridas.recibos.guardar');
+        Route::post('corridas/{corrida}/recibos/{recibo}/autosave',[NominaCorridaController::class, 'autosave'])->name('corridas.recibos.autosave');
         Route::delete('corridas/{corrida}/recibos',[NominaCorridaController::class, 'destroyRecibos'])->name('corridas.recibos.destroy');
         Route::delete('corridas/{corrida}',[NominaCorridaController::class, 'destroy'])->name('corridas.destroy');
         
@@ -317,7 +319,7 @@ Route::middleware('auth','verified')->group(function () {
 
     Route::prefix('presupuesto')->group(function(){
         Route::get('presupuestos', [App\Http\Controllers\PresupuestoController::class, 'index'])->name('presupuesto.index');
-        // Ruta para ver el detalle de uno específico (la usaremos después)
+        // Ruta para ver el detalle de uno especÃ­fico (la usaremos despuÃ©s)
         Route::get('presupuestos/{id}', [App\Http\Controllers\PresupuestoController::class, 'show'])->name('presupuesto.show');
         Route::get('presupuestos/{id}/pdf', [App\Http\Controllers\PresupuestoController::class, 'exportPdf'])->name('presupuesto.pdf');
         Route::delete('presupuestos/{id}', [App\Http\Controllers\PresupuestoController::class, 'destroy'])->name('presupuesto.destroy');
@@ -333,15 +335,15 @@ Route::middleware('auth','verified')->group(function () {
         });
 
     Route::prefix('inventario')->group(function () {
-    // 🔹 STOCK
-       // 🔹 STOCK
+    // ðŸ”¹ STOCK
+       // ðŸ”¹ STOCK
         Route::get('stock', [InventarioStockController::class, 'view'])->name('inventario.stock.index');
         
         Route::get('documentos/buscar-proveedor', [InventarioDocumentoController::class, 'buscarProveedor'])->name('inventario.documentos.buscar-proveedor');
         Route::get('documentos/buscar-producto',  [InventarioDocumentoController::class, 'buscarProducto'])->name('inventario.documentos.buscar-producto');
 
         Route::get('stock.json', [InventarioStockController::class, 'index'])->name('inventario.stock.index.json');
-        // 🔹 DOCUMENTOS (MOVIMIENTOS)
+        // ðŸ”¹ DOCUMENTOS (MOVIMIENTOS)
         // Index con tabs (?tipo=entrada|salida|resguardo|devolucion|ajuste)
         Route::get('documentos', [InventarioDocumentoController::class, 'index'])->name('inventario.documentos.index');
         // Crear
@@ -356,7 +358,7 @@ Route::middleware('auth','verified')->group(function () {
         Route::put('documentos/{doc}', [InventarioDocumentoController::class, 'update'])->name('inventario.documentos.update');
         // Aplicar
         Route::post('documentos/{doc}/aplicar', [InventarioDocumentoController::class, 'aplicar'])->name('inventario.documentos.aplicar');
-        // Cancelar (crea documento cancelación)
+        // Cancelar (crea documento cancelaciÃ³n)
         Route::post('documentos/{doc}/cancelar', [InventarioDocumentoController::class, 'cancelar'])->name('inventario.documentos.cancelar');
         
         Route::get('kardex', [InventarioKardexController::class, 'index'])->name('inventario.kardex.index');
@@ -434,6 +436,11 @@ Route::middleware('auth','verified')->group(function () {
     Route::patch('/empresa-config/areas/{area}', [EmpresaConfigAreaController::class, 'update'])->name('empresa-config.areas.update');
     Route::patch('/empresa-config/areas/{area}/toggle', [EmpresaConfigAreaController::class, 'toggle'])->name('empresa-config.areas.toggle');
     Route::delete('/empresa-config/areas/{area}', [EmpresaConfigAreaController::class, 'destroy'])->name('empresa-config.areas.destroy');
+
+    Route::post('/empresa-config/listas-raya', [EmpresaConfigListaRayaController::class, 'store'])->name('empresa-config.listas-raya.store');
+    Route::patch('/empresa-config/listas-raya/{listaRaya}', [EmpresaConfigListaRayaController::class, 'update'])->name('empresa-config.listas-raya.update');
+    Route::patch('/empresa-config/listas-raya/{listaRaya}/toggle', [EmpresaConfigListaRayaController::class, 'toggle'])->name('empresa-config.listas-raya.toggle');
+    Route::delete('/empresa-config/listas-raya/{listaRaya}', [EmpresaConfigListaRayaController::class, 'destroy'])->name('empresa-config.listas-raya.destroy');
 
     Route::get('/configuracion-empresa/maquinas/{maquina}/edit', [EmpresaConfigMaquinaController::class, 'edit'])->name('empresa_config.maquinas.edit');
 
@@ -575,17 +582,17 @@ Route::middleware('auth','verified')->group(function () {
     Route::delete('productos/{producto}/proveedores/{proveedor}', [ProductoController::class, 'proveedoresDetach'])->name('productos.proveedores.detach');
 //mantenimiento y vehiculos
     Route::prefix('mantenimiento')->name('mantenimiento.')->group(function () {
-        // Catálogo de vehículos
+        // CatÃ¡logo de vehÃ­culos
         Route::resource('vehiculos', VehiculoController::class)
             ->except(['destroy']);
-              // Asignar vehículo a empleado
+              // Asignar vehÃ­culo a empleado
         Route::post('vehiculos/{vehiculo}/asignar', [VehiculoController::class, 'asignar'])
         ->name('vehiculos.asignar');
         
         // Route::post('vehiculos/{vehiculo}/seguro', [VehiculoController::class, 'guardarSeguro'])
         // ->name('vehiculos.seguro.store');
 
-        // Mantenimientos de vehículos
+        // Mantenimientos de vehÃ­culos
         Route::resource('mantenimientos', MantenimientoController::class)
             ->except(['destroy']);
 
@@ -635,43 +642,43 @@ Route::middleware('auth','verified')->group(function () {
             Route::get('comisiones', [ComisionController::class, 'index'])
                 ->name('comisiones.index');
 
-            // Formulario para crear nueva comisión
+            // Formulario para crear nueva comisiÃ³n
             Route::get('comisiones/create', [ComisionController::class, 'create'])
                 ->name('comisiones.create');
 
-            // Guardar nueva comisión
+            // Guardar nueva comisiÃ³n
             Route::post('comisiones', [ComisionController::class, 'store'])
                 ->name('comisiones.store');
 
-            // Ver detalle de una comisión (y desde aquí imprimir)
+            // Ver detalle de una comisiÃ³n (y desde aquÃ­ imprimir)
             Route::get('comisiones/{comision}', [ComisionController::class, 'show'])
                 ->name('comisiones.show');
 
-            // Editar comisión
+            // Editar comisiÃ³n
             Route::get('comisiones/{comision}/edit', [ComisionController::class, 'edit'])
                 ->name('comisiones.edit');
 
-            // Actualizar comisión
+            // Actualizar comisiÃ³n
             Route::put('comisiones/{comision}', [ComisionController::class, 'update'])
                 ->name('comisiones.update');
 
-            // Eliminar comisión
+            // Eliminar comisiÃ³n
             Route::delete('comisiones/{comision}', [ComisionController::class, 'destroy'])
                 ->name('comisiones.destroy');
 
-            // Vista para imprimir el formato (opcional, pero muy útil)
+            // Vista para imprimir el formato (opcional, pero muy Ãºtil)
             Route::get('comisiones/{comision}/imprimir', [ComisionController::class, 'print'])
                 ->name('comisiones.print');
 
-                   // Asignar máquina a la obra
+                   // Asignar mÃ¡quina a la obra
             Route::post('maquinaria', [ObraMaquinaController::class, 'store'])
                 ->name('maquinaria.store');
 
-            // Dar de baja una máquina de la obra
+            // Dar de baja una mÃ¡quina de la obra
             Route::patch('maquinaria/{asignacion}/baja', [ObraMaquinaController::class, 'baja'])
                 ->name('maquinaria.baja');
         });
-    // Rutas para gestión de empleados
+    // Rutas para gestiÃ³n de empleados
 
      Route::resource('empleados', EmpleadoController::class)->except(['destroy']);
 
@@ -783,3 +790,4 @@ Route::prefix('pagos-proveedores')
 });
 
 require __DIR__.'/auth.php';
+

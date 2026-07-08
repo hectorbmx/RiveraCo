@@ -8,6 +8,7 @@ use App\Models\CatalogoRol;
 use App\Models\EmpleadoNota;
 use App\Models\EmpresaConfig;
 use App\Models\EmpresaDocumentoTipo;
+use App\Models\NominaListaRaya;
 use Illuminate\Http\Request;
 use App\Services\Empleados\EmpleadoKardexService;
 
@@ -86,8 +87,14 @@ public function create()
 {
     $areas = Area::orderBy('nombre')->get();
     $roles = CatalogoRol::orderBy('nombre')->get();
+    $listasRaya = NominaListaRaya::query()
+        ->where('activo', true)
+        ->where('es_automatica', false)
+        ->orderBy('orden')
+        ->orderBy('nombre')
+        ->get();
 
-    return view('empleados.create', compact('areas', 'roles'));
+    return view('empleados.create', compact('areas', 'roles', 'listasRaya'));
 }
 
     // public function store(Request $request)
@@ -113,7 +120,7 @@ public function store(Request $request)
 {
     $data = $this->validateData($request, true);
 
-    // ⚠️ evita que se guarde el tmp path
+    // âš ï¸ evita que se guarde el tmp path
     unset($data['foto']);
 
     $nextId = (Empleado::max('id_Empleado') ?? 0) + 1;
@@ -141,7 +148,7 @@ public function store(Request $request)
     | puesto_base
     |--------------------------------------------------------------------------
     | Si no viene puesto_base lo tomamos del Puesto
-    | y lo normalizamos en MAYÚSCULAS
+    | y lo normalizamos en MAYÃšSCULAS
     */
     if (empty($data['puesto_base']) && !empty($data['Puesto'])) {
         $data['puesto_base'] = $data['Puesto'];
@@ -225,6 +232,12 @@ if ($tab === 'documentos') {
         ->get();
 
     $roles = \App\Models\CatalogoRol::orderBy('nombre')->get();
+    $listasRaya = NominaListaRaya::query()
+        ->where('activo', true)
+        ->where('es_automatica', false)
+        ->orderBy('orden')
+        ->orderBy('nombre')
+        ->get();
 
     return view('empleados.edit', compact(
         'empleado',
@@ -233,6 +246,7 @@ if ($tab === 'documentos') {
         'documentos',
         'areas',
         'roles',
+        'listasRaya',
         'documentosTipos'
     ));
 }
@@ -251,7 +265,7 @@ if ($tab === 'documentos') {
 {
     $data = $this->validateData($request, false);
 
-    // ⚠️ evita guardar tmp path si no procesas el archivo
+    // âš ï¸ evita guardar tmp path si no procesas el archivo
     unset($data['foto']);
 
     // Normalizaciones
@@ -318,7 +332,7 @@ if ($tab === 'documentos') {
 
 
     /**
-     * Validación centralizada
+     * ValidaciÃ³n centralizada
      */
     protected function validateData(Request $request, bool $isCreate = true): array
     {
@@ -349,6 +363,7 @@ if ($tab === 'documentos') {
             'Complemento'      => ['nullable', 'numeric'],
             'Sueldo_tipo'      => ['nullable', 'integer'],
             'listaraya'        => ['nullable', 'integer'],
+            'lista_raya_principal_id' => ['nullable', 'integer', 'exists:nomina_listas_raya,id'],
             'Horassemana'      => ['nullable', 'string', 'max:50'],
             'infonavit'        => ['nullable', 'numeric'],
 
@@ -360,3 +375,7 @@ if ($tab === 'documentos') {
         ]);
     }
 }
+
+
+
+

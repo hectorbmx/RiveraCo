@@ -22,6 +22,9 @@ use App\Models\TipoIva;
 use App\Models\Obra;
 use App\Models\ObraFolio;
 use App\Models\ObraTipoConfiguracion;
+use App\Models\NominaListaRaya;
+use App\Models\Almacen;
+use App\Services\Nomina\ListaRayaResolver;
 use App\Services\Maquinas\PreventivoMaquinaService;
 
 class EmpresaConfigController extends Controller
@@ -56,6 +59,14 @@ public function index(){
             'activa'          => true,
         ]);
         $areas = Area::orderBy('codigo')->orderBy('nombre')->get();
+        app(ListaRayaResolver::class)->syncObrasVivas();
+        $listasRaya = NominaListaRaya::query()
+            ->with(['area', 'obra', 'almacen'])
+            ->orderBy('orden')
+            ->orderBy('tipo')
+            ->orderBy('nombre')
+            ->get();
+        $almacenes = Almacen::query()->where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
 
         $cuentasBancoEmpresa = CuentaBancoEmpresa::query()
             ->orderByDesc('principal')
@@ -136,7 +147,7 @@ public function index(){
         $catalogoRoles = CatalogoRol::orderBy('nombre')->get();    
         $tarifarios = ComisionTarifario::orderByDesc('vigente_desde')->orderByDesc('id')->get();
 
-        // “vigente” = el más reciente (por ahora solo 1)
+        // â€œvigenteâ€ = el mÃ¡s reciente (por ahora solo 1)
         $tarifarioVigente = $tarifarios->first();
 
         // detalles del vigente (si existe)
@@ -148,7 +159,7 @@ public function index(){
                 ->get()
             : collect();
 
-        // ✅ Seguridad (solo para admin/super-admin)
+        // âœ… Seguridad (solo para admin/super-admin)
         $roles = collect();
         $permissions = collect();
         
@@ -169,7 +180,7 @@ public function index(){
                 ->orderBy('name')
                 ->get();
 
-            // Selección de rol: por query (?role=ID) o el primero
+            // SelecciÃ³n de rol: por query (?role=ID) o el primero
             $roleId = request()->integer('role');
             $selectedRole = $roleId
                 ? $roles->firstWhere('id', $roleId)
@@ -202,6 +213,8 @@ public function index(){
         'tiposObraConfiguraciones',
         'anioFoliosObra',
         'preventivosMaquinaria',
+        'listasRaya',
+        'almacenes',
     ));
 }
 
@@ -229,14 +242,14 @@ public function index(){
 
         $config->update($data);
 
-        return back()->with('success', 'Configuración general actualizada.');
+        return back()->with('success', 'ConfiguraciÃ³n general actualizada.');
     }
 
     /**
      * Secciones nuevas (tabs): por ahora no persisten en empresa_config
      * pero tampoco rompen la app.
      *
-     * Aquí después conectamos a tabla meta o a tablas específicas.
+     * AquÃ­ despuÃ©s conectamos a tabla meta o a tablas especÃ­ficas.
      */
     if ($section === 'maquinaria') {
         $data = $request->validate([
@@ -249,20 +262,20 @@ public function index(){
 
         return redirect()
             ->route('empresa_config.edit', ['tab' => 'maquinaria'])
-            ->with('success', 'ConfiguraciÃ³n de maquinaria guardada.');
+            ->with('success', 'ConfiguraciÃƒÂ³n de maquinaria guardada.');
     }
 
     if (in_array($section, ['vehiculos', 'rrhh', 'comisiones', 'reglas', 'alertas'], true)) {
-        // Validación opcional mínima para que no aceptes basura (puedes ajustar)
+        // ValidaciÃ³n opcional mÃ­nima para que no aceptes basura (puedes ajustar)
         $request->validate([
-            // ejemplos (opcionales). Si todavía no guardarás, puedes dejar vacío.
+            // ejemplos (opcionales). Si todavÃ­a no guardarÃ¡s, puedes dejar vacÃ­o.
             // 'servicio_km' => ['nullable','integer','min:0'],
         ]);
 
-        return back()->with('success', 'Configuración guardada.');
+        return back()->with('success', 'ConfiguraciÃ³n guardada.');
     }
 
-    return back()->with('error', 'Sección de configuración inválida.');
+    return back()->with('error', 'SecciÃ³n de configuraciÃ³n invÃ¡lida.');
 }
 public function updateFolioObra(Request $request, ObraFolio $folio)
 {
@@ -309,7 +322,7 @@ public function updateTipoObraConfiguracion(Request $request, ObraTipoConfigurac
 
     return redirect()
         ->route('empresa_config.edit', ['tab' => 'folios'])
-        ->with('success', 'Configuración de tipo de obra actualizada.');
+        ->with('success', 'ConfiguraciÃ³n de tipo de obra actualizada.');
 }
 
 private function ultimoConsecutivoObraExistente(string $prefijo, int $anio): int
@@ -350,7 +363,7 @@ public function storeCuentaBanco(Request $request)
 
     $data['activa'] = true;
 
-    // si es la primera cuenta -> principal automática
+    // si es la primera cuenta -> principal automÃ¡tica
     $data['principal'] = CuentaBancoEmpresa::count() === 0;
 
     CuentaBancoEmpresa::create($data);
@@ -550,3 +563,6 @@ public function marcarTipoIvaDefault(TipoIva $tipoIva)
         ->with('success', 'IVA por defecto actualizado.');
 }
 }
+
+
+

@@ -41,6 +41,7 @@ class Empleado extends Model
         'Complemento',
         'Sueldo_tipo',
         'listaraya',
+        'lista_raya_principal_id',
         'Horassemana',
         'infonavit',
         'Estatus',
@@ -67,6 +68,11 @@ class Empleado extends Model
     }
 
 
+    public function listaRayaPrincipal()
+    {
+        return $this->belongsTo(\App\Models\NominaListaRaya::class, 'lista_raya_principal_id');
+    }
+
     public function asignaciones()
     {
         return $this->hasMany(ObraEmpleado::class, 'empleado_id', 'id_Empleado');
@@ -84,7 +90,7 @@ public function areaRef()
     return $this->belongsTo(\App\Models\Area::class, 'Area', 'id');
 }
 
-// ✅ helper seguro si en algún lado te están accediendo raro:
+// ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ helper seguro si en algÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âºn lado te estÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡n accediendo raro:
 public function getAreaIdAttribute()
 {
     return $this->getAttribute('Area');
@@ -134,18 +140,22 @@ public function getAreaIdAttribute()
     //         ->wherePivot('activo', 1);
     // }
     public function obraActiva()
-{
-    return $this->belongsToMany(Obra::class, 'obra_empleado', 'empleado_id', 'obra_id')
-        ->withPivot(['puesto_en_obra', 'activo']) // Añade los campos que necesites de la tabla intermedia
-        ->wherePivot('activo', 1);
-}
-        // Vehículos que ha tenido asignados (histórico)
+    {
+        return $this->belongsToMany(Obra::class, 'obra_empleado', 'empleado_id', 'obra_id')
+            ->withPivot(['fecha_alta', 'fecha_baja', 'puesto_en_obra', 'activo'])
+            ->wherePivot('activo', 1)
+            ->wherePivotNull('fecha_baja')
+            ->where('obras.estatus_nuevo', '!=', Obra::ESTATUS_CANCELADA)
+            ->orderByDesc('obra_empleado.fecha_alta')
+            ->orderByDesc('obra_empleado.id');
+    }
+        // VehÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­culos que ha tenido asignados (histÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³rico)
     public function vehiculosAsignados()
     {
         return $this->hasMany(VehiculoEmpleado::class, 'empleado_id', 'id_Empleado');
     }
 
-    // Mantenimientos donde fue mecánico
+    // Mantenimientos donde fue mecÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡nico
     public function mantenimientosComoMecanico()
     {
         return $this->hasMany(Mantenimiento::class, 'mecanico_id', 'id_Empleado');
@@ -174,3 +184,4 @@ public function getAreaIdAttribute()
                 ->latestOfMany();
         }
 }
+

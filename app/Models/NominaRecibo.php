@@ -13,6 +13,9 @@ class NominaRecibo extends Model
 
         'empleado_id',
         'obra_id',
+        'lista_raya_id',
+        'lista_raya_nombre',
+        'lista_raya_tipo',
         'obra_legacy',
 
         'periodo_label',
@@ -52,7 +55,7 @@ class NominaRecibo extends Model
         'factura_monto',
         'notas_legacy',
 
-        // redundancia útil para reportes
+        // redundancia Ãºtil para reportes
         'tipo_pago',
         'subtipo',
     ];
@@ -107,8 +110,21 @@ class NominaRecibo extends Model
         return $this->belongsTo(Obra::class, 'obra_id');
     }
 
+    public function listaRaya()
+    {
+        return $this->belongsTo(NominaListaRaya::class, 'lista_raya_id');
+    }
+
     public function comisionesCargadasPor()
     {
         return $this->belongsTo(User::class, 'comisiones_cargadas_by');
     }
+
+    public function pagosExtra()
+    {
+        return $this->hasMany(NominaPagoExtra::class, 'recibo_id');
+    }
 }
+
+
+

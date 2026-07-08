@@ -1,4 +1,4 @@
-<h2 class="text-lg font-semibold mb-4">Datos generales del empleado</h2>
+﻿<h2 class="text-lg font-semibold mb-4">Datos generales del empleado</h2>
 
 <form action="{{ route('empleados.update', $empleado->id_Empleado) }}" method="POST" enctype="multipart/form-data">
     @csrf
@@ -33,10 +33,10 @@
             </div>
 
             <p class="text-xs text-slate-600 leading-5 mt-3">
-                Sube una foto (JPG/PNG). Se guardará en <span class="font-mono">storage/empleados</span>.
+                Sube una foto (JPG/PNG). Se guardarÃ¡ en <span class="font-mono">storage/empleados</span>.
             </p>
 
-            {{-- Botón abajo --}}
+            {{-- BotÃ³n abajo --}}
             <input
                 type="file"
                 name="foto"
@@ -94,7 +94,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-600">Teléfono</label>
+                        <label class="block text-xs font-medium text-slate-600">TelÃ©fono</label>
                         <input type="text" name="Telefono"
                                value="{{ old('Telefono', $empleado->Telefono) }}"
                                class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
@@ -103,11 +103,11 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-600">Área</label>
+                        <label class="block text-xs font-medium text-slate-600">Ãrea</label>
                         <select name="Area"
                                 class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
                                        focus:border-[#FFC107] focus:ring-[#FFC107]">
-                            <option value="">-- Seleccionar área --</option>
+                            <option value="">-- Seleccionar Ã¡rea --</option>
                             @foreach($areas as $a)
                                 <option value="{{ $a->id }}"
                                     {{ (string)old('Area', $empleado->Area) === (string)$a->id ? 'selected' : '' }}>
@@ -164,13 +164,13 @@
 
     <hr class="my-4">
 
-    {{-- DIRECCIÓN --}}
+    {{-- DIRECCIÃ“N --}}
     <div class="mb-6">
-        <h3 class="text-sm font-semibold text-slate-700 mb-2">Dirección</h3>
+        <h3 class="text-sm font-semibold text-slate-700 mb-2">DirecciÃ³n</h3>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="md:col-span-2">
-                <label class="block text-xs font-medium text-slate-600">Calle y número</label>
+                <label class="block text-xs font-medium text-slate-600">Calle y nÃºmero</label>
                 <input type="text" name="Direccion"
                        value="{{ old('Direccion', $empleado->Direccion) }}"
                        class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
@@ -197,7 +197,7 @@
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-slate-600">Código postal</label>
+                <label class="block text-xs font-medium text-slate-600">CÃ³digo postal</label>
                 <input type="text" name="CP"
                        value="{{ old('CP', $empleado->CP) }}"
                        class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
@@ -272,9 +272,9 @@
 
     <hr class="my-4">
 
-    {{-- NÓMINA BASE --}}
+    {{-- NÃ“MINA BASE --}}
     <div class="mb-6">
-        <h3 class="text-sm font-semibold text-slate-700 mb-2">Nómina base</h3>
+        <h3 class="text-sm font-semibold text-slate-700 mb-2">NÃ³mina base</h3>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -333,12 +333,22 @@
 </div>
 
             <div>
-                <label class="block text-xs font-medium text-slate-600">Lista raya</label>
-                <input type="number" name="listaraya"
-                       value="{{ old('listaraya', $empleado->listaraya) }}"
-                       class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
-                              focus:border-[#FFC107] focus:ring-[#FFC107]">
-                @error('listaraya') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                <label class="block text-xs font-medium text-slate-600">Lista de raya principal</label>
+                <select name="lista_raya_principal_id"
+                    class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                           focus:border-[#FFC107] focus:ring-[#FFC107]">
+                    <option value="">-- Sin lista principal --</option>
+                    @foreach(($listasRaya ?? collect()) as $lista)
+                        <option value="{{ $lista->id }}"
+                            @selected((string)old('lista_raya_principal_id', $empleado->lista_raya_principal_id ?? '') === (string)$lista->id)>
+                            {{ $lista->nombre }}
+                        </option>
+                    @endforeach
+                </select>
+                @if($empleado->listaraya)
+                    <p class="text-[11px] text-slate-500 mt-1">Legacy: {{ $empleado->listaraya }}</p>
+                @endif
+                @error('lista_raya_principal_id') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
 
             <div>
@@ -378,3 +388,4 @@
     </div>
 
 </form>
+
