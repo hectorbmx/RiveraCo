@@ -55,7 +55,7 @@ class NominaRecibo extends Model
         'factura_monto',
         'notas_legacy',
 
-        // redundancia Ãºtil para reportes
+        // redundancia util para reportes
         'tipo_pago',
         'subtipo',
     ];
@@ -123,6 +123,11 @@ class NominaRecibo extends Model
     public function pagosExtra()
     {
         return $this->hasMany(NominaPagoExtra::class, 'recibo_id');
+    }
+
+    public function comisionesTrazadas()
+    {
+        return $this->hasMany(NominaReciboComision::class, 'recibo_id');
     }
 }
 

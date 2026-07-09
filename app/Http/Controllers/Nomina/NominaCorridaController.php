@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\NominaCorrida;
 use App\Models\NominaRecibo;
+use App\Models\NominaReciboComision;
 use App\Models\Empleado;
 use Carbon\Carbon;
 use App\Services\Nomina\ListaRayaResolver;
@@ -37,7 +38,7 @@ class NominaCorridaController extends Controller
           ->exists();
 
         if ($existe) {
-            return back()->with('error', 'Ya existe una corrida con esos parámetros.');
+            return back()->with('error', 'Ya existe una corrida con esos parametros.');
         }
 
         $corrida = NominaCorrida::create([
@@ -169,24 +170,40 @@ class NominaCorridaController extends Controller
         $fechaFin    = Carbon::parse($corrida->fecha_fin)->endOfDay();
         $comisionFechaCol = 'fecha';
 
-        $comisiones = DB::table('comision_personal as cp')
+        $comisionesDetalle = DB::table('comision_personal as cp')
             ->join('obra_empleado as oe', 'oe.id', '=', 'cp.obra_empleado_id')
             ->join('comisiones as c', 'c.id', '=', 'cp.comision_id')
+            ->leftJoin('nomina_recibo_comisiones as nrc', function ($join) use ($corrida) {
+                $join->on('nrc.comision_personal_id', '=', 'cp.id')
+                    ->where('nrc.corrida_id', '!=', $corrida->id);
+            })
+            ->whereNull('nrc.id')
             ->whereBetween("c.$comisionFechaCol", [$fechaInicio, $fechaFin])
-            ->groupBy('oe.empleado_id')
             ->selectRaw('
+                cp.id as comision_personal_id,
+                cp.comision_id,
                 oe.empleado_id as empleado_id,
-                MAX(oe.obra_id) as obra_id,
-                COALESCE(SUM(cp.importe_comision),0) as comisiones_monto,
-                COALESCE(SUM(cp.tiempo_extra),0) as horas_extra
+                oe.obra_id as obra_id,
+                c.fecha as fecha_comision,
+                COALESCE(cp.importe_comision,0) as importe_comision,
+                COALESCE(cp.tiempo_extra,0) as tiempo_extra,
+                cp.rol as rol
             ')
             ->get()
-            ->keyBy('empleado_id');
+            ->groupBy('empleado_id');
+
+        $comisiones = $comisionesDetalle->map(function ($items) {
+            return (object) [
+                'obra_id' => $items->pluck('obra_id')->filter()->last(),
+                'comisiones_monto' => $items->sum('importe_comision'),
+                'horas_extra' => $items->sum('tiempo_extra'),
+            ];
+        });
 
         $creados = 0;
         $actualizados = 0;
 
-        DB::transaction(function () use ($corrida, $empleados, $comisiones, $listaRayaResolver, &$creados, &$actualizados) {
+        DB::transaction(function () use ($corrida, $empleados, $comisiones, $comisionesDetalle, $listaRayaResolver, &$creados, &$actualizados) {
             $corrida = NominaCorrida::whereKey($corrida->id)->lockForUpdate()->first();
 
             foreach ($empleados as $emp) {
@@ -263,6 +280,8 @@ class NominaCorridaController extends Controller
                 ];
 
                 $recibo = NominaRecibo::updateOrCreate($where, $payload);
+                $this->syncComisionesTrazadas($recibo, $comisionesDetalle->get($emp->id_Empleado, collect()));
+
                 if ($recibo->wasRecentlyCreated) $creados++;
                 else $actualizados++;
             }
@@ -466,6 +485,42 @@ class NominaCorridaController extends Controller
      * Sincroniza extras multiples para un recibo.
      * Devuelve el monto acumulado de todos los extras vigentes.
      */
+    private function syncComisionesTrazadas(NominaRecibo $recibo, $comisionesEmpleado): void
+    {
+        $idsProcesados = [];
+
+        foreach ($comisionesEmpleado as $comision) {
+            $comisionPersonalId = (int) ($comision->comision_personal_id ?? 0);
+            if ($comisionPersonalId <= 0) {
+                continue;
+            }
+
+            NominaReciboComision::updateOrCreate(
+                [
+                    'recibo_id' => $recibo->id,
+                    'comision_personal_id' => $comisionPersonalId,
+                ],
+                [
+                    'corrida_id' => $recibo->corrida_id,
+                    'comision_id' => (int) ($comision->comision_id ?? 0),
+                    'empleado_id' => (int) ($comision->empleado_id ?? $recibo->empleado_id),
+                    'obra_id' => $comision->obra_id ?? $recibo->obra_id,
+                    'fecha_comision' => $comision->fecha_comision ?? null,
+                    'importe_comision' => (float) ($comision->importe_comision ?? 0),
+                    'tiempo_extra' => (float) ($comision->tiempo_extra ?? 0),
+                    'rol' => $comision->rol ?? null,
+                ]
+            );
+
+            $idsProcesados[] = $comisionPersonalId;
+        }
+
+        $query = NominaReciboComision::where('recibo_id', $recibo->id);
+        if (!empty($idsProcesados)) {
+            $query->whereNotIn('comision_personal_id', $idsProcesados);
+        }
+        $query->delete();
+    }
     private function syncExtras(NominaRecibo $recibo, array $extrasEnviados, $corrida): float
     {
         $extraMontoTotal = 0.0;

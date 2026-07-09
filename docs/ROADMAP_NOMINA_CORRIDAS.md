@@ -100,6 +100,9 @@ Punto de entrada actual:
 - [ ] Mostrar la corrida agrupada por listas de raya.
 - [ ] Permitir imprimir/exportar una lista de raya individual.
 - [ ] Agregar filtro por lista de raya en la vista de corrida.
+
+## AQUI UNA NOTA, LAS LISTAS DE RAYA CUANDO SON OBRAS, NO NECESITAN ESTAR EN MI CONFIG YA QUE SON LISTAS "TEMPORALES" O hay que buscar la manera porque con el paso del tiempo esas listas temporales iran creciendo, porque siempre hay obras nuevas, lo que podriamos hacer es dejarlas como referencia, para en un futuro auditar las rayas de la obra ejemplo entrar ala lista de raya de la obra X y ver cuantas corridas tienen, que empleados tiene y cuanto se pago 
+
 ### Fase 2 - Correccion de base actual
 
 - [x] Filtrar obras vivas en el select de obra de la corrida.
@@ -116,7 +119,12 @@ Punto de entrada actual:
   - [x] infonavit
   - [x] deducciones iniciales
 - [x] Verificar que KPIs de la corrida cuadren inmediatamente despues de generar recibos.
+- [x] Mantener snapshot de lista de raya al guardar cambios de obra en recibos.
+- [x] Si el recibo queda sin obra, resolver de nuevo la lista principal del empleado.
+- [x] Confirmar que `guardarRecibos()` y autosave cargan `empleado` para poder resolver lista principal.
 - [x] Agregar pruebas/manual QA para corrida semanal y quincenal.
+
+**Cierre Fase 2:** se valido sintaxis de `NominaCorridaController` y `ListaRayaResolver`. La corrida ya recalcula lista de raya por obra seleccionada y vuelve a lista principal cuando el recibo queda sin obra.
 
 ### Fase 3 - Guardado parcial/autosave
 
@@ -142,36 +150,45 @@ Punto de entrada actual:
 
 ### Fase 4 - Multiples extras por recibo
 
-- [ ] Crear migracion para permitir multiples extras por recibo.
-- [ ] Quitar `UNIQUE(recibo_id)` de `nomina_pagos_extra`.
-- [ ] Confirmar FK `recibo_id -> nomina_recibos.id`.
-- [ ] Agregar `recibo_id` a `$fillable` de `NominaPagoExtra` si falta.
-- [ ] Agregar relacion:
-  - [ ] `NominaRecibo::pagosExtra()`
-  - [ ] `NominaPagoExtra::recibo()`
-- [ ] Cargar extras con los recibos en `NominaCorridaController@show`.
-- [ ] Cambiar UI de un extra unico a lista de extras.
-- [ ] Agregar boton `+ Extra` por recibo.
-- [ ] Permitir eliminar extras.
-- [ ] Recalcular totales sumando todos los extras.
-- [ ] Ajustar guardado general y autosave para multiples extras.
+- [x] Crear migracion para permitir multiples extras por recibo.
+- [x] Quitar `UNIQUE(recibo_id)` de `nomina_pagos_extra`.
+- [x] Confirmar FK `recibo_id -> nomina_recibos.id`.
+- [x] Agregar `recibo_id` a `$fillable` de `NominaPagoExtra` si falta.
+- [x] Agregar relacion:
+  - [x] `NominaRecibo::pagosExtra()`.
+  - [x] `NominaPagoExtra::recibo()`.
+- [x] Cargar extras con los recibos en `NominaCorridaController@show`.
+- [x] Cambiar UI de un extra unico a lista de extras.
+- [x] Agregar boton `+ Extra` por recibo.
+- [x] Permitir eliminar extras.
+- [x] Recalcular totales sumando todos los extras.
+- [x] Ajustar guardado general y autosave para multiples extras.
+- [x] Separar notas del recibo y notas propias de cada extra.
+
+**Cierre Fase 4:** multiples extras por recibo quedan operativos. Se validaron alta, guardado, suma en totales, autosave, eliminacion y notas independientes por extra. La columna `Notas` del recibo quedo separada del boton `Extras`.
 
 ### Fase 5 - Comisiones trazables
 
-- [ ] Crear mecanismo de trazabilidad de comisiones por recibo.
-- [ ] Opcion recomendada: tabla `nomina_recibo_comisiones`.
-- [ ] Guardar por cada comision/persona:
-  - [ ] `recibo_id`
-  - [ ] `comision_id`
-  - [ ] `comision_personal_id`
-  - [ ] `obra_id`
-  - [ ] `empleado_id`
-  - [ ] `importe_comision`
-  - [ ] `tiempo_extra`
-  - [ ] fecha de comision
-- [ ] Evitar doble conteo de comisiones ya ligadas a otro recibo/corrida, salvo que se autorice recarga.
+- [x] Crear mecanismo de trazabilidad de comisiones por recibo.
+- [x] Crear tabla `nomina_recibo_comisiones`.
+- [x] Crear modelo `NominaReciboComision`.
+- [x] Agregar relacion `NominaRecibo::comisionesTrazadas()`.
+- [x] Guardar por cada comision/persona:
+  - [x] `recibo_id`
+  - [x] `corrida_id`
+  - [x] `comision_id`
+  - [x] `comision_personal_id`
+  - [x] `obra_id`
+  - [x] `empleado_id`
+  - [x] `importe_comision`
+  - [x] `tiempo_extra`
+  - [x] fecha de comision
+  - [x] rol snapshot
+- [x] Evitar doble conteo de comisiones ya ligadas a otro recibo/corrida, salvo que se autorice recarga.
 - [ ] Agregar indicador visual cuando las comisiones fueron cargadas y desde que registros.
 - [ ] Definir si se podra "recalcular comisiones" en una corrida abierta.
+
+**Avance Fase 5:** la generacion de recibos ya crea trazas por cada registro de `comision_personal` usado para calcular `comisiones_monto` y `horas_extra`. Tambien excluye comisiones ya ligadas a otra corrida para evitar doble pago.
 
 ### Fase 6 - Cierre, pago y auditoria
 

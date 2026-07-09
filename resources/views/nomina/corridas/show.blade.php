@@ -176,6 +176,7 @@
             <th class="px-3 py-2 text-center font-semibold bg-blue-50">M. lineales</th>
             <th class="px-3 py-2 text-center font-semibold bg-blue-50">Comisiones</th>
             <th class="px-3 py-2 text-center font-semibold bg-blue-50">Notas</th>
+            <th class="px-3 py-2 text-center font-semibold bg-blue-50">Extras</th>
 
             <th class="px-3 py-2 text-center font-semibold">Obra</th>
 
@@ -193,7 +194,7 @@
 @endphp
 @foreach($recibosAgrupados as $listaRayaNombre => $recibosLista)
   <tr class="bg-slate-100 text-slate-700">
-    <td colspan="15" class="px-3 py-2 font-semibold text-xs uppercase tracking-wide">
+    <td colspan="16" class="px-3 py-2 font-semibold text-xs uppercase tracking-wide">
       Lista de raya: {{ $listaRayaNombre }} <span class="font-normal text-slate-500">({{ $recibosLista->count() }} empleado(s))</span>
     </td>
   </tr>
@@ -296,18 +297,20 @@
              class="w-24 text-center rounded-lg border-slate-200 text-xs campo-calculo">
     </td>
 
-    <td class="px-3 py-2 bg-blue-50">
-     <div class="flex gap-2 items-center">
-    <input type="text"
-           name="recibos[{{ $r->id }}][notas]"
-           value="{{ $r->notas_legacy ?? '' }}"
-           class="w-full rounded-lg border-slate-200 text-xs">
-    <button type="button"
-            class="px-2 py-1 rounded-lg border text-xs bg-white hover:bg-slate-50"
-            data-toggle-extras="{{ $r->id }}">
-      + Extras
-    </button>
-  </div>
+    <td class="px-3 py-2 bg-blue-50 min-w-[220px]">
+      <input type="text"
+             name="recibos[{{ $r->id }}][notas]"
+             value="{{ $r->notas_legacy ?? '' }}"
+             class="w-full rounded-lg border-slate-200 text-xs"
+             placeholder="Notas del recibo">
+    </td>
+
+    <td class="px-3 py-2 text-center bg-blue-50">
+      <button type="button"
+              class="px-2 py-1 rounded-lg border text-xs bg-white hover:bg-slate-50"
+              data-toggle-extras="{{ $r->id }}">
+        + Extras
+      </button>
     </td>
 
     {{-- OBRA --}}
@@ -338,7 +341,7 @@
 
   </tr>
  <tr class="hidden bg-slate-50" data-extras-row="{{ $r->id }}">
-  <td colspan="15" class="px-3 py-3">
+  <td colspan="16" class="px-3 py-3">
     <div class="js-extras-container" data-recibo-id="{{ $r->id }}">
       @forelse($r->pagosExtra as $idx => $extra)
       <div class="js-extra-row grid grid-cols-1 md:grid-cols-4 gap-3 items-end mb-2 p-2 bg-white rounded-lg border border-slate-200" data-extra-id="{{ $extra->id }}">
@@ -437,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sync();
   });
 
-  // ========== Agregar extra dinámico ==========
+  // ========== Agregar extra dinamico ==========
   let extraTempIdx = 0;
   document.querySelectorAll('.js-add-extra').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -490,18 +493,34 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ========== Quitar extra ==========
+  const syncExtraChange = (reciboId) => {
+    if (typeof window.recalcularFila === 'function') {
+      window.recalcularFila(reciboId);
+    }
+
+    if (typeof window.queueAutosave === 'function') {
+      window.queueAutosave(reciboId);
+      return;
+    }
+
+    setTimeout(() => {
+      if (typeof window.queueAutosave === 'function') {
+        window.queueAutosave(reciboId);
+      }
+    }, 0);
+  };
+
   const attachExtraListeners = (rowEl, reciboId) => {
     const removeBtn = rowEl.querySelector('.js-remove-extra');
     if (removeBtn) {
       removeBtn.addEventListener('click', () => {
         rowEl.remove();
-        recalcularFila(reciboId);
-        queueAutosave(reciboId);
+        syncExtraChange(reciboId);
       });
     }
     rowEl.querySelectorAll('.js-extra-monto, .js-extra-tipo, .js-extra-notas').forEach(inp => {
-      inp.addEventListener('input', () => { recalcularFila(reciboId); queueAutosave(reciboId); });
-      inp.addEventListener('change', () => { recalcularFila(reciboId); queueAutosave(reciboId); });
+      inp.addEventListener('input', () => syncExtraChange(reciboId));
+      inp.addEventListener('change', () => syncExtraChange(reciboId));
     });
   };
 
@@ -545,7 +564,7 @@ document.addEventListener('DOMContentLoaded', () => {
       indicator.textContent = 'Guardado';
       indicator.className = 'js-status-indicator text-[10px] text-slate-400';
     } else if (status === 'error') {
-      indicator.textContent = '¡Error!';
+      indicator.textContent = 'Error';
       indicator.title = message;
       indicator.className = 'js-status-indicator text-[10px] text-red-500 font-bold cursor-help';
     }
@@ -722,8 +741,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const reciboId = fila.dataset.reciboId;
 
     const handler = () => {
-      recalcularFila(reciboId);
-      queueAutosave(reciboId);
+      window.recalcularFila?.(reciboId);
+      window.queueAutosave?.(reciboId);
     };
 
     fila.querySelectorAll('input, select').forEach((input) => {
@@ -732,7 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Initial calculation
-    recalcularFila(reciboId);
+    window.recalcularFila?.(reciboId);
   });
 
   recalcularKpis();
@@ -741,10 +760,9 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('beforeunload', (e) => {
     if (inFlightSaves.size > 0 || pendingSaves.size > 0) {
       e.preventDefault();
-      e.returnValue = 'Hay cambios de nomina guardandose en segundo plano. ¿Seguro que quieres salir?';
+      e.returnValue = 'Hay cambios de nomina guardandose en segundo plano. Seguro que quieres salir?';
       return e.returnValue;
     }
   });
 });
 </script>
-pt>
