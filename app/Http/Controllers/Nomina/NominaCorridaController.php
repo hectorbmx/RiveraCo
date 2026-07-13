@@ -107,7 +107,7 @@ class NominaCorridaController extends Controller
     // Mostrar una corrida despues de haber sido creada
     public function show(NominaCorrida $corrida)
     {
-        $corrida->load(['recibos.empleado', 'recibos.obra', 'recibos.listaRaya', 'recibos.pagosExtra']);
+        $corrida->load(['creador', 'cerrador', 'pagadoPor', 'recibos.empleado', 'recibos.obra', 'recibos.listaRaya', 'recibos.pagosExtra']);
 
         $totalBruto = $corrida->recibos->sum(function ($recibo) {
             $ex = $recibo->pagosExtra->sum('monto');
@@ -581,6 +581,8 @@ class NominaCorridaController extends Controller
 
     public function destroyRecibos(NominaCorrida $corrida)
     {
+        abort_unless(auth()->user()?->can('nomina.corridas.delete.access'), 403);
+
         if (($corrida->status ?? null) !== 'abierta') {
             return back()->with('error', 'Solo puedes borrar recibos si la corrida esta ABIERTA.');
         }
@@ -591,6 +593,8 @@ class NominaCorridaController extends Controller
 
     public function destroy(NominaCorrida $corrida)
     {
+        abort_unless(auth()->user()?->can('nomina.corridas.delete.access'), 403);
+
         if (($corrida->status ?? null) !== 'abierta') {
             return back()->with('error', 'Solo puedes eliminar una corrida si esta ABIERTA.');
         }
@@ -607,26 +611,88 @@ class NominaCorridaController extends Controller
 
     public function cerrar(NominaCorrida $corrida)
     {
-        if (($corrida->status ?? null) !== 'abierta') return back()->with('error', 'Solo puedes cerrar una corrida ABIERTA.');
-        if (!$corrida->recibos()->exists()) return back()->with('error', 'No hay recibos para cerrar.');
+        abort_unless(auth()->user()?->can('nomina.corridas.close.access'), 403);
 
-        $corrida->update(['status' => 'cerrada']);
-        return back()->with('success', 'Corrida cerrada.');
+        $resultado = DB::transaction(function () use ($corrida) {
+            $corrida = NominaCorrida::whereKey($corrida->id)->lockForUpdate()->first();
+
+            if (($corrida->status ?? null) !== 'abierta') {
+                return ['error', 'Solo puedes cerrar una corrida ABIERTA.'];
+            }
+
+            if (!$corrida->recibos()->exists()) {
+                return ['error', 'No hay recibos para cerrar.'];
+            }
+
+            $corrida->update([
+                'status' => 'cerrada',
+                'closed_by' => auth()->id(),
+                'closed_at' => now(),
+            ]);
+
+            return ['success', 'Corrida cerrada.'];
+        });
+
+        if ($resultado[0] === 'error') {
+            return back()->with('error', $resultado[1]);
+        }
+
+        return back()->with('success', $resultado[1]);
     }
 
     public function marcarPagada(NominaCorrida $corrida)
     {
-        if (($corrida->status ?? null) !== 'cerrada') return back()->with('error', 'Solo puedes marcar pagada una corrida CERRADA.');
+        abort_unless(auth()->user()?->can('nomina.corridas.pay.access'), 403);
 
-        $corrida->update(['status' => 'pagada']);
-        return back()->with('success', 'Corrida marcada como PAGADA.');
+        $resultado = DB::transaction(function () use ($corrida) {
+            $corrida = NominaCorrida::whereKey($corrida->id)->lockForUpdate()->first();
+
+            if (($corrida->status ?? null) !== 'cerrada') {
+                return ['error', 'Solo puedes marcar pagada una corrida CERRADA.'];
+            }
+
+            $corrida->update([
+                'status' => 'pagada',
+                'paid_by' => auth()->id(),
+                'paid_at' => now(),
+            ]);
+
+            $corrida->recibos()->update(['status' => 'pagado']);
+
+            return ['success', 'Corrida marcada como PAGADA.'];
+        });
+
+        if ($resultado[0] === 'error') {
+            return back()->with('error', $resultado[1]);
+        }
+
+        return back()->with('success', $resultado[1]);
     }
 
     public function reabrir(NominaCorrida $corrida)
     {
-        if (($corrida->status ?? null) !== 'cerrada') return back()->with('error', 'Solo puedes reabrir una corrida CERRADA.');
+        abort_unless(auth()->user()?->can('nomina.corridas.reopen.access'), 403);
 
-        $corrida->update(['status' => 'abierta']);
-        return back()->with('success', 'Corrida reabierta.');
+        $resultado = DB::transaction(function () use ($corrida) {
+            $corrida = NominaCorrida::whereKey($corrida->id)->lockForUpdate()->first();
+
+            if (($corrida->status ?? null) !== 'cerrada') {
+                return ['error', 'Solo puedes reabrir una corrida CERRADA.'];
+            }
+
+            $corrida->update([
+                'status' => 'abierta',
+                'closed_by' => null,
+                'closed_at' => null,
+            ]);
+
+            return ['success', 'Corrida reabierta.'];
+        });
+
+        if ($resultado[0] === 'error') {
+            return back()->with('error', $resultado[1]);
+        }
+
+        return back()->with('success', $resultado[1]);
     }
 }

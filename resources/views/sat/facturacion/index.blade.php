@@ -86,6 +86,16 @@
 
                 <tbody class="divide-y divide-slate-100">
         @forelse($facturas as $factura)
+            @php
+                $esBorradorCfdi = $factura instanceof \App\Models\SatFacturaBorrador;
+                $payload = $esBorradorCfdi ? ($factura->payload ?: []) : [];
+                $conceptosBorrador = collect($payload['conceptos'] ?? []);
+                $subtotalBorrador = $conceptosBorrador->sum(fn ($concepto) => (float) ($concepto['cantidad'] ?? 0) * (float) ($concepto['precio_unitario'] ?? 0));
+                $tipoIvaBorrador = $payload['tipo_iva'] ?? '0.16';
+                $ivaTasaBorrador = in_array($tipoIvaBorrador, ['0.16', '0.08'], true) ? (float) $tipoIvaBorrador : 0;
+                $baseBorrador = max(0, $subtotalBorrador - (float) ($payload['amortizacion'] ?? 0) - (float) ($payload['descuento'] ?? 0));
+                $totalBorrador = max(0, $baseBorrador + ($baseBorrador * $ivaTasaBorrador) - (float) ($payload['retenciones'] ?? 0));
+            @endphp
           <tr
                     @class([
                         'hover:bg-slate-50' => $factura->estado !== 'cancelada',
@@ -94,26 +104,30 @@
                             $factura->estado === 'cancelada',
                     ])>
                 <td class="px-5 py-4">
-                    {{ $factura->serie }}-{{ $factura->folio }}
+                    @if($esBorradorCfdi)
+                        <span class="text-slate-400">Sin folio</span>
+                    @else
+                        {{ trim(($factura->serie ? $factura->serie . '-' : '') . ($factura->folio ?: '')) ?: 'Sin folio' }}
+                    @endif
                 </td>
 
                 <td class="px-5 py-4">
-                    {{ $factura->fecha_emision?->format('d/m/Y') ?? $factura->created_at->format('d/m/Y') }}
+                    {{ $esBorradorCfdi ? $factura->created_at->format('d/m/Y') : ($factura->fecha_emision?->format('d/m/Y') ?? $factura->created_at->format('d/m/Y')) }}
                 </td>
 
                 <td class="px-5 py-4">
                     @if($factura->cliente)
                         <a href="{{ route('sat.facturacion.clientes.show', $factura->cliente) }}"
                            class="font-semibold text-indigo-700 hover:text-indigo-900 hover:underline">
-                            {{ $factura->receptor_nombre ?? $factura->cliente->razon_social ?? $factura->cliente->nombre_comercial }}
+                            {{ $esBorradorCfdi ? ($factura->cliente->razon_social ?? $factura->cliente->nombre_comercial ?? 'Cliente sin nombre') : ($factura->receptor_nombre ?? $factura->cliente->razon_social ?? $factura->cliente->nombre_comercial) }}
                         </a>
                     @else
-                        {{ $factura->receptor_nombre ?? 'Sin cliente' }}
+                        {{ $esBorradorCfdi ? ($factura->titulo ?: 'Borrador CFDI') : ($factura->receptor_nombre ?? 'Sin cliente') }}
                     @endif
                 </td>
 
                 <td class="px-5 py-4">
-                    {{ $factura->receptor_rfc ?? $factura->cliente->rfc ?? '—' }}
+                    {{ $esBorradorCfdi ? ($factura->cliente->rfc ?? '—') : ($factura->receptor_rfc ?? $factura->cliente->rfc ?? '—') }}
                 </td>
 
                 <td class="px-5 py-4">
@@ -131,7 +145,7 @@
                 </td>
 
                 <td class="px-5 py-4 text-right font-semibold">
-                    ${{ number_format($factura->total, 2) }}
+                    ${{ number_format($esBorradorCfdi ? $totalBorrador : $factura->total, 2) }}
                 </td>
 
                 <td class="px-5 py-4">
@@ -142,7 +156,7 @@
                             'bg-red-50 text-red-700 border border-red-200' => $factura->estado === 'cancelada',
                             'bg-slate-50 text-slate-700 border border-slate-200' => !in_array($factura->estado, ['timbrada', 'borrador', 'cancelada']),
                         ])">
-                        {{ ucfirst($factura->estado) }}
+                        {{ $esBorradorCfdi ? 'Borrador' : ucfirst($factura->estado) }}
                     </span>
                 </td>
                <td class="px-5 py-4">
@@ -170,15 +184,22 @@
     </span>
 </td>
                 <td class="px-5 py-4 text-right">
-                    <a href="{{ route('sat.facturacion.show', $factura) }}"
-                    class="text-sm font-medium text-indigo-600 hover:text-indigo-800">
-                        Ver
-                    </a>
+                    @if($esBorradorCfdi)
+                        <a href="{{ route('sat.facturacion.create', ['cfdi_borrador_id' => $factura->id]) }}"
+                           class="text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                            Continuar
+                        </a>
+                    @else
+                        <a href="{{ route('sat.facturacion.show', $factura) }}"
+                           class="text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                            Ver
+                        </a>
+                    @endif
                 </td>
             </tr>
         @empty
             <tr>
-                <td colspan="8" class="px-5 py-10 text-center text-slate-500">
+                <td colspan="9" class="px-5 py-10 text-center text-slate-500">
                     Aún no hay facturas emitidas.
                 </td>
             </tr>

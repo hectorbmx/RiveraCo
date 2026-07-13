@@ -124,6 +124,31 @@
                     <span class="text-sm text-slate-500">1 concepto</span>
                 </div>
 
+                @can('obra_factura_borradores.edit.access')
+                    @unless(in_array($borrador->estatus, [\App\Models\ObraFacturaBorrador::ESTATUS_FACTURADO, \App\Models\ObraFacturaBorrador::ESTATUS_CANCELADO], true))
+                        <form method="POST" action="{{ route('obras.factura-borradores.update', [$obra, $borrador]) }}" class="px-6 py-5 border-b border-slate-100 bg-slate-50/70 space-y-3">
+                            @csrf
+                            @method('PUT')
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Concepto modificado</label>
+                                <textarea name="concepto_descripcion"
+                                          rows="4"
+                                          required
+                                          maxlength="1000"
+                                          class="w-full rounded-xl border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('concepto_descripcion', $borrador->concepto_descripcion) }}</textarea>
+                                <p class="mt-1 text-xs text-slate-500">El concepto SAT se conserva como base; esta descripcion editable se usara para imprimir y facturar.</p>
+                                @error('concepto_descripcion')
+                                    <p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="flex justify-end">
+                                <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+                                    Guardar concepto
+                                </button>
+                            </div>
+                        </form>
+                    @endunless
+                @endcan
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-100 text-sm">
                         <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -140,7 +165,7 @@
                                     <div class="font-semibold text-slate-900">{{ $borrador->conceptoSat?->codigo ?: $borrador->conceptoSat?->clave_producto_servicio ?: '-' }}</div>
                                     <div class="text-xs text-slate-500">{{ $borrador->conceptoSat?->descripcion ?: '' }}</div>
                                 </td>
-                                <td class="px-6 py-4 align-top text-slate-700">{{ $borrador->concepto_descripcion }}</td>
+                                <td class="px-6 py-4 align-top text-slate-700 whitespace-pre-line">{{ $borrador->concepto_descripcion }}</td>
                                 <td class="px-6 py-4 align-top text-right tabular-nums">{{ number_format((float) $borrador->cantidad, 6) }}</td>
                                 <td class="px-6 py-4 align-top text-right font-semibold tabular-nums">${{ number_format((float) $borrador->subtotal, 2) }}</td>
                             </tr>
@@ -160,11 +185,11 @@
                         <span class="font-semibold tabular-nums">${{ number_format((float) $borrador->subtotal, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-4">
-                        <span class="text-slate-500">IVA</span>
+                        <span class="text-slate-500">IVA{{ $borrador->iva_tasa !== null ? ' (' . rtrim(rtrim(number_format((float) $borrador->iva_tasa * 100, 4), '0'), '.') . '%)' : '' }}</span>
                         <span class="font-semibold tabular-nums">${{ number_format((float) $borrador->iva, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-4">
-                        <span class="text-slate-500">Retenciones</span>
+                        <span class="text-slate-500">Retenciones{{ $borrador->retencion_tipo && $borrador->retencion_tipo !== 'sin_retencion' ? ' - ' . (\App\Models\ObraFacturaBorrador::retencionTipoLabels()[$borrador->retencion_tipo] ?? $borrador->retencion_tipo) : '' }}</span>
                         <span class="font-semibold text-amber-700 tabular-nums">- ${{ number_format((float) $borrador->retenciones, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-4">

@@ -207,8 +207,8 @@
 
         <section class="totals">
             <div class="row"><span>Subtotal</span><strong>${{ number_format((float) $borrador->subtotal, 2) }}</strong></div>
-            <div class="row"><span>IVA</span><strong>${{ number_format((float) $borrador->iva, 2) }}</strong></div>
-            <div class="row"><span>Retenciones</span><strong>${{ number_format((float) $borrador->retenciones, 2) }}</strong></div>
+            <div class="row"><span>IVA{{ $borrador->iva_tasa !== null ? ' (' . rtrim(rtrim(number_format((float) $borrador->iva_tasa * 100, 4), '0'), '.') . '%)' : '' }}</span><strong>${{ number_format((float) $borrador->iva, 2) }}</strong></div>
+            <div class="row"><span>Retenciones{{ $borrador->retencion_tipo && $borrador->retencion_tipo !== 'sin_retencion' ? ' - ' . (\App\Models\ObraFacturaBorrador::retencionTipoLabels()[$borrador->retencion_tipo] ?? $borrador->retencion_tipo) : '' }}</span><strong>${{ number_format((float) $borrador->retenciones, 2) }}</strong></div>
             <div class="row"><span>Descuentos</span><strong>${{ number_format((float) $borrador->descuentos, 2) }}</strong></div>
             <div class="row total"><span>Total</span><span>${{ number_format((float) $borrador->total, 2) }}</span></div>
         </section>

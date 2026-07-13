@@ -63,6 +63,10 @@
 
         @csrf
 
+        @if(!empty($prefill['cfdi_borrador_id']))
+            <input type="hidden" name="cfdi_borrador_id" value="{{ old('cfdi_borrador_id', $prefill['cfdi_borrador_id']) }}">
+        @endif
+
         @if(!empty($prefill['obra_factura_borrador_id']))
             <input type="hidden" name="obra_factura_borrador_id" value="{{ old('obra_factura_borrador_id', $prefill['obra_factura_borrador_id']) }}">
         @endif
@@ -70,6 +74,12 @@
         @if(!empty($borrador))
             <div class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 Facturando borrador BF-{{ str_pad($borrador->id, 5, '0', STR_PAD_LEFT) }} de la obra {{ $borrador->obra?->nombre ?? $borrador->obra?->Nombre ?? ('#' . $borrador->obra_id) }}.
+            </div>
+        @endif
+
+        @if(!empty($cfdiBorrador))
+            <div class="mb-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+                Editando borrador CFDI #{{ $cfdiBorrador->id }} guardado el {{ $cfdiBorrador->updated_at?->format('d/m/Y H:i') }}.
             </div>
         @endif
 
@@ -720,6 +730,20 @@
                             </button>
 
                             <button type="submit"
+                                    formaction="{{ route('sat.facturacion.borradores.store') }}"
+                                    formmethod="POST"
+                                    formnovalidate
+                                    :disabled="loadingTimbrar"
+                                    class="w-full inline-flex items-center justify-center rounded-lg border border-amber-400/50 bg-slate-950 px-5 py-4 text-sm font-bold text-amber-300 shadow-sm hover:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span class="inline-flex items-center gap-2">
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 3H7a2 2 0 0 0-2 2v14l7-3 7 3V5a2 2 0 0 0-2-2Z" />
+                                    </svg>
+                                    Guardar borrador
+                                </span>
+                            </button>
+
+                            <button type="submit"
                                     formaction="{{ route('sat.facturacion.preview') }}"
                                     formmethod="POST"
                                     formtarget="_blank"
@@ -741,6 +765,30 @@
                     </div>
 
                 </div>
+
+                @if(($cfdiBorradores ?? collect())->isNotEmpty())
+                    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div class="mb-4">
+                            <h3 class="text-sm font-bold uppercase tracking-[0.18em] text-slate-700">Borradores</h3>
+                            <p class="mt-1 text-xs text-slate-500">Capturas CFDI guardadas recientemente.</p>
+                        </div>
+
+                        <div class="space-y-3">
+                            @foreach($cfdiBorradores as $draft)
+                                <a href="{{ route('sat.facturacion.create', ['cfdi_borrador_id' => $draft->id]) }}"
+                                   class="block rounded-xl border px-4 py-3 text-sm hover:bg-slate-50 {{ !empty($cfdiBorrador) && $cfdiBorrador->id === $draft->id ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white' }}">
+                                    <div class="font-semibold text-slate-900">{{ $draft->titulo ?: 'Borrador CFDI #' . $draft->id }}</div>
+                                    <div class="mt-1 text-xs text-slate-500">
+                                        {{ $draft->updated_at?->format('d/m/Y H:i') }}
+                                        @if($draft->cliente)
+                                            · {{ $draft->cliente->razon_social ?: $draft->cliente->nombre_comercial }}
+                                        @endif
+                                    </div>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
 
             </div>
 
@@ -1090,14 +1138,14 @@ function facturaForm() {
         descuento: Number(@json(old('descuento', $prefill['descuento'] ?? 0))) || 0,
         retenciones: Number(@json(old('retenciones', $prefill['retenciones'] ?? 0))) || 0,
         tipoIva: @json(old('tipo_iva', $prefill['tipo_iva'] ?? '0.16')),
-        usarRelacion: @json((bool) old('usar_relacion')),
+        usarRelacion: @json((bool) old('usar_relacion', ['usar_relacion'] ?? false)),
         openRelacion: false,
         relacionSearch: '',
         relacionLoading: false,
         relacionResults: [],
         selectedRelacionadas: [],
         relacionablesUrl: @json(route('sat.facturacion.relacionables')),
-        oldRelacionUuids: @json(old('relacion_uuids', '')),
+        oldRelacionUuids: @json(old('relacion_uuids', ['relacion_uuids'] ?? '')),
 
         openEditDesc: false,
         descToEditIndex: null,

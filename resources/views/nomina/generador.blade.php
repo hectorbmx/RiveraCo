@@ -188,7 +188,7 @@
 
            <div class="flex gap-2 justify-end items-center flex-wrap">
 
-
+  @can('nomina.corridas.close.access')
   @if(($c->status ?? '') === 'abierta')
     <form method="POST" action="{{ route('nomina.corridas.cerrar', $c) }}"
           onsubmit="return confirm('¿Cerrar la corrida? Ya no se podrá editar.')">
@@ -199,7 +199,9 @@
       </button>
     </form>
   @endif
+  @endcan
 
+  @can('nomina.corridas.pay.access')
   @if(($c->status ?? '') === 'cerrada')
     <form method="POST" action="{{ route('nomina.corridas.pagar', $c) }}"
           onsubmit="return confirm('¿Marcar como PAGADA?')">
@@ -209,7 +211,11 @@
         Marcar pagada
       </button>
     </form>
+  @endif
+  @endcan
 
+  @can('nomina.corridas.reopen.access')
+  @if(($c->status ?? '') === 'cerrada')
     <form method="POST" action="{{ route('nomina.corridas.reabrir', $c) }}"
           onsubmit="return confirm('¿Reabrir para editar?')">
       @csrf
@@ -219,7 +225,9 @@
       </button>
     </form>
   @endif
+  @endcan
 
+  @can('nomina.corridas.delete.access')
   <form method="POST" action="{{ route('nomina.corridas.destroy', $c) }}"
         onsubmit="return confirm('¿Eliminar corrida completa?')">
     @csrf
@@ -230,6 +238,7 @@
       Eliminar
     </button>
   </form>
+  @endcan
 </div>
 
 

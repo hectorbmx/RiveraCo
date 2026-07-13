@@ -29,6 +29,7 @@
                 {{-- Status badge --}}
                 @php
                     $status = $corrida->status ?? 'abierta';
+                    $isEditable = $status === 'abierta';
                     $badge = match ($status) {
                         'abierta' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
                         'cerrada' => 'bg-slate-100 text-slate-700 border-slate-200',
@@ -41,6 +42,28 @@
                 <span class="px-2 py-1 rounded-full border {{ $badge }}">
                     Status: <span class="font-semibold">{{ strtoupper($status) }}</span>
                 </span>
+
+                @if($corrida->closed_at)
+                    <span class="px-2 py-1 rounded-full bg-slate-100 border border-slate-200">
+                        Cerrada: <span class="font-semibold">{{ optional($corrida->closed_at)->format('d/m/Y H:i') }}</span>
+                        @if($corrida->cerrador)
+                            <span class="text-slate-400">por</span> <span class="font-semibold">{{ $corrida->cerrador->name }}</span>
+                        @elseif($corrida->closed_by)
+                            <span class="text-slate-400">por usuario #{{ $corrida->closed_by }}</span>
+                        @endif
+                    </span>
+                @endif
+
+                @if($corrida->paid_at)
+                    <span class="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        Pagada: <span class="font-semibold">{{ optional($corrida->paid_at)->format('d/m/Y H:i') }}</span>
+                        @if($corrida->pagadoPor)
+                            <span class="text-indigo-400">por</span> <span class="font-semibold">{{ $corrida->pagadoPor->name }}</span>
+                        @elseif($corrida->paid_by)
+                            <span class="text-indigo-400">por usuario #{{ $corrida->paid_by }}</span>
+                        @endif
+                    </span>
+                @endif
             </div>
         </div>
 
@@ -51,11 +74,42 @@
                 Volver al generador
             </a>
 
-            {{-- Placeholder acciones futuras --}}
-            <!-- <button type="button"
-                    class="px-4 py-2 bg-slate-800 text-white text-sm rounded-xl shadow hover:bg-slate-900">
-                Cargar comisiones
-            </button> -->
+            @can('nomina.corridas.close.access')
+            @if($isEditable)
+                <form method="POST" action="{{ route('nomina.corridas.cerrar', $corrida) }}"
+                      onsubmit="return confirm('Cerrar la corrida? Ya no se podra editar.');">
+                    @csrf
+                    <button type="submit" class="px-4 py-2 bg-slate-700 text-white text-sm rounded-xl shadow hover:bg-slate-800">
+                        Cerrar corrida
+                    </button>
+                </form>
+            @endif
+            @endcan
+
+            @can('nomina.corridas.pay.access')
+            @if($status === 'cerrada')
+                <form method="POST" action="{{ route('nomina.corridas.pagar', $corrida) }}"
+                      onsubmit="return confirm('Marcar esta corrida como pagada?');">
+                    @csrf
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white text-sm rounded-xl shadow hover:bg-indigo-700">
+                        Marcar pagada
+                    </button>
+                </form>
+            @endif
+            @endcan
+
+            @can('nomina.corridas.reopen.access')
+            @if($status === 'cerrada')
+                <form method="POST" action="{{ route('nomina.corridas.reabrir', $corrida) }}"
+                      onsubmit="return confirm('Reabrir la corrida para editar?');">
+                    @csrf
+                    <button type="submit" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl shadow-sm hover:bg-slate-50">
+                        Reabrir
+                    </button>
+                </form>
+            @endif
+            @endcan
+            @can('nomina.corridas.delete.access')
             <form method="POST"
                 action="{{ route('nomina.corridas.destroy', $corrida) }}"
                 onsubmit="return confirm('Eliminar esta corrida COMPLETA? Se borraran tambien todos sus recibos.');">
@@ -71,7 +125,9 @@
                     Eliminar corrida
                 </button>
             </form>
+            @endcan
 
+            @can('nomina.corridas.delete.access')
           <form method="POST"
                 action="{{ route('nomina.corridas.recibos.destroy', $corrida) }}"
                 onsubmit="return confirm('Seguro que quieres BORRAR TODOS los recibos de esta corrida? Esta accion no se puede deshacer.')">
@@ -87,6 +143,7 @@
                     Borrar recibos
                 </button>
             </form>
+            @endcan
 
 
           <form method="POST"
@@ -107,6 +164,12 @@
 
         </div>
     </div>
+
+    @unless($isEditable)
+        <div class="mb-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            Esta corrida esta {{ $status }}. La captura y el autosave quedan bloqueados para proteger la nomina.
+        </div>
+    @endunless
 
     {{-- KPIs --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -414,8 +477,16 @@
 @endsection
 <script>
 const corridaId = {{ $corrida->id }};
+const isEditable = @json($isEditable);
 
 document.addEventListener('DOMContentLoaded', () => {
+  if (!isEditable) {
+    document.querySelectorAll('.fila-recibo input, .fila-recibo select, .js-extras-container input, .js-extras-container select, .js-add-extra, .js-remove-extra').forEach((control) => {
+      control.disabled = true;
+      control.classList.add('cursor-not-allowed', 'opacity-70');
+    });
+  }
+
   // Toggle child row
   document.querySelectorAll('[data-toggle-extras]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -444,6 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let extraTempIdx = 0;
   document.querySelectorAll('.js-add-extra').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (!isEditable) return;
       const reciboId = btn.dataset.reciboId;
       const empleadoId = btn.dataset.empleadoId;
       const obraId = btn.dataset.obraId;
@@ -494,6 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ========== Quitar extra ==========
   const syncExtraChange = (reciboId) => {
+    if (!isEditable) return;
     if (typeof window.recalcularFila === 'function') {
       window.recalcularFila(reciboId);
     }
@@ -604,6 +677,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const saveRecibo = async (reciboId) => {
+    if (!isEditable) return;
     inFlightSaves.add(reciboId);
     updateStatusIndicator(reciboId, 'saving');
 
@@ -679,6 +753,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const queueAutosave = (reciboId) => {
+    if (!isEditable) return;
     if (pendingSaves.has(reciboId)) {
       clearTimeout(pendingSaves.get(reciboId));
     }

@@ -51,6 +51,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'obra_factura_borradores.authorize.access',
             'obra_factura_borradores.reject.access',
             'obra_factura_borradores.invoice.access',
+
+            // Nomina - corridas
+            'nomina.corridas.close.access',
+            'nomina.corridas.pay.access',
+            'nomina.corridas.reopen.access',
+            'nomina.corridas.delete.access',
         ];
 
         foreach ($permisos as $p) {
@@ -95,6 +101,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'obra_factura_borradores.authorize.access',
             'obra_factura_borradores.reject.access',
             'obra_factura_borradores.invoice.access',
+
+            'nomina.corridas.close.access',
+            'nomina.corridas.pay.access',
+            'nomina.corridas.reopen.access',
+            'nomina.corridas.delete.access',
         ]);
 
         // Jefe de obra

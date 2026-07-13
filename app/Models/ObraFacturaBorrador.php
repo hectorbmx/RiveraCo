@@ -26,7 +26,9 @@ class ObraFacturaBorrador extends Model
         'concepto_descripcion',
         'cantidad',
         'subtotal',
+        'iva_tasa',
         'iva',
+        'retencion_tipo',
         'retenciones',
         'descuentos',
         'total',
@@ -47,6 +49,7 @@ class ObraFacturaBorrador extends Model
         'fecha' => 'date',
         'cantidad' => 'decimal:6',
         'subtotal' => 'decimal:2',
+        'iva_tasa' => 'decimal:6',
         'iva' => 'decimal:2',
         'retenciones' => 'decimal:2',
         'descuentos' => 'decimal:2',
@@ -64,6 +67,17 @@ class ObraFacturaBorrador extends Model
             self::ESTATUS_RECHAZADO => 'Rechazado',
             self::ESTATUS_FACTURADO => 'Facturado',
             self::ESTATUS_CANCELADO => 'Cancelado',
+        ];
+    }
+
+    public static function retencionTipoLabels(): array
+    {
+        return [
+            'sin_retencion' => 'Sin retencion',
+            'iva' => 'Retencion IVA',
+            'isr' => 'Retencion ISR',
+            'iva_isr' => 'Retencion IVA + ISR',
+            'otra' => 'Otra / manual',
         ];
     }
 

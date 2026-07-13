@@ -11,6 +11,7 @@ use App\Models\Cliente;
 use App\Models\Obra;
 use App\Models\SatConcepto;
 use App\Models\SatCfdi;
+use App\Models\SatFacturaBorrador;
 use App\Models\ObraFacturaBorrador;
 use App\Services\Facturacion\FacturapiService;
 use Facturapi\Exceptions\FacturapiException;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Arr;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\Rule;
 
 
@@ -34,16 +37,39 @@ class SatFacturacionController extends Controller
     /**
      * Listado de facturas emitidas.
      */
-   public function index()
+   public function index(Request $request)
     {
-        $facturas = SatFactura::with(['cliente', 'obra', 'ordenCompra', 'empresa'])
+        $facturasTimbradas = SatFactura::with(['cliente', 'obra', 'ordenCompra', 'empresa'])
             ->latest()
-            ->paginate(15);
+            ->get();
+
+        $borradoresCfdi = SatFacturaBorrador::with(['cliente', 'obra', 'empresa'])
+            ->where('estado', 'borrador')
+            ->latest()
+            ->get();
+
+        $items = $facturasTimbradas
+            ->concat($borradoresCfdi)
+            ->sortByDesc(fn ($item) => $item->updated_at ?? $item->created_at)
+            ->values();
+
+        $perPage = 15;
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $facturas = new LengthAwarePaginator(
+            $items->forPage($page, $perPage)->values(),
+            $items->count(),
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]
+        );
 
         $totalFacturado = SatFactura::where('estado', 'timbrada')->sum('total');
 
         $timbradas = SatFactura::where('estado', 'timbrada')->count();
-        $pendientes = SatFactura::where('estado', 'borrador')->count();
+        $pendientes = SatFactura::where('estado', 'borrador')->count() + SatFacturaBorrador::where('estado', 'borrador')->count();
         $canceladas = SatFactura::where('estado', 'cancelada')->count();
 
         return view('sat.facturacion.index', compact(
@@ -112,7 +138,20 @@ class SatFacturacionController extends Controller
         ->get();
 
     $borrador = null;
+    $cfdiBorrador = null;
     $prefill = [];
+
+    if ($request->filled('cfdi_borrador_id')) {
+        $cfdiBorrador = SatFacturaBorrador::with(['cliente', 'obra', 'empresa'])
+            ->where('estado', 'borrador')
+            ->where(function ($query) {
+                $query->whereNull('user_id')
+                    ->orWhere('user_id', auth()->id());
+            })
+            ->findOrFail($request->integer('cfdi_borrador_id'));
+
+        $prefill = $this->prefillFromCfdiBorrador($cfdiBorrador);
+    }
 
     if ($request->filled('borrador_id')) {
         abort_unless(auth()->user()?->can('obra_factura_borradores.invoice.access'), 403);
@@ -165,16 +204,147 @@ class SatFacturacionController extends Controller
         ];
     }
 
+    $cfdiBorradores = SatFacturaBorrador::with(['cliente', 'obra', 'empresa'])
+        ->where('estado', 'borrador')
+        ->where(function ($query) {
+            $query->whereNull('user_id')
+                ->orWhere('user_id', auth()->id());
+        })
+        ->latest()
+        ->limit(8)
+        ->get();
+
     return view('sat.facturacion.create', compact(
         'empresas',
         'clientes',
         'obras',
         'conceptos',
         'borrador',
+        'cfdiBorrador',
+        'cfdiBorradores',
         'prefill'
     ));
 }
 
+public function storeBorrador(Request $request)
+{
+    $payload = $this->normalizarPayloadBorradorCfdi($request);
+    $titulo = $this->tituloBorradorCfdi($payload);
+
+    $borrador = null;
+
+    if ($request->filled('cfdi_borrador_id')) {
+        $borrador = SatFacturaBorrador::where('estado', 'borrador')
+            ->where(function ($query) {
+                $query->whereNull('user_id')
+                    ->orWhere('user_id', auth()->id());
+            })
+            ->find($request->integer('cfdi_borrador_id'));
+    }
+
+    $attributes = [
+        'user_id' => auth()->id(),
+        'sat_empresa_id' => $payload['sat_empresa_id'] ?: null,
+        'cliente_id' => $payload['cliente_id'] ?: null,
+        'obra_id' => $payload['obra_id'] ?: null,
+        'obra_factura_borrador_id' => $payload['obra_factura_borrador_id'] ?: null,
+        'titulo' => $titulo,
+        'payload' => $payload,
+        'estado' => 'borrador',
+    ];
+
+    if ($borrador) {
+        $borrador->update($attributes);
+    } else {
+        $borrador = SatFacturaBorrador::create($attributes);
+    }
+
+    return redirect()
+        ->route('sat.facturacion.create', ['cfdi_borrador_id' => $borrador->id])
+        ->with('success', 'Borrador CFDI guardado correctamente.');
+}
+
+private function normalizarPayloadBorradorCfdi(Request $request): array
+{
+    $conceptos = collect($request->input('conceptos', []))
+        ->filter(fn ($concepto) => is_array($concepto) && trim((string) ($concepto['descripcion'] ?? '')) !== '')
+        ->map(fn ($concepto) => [
+            'id' => $concepto['sat_concepto_id'] ?? $concepto['id'] ?? null,
+            'sat_concepto_id' => $concepto['sat_concepto_id'] ?? $concepto['id'] ?? null,
+            'codigo' => $concepto['codigo'] ?? '',
+            'nombre_catalogo' => $concepto['nombre_catalogo'] ?? $concepto['descripcion'] ?? '',
+            'descripcion' => $concepto['descripcion'] ?? '',
+            'clave_producto_servicio' => $concepto['clave_producto_servicio'] ?? '',
+            'clave_unidad' => $concepto['clave_unidad'] ?? '',
+            'unidad' => $concepto['unidad'] ?? '',
+            'objeto_impuesto' => $concepto['objeto_impuesto'] ?? '02',
+            'iva_tasa' => (float) ($concepto['iva_tasa'] ?? 0),
+            'incluye_iva' => filter_var($concepto['incluye_iva'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'cantidad' => (float) ($concepto['cantidad'] ?? 1),
+            'precio_unitario' => (float) ($concepto['precio_unitario'] ?? 0),
+        ])
+        ->values()
+        ->all();
+
+    return [
+        'sat_empresa_id' => $request->input('sat_empresa_id'),
+        'cliente_id' => $request->input('cliente_id'),
+        'obra_id' => $request->input('obra_id'),
+        'obra_factura_borrador_id' => $request->input('obra_factura_borrador_id'),
+        'uso_cfdi' => $request->input('uso_cfdi', 'G03'),
+        'metodo_pago' => $request->input('metodo_pago', 'PUE'),
+        'forma_pago' => $request->input('forma_pago', '03'),
+        'tipo_iva' => $request->input('tipo_iva', '0.16'),
+        'amortizacion' => (float) $request->input('amortizacion', 0),
+        'descuento' => (float) $request->input('descuento', 0),
+        'retenciones' => (float) $request->input('retenciones', 0),
+        'usar_relacion' => $request->boolean('usar_relacion'),
+        'relacion_tipo' => $request->input('relacion_tipo'),
+        'relacion_uuids' => $request->input('relacion_uuids'),
+        'usar_complemento_construccion' => $request->boolean('usar_complemento_construccion'),
+        'complemento_construccion' => $request->input('complemento_construccion', []),
+        'conceptos' => $conceptos,
+    ];
+}
+
+private function prefillFromCfdiBorrador(SatFacturaBorrador $borrador): array
+{
+    $payload = $borrador->payload ?: [];
+
+    return [
+        'cfdi_borrador_id' => (string) $borrador->id,
+        'sat_empresa_id' => (string) ($payload['sat_empresa_id'] ?? ''),
+        'cliente_id' => (string) ($payload['cliente_id'] ?? ''),
+        'obra_id' => (string) ($payload['obra_id'] ?? ''),
+        'obra_factura_borrador_id' => (string) ($payload['obra_factura_borrador_id'] ?? ''),
+        'uso_cfdi' => $payload['uso_cfdi'] ?? 'G03',
+        'metodo_pago' => $payload['metodo_pago'] ?? 'PUE',
+        'forma_pago' => $payload['forma_pago'] ?? '03',
+        'tipo_iva' => $payload['tipo_iva'] ?? '0.16',
+        'amortizacion' => (float) ($payload['amortizacion'] ?? 0),
+        'descuento' => (float) ($payload['descuento'] ?? 0),
+        'retenciones' => (float) ($payload['retenciones'] ?? 0),
+        'usar_relacion' => (bool) ($payload['usar_relacion'] ?? false),
+        'relacion_tipo' => $payload['relacion_tipo'] ?? null,
+        'relacion_uuids' => $payload['relacion_uuids'] ?? '',
+        'usar_complemento_construccion' => (bool) ($payload['usar_complemento_construccion'] ?? false),
+        'complemento_construccion' => $payload['complemento_construccion'] ?? [],
+        'conceptos' => $payload['conceptos'] ?? [],
+    ];
+}
+
+private function tituloBorradorCfdi(array $payload): string
+{
+    $cliente = !empty($payload['cliente_id']) ? Cliente::find($payload['cliente_id']) : null;
+    $obra = !empty($payload['obra_id']) ? Obra::find($payload['obra_id']) : null;
+    $concepto = Arr::get($payload, 'conceptos.0.descripcion', 'Sin conceptos');
+
+    return collect([
+        $cliente?->razon_social ?: $cliente?->nombre_comercial,
+        $obra?->nombre ?: $obra?->Nombre,
+        str($concepto)->limit(50)->toString(),
+    ])->filter()->join(' - ') ?: 'Borrador CFDI';
+}
 public function relacionables(Request $request)
 {
     $data = $request->validate([
@@ -513,6 +683,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
                 'cliente_id' => ['required', 'exists:clientes,id'],
                 'obra_id' => ['nullable', 'exists:obras,id'],
                 'obra_factura_borrador_id' => ['nullable', 'exists:obra_factura_borradores,id'],
+                'cfdi_borrador_id' => ['nullable', 'exists:sat_factura_borradores,id'],
 
                 'uso_cfdi' => ['required', 'string', 'max:10'],
                 'metodo_pago' => ['required', 'string', 'max:10'],
@@ -1021,6 +1192,18 @@ $invoice = $facturapi->Invoices->create($payload);
 
                     'facturapi_payload' => $concepto,
                 ]);
+            }
+
+            if (!empty($data['cfdi_borrador_id'])) {
+                SatFacturaBorrador::where('id', $data['cfdi_borrador_id'])
+                    ->where(function ($query) {
+                        $query->whereNull('user_id')
+                            ->orWhere('user_id', auth()->id());
+                    })
+                    ->update([
+                        'estado' => 'timbrado',
+                        'sat_factura_id' => $factura->id,
+                    ]);
             }
         });
 \Log::info('INVOICE OK', [

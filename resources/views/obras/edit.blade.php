@@ -4214,7 +4214,12 @@ function relacionFacturasModal() {
                             </td>
                             <td class="px-3 py-2 text-right">$ {{ number_format((float) $borrador->subtotal, 2) }}</td>
                             <td class="px-3 py-2 text-right">$ {{ number_format((float) $borrador->iva, 2) }}</td>
-                            <td class="px-3 py-2 text-right">$ {{ number_format((float) $borrador->retenciones, 2) }}</td>
+                            <td class="px-3 py-2 text-right">
+                                <div>$ {{ number_format((float) $borrador->retenciones, 2) }}</div>
+                                @if($borrador->retencion_tipo && $borrador->retencion_tipo !== 'sin_retencion')
+                                    <div class="text-[10px] text-slate-500">{{ \App\Models\ObraFacturaBorrador::retencionTipoLabels()[$borrador->retencion_tipo] ?? $borrador->retencion_tipo }}</div>
+                                @endif
+                            </td>
                             <td class="px-3 py-2 text-right">$ {{ number_format((float) $borrador->descuentos, 2) }}</td>
                             <td class="px-3 py-2 text-right font-semibold text-slate-900">$ {{ number_format((float) $borrador->total, 2) }}</td>
                             <td class="px-3 py-2 text-center">
@@ -4497,13 +4502,15 @@ function relacionFacturasModal() {
                 </div>
 
                 <div class="md:col-span-3">
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Concepto editado</label>
-                    <input type="text"
-                           name="concepto_descripcion"
-                           x-model="borradorForm.concepto_descripcion"
-                           required
-                           maxlength="255"
-                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Concepto modificado</label>
+                    <textarea name="concepto_descripcion"
+                              x-model="borradorForm.concepto_descripcion"
+                              rows="4"
+                              required
+                              maxlength="1000"
+                              class="w-full rounded-xl border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                              placeholder="Edita aqui la descripcion que se imprimira y se usara para facturar"></textarea>
+                    <p class="mt-1 text-[11px] text-slate-500">El concepto SAT se conserva como base; puedes modificar libremente esta descripcion.</p>
                 </div>
 
                 <div>
@@ -4513,6 +4520,7 @@ function relacionFacturasModal() {
                            step="0.000001"
                            min="0.000001"
                            x-model.number="borradorForm.cantidad"
+                           @input="recalcularBorradorSubtotalDesdeConcepto()"
                            required
                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
                 </div>
@@ -4524,22 +4532,40 @@ function relacionFacturasModal() {
                            step="0.01"
                            min="0"
                            x-model.number="borradorForm.subtotal"
+                           @input="recalcularBorradorIva()"
                            required
                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">IVA</label>
-                    <input type="number"
-                           name="iva"
-                           step="0.01"
-                           min="0"
-                           x-model.number="borradorForm.iva"
-                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                    <select name="iva_tasa"
+                            x-model.number="borradorForm.iva_tasa"
+                            @change="recalcularBorradorIva()"
+                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="0.16">IVA 16%</option>
+                        <option value="0.08">IVA 8%</option>
+                        <option value="0">IVA 0%</option>
+                    </select>
+                    <input type="hidden" name="iva" :value="Number(borradorForm.iva || 0).toFixed(2)">
+                    <p class="mt-1 text-[11px] text-slate-500" x-text="'Importe: ' + money(borradorForm.iva)"></p>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Retenciones</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de retencion</label>
+                    <select name="retencion_tipo"
+                            x-model="borradorForm.retencion_tipo"
+                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="sin_retencion">Sin retencion</option>
+                        <option value="iva">Retencion IVA</option>
+                        <option value="isr">Retencion ISR</option>
+                        <option value="iva_isr">Retencion IVA + ISR</option>
+                        <option value="otra">Otra / manual</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Importe retenido</label>
                     <input type="number"
                            name="retenciones"
                            step="0.01"
@@ -4953,7 +4979,9 @@ function relacionFacturasModal() {
                     concepto_descripcion: '',
                     cantidad: 1,
                     subtotal: 0,
+                    iva_tasa: 0.16,
                     iva: 0,
+                    retencion_tipo: 'sin_retencion',
                     retenciones: 0,
                     descuentos: 0,
                 },
@@ -5024,7 +5052,9 @@ function relacionFacturasModal() {
                         concepto_descripcion: '',
                         cantidad: 1,
                         subtotal: 0,
+                        iva_tasa: 0.16,
                         iva: 0,
+                        retencion_tipo: 'sin_retencion',
                         retenciones: 0,
                         descuentos: 0,
                     };
@@ -5048,7 +5078,28 @@ function relacionFacturasModal() {
 
                     this.borradorForm.concepto_descripcion = concepto.descripcion || '';
                     this.borradorForm.subtotal = subtotal;
-                    this.borradorForm.iva = Number((subtotal * Number(concepto.iva_tasa || 0)).toFixed(2));
+                    this.borradorForm.iva_tasa = Number(concepto.iva_tasa ?? this.borradorForm.iva_tasa ?? 0.16);
+                    this.recalcularBorradorIva();
+                },
+
+                recalcularBorradorSubtotalDesdeConcepto() {
+                    const concepto = this.conceptosSat.find(item => String(item.id) === String(this.borradorForm.sat_concepto_id));
+
+                    if (!concepto) {
+                        this.recalcularBorradorIva();
+                        return;
+                    }
+
+                    const cantidad = Number(this.borradorForm.cantidad || 1);
+                    const precio = Number(concepto.precio_unitario || 0);
+                    this.borradorForm.subtotal = Number((cantidad * precio).toFixed(2));
+                    this.recalcularBorradorIva();
+                },
+
+                recalcularBorradorIva() {
+                    const subtotal = Number(this.borradorForm.subtotal || 0);
+                    const ivaTasa = Number(this.borradorForm.iva_tasa || 0);
+                    this.borradorForm.iva = Number((subtotal * ivaTasa).toFixed(2));
                 },
 
                 totalBorrador() {

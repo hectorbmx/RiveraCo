@@ -1684,10 +1684,11 @@ public function storeFacturaBorrador(Request $request, Obra $obra)
         'metodo_pago' => ['required', 'string', 'in:' . implode(',', $metodosPago)],
         'uso_cfdi' => ['required', 'string', 'in:' . implode(',', $usosCfdi)],
         'sat_concepto_id' => ['required', 'exists:sat_conceptos,id'],
-        'concepto_descripcion' => ['required', 'string', 'max:255'],
+        'concepto_descripcion' => ['required', 'string', 'max:1000'],
         'cantidad' => ['required', 'numeric', 'min:0.000001'],
         'subtotal' => ['required', 'numeric', 'min:0'],
-        'iva' => ['nullable', 'numeric', 'min:0'],
+        'iva_tasa' => ['nullable', 'numeric', 'min:0', 'max:1'],
+        'retencion_tipo' => ['nullable', 'string', 'in:sin_retencion,iva,isr,iva_isr,otra'],
         'retenciones' => ['nullable', 'numeric', 'min:0'],
         'descuentos' => ['nullable', 'numeric', 'min:0'],
     ]);
@@ -1699,7 +1700,9 @@ public function storeFacturaBorrador(Request $request, Obra $obra)
     }
 
     $subtotal = round((float) $data['subtotal'], 2);
-    $iva = round((float) ($data['iva'] ?? 0), 2);
+    $ivaTasa = round((float) ($data['iva_tasa'] ?? 0.16), 6);
+    $iva = round($subtotal * $ivaTasa, 2);
+    $retencionTipo = $data['retencion_tipo'] ?? 'sin_retencion';
     $retenciones = round((float) ($data['retenciones'] ?? 0), 2);
     $descuentos = round((float) ($data['descuentos'] ?? 0), 2);
     $total = round(max(0, $subtotal + $iva - $retenciones - $descuentos), 2);
@@ -1716,7 +1719,9 @@ public function storeFacturaBorrador(Request $request, Obra $obra)
         'concepto_descripcion' => $data['concepto_descripcion'],
         'cantidad' => $data['cantidad'],
         'subtotal' => $subtotal,
+        'iva_tasa' => $ivaTasa,
         'iva' => $iva,
+        'retencion_tipo' => $retencionTipo,
         'retenciones' => $retenciones,
         'descuentos' => $descuentos,
         'total' => $total,
@@ -1762,6 +1767,24 @@ public function showFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrador)
     ]);
 }
 
+public function updateFacturaBorrador(Request $request, Obra $obra, ObraFacturaBorrador $borrador)
+{
+    abort_unless(auth()->user()?->can('obra_factura_borradores.edit.access'), 403);
+    $this->validarBorradorPerteneceAObra($obra, $borrador);
+    $this->abortarSiBorradorCerrado($borrador);
+
+    $data = $request->validate([
+        'concepto_descripcion' => ['required', 'string', 'max:1000'],
+    ]);
+
+    $borrador->update([
+        'concepto_descripcion' => trim($data['concepto_descripcion']),
+    ]);
+
+    return redirect()
+        ->route('obras.factura-borradores.show', [$obra, $borrador])
+        ->with('success', 'Concepto modificado actualizado correctamente.');
+}
 public function printFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrador)
 {
     abort_unless(auth()->user()?->can('obra_factura_borradores.print.access'), 403);

@@ -595,6 +595,13 @@ Validaciones ejecutadas:
 - [x] Agregar acciones de autorizacion/rechazo desde el detalle.
 - [x] Notificar a usuarios con permiso `obra_factura_borradores.invoice.access` cuando el borrador queda autorizado.
 - [x] Mostrar flujo operativo en detalle: solicita, autoriza y factura.
+- [ ] Permitir editar borrador antes de autorizar y/o antes de facturar, incluyendo `concepto modificado` como en `/sat/facturacion/create`.
+- [ ] En el modal/flujo de creacion del borrador, permitir editar libremente la descripcion del concepto seleccionado del catalogo, igual que en `/sat/facturacion/create`.
+  - Actualmente solo acepta el concepto tal como viene del catalogo y no permite modificarlo dentro del borrador.
+  - El concepto SAT/catalogo debe conservarse como base, pero la descripcion editable debe guardarse como `concepto modificado` para facturar/imprimir.
+- [ ] Crear guardado tipo borrador/autosave en `/sat/facturacion/create` antes de timbrar para no perder captura si Facturapi/SAT rechaza.
+  - Disparador sugerido: despues de agregar el primer concepto o al tener datos fiscales minimos.
+  - Caso observado: timbrado falla por razon social distinta a SAT; al corregir cliente se pierde la factura capturada.
 - [ ] Agregar boton `Facturar` para borradores autorizados.
 - [ ] Prellenar pantalla de Facturapi con datos del borrador.
 - [ ] Al timbrar, vincular CFDI real con el borrador.
@@ -629,6 +636,7 @@ Implementado:
 
 Pendiente inmediato:
 
+- Permitir editar el borrador antes de autorizar/facturar para ajustar el concepto modificado.
 - Agregar `Facturar` solo para borradores autorizados.
 
 #### Hallazgos Fase 8 - Paso 2
@@ -657,6 +665,7 @@ Pendiente inmediato:
 
 - Crear campos `facturado_por` y `facturado_at`.
 - Agregar boton `Facturar` en el detalle cuando el borrador este autorizado.
+- Permitir editar el concepto modificado del borrador con una experiencia equivalente a la pagina de facturacion.
 - Prellenar `/sat/facturacion/create` con `borrador_id`.
 
 ## Primer paso recomendado al retomar
@@ -679,3 +688,6 @@ Orden sugerido:
 - Confirmar si IVA, retenciones y descuentos seran capturados como monto o porcentaje.
 - Confirmar quienes son exactamente los usuarios/roles de gerente administrativo.
 - Confirmar si se requiere historial de cambios del borrador.
+- Definir regla de edicion del borrador: quien puede editar, hasta que estatus, y si al editar despues de autorizado debe regresar a revision.
+- Definir si los borradores/autosaves de `/sat/facturacion/create` usan tabla propia o se integran con `obra_factura_borradores`.
+- Definir politica de limpieza de borradores CFDI no timbrados: expiracion, usuario propietario y recuperacion al volver a la pantalla.
