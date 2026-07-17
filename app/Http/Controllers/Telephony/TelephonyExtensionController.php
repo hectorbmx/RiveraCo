@@ -176,6 +176,11 @@ class TelephonyExtensionController extends Controller
 
     public function syncExtensions()
     {
+        if (config('grandstream.mode') === 'agent') {
+            return redirect()
+                ->route('telephony.extensions.index', ['tab' => 'extensions'])
+                ->with('error', 'La sincronizacion de extensiones se ejecuta desde el agente local en la red del UCM. En este servidor no se conecta directo a Grandstream.');
+        }
         $exitCode = Artisan::call('grandstream:sync-extensions');
 
         if ($exitCode !== 0) {
@@ -322,3 +327,4 @@ class TelephonyExtensionController extends Controller
         ]);
     }
 }
+
