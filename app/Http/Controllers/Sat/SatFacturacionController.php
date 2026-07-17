@@ -264,6 +264,19 @@ public function storeBorrador(Request $request)
         ->with('success', 'Borrador CFDI guardado correctamente.');
 }
 
+public function destroyBorrador(SatFacturaBorrador $borrador)
+{
+    abort_unless($borrador->estado === 'borrador' && !$borrador->sat_factura_id, 404);
+
+    abort_unless($borrador->user_id === null || (int) $borrador->user_id === (int) auth()->id(), 403);
+
+    $borrador->delete();
+
+    return redirect()
+        ->route('sat.facturacion.index')
+        ->with('success', 'Borrador CFDI eliminado correctamente.');
+}
+
 private function normalizarPayloadBorradorCfdi(Request $request): array
 {
     $conceptos = collect($request->input('conceptos', []))

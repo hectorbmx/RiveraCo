@@ -30,6 +30,18 @@
         </div>
     </div>
 
+    @if(session('success'))
+        <div class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+            {{ session('error') }}
+        </div>
+    @endif
+
     {{-- ACCESOS --}}
     <div class="flex flex-wrap gap-3 mb-6">
         <a href="{{ route('clientes.index') }}"
@@ -185,10 +197,22 @@
 </td>
                 <td class="px-5 py-4 text-right">
                     @if($esBorradorCfdi)
-                        <a href="{{ route('sat.facturacion.create', ['cfdi_borrador_id' => $factura->id]) }}"
-                           class="text-sm font-medium text-indigo-600 hover:text-indigo-800">
-                            Continuar
-                        </a>
+                        <div class="flex justify-end gap-3">
+                            <a href="{{ route('sat.facturacion.create', ['cfdi_borrador_id' => $factura->id]) }}"
+                               class="text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                                Continuar
+                            </a>
+
+                            <form method="POST"
+                                  action="{{ route('sat.facturacion.borradores.destroy', $factura) }}"
+                                  onsubmit="return confirm('Eliminar este borrador CFDI? Esta accion no se puede deshacer.');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-800">
+                                    Borrar
+                                </button>
+                            </form>
+                        </div>
                     @else
                         <a href="{{ route('sat.facturacion.show', $factura) }}"
                            class="text-sm font-medium text-indigo-600 hover:text-indigo-800">

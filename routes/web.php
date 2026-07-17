@@ -193,6 +193,8 @@ Route::middleware(['auth', 'verified'])
 
             Route::post('/borradores', [SatFacturacionController::class, 'storeBorrador'])->name('borradores.store');
 
+            Route::delete('/borradores/{borrador}', [SatFacturacionController::class, 'destroyBorrador'])->name('borradores.destroy');
+
             Route::post('/', [SatFacturacionController::class, 'store'])->name('store');
 
             Route::get('/clientes/{cliente}', [SatFacturacionController::class, 'clienteResumen'])->name('clientes.show');
