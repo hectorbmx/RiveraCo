@@ -268,7 +268,12 @@ public function destroyBorrador(SatFacturaBorrador $borrador)
 {
     abort_unless($borrador->estado === 'borrador' && !$borrador->sat_factura_id, 404);
 
-    abort_unless($borrador->user_id === null || (int) $borrador->user_id === (int) auth()->id(), 403);
+    $user = auth()->user();
+    $puedeBorrar = $user?->hasRole('super-admin')
+        || $borrador->user_id === null
+        || (int) $borrador->user_id === (int) $user?->id;
+
+    abort_unless($puedeBorrar, 403);
 
     $borrador->delete();
 
