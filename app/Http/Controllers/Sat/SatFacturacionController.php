@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Arr;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 
 use App\Mail\SatFacturaMail;
@@ -233,6 +234,11 @@ public function storeBorrador(Request $request)
     ], $this->clienteActivoMessages());
 
     $payload = $this->normalizarPayloadBorradorCfdi($request);
+
+    if (!empty($payload['cliente_id'])) {
+        $this->assertClienteFiscalCompleto(Cliente::findOrFail($payload['cliente_id']));
+    }
+
     $titulo = $this->tituloBorradorCfdi($payload);
 
     $borrador = null;
@@ -296,6 +302,35 @@ private function clienteActivoMessages(): array
     return [
         'cliente_id.exists' => 'El cliente seleccionado está inactivo.',
     ];
+}
+
+private function assertClienteFiscalCompleto(Cliente $cliente): void
+{
+    $faltantes = [];
+
+    if (!$this->normalizeRfc($cliente->rfc)) {
+        $faltantes[] = 'RFC';
+    }
+
+    if (!trim((string) ($cliente->razon_social ?: $cliente->nombre_comercial))) {
+        $faltantes[] = 'razón social o nombre comercial';
+    }
+
+    if (!trim((string) $cliente->regimen_fiscal)) {
+        $faltantes[] = 'régimen fiscal';
+    }
+
+    if (!trim((string) $cliente->codigo_postal)) {
+        $faltantes[] = 'código postal';
+    }
+
+    if ($faltantes === []) {
+        return;
+    }
+
+    throw ValidationException::withMessages([
+        'cliente_id' => 'El cliente seleccionado tiene datos fiscales incompletos: ' . implode(', ', $faltantes) . '. Completa estos datos antes de guardar el borrador o timbrar.',
+    ]);
 }
 
 private function normalizarPayloadBorradorCfdi(Request $request): array
@@ -541,21 +576,10 @@ public function preview(Request $request, FacturapiService $facturapiService)
     ], $this->clienteActivoMessages());
 
     $cliente = Cliente::findOrFail($data['cliente_id']);
-
-    if (!$cliente->regimen_fiscal) {
-        throw new \RuntimeException('El cliente no tiene regimen fiscal configurado.');
-    }
-
-    if (!$cliente->codigo_postal) {
-        throw new \RuntimeException('El cliente no tiene codigo postal fiscal configurado.');
-    }
+    $this->assertClienteFiscalCompleto($cliente);
 
     try {
         $rfc = $this->normalizeRfc($cliente->rfc);
-
-        if (!$rfc) {
-            throw new \RuntimeException('El cliente no tiene RFC fiscal configurado.');
-        }
 
         $payload = $this->buildFacturapiPreviewPayload($request, $data, $cliente, $rfc);
         $pdf = $facturapiService->client()->Invoices->previewPdf($payload);
@@ -799,17 +823,11 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
 
     $empresa = SatEmpresa::findOrFail($data['sat_empresa_id']);
     $cliente = Cliente::findOrFail($data['cliente_id']);
+    $this->assertClienteFiscalCompleto($cliente);
 
     $facturapi = $facturapiService->client();
     $regimenFiscal = $cliente->regimen_fiscal;
-
-        if (!$regimenFiscal) {
-            throw new \RuntimeException('El cliente no tiene régimen fiscal configurado.');
-        }
-
-        if (!$cliente->codigo_postal) {
-            throw new \RuntimeException('El cliente no tiene código postal fiscal configurado.');
-        }
+    $rfc = $this->normalizeRfc($cliente->rfc);
 
     try {
 
@@ -823,7 +841,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
 // \Log::info('ANTES CUSTOMER');
             $customer = $facturapi->Customers->create([
                 'legal_name' => $cliente->razon_social ?: $cliente->nombre_comercial,
-                'tax_id' => strtoupper($cliente->rfc),
+                'tax_id' => $rfc,
                 'tax_system' => $regimenFiscal,
                 'email' => $cliente->email ?: 'facturacion@example.com',
                 'address' => [
