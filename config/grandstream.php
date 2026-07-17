@@ -38,6 +38,14 @@ return [
         'timezone' => env('GRANDSTREAM_TIMEZONE', 'America/Mexico_City'),
         'format' => env('GRANDSTREAM_CDR_FORMAT', 'json'),
     ],
+    'agent' => [
+        'server_url' => env('GRANDSTREAM_AGENT_SERVER_URL'),
+        'token' => env('GRANDSTREAM_AGENT_TOKEN'),
+        'email' => env('GRANDSTREAM_AGENT_EMAIL'),
+        'password' => env('GRANDSTREAM_AGENT_PASSWORD'),
+        'timeout' => env('GRANDSTREAM_AGENT_TIMEOUT', 30),
+    ],
+
 
     'actions' => [
         'challenge' => 'challenge',

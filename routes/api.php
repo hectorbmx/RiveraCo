@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\Gerencial\InventarioKardexGerencialController;
 use App\Http\Controllers\Integrations\ContpaqiFacturaImportController;
 use App\Http\Controllers\Api\V1\AttendanceIngestController;
 use App\Http\Controllers\Api\V1\Attendance\AttendanceApiController;
+use App\Http\Controllers\Api\Agent\AgentTelephonyController;
 
 use App\Http\Controllers\Api\V1\PresupuestoController;
 use App\Http\Controllers\Api\V1\PlaneacionGastosController;
@@ -133,6 +134,8 @@ Route::prefix('agent')->group(function () {
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('notifications/unread', [\App\Http\Controllers\Api\Agent\AgentNotificationController::class, 'unread']);
+        Route::post('telephony/extensions', [AgentTelephonyController::class, 'syncExtensions']);
+        Route::post('telephony/calls', [AgentTelephonyController::class, 'importCalls']);
         Route::post('notifications/{id}/read', [\App\Http\Controllers\Api\Agent\AgentNotificationController::class, 'markRead']);
         Route::post('logout', [\App\Http\Controllers\Api\Agent\AgentAuthController::class, 'logout']);
     });
