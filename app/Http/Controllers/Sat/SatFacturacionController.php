@@ -228,6 +228,10 @@ class SatFacturacionController extends Controller
 
 public function storeBorrador(Request $request)
 {
+    $request->validate([
+        'cliente_id' => ['nullable', $this->clienteActivoRule()],
+    ], $this->clienteActivoMessages());
+
     $payload = $this->normalizarPayloadBorradorCfdi($request);
     $titulo = $this->tituloBorradorCfdi($payload);
 
@@ -280,6 +284,18 @@ public function destroyBorrador(SatFacturaBorrador $borrador)
     return redirect()
         ->route('sat.facturacion.index')
         ->with('success', 'Borrador CFDI eliminado correctamente.');
+}
+
+private function clienteActivoRule()
+{
+    return Rule::exists('clientes', 'id')->where('activo', true);
+}
+
+private function clienteActivoMessages(): array
+{
+    return [
+        'cliente_id.exists' => 'El cliente seleccionado está inactivo.',
+    ];
 }
 
 private function normalizarPayloadBorradorCfdi(Request $request): array
@@ -487,7 +503,7 @@ public function preview(Request $request, FacturapiService $facturapiService)
 {
     $data = $request->validate([
         'sat_empresa_id' => ['required', 'exists:sat_empresas,id'],
-        'cliente_id' => ['required', 'exists:clientes,id'],
+        'cliente_id' => ['required', $this->clienteActivoRule()],
         'obra_id' => ['nullable', 'exists:obras,id'],
 
         'uso_cfdi' => ['required', 'string', 'max:10'],
@@ -522,7 +538,7 @@ public function preview(Request $request, FacturapiService $facturapiService)
         'complemento_construccion.municipio' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:100'],
         'complemento_construccion.estado' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:2'],
         'complemento_construccion.codigo_postal' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:5'],
-    ]);
+    ], $this->clienteActivoMessages());
 
     $cliente = Cliente::findOrFail($data['cliente_id']);
 
@@ -698,7 +714,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
 // );
             $data = $request->validate([
                 'sat_empresa_id' => ['required', 'exists:sat_empresas,id'],
-                'cliente_id' => ['required', 'exists:clientes,id'],
+                'cliente_id' => ['required', $this->clienteActivoRule()],
                 'obra_id' => ['nullable', 'exists:obras,id'],
                 'obra_factura_borrador_id' => ['nullable', 'exists:obra_factura_borradores,id'],
                 'cfdi_borrador_id' => ['nullable', 'exists:sat_factura_borradores,id'],
@@ -750,7 +766,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
                 'complemento_construccion.municipio' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:100'],
                 'complemento_construccion.estado' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:2'],
                 'complemento_construccion.codigo_postal' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:5'],
-            ]);
+            ], $this->clienteActivoMessages());
 
     $borrador = null;
 
