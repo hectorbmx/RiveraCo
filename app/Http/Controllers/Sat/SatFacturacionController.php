@@ -22,7 +22,6 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Arr;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 
 use App\Mail\SatFacturaMail;
@@ -236,7 +235,11 @@ public function storeBorrador(Request $request)
     $payload = $this->normalizarPayloadBorradorCfdi($request);
 
     if (!empty($payload['cliente_id'])) {
-        $this->assertClienteFiscalCompleto(Cliente::findOrFail($payload['cliente_id']));
+        $cliente = Cliente::findOrFail($payload['cliente_id']);
+
+        if ($error = $this->clienteDatosFiscalesError($cliente)) {
+            return back()->withInput()->with('error', $error);
+        }
     }
 
     $titulo = $this->tituloBorradorCfdi($payload);
@@ -304,7 +307,7 @@ private function clienteActivoMessages(): array
     ];
 }
 
-private function assertClienteFiscalCompleto(Cliente $cliente): void
+private function clienteDatosFiscalesError(Cliente $cliente): ?string
 {
     $faltantes = [];
 
@@ -325,12 +328,10 @@ private function assertClienteFiscalCompleto(Cliente $cliente): void
     }
 
     if ($faltantes === []) {
-        return;
+        return null;
     }
 
-    throw ValidationException::withMessages([
-        'cliente_id' => 'El cliente seleccionado tiene datos fiscales incompletos: ' . implode(', ', $faltantes) . '. Completa estos datos antes de guardar el borrador o timbrar.',
-    ]);
+    return 'El cliente no tiene datos fiscales completos: ' . implode(', ', $faltantes) . '. Completa estos datos antes de guardar el borrador o timbrar.';
 }
 
 private function normalizarPayloadBorradorCfdi(Request $request): array
@@ -576,7 +577,10 @@ public function preview(Request $request, FacturapiService $facturapiService)
     ], $this->clienteActivoMessages());
 
     $cliente = Cliente::findOrFail($data['cliente_id']);
-    $this->assertClienteFiscalCompleto($cliente);
+
+    if ($error = $this->clienteDatosFiscalesError($cliente)) {
+        return back()->withInput()->with('error', $error);
+    }
 
     try {
         $rfc = $this->normalizeRfc($cliente->rfc);
@@ -823,7 +827,10 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
 
     $empresa = SatEmpresa::findOrFail($data['sat_empresa_id']);
     $cliente = Cliente::findOrFail($data['cliente_id']);
-    $this->assertClienteFiscalCompleto($cliente);
+
+    if ($error = $this->clienteDatosFiscalesError($cliente)) {
+        return back()->withInput()->with('error', $error);
+    }
 
     $facturapi = $facturapiService->client();
     $regimenFiscal = $cliente->regimen_fiscal;
