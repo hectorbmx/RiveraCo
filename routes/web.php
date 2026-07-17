@@ -48,11 +48,14 @@ use App\Http\Controllers\Vehiculos\VehiculoDocumentoController;
 
 
 use App\Http\Controllers\Nomina\NominaCorridaController;
+use App\Http\Controllers\Nomina\NominaPromedioController;
 use App\Http\Controllers\Inventario\InventarioStockController;
 use App\Http\Controllers\Inventario\InventarioKardexController;
 use App\Http\Controllers\Inventario\InventarioDocumentoController;
 use App\Http\Controllers\Attendance\AttendanceController;
 use App\Http\Controllers\Attendance\AttendanceWebController;
+use App\Http\Controllers\Telephony\TelephonyExtensionController;
+use App\Http\Controllers\Telephony\TelephonyClickToCallController;
 
 
 use App\Http\Controllers\Sat\SatDownloadController;
@@ -71,6 +74,7 @@ use App\Http\Controllers\PagoProveedorController;
 use App\Http\Controllers\ObraReposicionGastoController;
 use App\Http\Controllers\CajaChicaController;
 use App\Http\Controllers\EquipoComputoController;
+use App\Http\Controllers\AgendaController;
 
 
 
@@ -139,7 +143,7 @@ Route::middleware(['auth', 'verified'])
 
         /*
         |----------------------------------------------------------------------
-        | ESTADÃSTICAS CFDI
+        | ESTADISTICAS CFDI
         |----------------------------------------------------------------------
         */
         Route::get('/estadisticas', [SatCfdiEstadisticaController::class, 'index'])->name('estadisticas');
@@ -174,7 +178,7 @@ Route::middleware(['auth', 'verified'])
 });
         /*
         |--------------------------------------------------------------------------
-        | FACTURACIÃ“N CFDI
+        | FACTURACION CFDI
         |--------------------------------------------------------------------------
         */
         Route::prefix('facturacion')->name('facturacion.')->group(function () {
@@ -221,7 +225,7 @@ Route::middleware(['auth', 'verified'])
 
         /*
         |--------------------------------------------------------------------------
-        | CATÃLOGOS SAT
+        | CATALOGOS SAT
         |--------------------------------------------------------------------------
         */
         Route::prefix('catalogos')->name('catalogos.')->group(function () {
@@ -280,8 +284,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/', [UsuarioController::class, 'index'])->name('index');
         Route::get('/create', [UsuarioController::class, 'create'])->name('create');
-
-        // ðŸ”Ž buscador empleados legacy (JSON)
+        // buscador empleados legacy (JSON)
         Route::get('/empleados/search', [UsuarioController::class, 'searchEmpleados'])->name('empleados.search');
 
         Route::post('/', [UsuarioController::class, 'store'])->name('store');
@@ -294,6 +297,10 @@ Route::middleware(['auth','verified'])
     ->prefix('nomina')
     ->name('nomina.')
     ->group(function () {
+
+        Route::get('promedios', [NominaPromedioController::class, 'index'])->name('promedios.index');
+        Route::get('promedios/empleados/{empleado}', [NominaPromedioController::class, 'detalle'])->name('promedios.empleados.show');
+        Route::post('promedios/empleados/{empleado}/recalcular', [NominaPromedioController::class, 'recalcular'])->name('promedios.empleados.recalcular');
 
         Route::post('corridas',[NominaCorridaController::class, 'store'])->name('corridas.store');
         
@@ -321,7 +328,7 @@ Route::middleware('auth','verified')->group(function () {
 
     Route::prefix('presupuesto')->group(function(){
         Route::get('presupuestos', [App\Http\Controllers\PresupuestoController::class, 'index'])->name('presupuesto.index');
-        // Ruta para ver el detalle de uno especÃ­fico (la usaremos despuÃ©s)
+        // Ruta para ver el detalle de uno especifico (la usaremos despues)
         Route::get('presupuestos/{id}', [App\Http\Controllers\PresupuestoController::class, 'show'])->name('presupuesto.show');
         Route::get('presupuestos/{id}/pdf', [App\Http\Controllers\PresupuestoController::class, 'exportPdf'])->name('presupuesto.pdf');
         Route::delete('presupuestos/{id}', [App\Http\Controllers\PresupuestoController::class, 'destroy'])->name('presupuesto.destroy');
@@ -329,6 +336,17 @@ Route::middleware('auth','verified')->group(function () {
         });
 
 
+
+    Route::prefix('telefonia')
+        ->name('telephony.')
+        ->group(function () {
+            Route::get('/', [TelephonyExtensionController::class, 'index'])->name('extensions.index');
+            Route::post('/calls/import-today', [TelephonyExtensionController::class, 'importToday'])->name('calls.import-today');
+            Route::post('/phone-numbers/{phoneNumber}/llamar', [TelephonyClickToCallController::class, 'phoneNumber'])->name('phone-numbers.call');
+            Route::post('/extensions/sync', [TelephonyExtensionController::class, 'syncExtensions'])->name('extensions.sync');
+            Route::get('/extensions/{phoneExtension}', [TelephonyExtensionController::class, 'show'])->name('extensions.show');
+            Route::patch('/extensions/{phoneExtension}/assign', [TelephonyExtensionController::class, 'assign'])->name('extensions.assign');
+        });
    Route::prefix('attendance')->group(function () {
         Route::get('logs', [AttendanceWebController::class, 'index'])->name('attendance.logs.index');
         Route::get('employees/{employee}', [AttendanceWebController::class, 'showEmployee'])->name('attendance.employees.show');
@@ -337,15 +355,15 @@ Route::middleware('auth','verified')->group(function () {
         });
 
     Route::prefix('inventario')->group(function () {
-    // ðŸ”¹ STOCK
-       // ðŸ”¹ STOCK
+    // STOCK
+    // STOCK
         Route::get('stock', [InventarioStockController::class, 'view'])->name('inventario.stock.index');
         
         Route::get('documentos/buscar-proveedor', [InventarioDocumentoController::class, 'buscarProveedor'])->name('inventario.documentos.buscar-proveedor');
         Route::get('documentos/buscar-producto',  [InventarioDocumentoController::class, 'buscarProducto'])->name('inventario.documentos.buscar-producto');
 
         Route::get('stock.json', [InventarioStockController::class, 'index'])->name('inventario.stock.index.json');
-        // ðŸ”¹ DOCUMENTOS (MOVIMIENTOS)
+        // DOCUMENTOS (MOVIMIENTOS)
         // Index con tabs (?tipo=entrada|salida|resguardo|devolucion|ajuste)
         Route::get('documentos', [InventarioDocumentoController::class, 'index'])->name('inventario.documentos.index');
         // Crear
@@ -360,7 +378,7 @@ Route::middleware('auth','verified')->group(function () {
         Route::put('documentos/{doc}', [InventarioDocumentoController::class, 'update'])->name('inventario.documentos.update');
         // Aplicar
         Route::post('documentos/{doc}/aplicar', [InventarioDocumentoController::class, 'aplicar'])->name('inventario.documentos.aplicar');
-        // Cancelar (crea documento cancelaciÃ³n)
+        // Cancelar (crea documento cancelacion)
         Route::post('documentos/{doc}/cancelar', [InventarioDocumentoController::class, 'cancelar'])->name('inventario.documentos.cancelar');
         
         Route::get('kardex', [InventarioKardexController::class, 'index'])->name('inventario.kardex.index');
@@ -489,10 +507,14 @@ Route::middleware('auth','verified')->group(function () {
 
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/agenda', [AgendaController::class, 'index'])
+        ->middleware('permission:agenda.access')
+        ->name('agenda.index');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('clientes/check-duplicate', [ClienteController::class, 'checkDuplicate'])->name('clientes.checkDuplicate');
+    Route::post('clientes/{cliente}/telefonia/llamar/{phoneNumber}', [TelephonyClickToCallController::class, 'cliente'])->name('clientes.telephony.call');
     Route::resource('clientes', ClienteController::class)->except(['show']);
     Route::get('obras/folio-siguiente', [ObraController::class, 'folioSiguiente'])->name('obras.folio-siguiente');
     Route::resource('obras', ObraController::class)->except(['show']);
@@ -562,6 +584,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::get('ordenes-compra/partidas-obra/{obra_id}', [OrdenCompraController::class, 'partidasPorObra'])->name('ordenes_compra.partidas_obra');
 
     Route::get('proveedores/buscar', [ProveedorController::class, 'buscar'])->name('proveedores.buscar');
+    Route::post('proveedores/{proveedor}/telefonia/llamar/{phoneNumber}', [TelephonyClickToCallController::class, 'proveedor'])->name('proveedores.telephony.call');
     
     Route::get('proveedores/{proveedor}/facturas/{cfdi}', [ProveedorController::class, 'showFactura'])->name('proveedores.facturas.show');
 
@@ -585,17 +608,16 @@ Route::middleware('auth','verified')->group(function () {
     Route::delete('productos/{producto}/proveedores/{proveedor}', [ProductoController::class, 'proveedoresDetach'])->name('productos.proveedores.detach');
 //mantenimiento y vehiculos
     Route::prefix('mantenimiento')->name('mantenimiento.')->group(function () {
-        // CatÃ¡logo de vehÃ­culos
+        // Catalogo de vehiculos
         Route::resource('vehiculos', VehiculoController::class)
             ->except(['destroy']);
-              // Asignar vehÃ­culo a empleado
+              // Asignar vehiculo a empleado
         Route::post('vehiculos/{vehiculo}/asignar', [VehiculoController::class, 'asignar'])
         ->name('vehiculos.asignar');
         
         // Route::post('vehiculos/{vehiculo}/seguro', [VehiculoController::class, 'guardarSeguro'])
         // ->name('vehiculos.seguro.store');
-
-        // Mantenimientos de vehÃ­culos
+        // Mantenimientos de vehiculos
         Route::resource('mantenimientos', MantenimientoController::class)
             ->except(['destroy']);
 
@@ -644,45 +666,35 @@ Route::middleware('auth','verified')->group(function () {
             // Lista de comisiones de una obra (TAB Comisiones)
             Route::get('comisiones', [ComisionController::class, 'index'])
                 ->name('comisiones.index');
-
-            // Formulario para crear nueva comisiÃ³n
+            // Formulario para crear nueva comision
             Route::get('comisiones/create', [ComisionController::class, 'create'])
                 ->name('comisiones.create');
-
-            // Guardar nueva comisiÃ³n
+            // Guardar nueva comision
             Route::post('comisiones', [ComisionController::class, 'store'])
                 ->name('comisiones.store');
-
-            // Ver detalle de una comisiÃ³n (y desde aquÃ­ imprimir)
+            // Ver detalle de una comision (y desde aqui imprimir)
             Route::get('comisiones/{comision}', [ComisionController::class, 'show'])
                 ->name('comisiones.show');
-
-            // Editar comisiÃ³n
+            // Editar comision
             Route::get('comisiones/{comision}/edit', [ComisionController::class, 'edit'])
                 ->name('comisiones.edit');
-
-            // Actualizar comisiÃ³n
+            // Actualizar comision
             Route::put('comisiones/{comision}', [ComisionController::class, 'update'])
                 ->name('comisiones.update');
-
-            // Eliminar comisiÃ³n
+            // Eliminar comision
             Route::delete('comisiones/{comision}', [ComisionController::class, 'destroy'])
                 ->name('comisiones.destroy');
-
-            // Vista para imprimir el formato (opcional, pero muy Ãºtil)
+            // Vista para imprimir el formato (opcional, pero muy util)
             Route::get('comisiones/{comision}/imprimir', [ComisionController::class, 'print'])
                 ->name('comisiones.print');
-
-                   // Asignar mÃ¡quina a la obra
+                   // Asignar maquina a la obra
             Route::post('maquinaria', [ObraMaquinaController::class, 'store'])
                 ->name('maquinaria.store');
-
-            // Dar de baja una mÃ¡quina de la obra
+            // Dar de baja una maquina de la obra
             Route::patch('maquinaria/{asignacion}/baja', [ObraMaquinaController::class, 'baja'])
                 ->name('maquinaria.baja');
         });
-    // Rutas para gestiÃ³n de empleados
-
+    // Rutas para gestion de empleados
      Route::resource('empleados', EmpleadoController::class)->except(['destroy']);
 
     // Ruta para dar de baja / alta (cambiar estatus)
@@ -793,4 +805,3 @@ Route::prefix('pagos-proveedores')
 });
 
 require __DIR__.'/auth.php';
-

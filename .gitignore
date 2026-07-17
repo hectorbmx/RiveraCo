@@ -1,4 +1,4 @@
-/.phpunit.cache
+﻿/.phpunit.cache
 /node_modules
 /public/build
 /public/hot
@@ -20,3 +20,7 @@ yarn-error.log
 /storage/logs/*
 /android
 /ios
+
+# Local code graph artifacts for Codex/graphify; not needed on production.
+/graphify-out/
+

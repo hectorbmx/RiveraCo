@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use App\Services\Empleados\EmpleadoKardexService;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -171,6 +172,8 @@ public function store(Request $request)
         Empleado::create($data);
     });
 
+    Artisan::call('telephony:index-phones');
+
     return redirect()->route('empleados.index')
         ->with('success', 'Empleado creado correctamente.');
 }
@@ -308,6 +311,8 @@ if ($tab === 'documentos') {
         $empleado->update($data);
     });
 
+    Artisan::call('telephony:index-phones');
+
     return redirect()->route('empleados.edit', $empleado->id_Empleado)
         ->with('success', 'Empleado actualizado correctamente.');
 }
@@ -324,6 +329,8 @@ if ($tab === 'documentos') {
     }
 
     $empleado->save();
+
+    Artisan::call('telephony:index-phones');
 
     return redirect()
         ->route('empleados.index')
@@ -375,7 +382,3 @@ if ($tab === 'documentos') {
         ]);
     }
 }
-
-
-
-

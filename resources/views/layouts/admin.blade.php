@@ -66,11 +66,19 @@
                     <span class="sidebar-text">Clientes</span>
                 </a>
                 @endif
+                @if($canMenu('agenda.access'))
+                <a href="{{ route('agenda.index') }}"
+                   class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('agenda.*') ? 'bg-white/10' : '' }}"
+                   title="Agenda">
+                    <span class="text-lg">TEL</span>
+                    <span class="sidebar-text">Agenda</span>
+                </a>
+                @endif
                 @if($canMenu('obras.access'))
                 <a href="{{ route('presupuesto.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('presupuesto.*') ? 'bg-white/10' : '' }}"
                    title="Presupuestos">
-                    <span class="text-lg">ðŸ“‹</span>
+                    <span class="text-lg">📋</span>
                     <span class="sidebar-text">Presupuestos</span>
                 </a>
 
@@ -128,6 +136,12 @@
                    title="Nómina">
                     <span class="text-lg">📄</span>
                     <span class="sidebar-text">Nómina</span>
+                </a>
+                <a href="{{ route('nomina.promedios.index') }}"
+                   class="flex items-center gap-3 px-10 py-2 text-xs font-medium hover:bg-white/10 {{ request()->routeIs('nomina.promedios.*') ? 'bg-white/10' : '' }}"
+                   title="Promedios de nomina">
+                    <span class="text-sm">·</span>
+                    <span class="sidebar-text">Promedios</span>
                 </a>
                 @endif
                @if($canMenu('sat.access'))
@@ -255,7 +269,7 @@
                 <a href="{{ route('pagos-proveedores.index') }}"
                 class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('pagos-proveedores.*') ? 'bg-white/10' : '' }}"
                 title="Pagos a proveedores">
-                    <span class="text-lg">ðŸ’³</span>
+                    <span class="text-lg">💳</span>
                     <span class="sidebar-text">Pagos a proveedores</span>
                 </a>
                 @if($canMenu('productos.access'))
@@ -299,6 +313,23 @@
                    title="Reportes">
                     <span class="text-lg">📑</span>
                     <span class="sidebar-text">Reportes</span>
+                </a>
+                @endif
+                @if($canMenu('empresa.access'))
+                <a href="{{ route('telephony.extensions.index') }}"
+                   class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('telephony.*') ? 'bg-white/10' : '' }}"
+                   title="Telefonia">
+                    <span class="text-lg">TEL</span>
+                    <span class="sidebar-text">Telefonia</span>
+                </a>
+                @endif
+
+                   @if($canMenu('agenda.access'))
+                <a href="{{ route('telephony.extensions.index') }}"
+                   class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('telephony.*') ? 'bg-white/10' : '' }}"
+                   title="Telefonia">
+                    <span class="text-lg">TEL</span>
+                    <span class="sidebar-text">Telefonia</span>
                 </a>
                 @endif
                 @if($canMenu('empresa.access'))
@@ -438,7 +469,7 @@
                 </div>
             </header>
 
-            {{-- CONTENIDO DE LA PÁGINA --}}
+            {{-- CONTENIDO DE LA PAGINA --}}
             <div class="p-6">
                 @yield('content')
             </div>

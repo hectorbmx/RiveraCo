@@ -3,11 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Proveedor;
+use App\Models\PhoneCall;
 use Illuminate\Http\Request;
 use App\Models\OrdenCompra;
 use App\Models\SatCfdi;
 use App\Models\Obra;
 use App\Models\SatCfdiPago;
+use App\Models\TelephonyPhoneNumber;
+use App\Rules\ValidMexicanPhone;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Validation\Rule;
 
 class ProveedorController extends Controller
@@ -52,7 +56,7 @@ class ProveedorController extends Controller
     {
         $data = $request->validate($this->rulesProveedor(), $this->messagesProveedor());
 
-        // ✅ Bloquear RFC + domicilio duplicado
+        // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Bloquear RFC + domicilio duplicado
         $rfc = $data['rfc'] ?? null;
         $dom = $data['domicilio'] ?? null;
 
@@ -71,6 +75,8 @@ class ProveedorController extends Controller
         $data['activo'] = (bool) ($data['activo'] ?? true);
 
         Proveedor::create($data);
+
+        Artisan::call('telephony:index-phones');
 
         return redirect()->route('proveedores.index')->with('success', 'Proveedor creado.');
     }
@@ -94,10 +100,10 @@ class ProveedorController extends Controller
             'codigo_postal' => ['nullable','string','max:10'],
             'regimen_fiscal' => ['nullable','string','max:10', Rule::in(array_keys(config('sat_catalogs.regimenes_fiscales', [])))],
             'uso_cfdi_default' => ['nullable','string','max:10', Rule::in(array_keys(config('sat_catalogs.usos_cfdi', [])))],
-            'telefono'   => ['nullable','string','max:30'],
+            'telefono'   => ['nullable','string','max:30', new ValidMexicanPhone()],
             'email'      => ['nullable','email','max:150'],
             'nombre_contacto' => ['nullable','string','max:150'],
-            'telefono_contacto' => ['nullable','string','max:30'],
+            'telefono_contacto' => ['nullable','string','max:30', new ValidMexicanPhone()],
             'banco'      => ['nullable','string','max:100'],
             'clabe'      => ['nullable','regex:/^[0-9]{18}$/'],
             'cuenta'     => ['nullable','string','max:50'],
@@ -119,7 +125,7 @@ class ProveedorController extends Controller
 {
     $tab = $request->get('tab', 'general');
 
-    // Cargas por tab (evita cargar de más)
+    // Cargas por tab (evita cargar de mÃƒÆ’Ã‚Â¡s)
     if ($tab === 'productos') {
         $proveedor->load(['productos' => function ($q) {
             $q->orderBy('productos.nombre');
@@ -128,6 +134,9 @@ class ProveedorController extends Controller
 
     $ordenes = null;
     $facturas = null;
+    $llamadasSeguimiento = null;
+    $telefonosSeguimiento = collect();
+    $extensionTelefoniaActual = null;
 
     if ($tab === 'ordenes') {
         $q = OrdenCompra::query()
@@ -172,11 +181,41 @@ class ProveedorController extends Controller
         $facturas = $q->paginate(15)->withQueryString();
     }
 
+    if ($tab === 'seguimiento') {
+        $llamadasSeguimiento = PhoneCall::query()
+            ->with(['extension', 'user'])
+            ->where('phoneable_type', Proveedor::class)
+            ->where('phoneable_id', $proveedor->id)
+            ->orderByDesc('started_at')
+            ->orderByDesc('id')
+            ->paginate(15, ['*'], 'llamadas_page')
+            ->withQueryString();
+    }
+
+    $telefonosSeguimiento = TelephonyPhoneNumber::query()
+        ->where('phoneable_type', Proveedor::class)
+        ->where('phoneable_id', $proveedor->id)
+        ->where('is_active', true)
+        ->orderByDesc('is_primary')
+        ->orderBy('label')
+        ->get();
+
+    $extensionTelefoniaActual = $request->user()?->phoneExtensions()
+        ->where(function ($query) {
+            $query->whereNull('out_of_service')
+                ->orWhere('out_of_service', false);
+        })
+        ->orderBy('extension')
+        ->first();
+
     return view('proveedores.show', compact(
         'proveedor',
         'tab',
         'ordenes',
-        'facturas'
+        'facturas',
+        'llamadasSeguimiento',
+        'telefonosSeguimiento',
+        'extensionTelefoniaActual'
     ));
 }
     public function edit(Proveedor $proveedor)
@@ -191,7 +230,7 @@ class ProveedorController extends Controller
     {
         $data = $request->validate($this->rulesProveedor(), $this->messagesProveedor());
 
-        // ✅ Bloquear RFC + domicilio duplicado (ignorando el mismo registro)
+        // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Bloquear RFC + domicilio duplicado (ignorando el mismo registro)
         $rfc = $data['rfc'] ?? null;
         $dom = $data['domicilio'] ?? null;
 
@@ -211,6 +250,8 @@ class ProveedorController extends Controller
         $data['activo'] = (bool) ($data['activo'] ?? false);
 
         $proveedor->update($data);
+
+        Artisan::call('telephony:index-phones');
 
         return redirect()->route('proveedores.show', $proveedor)->with('success', 'Proveedor actualizado.');
     }

@@ -10,6 +10,8 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use App\Models\UsuarioApp;
 use App\Models\Empleado;
+use App\Models\PhoneExtension;
+use App\Models\PhoneCall;
 
 class User extends Authenticatable
 {
@@ -61,5 +63,14 @@ class User extends Authenticatable
                 'id',            // PK local en users
                 'empleado_id'    // FK en usuarios_app que apunta a empleados.id_Empleado
             );
+        }
+        public function phoneExtensions()
+        {
+            return $this->hasMany(PhoneExtension::class);
+        }
+
+        public function phoneCalls()
+        {
+            return $this->hasMany(PhoneCall::class);
         }
 }

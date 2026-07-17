@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
+use App\Models\PhoneCall;
+use App\Models\TelephonyPhoneNumber;
+use App\Rules\ValidMexicanPhone;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Http\Request;
 
 class ClienteController extends Controller
@@ -68,7 +72,7 @@ class ClienteController extends Controller
         'nombre_comercial' => ['required', 'string', 'max:255'],
         'razon_social'     => ['nullable', 'string', 'max:255'],
         'rfc'              => ['nullable', 'string', 'max:13', 'unique:clientes,rfc'],
-        'telefono'         => ['nullable', 'string', 'max:20'],
+        'telefono'         => ['nullable', 'string', 'max:20', new ValidMexicanPhone()],
         'email'            => ['nullable', 'email', 'max:255'],
 
         'direccion'        => ['nullable', 'string', 'max:255'],
@@ -90,6 +94,8 @@ class ClienteController extends Controller
 
     Cliente::create($data);
 
+    Artisan::call('telephony:index-phones');
+
     return redirect()->route('clientes.index')
         ->with('success', 'Cliente creado correctamente.');
 }
@@ -108,6 +114,9 @@ class ClienteController extends Controller
     $contactos = null;
     $documentos = null;
     $notas = null;
+    $llamadasSeguimiento = null;
+    $telefonosSeguimiento = collect();
+    $extensionTelefoniaActual = null;
 
     if ($tab === 'obras') {
         $obras = $cliente->obras()
@@ -194,8 +203,35 @@ class ClienteController extends Controller
         // $notas = $cliente->notas()->with('autor')->latest()->paginate(10)->withQueryString();
     }
 
+
+    if ($tab === 'seguimiento') {
+        $llamadasSeguimiento = PhoneCall::query()
+            ->with(['extension', 'user'])
+            ->where('phoneable_type', Cliente::class)
+            ->where('phoneable_id', $cliente->id)
+            ->orderByDesc('started_at')
+            ->orderByDesc('id')
+            ->paginate(15, ['*'], 'llamadas_page')
+            ->withQueryString();
+
+        $telefonosSeguimiento = TelephonyPhoneNumber::query()
+            ->where('phoneable_type', Cliente::class)
+            ->where('phoneable_id', $cliente->id)
+            ->where('is_active', true)
+            ->orderByDesc('is_primary')
+            ->orderBy('label')
+            ->get();
+
+        $extensionTelefoniaActual = $request->user()?->phoneExtensions()
+            ->where(function ($query) {
+                $query->whereNull('out_of_service')
+                    ->orWhere('out_of_service', false);
+            })
+            ->orderBy('extension')
+            ->first();
+    }
     return view('clientes.edit', compact(
-        'cliente','tab','obras','facturas','pagos','contactos','documentos','notas'
+        'cliente','tab','obras','facturas','pagos','contactos','documentos','notas','llamadasSeguimiento','telefonosSeguimiento','extensionTelefoniaActual'
     ));
 }
 
@@ -205,7 +241,7 @@ class ClienteController extends Controller
         'nombre_comercial' => ['required', 'string', 'max:255'],
         'razon_social'     => ['nullable', 'string', 'max:255'],
         'rfc'              => ['nullable', 'string', 'max:13', 'unique:clientes,rfc,' . $cliente->id],
-        'telefono'         => ['nullable', 'string', 'max:20'],
+        'telefono'         => ['nullable', 'string', 'max:20', new ValidMexicanPhone()],
         'email'            => ['nullable', 'email', 'max:255'],
 
         'direccion'        => ['nullable', 'string', 'max:255'],
@@ -226,6 +262,8 @@ class ClienteController extends Controller
     $data['activo'] = $request->boolean('activo', true);
 
     $cliente->update($data);
+
+    Artisan::call('telephony:index-phones');
 
     return redirect()->route('clientes.index')
         ->with('success', 'Cliente actualizado correctamente.');

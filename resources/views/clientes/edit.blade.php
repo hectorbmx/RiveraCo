@@ -11,6 +11,7 @@
     'contactos' => 'Contactos',
     'docs'      => 'Documentos',
     'notas'     => 'Notas',
+    'seguimiento' => 'Seguimiento',
   ];
 
   $currentTab = $tab ?? request()->query('tab', 'general');
@@ -27,8 +28,8 @@
       </h1>
       <p class="text-sm text-slate-500">
         ID: {{ $cliente->id }}
-        @if($cliente->rfc) · RFC: {{ $cliente->rfc }} @endif
-        · Estatus:
+        @if($cliente->rfc) Â· RFC: {{ $cliente->rfc }} @endif
+        Â· Estatus:
         @if((int)$cliente->activo === 1)
           <span class="text-green-600 font-semibold">Activo</span>
         @else
@@ -44,7 +45,7 @@
       </a>
 
       <form action="{{ route('clientes.destroy', $cliente) }}" method="POST"
-            onsubmit="return confirm('¿Eliminar cliente? Esta acción no se puede deshacer.')">
+            onsubmit="return confirm('Â¿Eliminar cliente? Esta acciÃ³n no se puede deshacer.')">
         @csrf
         @method('DELETE')
         <button class="px-4 py-2 rounded bg-red-600 text-white hover:opacity-90">
@@ -58,6 +59,12 @@
   @if(session('success'))
     <div class="mb-4 p-3 rounded bg-green-50 text-green-700">
       {{ session('success') }}
+    </div>
+  @endif
+
+  @if(session('error'))
+    <div class="mb-4 p-3 rounded bg-red-50 text-red-700">
+      {{ session('error') }}
     </div>
   @endif
 
@@ -101,7 +108,7 @@
         @if(isset($obras) && $obras && $obras->count())
           <div class="flex items-center justify-between mb-3">
             <h2 class="text-lg font-semibold text-slate-800">Obras del cliente</h2>
-            {{-- Si ya tienes ruta para crear obra, la conectamos después --}}
+            {{-- Si ya tienes ruta para crear obra, la conectamos despuÃ©s --}}
             {{-- <a href="{{ route('obras.create', ['cliente_id' => $cliente->id]) }}" class="px-3 py-2 rounded bg-[#0B265A] text-white">+ Nueva obra</a> --}}
           </div>
 
@@ -126,7 +133,7 @@
                         </td>
                     <td class="px-4 py-3">
                       <span class="inline-flex px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-700">
-                        {{ $o->estatus ?? $o->status ?? '—' }}
+                        {{ $o->estatus ?? $o->status ?? 'â€”' }}
                       </span>
                     </td>
                     <td class="px-4 py-3 text-right">
@@ -146,7 +153,7 @@
         @else
           @include('clientes.partials.tab-placeholder', [
             'title' => 'Obras',
-            'msg'   => 'Este cliente aún no tiene obras registradas (o falta conectar la relación/listado).'
+            'msg'   => 'Este cliente aÃºn no tiene obras registradas (o falta conectar la relaciÃ³n/listado).'
           ])
         @endif
       <!-- TAB DE FACTURAS -->
@@ -158,7 +165,7 @@
     </h2>
     @if(!$cliente->rfc)
       <span class="text-xs text-amber-600 font-medium">
-        ⚠ El cliente no tiene RFC asignado — agrega el RFC en la pestaña General para ver facturas.
+        âš  El cliente no tiene RFC asignado â€” agrega el RFC en la pestaÃ±a General para ver facturas.
       </span>
     @endif
   </div>
@@ -216,7 +223,7 @@
                   </span>
                 </td>
                 <td class="px-4 py-3 text-slate-600">{{ $f['fecha'] }}</td>
-                <td class="px-4 py-3 font-medium">{{ $f['serie_folio'] ?: '—' }}</td>
+                <td class="px-4 py-3 font-medium">{{ $f['serie_folio'] ?: 'â€”' }}</td>
                 <td class="px-4 py-3 font-mono text-[11px] text-slate-500">
                   {{ Str::limit($f['uuid'], 28) }}
                 </td>
@@ -240,7 +247,7 @@
                   @elseif($f['estado'])
                     <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] bg-emerald-100 text-emerald-700">{{ ucfirst($f['estado']) }}</span>
                   @else
-                    <span class="text-slate-400 text-[11px]">—</span>
+                    <span class="text-slate-400 text-[11px]">â€”</span>
                   @endif
                 </td>
               </tr>
@@ -258,13 +265,13 @@
       @elseif($currentTab === 'pagos')
         @include('clientes.partials.tab-placeholder', [
           'title' => 'Pagos',
-          'msg'   => 'No tenemos captura de pagos todavía. Esta sección queda lista para cuando se implemente.'
+          'msg'   => 'No tenemos captura de pagos todavÃ­a. Esta secciÃ³n queda lista para cuando se implemente.'
         ])
 
       @elseif($currentTab === 'contactos')
         @include('clientes.partials.tab-placeholder', [
           'title' => 'Contactos',
-          'msg'   => 'Pendiente: catálogo de contactos del cliente.'
+          'msg'   => 'Pendiente: catÃ¡logo de contactos del cliente.'
         ])
 
       @elseif($currentTab === 'docs')
@@ -273,15 +280,104 @@
           'msg'   => 'Pendiente: documentos (RFC/contratos/anexos) del cliente.'
         ])
 
+
+      @elseif($currentTab === 'seguimiento')
+        <div class="flex flex-col gap-4 mb-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-800">Llamadas relacionadas</h2>
+            <p class="text-sm text-slate-500">Historial identificado por los telefonos registrados del cliente.</p>
+            @if(isset($extensionTelefoniaActual) && $extensionTelefoniaActual)
+              <p class="mt-1 text-xs text-slate-500">Tu extension para llamar: <span class="font-semibold text-slate-700">{{ $extensionTelefoniaActual->extension }}</span></p>
+            @else
+              <p class="mt-1 text-xs text-amber-700">Tu usuario no tiene extension asignada para click-to-call.</p>
+            @endif
+          </div>
+
+          <div class="w-full lg:w-auto">
+            @if(isset($telefonosSeguimiento) && $telefonosSeguimiento->count())
+              <div class="flex flex-wrap gap-2 lg:justify-end">
+                @foreach($telefonosSeguimiento as $telefonoSeguimiento)
+                  <form method="POST" action="{{ route('clientes.telephony.call', ['cliente' => $cliente, 'phoneNumber' => $telefonoSeguimiento]) }}" onsubmit="return confirm('Se llamara desde tu extension al numero {{ $telefonoSeguimiento->raw_number }}. Deseas continuar?')">
+                    @csrf
+                    <button type="submit" class="inline-flex items-center gap-2 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60" {{ isset($extensionTelefoniaActual) && $extensionTelefoniaActual ? '' : 'disabled' }}>
+                      <span aria-hidden="true">&#9742;</span>
+                      Llamar {{ $telefonoSeguimiento->raw_number }}
+                    </button>
+                  </form>
+                @endforeach
+              </div>
+            @else
+              <div class="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                No hay telefonos indexados para llamar. Ejecuta el indexador de telefonos si acabas de capturar el numero.
+              </div>
+            @endif
+          </div>
+        </div>
+
+        @if(isset($llamadasSeguimiento) && $llamadasSeguimiento && $llamadasSeguimiento->count())
+          <div class="overflow-x-auto rounded-xl border border-slate-200">
+            <table class="min-w-full text-sm">
+              <thead class="bg-slate-50 text-slate-600 text-xs font-semibold uppercase tracking-wide">
+                <tr>
+                  <th class="text-left px-4 py-3">Fecha</th>
+                  <th class="text-left px-4 py-3">Empleado</th>
+                  <th class="text-left px-4 py-3">Extension</th>
+                  <th class="text-left px-4 py-3">Numero</th>
+                  <th class="text-left px-4 py-3">Direccion</th>
+                  <th class="text-left px-4 py-3">Estado</th>
+                  <th class="text-right px-4 py-3">Duracion</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @foreach($llamadasSeguimiento as $llamada)
+                  <tr class="hover:bg-slate-50">
+                    <td class="px-4 py-3 text-slate-700">
+                      {{ optional($llamada->started_at)->format('Y-m-d H:i') ?: '-' }}
+                    </td>
+                    <td class="px-4 py-3 text-slate-700">
+                      {{ $llamada->user_name_snapshot ?: optional($llamada->user)->name ?: '-' }}
+                    </td>
+                    <td class="px-4 py-3 text-slate-700">
+                      {{ $llamada->extension_snapshot ?: optional($llamada->extension)->extension ?: '-' }}
+                      @if($llamada->extension_name_snapshot)
+                        <div class="text-xs text-slate-400">{{ $llamada->extension_name_snapshot }}</div>
+                      @endif
+                    </td>
+                    <td class="px-4 py-3 font-mono text-xs text-slate-700">
+                      {{ $llamada->matched_number ?: $llamada->destination_number ?: $llamada->source_number ?: '-' }}
+                    </td>
+                    <td class="px-4 py-3 text-slate-700">{{ $llamada->direction ?: '-' }}</td>
+                    <td class="px-4 py-3">
+                      <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {{ $llamada->status === 'answered' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }}">
+                        {{ $llamada->status ?: '-' }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 text-right text-slate-700">
+                      {{ gmdate('H:i:s', (int) $llamada->duration_seconds) }}
+                    </td>
+                  </tr>
+                @endforeach
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mt-4">
+            {{ $llamadasSeguimiento->links() }}
+          </div>
+        @else
+          <div class="p-4 bg-slate-50 border rounded-lg text-slate-600 text-sm">
+            No hay llamadas relacionadas todavia. Importa CDR y valida que el telefono del cliente este normalizado en SIRICO.
+          </div>
+        @endif
       @elseif($currentTab === 'notas')
         @include('clientes.partials.tab-placeholder', [
           'title' => 'Notas',
-          'msg'   => 'Pendiente: bitácora/notas internas del cliente.'
+          'msg'   => 'Pendiente: bitÃ¡cora/notas internas del cliente.'
         ])
 
       @else
         @include('clientes.partials.tab-placeholder', [
-          'title' => 'Sección',
+          'title' => 'SecciÃ³n',
           'msg'   => 'Tab no reconocido.'
         ])
       @endif
