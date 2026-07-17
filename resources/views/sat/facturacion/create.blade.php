@@ -1138,14 +1138,14 @@ function facturaForm() {
         descuento: Number(@json(old('descuento', $prefill['descuento'] ?? 0))) || 0,
         retenciones: Number(@json(old('retenciones', $prefill['retenciones'] ?? 0))) || 0,
         tipoIva: @json(old('tipo_iva', $prefill['tipo_iva'] ?? '0.16')),
-        usarRelacion: @json((bool) old('usar_relacion', ['usar_relacion'] ?? false)),
+        usarRelacion: @json((bool) old('usar_relacion', !empty($prefill['relacion_uuids'] ?? ''))),
         openRelacion: false,
         relacionSearch: '',
         relacionLoading: false,
         relacionResults: [],
         selectedRelacionadas: [],
         relacionablesUrl: @json(route('sat.facturacion.relacionables')),
-        oldRelacionUuids: @json(old('relacion_uuids', ['relacion_uuids'] ?? '')),
+        oldRelacionUuids: @json(old('relacion_uuids', $prefill['relacion_uuids'] ?? '')),
 
         openEditDesc: false,
         descToEditIndex: null,
@@ -1188,6 +1188,10 @@ function facturaForm() {
                     source_label: 'Seleccionada',
                     total: 0,
                 }));
+
+            if (this.selectedRelacionadas.length > 0) {
+                this.usarRelacion = true;
+            }
         },
 
         clientesFiltrados() {
