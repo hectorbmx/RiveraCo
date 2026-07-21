@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\SatFactura;
 use App\Models\SatFacturaPago;
+use App\Mail\SatFacturaMail;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class SatFacturaPagoController extends Controller
@@ -202,6 +204,55 @@ public function pdf(SatFacturaPago $pago)
     );
 }
 
+public function enviar(Request $request, SatFacturaPago $pago)
+{
+    $pago->loadMissing('factura.cliente');
+    $factura = $pago->factura;
+
+    $data = $request->validate([
+        'email_destino' => ['nullable', 'email', 'max:255'],
+        'email_adicional' => ['nullable', 'email', 'max:255'],
+    ]);
+
+    if (!$factura) {
+        return back()->with('error', 'El complemento no tiene factura relacionada.');
+    }
+
+    if (!$pago->xml_path && !$pago->pdf_path) {
+        return back()->with('error', 'El complemento no tiene XML o PDF para enviar.');
+    }
+
+    $email = $data['email_destino']
+        ?? $factura->email_destino
+        ?? $factura->cliente?->email;
+
+    if (!$email) {
+        return back()->with('error', 'La factura no tiene correo destino.');
+    }
+
+    $destinatarios = collect([
+        $email,
+        $data['email_adicional'] ?? null,
+    ])
+        ->filter()
+        ->unique()
+        ->values()
+        ->all();
+
+    try {
+        Mail::mailer(config('services.facturacion_mail.mailer', config('mail.default')))
+            ->to($destinatarios)
+            ->send(new SatFacturaMail($factura, $pago));
+
+        $factura->update([
+            'email_destino' => $email,
+        ]);
+
+        return back()->with('success', 'Complemento de pago enviado correctamente.');
+    } catch (\Throwable $e) {
+        return back()->with('error', 'Error al enviar complemento de pago: ' . $e->getMessage());
+    }
+}
 public function cancelar(Request $request, SatFacturaPago $pago)
 {
     $data = $request->validate([

@@ -4232,6 +4232,11 @@ function relacionFacturasModal() {
                                                 : 'bg-amber-100 text-amber-800') }}">
                                         {{ \App\Models\ObraFacturaBorrador::estatusLabels()[$borrador->estatus] ?? ucfirst($borrador->estatus) }}
                                     </span>
+                                    @if($borrador->estatus === 'rechazado' && $borrador->observaciones_revision)
+                                        <div class="mt-1 max-w-48 rounded-lg border border-red-100 bg-red-50 px-2 py-1 text-[11px] font-medium text-red-700" title="{{ $borrador->observaciones_revision }}">
+                                            {{ \Illuminate\Support\Str::limit($borrador->observaciones_revision, 90) }}
+                                        </div>
+                                    @endif
                                     @can('obra_factura_borradores.print.access')
                                         <a href="{{ route('obras.factura-borradores.print', [$obra, $borrador]) }}"
                                            target="_blank"
@@ -4244,8 +4249,51 @@ function relacionFacturasModal() {
                             <td class="px-3 py-2">{{ $borrador->creador?->name ?: '-' }}</td>
                             <td class="px-3 py-2 text-center">
                                 <div class="flex flex-wrap items-center justify-center gap-2">
+                                    @php
+                                        $borradorEditable = in_array($borrador->estatus, ['pendiente_revision', 'rechazado'], true);
+                                        $borradorPendiente = $borrador->estatus === 'pendiente_revision';
+                                        $borradorPayload = [
+                                            'id' => $borrador->id,
+                                            'action' => route('obras.factura-borradores.update', [$obra, $borrador]),
+                                            'fecha' => optional($borrador->fecha)->format('Y-m-d'),
+                                            'forma_pago' => $borrador->forma_pago,
+                                            'metodo_pago' => $borrador->metodo_pago,
+                                            'uso_cfdi' => $borrador->uso_cfdi,
+                                            'sat_concepto_id' => $borrador->sat_concepto_id,
+                                            'concepto_descripcion' => $borrador->concepto_descripcion,
+                                            'cantidad' => (float) $borrador->cantidad,
+                                            'subtotal' => (float) $borrador->subtotal,
+                                            'iva_tasa' => (float) $borrador->iva_tasa,
+                                            'iva' => (float) $borrador->iva,
+                                            'retencion_tipo' => $borrador->retencion_tipo ?: 'sin_retencion',
+                                            'retenciones' => (float) $borrador->retenciones,
+                                            'descuentos' => (float) $borrador->descuentos,
+                                        ];
+                                    @endphp
+
+                                    @can('obra_factura_borradores.edit.access')
+                                        @if($borradorEditable)
+                                            <button type="button"
+                                                    @click="openEditarBorradorModal(@js($borradorPayload))"
+                                                    class="text-[11px] font-semibold rounded-lg bg-indigo-50 px-2.5 py-1 text-indigo-700 border border-indigo-200 hover:bg-indigo-100">
+                                                Editar
+                                            </button>
+
+                                            <form method="POST"
+                                                  action="{{ route('obras.factura-borradores.destroy', [$obra, $borrador]) }}"
+                                                  onsubmit="return confirm('Eliminar este borrador de factura?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        class="text-[11px] font-semibold rounded-lg bg-slate-50 px-2.5 py-1 text-slate-600 border border-slate-200 hover:bg-slate-100">
+                                                    Eliminar
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @endcan
+
                                     @can('obra_factura_borradores.authorize.access')
-                                        @if(!in_array($borrador->estatus, ['facturado', 'cancelado'], true))
+                                        @if($borradorPendiente)
                                             <form method="POST"
                                                   action="{{ route('obras.factura-borradores.autorizar', [$obra, $borrador]) }}"
                                                   onsubmit="return confirm('Autorizar este borrador de factura?');">
@@ -4259,7 +4307,7 @@ function relacionFacturasModal() {
                                     @endcan
 
                                     @can('obra_factura_borradores.reject.access')
-                                        @if(!in_array($borrador->estatus, ['facturado', 'cancelado'], true))
+                                        @if($borradorPendiente)
                                             <form method="POST"
                                                   action="{{ route('obras.factura-borradores.rechazar', [$obra, $borrador]) }}"
                                                   onsubmit="const obs = prompt('Motivo del rechazo (opcional):'); if (obs === null) return false; this.querySelector('[name=observaciones_revision]').value = obs; return true;">
@@ -4273,11 +4321,6 @@ function relacionFacturasModal() {
                                         @endif
                                     @endcan
 
-                                    @if($borrador->observaciones_revision)
-                                        <span class="text-[11px] text-slate-500" title="{{ $borrador->observaciones_revision }}">
-                                            Con observacion
-                                        </span>
-                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -4422,7 +4465,7 @@ function relacionFacturasModal() {
     <div class="bg-white w-full max-w-4xl rounded-xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
         <div class="flex items-start justify-between gap-4 mb-4">
             <div>
-                <h3 class="text-lg font-semibold">Crear borrador de factura</h3>
+                <h3 class="text-lg font-semibold" x-text="borradorModalTitle"></h3>
                 <p class="text-sm text-slate-500">
                     {{ $obra->cliente?->razon_social ?: $obra->cliente?->nombre_comercial ?: 'Cliente sin nombre' }}
                 </p>
@@ -4430,8 +4473,11 @@ function relacionFacturasModal() {
             <button type="button" @click="closeBorradorModal()" class="text-slate-400 hover:text-slate-600">x</button>
         </div>
 
-        <form method="POST" action="{{ route('obras.factura-borradores.store', $obra) }}" class="space-y-4">
+        <form method="POST" action="{{ route('obras.factura-borradores.store', $obra) }}" x-bind:action="borradorAction" class="space-y-4">
             @csrf
+            <template x-if="borradorEditando">
+                <input type="hidden" name="_method" value="PUT">
+            </template>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -4595,7 +4641,7 @@ function relacionFacturasModal() {
                     Cancelar
                 </button>
                 <button type="submit" class="bg-[#0B265A] text-white px-4 py-2 rounded">
-                    Guardar borrador
+                    <span x-text="borradorSubmitLabel"></span>
                 </button>
             </div>
         </form>
@@ -4965,6 +5011,10 @@ function relacionFacturasModal() {
                 open: false,
                 openPago: false,
                 openBorrador: false,
+                borradorEditando: false,
+                borradorAction: @js(route('obras.factura-borradores.store', $obra)),
+                borradorModalTitle: 'Crear borrador de factura',
+                borradorSubmitLabel: 'Guardar borrador',
                 cfdis: cfdisDisponibles || [],
                 conceptosSat: conceptosSat || [],
                 filteredCfdis: [],
@@ -5042,8 +5092,8 @@ function relacionFacturasModal() {
                     this.pagoFactura = null;
                 },
 
-                openBorradorModal() {
-                    this.borradorForm = {
+                borradorDefaults() {
+                    return {
                         fecha: new Date().toISOString().slice(0, 10),
                         forma_pago: '03',
                         metodo_pago: 'PUE',
@@ -5058,11 +5108,48 @@ function relacionFacturasModal() {
                         retenciones: 0,
                         descuentos: 0,
                     };
+                },
+
+                openBorradorModal() {
+                    this.borradorEditando = false;
+                    this.borradorAction = @js(route('obras.factura-borradores.store', $obra));
+                    this.borradorModalTitle = 'Crear borrador de factura';
+                    this.borradorSubmitLabel = 'Guardar borrador';
+                    this.borradorForm = this.borradorDefaults();
+                    this.openBorrador = true;
+                },
+
+                openEditarBorradorModal(borrador) {
+                    this.borradorEditando = true;
+                    this.borradorAction = borrador.action;
+                    this.borradorModalTitle = 'Editar borrador de factura';
+                    this.borradorSubmitLabel = 'Guardar ajustes';
+                    this.borradorForm = {
+                        ...this.borradorDefaults(),
+                        fecha: borrador.fecha || new Date().toISOString().slice(0, 10),
+                        forma_pago: borrador.forma_pago || '03',
+                        metodo_pago: borrador.metodo_pago || 'PUE',
+                        uso_cfdi: borrador.uso_cfdi || @js($obra->cliente?->uso_cfdi_default ?: 'G03'),
+                        sat_concepto_id: String(borrador.sat_concepto_id || ''),
+                        concepto_descripcion: borrador.concepto_descripcion || '',
+                        cantidad: Number(borrador.cantidad || 1),
+                        subtotal: Number(borrador.subtotal || 0),
+                        iva_tasa: Number(borrador.iva_tasa ?? 0.16),
+                        iva: Number(borrador.iva || 0),
+                        retencion_tipo: borrador.retencion_tipo || 'sin_retencion',
+                        retenciones: Number(borrador.retenciones || 0),
+                        descuentos: Number(borrador.descuentos || 0),
+                    };
+                    this.recalcularBorradorIva();
                     this.openBorrador = true;
                 },
 
                 closeBorradorModal() {
                     this.openBorrador = false;
+                    this.borradorEditando = false;
+                    this.borradorAction = @js(route('obras.factura-borradores.store', $obra));
+                    this.borradorModalTitle = 'Crear borrador de factura';
+                    this.borradorSubmitLabel = 'Guardar borrador';
                 },
 
                 selectBorradorConcepto() {

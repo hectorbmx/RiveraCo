@@ -1771,19 +1771,72 @@ public function updateFacturaBorrador(Request $request, Obra $obra, ObraFacturaB
 {
     abort_unless(auth()->user()?->can('obra_factura_borradores.edit.access'), 403);
     $this->validarBorradorPerteneceAObra($obra, $borrador);
-    $this->abortarSiBorradorCerrado($borrador);
+    $this->abortarSiBorradorNoEditable($borrador);
+
+    $formasPago = array_keys(config('sat_catalogs.formas_pago', []));
+    $metodosPago = array_keys(config('sat_catalogs.metodos_pago', []));
+    $usosCfdi = array_keys(config('sat_catalogs.usos_cfdi', []));
 
     $data = $request->validate([
+        'fecha' => ['required', 'date'],
+        'forma_pago' => ['nullable', 'string', 'in:' . implode(',', $formasPago)],
+        'metodo_pago' => ['required', 'string', 'in:' . implode(',', $metodosPago)],
+        'uso_cfdi' => ['required', 'string', 'in:' . implode(',', $usosCfdi)],
+        'sat_concepto_id' => ['required', 'exists:sat_conceptos,id'],
         'concepto_descripcion' => ['required', 'string', 'max:1000'],
+        'cantidad' => ['required', 'numeric', 'min:0.000001'],
+        'subtotal' => ['required', 'numeric', 'min:0'],
+        'iva_tasa' => ['nullable', 'numeric', 'min:0', 'max:1'],
+        'retencion_tipo' => ['nullable', 'string', 'in:sin_retencion,iva,isr,iva_isr,otra'],
+        'retenciones' => ['nullable', 'numeric', 'min:0'],
+        'descuentos' => ['nullable', 'numeric', 'min:0'],
     ]);
+
+    $subtotal = round((float) $data['subtotal'], 2);
+    $ivaTasa = round((float) ($data['iva_tasa'] ?? 0.16), 6);
+    $iva = round($subtotal * $ivaTasa, 2);
+    $retencionTipo = $data['retencion_tipo'] ?? 'sin_retencion';
+    $retenciones = round((float) ($data['retenciones'] ?? 0), 2);
+    $descuentos = round((float) ($data['descuentos'] ?? 0), 2);
+    $total = round(max(0, $subtotal + $iva - $retenciones - $descuentos), 2);
 
     $borrador->update([
+        'fecha' => $data['fecha'],
+        'forma_pago' => $data['forma_pago'] ?? null,
+        'metodo_pago' => $data['metodo_pago'],
+        'uso_cfdi' => $data['uso_cfdi'],
+        'sat_concepto_id' => $data['sat_concepto_id'],
         'concepto_descripcion' => trim($data['concepto_descripcion']),
+        'cantidad' => $data['cantidad'],
+        'subtotal' => $subtotal,
+        'iva_tasa' => $ivaTasa,
+        'iva' => $iva,
+        'retencion_tipo' => $retencionTipo,
+        'retenciones' => $retenciones,
+        'descuentos' => $descuentos,
+        'total' => $total,
+        'estatus' => ObraFacturaBorrador::ESTATUS_PENDIENTE_REVISION,
+        'autorizado_por' => null,
+        'autorizado_at' => null,
+        'rechazado_por' => null,
+        'rechazado_at' => null,
+        'observaciones_revision' => null,
     ]);
 
+    return back()->with('success', 'Borrador actualizado y enviado nuevamente a revision.');
+}
+
+public function destroyFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrador)
+{
+    abort_unless(auth()->user()?->can('obra_factura_borradores.edit.access'), 403);
+    $this->validarBorradorPerteneceAObra($obra, $borrador);
+    $this->abortarSiBorradorNoEditable($borrador);
+
+    $borrador->delete();
+
     return redirect()
-        ->route('obras.factura-borradores.show', [$obra, $borrador])
-        ->with('success', 'Concepto modificado actualizado correctamente.');
+        ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'facturacion'])
+        ->with('success', 'Borrador eliminado correctamente.');
 }
 public function printFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrador)
 {
@@ -1809,7 +1862,7 @@ public function autorizarFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrad
 {
     abort_unless(auth()->user()?->can('obra_factura_borradores.authorize.access'), 403);
     $this->validarBorradorPerteneceAObra($obra, $borrador);
-    $this->abortarSiBorradorCerrado($borrador);
+    $this->abortarSiBorradorNoPendiente($borrador);
 
     $borrador->update([
         'estatus' => ObraFacturaBorrador::ESTATUS_AUTORIZADO,
@@ -1839,7 +1892,7 @@ public function rechazarFacturaBorrador(Request $request, Obra $obra, ObraFactur
 {
     abort_unless(auth()->user()?->can('obra_factura_borradores.reject.access'), 403);
     $this->validarBorradorPerteneceAObra($obra, $borrador);
-    $this->abortarSiBorradorCerrado($borrador);
+    $this->abortarSiBorradorNoPendiente($borrador);
 
     $data = $request->validate([
         'observaciones_revision' => ['nullable', 'string', 'max:1000'],
@@ -1869,13 +1922,20 @@ private function validarBorradorPerteneceAObra(Obra $obra, ObraFacturaBorrador $
     }
 }
 
-private function abortarSiBorradorCerrado(ObraFacturaBorrador $borrador): void
+private function abortarSiBorradorNoEditable(ObraFacturaBorrador $borrador): void
 {
-    if (in_array($borrador->estatus, [
-        ObraFacturaBorrador::ESTATUS_FACTURADO,
-        ObraFacturaBorrador::ESTATUS_CANCELADO,
+    if (!in_array($borrador->estatus, [
+        ObraFacturaBorrador::ESTATUS_PENDIENTE_REVISION,
+        ObraFacturaBorrador::ESTATUS_RECHAZADO,
     ], true)) {
-        abort(422, 'Este borrador ya no puede cambiar de estatus.');
+        abort(422, 'Solo se pueden editar o eliminar borradores pendientes o rechazados.');
+    }
+}
+
+private function abortarSiBorradorNoPendiente(ObraFacturaBorrador $borrador): void
+{
+    if ($borrador->estatus !== ObraFacturaBorrador::ESTATUS_PENDIENTE_REVISION) {
+        abort(422, 'Solo se pueden autorizar o rechazar borradores pendientes de revision.');
     }
 }
 

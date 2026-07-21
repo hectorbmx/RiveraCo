@@ -125,10 +125,21 @@
                 </div>
 
                 @can('obra_factura_borradores.edit.access')
-                    @unless(in_array($borrador->estatus, [\App\Models\ObraFacturaBorrador::ESTATUS_FACTURADO, \App\Models\ObraFacturaBorrador::ESTATUS_CANCELADO], true))
+                    @if(in_array($borrador->estatus, [\App\Models\ObraFacturaBorrador::ESTATUS_PENDIENTE_REVISION, \App\Models\ObraFacturaBorrador::ESTATUS_RECHAZADO], true))
                         <form method="POST" action="{{ route('obras.factura-borradores.update', [$obra, $borrador]) }}" class="px-6 py-5 border-b border-slate-100 bg-slate-50/70 space-y-3">
                             @csrf
                             @method('PUT')
+                            <input type="hidden" name="fecha" value="{{ old('fecha', optional($borrador->fecha)->format('Y-m-d')) }}">
+                            <input type="hidden" name="forma_pago" value="{{ old('forma_pago', $borrador->forma_pago) }}">
+                            <input type="hidden" name="metodo_pago" value="{{ old('metodo_pago', $borrador->metodo_pago) }}">
+                            <input type="hidden" name="uso_cfdi" value="{{ old('uso_cfdi', $borrador->uso_cfdi) }}">
+                            <input type="hidden" name="sat_concepto_id" value="{{ old('sat_concepto_id', $borrador->sat_concepto_id) }}">
+                            <input type="hidden" name="cantidad" value="{{ old('cantidad', $borrador->cantidad) }}">
+                            <input type="hidden" name="subtotal" value="{{ old('subtotal', $borrador->subtotal) }}">
+                            <input type="hidden" name="iva_tasa" value="{{ old('iva_tasa', $borrador->iva_tasa) }}">
+                            <input type="hidden" name="retencion_tipo" value="{{ old('retencion_tipo', $borrador->retencion_tipo ?: 'sin_retencion') }}">
+                            <input type="hidden" name="retenciones" value="{{ old('retenciones', $borrador->retenciones) }}">
+                            <input type="hidden" name="descuentos" value="{{ old('descuentos', $borrador->descuentos) }}">
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Concepto modificado</label>
                                 <textarea name="concepto_descripcion"
@@ -143,11 +154,11 @@
                             </div>
                             <div class="flex justify-end">
                                 <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
-                                    Guardar concepto
+                                    Guardar ajustes
                                 </button>
                             </div>
                         </form>
-                    @endunless
+                    @endif
                 @endcan
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-100 text-sm">
@@ -310,7 +321,7 @@
                         <p class="text-sm text-slate-500">El borrador ya fue autorizado y esta listo para facturacion.</p>
                     @endcan
                 @elseif($borrador->estatus === \App\Models\ObraFacturaBorrador::ESTATUS_RECHAZADO)
-                    <p class="text-sm text-slate-500">El borrador fue rechazado. El solicitante recibio una notificacion para revisarlo.</p>
+                    <p class="text-sm text-slate-500">El borrador fue rechazado. Editalo para enviarlo nuevamente a revision.</p>
                 @else
                     <p class="text-sm text-slate-500">No hay acciones pendientes para este borrador.</p>
                 @endif

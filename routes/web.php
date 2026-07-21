@@ -214,6 +214,7 @@ Route::middleware(['auth', 'verified'])
             Route::get('/pagos/{pago}', [SatFacturaPagoController::class, 'show'])->name('pagos.show');
             Route::get('/pagos/{pago}/xml', [SatFacturaPagoController::class, 'xml'])->name('pagos.xml');
             Route::get('/pagos/{pago}/pdf', [SatFacturaPagoController::class, 'pdf'])->name('pagos.pdf');
+            Route::post('/pagos/{pago}/enviar', [SatFacturaPagoController::class, 'enviar'])->name('pagos.enviar');
             Route::post('/pagos/{pago}/cancelar', [SatFacturaPagoController::class, 'cancelar'])->name('pagos.cancelar');
             
 
@@ -569,6 +570,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::post('/obras/{obra}/factura-borradores', [ObraController::class, 'storeFacturaBorrador'])->name('obras.factura-borradores.store');
     Route::get('/obras/{obra}/factura-borradores/{borrador}', [ObraController::class, 'showFacturaBorrador'])->name('obras.factura-borradores.show');
     Route::put('/obras/{obra}/factura-borradores/{borrador}', [ObraController::class, 'updateFacturaBorrador'])->name('obras.factura-borradores.update');
+    Route::delete('/obras/{obra}/factura-borradores/{borrador}', [ObraController::class, 'destroyFacturaBorrador'])->name('obras.factura-borradores.destroy');
     Route::get('/obras/{obra}/factura-borradores/{borrador}/imprimir', [ObraController::class, 'printFacturaBorrador'])->name('obras.factura-borradores.print');
     Route::post('/obras/{obra}/factura-borradores/{borrador}/autorizar', [ObraController::class, 'autorizarFacturaBorrador'])->name('obras.factura-borradores.autorizar');
     Route::post('/obras/{obra}/factura-borradores/{borrador}/rechazar', [ObraController::class, 'rechazarFacturaBorrador'])->name('obras.factura-borradores.rechazar');

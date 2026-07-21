@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Factura CFDI</title>
+    <title>{{ !empty($esComplemento) ? 'Complemento de pago CFDI' : 'Factura CFDI' }}</title>
 </head>
 <body style="margin:0; padding:0; background:#f1f5f9; font-family:Arial, Helvetica, sans-serif; color:#0f172a;">
 
@@ -12,7 +12,7 @@
 
             <div style="background:#0f172a; padding:24px 28px;">
                 <h1 style="margin:0; color:#ffffff; font-size:22px;">
-                    Factura CFDI
+                    {{ !empty($esComplemento) ? 'Complemento de pago CFDI' : 'Factura CFDI' }}
                 </h1>
                 <p style="margin:6px 0 0; color:#cbd5e1; font-size:14px;">
                     Rivera Construcciones
@@ -26,39 +26,76 @@
                 </p>
 
                 <p style="font-size:15px; line-height:1.6; margin:0 0 24px; color:#334155;">
-                    Adjuntamos los archivos XML y PDF correspondientes a su factura CFDI.
+                    Adjuntamos los archivos XML y PDF correspondientes a {{ !empty($esComplemento) ? 'su complemento de pago CFDI' : 'su factura CFDI' }}.
                 </p>
 
                 <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:18px; margin-bottom:24px;">
 
                     <table style="width:100%; border-collapse:collapse; font-size:14px;">
-                        <tr>
-                            <td style="padding:8px 0; color:#64748b;">Folio</td>
-                            <td style="padding:8px 0; text-align:right; font-weight:bold;">
-                                {{ $factura->serie }}-{{ $factura->folio }}
-                            </td>
-                        </tr>
+                        @if(!empty($esComplemento) && $pago)
+                            <tr>
+                                <td style="padding:8px 0; color:#64748b;">Factura relacionada</td>
+                                <td style="padding:8px 0; text-align:right; font-weight:bold;">
+                                    {{ $factura->serie }}-{{ $factura->folio }}
+                                </td>
+                            </tr>
 
-                        <tr>
-                            <td style="padding:8px 0; color:#64748b;">UUID</td>
-                            <td style="padding:8px 0; text-align:right; font-weight:bold; font-size:12px;">
-                                {{ $factura->uuid }}
-                            </td>
-                        </tr>
+                            <tr>
+                                <td style="padding:8px 0; color:#64748b;">UUID complemento</td>
+                                <td style="padding:8px 0; text-align:right; font-weight:bold; font-size:12px;">
+                                    {{ $pago->uuid }}
+                                </td>
+                            </tr>
 
-                        <tr>
-                            <td style="padding:8px 0; color:#64748b;">Total</td>
-                            <td style="padding:8px 0; text-align:right; font-weight:bold; color:#059669;">
-                                ${{ number_format($factura->total, 2) }}
-                            </td>
-                        </tr>
+                            <tr>
+                                <td style="padding:8px 0; color:#64748b;">Parcialidad</td>
+                                <td style="padding:8px 0; text-align:right; font-weight:bold;">
+                                    {{ $pago->numero_parcialidad }}
+                                </td>
+                            </tr>
 
-                        <tr>
-                            <td style="padding:8px 0; color:#64748b;">Fecha</td>
-                            <td style="padding:8px 0; text-align:right; font-weight:bold;">
-                                {{ $factura->fecha_emision?->format('d/m/Y H:i') }}
-                            </td>
-                        </tr>
+                            <tr>
+                                <td style="padding:8px 0; color:#64748b;">Monto pagado</td>
+                                <td style="padding:8px 0; text-align:right; font-weight:bold; color:#059669;">
+                                    ${{ number_format($pago->monto, 2) }}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px 0; color:#64748b;">Fecha de pago</td>
+                                <td style="padding:8px 0; text-align:right; font-weight:bold;">
+                                    {{ $pago->fecha_pago?->format('d/m/Y H:i') }}
+                                </td>
+                            </tr>
+                        @else
+                            <tr>
+                                <td style="padding:8px 0; color:#64748b;">Folio</td>
+                                <td style="padding:8px 0; text-align:right; font-weight:bold;">
+                                    {{ $factura->serie }}-{{ $factura->folio }}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px 0; color:#64748b;">UUID</td>
+                                <td style="padding:8px 0; text-align:right; font-weight:bold; font-size:12px;">
+                                    {{ $factura->uuid }}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px 0; color:#64748b;">Total</td>
+                                <td style="padding:8px 0; text-align:right; font-weight:bold; color:#059669;">
+                                    ${{ number_format($factura->total, 2) }}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px 0; color:#64748b;">Fecha</td>
+                                <td style="padding:8px 0; text-align:right; font-weight:bold;">
+                                    {{ $factura->fecha_emision?->format('d/m/Y H:i') }}
+                                </td>
+                            </tr>
+                        @endif
                     </table>
 
                 </div>
@@ -74,7 +111,7 @@
             </div>
 
             <div style="background:#f8fafc; border-top:1px solid #e2e8f0; padding:18px 28px; font-size:12px; color:#64748b;">
-                Este correo fue generado automáticamente desde el sistema SIRICO.
+                Este correo fue generado automaticamente desde el sistema SIRICO.
             </div>
 
         </div>

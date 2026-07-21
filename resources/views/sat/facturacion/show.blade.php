@@ -182,7 +182,7 @@
                     @endif
 
                     <button type="button"
-                            @click="envioOpen = true"
+                            @click="abrirEnvio(@js(route('sat.facturacion.enviar', $factura)), 'Enviar factura', 'XML y PDF se enviaran adjuntos.', 'Enviar factura')"
                             class="group relative w-full flex items-center justify-center gap-3 rounded-xl border border-indigo-200 bg-white px-4 py-3 text-sm font-bold text-indigo-700
                                 transition-all duration-300 ease-out
                                 hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-[0_10px_20px_-10px_rgba(79,70,229,0.4)]
@@ -370,16 +370,37 @@
 
                                     @if($pago->xml_path)
                                         <a href="{{ route('sat.facturacion.pagos.xml', $pago) }}"
-                                           class="text-xs font-medium text-slate-600 hover:text-slate-900">
-                                            XML
+                                           title="Descargar XML"
+                                           aria-label="Descargar XML del complemento"
+                                           class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600 transition hover:border-blue-200 hover:bg-blue-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                            </svg>
                                         </a>
                                     @endif
 
                                     @if($pago->pdf_path)
                                         <a href="{{ route('sat.facturacion.pagos.pdf', $pago) }}"
-                                           class="text-xs font-medium text-slate-600 hover:text-slate-900">
-                                            PDF
+                                           title="Descargar PDF"
+                                           aria-label="Descargar PDF del complemento"
+                                           class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-600 transition hover:border-red-200 hover:bg-red-100 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500/20">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 9h1.5m1.5 0H13m-4 4h1.5m1.5 0H13m-4 4h1.5m1.5 0H13" />
+                                            </svg>
                                         </a>
+                                    @endif
+
+                                    @if($pago->xml_path || $pago->pdf_path)
+                                        <button type="button"
+                                                title="Enviar por correo"
+                                                aria-label="Enviar complemento de pago por correo"
+                                                @click="abrirEnvio(@js(route('sat.facturacion.pagos.enviar', $pago)), 'Enviar complemento de pago', 'XML y PDF del complemento se enviaran adjuntos.', 'Enviar complemento')"
+                                                class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 text-indigo-600 transition hover:border-indigo-200 hover:bg-indigo-100 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                            </svg>
+                                        </button>
                                     @endif
 
                                 </div>
@@ -564,14 +585,14 @@
              class="w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                 <div>
-                    <h2 class="text-lg font-semibold text-slate-900">Enviar factura</h2>
-                    <p class="text-sm text-slate-500">XML y PDF se enviaran adjuntos.</p>
+                    <h2 class="text-lg font-semibold text-slate-900" x-text="envioTitulo"></h2>
+                    <p class="text-sm text-slate-500" x-text="envioDescripcion"></p>
                 </div>
                 <button type="button" @click="envioOpen = false" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
             </div>
 
             <form method="POST"
-                  action="{{ route('sat.facturacion.enviar', $factura) }}"
+                  action="{{ route('sat.facturacion.enviar', $factura) }}" x-bind:action="envioAction"
                   @submit="loading = true; envioOpen = false"
                   class="p-6 space-y-5">
                 @csrf
@@ -605,8 +626,8 @@
                         Cerrar
                     </button>
                     <button type="submit"
-                            class="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-700 shadow-md">
-                        Enviar factura
+                            class="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-700 shadow-md"
+                            x-text="envioSubmitLabel">
                     </button>
                 </div>
             </form>
@@ -632,10 +653,21 @@
             cancelacionOpen: false,
             motivoCancelacion: '02',
             envioOpen: false,
+            envioAction: @json(route('sat.facturacion.enviar', $factura)),
+            envioTitulo: 'Enviar factura',
+            envioDescripcion: 'XML y PDF se enviaran adjuntos.',
+            envioSubmitLabel: 'Enviar factura',
             envioEmail: @json(old('email_destino', $factura->email_destino ?? $factura->cliente?->email ?? '')),
             envioEmailAdicional: @json(old('email_adicional', '')),
             loading: false,
             pagoOpen: false,
+            abrirEnvio(action, titulo, descripcion, submitLabel) {
+                this.envioAction = action;
+                this.envioTitulo = titulo;
+                this.envioDescripcion = descripcion;
+                this.envioSubmitLabel = submitLabel;
+                this.envioOpen = true;
+            },
         }
     }
 </script>
