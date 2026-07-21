@@ -104,7 +104,10 @@ class TelephonyExtensionController extends Controller
             ->orderBy('status')
             ->pluck('status');
 
+         $usesLocalTelephonyAgent = config('grandstream.mode') === 'agent';
+
         return view('telephony.index', compact(
+            'usesLocalTelephonyAgent',
             'tab',
             'extensions',
             'users',

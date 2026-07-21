@@ -6,32 +6,34 @@ use App\Exceptions\Telephony\GrandstreamApiException;
 use App\Http\Controllers\Controller;
 use App\Models\Cliente;
 use App\Models\Proveedor;
+use App\Models\TelephonyCallRequest;
 use App\Models\TelephonyPhoneNumber;
 use App\Services\Telephony\GrandstreamClient;
+use App\Services\Telephony\PhoneNumberNormalizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 
 class TelephonyClickToCallController extends Controller
 {
-    public function cliente(Request $request, Cliente $cliente, TelephonyPhoneNumber $phoneNumber, GrandstreamClient $client)
+    public function cliente(Request $request, Cliente $cliente, TelephonyPhoneNumber $phoneNumber, GrandstreamClient $client, PhoneNumberNormalizer $normalizer)
     {
-        return $this->dial($request, $cliente, $phoneNumber, $client);
+        return $this->dial($request, $cliente, $phoneNumber, $client, $normalizer);
     }
 
-    public function proveedor(Request $request, Proveedor $proveedor, TelephonyPhoneNumber $phoneNumber, GrandstreamClient $client)
+    public function proveedor(Request $request, Proveedor $proveedor, TelephonyPhoneNumber $phoneNumber, GrandstreamClient $client, PhoneNumberNormalizer $normalizer)
     {
-        return $this->dial($request, $proveedor, $phoneNumber, $client);
+        return $this->dial($request, $proveedor, $phoneNumber, $client, $normalizer);
     }
 
-    public function phoneNumber(Request $request, TelephonyPhoneNumber $phoneNumber, GrandstreamClient $client)
+    public function phoneNumber(Request $request, TelephonyPhoneNumber $phoneNumber, GrandstreamClient $client, PhoneNumberNormalizer $normalizer)
     {
         abort_unless($phoneNumber->is_active, 404);
 
-        return $this->dialPhoneNumber($request, $phoneNumber, $client);
+        return $this->dialPhoneNumber($request, $phoneNumber, $client, $normalizer);
     }
 
-    private function dial(Request $request, Model $phoneable, TelephonyPhoneNumber $phoneNumber, GrandstreamClient $client)
+    private function dial(Request $request, Model $phoneable, TelephonyPhoneNumber $phoneNumber, GrandstreamClient $client, PhoneNumberNormalizer $normalizer)
     {
         abort_unless(
             $phoneNumber->phoneable_type === $phoneable::class
@@ -40,10 +42,10 @@ class TelephonyClickToCallController extends Controller
             404
         );
 
-        return $this->dialPhoneNumber($request, $phoneNumber, $client);
+        return $this->dialPhoneNumber($request, $phoneNumber, $client, $normalizer);
     }
 
-    private function dialPhoneNumber(Request $request, TelephonyPhoneNumber $phoneNumber, GrandstreamClient $client)
+    private function dialPhoneNumber(Request $request, TelephonyPhoneNumber $phoneNumber, GrandstreamClient $client, PhoneNumberNormalizer $normalizer)
     {
         $extension = $request->user()?->phoneExtensions()
             ->where(function ($query) {
@@ -61,6 +63,39 @@ class TelephonyClickToCallController extends Controller
 
         if ($outbound === '') {
             return back()->with('error', 'El telefono seleccionado no tiene numero marcado disponible.');
+        }
+
+        if (config('grandstream.mode') === 'agent') {
+            $callRequest = TelephonyCallRequest::create([
+                'requested_by_user_id' => $request->user()?->id,
+                'phone_extension_id' => $extension->id,
+                'telephony_phone_number_id' => $phoneNumber->id,
+                'caller_extension' => $extension->extension,
+                'outbound_number' => $outbound,
+                'normalized_outbound_number' => $normalizer->normalize($outbound),
+                'phoneable_type' => $phoneNumber->phoneable_type,
+                'phoneable_id' => $phoneNumber->phoneable_id,
+                'phoneable_name' => $phoneNumber->display_name,
+                'status' => TelephonyCallRequest::STATUS_PENDING,
+                'source' => 'web',
+                'request_payload' => [
+                    'route' => $request->route()?->getName(),
+                    'server_mode' => config('grandstream.mode'),
+                    'phone_number' => [
+                        'id' => $phoneNumber->id,
+                        'label' => $phoneNumber->label,
+                        'raw_number' => $phoneNumber->raw_number,
+                        'normalized_number' => $phoneNumber->normalized_number,
+                    ],
+                    'extension' => [
+                        'id' => $extension->id,
+                        'extension' => $extension->extension,
+                        'fullname' => $extension->fullname,
+                    ],
+                ],
+            ]);
+
+            return back()->with('success', "Solicitud de llamada #{$callRequest->id} enviada al agente local: extension {$extension->extension} -> {$outbound}.");
         }
 
         try {

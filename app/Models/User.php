@@ -12,6 +12,7 @@ use App\Models\UsuarioApp;
 use App\Models\Empleado;
 use App\Models\PhoneExtension;
 use App\Models\PhoneCall;
+use App\Models\TelephonyCallRequest;
 
 class User extends Authenticatable
 {

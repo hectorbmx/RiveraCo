@@ -62,12 +62,18 @@
                         <h2 class="text-lg font-semibold text-slate-900">Extensiones</h2>
                         <p class="text-sm text-slate-500">{{ $extensions->count() }} extensiones sincronizadas desde UCM.</p>
                     </div>
-                    <form method="POST" action="{{ route('telephony.extensions.sync') }}">
-                        @csrf
-                        <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-700">
-                            Sincronizar extensiones
-                        </button>
-                    </form>
+                    @if ($usesLocalTelephonyAgent)
+                        <div class="max-w-md rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                            Las extensiones se sincronizan desde el agente local conectado al UCM.
+                        </div>
+                    @else
+                        <form method="POST" action="{{ route('telephony.extensions.sync') }}">
+                            @csrf
+                            <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-700">
+                                Sincronizar extensiones
+                            </button>
+                        </form>
+                    @endif
                 </div>
 
                 <div class="overflow-x-auto rounded-lg border border-slate-200">
