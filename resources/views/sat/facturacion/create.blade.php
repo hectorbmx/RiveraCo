@@ -543,7 +543,7 @@
             <td class="px-4 py-3 text-right">
                 <input type="number"
                        min="0"
-                       step="0.01"
+                       step="0.000001"
                        :name="`conceptos[${index}][precio_unitario]`"
                        x-model.number="item.precio_unitario"
                        class="w-28 rounded-lg border-slate-300 text-right">

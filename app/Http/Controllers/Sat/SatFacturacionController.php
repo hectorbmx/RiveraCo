@@ -49,8 +49,18 @@ class SatFacturacionController extends Controller
             ->latest()
             ->get();
 
+        $borradoresObra = ObraFacturaBorrador::with(['cliente', 'obra', 'conceptoSat'])
+            ->whereNull('sat_factura_id')
+            ->whereNotIn('estatus', [
+                ObraFacturaBorrador::ESTATUS_FACTURADO,
+                ObraFacturaBorrador::ESTATUS_CANCELADO,
+            ])
+            ->latest()
+            ->get();
+
         $items = $facturasTimbradas
             ->concat($borradoresCfdi)
+            ->concat($borradoresObra)
             ->sortByDesc(fn ($item) => $item->updated_at ?? $item->created_at)
             ->values();
 
@@ -70,7 +80,14 @@ class SatFacturacionController extends Controller
         $totalFacturado = SatFactura::where('estado', 'timbrada')->sum('total');
 
         $timbradas = SatFactura::where('estado', 'timbrada')->count();
-        $pendientes = SatFactura::where('estado', 'borrador')->count() + SatFacturaBorrador::where('estado', 'borrador')->count();
+        $pendientes = SatFactura::where('estado', 'borrador')->count()
+            + SatFacturaBorrador::where('estado', 'borrador')->count()
+            + ObraFacturaBorrador::whereNull('sat_factura_id')
+                ->whereNotIn('estatus', [
+                    ObraFacturaBorrador::ESTATUS_FACTURADO,
+                    ObraFacturaBorrador::ESTATUS_CANCELADO,
+                ])
+                ->count();
         $canceladas = SatFactura::where('estado', 'cancelada')->count();
 
         return view('sat.facturacion.index', compact(
@@ -170,7 +187,7 @@ class SatFacturacionController extends Controller
         }
 
         $cantidad = max((float) $borrador->cantidad, 0.000001);
-        $precioUnitario = round((float) $borrador->subtotal / $cantidad, 2);
+        $precioUnitario = round((float) $borrador->subtotal / $cantidad, 6);
         $ivaTasa = (float) $borrador->subtotal > 0
             ? round((float) $borrador->iva / (float) $borrador->subtotal, 2)
             : 0.16;

@@ -293,6 +293,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/', [UsuarioController::class, 'store'])->name('store');
         Route::get('/{usuario}/edit', [UsuarioController::class, 'edit'])->name('edit');
         Route::put('/{usuario}', [UsuarioController::class, 'update'])->name('update');
+        Route::put('/{usuario}/permisos', [UsuarioController::class, 'syncPermissions'])->name('permissions.sync');
 
     });
     //rutas nomina
@@ -566,6 +567,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::post('obras/{obra}/guardar-planeacion', [ObraController::class, 'guardarPlaneacion'])->name('obras.guardarPlaneacion');
 //relacionar facturas desde la vista de las obras
     Route::post('/obras/{obra}/relacionar-cfdis', [ObraController::class, 'relacionarCfdis'])->name('obras.relacionarCfdis');
+    Route::delete('/obras/{obra}/facturas-relacionadas/{source}/{factura}/desvincular', [ObraController::class, 'desvincularFacturaRelacionada'])->name('obras.facturas-relacionadas.desvincular');
     Route::post('/obras/{obra}/facturas-sat/pagos', [ObraController::class, 'storeFacturaPago'])->name('obras.facturas-sat.pagos.store');
     Route::post('/obras/{obra}/factura-borradores', [ObraController::class, 'storeFacturaBorrador'])->name('obras.factura-borradores.store');
     Route::get('/obras/{obra}/factura-borradores/{borrador}', [ObraController::class, 'showFacturaBorrador'])->name('obras.factura-borradores.show');
@@ -809,3 +811,4 @@ Route::prefix('pagos-proveedores')
 });
 
 require __DIR__.'/auth.php';
+

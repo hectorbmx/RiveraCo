@@ -146,8 +146,22 @@
             <tbody>
                 @forelse($obras as $obra)
                     <tr class="border-b hover:bg-slate-50">
-                        <td class="py-3 px-2">{{ $obra->nombre }}</td>
-                        <td class="py-3 px-2">{{ $obra->cliente->nombre_comercial ?? '-' }}</td>
+                        <td class="py-3 px-2">
+                            <a href="{{ route('obras.edit', $obra) }}"
+                               class="font-semibold text-slate-800 hover:text-blue-700 hover:underline">
+                                {{ $obra->nombre }}
+                            </a>
+                        </td>
+                        <td class="py-3 px-2">
+                            @if($obra->cliente)
+                                <a href="{{ route('clientes.edit', $obra->cliente) }}"
+                                   class="text-slate-700 hover:text-blue-700 hover:underline">
+                                    {{ $obra->cliente->nombre_comercial }}
+                                </a>
+                            @else
+                                -
+                            @endif
+                        </td>
                         <td class="py-3 px-2">{{ $obra->clave_obra }}</td>
 
                         <td class="py-3 px-2">

@@ -8,6 +8,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Collection;
 use App\Models\UsuarioApp;
 use App\Models\Empleado;
 use App\Models\PhoneExtension;
@@ -16,7 +18,9 @@ use App\Models\TelephonyCallRequest;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable,HasRoles;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles {
+        HasRoles::getAllPermissions as spatieGetAllPermissions;
+    }
     protected $guard_name = 'web';
     /**
      * The attributes that are mass assignable.
@@ -73,5 +77,33 @@ class User extends Authenticatable
         public function phoneCalls()
         {
             return $this->hasMany(PhoneCall::class);
+        }
+        public function deniedPermissions()
+        {
+            return $this->belongsToMany(Permission::class, 'user_permission_overrides', 'user_id', 'permission_id')
+                ->wherePivot('effect', 'deny')
+                ->withTimestamps();
+        }
+
+        public function hasDeniedPermission(string $permission): bool
+        {
+            return $this->deniedPermissions()
+                ->where('name', $permission)
+                ->where('guard_name', $this->guard_name)
+                ->exists();
+        }
+
+        public function getAllPermissions(): Collection
+        {
+            $permissions = $this->spatieGetAllPermissions();
+            $deniedIds = $this->deniedPermissions()->pluck('permissions.id');
+
+            if ($deniedIds->isEmpty()) {
+                return $permissions;
+            }
+
+            return $permissions
+                ->reject(fn (Permission $permission) => $deniedIds->contains($permission->id))
+                ->values();
         }
 }

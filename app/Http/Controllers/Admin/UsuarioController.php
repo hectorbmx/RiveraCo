@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use App\Models\User;
 use App\Models\Empleado;
 use App\Models\UsuarioApp;
@@ -145,6 +147,36 @@ class UsuarioController extends Controller
 public function edit(User $usuario)
 {
     $usuario->load(['usuarioApp.empleado']);
+
+    $permissions = Permission::query()
+        ->where('guard_name', 'web')
+        ->orderBy('name')
+        ->get();
+
+    $rolePermissionIds = $usuario->roles()
+        ->with('permissions:id,name,guard_name')
+        ->get()
+        ->pluck('permissions')
+        ->flatten()
+        ->pluck('id')
+        ->unique()
+        ->values()
+        ->toArray();
+
+    $directPermissionIds = $usuario->permissions()
+        ->where('guard_name', 'web')
+        ->pluck('id')
+        ->toArray();
+
+    $deniedPermissionIds = DB::table('user_permission_overrides')
+        ->where('user_id', $usuario->id)
+        ->where('effect', 'deny')
+        ->pluck('permission_id')
+        ->toArray();
+
+    $effectivePermissionIds = $usuario->getAllPermissions()
+        ->pluck('id')
+        ->toArray();
 
     // 1. Autorizaciones
     $autorizaciones = collect();
@@ -339,10 +371,84 @@ public function edit(User $usuario)
         'comprasGastos', 
         'operaciones', 
         'bitacora',
-        'pilas'
+        'pilas',
+        'permissions',
+        'rolePermissionIds',
+        'directPermissionIds',
+        'deniedPermissionIds',
+        'effectivePermissionIds'
     ));
 }
+  public function syncPermissions(Request $request, User $usuario)
+{
+    $data = $request->validate([
+        'permission_overrides' => ['array'],
+        'permission_overrides.*' => ['in:inherit,grant,deny'],
+    ]);
 
+    $overrides = $data['permission_overrides'] ?? [];
+    $permissionIds = Permission::query()
+        ->where('guard_name', 'web')
+        ->whereIn('id', array_keys($overrides))
+        ->pluck('id')
+        ->map(fn ($id) => (int) $id)
+        ->all();
+
+    $validIds = array_flip($permissionIds);
+    $grantIds = [];
+    $denyIds = [];
+
+    foreach ($overrides as $permissionId => $effect) {
+        $permissionId = (int) $permissionId;
+
+        if (!isset($validIds[$permissionId])) {
+            continue;
+        }
+
+        if ($effect === 'grant') {
+            $grantIds[] = $permissionId;
+        }
+
+        if ($effect === 'deny') {
+            $denyIds[] = $permissionId;
+        }
+    }
+
+    $grantPermissions = Permission::query()
+        ->where('guard_name', 'web')
+        ->whereIn('id', $grantIds)
+        ->get();
+
+    DB::transaction(function () use ($usuario, $grantPermissions, $denyIds) {
+        $usuario->syncPermissions($grantPermissions);
+
+        DB::table('user_permission_overrides')
+            ->where('user_id', $usuario->id)
+            ->delete();
+
+        if (!empty($denyIds)) {
+            $now = now();
+            $rows = collect($denyIds)
+                ->unique()
+                ->map(fn ($permissionId) => [
+                    'user_id' => $usuario->id,
+                    'permission_id' => $permissionId,
+                    'effect' => 'deny',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])
+                ->all();
+
+            DB::table('user_permission_overrides')->insert($rows);
+        }
+    });
+
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    return redirect()
+        ->route('usuarios.edit', ['usuario' => $usuario->id, 'tab' => 'permisos'])
+        ->with('success', 'Permisos del usuario actualizados.');
+}
   public function update(Request $request, User $usuario)
 {
     $data = $request->validate([
@@ -377,3 +483,4 @@ public function edit(User $usuario)
         ->with('success', 'Usuario actualizado.');
 }
 }
+

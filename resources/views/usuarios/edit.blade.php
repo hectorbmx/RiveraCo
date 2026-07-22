@@ -106,7 +106,7 @@
         </div>
 
         {{-- COLUMNA DERECHA: HISTORIAL DE MOVIMIENTOS --}}
-        <div class="lg:col-span-2" x-data="{ tab: 'autorizaciones' }">
+        <div class="lg:col-span-2" x-data="{ tab: @js(in_array(request('tab'), ['autorizaciones', 'compras', 'operaciones', 'bitacora', 'permisos', 'pilas']) ? request('tab') : 'autorizaciones') }">
             <div class="bg-white rounded-lg shadow-sm border min-h-[600px] flex flex-col">
                 
                 {{-- TABS NAVIGATION --}}
@@ -130,6 +130,11 @@
                             :class="tab === 'bitacora' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
                             class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
                         📝 Bitácora
+                    </button>
+                    <button @click="tab = 'permisos'" 
+                            :class="tab === 'permisos' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                            class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
+                        Permisos
                     </button>
                     <button @click="tab = 'pilas'" 
                             :class="tab === 'pilas' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
@@ -263,6 +268,109 @@
                             @endforelse
                         </div>
                     </div>
+                    {{-- TAB: PERMISOS --}}
+                    <div x-show="tab === 'permisos'" x-transition>
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+                            <div>
+                                <h3 class="font-semibold text-gray-800">Permisos del usuario</h3>
+                                <p class="text-sm text-gray-500 mt-1">Ajusta permisos directos sin cambiar los permisos del rol.</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <span class="px-2 py-1 rounded bg-blue-100 text-blue-700">{{ count($rolePermissionIds ?? []) }} por rol</span>
+                                <span class="px-2 py-1 rounded bg-green-100 text-green-700">{{ count($directPermissionIds ?? []) }} agregados</span>
+                                <span class="px-2 py-1 rounded bg-red-100 text-red-700">{{ count($deniedPermissionIds ?? []) }} quitados</span>
+                            </div>
+                        </div>
+
+                        <form method="POST" action="{{ route('usuarios.permissions.sync', $usuario->id) }}">
+                            @csrf
+                            @method('PUT')
+
+                            <div class="overflow-x-auto border rounded">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                                        <tr>
+                                            <th class="px-4 py-3 border-b">Permiso</th>
+                                            <th class="px-4 py-3 border-b text-center">Estado efectivo</th>
+                                            <th class="px-4 py-3 border-b text-center">Heredar</th>
+                                            <th class="px-4 py-3 border-b text-center">Agregar</th>
+                                            <th class="px-4 py-3 border-b text-center">Quitar</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($permissions as $permission)
+                                            @php
+                                                $isFromRole = in_array($permission->id, $rolePermissionIds ?? []);
+                                                $isDirect = in_array($permission->id, $directPermissionIds ?? []);
+                                                $isDenied = in_array($permission->id, $deniedPermissionIds ?? []);
+                                                $isEffective = in_array($permission->id, $effectivePermissionIds ?? []);
+                                                $currentEffect = $isDenied ? 'deny' : ($isDirect ? 'grant' : 'inherit');
+                                            @endphp
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-3 border-b">
+                                                    <div class="font-medium text-gray-800">{{ $permission->name }}</div>
+                                                    <div class="text-xs text-gray-400">Guard: {{ $permission->guard_name }}</div>
+                                                </td>
+                                                <td class="px-4 py-3 border-b text-center">
+                                                    @if($isDenied)
+                                                        <span class="px-2 py-1 rounded text-xs bg-red-100 text-red-700">Quitado</span>
+                                                    @elseif($isDirect && !$isFromRole)
+                                                        <span class="px-2 py-1 rounded text-xs bg-green-100 text-green-700">Agregado</span>
+                                                    @elseif($isEffective)
+                                                        <span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-700">Activo</span>
+                                                    @else
+                                                        <span class="px-2 py-1 rounded text-xs bg-gray-100 text-gray-500">Sin acceso</span>
+                                                    @endif
+                                                </td>
+                                                <td class="px-4 py-3 border-b text-center">
+                                                    <label class="inline-flex items-center justify-center cursor-pointer">
+                                                        <input type="radio"
+                                                               name="permission_overrides[{{ $permission->id }}]"
+                                                               value="inherit"
+                                                               class="text-blue-600 focus:ring-blue-500"
+                                                               {{ $currentEffect === 'inherit' ? 'checked' : '' }}>
+                                                        <span class="sr-only">Heredar {{ $permission->name }}</span>
+                                                    </label>
+                                                    <div class="text-[11px] text-gray-400 mt-1">{{ $isFromRole ? 'Rol' : 'Base' }}</div>
+                                                </td>
+                                                <td class="px-4 py-3 border-b text-center">
+                                                    <label class="inline-flex items-center justify-center cursor-pointer">
+                                                        <input type="radio"
+                                                               name="permission_overrides[{{ $permission->id }}]"
+                                                               value="grant"
+                                                               class="text-green-600 focus:ring-green-500"
+                                                               {{ $currentEffect === 'grant' ? 'checked' : '' }}>
+                                                        <span class="sr-only">Agregar {{ $permission->name }}</span>
+                                                    </label>
+                                                </td>
+                                                <td class="px-4 py-3 border-b text-center">
+                                                    <label class="inline-flex items-center justify-center cursor-pointer">
+                                                        <input type="radio"
+                                                               name="permission_overrides[{{ $permission->id }}]"
+                                                               value="deny"
+                                                               class="text-red-600 focus:ring-red-500"
+                                                               {{ $currentEffect === 'deny' ? 'checked' : '' }}>
+                                                        <span class="sr-only">Quitar {{ $permission->name }}</span>
+                                                    </label>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="5" class="px-4 py-8 text-center text-gray-400 italic">No hay permisos registrados.</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="flex justify-end pt-4">
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition shadow-sm">
+                                    Guardar permisos
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
                     {{-- TAB: PILAS (COMISIONES) --}}
                     <div x-show="tab === 'pilas'" x-transition>
                         <h3 class="font-semibold text-gray-800 mb-4">Registro de Pilas Culminadas (Comisiones)</h3>
@@ -312,3 +420,4 @@
     </div>
 </div>
 @endsection
+

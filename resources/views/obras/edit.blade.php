@@ -4482,15 +4482,27 @@ function relacionFacturasModal() {
                             </a>
                         </td>
                         <td class="px-3 py-2 text-center">
-                            @if($factura['saldo'] > 0)
-                                <button type="button"
-                                        @click="openPagoModal(@js($factura))"
-                                        class="text-xs font-semibold text-emerald-700 hover:underline">
-                                    Registrar pago
-                                </button>
-                            @else
-                                <span class="text-xs text-slate-400">Sin saldo</span>
-                            @endif
+                            <div class="flex flex-col items-center gap-1.5">
+                                @if($factura['saldo'] > 0)
+                                    <button type="button"
+                                            @click="openPagoModal(@js($factura))"
+                                            class="text-xs font-semibold text-emerald-700 hover:underline">
+                                        Registrar pago
+                                    </button>
+                                @else
+                                    <span class="text-xs text-slate-400">Sin saldo</span>
+                                @endif
+
+                                <form method="POST"
+                                      action="{{ route('obras.facturas-relacionadas.desvincular', ['obra' => $obra, 'source' => $factura['source'], 'factura' => $factura['id']]) }}"
+                                      onsubmit="return confirm('Desvincular esta factura de la obra? La factura no se eliminara.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-xs font-semibold text-red-600 hover:underline">
+                                        Desvincular
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 @endforeach

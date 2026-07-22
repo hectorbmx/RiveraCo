@@ -100,6 +100,7 @@
         @forelse($facturas as $factura)
             @php
                 $esBorradorCfdi = $factura instanceof \App\Models\SatFacturaBorrador;
+                $esBorradorObra = $factura instanceof \App\Models\ObraFacturaBorrador;
                 $payload = $esBorradorCfdi ? ($factura->payload ?: []) : [];
                 $conceptosBorrador = collect($payload['conceptos'] ?? []);
                 $subtotalBorrador = $conceptosBorrador->sum(fn ($concepto) => (float) ($concepto['cantidad'] ?? 0) * (float) ($concepto['precio_unitario'] ?? 0));
@@ -107,39 +108,49 @@
                 $ivaTasaBorrador = in_array($tipoIvaBorrador, ['0.16', '0.08'], true) ? (float) $tipoIvaBorrador : 0;
                 $baseBorrador = max(0, $subtotalBorrador - (float) ($payload['amortizacion'] ?? 0) - (float) ($payload['descuento'] ?? 0));
                 $totalBorrador = max(0, $baseBorrador + ($baseBorrador * $ivaTasaBorrador) - (float) ($payload['retenciones'] ?? 0));
+                $estadoFactura = $esBorradorObra ? $factura->estatus : $factura->estado;
+                $estadoCancelada = in_array($estadoFactura, ['cancelada', \App\Models\ObraFacturaBorrador::ESTATUS_CANCELADO], true);
+                $totalFila = $esBorradorObra ? (float) $factura->total : ($esBorradorCfdi ? $totalBorrador : (float) $factura->total);
+                $fechaFila = $esBorradorObra
+                    ? optional($factura->fecha ?: $factura->created_at)->format('d/m/Y')
+                    : ($esBorradorCfdi ? $factura->created_at->format('d/m/Y') : ($factura->fecha_emision?->format('d/m/Y') ?? $factura->created_at->format('d/m/Y')));
             @endphp
           <tr
                     @class([
-                        'hover:bg-slate-50' => $factura->estado !== 'cancelada',
-
-                        'bg-red-50/60 hover:bg-red-100/70 text-slate-500' =>
-                            $factura->estado === 'cancelada',
+                        'hover:bg-slate-50' => !$estadoCancelada,
+                        'bg-red-50/60 hover:bg-red-100/70 text-slate-500' => $estadoCancelada,
                     ])>
                 <td class="px-5 py-4">
-                    @if($esBorradorCfdi)
+                    @if($esBorradorObra)
+                        BF-{{ str_pad($factura->id, 5, '0', STR_PAD_LEFT) }}
+                    @elseif($esBorradorCfdi)
                         <span class="text-slate-400">Sin folio</span>
                     @else
                         {{ trim(($factura->serie ? $factura->serie . '-' : '') . ($factura->folio ?: '')) ?: 'Sin folio' }}
                     @endif
                 </td>
 
-                <td class="px-5 py-4">
-                    {{ $esBorradorCfdi ? $factura->created_at->format('d/m/Y') : ($factura->fecha_emision?->format('d/m/Y') ?? $factura->created_at->format('d/m/Y')) }}
-                </td>
+                <td class="px-5 py-4">{{ $fechaFila }}</td>
 
                 <td class="px-5 py-4">
                     @if($factura->cliente)
                         <a href="{{ route('sat.facturacion.clientes.show', $factura->cliente) }}"
                            class="font-semibold text-indigo-700 hover:text-indigo-900 hover:underline">
-                            {{ $esBorradorCfdi ? ($factura->cliente->razon_social ?? $factura->cliente->nombre_comercial ?? 'Cliente sin nombre') : ($factura->receptor_nombre ?? $factura->cliente->razon_social ?? $factura->cliente->nombre_comercial) }}
+                            @if($esBorradorObra)
+                                {{ $factura->cliente->razon_social ?? $factura->cliente->nombre_comercial ?? 'Cliente sin nombre' }}
+                            @elseif($esBorradorCfdi)
+                                {{ $factura->cliente->razon_social ?? $factura->cliente->nombre_comercial ?? 'Cliente sin nombre' }}
+                            @else
+                                {{ $factura->receptor_nombre ?? $factura->cliente->razon_social ?? $factura->cliente->nombre_comercial }}
+                            @endif
                         </a>
                     @else
-                        {{ $esBorradorCfdi ? ($factura->titulo ?: 'Borrador CFDI') : ($factura->receptor_nombre ?? 'Sin cliente') }}
+                        {{ $esBorradorObra ? 'Cliente sin nombre' : ($esBorradorCfdi ? ($factura->titulo ?: 'Borrador CFDI') : ($factura->receptor_nombre ?? 'Sin cliente')) }}
                     @endif
                 </td>
 
                 <td class="px-5 py-4">
-                    {{ $esBorradorCfdi ? ($factura->cliente->rfc ?? '—') : ($factura->receptor_rfc ?? $factura->cliente->rfc ?? '—') }}
+                    {{ ($factura->cliente->rfc ?? null) ?: ($factura->receptor_rfc ?? '-') }}
                 </td>
 
                 <td class="px-5 py-4">
@@ -149,40 +160,48 @@
                            class="font-semibold text-indigo-700 hover:text-indigo-900 hover:underline">
                             {{ $factura->obra->nombre ?? $factura->obra->Nombre ?? 'Obra #' . $factura->obra->id }}
                         </a>
-                    @elseif($factura->ordenCompra)
+                    @elseif(!$esBorradorObra && !$esBorradorCfdi && $factura->ordenCompra)
                         OC: {{ $factura->ordenCompra->folio ?? 'OC #' . $factura->ordenCompra->id }}
                     @else
-                        —
+                        -
                     @endif
                 </td>
 
                 <td class="px-5 py-4 text-right font-semibold">
-                    ${{ number_format($esBorradorCfdi ? $totalBorrador : $factura->total, 2) }}
+                    ${{ number_format($totalFila, 2) }}
                 </td>
 
                 <td class="px-5 py-4">
                     <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium
                         @class([
-                            'bg-emerald-50 text-emerald-700 border border-emerald-200' => $factura->estado === 'timbrada',
-                            'bg-amber-50 text-amber-700 border border-amber-200' => $factura->estado === 'borrador',
-                            'bg-red-50 text-red-700 border border-red-200' => $factura->estado === 'cancelada',
-                            'bg-slate-50 text-slate-700 border border-slate-200' => !in_array($factura->estado, ['timbrada', 'borrador', 'cancelada']),
+                            'bg-emerald-50 text-emerald-700 border border-emerald-200' => in_array($estadoFactura, ['timbrada', \App\Models\ObraFacturaBorrador::ESTATUS_AUTORIZADO], true),
+                            'bg-amber-50 text-amber-700 border border-amber-200' => in_array($estadoFactura, ['borrador', \App\Models\ObraFacturaBorrador::ESTATUS_PENDIENTE_REVISION], true),
+                            'bg-red-50 text-red-700 border border-red-200' => in_array($estadoFactura, ['cancelada', \App\Models\ObraFacturaBorrador::ESTATUS_CANCELADO, \App\Models\ObraFacturaBorrador::ESTATUS_RECHAZADO], true),
+                            'bg-slate-50 text-slate-700 border border-slate-200' => !in_array($estadoFactura, ['timbrada', 'borrador', 'cancelada', \App\Models\ObraFacturaBorrador::ESTATUS_AUTORIZADO, \App\Models\ObraFacturaBorrador::ESTATUS_PENDIENTE_REVISION, \App\Models\ObraFacturaBorrador::ESTATUS_CANCELADO, \App\Models\ObraFacturaBorrador::ESTATUS_RECHAZADO], true),
                         ])">
-                        {{ $esBorradorCfdi ? 'Borrador' : ucfirst($factura->estado) }}
+                        @if($esBorradorObra)
+                            {{ \App\Models\ObraFacturaBorrador::estatusLabels()[$factura->estatus] ?? ucfirst($factura->estatus) }}
+                        @elseif($esBorradorCfdi)
+                            Borrador
+                        @else
+                            {{ ucfirst($factura->estado) }}
+                        @endif
                     </span>
                 </td>
                <td class="px-5 py-4">
     @php
-        $estatusSat = match ($factura->estado) {
-            'cancelada' => 'cancelada',
-            'cancelacion_solicitada' => 'solicitud_cancelacion',
+        $estatusSat = match (true) {
+            $esBorradorObra || $esBorradorCfdi => 'pendiente',
+            $factura->estado === 'cancelada' => 'cancelada',
+            $factura->estado === 'cancelacion_solicitada' => 'solicitud_cancelacion',
             default => 'vigente',
         };
 
         $estatusSatLabel = match ($estatusSat) {
+            'pendiente' => 'Pendiente de timbrar',
             'vigente' => 'Vigente',
             'cancelada' => 'Cancelada',
-            'solicitud_cancelacion' => 'En proceso de cancelación',
+            'solicitud_cancelacion' => 'En proceso de cancelacion',
         };
     @endphp
 
@@ -190,13 +209,26 @@
         @class([
             'bg-emerald-50 text-emerald-700 border border-emerald-200' => $estatusSat === 'vigente',
             'bg-red-50 text-red-700 border border-red-200' => $estatusSat === 'cancelada',
-            'bg-amber-50 text-amber-700 border border-amber-200' => $estatusSat === 'solicitud_cancelacion',
+            'bg-amber-50 text-amber-700 border border-amber-200' => in_array($estatusSat, ['solicitud_cancelacion', 'pendiente'], true),
         ])">
         {{ $estatusSatLabel }}
     </span>
 </td>
                 <td class="px-5 py-4 text-right">
-                    @if($esBorradorCfdi)
+                    @if($esBorradorObra)
+                        <div class="flex justify-end gap-3">
+                            @if($factura->estatus === \App\Models\ObraFacturaBorrador::ESTATUS_AUTORIZADO)
+                                <a href="{{ route('sat.facturacion.create', ['borrador_id' => $factura->id]) }}"
+                                   class="text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                                    Facturar
+                                </a>
+                            @endif
+                            <a href="{{ route('obras.factura-borradores.show', [$factura->obra_id, $factura->id]) }}"
+                               class="text-sm font-medium text-slate-600 hover:text-slate-800">
+                                Detalle
+                            </a>
+                        </div>
+                    @elseif($esBorradorCfdi)
                         <div class="flex justify-end gap-3">
                             <a href="{{ route('sat.facturacion.create', ['cfdi_borrador_id' => $factura->id]) }}"
                                class="text-sm font-medium text-indigo-600 hover:text-indigo-800">

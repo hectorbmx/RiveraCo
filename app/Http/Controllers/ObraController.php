@@ -1939,6 +1939,42 @@ private function abortarSiBorradorNoPendiente(ObraFacturaBorrador $borrador): vo
     }
 }
 
+
+public function desvincularFacturaRelacionada(Obra $obra, string $source, int $factura)
+{
+    if (!in_array($source, ['sat_facturas', 'sat_cfdis'], true)) {
+        abort(404);
+    }
+
+    $modelClass = $source === 'sat_facturas'
+        ? SatFactura::class
+        : SatCfdi::class;
+
+    $registro = $modelClass::query()
+        ->where('id', $factura)
+        ->where('obra_id', $obra->id)
+        ->firstOrFail();
+
+    $uuid = strtoupper((string) $registro->uuid);
+
+    $tienePagos = ObraFacturaPago::query()
+        ->where('obra_id', $obra->id)
+        ->whereRaw('UPPER(factura_uuid) = ?', [$uuid])
+        ->exists();
+
+    if ($tienePagos) {
+        return redirect()
+            ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'facturacion'])
+            ->with('error', 'No se puede desvincular la factura porque tiene pagos registrados en esta obra.');
+    }
+
+    $registro->update(['obra_id' => null]);
+
+    return redirect()
+        ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'facturacion'])
+        ->with('success', 'Factura desvinculada de la obra.');
+}
+
 public function relacionarCfdis(Request $request, Obra $obra)
 {
     $validated = $request->validate([
