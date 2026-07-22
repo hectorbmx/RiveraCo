@@ -44,6 +44,35 @@
                     Imprimir
                 </a>
             @endcan
+
+            @can('obra_factura_borradores.revoke_authorization.access')
+                @if($borrador->estatus === \App\Models\ObraFacturaBorrador::ESTATUS_AUTORIZADO && !$borrador->sat_factura_id)
+                    <form method="POST"
+                          action="{{ route('obras.factura-borradores.revocar-autorizacion', [$obra, $borrador]) }}"
+                          onsubmit="return confirm('Revocar la autorizacion de este borrador? Quedara editable nuevamente.');">
+                        @csrf
+                        <button type="submit"
+                                class="inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-100">
+                            Revocar autorizacion
+                        </button>
+                    </form>
+                @endif
+            @endcan
+
+            @can('obra_factura_borradores.edit.access')
+                @if(in_array($borrador->estatus, [\App\Models\ObraFacturaBorrador::ESTATUS_PENDIENTE_REVISION, \App\Models\ObraFacturaBorrador::ESTATUS_RECHAZADO], true))
+                    <form method="POST"
+                          action="{{ route('obras.factura-borradores.destroy', [$obra, $borrador]) }}"
+                          onsubmit="return confirm('Eliminar este borrador de factura?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                                class="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100">
+                            Eliminar borrador
+                        </button>
+                    </form>
+                @endif
+            @endcan
         </div>
     </div>
 

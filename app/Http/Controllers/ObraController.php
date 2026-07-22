@@ -1888,6 +1888,28 @@ public function autorizarFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrad
         ->with('success', 'Borrador autorizado correctamente.');
 }
 
+
+public function revocarAutorizacionFacturaBorrador(Obra $obra, ObraFacturaBorrador $borrador)
+{
+    abort_unless(auth()->user()?->can('obra_factura_borradores.revoke_authorization.access'), 403);
+    $this->validarBorradorPerteneceAObra($obra, $borrador);
+
+    if ($borrador->estatus !== ObraFacturaBorrador::ESTATUS_AUTORIZADO || $borrador->sat_factura_id) {
+        return back()->with('error', 'Solo se puede revocar la autorizacion de borradores autorizados y sin factura ligada.');
+    }
+
+    $borrador->update([
+        'estatus' => ObraFacturaBorrador::ESTATUS_PENDIENTE_REVISION,
+        'autorizado_por' => null,
+        'autorizado_at' => null,
+        'observaciones_revision' => null,
+    ]);
+
+    return redirect()
+        ->route('obras.factura-borradores.show', [$obra, $borrador])
+        ->with('success', 'Autorizacion revocada. El borrador queda editable nuevamente.');
+}
+
 public function rechazarFacturaBorrador(Request $request, Obra $obra, ObraFacturaBorrador $borrador)
 {
     abort_unless(auth()->user()?->can('obra_factura_borradores.reject.access'), 403);

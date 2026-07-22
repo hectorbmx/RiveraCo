@@ -576,6 +576,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::get('/obras/{obra}/factura-borradores/{borrador}/imprimir', [ObraController::class, 'printFacturaBorrador'])->name('obras.factura-borradores.print');
     Route::post('/obras/{obra}/factura-borradores/{borrador}/autorizar', [ObraController::class, 'autorizarFacturaBorrador'])->name('obras.factura-borradores.autorizar');
     Route::post('/obras/{obra}/factura-borradores/{borrador}/rechazar', [ObraController::class, 'rechazarFacturaBorrador'])->name('obras.factura-borradores.rechazar');
+    Route::post('/obras/{obra}/factura-borradores/{borrador}/revocar-autorizacion', [ObraController::class, 'revocarAutorizacionFacturaBorrador'])->name('obras.factura-borradores.revocar-autorizacion');
     Route::resource('ordenes_compra', OrdenCompraController::class)->except(['show','destroy']);
     Route::post('ordenes_compra/{id}/autorizar', [OrdenCompraController::class, 'autorizar'])->name('ordenes_compra.autorizar');
     Route::post('ordenes_compra/{id}/cancelar', [OrdenCompraController::class, 'cancelar'])->name('ordenes_compra.cancelar');

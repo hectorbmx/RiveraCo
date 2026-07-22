@@ -4279,6 +4279,41 @@ function relacionFacturasModal() {
                                             </span>
                                         </a>
                                     @endcan
+                                    @can('obra_factura_borradores.view.access')
+                                        <a href="{{ route('obras.factura-borradores.show', [$obra, $borrador]) }}"
+                                           title="Detalle"
+                                           aria-label="Detalle"
+                                           class="group relative inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <path d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z" />
+                                                <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                            </svg>
+                                            <span class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-lg transition group-hover:opacity-100 group-focus:opacity-100">
+                                                Detalle
+                                            </span>
+                                        </a>
+                                    @endcan
+                                    @can('obra_factura_borradores.revoke_authorization.access')
+                                        @if($borrador->estatus === \App\Models\ObraFacturaBorrador::ESTATUS_AUTORIZADO && !$borrador->sat_factura_id)
+                                            <form method="POST"
+                                                  action="{{ route('obras.factura-borradores.revocar-autorizacion', [$obra, $borrador]) }}"
+                                                  onsubmit="return confirm('Revocar la autorizacion de este borrador? Quedara editable nuevamente.');">
+                                                @csrf
+                                                <button type="submit"
+                                                        title="Revocar autorizacion"
+                                                        aria-label="Revocar autorizacion"
+                                                        class="group relative inline-flex h-8 w-8 items-center justify-center rounded-md border border-amber-200 bg-amber-50 text-amber-700 shadow-sm transition hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-200">
+                                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                        <path d="M3 7v6h6" />
+                                                        <path d="M21 17a9 9 0 0 0-15-6.7L3 13" />
+                                                    </svg>
+                                                    <span class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-lg transition group-hover:opacity-100 group-focus:opacity-100">
+                                                        Revocar autorizacion
+                                                    </span>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @endcan
                                     @can('obra_factura_borradores.edit.access')
                                         @if($borradorEditable)
                                             <button type="button"
