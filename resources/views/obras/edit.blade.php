@@ -4201,7 +4201,7 @@ function relacionFacturasModal() {
                         <th class="px-3 py-2 text-right">Total</th>
                         <th class="px-3 py-2 text-center">Estatus</th>
                         <th class="px-3 py-2 text-left">Creado por</th>
-                        <th class="px-3 py-2 text-center">Revision</th>
+                        <th class="px-3 py-2 text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -4237,18 +4237,11 @@ function relacionFacturasModal() {
                                             {{ \Illuminate\Support\Str::limit($borrador->observaciones_revision, 90) }}
                                         </div>
                                     @endif
-                                    @can('obra_factura_borradores.print.access')
-                                        <a href="{{ route('obras.factura-borradores.print', [$obra, $borrador]) }}"
-                                           target="_blank"
-                                           class="text-[11px] font-semibold text-[#0B265A] hover:underline">
-                                            Imprimir
-                                        </a>
-                                    @endcan
                                 </div>
                             </td>
                             <td class="px-3 py-2">{{ $borrador->creador?->name ?: '-' }}</td>
                             <td class="px-3 py-2 text-center">
-                                <div class="flex flex-wrap items-center justify-center gap-2">
+                                <div class="flex flex-wrap items-center justify-center gap-1.5">
                                     @php
                                         $borradorEditable = in_array($borrador->estatus, ['pendiente_revision', 'rechazado'], true);
                                         $borradorPendiente = $borrador->estatus === 'pendiente_revision';
@@ -4270,13 +4263,36 @@ function relacionFacturasModal() {
                                             'descuentos' => (float) $borrador->descuentos,
                                         ];
                                     @endphp
-
+                                    @can('obra_factura_borradores.print.access')
+                                        <a href="{{ route('obras.factura-borradores.print', [$obra, $borrador]) }}"
+                                           target="_blank"
+                                           title="Imprimir"
+                                           aria-label="Imprimir"
+                                           class="group relative inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-[#0B265A] shadow-sm transition hover:border-[#0B265A]/30 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0B265A]/20">
+                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <path d="M6 9V2h12v7" />
+                                                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                                                <path d="M6 14h12v8H6z" />
+                                            </svg>
+                                            <span class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-lg transition group-hover:opacity-100 group-focus:opacity-100">
+                                                Imprimir
+                                            </span>
+                                        </a>
+                                    @endcan
                                     @can('obra_factura_borradores.edit.access')
                                         @if($borradorEditable)
                                             <button type="button"
                                                     @click="openEditarBorradorModal(@js($borradorPayload))"
-                                                    class="text-[11px] font-semibold rounded-lg bg-indigo-50 px-2.5 py-1 text-indigo-700 border border-indigo-200 hover:bg-indigo-100">
-                                                Editar
+                                                    title="Editar"
+                                                    aria-label="Editar"
+                                                    class="group relative inline-flex h-8 w-8 items-center justify-center rounded-md border border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm transition hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                    <path d="M12 20h9" />
+                                                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                                </svg>
+                                                <span class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-lg transition group-hover:opacity-100 group-focus:opacity-100">
+                                                    Editar
+                                                </span>
                                             </button>
 
                                             <form method="POST"
@@ -4285,8 +4301,19 @@ function relacionFacturasModal() {
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit"
-                                                        class="text-[11px] font-semibold rounded-lg bg-slate-50 px-2.5 py-1 text-slate-600 border border-slate-200 hover:bg-slate-100">
-                                                    Eliminar
+                                                        title="Eliminar"
+                                                        aria-label="Eliminar"
+                                                        class="group relative inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-600 shadow-sm transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                        <path d="M3 6h18" />
+                                                        <path d="M8 6V4h8v2" />
+                                                        <path d="M19 6l-1 14H6L5 6" />
+                                                        <path d="M10 11v5" />
+                                                        <path d="M14 11v5" />
+                                                    </svg>
+                                                    <span class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-lg transition group-hover:opacity-100 group-focus:opacity-100">
+                                                        Eliminar
+                                                    </span>
                                                 </button>
                                             </form>
                                         @endif
@@ -4299,8 +4326,15 @@ function relacionFacturasModal() {
                                                   onsubmit="return confirm('Autorizar este borrador de factura?');">
                                                 @csrf
                                                 <button type="submit"
-                                                        class="text-[11px] font-semibold rounded-lg bg-emerald-50 px-2.5 py-1 text-emerald-700 border border-emerald-200 hover:bg-emerald-100">
-                                                    Autorizar
+                                                        title="Autorizar"
+                                                        aria-label="Autorizar"
+                                                        class="group relative inline-flex h-8 w-8 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-200">
+                                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                        <path d="M20 6 9 17l-5-5" />
+                                                    </svg>
+                                                    <span class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-lg transition group-hover:opacity-100 group-focus:opacity-100">
+                                                        Autorizar
+                                                    </span>
                                                 </button>
                                             </form>
                                         @endif
@@ -4314,8 +4348,16 @@ function relacionFacturasModal() {
                                                 @csrf
                                                 <input type="hidden" name="observaciones_revision" value="">
                                                 <button type="submit"
-                                                        class="text-[11px] font-semibold rounded-lg bg-red-50 px-2.5 py-1 text-red-700 border border-red-200 hover:bg-red-100">
-                                                    Rechazar
+                                                        title="Rechazar"
+                                                        aria-label="Rechazar"
+                                                        class="group relative inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 shadow-sm transition hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-200">
+                                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                        <path d="M18 6 6 18" />
+                                                        <path d="m6 6 12 12" />
+                                                    </svg>
+                                                    <span class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-lg transition group-hover:opacity-100 group-focus:opacity-100">
+                                                        Rechazar
+                                                    </span>
                                                 </button>
                                             </form>
                                         @endif

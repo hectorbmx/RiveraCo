@@ -14,6 +14,7 @@ use App\Models\SatCfdi;
 use App\Models\SatFacturaBorrador;
 use App\Models\ObraFacturaBorrador;
 use App\Services\Facturacion\FacturapiService;
+use App\Services\Mail\MicrosoftGraphMailService;
 use Facturapi\Exceptions\FacturapiException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -1116,7 +1117,7 @@ $invoice = $facturapi->Invoices->create($payload);
         | 5. Guardar en BD
         |--------------------------------------------------------------------------
         */
-        DB::transaction(function () use (
+        $factura = DB::transaction(function () use (
             $data,
             $empresa,
             $cliente,
@@ -1264,12 +1265,14 @@ $invoice = $facturapi->Invoices->create($payload);
                         'sat_factura_id' => $factura->id,
                     ]);
             }
+
+            return $factura;
         });
 \Log::info('INVOICE OK', [
     'invoice_id' => $invoice->id ?? null,
 ]);
         return redirect()
-            ->route('sat.facturacion.index')
+            ->route('sat.facturacion.show', $factura)
             ->with('success', 'Factura timbrada correctamente en sandbox.');
 
     } catch (\Throwable $e) {
@@ -1583,7 +1586,7 @@ public function acuseCancelacion(SatFactura $factura, string $format)
         );
     }
 }
-public function enviar(Request $request, SatFactura $factura)
+public function enviar(Request $request, SatFactura $factura, MicrosoftGraphMailService $graphMail)
 {
     $data = $request->validate([
         'email_destino' => ['nullable', 'email', 'max:255'],
@@ -1612,11 +1615,13 @@ public function enviar(Request $request, SatFactura $factura)
 
     try {
 
-        Mail::mailer(config('services.facturacion_mail.mailer', config('mail.default')))
-            ->to($destinatarios)
-            ->send(
-            new SatFacturaMail($factura)
-        );
+        if (strtolower((string) config('services.facturacion_mail.provider')) === 'graph') {
+            $graphMail->sendSatFactura($factura, $destinatarios);
+        } else {
+            Mail::mailer(config('services.facturacion_mail.mailer', config('mail.default')))
+                ->to($destinatarios)
+                ->send(new SatFacturaMail($factura));
+        }
 
         $factura->update([
             'email_enviado_at' => now(),

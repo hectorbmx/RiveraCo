@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\SatFactura;
 use App\Models\SatFacturaPago;
 use App\Mail\SatFacturaMail;
+use App\Services\Mail\MicrosoftGraphMailService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
@@ -204,7 +205,7 @@ public function pdf(SatFacturaPago $pago)
     );
 }
 
-public function enviar(Request $request, SatFacturaPago $pago)
+public function enviar(Request $request, SatFacturaPago $pago, MicrosoftGraphMailService $graphMail)
 {
     $pago->loadMissing('factura.cliente');
     $factura = $pago->factura;
@@ -240,9 +241,13 @@ public function enviar(Request $request, SatFacturaPago $pago)
         ->all();
 
     try {
-        Mail::mailer(config('services.facturacion_mail.mailer', config('mail.default')))
-            ->to($destinatarios)
-            ->send(new SatFacturaMail($factura, $pago));
+        if (strtolower((string) config('services.facturacion_mail.provider')) === 'graph') {
+            $graphMail->sendSatFactura($factura, $destinatarios, $pago);
+        } else {
+            Mail::mailer(config('services.facturacion_mail.mailer', config('mail.default')))
+                ->to($destinatarios)
+                ->send(new SatFacturaMail($factura, $pago));
+        }
 
         $factura->update([
             'email_destino' => $email,

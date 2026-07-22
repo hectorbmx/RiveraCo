@@ -38,9 +38,16 @@ return [
         'sandbox' => env('FACTURAPI_SANDBOX', true),
     ],
     'facturacion_mail' => [
+        'provider' => env('FACTURACION_MAIL_PROVIDER', 'laravel'),
         'mailer' => env('FACTURACION_MAIL_MAILER', 'facturas'),
         'from_address' => env('FACTURACION_MAIL_FROM_ADDRESS', env('MAIL_FROM_ADDRESS')),
         'from_name' => env('FACTURACION_MAIL_FROM_NAME', env('MAIL_FROM_NAME', 'Rivera Construcciones')),
+        'microsoft_graph' => [
+            'tenant_id' => env('FACTURACION_GRAPH_TENANT_ID'),
+            'client_id' => env('FACTURACION_GRAPH_CLIENT_ID'),
+            'client_secret' => env('FACTURACION_GRAPH_CLIENT_SECRET'),
+            'user' => env('FACTURACION_GRAPH_USER', env('FACTURACION_MAIL_FROM_ADDRESS')),
+        ],
     ],
     // config/services.php
     'attendance' => [

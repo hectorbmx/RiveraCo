@@ -46,17 +46,31 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN'),
         ],
 
+        // 'facturas' => [
+        //     'transport' => 'smtp',
+        //     'url' => env('FACTURACION_MAIL_URL'),
+        //     'host' => env('FACTURACION_MAIL_HOST', env('MAIL_HOST', 'smtp.mailgun.org')),
+        //     'port' => env('FACTURACION_MAIL_PORT', 465),
+        //     'encryption' => env('FACTURACION_MAIL_ENCRYPTION', 'ssl'),
+        //     'username' => env('FACTURACION_MAIL_USERNAME'),
+        //     'password' => env('FACTURACION_MAIL_PASSWORD'),
+        //     'timeout' => env('FACTURACION_MAIL_TIMEOUT', 20),
+        //     'local_domain' => env('FACTURACION_MAIL_EHLO_DOMAIN', env('MAIL_EHLO_DOMAIN')),
+        // ],
         'facturas' => [
-            'transport' => 'smtp',
-            'url' => env('FACTURACION_MAIL_URL'),
-            'host' => env('FACTURACION_MAIL_HOST', env('MAIL_HOST', 'smtp.mailgun.org')),
-            'port' => env('FACTURACION_MAIL_PORT', 465),
-            'encryption' => env('FACTURACION_MAIL_ENCRYPTION', 'ssl'),
-            'username' => env('FACTURACION_MAIL_USERNAME'),
-            'password' => env('FACTURACION_MAIL_PASSWORD'),
-            'timeout' => env('FACTURACION_MAIL_TIMEOUT', 20),
-            'local_domain' => env('FACTURACION_MAIL_EHLO_DOMAIN', env('MAIL_EHLO_DOMAIN')),
-        ],
+    'transport' => 'smtp',
+    'url' => env('FACTURACION_MAIL_URL'),
+    'host' => env('FACTURACION_MAIL_HOST', 'smtp.office365.com'),
+    'port' => env('FACTURACION_MAIL_PORT', 587),
+    'encryption' => env('FACTURACION_MAIL_ENCRYPTION', 'tls'),
+    'username' => env('FACTURACION_MAIL_USERNAME'),
+    'password' => env('FACTURACION_MAIL_PASSWORD'),
+    'timeout' => env('FACTURACION_MAIL_TIMEOUT', 30),
+    'local_domain' => env(
+        'FACTURACION_MAIL_EHLO_DOMAIN',
+        env('MAIL_EHLO_DOMAIN')
+    ),
+],
 
         'ses' => [
             'transport' => 'ses',
@@ -123,6 +137,16 @@ return [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
+    'facturacion_from' => [
+    'address' => env(
+        'FACTURACION_MAIL_FROM_ADDRESS',
+        'facturacion@riveraco.com.mx'
+    ),
+    'name' => env(
+        'FACTURACION_MAIL_FROM_NAME',
+        'Rivera Construcciones'
+    ),
+],
 
     /*
     |--------------------------------------------------------------------------
