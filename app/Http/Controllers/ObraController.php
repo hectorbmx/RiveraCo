@@ -1602,6 +1602,7 @@ public function storeFacturaPago(Request $request, Obra $obra)
     $data = $request->validate([
         'factura_uuid' => ['required', 'string', 'max:80'],
         'factura_source' => ['nullable', 'string', 'max:30'],
+        'idempotency_key' => ['required', 'string', 'max:80'],
         'monto' => ['required', 'numeric', 'min:0.01'],
         'fecha_pago' => ['required', 'date'],
         'cuenta_banco_empresa_id' => ['nullable', 'exists:cuentas_banco_empresa,id'],
@@ -1612,6 +1613,15 @@ public function storeFacturaPago(Request $request, Obra $obra)
     ]);
 
     $uuid = trim($data['factura_uuid']);
+    $idempotencyKey = trim($data['idempotency_key']);
+
+    $pagoExistente = ObraFacturaPago::where('idempotency_key', $idempotencyKey)->first();
+    if ($pagoExistente) {
+        return redirect()
+            ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'facturacion'])
+            ->with('success', 'Pago registrado correctamente.');
+    }
+
     $factura = SatFactura::where('obra_id', $obra->id)->where('uuid', $uuid)->first();
     $cfdi = $factura ? null : SatCfdi::where('obra_id', $obra->id)->where('uuid', $uuid)->first();
 
@@ -1644,23 +1654,30 @@ public function storeFacturaPago(Request $request, Obra $obra)
         $comprobanteMime = $comprobante->getClientMimeType();
     }
 
-    ObraFacturaPago::create([
-        'obra_id' => $obra->id,
-        'factura_uuid' => $uuid,
-        'factura_source' => $data['factura_source'] ?? ($factura ? 'sat_facturas' : 'sat_cfdis'),
-        'monto' => $monto,
-        'fecha_pago' => $data['fecha_pago'],
-        'cuenta_banco_empresa_id' => $data['cuenta_banco_empresa_id'] ?? null,
-        'metodo_pago_empresa_id' => $data['metodo_pago_empresa_id'] ?? null,
-        'referencia' => $data['referencia'] ?? null,
-        'observaciones' => $data['observaciones'] ?? null,
-        'comprobante_path' => $comprobantePath,
-        'comprobante_nombre_original' => $comprobanteNombreOriginal,
-        'comprobante_mime' => $comprobanteMime,
-        'requiere_complemento_pago' => $metodoPagoCfdi === 'PPD',
-        'registrado_por' => auth()->id(),
-        'registrado_at' => now(),
-    ]);
+    try {
+        ObraFacturaPago::create([
+            'obra_id' => $obra->id,
+            'factura_uuid' => $uuid,
+            'factura_source' => $data['factura_source'] ?? ($factura ? 'sat_facturas' : 'sat_cfdis'),
+            'idempotency_key' => $idempotencyKey,
+            'monto' => $monto,
+            'fecha_pago' => $data['fecha_pago'],
+            'cuenta_banco_empresa_id' => $data['cuenta_banco_empresa_id'] ?? null,
+            'metodo_pago_empresa_id' => $data['metodo_pago_empresa_id'] ?? null,
+            'referencia' => $data['referencia'] ?? null,
+            'observaciones' => $data['observaciones'] ?? null,
+            'comprobante_path' => $comprobantePath,
+            'comprobante_nombre_original' => $comprobanteNombreOriginal,
+            'comprobante_mime' => $comprobanteMime,
+            'requiere_complemento_pago' => $metodoPagoCfdi === 'PPD',
+            'registrado_por' => auth()->id(),
+            'registrado_at' => now(),
+        ]);
+    } catch (\Illuminate\Database\QueryException $exception) {
+        if ($exception->getCode() !== '23000' || !ObraFacturaPago::where('idempotency_key', $idempotencyKey)->exists()) {
+            throw $exception;
+        }
+    }
 
     return redirect()
         ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'facturacion'])

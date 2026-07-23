@@ -12,6 +12,7 @@ class ObraFacturaPago extends Model
         'obra_id',
         'factura_uuid',
         'factura_source',
+        'idempotency_key',
         'monto',
         'fecha_pago',
         'cuenta_banco_empresa_id',

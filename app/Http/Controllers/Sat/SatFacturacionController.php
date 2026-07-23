@@ -40,6 +40,12 @@ class SatFacturacionController extends Controller
      */
    public function index(Request $request)
     {
+        $busqueda = trim((string) $request->query('q', ''));
+        $estadoFiltro = $request->query('estado');
+        $estadoFiltro = in_array($estadoFiltro, ['pendientes', 'timbradas', 'canceladas'], true)
+            ? $estadoFiltro
+            : null;
+
         $facturasTimbradas = SatFactura::with(['cliente', 'obra', 'ordenCompra', 'empresa'])
             ->latest()
             ->get();
@@ -61,6 +67,34 @@ class SatFacturacionController extends Controller
         $items = $facturasTimbradas
             ->concat($borradoresCfdi)
             ->concat($borradoresObra)
+            ->when($busqueda !== '', function ($items) use ($busqueda) {
+                $needle = mb_strtolower($busqueda);
+
+                return $items->filter(function ($item) use ($needle) {
+                    $cliente = $item->cliente;
+                    $obra = $item->obra;
+
+                    $haystack = collect([
+                        $cliente?->rfc,
+                        $cliente?->razon_social,
+                        $cliente?->nombre_comercial,
+                        $item->receptor_rfc ?? null,
+                        $item->receptor_nombre ?? null,
+                        $item->titulo ?? null,
+                        $obra?->nombre,
+                        $obra?->Nombre,
+                        $obra?->clave_obra,
+                    ])
+                        ->filter()
+                        ->map(fn ($value) => mb_strtolower((string) $value))
+                        ->implode(' ');
+
+                    return str_contains($haystack, $needle);
+                });
+            })
+            ->when($estadoFiltro, function ($items) use ($estadoFiltro) {
+                return $items->filter(fn ($item) => $this->facturaMatchesEstadoFiltro($item, $estadoFiltro));
+            })
             ->sortByDesc(fn ($item) => $item->updated_at ?? $item->created_at)
             ->values();
 
@@ -78,6 +112,7 @@ class SatFacturacionController extends Controller
         );
 
         $totalFacturado = SatFactura::where('estado', 'timbrada')->sum('total');
+        $totalFacturas = $facturasTimbradas->count() + $borradoresCfdi->count() + $borradoresObra->count();
 
         $timbradas = SatFactura::where('estado', 'timbrada')->count();
         $pendientes = SatFactura::where('estado', 'borrador')->count()
@@ -93,10 +128,36 @@ class SatFacturacionController extends Controller
         return view('sat.facturacion.index', compact(
             'facturas',
             'totalFacturado',
+            'totalFacturas',
             'timbradas',
             'pendientes',
-            'canceladas'
+            'canceladas',
+            'busqueda',
+            'estadoFiltro'
         ));
+    }
+
+    private function facturaMatchesEstadoFiltro($factura, string $estadoFiltro): bool
+    {
+        if ($factura instanceof SatFacturaBorrador) {
+            return $estadoFiltro === 'pendientes' && $factura->estado === 'borrador';
+        }
+
+        if ($factura instanceof ObraFacturaBorrador) {
+            return $estadoFiltro === 'pendientes'
+                && $factura->sat_factura_id === null
+                && ! in_array($factura->estatus, [
+                    ObraFacturaBorrador::ESTATUS_FACTURADO,
+                    ObraFacturaBorrador::ESTATUS_CANCELADO,
+                ], true);
+        }
+
+        return match ($estadoFiltro) {
+            'pendientes' => $factura->estado === 'borrador',
+            'timbradas' => $factura->estado === 'timbrada',
+            'canceladas' => $factura->estado === 'cancelada',
+            default => true,
+        };
     }
 
     public function clienteResumen(Cliente $cliente)

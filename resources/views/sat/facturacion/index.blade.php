@@ -56,26 +56,108 @@
     </div>
 
     {{-- KPIS --}}
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    @php
+        $filtroBase = $busqueda !== '' ? ['q' => $busqueda] : [];
+        $estadoCards = [
+            [
+                'estado' => null,
+                'label' => 'Todas',
+                'count' => $totalFacturas,
+                'color' => 'text-slate-900',
+                'activeCard' => 'border-slate-900 bg-slate-900 ring-2 ring-slate-900 ring-offset-2',
+                'activeLabel' => 'text-slate-200',
+                'activeCount' => 'text-white',
+            ],
+            [
+                'estado' => 'timbradas',
+                'label' => 'Timbradas',
+                'count' => $timbradas,
+                'color' => 'text-emerald-600',
+                'activeCard' => 'border-emerald-300 bg-emerald-50 ring-2 ring-emerald-200 ring-offset-2',
+                'activeLabel' => 'text-emerald-700',
+                'activeCount' => 'text-emerald-700',
+            ],
+            [
+                'estado' => 'pendientes',
+                'label' => 'Pendientes',
+                'count' => $pendientes,
+                'color' => 'text-amber-600',
+                'activeCard' => 'border-amber-300 bg-amber-50 ring-2 ring-amber-200 ring-offset-2',
+                'activeLabel' => 'text-amber-700',
+                'activeCount' => 'text-amber-700',
+            ],
+            [
+                'estado' => 'canceladas',
+                'label' => 'Canceladas',
+                'count' => $canceladas,
+                'color' => 'text-red-600',
+                'activeCard' => 'border-red-300 bg-red-50 ring-2 ring-red-200 ring-offset-2',
+                'activeLabel' => 'text-red-700',
+                'activeCount' => 'text-red-700',
+            ],
+        ];
+    @endphp
+
+    <div class="grid grid-cols-1 gap-4 mb-6 md:grid-cols-5">
         <div class="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm">
             <p class="text-sm text-slate-500">Total facturado</p>
             <p class="text-2xl font-bold text-slate-900 mt-1">${{ number_format($totalFacturado, 2) }}</p>
         </div>
 
-        <div class="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm">
-            <p class="text-sm text-slate-500">Timbradas</p>
-            <p class="text-2xl font-bold text-emerald-600 mt-1">{{ $timbradas }}</p>
-        </div>
+        @foreach($estadoCards as $card)
+            @php
+                $activo = $estadoFiltro === $card['estado'];
+                $queryCard = $card['estado'] ? array_merge($filtroBase, ['estado' => $card['estado']]) : $filtroBase;
+            @endphp
 
-        <div class="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm">
-            <p class="text-sm text-slate-500">Pendientes</p>
-            <p class="text-2xl font-bold text-amber-600 mt-1">{{ $pendientes }}</p>
-        </div>
+            <a href="{{ route('sat.facturacion.index', $queryCard) }}"
+               @class([
+                   'block rounded-2xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2',
+                   'bg-white border-slate-200' => ! $activo,
+                   $card['activeCard'] => $activo,
+               ])>
+                <p class="text-sm {{ $activo ? $card['activeLabel'] : 'text-slate-500' }}">{{ $card['label'] }}</p>
+                <p class="text-2xl font-bold mt-1 {{ $activo ? $card['activeCount'] : $card['color'] }}">{{ $card['count'] }}</p>
+            </a>
+        @endforeach
+    </div>
 
-        <div class="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm">
-            <p class="text-sm text-slate-500">Canceladas</p>
-            <p class="text-2xl font-bold text-red-600 mt-1">{{ $canceladas }}</p>
-        </div>
+    {{-- FILTROS --}}
+    <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <form method="GET" action="{{ route('sat.facturacion.index') }}" class="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div>
+                <label for="facturacion-search" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Buscar por RFC, cliente u obra
+                </label>
+                <div class="mt-2 flex gap-2">
+                    <input
+                        id="facturacion-search"
+                        name="q"
+                        type="search"
+                        value="{{ $busqueda }}"
+                        placeholder="RFC, cliente u obra"
+                        class="w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    >
+                    @if($estadoFiltro)
+                        <input type="hidden" name="estado" value="{{ $estadoFiltro }}">
+                    @endif
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+                <button type="submit"
+                        class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
+                    Buscar
+                </button>
+
+                @if($busqueda !== '' || $estadoFiltro)
+                    <a href="{{ route('sat.facturacion.index') }}"
+                       class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                        Limpiar
+                    </a>
+                @endif
+            </div>
+        </form>
     </div>
 
     {{-- TABLA --}}
@@ -256,7 +338,7 @@
         @empty
             <tr>
                 <td colspan="9" class="px-5 py-10 text-center text-slate-500">
-                    Aún no hay facturas emitidas.
+                    No hay facturas que coincidan con los filtros.
                 </td>
             </tr>
         @endforelse

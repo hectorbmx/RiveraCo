@@ -4854,7 +4854,7 @@ function relacionFacturasModal() {
      x-cloak
      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
 
-    <div class="bg-white w-full max-w-2xl rounded-xl p-6 shadow-xl">
+    <div class="relative bg-white w-full max-w-2xl rounded-xl p-6 shadow-xl">
         <div class="flex items-start justify-between gap-4 mb-4">
             <div>
                 <h3 class="text-lg font-semibold">Registrar pago</h3>
@@ -4862,7 +4862,7 @@ function relacionFacturasModal() {
                     <span x-text="pagoFactura?.uuid || ''"></span>
                 </p>
             </div>
-            <button type="button" @click="closePagoModal()" class="text-slate-400 hover:text-slate-600">x</button>
+            <button type="button" @click="closePagoModal()" :disabled="pagoSubmitting" class="text-slate-400 hover:text-slate-600 disabled:opacity-50">x</button>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
@@ -4888,10 +4888,12 @@ function relacionFacturasModal() {
         <form method="POST"
               action="{{ route('obras.facturas-sat.pagos.store', $obra) }}"
               enctype="multipart/form-data"
-              class="space-y-4">
+              class="space-y-4"
+              @submit="if (pagoSubmitting) { $event.preventDefault(); return; } pagoSubmitting = true;">
             @csrf
             <input type="hidden" name="factura_uuid" :value="pagoFactura?.uuid || ''">
             <input type="hidden" name="factura_source" :value="pagoFactura?.source || ''">
+            <input type="hidden" name="idempotency_key" :value="pagoIdempotencyKey">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -4973,14 +4975,36 @@ function relacionFacturasModal() {
             </div>
 
             <div class="flex justify-end gap-2">
-                <button type="button" @click="closePagoModal()" class="px-4 py-2 border rounded">
+                <button type="button"
+                        @click="closePagoModal()"
+                        :disabled="pagoSubmitting"
+                        class="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed">
                     Cancelar
                 </button>
-                <button type="submit" class="bg-emerald-600 text-white px-4 py-2 rounded">
-                    Guardar pago
+                <button type="submit"
+                        :disabled="pagoSubmitting"
+                        class="inline-flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed">
+                    <svg x-show="pagoSubmitting" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                    <span x-text="pagoSubmitting ? 'Guardando...' : 'Guardar pago'"></span>
                 </button>
             </div>
         </form>
+
+        <div x-show="pagoSubmitting"
+             x-cloak
+             class="absolute inset-0 flex items-center justify-center rounded-xl bg-white/80 backdrop-blur-sm">
+            <div class="rounded-xl border border-emerald-100 bg-white px-5 py-4 text-center shadow-lg">
+                <svg class="mx-auto h-7 w-7 animate-spin text-emerald-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <p class="mt-3 text-sm font-semibold text-slate-800">Guardando pago...</p>
+                <p class="mt-1 text-xs text-slate-500">No cierres esta ventana.</p>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -5109,6 +5133,8 @@ function relacionFacturasModal() {
                 filteredCfdis: [],
                 selected: [],
                 pagoFactura: null,
+                pagoSubmitting: false,
+                pagoIdempotencyKey: '',
                 borradorForm: {
                     fecha: '',
                     forma_pago: '03',
@@ -5165,6 +5191,8 @@ function relacionFacturasModal() {
 
                 openPagoModal(factura) {
                     this.pagoFactura = factura;
+                    this.pagoSubmitting = false;
+                    this.pagoIdempotencyKey = this.newPagoIdempotencyKey();
                     this.pagoForm = {
                         fecha_pago: new Date().toISOString().slice(0, 10),
                         monto: Number(factura.saldo || 0).toFixed(2),
@@ -5177,8 +5205,21 @@ function relacionFacturasModal() {
                 },
 
                 closePagoModal() {
+                    if (this.pagoSubmitting) {
+                        return;
+                    }
+
                     this.openPago = false;
                     this.pagoFactura = null;
+                    this.pagoIdempotencyKey = '';
+                },
+
+                newPagoIdempotencyKey() {
+                    if (window.crypto?.randomUUID) {
+                        return window.crypto.randomUUID();
+                    }
+
+                    return `${Date.now()}-${Math.random().toString(16).slice(2)}-${Math.random().toString(16).slice(2)}`;
                 },
 
                 borradorDefaults() {
