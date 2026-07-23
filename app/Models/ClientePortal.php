@@ -13,6 +13,7 @@ class ClientePortal extends Model
 
     protected $fillable = [
         'cliente_id',
+        'titulo',
         'link_acceso',
         'usuario',
         'password',

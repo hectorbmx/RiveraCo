@@ -11,6 +11,7 @@ class ClientePortalController extends Controller
     public function store(Request $request, Cliente $cliente)
     {
         $data = $request->validate([
+            'titulo' => ['required', 'string', 'max:120'],
             'link_acceso' => ['required', 'url', 'max:2048'],
             'usuario' => ['nullable', 'string', 'max:255'],
             'password' => ['required', 'string', 'max:2000'],
@@ -28,6 +29,7 @@ class ClientePortalController extends Controller
         $this->ensurePortalBelongsToCliente($cliente, $portal);
 
         $data = $request->validate([
+            'titulo' => ['required', 'string', 'max:120'],
             'link_acceso' => ['required', 'url', 'max:2048'],
             'usuario' => ['nullable', 'string', 'max:255'],
             'password' => ['nullable', 'string', 'max:2000'],
