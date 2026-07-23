@@ -12,6 +12,7 @@
     'docs'      => 'Documentos',
     'notas'     => 'Notas',
     'seguimiento' => 'Seguimiento',
+    'portales' => 'Portales',
   ];
 
   $currentTab = $tab ?? request()->query('tab', 'general');
@@ -369,6 +370,8 @@
             No hay llamadas relacionadas todavia. Importa CDR y valida que el telefono del cliente este normalizado en SIRICO.
           </div>
         @endif
+      @elseif($currentTab === 'portales')
+        @include('clientes.partials._portales', ['cliente' => $cliente, 'portales' => $portales])
       @elseif($currentTab === 'notas')
         @include('clientes.partials.tab-placeholder', [
           'title' => 'Notas',

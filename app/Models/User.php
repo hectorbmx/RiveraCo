@@ -15,6 +15,7 @@ use App\Models\Empleado;
 use App\Models\PhoneExtension;
 use App\Models\PhoneCall;
 use App\Models\TelephonyCallRequest;
+use App\Models\AgentDevice;
 
 class User extends Authenticatable
 {
@@ -77,6 +78,11 @@ class User extends Authenticatable
         public function phoneCalls()
         {
             return $this->hasMany(PhoneCall::class);
+        }
+
+        public function agentDevices()
+        {
+            return $this->hasMany(AgentDevice::class);
         }
         public function deniedPermissions()
         {

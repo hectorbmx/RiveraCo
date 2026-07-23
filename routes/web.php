@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\ClientePortalController;
 use App\Http\Controllers\ObraController;
 use App\Http\Controllers\ObraContratoController;
 use App\Http\Controllers\ObraPlanoController;
@@ -96,6 +97,8 @@ Route::get('/test-xsl', function () {
         'class_exists' => class_exists('XSLTProcessor'),
     ];
 });
+Route::get('/agent/open/{token}', [\App\Http\Controllers\AgentOpenLinkController::class, 'show'])->name('agent.open');
+
 Route::get('/', function () {
     // return view('welcome');
       return redirect()->route('login');
@@ -519,7 +522,9 @@ Route::middleware('auth','verified')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('clientes/check-duplicate', [ClienteController::class, 'checkDuplicate'])->name('clientes.checkDuplicate');
     Route::post('clientes/{cliente}/telefonia/llamar/{phoneNumber}', [TelephonyClickToCallController::class, 'cliente'])->name('clientes.telephony.call');
-    Route::resource('clientes', ClienteController::class)->except(['show']);
+    Route::post('clientes/{cliente}/portales', [ClientePortalController::class, 'store'])->name('clientes.portales.store');
+    Route::put('clientes/{cliente}/portales/{portal}', [ClientePortalController::class, 'update'])->name('clientes.portales.update');
+    Route::delete('clientes/{cliente}/portales/{portal}', [ClientePortalController::class, 'destroy'])->name('clientes.portales.destroy');    Route::resource('clientes', ClienteController::class)->except(['show']);
     Route::get('obras/folio-siguiente', [ObraController::class, 'folioSiguiente'])->name('obras.folio-siguiente');
     Route::resource('obras', ObraController::class)->except(['show']);
     Route::get('obras/{obra}/asistencias/reporte', [ObraController::class, 'reporteAsistencias'])
@@ -812,4 +817,3 @@ Route::prefix('pagos-proveedores')
 });
 
 require __DIR__.'/auth.php';
-

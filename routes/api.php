@@ -132,13 +132,14 @@ Route::prefix('v1')->group(function () {
 Route::prefix('agent')->group(function () {
     Route::post('login', [\App\Http\Controllers\Api\Agent\AgentAuthController::class, 'login']);
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'agent.device'])->group(function () {
         Route::get('notifications/unread', [\App\Http\Controllers\Api\Agent\AgentNotificationController::class, 'unread']);
         Route::post('telephony/extensions', [AgentTelephonyController::class, 'syncExtensions']);
         Route::post('telephony/calls', [AgentTelephonyController::class, 'importCalls']);
         Route::post('telephony/call-requests/claim', [AgentTelephonyController::class, 'claimCallRequests']);
         Route::post('telephony/call-requests/{callRequest}/complete', [AgentTelephonyController::class, 'completeCallRequest']);
         Route::post('telephony/call-requests/{callRequest}/fail', [AgentTelephonyController::class, 'failCallRequest']);
+        Route::post('notifications/{id}/open-link', [\App\Http\Controllers\Api\Agent\AgentNotificationController::class, 'openLink']);
         Route::post('notifications/{id}/read', [\App\Http\Controllers\Api\Agent\AgentNotificationController::class, 'markRead']);
         Route::post('logout', [\App\Http\Controllers\Api\Agent\AgentAuthController::class, 'logout']);
     });

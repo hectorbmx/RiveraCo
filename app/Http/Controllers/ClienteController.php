@@ -115,6 +115,7 @@ class ClienteController extends Controller
     $documentos = null;
     $notas = null;
     $llamadasSeguimiento = null;
+    $portales = collect();
     $telefonosSeguimiento = collect();
     $extensionTelefoniaActual = null;
 
@@ -204,6 +205,12 @@ class ClienteController extends Controller
     }
 
 
+
+    if ($tab === 'portales') {
+        $portales = $cliente->portales()
+            ->latest()
+            ->get();
+    }
     if ($tab === 'seguimiento') {
         $llamadasSeguimiento = PhoneCall::query()
             ->with(['extension', 'user'])
@@ -231,7 +238,7 @@ class ClienteController extends Controller
             ->first();
     }
     return view('clientes.edit', compact(
-        'cliente','tab','obras','facturas','pagos','contactos','documentos','notas','llamadasSeguimiento','telefonosSeguimiento','extensionTelefoniaActual'
+        'cliente','tab','obras','facturas','pagos','contactos','documentos','notas','llamadasSeguimiento','telefonosSeguimiento','extensionTelefoniaActual','portales'
     ));
 }
 

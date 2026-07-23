@@ -50,4 +50,8 @@ class Cliente extends Model
         'rfc'           // PK lógica en clientes
     );
 }
+    public function portales()
+    {
+        return $this->hasMany(ClientePortal::class);
+    }
 }
