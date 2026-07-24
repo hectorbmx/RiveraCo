@@ -9,6 +9,10 @@ class EmpresaDocumentoTipo extends Model
 {
     use SoftDeletes;
 
+    public const APLICA_EMPLEADO = 'empleado';
+    public const APLICA_CLIENTE = 'cliente';
+    public const APLICA_AMBOS = 'ambos';
+
     protected $table = 'empresa_documento_tipos';
 
     protected $fillable = [
@@ -16,6 +20,7 @@ class EmpresaDocumentoTipo extends Model
         'codigo',
         'nombre',
         'descripcion',
+        'aplica_a',
         'obligatorio',
         'requiere_vencimiento',
         'activo',
@@ -54,6 +59,22 @@ class EmpresaDocumentoTipo extends Model
     public function scopeActivos($query)
     {
         return $query->where('activo', true);
+    }
+
+    public function scopeAplicaACliente($query)
+    {
+        return $query->whereIn('aplica_a', [
+            self::APLICA_CLIENTE,
+            self::APLICA_AMBOS,
+        ]);
+    }
+
+    public function scopeAplicaAEmpleado($query)
+    {
+        return $query->whereIn('aplica_a', [
+            self::APLICA_EMPLEADO,
+            self::APLICA_AMBOS,
+        ]);
     }
 
     public function scopeOrdenados($query)

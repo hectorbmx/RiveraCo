@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
+use App\Models\EmpresaDocumentoTipo;
 use App\Models\PhoneCall;
 use App\Models\TelephonyPhoneNumber;
 use App\Rules\ValidMexicanPhone;
@@ -112,7 +113,10 @@ class ClienteController extends Controller
     $facturas = null;
     $pagos = null; // placeholder
     $contactos = null;
-    $documentos = null;
+    $documentos = collect();
+    $documentosTipos = collect();
+    $canUploadClienteDocumentos = false;
+    $canDeleteClienteDocumentos = false;
     $notas = null;
     $llamadasSeguimiento = null;
     $portales = collect();
@@ -196,10 +200,21 @@ class ClienteController extends Controller
         // $contactos = $cliente->contactos()->orderBy('nombre')->paginate(10)->withQueryString();
     }
 
-    if ($tab === 'documentos') {
-        // $documentos = $cliente->documentos()->latest()->paginate(10)->withQueryString();
-    }
+    if ($tab === 'docs') {
+        $documentos = $cliente->documentos()
+            ->with('documentoTipo')
+            ->latest()
+            ->get();
 
+        $documentosTipos = EmpresaDocumentoTipo::query()
+            ->activos()
+            ->aplicaACliente()
+            ->ordenados()
+            ->get();
+
+        $canUploadClienteDocumentos = $this->userHasClientePermission($request->user(), ['clientes.edit', 'clientes.access']);
+        $canDeleteClienteDocumentos = $this->userHasClientePermission($request->user(), ['clientes.delete', 'clientes.edit', 'clientes.access']);
+    }
     if ($tab === 'notas') {
         // $notas = $cliente->notas()->with('autor')->latest()->paginate(10)->withQueryString();
     }
@@ -238,10 +253,25 @@ class ClienteController extends Controller
             ->first();
     }
     return view('clientes.edit', compact(
-        'cliente','tab','obras','facturas','pagos','contactos','documentos','notas','llamadasSeguimiento','telefonosSeguimiento','extensionTelefoniaActual','portales'
+        'cliente','tab','obras','facturas','pagos','contactos','documentos','notas','llamadasSeguimiento','telefonosSeguimiento','extensionTelefoniaActual','portales','documentosTipos','canUploadClienteDocumentos','canDeleteClienteDocumentos'
     ));
 }
 
+    private function userHasClientePermission($user, array $permissions): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        if (method_exists($user, 'hasRole') && $user->hasRole('super-admin')) {
+            return true;
+        }
+
+        return $user->getAllPermissions()
+            ->pluck('name')
+            ->intersect($permissions)
+            ->isNotEmpty();
+    }
     public function update(Request $request, Cliente $cliente)
 {
     $data = $request->validate([

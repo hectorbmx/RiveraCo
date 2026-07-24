@@ -54,4 +54,8 @@ class Cliente extends Model
     {
         return $this->hasMany(ClientePortal::class);
     }
+    public function documentos()
+    {
+        return $this->hasMany(ClienteDocumento::class);
+    }
 }

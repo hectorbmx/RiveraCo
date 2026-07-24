@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\ClienteDocumentoController;
 use App\Http\Controllers\ClientePortalController;
 use App\Http\Controllers\ObraController;
 use App\Http\Controllers\ObraContratoController;
@@ -524,7 +525,10 @@ Route::middleware('auth','verified')->group(function () {
     Route::post('clientes/{cliente}/telefonia/llamar/{phoneNumber}', [TelephonyClickToCallController::class, 'cliente'])->name('clientes.telephony.call');
     Route::post('clientes/{cliente}/portales', [ClientePortalController::class, 'store'])->name('clientes.portales.store');
     Route::put('clientes/{cliente}/portales/{portal}', [ClientePortalController::class, 'update'])->name('clientes.portales.update');
-    Route::delete('clientes/{cliente}/portales/{portal}', [ClientePortalController::class, 'destroy'])->name('clientes.portales.destroy');    Route::resource('clientes', ClienteController::class)->except(['show']);
+    Route::delete('clientes/{cliente}/portales/{portal}', [ClientePortalController::class, 'destroy'])->name('clientes.portales.destroy');
+    Route::post('clientes/{cliente}/documentos', [ClienteDocumentoController::class, 'store'])->name('clientes.documentos.store');
+    Route::delete('clientes/{cliente}/documentos/{documento}', [ClienteDocumentoController::class, 'destroy'])->name('clientes.documentos.destroy');
+    Route::resource('clientes', ClienteController::class)->except(['show']);
     Route::get('obras/folio-siguiente', [ObraController::class, 'folioSiguiente'])->name('obras.folio-siguiente');
     Route::resource('obras', ObraController::class)->except(['show']);
     Route::get('obras/{obra}/asistencias/reporte', [ObraController::class, 'reporteAsistencias'])

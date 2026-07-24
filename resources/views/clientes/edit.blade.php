@@ -276,9 +276,10 @@
         ])
 
       @elseif($currentTab === 'docs')
-        @include('clientes.partials.tab-placeholder', [
-          'title' => 'Documentos',
-          'msg'   => 'Pendiente: documentos (RFC/contratos/anexos) del cliente.'
+        @include('clientes.partials._documentos', [
+          'cliente' => $cliente,
+          'documentos' => $documentos,
+          'documentosTipos' => $documentosTipos,
         ])
 
 

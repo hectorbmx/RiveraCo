@@ -402,6 +402,7 @@ public function storeDocumentoEmpleado(Request $request)
     $data = $request->validate([
         'nombre'                 => 'required|string|max:150',
         'descripcion'            => 'nullable|string',
+        'aplica_a'               => 'required|in:empleado,cliente,ambos',
         'obligatorio'            => 'nullable|boolean',
         'requiere_vencimiento'   => 'nullable|boolean',
         'activo'                 => 'nullable|boolean',
@@ -431,6 +432,7 @@ public function storeDocumentoEmpleado(Request $request)
         'codigo'                 => $codigo,
         'nombre'                 => $data['nombre'],
         'descripcion'            => $data['descripcion'] ?? null,
+        'aplica_a'               => $data['aplica_a'],
         'obligatorio'            => $request->boolean('obligatorio'),
         'requiere_vencimiento'   => $request->boolean('requiere_vencimiento'),
         'activo'                 => $request->boolean('activo', true),
@@ -446,6 +448,7 @@ public function updateDocumentoEmpleado(
     $data = $request->validate([
         'nombre'                 => 'required|string|max:150',
         'descripcion'            => 'nullable|string',
+        'aplica_a'               => 'required|in:empleado,cliente,ambos',
         'obligatorio'            => 'nullable|boolean',
         'requiere_vencimiento'   => 'nullable|boolean',
         'activo'                 => 'nullable|boolean',
@@ -454,6 +457,7 @@ public function updateDocumentoEmpleado(
     $documentoTipo->update([
         'nombre'                 => $data['nombre'],
         'descripcion'            => $data['descripcion'] ?? null,
+        'aplica_a'               => $data['aplica_a'],
         'obligatorio'            => $request->boolean('obligatorio'),
         'requiere_vencimiento'   => $request->boolean('requiere_vencimiento'),
         'activo'                 => $request->boolean('activo', true),
