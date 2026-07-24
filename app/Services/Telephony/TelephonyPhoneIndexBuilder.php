@@ -23,22 +23,49 @@ class TelephonyPhoneIndexBuilder
 
     private function clientes(): array
     {
-        return Cliente::query()
+        $rows = [];
+
+        Cliente::query()
+            ->with(['contactos' => fn ($q) => $q->where('activo', true)])
             ->select(['id', 'nombre_comercial', 'razon_social', 'telefono', 'activo'])
-            ->get()
-            ->map(fn (Cliente $cliente) => $this->row(
-                model: $cliente,
-                sourceColumn: 'telefono',
-                rawNumber: $cliente->telefono,
-                label: 'Cliente',
-                displayName: $cliente->nombre_comercial ?: $cliente->razon_social,
-                isPrimary: true,
-                metadata: [
-                    'entity' => 'cliente',
-                    'activo' => (bool) ($cliente->activo ?? true),
-                ]
-            ))
-            ->all();
+            ->chunkById(200, function ($clientes) use (&$rows) {
+                foreach ($clientes as $cliente) {
+                    $rows[] = $this->row(
+                        model: $cliente,
+                        sourceColumn: 'telefono',
+                        rawNumber: $cliente->telefono,
+                        label: 'Cliente',
+                        displayName: $cliente->nombre_comercial ?: $cliente->razon_social,
+                        isPrimary: true,
+                        metadata: [
+                            'entity' => 'cliente',
+                            'activo' => (bool) ($cliente->activo ?? true),
+                        ]
+                    );
+
+                    foreach ($cliente->contactos as $contacto) {
+                        $rows[] = $this->row(
+                            model: $cliente,
+                            sourceColumn: 'contacto_' . $contacto->id . '_telefono',
+                            rawNumber: $contacto->telefono,
+                            label: 'Contacto: ' . ($contacto->cargo ? $contacto->cargo . ' - ' : '') . ($contacto->nombre),
+                            displayName: $contacto->nombre . ' (' . ($cliente->nombre_comercial ?: $cliente->razon_social) . ')',
+                            isPrimary: false,
+                            metadata: [
+                                'entity' => 'cliente',
+                                'contacto_id' => $contacto->id,
+                                'contacto_nombre' => $contacto->nombre,
+                                'contacto_cargo' => $contacto->cargo,
+                                'contacto_email' => $contacto->email,
+                                'contacto_ext' => $contacto->ext,
+                                'activo' => (bool) ($cliente->activo ?? true),
+                            ]
+                        );
+                    }
+                }
+            });
+
+        return array_values(array_filter($rows));
     }
 
     private function proveedores(): array

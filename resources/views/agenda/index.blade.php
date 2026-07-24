@@ -119,8 +119,10 @@
                                 $area = 'Proveedores';
                             } else {
                                 $nombre = $telefono->display_name ?: optional($persona)->nombre_comercial ?: optional($persona)->razon_social;
-                                $puesto = 'Cliente';
-                                $area = 'Clientes';
+                                $puesto = isset($telefono->metadata['contacto_cargo']) && $telefono->metadata['contacto_cargo'] 
+                                    ? $telefono->metadata['contacto_cargo'] . ' (' . (optional($persona)->nombre_comercial ?: optional($persona)->razon_social) . ')'
+                                    : ($telefono->source_column !== 'telefono' ? 'Contacto cliente' : 'Cliente');
+                                $area = optional($persona)->nombre_comercial ?: optional($persona)->razon_social ?: 'Clientes';
                             }
                         @endphp
 

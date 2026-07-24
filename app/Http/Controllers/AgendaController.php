@@ -45,7 +45,12 @@ class AgendaController extends Controller
                         ->orWhereHasMorph('phoneable', [Cliente::class], function ($cliente) use ($search) {
                             $cliente->where('nombre_comercial', 'like', "%{$search}%")
                                 ->orWhere('razon_social', 'like', "%{$search}%")
-                                ->orWhere('rfc', 'like', "%{$search}%");
+                                ->orWhere('rfc', 'like', "%{$search}%")
+                                ->orWhereHas('contactos', function ($contacto) use ($search) {
+                                    $contacto->where('nombre', 'like', "%{$search}%")
+                                        ->orWhere('cargo', 'like', "%{$search}%")
+                                        ->orWhere('email', 'like', "%{$search}%");
+                                });
                         })
                         ->orWhereHasMorph('phoneable', [Proveedor::class], function ($proveedor) use ($search) {
                             $proveedor->where('nombre', 'like', "%{$search}%")

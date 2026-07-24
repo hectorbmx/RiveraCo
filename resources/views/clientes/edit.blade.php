@@ -29,8 +29,8 @@
       </h1>
       <p class="text-sm text-slate-500">
         ID: {{ $cliente->id }}
-        @if($cliente->rfc) Â· RFC: {{ $cliente->rfc }} @endif
-        Â· Estatus:
+        @if($cliente->rfc) · RFC: {{ $cliente->rfc }} @endif
+        · Estatus:
         @if((int)$cliente->activo === 1)
           <span class="text-green-600 font-semibold">Activo</span>
         @else
@@ -46,7 +46,7 @@
       </a>
 
       <form action="{{ route('clientes.destroy', $cliente) }}" method="POST"
-            onsubmit="return confirm('Â¿Eliminar cliente? Esta acciÃ³n no se puede deshacer.')">
+            onsubmit="return confirm('¿Eliminar cliente? Esta acción no se puede deshacer.')">
         @csrf
         @method('DELETE')
         <button class="px-4 py-2 rounded bg-red-600 text-white hover:opacity-90">
@@ -109,8 +109,6 @@
         @if(isset($obras) && $obras && $obras->count())
           <div class="flex items-center justify-between mb-3">
             <h2 class="text-lg font-semibold text-slate-800">Obras del cliente</h2>
-            {{-- Si ya tienes ruta para crear obra, la conectamos despuÃ©s --}}
-            {{-- <a href="{{ route('obras.create', ['cliente_id' => $cliente->id]) }}" class="px-3 py-2 rounded bg-[#0B265A] text-white">+ Nueva obra</a> --}}
           </div>
 
           <div class="overflow-x-auto">
@@ -124,22 +122,20 @@
               </thead>
               <tbody>
                 @foreach($obras as $o)
-               <tr class="border-t hover:bg-slate-50 cursor-pointer"
-    onclick="window.location='{{ route('obras.edit', $o) }}'">
+                <tr class="border-t hover:bg-slate-50 cursor-pointer"
+                    onclick="window.location='{{ route('obras.edit', $o) }}'">
                     <td class="px-4 py-3 font-medium">
                         <a href="{{ route('obras.edit', $o->id ?? $o->id_Obra) }}"
                             class="text-[#0B265A] hover:underline">
                             {{ $o->nombre ?? $o->Nombre ?? ('Obra #' . ($o->id ?? '')) }}
                         </a>
-                        </td>
+                    </td>
                     <td class="px-4 py-3">
                       <span class="inline-flex px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-700">
-                        {{ $o->estatus ?? $o->status ?? 'â€”' }}
+                        {{ $o->estatus ?? $o->status ?? '—' }}
                       </span>
                     </td>
                     <td class="px-4 py-3 text-right">
-                      {{-- Ajusta a tu ruta real --}}
-                      {{-- <a href="{{ route('obras.edit', $o) }}" class="px-3 py-1 rounded bg-slate-100 hover:bg-slate-200">Ver</a> --}}
                       <span class="text-slate-400 text-xs">pendiente</span>
                     </td>
                   </tr>
@@ -154,9 +150,10 @@
         @else
           @include('clientes.partials.tab-placeholder', [
             'title' => 'Obras',
-            'msg'   => 'Este cliente aÃºn no tiene obras registradas (o falta conectar la relaciÃ³n/listado).'
+            'msg'   => 'Este cliente aún no tiene obras registradas (o falta conectar la relación/listado).'
           ])
         @endif
+
       <!-- TAB DE FACTURAS -->
       @elseif($currentTab === 'facturas')
 
@@ -166,7 +163,7 @@
     </h2>
     @if(!$cliente->rfc)
       <span class="text-xs text-amber-600 font-medium">
-        âš  El cliente no tiene RFC asignado â€” agrega el RFC en la pestaÃ±a General para ver facturas.
+        ⚠ El cliente no tiene RFC asignado — agrega el RFC en la pestaña General para ver facturas.
       </span>
     @endif
   </div>
@@ -224,7 +221,7 @@
                   </span>
                 </td>
                 <td class="px-4 py-3 text-slate-600">{{ $f['fecha'] }}</td>
-                <td class="px-4 py-3 font-medium">{{ $f['serie_folio'] ?: 'â€”' }}</td>
+                <td class="px-4 py-3 font-medium">{{ $f['serie_folio'] ?: '—' }}</td>
                 <td class="px-4 py-3 font-mono text-[11px] text-slate-500">
                   {{ Str::limit($f['uuid'], 28) }}
                 </td>
@@ -248,7 +245,7 @@
                   @elseif($f['estado'])
                     <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] bg-emerald-100 text-emerald-700">{{ ucfirst($f['estado']) }}</span>
                   @else
-                    <span class="text-slate-400 text-[11px]">â€”</span>
+                    <span class="text-slate-400 text-[11px]">—</span>
                   @endif
                 </td>
               </tr>
@@ -263,23 +260,24 @@
       </div>
   @endif
         <!-- TERMINA TAB FACTURAS -->
+
       @elseif($currentTab === 'pagos')
         @include('clientes.partials.tab-placeholder', [
           'title' => 'Pagos',
-          'msg'   => 'No tenemos captura de pagos todavÃ­a. Esta secciÃ³n queda lista para cuando se implemente.'
+          'msg'   => 'No tenemos captura de pagos todavía. Esta sección queda lista para cuando se implemente.'
         ])
 
       @elseif($currentTab === 'contactos')
-        @include('clientes.partials.tab-placeholder', [
-          'title' => 'Contactos',
-          'msg'   => 'Pendiente: catÃ¡logo de contactos del cliente.'
+        @include('clientes.partials._contactos', [
+          'cliente'   => $cliente,
+          'contactos' => $contactos ?? collect(),
         ])
 
       @elseif($currentTab === 'docs')
         @include('clientes.partials._documentos', [
-          'cliente' => $cliente,
-          'documentos' => $documentos,
-          'documentosTipos' => $documentosTipos,
+          'cliente'        => $cliente,
+          'documentos'     => $documentos,
+          'documentosTipos'=> $documentosTipos,
         ])
 
 
@@ -371,17 +369,19 @@
             No hay llamadas relacionadas todavia. Importa CDR y valida que el telefono del cliente este normalizado en SIRICO.
           </div>
         @endif
+
       @elseif($currentTab === 'portales')
         @include('clientes.partials._portales', ['cliente' => $cliente, 'portales' => $portales])
+
       @elseif($currentTab === 'notas')
         @include('clientes.partials.tab-placeholder', [
           'title' => 'Notas',
-          'msg'   => 'Pendiente: bitÃ¡cora/notas internas del cliente.'
+          'msg'   => 'Pendiente: bitácora/notas internas del cliente.'
         ])
 
       @else
         @include('clientes.partials.tab-placeholder', [
-          'title' => 'SecciÃ³n',
+          'title' => 'Sección',
           'msg'   => 'Tab no reconocido.'
         ])
       @endif

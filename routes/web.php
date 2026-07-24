@@ -528,6 +528,10 @@ Route::middleware('auth','verified')->group(function () {
     Route::delete('clientes/{cliente}/portales/{portal}', [ClientePortalController::class, 'destroy'])->name('clientes.portales.destroy');
     Route::post('clientes/{cliente}/documentos', [ClienteDocumentoController::class, 'store'])->name('clientes.documentos.store');
     Route::delete('clientes/{cliente}/documentos/{documento}', [ClienteDocumentoController::class, 'destroy'])->name('clientes.documentos.destroy');
+    // Contactos de cliente
+    Route::post('clientes/{cliente}/contactos', [\App\Http\Controllers\ClienteContactoController::class, 'store'])->name('clientes.contactos.store');
+    Route::put('clientes/{cliente}/contactos/{contacto}', [\App\Http\Controllers\ClienteContactoController::class, 'update'])->name('clientes.contactos.update');
+    Route::delete('clientes/{cliente}/contactos/{contacto}', [\App\Http\Controllers\ClienteContactoController::class, 'destroy'])->name('clientes.contactos.destroy');
     Route::resource('clientes', ClienteController::class)->except(['show']);
     Route::get('obras/folio-siguiente', [ObraController::class, 'folioSiguiente'])->name('obras.folio-siguiente');
     Route::resource('obras', ObraController::class)->except(['show']);
