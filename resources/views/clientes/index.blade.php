@@ -14,7 +14,7 @@
                 <input type="text" 
                        name="search" 
                        value="{{ $search ?? '' }}"
-                       placeholder="Buscar por nombre, razón social o RFC..." 
+                       placeholder="Buscar por nombre, razon social o RFC..." 
                        class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0B265A] focus:border-transparent transition text-sm">
                 <div class="absolute left-3 top-2.5 text-slate-400">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -66,14 +66,15 @@
     @endif
 
     <div class="overflow-x-auto">
-        <table class="w-full min-w-[700px] text-sm">
+        <table class="w-full min-w-[820px] text-sm">
             <thead>
                 <tr class="border-b text-slate-500 font-medium">
                     <th class="py-3 px-2 text-left">Nombre Comercial</th>
-                    <th class="py-3 px-2 text-left">Razón Social</th>
+                    <th class="py-3 px-2 text-left">Razon Social</th>
                     <th class="py-3 px-2 text-left">RFC</th>
-                    <th class="py-3 px-2 text-left">Teléfono</th>
+                    <th class="py-3 px-2 text-left">Telefono</th>
                     <th class="py-3 px-2 text-left">Activo</th>
+                    <th class="py-3 px-2 text-left">Docs obligatorios</th>
                     <th class="py-3 px-2 text-right">Acciones</th>
                 </tr>
             </thead>
@@ -94,6 +95,34 @@
                             @endif
                         </td>
 
+                        <td class="py-3 px-2">
+                            @php
+                                $totalObligatorios = $totalDocumentosObligatoriosCliente ?? 0;
+                                $cargadosObligatorios = min((int) ($cliente->documentos_obligatorios_cargados_count ?? 0), $totalObligatorios);
+                                $porcentajeDocs = $totalObligatorios > 0 ? (int) round(($cargadosObligatorios / $totalObligatorios) * 100) : null;
+                                $barraDocsClass = $porcentajeDocs === null
+                                    ? 'bg-slate-300'
+                                    : ($porcentajeDocs >= 100 ? 'bg-emerald-500' : ($porcentajeDocs >= 60 ? 'bg-amber-500' : 'bg-red-500'));
+                            @endphp
+
+                            <a href="{{ route('clientes.edit', ['cliente' => $cliente, 'tab' => 'docs']) }}" class="block min-w-[130px] rounded-xl border border-slate-200 px-3 py-2 hover:border-[#0B265A]/40 hover:bg-slate-50 transition">
+                                @if($porcentajeDocs === null)
+                                    <div class="text-xs font-semibold text-slate-500">Sin obligatorios</div>
+                                    <div class="mt-2 h-1.5 rounded-full bg-slate-100">
+                                        <div class="h-1.5 rounded-full bg-slate-300" style="width: 100%"></div>
+                                    </div>
+                                @else
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-sm font-semibold text-slate-800">{{ $porcentajeDocs }}%</span>
+                                        <span class="text-xs text-slate-500">{{ $cargadosObligatorios }}/{{ $totalObligatorios }}</span>
+                                    </div>
+                                    <div class="mt-2 h-1.5 rounded-full bg-slate-100">
+                                        <div class="h-1.5 rounded-full {{ $barraDocsClass }}" style="width: {{ $porcentajeDocs }}%"></div>
+                                    </div>
+                                @endif
+                            </a>
+                        </td>
+
                         <td class="py-3 px-2 text-right space-x-2">
 
                             {{-- EDITAR --}}
@@ -106,7 +135,7 @@
                             <form action="{{ route('clientes.destroy', $cliente) }}"
                                   method="POST"
                                   class="inline-block"
-                                  onsubmit="return confirm('¿Eliminar este cliente?')">
+                                  onsubmit="return confirm('Eliminar este cliente?')">
                                 @csrf
                                 @method('DELETE')
                                 <button class="text-red-600 hover:text-red-800 font-medium text-sm">
@@ -119,8 +148,8 @@
 
                 @empty
                     <tr>
-                        <td colspan="6" class="py-6 text-center text-slate-500">
-                            No hay clientes registrados aún.
+                        <td colspan="7" class="py-6 text-center text-slate-500">
+                            No hay clientes registrados aun.
                         </td>
                     </tr>
                 @endforelse
@@ -129,7 +158,7 @@
     </div>
 
 
-    {{-- PAGINACIÓN --}}
+    {{-- PAGINACION --}}
     <div class="mt-4">
         {{ $clientes->links() }}
     </div>

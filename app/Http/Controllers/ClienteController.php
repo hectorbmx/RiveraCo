@@ -23,8 +23,22 @@ class ClienteController extends Controller
             $perPage = 10;
         }
 
+
+        $documentosObligatoriosIds = EmpresaDocumentoTipo::query()
+            ->activos()
+            ->aplicaACliente()
+            ->where('obligatorio', true)
+            ->pluck('id');
+
+        $totalDocumentosObligatoriosCliente = $documentosObligatoriosIds->count();
+
         $clientes = Cliente::query()
-            ->when($search, function ($query, $search) {
+            ->withCount([
+                'documentos as documentos_obligatorios_cargados_count' => function ($query) use ($documentosObligatoriosIds) {
+                    $query->where('vigente', true)
+                        ->whereIn('documento_tipo_id', $documentosObligatoriosIds);
+                },
+            ])->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('nombre_comercial', 'like', "%{$search}%")
                       ->orWhere('razon_social', 'like', "%{$search}%")
@@ -38,7 +52,7 @@ class ClienteController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        return view('clientes.index', compact('clientes', 'search', 'activo', 'perPage', 'perPageOpciones'));
+        return view('clientes.index', compact('clientes', 'search', 'activo', 'perPage', 'perPageOpciones', 'totalDocumentosObligatoriosCliente'));
     }
 
     public function checkDuplicate(Request $request)
