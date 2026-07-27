@@ -24,6 +24,12 @@ class ObraEmpleadoController extends Controller
         $yaAsignado = ObraEmpleado::where('empleado_id', $data['empleado_id'])
             ->where('activo', true)
             ->whereNull('fecha_baja')
+            ->whereHas('obra', function ($query) {
+                $query->whereNotIn('estatus_nuevo', [
+                    Obra::ESTATUS_TERMINADA,
+                    Obra::ESTATUS_CANCELADA,
+                ]);
+            })
             ->exists();
 
         if ($yaAsignado) {
@@ -68,3 +74,4 @@ class ObraEmpleadoController extends Controller
             ->with('success', 'Empleado dado de baja en esta obra.');
     }
 }
+

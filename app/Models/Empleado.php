@@ -100,7 +100,13 @@ public function getAreaIdAttribute()
     {
         return $this->hasOne(ObraEmpleado::class, 'empleado_id', 'id_Empleado')
             ->whereNull('fecha_baja')
-            ->where('activo', true);
+            ->where('activo', true)
+            ->whereHas('obra', function ($query) {
+                $query->whereNotIn('estatus_nuevo', [
+                    Obra::ESTATUS_TERMINADA,
+                    Obra::ESTATUS_CANCELADA,
+                ]);
+            });
     }
     public function notas()
     {
@@ -145,7 +151,10 @@ public function getAreaIdAttribute()
             ->withPivot(['fecha_alta', 'fecha_baja', 'puesto_en_obra', 'activo'])
             ->wherePivot('activo', 1)
             ->wherePivotNull('fecha_baja')
-            ->where('obras.estatus_nuevo', '!=', Obra::ESTATUS_CANCELADA)
+            ->whereNotIn('obras.estatus_nuevo', [
+                Obra::ESTATUS_TERMINADA,
+                Obra::ESTATUS_CANCELADA,
+            ])
             ->orderByDesc('obra_empleado.fecha_alta')
             ->orderByDesc('obra_empleado.id');
     }
@@ -184,4 +193,5 @@ public function getAreaIdAttribute()
                 ->latestOfMany();
         }
 }
+
 

@@ -1335,6 +1335,7 @@ public function reporteAsistencias(Request $request, Obra $obra)
    public function update(Request $request, Obra $obra)
 {
     $this->abortarSiObraFueraDeArea($obra);
+    $estatusAnterior = (int) $obra->estatus_nuevo;
   
     // 2) Validar
     $data = $request->validate([
@@ -1365,6 +1366,25 @@ public function reporteAsistencias(Request $request, Obra $obra)
     $data['area_id'] = $this->areaIdParaTipoObra($data['tipo_obra']);
 
     $obra->update($data);
+
+    $estatusNuevo = (int) $obra->estatus_nuevo;
+    $estatusQueLiberanPersonal = [
+        Obra::ESTATUS_TERMINADA,
+        Obra::ESTATUS_CANCELADA,
+    ];
+
+    if (
+        !in_array($estatusAnterior, $estatusQueLiberanPersonal, true)
+        && in_array($estatusNuevo, $estatusQueLiberanPersonal, true)
+    ) {
+        $obra->empleadosAsignados()
+            ->where('activo', true)
+            ->whereNull('fecha_baja')
+            ->update([
+                'activo' => false,
+                'fecha_baja' => $data['fecha_fin_real'] ?? now()->toDateString(),
+            ]);
+    }
 
     return redirect()->route('obras.index')
         ->with('success', 'Obra actualizada correctamente.');
@@ -2040,3 +2060,4 @@ public function relacionarCfdis(Request $request, Obra $obra)
     ]);
 }
 }
+
