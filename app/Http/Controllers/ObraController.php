@@ -35,6 +35,8 @@ use Illuminate\Validation\ValidationException;
 use App\Models\ObraMaquinaRegistro;
 use App\Models\CatalogoActividadComision;
 use App\Models\ObraAsistencia;
+use App\Models\VehiculoEmpleadoKmLog;
+use App\Models\VehiculoObra;
 use Carbon\Carbon;
 use App\Models\OrdenCompra;
 use App\Models\ObraFolio;
@@ -43,6 +45,7 @@ use App\Notifications\FacturaBorradorCreado;
 use App\Notifications\FacturaBorradorListoParaFacturar;
 use App\Notifications\FacturaBorradorRechazado;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 
 
 
@@ -882,6 +885,9 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
     $maquinasDisponibles         = collect();
 
     $registrosHorasMaquina = collect();
+    $vehiculosObra = collect();
+    $vehiculoKmLogs = collect();
+    $vehiculoKmResumen = collect();
 
     $pilasAsignadasActivas       = collect();
     $pilasAsignadasHistoricas    = collect();
@@ -959,6 +965,84 @@ if ($tab === 'horas-maquina') {
         ->get();
 }
 
+
+if ($tab === 'vehiculos') {
+    $vehiculosObra = VehiculoObra::query()
+        ->where('obra_id', $obra->id)
+        ->with(['vehiculo', 'empleado'])
+        ->orderByDesc('fecha_inicio')
+        ->orderByDesc('id')
+        ->get();
+
+    $vehiculoIds = $vehiculosObra->pluck('vehiculo_id')->filter()->unique()->values();
+
+    if ($vehiculoIds->isNotEmpty()) {
+        $rangos = $vehiculosObra->groupBy('vehiculo_id');
+
+        $vehiculoKmLogs = VehiculoEmpleadoKmLog::query()
+            ->with(['asignacion.vehiculo', 'asignacion.empleado'])
+            ->whereHas('asignacion', function ($query) use ($vehiculoIds) {
+                $query->whereIn('vehiculo_id', $vehiculoIds);
+            })
+            ->orderByDesc('fecha')
+            ->orderByDesc('id')
+            ->get()
+            ->filter(function ($log) use ($rangos) {
+                $asignacion = $log->asignacion;
+                $fecha = $log->fecha;
+
+                if (!$asignacion || !$fecha) {
+                    return false;
+                }
+
+                $coincidencia = ($rangos->get($asignacion->vehiculo_id) ?? collect())
+                    ->first(function ($vehiculoObra) use ($asignacion, $fecha) {
+                        if ($vehiculoObra->empleado_id && (int) $vehiculoObra->empleado_id !== (int) $asignacion->empleado_id) {
+                            return false;
+                        }
+
+                        $inicio = Carbon::parse($vehiculoObra->fecha_inicio)->startOfDay();
+                        $fin = $vehiculoObra->fecha_fin
+                            ? Carbon::parse($vehiculoObra->fecha_fin)->endOfDay()
+                            : now()->endOfDay();
+
+                        return $fecha->betweenIncluded($inicio, $fin);
+                    });
+
+                if (!$coincidencia) {
+                    return false;
+                }
+
+                $log->obra_vehiculo = $coincidencia;
+                $log->foto_url = $log->foto ? Storage::disk('public')->url($log->foto) : null;
+
+                return true;
+            })
+            ->values();
+
+        $vehiculoKmResumen = $vehiculosObra
+            ->map(function ($vehiculoObra) use ($vehiculoKmLogs) {
+                $logs = $vehiculoKmLogs
+                    ->filter(fn ($log) => (int) $log->asignacion?->vehiculo_id === (int) $vehiculoObra->vehiculo_id)
+                    ->sortBy('fecha')
+                    ->values();
+
+                $ultimoLog = $logs->last();
+                $kmInicio = $vehiculoObra->km_inicio !== null ? (int) $vehiculoObra->km_inicio : null;
+                $kmActual = $ultimoLog ? (int) $ultimoLog->km : ($vehiculoObra->km_fin !== null ? (int) $vehiculoObra->km_fin : null);
+
+                return (object) [
+                    'asignacion' => $vehiculoObra,
+                    'lecturas' => $logs->count(),
+                    'km_inicio' => $kmInicio,
+                    'km_actual' => $kmActual,
+                    'km_avanzados' => ($kmInicio !== null && $kmActual !== null) ? max(0, $kmActual - $kmInicio) : null,
+                    'ultima_fecha' => $ultimoLog?->fecha,
+                ];
+            })
+            ->values();
+    }
+}
     $comisiones =collect();
     $comisionesAgrupadas = collect();
     $fechasDisponibles =collect();
@@ -1150,6 +1234,9 @@ return view('obras.edit', [
     'maquinasAsignadasHistoricas' => $maquinasAsignadasHistoricas,
     'maquinasDisponibles'         => $maquinasDisponibles,
     'registrosHorasMaquina'       => $registrosHorasMaquina,
+    'vehiculosObra'               => $vehiculosObra,
+    'vehiculoKmLogs'              => $vehiculoKmLogs,
+    'vehiculoKmResumen'           => $vehiculoKmResumen,
     
 
     
