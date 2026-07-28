@@ -68,7 +68,14 @@ class ObraMaquina extends Model
     // Scope para asignaciones activas
     public function scopeActivas($query)
     {
-        return $query->where('estado', 'activa')->whereNull('fecha_fin');
+        return $query->where('estado', 'activa')
+            ->whereNull('fecha_fin')
+            ->whereHas('obra', function ($obra) {
+                $obra->whereNotIn('estatus_nuevo', [
+                    Obra::ESTATUS_TERMINADA,
+                    Obra::ESTATUS_CANCELADA,
+                ]);
+            });
     }
     public function registrosHoras()
         {

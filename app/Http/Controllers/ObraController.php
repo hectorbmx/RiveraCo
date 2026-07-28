@@ -943,8 +943,7 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
         $maquinasAsignadasHistoricas = $asignacionesMaquina->where('estado', 'finalizada');
 
         // IDs de máquinas actualmente activas en cualquier obra
-        $maquinasOcupadasIds = ObraMaquina::where('estado', 'activa')
-            ->whereNull('fecha_fin')
+        $maquinasOcupadasIds = ObraMaquina::activas()
             ->pluck('maquina_id');
 
         // Máquinas operativas y no ocupadas
@@ -1455,14 +1454,14 @@ public function reporteAsistencias(Request $request, Obra $obra)
     $obra->update($data);
 
     $estatusNuevo = (int) $obra->estatus_nuevo;
-    $estatusQueLiberanPersonal = [
+    $estatusQueLiberanRecursos = [
         Obra::ESTATUS_TERMINADA,
         Obra::ESTATUS_CANCELADA,
     ];
 
     if (
-        !in_array($estatusAnterior, $estatusQueLiberanPersonal, true)
-        && in_array($estatusNuevo, $estatusQueLiberanPersonal, true)
+        !in_array($estatusAnterior, $estatusQueLiberanRecursos, true)
+        && in_array($estatusNuevo, $estatusQueLiberanRecursos, true)
     ) {
         $obra->empleadosAsignados()
             ->where('activo', true)
@@ -1471,6 +1470,15 @@ public function reporteAsistencias(Request $request, Obra $obra)
                 'activo' => false,
                 'fecha_baja' => $data['fecha_fin_real'] ?? now()->toDateString(),
             ]);
+        $obra->maquinasAsignadas()
+            ->where('estado', 'activa')
+            ->whereNull('fecha_fin')
+            ->update([
+                'estado' => 'finalizada',
+                'fecha_fin' => $data['fecha_fin_real'] ?? now()->toDateString(),
+                'updated_by' => auth()->id(),
+            ]);
+
     }
 
     return redirect()->route('obras.index')

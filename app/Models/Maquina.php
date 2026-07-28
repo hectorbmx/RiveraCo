@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Obra;
 
 class Maquina extends Model
 {
@@ -59,8 +60,15 @@ class Maquina extends Model
     public function asignacionActiva()
     {
         return $this->hasOne(ObraMaquina::class, 'maquina_id')
+            ->where('estado', 'activa')
             ->whereNull('fecha_fin')
-            ->latestOfMany('fecha_inicio'); // si hay varias activas por error, toma la más reciente
+            ->whereHas('obra', function ($obra) {
+                $obra->whereNotIn('estatus_nuevo', [
+                    Obra::ESTATUS_TERMINADA,
+                    Obra::ESTATUS_CANCELADA,
+                ]);
+            })
+            ->latestOfMany('fecha_inicio'); // si hay varias activas por error, toma la mas reciente
     }
 // Movimientos (bitácora)
 public function movimientos()

@@ -256,7 +256,16 @@
                                 </td>
                                 <td class="px-4 py-3">{{ $a->fecha_inicio?->format('Y-m-d') ?? '—' }}</td>
                                 <td class="px-4 py-3">{{ $a->fecha_fin?->format('Y-m-d') ?? '—' }}</td>
-                                <td class="px-4 py-3">{{ $a->estado ?? '—' }}</td>
+                                <td class="px-4 py-3">
+    @php
+        $obraCerrada = in_array((int) ($a->obra?->estatus_nuevo ?? 0), [\App\Models\Obra::ESTATUS_TERMINADA, \App\Models\Obra::ESTATUS_CANCELADA], true);
+        $estadoVisible = ($a->estado === 'activa' && $obraCerrada) ? 'finalizada' : ($a->estado ?? '-');
+    @endphp
+    {{ $estadoVisible }}
+    @if($a->estado === 'activa' && $obraCerrada)
+        <div class="text-xs text-slate-400">Liberada por obra cerrada</div>
+    @endif
+</td>
                             </tr>
                         @empty
                             <tr>

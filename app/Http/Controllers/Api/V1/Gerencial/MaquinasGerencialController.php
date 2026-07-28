@@ -182,7 +182,7 @@ public function registros(Request $request, Maquina $maquina)
     // 1) Determinar la asignación activa (o la última si no hay activa)
     $asignacion = ObraMaquina::query()
         ->where('maquina_id', $maquina->id)
-        ->where('estado', 'activa') // tú usas estado === 'activa'
+        ->activas()
         ->latest('fecha_inicio')
         ->first();
 
@@ -274,7 +274,7 @@ public function registrosResumen(Request $request, Maquina $maquina)
     // Asignación activa (si existe)
     $asignacionActiva = ObraMaquina::query()
         ->where('maquina_id', $maquina->id)
-        ->where('estado', 'activa')
+        ->activas()
         ->latest('fecha_inicio')
         ->first();
 

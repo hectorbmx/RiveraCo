@@ -24,8 +24,7 @@ class MaquinaService
             // No permitir doble asignación activa
             $activa = ObraMaquina::query()
                 ->where('maquina_id', $maquina->id)
-                ->where('estado', 'activa')
-                ->whereNull('fecha_fin')
+                ->activas()
                 ->first();
 
             if ($activa) {
