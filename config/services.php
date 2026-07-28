@@ -49,6 +49,15 @@ return [
             'user' => env('FACTURACION_GRAPH_USER', env('FACTURACION_MAIL_FROM_ADDRESS')),
         ],
     ],
+    'alertas_mail' => [
+        'provider' => env('ALERTAS_MAIL_PROVIDER', env('FACTURACION_MAIL_PROVIDER', 'laravel')),
+        'mailer' => env('ALERTAS_MAIL_MAILER', env('FACTURACION_MAIL_MAILER', 'facturas')),
+        'from_address' => env('ALERTAS_MAIL_FROM_ADDRESS', 'administracion@riveraco.com.mx'),
+        'from_name' => env('ALERTAS_MAIL_FROM_NAME', 'Rivera Administracion'),
+        'microsoft_graph' => [
+            'user' => env('ALERTAS_GRAPH_USER', env('ALERTAS_MAIL_FROM_ADDRESS', 'administracion@riveraco.com.mx')),
+        ],
+    ],
     // config/services.php
     'attendance' => [
     'ingest_token' => env('ATTENDANCE_INGEST_TOKEN'),

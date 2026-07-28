@@ -22,7 +22,17 @@ class EmpresaConfig extends Model
         'maquinaria_servicio_horas',
         'maquinaria_servicio_meses',
         'maquinaria_alerta_horas',
+        'vehiculo_servicio_km',
+        'vehiculo_servicio_meses',
+        'vehiculo_alerta_km',
+        'vehiculo_alerta_dias',
+        'vehiculo_alertas_activas',
     ];
+    public function alertaDestinatarios()
+    {
+        return $this->hasMany(EmpresaAlertaDestinatario::class, 'empresa_config_id');
+    }
+
     public function documentosTipos()
     {
         return $this->hasMany(EmpresaDocumentoTipo::class, 'empresa_config_id');

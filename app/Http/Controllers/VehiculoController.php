@@ -8,6 +8,8 @@ use App\Models\VehiculoAsignacionFoto;
 use App\Models\Empleado;
 use App\Models\SeguroVehiculo;
 use App\Models\Mantenimiento;
+use App\Models\EmpresaConfig;
+use App\Services\Vehiculos\PreventivoVehiculoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -43,7 +45,10 @@ public function index()
     $hoy = Carbon::today();
     $limiteVencimiento = $hoy->copy()->addDays(30);
 
-    $vehiculos->getCollection()->transform(function (Vehiculo $vehiculo) use ($hoy, $limiteVencimiento) {
+    $preventivosVehiculos = app(PreventivoVehiculoService::class)
+        ->calcularParaColeccion($vehiculos->getCollection(), EmpresaConfig::first());
+
+    $vehiculos->getCollection()->transform(function (Vehiculo $vehiculo) use ($hoy, $limiteVencimiento, $preventivosVehiculos) {
         $seguros = $vehiculo->seguros
             ->filter(fn ($seguro) => $seguro->estatus !== 'cancelada');
 
@@ -97,6 +102,17 @@ public function index()
 
         $vehiculo->documentos_alertas = $alertas;
         $vehiculo->documentos_nivel = $nivel;
+        $vehiculo->preventivo_km = $preventivosVehiculos[$vehiculo->id] ?? null;
+
+        $preventivoEstado = $vehiculo->preventivo_km['estado'] ?? 'sin_datos';
+        $preventivoBadgeClasses = [
+            'ok' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            'proximo' => 'bg-amber-50 text-amber-800 border-amber-200',
+            'vencido' => 'bg-rose-50 text-rose-700 border-rose-200',
+            'sin_datos' => 'bg-slate-50 text-slate-600 border-slate-200',
+        ];
+        $vehiculo->preventivo_badge_class = $preventivoBadgeClasses[$preventivoEstado] ?? $preventivoBadgeClasses['sin_datos'];
+        $vehiculo->preventivo_badge_label = $vehiculo->preventivo_km['label'] ?? 'Sin kilometraje';
 
         return $vehiculo;
     });
@@ -156,6 +172,7 @@ public function index()
     $polizaVigente = null;
     $historialSeguros = collect();
     $mantenimientosVehiculo = collect();
+    $preventivoVehiculo = null;
     $kmSugeridoAsignacion = 0;
 
     $statsMantenimientos = [
@@ -238,6 +255,9 @@ public function index()
         $statsMantenimientos['en_proceso'] = $mantenimientosVehiculo->where('estatus', 'en_proceso')->count();
         $statsMantenimientos['completado'] = $mantenimientosVehiculo->where('estatus', 'completado')->count();
         $statsMantenimientos['cancelado']  = $mantenimientosVehiculo->where('estatus', 'cancelado')->count();
+
+        $preventivoVehiculo = app(PreventivoVehiculoService::class)
+            ->calcularParaVehiculo($vehiculo, EmpresaConfig::first());
     }
 
     return view('vehiculos.edit', compact(
@@ -250,6 +270,7 @@ public function index()
         'historialSeguros',
         'mantenimientosVehiculo',
         'statsMantenimientos',
+        'preventivoVehiculo',
         'kmSugeridoAsignacion'
     ));
 }

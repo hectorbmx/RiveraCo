@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Configuración de la Empresa')
+@section('title', 'ConfiguraciÃ³n de la Empresa')
 
 @section('content')
     <div class="max-w-8xl mx-auto px-4 py-6"
@@ -17,8 +17,8 @@
         {{-- Header --}}
         <div class="flex items-start justify-between gap-4 mb-6">
             <div>
-                <h1 class="text-2xl font-semibold text-gray-900">Configuración de la Empresa</h1>
-                <p class="text-sm text-gray-600">Parámetros globales que impactan vehículos, maquinaria, costos y comisiones.</p>
+                <h1 class="text-2xl font-semibold text-gray-900">ConfiguraciÃ³n de la Empresa</h1>
+                <p class="text-sm text-gray-600">ParÃ¡metros globales que impactan vehÃ­culos, maquinaria, costos y comisiones.</p>
             </div>
         </div>
 
@@ -50,7 +50,7 @@
                                 'general'   => ['label' => 'General', 'desc' => 'Datos base del sistema'],
                                 
                                 'cuentas' => ['label' => 'Cuentas banco', 'desc' => 'Cuentas para pagos y aprovisionamiento'],
-                                'vehiculos' => ['label' => 'Vehículos', 'desc' => 'Mantenimientos y alertas'],
+                                'vehiculos' => ['label' => 'VehÃ­culos', 'desc' => 'Mantenimientos y alertas'],
                                 'maquinaria'=> ['label' => 'Maquinaria', 'desc' => 'Servicios por horas y tiempos'],
                                 'rrhh'      => ['label' => 'Puestos', 'desc' => 'Horas y horas extra'],
                                 'documentos' => ['label' => 'Documentos','desc'  => 'Documentos para empleados y clientes'],
@@ -58,7 +58,7 @@
                                 'centros_costo' => ['label' => 'Centros de costo', 'desc' => 'Gastos fuera de obra'],
                                 'iva' => ['label' => 'IVA', 'desc' => 'Tipos de IVA utilizables'],
                                 'comisiones'=> ['label' => 'Comisiones', 'desc' => 'Reglas por tipo de trabajo'],
-                                'reglas'    => ['label' => 'Reglas', 'desc' => 'Políticas y flujos'],
+                                'reglas'    => ['label' => 'Reglas', 'desc' => 'PolÃ­ticas y flujos'],
                                 'alertas'   => ['label' => 'Alertas', 'desc' => 'Notificaciones y avisos'],
                                 'areas'   => ['label' => 'Areas', 'desc' => 'Areas de la empresa'],
                                 'folios'   => ['label' => 'Folios', 'desc' => 'Consecutivos de obras'],
@@ -107,7 +107,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm mb-1">Razón social</label>
+                    <label class="block text-sm mb-1">RazÃ³n social</label>
                     <input type="text" name="razon_social" class="w-full border rounded px-3 py-2"
                            value="{{ old('razon_social', $config->razon_social) }}">
                 </div>
@@ -125,7 +125,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm mb-1">Teléfono</label>
+                    <label class="block text-sm mb-1">TelÃ©fono</label>
                     <input type="text" name="telefono" class="w-full border rounded px-3 py-2"
                            value="{{ old('telefono', $config->telefono) }}">
                 </div>
@@ -144,9 +144,9 @@
             </div>
         </div>
 
-        {{-- Configuración financiera --}}
+        {{-- ConfiguraciÃ³n financiera --}}
         <div class="bg-white rounded shadow p-5 space-y-4">
-            <h2 class="font-semibold text-gray-700">Configuración financiera</h2>
+            <h2 class="font-semibold text-gray-700">ConfiguraciÃ³n financiera</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -177,7 +177,7 @@
         <div class="flex gap-3">
             <button type="submit"
                     class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700">
-                Guardar configuración
+                Guardar configuraciÃ³n
             </button>
         </div>
     </form>
@@ -258,7 +258,7 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">
-                    Número de cuenta
+                    NÃºmero de cuenta
                 </label>
                 <input
                     type="text"
@@ -416,36 +416,132 @@
                 ======================= --}}
                 <div x-show="tab === 'vehiculos'" x-cloak class="space-y-6">
                     <div>
-                        <h2 class="text-lg font-semibold text-gray-900">Vehículos</h2>
+                        <h2 class="text-lg font-semibold text-gray-900">VehÃ­culos</h2>
                         <p class="text-sm text-gray-600">Frecuencias de servicio y alertas globales.</p>
                     </div>
 
-                    <form method="POST" action="{{ route('empresa_config.update') }}"  class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <form method="POST" action="{{ route('empresa_config.update') }}" class="space-y-6">
                         @csrf
                         @method('PUT')
                         <input type="hidden" name="section" value="vehiculos">
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Servicio cada (km)</label>
-                            <input type="number" name="servicio_km" value="5000"
-                                   class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Servicio cada (km)</label>
+                                <input type="number" name="vehiculo_servicio_km" value="{{ old('vehiculo_servicio_km', $config->vehiculo_servicio_km ?? 5000) }}"
+                                       min="1"
+                                       class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Servicio cada (meses)</label>
+                                <input type="number" name="vehiculo_servicio_meses" value="{{ old('vehiculo_servicio_meses', $config->vehiculo_servicio_meses ?? 6) }}"
+                                       min="1"
+                                       class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Alerta antes (km)</label>
+                                <input type="number" name="vehiculo_alerta_km" value="{{ old('vehiculo_alerta_km', $config->vehiculo_alerta_km ?? 500) }}"
+                                       min="0"
+                                       class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Alerta antes (dias)</label>
+                                <input type="number" name="vehiculo_alerta_dias" value="{{ old('vehiculo_alerta_dias', $config->vehiculo_alerta_dias ?? 10) }}"
+                                       min="0"
+                                       class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
+                            </div>
+
+                            <div class="flex items-center gap-2 pt-7">
+                                <input type="checkbox" name="vehiculo_alertas_activas" value="1"
+                                       class="rounded border-gray-300"
+                                       @checked(old('vehiculo_alertas_activas', $config->vehiculo_alertas_activas ?? true))>
+                                <span class="text-sm text-gray-700">Alertas activas</span>
+                            </div>
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Servicio cada (meses)</label>
-                            <input type="number" name="servicio_meses" value="6"
-                                   class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
+                        <div class="border border-gray-200 rounded-xl p-4 space-y-4">
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-900">Destinatarios de alertas</h3>
+                                <p class="text-xs text-gray-500">Selecciona un usuario interno para campana/notificacion. Si solo necesitas correo, deja el usuario vacio y captura un email externo.</p>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full text-sm">
+                                    <thead>
+                                        <tr class="border-b bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+                                            <th class="px-3 py-2">Usuario interno</th>
+                                            <th class="px-3 py-2">Email externo / alterno</th>
+                                            <th class="px-3 py-2 text-center">Correo</th>
+                                            <th class="px-3 py-2 text-center">Notificacion</th>
+                                            <th class="px-3 py-2 text-center">Activo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse(($vehiculoAlertaDestinatarios ?? collect()) as $destinatario)
+                                            <tr class="border-b">
+                                                <td class="px-3 py-2 min-w-52">
+                                                    <input type="hidden" name="destinatarios[{{ $destinatario->id }}][id]" value="{{ $destinatario->id }}">
+                                                    <select name="destinatarios[{{ $destinatario->id }}][user_id]" class="w-full rounded-lg border-gray-300 text-sm">
+                                                        <option value="">Externo / solo correo</option>
+                                                        @foreach(($usuariosNotificables ?? collect()) as $usuario)
+                                                            <option value="{{ $usuario->id }}" @selected((int) $destinatario->user_id === (int) $usuario->id)>
+                                                                {{ $usuario->name }} - {{ $usuario->email }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </td>
+                                                <td class="px-3 py-2 min-w-64">
+                                                    <input type="email" name="destinatarios[{{ $destinatario->id }}][email]" value="{{ old('destinatarios.' . $destinatario->id . '.email', $destinatario->email) }}" class="w-full rounded-lg border-gray-300 text-sm">
+                                                </td>
+                                                <td class="px-3 py-2 text-center">
+                                                    <input type="checkbox" name="destinatarios[{{ $destinatario->id }}][notificar_correo]" value="1" class="rounded border-gray-300" @checked(old('destinatarios.' . $destinatario->id . '.notificar_correo', $destinatario->notificar_correo))>
+                                                </td>
+                                                <td class="px-3 py-2 text-center">
+                                                    <input type="checkbox" name="destinatarios[{{ $destinatario->id }}][notificar_sistema]" value="1" class="rounded border-gray-300" @checked(old('destinatarios.' . $destinatario->id . '.notificar_sistema', $destinatario->notificar_sistema))>
+                                                </td>
+                                                <td class="px-3 py-2 text-center">
+                                                    <input type="checkbox" name="destinatarios[{{ $destinatario->id }}][activo]" value="1" class="rounded border-gray-300" @checked(old('destinatarios.' . $destinatario->id . '.activo', $destinatario->activo))>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="5" class="px-3 py-6 text-center text-gray-400">Aun no hay destinatarios configurados.</td>
+                                            </tr>
+                                        @endforelse
+
+                                        <tr class="bg-gray-50/70">
+                                            <td class="px-3 py-2 min-w-52">
+                                                <select name="nuevo_destinatario[user_id]" class="w-full rounded-lg border-gray-300 text-sm">
+                                                    <option value="">Agregar externo / solo correo</option>
+                                                    @foreach(($usuariosNotificables ?? collect()) as $usuario)
+                                                        <option value="{{ $usuario->id }}">{{ $usuario->name }} - {{ $usuario->email }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </td>
+                                            <td class="px-3 py-2 min-w-64">
+                                                <input type="email" name="nuevo_destinatario[email]" value="{{ old('nuevo_destinatario.email') }}" placeholder="correo@empresa.com" class="w-full rounded-lg border-gray-300 text-sm">
+                                            </td>
+                                            <td class="px-3 py-2 text-center">
+                                                <input type="checkbox" name="nuevo_destinatario[notificar_correo]" value="1" class="rounded border-gray-300" checked>
+                                            </td>
+                                            <td class="px-3 py-2 text-center">
+                                                <input type="checkbox" name="nuevo_destinatario[notificar_sistema]" value="1" class="rounded border-gray-300" checked>
+                                            </td>
+                                            <td class="px-3 py-2 text-center">
+                                                <input type="checkbox" name="nuevo_destinatario[activo]" value="1" class="rounded border-gray-300" checked>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Alerta antes (días)</label>
-                            <input type="number" name="alerta_dias" value="10"
-                                   class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
-                        </div>
-
-                        <div class="flex items-end justify-end md:col-span-3">
+                        <div class="flex items-end justify-end">
                             <button class="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-gray-800">
-                                Guardar Vehículos
+                                Guardar Vehiculos
                             </button>
                         </div>
                     </form>
@@ -492,19 +588,19 @@
                     </form>
                     <div class="text-xs text-gray-500">
                         {{-- ======================
-   Catálogo de Máquinas
+   CatÃ¡logo de MÃ¡quinas
 ====================== --}}
 <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
     <div class="p-4 flex items-center justify-between">
         <div>
-            <h3 class="text-base font-semibold text-gray-900">Catálogo de Máquinas</h3>
-            <p class="text-sm text-gray-600">Lista corporativa (no se permiten máquinas temporales).</p>
+            <h3 class="text-base font-semibold text-gray-900">CatÃ¡logo de MÃ¡quinas</h3>
+            <p class="text-sm text-gray-600">Lista corporativa (no se permiten mÃ¡quinas temporales).</p>
         </div>
 
-        {{-- Por ahora solo el botón (en el siguiente paso lo hacemos funcional) --}}
+        {{-- Por ahora solo el botÃ³n (en el siguiente paso lo hacemos funcional) --}}
         <a href="{{ route('empresa_config.maquinas.create') }}"
            class="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-gray-800">
-            + Nueva máquina
+            + Nueva mÃ¡quina
         </a>
     </div>
 
@@ -513,12 +609,12 @@
             <thead class="bg-gray-50 text-gray-700">
                 <tr>
                     <th class="text-left px-4 py-3">Nombre</th>
-                    <th class="text-left px-4 py-3">Código</th>
+                    <th class="text-left px-4 py-3">CÃ³digo</th>
                     <th class="text-left px-4 py-3">Serie</th>
-                    <th class="text-left px-4 py-3">Año</th>
+                    <th class="text-left px-4 py-3">AÃ±o</th>
                     <th class="text-left px-4 py-3">Placas</th>
                     <th class="text-left px-4 py-3">Color</th>
-                    <th class="text-left px-4 py-3">Horómetro base</th>
+                    <th class="text-left px-4 py-3">HorÃ³metro base</th>
                     <th class="text-left px-4 py-3">Servicio preventivo</th>
                     <th class="text-left px-4 py-3">Estado</th>
                     <th class="text-left px-4 py-3">Acciones</th>
@@ -531,12 +627,12 @@
                         <td class="px-4 py-3 font-medium text-gray-900">
                             {{ $m->nombre }}
                         </td>
-                        <td class="px-4 py-3 text-gray-700">{{ $m->codigo ?? '—' }}</td>
-                        <td class="px-4 py-3 text-gray-700">{{ $m->numero_serie ?? '—' }}</td>
-                        <td class="px-4 py-3 text-gray-700">{{ $m->modelo ?? '—' }}</td>
-                        <td class="px-4 py-3 text-gray-700">{{ $m->placas ?? '—' }}</td>
-                        <td class="px-4 py-3 text-gray-700">{{ $m->color ?? '—' }}</td>
-                        <td class="px-4 py-3 text-gray-700">{{ $m->horometro_base ?? '—' }}</td>
+                        <td class="px-4 py-3 text-gray-700">{{ $m->codigo ?? 'â€”' }}</td>
+                        <td class="px-4 py-3 text-gray-700">{{ $m->numero_serie ?? 'â€”' }}</td>
+                        <td class="px-4 py-3 text-gray-700">{{ $m->modelo ?? 'â€”' }}</td>
+                        <td class="px-4 py-3 text-gray-700">{{ $m->placas ?? 'â€”' }}</td>
+                        <td class="px-4 py-3 text-gray-700">{{ $m->color ?? 'â€”' }}</td>
+                        <td class="px-4 py-3 text-gray-700">{{ $m->horometro_base ?? 'â€”' }}</td>
                         <td class="px-4 py-3 text-gray-700">
                             @include('maquinas.partials._preventivo_badge', ['preventivo' => $preventivosMaquinaria[$m->id] ?? null])
                         </td>
@@ -546,7 +642,7 @@
                                     {{ $m->estado }}
                                 </span>
                             @else
-                                <span class="text-gray-400">—</span>
+                                <span class="text-gray-400">â€”</span>
                             @endif
                         </td>
                         <td class="px-4 py-3 text-right">
@@ -567,7 +663,7 @@
                 @empty
                     <tr>
                         <td colspan="7" class="px-4 py-6 text-center text-gray-500">
-                            No hay máquinas registradas.
+                            No hay mÃ¡quinas registradas.
                         </td>
                     </tr>
                 @endforelse
@@ -576,7 +672,7 @@
     </div>
 </div>
 
-    Máquinas cargadas: {{ isset($maquinas) ? $maquinas->count() : 'NO VAR' }}
+    MÃ¡quinas cargadas: {{ isset($maquinas) ? $maquinas->count() : 'NO VAR' }}
 </div>
                 </div>
 
@@ -589,7 +685,7 @@
         <div>
             <h2 class="text-lg font-semibold text-gray-900">Puestos</h2>
             <p class="text-sm text-gray-600">
-                Catálogo de puestos disponibles en la empresa.
+                CatÃ¡logo de puestos disponibles en la empresa.
             </p>
         </div>
 
@@ -625,7 +721,7 @@
                         <td class="px-4 py-3">
                             <span class="text-xs px-2 py-1 rounded-lg
                                 {{ $rol->comisionable ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600' }}">
-                                {{ $rol->comisionable ? 'Sí' : 'No' }}
+                                {{ $rol->comisionable ? 'SÃ­' : 'No' }}
                             </span>
                         </td>
 
@@ -692,7 +788,7 @@
                 {{-- DESCRIPCION --}}
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-slate-700 mb-1">
-                        Descripción
+                        DescripciÃ³n
                     </label>
 
                     <input
@@ -771,7 +867,7 @@
                         </th>
 
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            Configuración
+                            ConfiguraciÃ³n
                         </th>
 
                         <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -873,7 +969,7 @@
                                     <form
                                         method="POST"
                                         action="{{ route('empresa_config.documentos.destroy', $documento) }}"
-                                        onsubmit="return confirm('¿Eliminar documento?')"
+                                        onsubmit="return confirm('Â¿Eliminar documento?')"
                                     >
                                         @csrf
                                         @method('DELETE')
@@ -919,7 +1015,7 @@
     <div class="flex items-center justify-between">
         <div>
             <h2 class="text-lg font-semibold text-gray-900">Comisiones</h2>
-            <p class="text-sm text-gray-600">Tarifarios y reglas vigentes para cálculo de comisiones.</p>
+            <p class="text-sm text-gray-600">Tarifarios y reglas vigentes para cÃ¡lculo de comisiones.</p>
         </div>
 
         <a href="{{ route('empresa_config.comisiones.tarifarios.create') }}"
@@ -956,12 +1052,12 @@
                         </td>
                         <td class="px-4 py-3 text-gray-700">{{ $t->estado }}</td>
                         <td class="px-4 py-3 text-gray-700">
-                            {{ optional($t->vigente_desde)->format('Y-m-d') ?? '—' }}
-                            <span class="text-gray-400">→</span>
-                            {{ optional($t->vigente_hasta)->format('Y-m-d') ?? '—' }}
+                            {{ optional($t->vigente_desde)->format('Y-m-d') ?? 'â€”' }}
+                            <span class="text-gray-400">â†’</span>
+                            {{ optional($t->vigente_hasta)->format('Y-m-d') ?? 'â€”' }}
                         </td>
                         <td class="px-4 py-3 text-gray-700">
-                            {{ optional($t->published_at)->format('Y-m-d') ?? '—' }}
+                            {{ optional($t->published_at)->format('Y-m-d') ?? 'â€”' }}
                         </td>
                         <td class="px-4 py-3 text-right">
                             <a href="{{ route('empresa_config.comisiones.tarifarios.show', $t->id) }}"
@@ -973,7 +1069,7 @@
                 @empty
                     <tr>
                         <td colspan="5" class="px-4 py-6 text-center text-gray-400">
-                            No hay tarifarios aún.
+                            No hay tarifarios aÃºn.
                         </td>
                     </tr>
                 @endforelse
@@ -987,7 +1083,7 @@
             <div>
                 <div class="text-sm font-semibold text-gray-900">Detalles del tarifario vigente</div>
                 <div class="text-xs text-gray-500">
-                    Estos importes son los que se usarán al generar comisiones.
+                    Estos importes son los que se usarÃ¡n al generar comisiones.
                 </div>
             </div>
 
@@ -1028,20 +1124,20 @@
                                 </td> -->
                                 <!-- <td class="px-3 py-2">{{ $d->concepto }}</td> -->
                                 <td class="px-3 py-2">{{ $d->variable_origen }}</td>
-                                <td class="px-3 py-2">  {{ $d->uom?->nombre ?? '—' }}</td>
+                                <td class="px-3 py-2">  {{ $d->uom?->nombre ?? 'â€”' }}</td>
                                 <td class="px-3 py-2 text-right font-medium">
                                     {{ number_format((float)$d->tarifa, 2) }}
                                 </td>
                                 <td class="px-3 py-2 text-center">
                                     <span class="text-xs px-2 py-1 rounded-lg {{ $d->activo ? 'bg-sky-50 text-sky-700' : 'bg-gray-100 text-gray-600' }}">
-                                        {{ $d->activo ? 'Sí' : 'No' }}
+                                        {{ $d->activo ? 'SÃ­' : 'No' }}
                                     </span>
                                 </td>
                             </tr>
                         @empty
                             <tr>
                                 <td colspan="6" class="px-3 py-6 text-center text-gray-400">
-                                    Aún no hay detalles en el tarifario vigente.
+                                    AÃºn no hay detalles en el tarifario vigente.
                                 </td>
                             </tr>
                         @endforelse
@@ -1051,7 +1147,7 @@
         @endif
     </div>
 
-    {{-- Tus settings globales (los que ya tenías) --}}
+    {{-- Tus settings globales (los que ya tenÃ­as) --}}
     <form method="POST" action="{{ route('empresa_config.update') }}"
           class="grid grid-cols-1 md:grid-cols-3 gap-4">
         @csrf
@@ -1059,19 +1155,19 @@
         <input type="hidden" name="section" value="comisiones">
 
         <div>
-            <label class="block text-sm font-medium text-gray-700">Comisión default (%)</label>
+            <label class="block text-sm font-medium text-gray-700">ComisiÃ³n default (%)</label>
             <input type="number" step="0.01" name="comision_default_pct" value="0"
                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-gray-700">Comisión por metro (default)</label>
+            <label class="block text-sm font-medium text-gray-700">ComisiÃ³n por metro (default)</label>
             <input type="number" step="0.01" name="comision_por_metro" value="0"
                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-gray-700">Comisión por hora (default)</label>
+            <label class="block text-sm font-medium text-gray-700">ComisiÃ³n por hora (default)</label>
             <input type="number" step="0.01" name="comision_por_hora" value="0"
                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
         </div>
@@ -1101,12 +1197,12 @@
 
                         <label class="flex items-center gap-3">
                             <input type="checkbox" name="oc_requiere_autorizacion" value="1" class="rounded border-gray-300">
-                            <span class="text-sm text-gray-800">Órdenes de compra requieren autorización</span>
+                            <span class="text-sm text-gray-800">Ã“rdenes de compra requieren autorizaciÃ³n</span>
                         </label>
 
                         <label class="flex items-center gap-3">
                             <input type="checkbox" name="comision_solo_factura_pagada" value="1" class="rounded border-gray-300">
-                            <span class="text-sm text-gray-800">Comisión solo si la factura está pagada</span>
+                            <span class="text-sm text-gray-800">ComisiÃ³n solo si la factura estÃ¡ pagada</span>
                         </label>
 
                         <div class="flex items-end justify-end">
@@ -1133,7 +1229,7 @@
                         <input type="hidden" name="section" value="alertas">
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Revisión de alertas</label>
+                            <label class="block text-sm font-medium text-gray-700">RevisiÃ³n de alertas</label>
                             <select name="alertas_frecuencia" class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
                                 <option value="daily">Diaria</option>
                                 <option value="weekly">Semanal</option>
@@ -1141,7 +1237,7 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Anticipación (días)</label>
+                            <label class="block text-sm font-medium text-gray-700">AnticipaciÃ³n (dÃ­as)</label>
                             <input type="number" name="alertas_anticipacion_dias" value="7"
                                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20">
                         </div>
@@ -1169,7 +1265,7 @@
         <form method="GET" action="{{ route('empresa_config.edit') }}" class="flex items-end gap-2">
             <input type="hidden" name="tab" value="folios">
             <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">Año</label>
+                <label class="block text-xs font-medium text-slate-600 mb-1">AÃ±o</label>
                 <input type="number"
                        name="folio_anio"
                        min="2020"
@@ -1185,8 +1281,8 @@
 
     <div class="bg-white border rounded-2xl overflow-hidden">
         <div class="px-4 py-3 border-b bg-slate-50">
-            <h3 class="text-sm font-semibold text-slate-900">Tipos de obra y áreas</h3>
-            <p class="text-xs text-slate-500">Define qué área corresponde a cada tipo de obra.</p>
+            <h3 class="text-sm font-semibold text-slate-900">Tipos de obra y Ã¡reas</h3>
+            <p class="text-xs text-slate-500">Define quÃ© Ã¡rea corresponde a cada tipo de obra.</p>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
@@ -1194,9 +1290,9 @@
                     <tr>
                         <th class="text-left font-semibold px-4 py-3">Tipo</th>
                         <th class="text-left font-semibold px-4 py-3">Prefijo</th>
-                        <th class="text-left font-semibold px-4 py-3">Área asignada</th>
+                        <th class="text-left font-semibold px-4 py-3">Ãrea asignada</th>
                         <th class="text-left font-semibold px-4 py-3">Activo</th>
-                        <th class="text-right font-semibold px-4 py-3">Acción</th>
+                        <th class="text-right font-semibold px-4 py-3">AcciÃ³n</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y">
@@ -1217,7 +1313,7 @@
                                     @method('PATCH')
                                     <select name="area_id"
                                             class="min-w-56 rounded-xl border-slate-300 text-sm focus:border-slate-500 focus:ring-0">
-                                        <option value="">Sin área</option>
+                                        <option value="">Sin Ã¡rea</option>
                                         @foreach($areas as $area)
                                             <option value="{{ $area->id }}" @selected(old('area_id', $tipo->area_id) == $area->id)>
                                                 {{ $area->codigo ? $area->codigo . ' - ' : '' }}{{ $area->nombre }}
@@ -1260,10 +1356,10 @@
                     <tr>
                         <th class="text-left font-semibold px-4 py-3">Tipo</th>
                         <th class="text-left font-semibold px-4 py-3">Prefijo</th>
-                        <th class="text-left font-semibold px-4 py-3">Último usado</th>
+                        <th class="text-left font-semibold px-4 py-3">Ãšltimo usado</th>
                         <th class="text-left font-semibold px-4 py-3">Siguiente folio</th>
-                        <th class="text-left font-semibold px-4 py-3">Mínimo permitido</th>
-                        <th class="text-right font-semibold px-4 py-3">Acción</th>
+                        <th class="text-left font-semibold px-4 py-3">MÃ­nimo permitido</th>
+                        <th class="text-right font-semibold px-4 py-3">AcciÃ³n</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y">
@@ -1307,7 +1403,7 @@
                 @empty
                     <tr>
                         <td colspan="6" class="px-4 py-10 text-center text-slate-500">
-                            No hay folios configurados para este año.
+                            No hay folios configurados para este aÃ±o.
                         </td>
                     </tr>
                 @endforelse
@@ -1317,7 +1413,7 @@
     </div>
 
     <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-        El valor editable es el último consecutivo usado. El siguiente folio se genera sumando uno.
+        El valor editable es el Ãºltimo consecutivo usado. El siguiente folio se genera sumando uno.
     </div>
 </div>
 {{-- ======================
@@ -1407,14 +1503,14 @@ function listasRayaTab() {
 
     <div class="flex items-start justify-between gap-4">
         <div>
-            <h2 class="text-lg font-semibold text-gray-900">Áreas</h2>
-            <p class="text-sm text-gray-600">Áreas del sistema</p>
+            <h2 class="text-lg font-semibold text-gray-900">Ãreas</h2>
+            <p class="text-sm text-gray-600">Ãreas del sistema</p>
         </div>
 
         <button type="button"
                 @click="openCreate()"
                 class="px-4 py-2 rounded-xl text-sm bg-gray-900 text-white hover:bg-gray-800">
-            + Agregar área
+            + Agregar Ã¡rea
         </button>
     </div>
 
@@ -1424,9 +1520,9 @@ function listasRayaTab() {
             <table class="min-w-full text-sm">
                 <thead class="bg-slate-50 text-slate-600">
                     <tr>
-                        <th class="text-left font-semibold px-4 py-3">Código</th>
+                        <th class="text-left font-semibold px-4 py-3">CÃ³digo</th>
                         <th class="text-left font-semibold px-4 py-3">Nombre</th>
-                        <th class="text-left font-semibold px-4 py-3">Descripción</th>
+                        <th class="text-left font-semibold px-4 py-3">DescripciÃ³n</th>
                         <th class="text-left font-semibold px-4 py-3">Estatus</th>
                         <th class="text-right font-semibold px-4 py-3">Acciones</th>
                     </tr>
@@ -1437,7 +1533,7 @@ function listasRayaTab() {
                         <td class="px-4 py-3 font-mono text-xs text-slate-700">{{ $a->codigo }}</td>
                         <td class="px-4 py-3 font-medium text-slate-900">{{ $a->nombre }}</td>
                         <td class="px-4 py-3 text-slate-600">
-                            {{ $a->descripcion ?: '—' }}
+                            {{ $a->descripcion ?: 'â€”' }}
                         </td>
                         <td class="px-4 py-3">
                             @if($a->activo)
@@ -1456,7 +1552,7 @@ function listasRayaTab() {
 
                                 <form method="POST"
                                       action="{{ route('empresa-config.areas.toggle', $a->id) }}"
-                                      onsubmit="return confirm('¿Cambiar estatus del área?')">
+                                      onsubmit="return confirm('Â¿Cambiar estatus del Ã¡rea?')">
                                     @csrf
                                     @method('PATCH')
                                     <button type="submit"
@@ -1467,7 +1563,7 @@ function listasRayaTab() {
 
                                 <form method="POST"
                                       action="{{ route('empresa-config.areas.destroy', $a->id) }}"
-                                      onsubmit="return confirm('¿Eliminar esta área?')">
+                                      onsubmit="return confirm('Â¿Eliminar esta Ã¡rea?')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit"
@@ -1481,7 +1577,7 @@ function listasRayaTab() {
                 @empty
                     <tr>
                         <td colspan="5" class="px-4 py-10 text-center text-slate-500">
-                            No hay áreas registradas.
+                            No hay Ã¡reas registradas.
                         </td>
                     </tr>
                 @endforelse
@@ -1498,12 +1594,12 @@ function listasRayaTab() {
         <div class="relative w-full max-w-lg bg-white rounded-2xl shadow-xl border">
             <div class="p-5 border-b flex items-center justify-between">
                 <div>
-                    <div class="text-base font-semibold text-slate-900" x-text="isEdit ? 'Editar área' : 'Agregar área'"></div>
-                    <div class="text-xs text-slate-500">Configura código, nombre, descripción y estatus.</div>
+                    <div class="text-base font-semibold text-slate-900" x-text="isEdit ? 'Editar Ã¡rea' : 'Agregar Ã¡rea'"></div>
+                    <div class="text-xs text-slate-500">Configura cÃ³digo, nombre, descripciÃ³n y estatus.</div>
                 </div>
                 <button type="button" @click="close()"
                         class="p-2 rounded-lg hover:bg-slate-100">
-                    ✕
+                    âœ•
                 </button>
             </div>
 
@@ -1515,7 +1611,7 @@ function listasRayaTab() {
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs text-slate-600 mb-1">Código</label>
+                        <label class="block text-xs text-slate-600 mb-1">CÃ³digo</label>
                         <input type="text" name="codigo" x-model="form.codigo"
                                class="w-full rounded-xl border-slate-300 focus:ring-0 focus:border-slate-500"
                                placeholder="EJ: ADM, OBR, RH">
@@ -1525,12 +1621,12 @@ function listasRayaTab() {
                         <label class="block text-xs text-slate-600 mb-1">Nombre</label>
                         <input type="text" name="nombre" x-model="form.nombre"
                                class="w-full rounded-xl border-slate-300 focus:ring-0 focus:border-slate-500"
-                               placeholder="Ej: Administración">
+                               placeholder="Ej: AdministraciÃ³n">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs text-slate-600 mb-1">Descripción</label>
+                    <label class="block text-xs text-slate-600 mb-1">DescripciÃ³n</label>
                     <textarea name="descripcion" x-model="form.descripcion" rows="3"
                               class="w-full rounded-xl border-slate-300 focus:ring-0 focus:border-slate-500"
                               placeholder="Opcional"></textarea>
@@ -1635,7 +1731,7 @@ function areasTab() {
             </form>
         </div>
 
-        {{-- Selección de Rol + Renombrar/Eliminar --}}
+        {{-- SelecciÃ³n de Rol + Renombrar/Eliminar --}}
         <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 lg:col-span-2">
             <div class="flex items-center justify-between gap-2 mb-3">
                 <h3 class="font-semibold text-sm">Roles</h3>
@@ -1677,7 +1773,7 @@ function areasTab() {
                     {{-- Eliminar Rol --}}
                     <form method="POST" action="{{ route('empresa_config.roles.destroy', $selectedRole) }}"
                           class="mt-2"
-                          onsubmit="return confirm('¿Eliminar rol? (solo si no está asignado a usuarios)')">
+                          onsubmit="return confirm('Â¿Eliminar rol? (solo si no estÃ¡ asignado a usuarios)')">
                         @csrf
                         @method('DELETE')
                         <button class="text-sm text-red-600 hover:underline">
@@ -1735,13 +1831,13 @@ function areasTab() {
 
         {{-- Crear Permiso (modulo.access) --}}
         <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-            <h3 class="font-semibold text-sm mb-3">Crear permiso (módulo)</h3>
+            <h3 class="font-semibold text-sm mb-3">Crear permiso (mÃ³dulo)</h3>
 
             <form method="POST" action="{{ route('empresa_config.permissions.store') }}">
                 @csrf
 
                 <div class="mb-3">
-                    <label class="block text-xs text-gray-600 mb-1">Módulo</label>
+                    <label class="block text-xs text-gray-600 mb-1">MÃ³dulo</label>
                     <input name="module" value="{{ old('module') }}"
                            class="w-full border rounded-lg px-3 py-2 text-sm"
                            placeholder="ej: clientes, obras, ordenes_compra">
@@ -1767,7 +1863,7 @@ function areasTab() {
             {{-- Generar base (opcional) --}}
             @if(Route::has('empresa_config.permissions.seed_modules'))
                 <form method="POST" action="{{ route('empresa_config.permissions.seed_modules') }}" class="mt-3"
-                      onsubmit="return confirm('¿Generar permisos base de módulos? (si ya existen, no duplica)')">
+                      onsubmit="return confirm('Â¿Generar permisos base de mÃ³dulos? (si ya existen, no duplica)')">
                     @csrf
                     <button class="w-full px-3 py-2 rounded-lg border text-sm">
                         Generar permisos base
@@ -1796,7 +1892,7 @@ function areasTab() {
 
             @if($modulePerms->isEmpty())
                 <div class="text-sm text-gray-500">
-                    No hay permisos de módulo todavía. Crea uno o usa “Generar permisos base”.
+                    No hay permisos de mÃ³dulo todavÃ­a. Crea uno o usa â€œGenerar permisos baseâ€.
                 </div>
             @else
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -1808,7 +1904,7 @@ function areasTab() {
                             </div>
 
                             <form method="POST" action="{{ route('empresa_config.permissions.destroy', $p) }}"
-                                  onsubmit="return confirm('¿Eliminar permiso? (solo si no está asignado)')">
+                                  onsubmit="return confirm('Â¿Eliminar permiso? (solo si no estÃ¡ asignado)')">
                                 @csrf
                                 @method('DELETE')
                                 <button class="text-sm text-red-600 hover:underline">

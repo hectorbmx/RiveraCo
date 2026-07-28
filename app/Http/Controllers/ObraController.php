@@ -36,7 +36,6 @@ use App\Models\ObraMaquinaRegistro;
 use App\Models\CatalogoActividadComision;
 use App\Models\ObraAsistencia;
 use App\Models\VehiculoEmpleadoKmLog;
-use App\Models\VehiculoObra;
 use Carbon\Carbon;
 use App\Models\OrdenCompra;
 use App\Models\ObraFolio;
@@ -554,11 +553,11 @@ $planeacion = \App\Models\ObraPlaneacionSemanal::query()
 $presupuestosDisponibles = Presupuesto::whereDoesntHave('obras', function($query) use ($obra) {
     $query->where('obras.id', $obra->id);
 })
-// Usamos el nombre del cliente de la relación de la obra
+// Usamos el nombre del cliente de la relaciÃ³n de la obra
 // ->where('nombre_cliente', $obra->cliente->nombre) 
 ->get();
 
-    // Asignaciones activas e histórico (de esta obra)
+    // Asignaciones activas e histÃ³rico (de esta obra)
     $asignaciones           = $obra->empleadosAsignados;
     $asignacionesActivas    = $asignaciones->where('activo', true);
     $asignacionesHistoricas = $asignaciones->where('activo', false);
@@ -625,7 +624,7 @@ if ($tab === 'asistencias') {
         $rawQuery->whereDate('checked_date', now()->toDateString());
     }
 
-    // 👉 AQUÍ se ejecuta el query
+    // ðŸ‘‰ AQUÃ se ejecuta el query
     $raw = $rawQuery
         ->orderByDesc('checked_date')
         ->orderBy('checked_at')
@@ -633,7 +632,7 @@ if ($tab === 'asistencias') {
 
     /*
     |--------------------------------------------------------------------------
-    | TABLA GENERAL (ya la tenías)
+    | TABLA GENERAL (ya la tenÃ­as)
     |--------------------------------------------------------------------------
     */
     $asistencias = $raw
@@ -649,7 +648,7 @@ if ($tab === 'asistencias') {
                     'entrada_hora'  => $entrada?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
                     'salida_hora'   => $salida?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
 
-                    // ✅ estas 2 líneas son las que te faltan
+                    // âœ… estas 2 lÃ­neas son las que te faltan
                     'entrada_foto'  => $entrada?->photo_path,
                     'salida_foto'   => $salida?->photo_path,
 
@@ -682,7 +681,7 @@ if ($tab === 'asistencias') {
     }
 
     $getEmpId = function ($r) {
-    // prioridad: si la relación empleado existe, toma su PK real
+    // prioridad: si la relaciÃ³n empleado existe, toma su PK real
     return $r->empleado?->id_Empleado ?? $r->empleado_id;
 };
 
@@ -811,7 +810,7 @@ $reposicionesMontos = [
         'pagado'     => $solicitudesGastos->where('estatus', 'pagado')->sum('total'),
     ];
 
-    // Crear mapa de montos solicitados/autorizados por semana para Planeación
+    // Crear mapa de montos solicitados/autorizados por semana para PlaneaciÃ³n
     $montosSolicitadosMap = [];
     foreach ($solicitudesGastos as $sol) {
         if ($sol->estatus !== 'rechazado') {
@@ -879,7 +878,7 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
         })
         ->values();
 
-    // Inicializamos vacíos por si no estamos en ese tab
+    // Inicializamos vacÃ­os por si no estamos en ese tab
     $maquinasAsignadasActivas    = collect();
     $maquinasAsignadasHistoricas = collect();
     $maquinasDisponibles         = collect();
@@ -907,7 +906,7 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
         $pilasAsignadasActivas    = $pilasObra->where('activo', true);
         $pilasAsignadasHistoricas = $pilasObra->where('activo', false);
 
-        // Catálogo de pilas (para el <select> de asignación)
+        // CatÃ¡logo de pilas (para el <select> de asignaciÃ³n)
         $pilasCatalogo = CatalogoPila::where('activa', true)
             ->orderBy('diametro_cm')
             ->orderBy('codigo')
@@ -942,11 +941,11 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
         $maquinasAsignadasActivas    = $asignacionesMaquina->where('estado', 'activa');
         $maquinasAsignadasHistoricas = $asignacionesMaquina->where('estado', 'finalizada');
 
-        // IDs de máquinas actualmente activas en cualquier obra
+        // IDs de mÃ¡quinas actualmente activas en cualquier obra
         $maquinasOcupadasIds = ObraMaquina::activas()
             ->pluck('maquina_id');
 
-        // Máquinas operativas y no ocupadas
+        // MÃ¡quinas operativas y no ocupadas
         $maquinasDisponibles = Maquina::query()
             ->where('estado', 'operativa')
             ->whereNotIn('id', $maquinasOcupadasIds)
@@ -957,7 +956,7 @@ if ($tab === 'horas-maquina') {
     $registrosHorasMaquina = ObraMaquinaRegistro::query()
         ->where('obra_id', $obra->id)
         ->with([
-            'asignacion.maquina', // para mostrar la máquina en cada registro
+            'asignacion.maquina', // para mostrar la mÃ¡quina en cada registro
         ])
         ->orderByDesc('inicio')
         ->orderByDesc('id')
@@ -966,81 +965,49 @@ if ($tab === 'horas-maquina') {
 
 
 if ($tab === 'vehiculos') {
-    $vehiculosObra = VehiculoObra::query()
+    $vehiculoKmLogs = VehiculoEmpleadoKmLog::query()
+        ->with(['asignacion.vehiculo', 'asignacion.empleado'])
         ->where('obra_id', $obra->id)
-        ->with(['vehiculo', 'empleado'])
-        ->orderByDesc('fecha_inicio')
+        ->orderByDesc('fecha')
         ->orderByDesc('id')
-        ->get();
+        ->get()
+        ->map(function ($log) {
+            $log->foto_url = $log->foto ? Storage::disk('public')->url($log->foto) : null;
+            $log->foto_ticket_gasolina_url = $log->foto_ticket_gasolina
+                ? Storage::disk('public')->url($log->foto_ticket_gasolina)
+                : null;
 
-    $vehiculoIds = $vehiculosObra->pluck('vehiculo_id')->filter()->unique()->values();
+            return $log;
+        });
 
-    if ($vehiculoIds->isNotEmpty()) {
-        $rangos = $vehiculosObra->groupBy('vehiculo_id');
+    $vehiculosObra = $vehiculoKmLogs
+        ->map(fn ($log) => $log->asignacion)
+        ->filter()
+        ->unique('id')
+        ->values();
 
-        $vehiculoKmLogs = VehiculoEmpleadoKmLog::query()
-            ->with(['asignacion.vehiculo', 'asignacion.empleado'])
-            ->whereHas('asignacion', function ($query) use ($vehiculoIds) {
-                $query->whereIn('vehiculo_id', $vehiculoIds);
-            })
-            ->orderByDesc('fecha')
-            ->orderByDesc('id')
-            ->get()
-            ->filter(function ($log) use ($rangos) {
-                $asignacion = $log->asignacion;
-                $fecha = $log->fecha;
+    $vehiculoKmResumen = $vehiculoKmLogs
+        ->groupBy(fn ($log) => $log->vehiculo_empleado_id)
+        ->map(function ($logs) {
+            $logsOrdenados = $logs->sortBy('fecha')->values();
+            $primerLog = $logsOrdenados->first();
+            $ultimoLog = $logsOrdenados->last();
+            $asignacion = $ultimoLog?->asignacion;
+            $kmInicio = $primerLog ? (int) $primerLog->km : null;
+            $kmActual = $ultimoLog ? (int) $ultimoLog->km : null;
+            $montoGasolina = $logsOrdenados->sum(fn ($log) => (float) ($log->monto_gasolina ?? 0));
 
-                if (!$asignacion || !$fecha) {
-                    return false;
-                }
-
-                $coincidencia = ($rangos->get($asignacion->vehiculo_id) ?? collect())
-                    ->first(function ($vehiculoObra) use ($asignacion, $fecha) {
-                        if ($vehiculoObra->empleado_id && (int) $vehiculoObra->empleado_id !== (int) $asignacion->empleado_id) {
-                            return false;
-                        }
-
-                        $inicio = Carbon::parse($vehiculoObra->fecha_inicio)->startOfDay();
-                        $fin = $vehiculoObra->fecha_fin
-                            ? Carbon::parse($vehiculoObra->fecha_fin)->endOfDay()
-                            : now()->endOfDay();
-
-                        return $fecha->betweenIncluded($inicio, $fin);
-                    });
-
-                if (!$coincidencia) {
-                    return false;
-                }
-
-                $log->obra_vehiculo = $coincidencia;
-                $log->foto_url = $log->foto ? Storage::disk('public')->url($log->foto) : null;
-
-                return true;
-            })
-            ->values();
-
-        $vehiculoKmResumen = $vehiculosObra
-            ->map(function ($vehiculoObra) use ($vehiculoKmLogs) {
-                $logs = $vehiculoKmLogs
-                    ->filter(fn ($log) => (int) $log->asignacion?->vehiculo_id === (int) $vehiculoObra->vehiculo_id)
-                    ->sortBy('fecha')
-                    ->values();
-
-                $ultimoLog = $logs->last();
-                $kmInicio = $vehiculoObra->km_inicio !== null ? (int) $vehiculoObra->km_inicio : null;
-                $kmActual = $ultimoLog ? (int) $ultimoLog->km : ($vehiculoObra->km_fin !== null ? (int) $vehiculoObra->km_fin : null);
-
-                return (object) [
-                    'asignacion' => $vehiculoObra,
-                    'lecturas' => $logs->count(),
-                    'km_inicio' => $kmInicio,
-                    'km_actual' => $kmActual,
-                    'km_avanzados' => ($kmInicio !== null && $kmActual !== null) ? max(0, $kmActual - $kmInicio) : null,
-                    'ultima_fecha' => $ultimoLog?->fecha,
-                ];
-            })
-            ->values();
-    }
+            return (object) [
+                'asignacion' => $asignacion,
+                'lecturas' => $logsOrdenados->count(),
+                'km_inicio' => $kmInicio,
+                'km_actual' => $kmActual,
+                'km_avanzados' => ($kmInicio !== null && $kmActual !== null) ? max(0, $kmActual - $kmInicio) : null,
+                'monto_gasolina' => $montoGasolina,
+                'ultima_fecha' => $ultimoLog?->fecha,
+            ];
+        })
+        ->values();
 }
     $comisiones =collect();
     $comisionesAgrupadas = collect();
@@ -1049,7 +1016,7 @@ if ($tab === 'vehiculos') {
 
     if ($tab === 'comisiones') {
 
-    // 1) Fecha seleccionada en el filtro (puede venir vacía)
+    // 1) Fecha seleccionada en el filtro (puede venir vacÃ­a)
     $selectedFecha = $request->query('fecha');
 
     // 2) Todas las fechas distintas de comisiones de esta obra (para el <select>)
@@ -1063,10 +1030,10 @@ if ($tab === 'vehiculos') {
     $query = Comision::where('obra_id', $obra->id)
         ->with([
             'pila',
-            // para poder mostrar la máquina sin N+1
+            // para poder mostrar la mÃ¡quina sin N+1
             'detalles.asignacionMaquina.maquina',
         ])
-        // suma de cantidad de TODAS las filas de detalle de esta comisión
+        // suma de cantidad de TODAS las filas de detalle de esta comisiÃ³n
         ->withSum('detalles as total_pilas', 'cantidad')
         ->orderByDesc('fecha')
         ->orderByDesc('id');
@@ -1076,7 +1043,7 @@ if ($tab === 'vehiculos') {
         $query->whereDate('fecha', $selectedFecha);
     }
 
-    // 5) Obtenemos el histórico (sin paginar porque estás dentro de la misma vista)
+    // 5) Obtenemos el histÃ³rico (sin paginar porque estÃ¡s dentro de la misma vista)
     $comisiones = $query->get();
     $comisionesAgrupadas = $comisiones
     ->groupBy(function ($comision) {
@@ -1148,7 +1115,7 @@ if ($tab === 'vehiculos') {
             'detalle'     => $pilasAvance,
         ];
     }
-        // Facturas de la obra (para el tab de facturación)
+        // Facturas de la obra (para el tab de facturaciÃ³n)
         $facturas = $obra->facturas()
             ->orderByDesc('fecha_factura')
             ->orderByDesc('id')
@@ -1197,7 +1164,7 @@ if ($tab === 'vehiculos') {
             $totalPendiente = max(0, $totalFacturadoSat - $totalPagadoSat);
         }
 
-// Totales de facturación (para resumen y barras)
+// Totales de facturaciÃ³n (para resumen y barras)
 // $totalFacturado = (float) $obra->facturas()->sum('monto');                         // todas las facturas emitidas
 // $totalPagado    = (float) $obra->facturas()->whereNotNull('fecha_pago')->sum('monto'); // solo las pagadas
 // $totalPendiente = max(0, $totalFacturado - $totalPagado);
@@ -1205,7 +1172,7 @@ $actividades = CatalogoActividadComision::where('activa', 1)
     ->orderBy('orden')
     ->get();
 
-// Avance cobrado que usamos en el tab "Información general"
+// Avance cobrado que usamos en el tab "InformaciÃ³n general"
 $avanceCobrado = 0;
 if ($tab === 'general') {
     // reutilizamos el total pagado
@@ -1265,12 +1232,12 @@ return view('obras.edit', [
     'formasPagoCfdi'              => $formasPagoCfdi,
     'regimenesFiscales'           => $regimenesFiscales,
 
-    // NUEVO: totales para el resumen de facturación
+    // NUEVO: totales para el resumen de facturaciÃ³n
     'totalFacturado'              => $totalFacturado,
     'totalPagado'                 => $totalPagado,
     'totalPendiente'              => $totalPendiente,
 
-    // NUEVO: lo usamos en la barra de avance de cobro en Información general
+    // NUEVO: lo usamos en la barra de avance de cobro en InformaciÃ³n general
     'avanceCobrado'                => $avanceCobrado,
     'roles'                        =>$roles,
     'asistencias'                  =>$asistencias,
@@ -1445,10 +1412,10 @@ public function reporteAsistencias(Request $request, Obra $obra)
         'concreto_total'           => ['nullable', 'numeric', 'min:0'],
     ]);
 
-    // 3) Ver qué datos SI están pasando la validación
+    // 3) Ver quÃ© datos SI estÃ¡n pasando la validaciÃ³n
     // dd($data);
 
-    // 4) (Esto NO se va a ejecutar mientras esté el dd)
+    // 4) (Esto NO se va a ejecutar mientras estÃ© el dd)
     $data['area_id'] = $this->areaIdParaTipoObra($data['tipo_obra']);
 
     $obra->update($data);
@@ -1504,7 +1471,7 @@ public function reporteAsistencias(Request $request, Obra $obra)
     $obra = \App\Models\Obra::findOrFail($id);
     
     if ($request->has('presupuestos')) {
-        // attach añade los registros a la tabla pivote obra_presupuesto
+        // attach aÃ±ade los registros a la tabla pivote obra_presupuesto
         $obra->presupuestos_vinculados()->attach($request->presupuestos);
     }
 
@@ -1531,7 +1498,7 @@ public function guardarPlaneacion(Request $request, $id)
                 ->first();
 
             if (!$gastoBase) {
-                \Log::warning("No se encontró gasto base para ID: {$gasto_id}");
+                \Log::warning("No se encontrÃ³ gasto base para ID: {$gasto_id}");
                 continue;
             }
 
@@ -1559,24 +1526,24 @@ public function guardarPlaneacion(Request $request, $id)
         return redirect()->route('obras.edit', [
             'obra' => $id,
             'tab'  => 'planeacion',
-        ])->with('success', 'Planeación guardada correctamente.');
+        ])->with('success', 'PlaneaciÃ³n guardada correctamente.');
 
     } catch (\Exception $e) {
         \DB::rollBack();
 
-        \Log::error('Error guardando planeación', [
+        \Log::error('Error guardando planeaciÃ³n', [
             'obra_id' => $id,
             'message' => $e->getMessage(),
             'line'    => $e->getLine(),
             'file'    => $e->getFile(),
         ]);
 
-        return redirect()->back()->with('error', 'Ocurrió un error al guardar los datos.');
+        return redirect()->back()->with('error', 'OcurriÃ³ un error al guardar los datos.');
     }
 }
 private function normalizeRfc(?string $rfc): string
 {
-    return preg_replace('/[^A-Z0-9&Ñ]/u', '', strtoupper(trim((string) $rfc))) ?? '';
+    return preg_replace('/[^A-Z0-9&Ã‘]/u', '', strtoupper(trim((string) $rfc))) ?? '';
 }
 
 private function facturasSatObra(Obra $obra): Collection

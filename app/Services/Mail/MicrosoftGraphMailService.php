@@ -11,6 +11,52 @@ use RuntimeException;
 
 class MicrosoftGraphMailService
 {
+    /**
+     * @param array<int, string> $destinatarios
+     * @param array<int, array<string, mixed>> $attachments
+     */
+    public function sendHtml(
+        string $subject,
+        string $html,
+        array $destinatarios,
+        ?string $graphUser = null,
+        array $attachments = []
+    ): void {
+        $destinatarios = $this->normalizeRecipients($destinatarios);
+
+        if ($destinatarios === []) {
+            throw new RuntimeException('No hay destinatarios validos para enviar el correo.');
+        }
+
+        $payload = [
+            'message' => [
+                'subject' => $subject,
+                'body' => [
+                    'contentType' => 'HTML',
+                    'content' => $html,
+                ],
+                'toRecipients' => array_map(fn (string $email) => [
+                    'emailAddress' => ['address' => $email],
+                ], $destinatarios),
+                'attachments' => $attachments,
+            ],
+            'saveToSentItems' => true,
+        ];
+
+        $response = Http::withToken($this->accessToken($graphUser))
+            ->acceptJson()
+            ->asJson()
+            ->post($this->sendMailUrl($graphUser), $payload);
+
+        if (!$response->successful()) {
+            $message = $response->json('error.message')
+                ?: $response->body()
+                ?: 'Microsoft Graph rechazo el envio.';
+
+            throw new RuntimeException('Microsoft Graph no pudo enviar el correo: ' . $message);
+        }
+    }
+
     public function sendSatFactura(SatFactura $factura, array $destinatarios, ?SatFacturaPago $pago = null): void
     {
         $destinatarios = $this->normalizeRecipients($destinatarios);
@@ -63,12 +109,12 @@ class MicrosoftGraphMailService
         }
     }
 
-    private function accessToken(): string
+    private function accessToken(?string $graphUser = null): string
     {
         $tenantId = $this->requiredConfig('tenant_id');
         $clientId = $this->requiredConfig('client_id');
         $clientSecret = $this->requiredConfig('client_secret');
-        $cacheKey = 'facturacion_graph_token_' . sha1($tenantId . '|' . $clientId . '|' . $this->graphUser());
+        $cacheKey = 'facturacion_graph_token_' . sha1($tenantId . '|' . $clientId . '|' . $this->graphUser($graphUser));
 
         return Cache::remember($cacheKey, now()->addMinutes(50), function () use ($tenantId, $clientId, $clientSecret) {
             $response = Http::asForm()->post(
@@ -100,14 +146,14 @@ class MicrosoftGraphMailService
         });
     }
 
-    private function sendMailUrl(): string
+    private function sendMailUrl(?string $graphUser = null): string
     {
-        return 'https://graph.microsoft.com/v1.0/users/' . rawurlencode($this->graphUser()) . '/sendMail';
+        return 'https://graph.microsoft.com/v1.0/users/' . rawurlencode($this->graphUser($graphUser)) . '/sendMail';
     }
 
-    private function graphUser(): string
+    private function graphUser(?string $graphUser = null): string
     {
-        return $this->requiredConfig('user');
+        return $graphUser ?: $this->requiredConfig('user');
     }
 
     private function requiredConfig(string $key): string

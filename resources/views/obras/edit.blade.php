@@ -3336,9 +3336,9 @@
     <div class="space-y-6">
         <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
             <div>
-                <h2 class="text-lg font-semibold text-slate-900">Vehiculos de la obra</h2>
+                <h2 class="text-lg font-semibold text-slate-900">Vehiculos registrados en la obra</h2>
                 <p class="text-sm text-slate-500 mt-1">
-                    Registros de kilometraje capturados desde la app movil, con evidencia fotografica.
+                    Registros de kilometraje y cargas de gasolina capturados desde la app movil.
                 </p>
             </div>
             <div class="text-sm text-slate-500">
@@ -3348,7 +3348,7 @@
 
         @if($vehiculosObra->isEmpty())
             <div class="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-                No hay vehiculos relacionados a esta obra en la tabla vehiculo_obra.
+                Todavia no hay registros moviles de vehiculo ligados a esta obra.
             </div>
         @else
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -3372,7 +3372,7 @@
                             </span>
                         </div>
 
-                        <dl class="grid grid-cols-3 gap-3 mt-4 text-xs">
+                        <dl class="grid grid-cols-2 gap-3 mt-4 text-xs md:grid-cols-4">
                             <div>
                                 <dt class="text-slate-500">Km inicio</dt>
                                 <dd class="font-semibold text-slate-900">{{ $resumen->km_inicio !== null ? number_format($resumen->km_inicio) : '-' }}</dd>
@@ -3385,10 +3385,14 @@
                                 <dt class="text-slate-500">Avance</dt>
                                 <dd class="font-semibold text-emerald-700">{{ $resumen->km_avanzados !== null ? number_format($resumen->km_avanzados) . ' km' : '-' }}</dd>
                             </div>
+                            <div>
+                                <dt class="text-slate-500">Gasolina</dt>
+                                <dd class="font-semibold text-slate-900">{{ $resumen->monto_gasolina > 0 ? '$' . number_format($resumen->monto_gasolina, 2) : '-' }}</dd>
+                            </div>
                         </dl>
 
                         <div class="mt-4 text-xs text-slate-500">
-                            {{ $asig->fecha_inicio?->format('d/m/Y') }} - {{ $asig->fecha_fin?->format('d/m/Y') ?? 'Actual' }}
+                            {{ $asig->fecha_asignacion?->format('d/m/Y') }} - {{ $asig->fecha_fin?->format('d/m/Y') ?? 'Actual' }}
                             @if($asig->empleado)
                                 <br>Responsable: {{ $asig->empleado->Nombre }} {{ $asig->empleado->Apellidos }}
                             @endif
@@ -3405,8 +3409,10 @@
                             <th class="py-2 px-3 text-left">Vehiculo</th>
                             <th class="py-2 px-3 text-left">Empleado</th>
                             <th class="py-2 px-3 text-right">Km</th>
+                            <th class="py-2 px-3 text-right">Gasolina</th>
                             <th class="py-2 px-3 text-left">Notas</th>
-                            <th class="py-2 px-3 text-left">Imagen</th>
+                            <th class="py-2 px-3 text-left">Odometro</th>
+                            <th class="py-2 px-3 text-left">Ticket</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -3435,6 +3441,9 @@
                                 <td class="py-2 px-3 text-right font-semibold text-slate-900 whitespace-nowrap">
                                     {{ number_format((int) $log->km) }} km
                                 </td>
+                                <td class="py-2 px-3 text-right font-semibold text-slate-900 whitespace-nowrap">
+                                    {{ $log->monto_gasolina !== null ? '$' . number_format((float) $log->monto_gasolina, 2) : '-' }}
+                                </td>
                                 <td class="py-2 px-3 max-w-xs text-slate-600">
                                     {{ $log->notas ?: '-' }}
                                 </td>
@@ -3447,11 +3456,20 @@
                                         <span class="text-slate-400">Sin imagen</span>
                                     @endif
                                 </td>
+                                <td class="py-2 px-3">
+                                    @if($log->foto_ticket_gasolina_url)
+                                        <a href="{{ $log->foto_ticket_gasolina_url }}" target="_blank" class="inline-block rounded-lg border border-slate-200 overflow-hidden hover:ring-2 hover:ring-blue-300">
+                                            <img src="{{ $log->foto_ticket_gasolina_url }}" alt="Ticket gasolina" class="h-16 w-20 object-cover bg-slate-100">
+                                        </a>
+                                    @else
+                                        <span class="text-slate-400">Sin ticket</span>
+                                    @endif
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="py-6 text-center text-slate-500">
-                                    Hay vehiculos en la obra, pero todavia no hay lecturas moviles dentro del rango de asignacion.
+                                <td colspan="8" class="py-6 text-center text-slate-500">
+                                    Todavia no hay lecturas moviles ligadas a esta obra.
                                 </td>
                             </tr>
                         @endforelse

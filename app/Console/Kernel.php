@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
         $schedule->command('app:check-insurance-expirations')->dailyAt('08:00');
+        $schedule->command('vehiculos:alertas-preventivo-km')->dailyAt('08:15');
     }
 
     /**

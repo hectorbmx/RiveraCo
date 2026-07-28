@@ -11,6 +11,7 @@
         $asignacionActual      = $asignacionActual      ?? null;
         $historialAsignaciones = $historialAsignaciones ?? collect();
         $empleadosAsignables   = $empleadosAsignables   ?? collect();
+        $preventivoVehiculo    = $preventivoVehiculo    ?? null;
 
         $tabs = [
             'general'        => 'General',
@@ -733,6 +734,7 @@
             @if($tab === 'mantenimientos')
                 @php
                     $mantenimientosVehiculo = $mantenimientosVehiculo ?? collect();
+                    $preventivoVehiculo = $preventivoVehiculo ?? null;
                     $statsMantenimientos = $statsMantenimientos ?? [
                         'total'       => 0,
                         'pendiente'   => 0,
@@ -760,6 +762,58 @@
                             Registrar mantenimiento
                         </a>
                     </div>
+
+
+                    @if($preventivoVehiculo)
+                        @php
+                            $preventivoColors = [
+                                'emerald' => 'border-emerald-200 bg-emerald-50 text-emerald-800',
+                                'amber' => 'border-amber-200 bg-amber-50 text-amber-800',
+                                'rose' => 'border-rose-200 bg-rose-50 text-rose-800',
+                                'slate' => 'border-slate-200 bg-slate-50 text-slate-700',
+                            ];
+                            $preventivoClass = $preventivoColors[$preventivoVehiculo['color'] ?? 'slate'] ?? $preventivoColors['slate'];
+                        @endphp
+                        <div class="border rounded-xl p-4 {{ $preventivoClass }}">
+                            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                <div>
+                                    <div class="text-xs font-semibold uppercase tracking-wide opacity-80">Servicio preventivo por KM</div>
+                                    <div class="mt-1 text-lg font-semibold">{{ $preventivoVehiculo['label'] }}</div>
+                                    <div class="mt-2 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                        <div>
+                                            <div class="opacity-70">KM actual</div>
+                                            <div class="font-semibold">{{ $preventivoVehiculo['km_actual'] !== null ? number_format($preventivoVehiculo['km_actual']) . ' km' : '-' }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="opacity-70">Último servicio</div>
+                                            <div class="font-semibold">{{ $preventivoVehiculo['km_ultimo_servicio'] !== null ? number_format($preventivoVehiculo['km_ultimo_servicio']) . ' km' : '-' }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="opacity-70">Próximo servicio</div>
+                                            <div class="font-semibold">{{ $preventivoVehiculo['km_proximo_servicio'] !== null ? number_format($preventivoVehiculo['km_proximo_servicio']) . ' km' : '-' }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="opacity-70">Última captura</div>
+                                            <div class="font-semibold">{{ $preventivoVehiculo['ultima_captura_fecha'] ? $preventivoVehiculo['ultima_captura_fecha']->format('d/m/Y') : '-' }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <a href="{{ route('mantenimiento.mantenimientos.create', [
+                                        'vehiculo_id' => $vehiculo->id,
+                                        'km_actuales' => $preventivoVehiculo['km_actual'],
+                                        'km_proximo_servicio' => $preventivoVehiculo['km_proximo_servicio'],
+                                    ]) }}"
+                                   class="inline-flex items-center justify-center px-3 py-2 rounded-lg text-sm bg-white/80 text-slate-800 border border-white/60 font-medium hover:bg-white">
+                                    Programar servicio
+                                </a>
+                            </div>
+
+                            <div class="mt-3 h-2 rounded-full bg-white/60 overflow-hidden">
+                                <div class="h-full bg-current opacity-60" style="width: {{ number_format($preventivoVehiculo['porcentaje'] ?? 0, 0) }}%"></div>
+                            </div>
+                        </div>
+                    @endif
 
                     {{-- RESUMEN / ESTADÍSTICAS --}}
                     <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">

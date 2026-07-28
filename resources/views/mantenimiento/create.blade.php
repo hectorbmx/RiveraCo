@@ -130,13 +130,13 @@
                     @else
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Km actuales</label>
-                            <input type="number" name="km_actuales" value="{{ old('km_actuales') }}"
+                            <input type="number" name="km_actuales" value="{{ old('km_actuales', request('km_actuales')) }}"
                                    class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
                         </div>
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Km proximo servicio</label>
-                            <input type="number" name="km_proximo_servicio" value="{{ old('km_proximo_servicio') }}"
+                            <input type="number" name="km_proximo_servicio" value="{{ old('km_proximo_servicio', request('km_proximo_servicio')) }}"
                                    class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
                         </div>
                     @endif

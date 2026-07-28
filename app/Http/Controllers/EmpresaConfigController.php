@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\EmpresaConfig;
+use App\Models\EmpresaAlertaDestinatario;
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\Maquina;
 use App\Models\Area;
@@ -67,6 +69,18 @@ public function index(){
             ->orderBy('nombre')
             ->get();
         $almacenes = Almacen::query()->where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
+        $vehiculoAlertaDestinatarios = EmpresaAlertaDestinatario::query()
+            ->with('user')
+            ->where('empresa_config_id', $config->id)
+            ->modulo('vehiculos')
+            ->orderByDesc('activo')
+            ->orderBy('nombre')
+            ->orderBy('email')
+            ->get();
+        $usuariosNotificables = User::query()
+            ->orderBy('name')
+            ->orderBy('email')
+            ->get(['id', 'name', 'email']);
 
         $cuentasBancoEmpresa = CuentaBancoEmpresa::query()
             ->orderByDesc('principal')
@@ -147,7 +161,7 @@ public function index(){
         $catalogoRoles = CatalogoRol::orderBy('nombre')->get();    
         $tarifarios = ComisionTarifario::orderByDesc('vigente_desde')->orderByDesc('id')->get();
 
-        // â€œvigenteâ€ = el mÃ¡s reciente (por ahora solo 1)
+        // Ã¢â‚¬Å“vigenteÃ¢â‚¬Â = el mÃƒÂ¡s reciente (por ahora solo 1)
         $tarifarioVigente = $tarifarios->first();
 
         // detalles del vigente (si existe)
@@ -159,7 +173,7 @@ public function index(){
                 ->get()
             : collect();
 
-        // âœ… Seguridad (solo para admin/super-admin)
+        // Ã¢Å“â€¦ Seguridad (solo para admin/super-admin)
         $roles = collect();
         $permissions = collect();
         
@@ -180,7 +194,7 @@ public function index(){
                 ->orderBy('name')
                 ->get();
 
-            // SelecciÃ³n de rol: por query (?role=ID) o el primero
+            // SelecciÃƒÂ³n de rol: por query (?role=ID) o el primero
             $roleId = request()->integer('role');
             $selectedRole = $roleId
                 ? $roles->firstWhere('id', $roleId)
@@ -215,6 +229,8 @@ public function index(){
         'preventivosMaquinaria',
         'listasRaya',
         'almacenes',
+        'vehiculoAlertaDestinatarios',
+        'usuariosNotificables',
     ));
 }
 
@@ -242,14 +258,14 @@ public function index(){
 
         $config->update($data);
 
-        return back()->with('success', 'ConfiguraciÃ³n general actualizada.');
+        return back()->with('success', 'ConfiguraciÃƒÂ³n general actualizada.');
     }
 
     /**
      * Secciones nuevas (tabs): por ahora no persisten en empresa_config
      * pero tampoco rompen la app.
      *
-     * AquÃ­ despuÃ©s conectamos a tabla meta o a tablas especÃ­ficas.
+     * AquÃƒÂ­ despuÃƒÂ©s conectamos a tabla meta o a tablas especÃƒÂ­ficas.
      */
     if ($section === 'maquinaria') {
         $data = $request->validate([
@@ -262,21 +278,113 @@ public function index(){
 
         return redirect()
             ->route('empresa_config.edit', ['tab' => 'maquinaria'])
-            ->with('success', 'ConfiguraciÃƒÂ³n de maquinaria guardada.');
+            ->with('success', 'ConfiguraciÃƒÆ’Ã‚Â³n de maquinaria guardada.');
     }
 
-    if (in_array($section, ['vehiculos', 'rrhh', 'comisiones', 'reglas', 'alertas'], true)) {
-        // ValidaciÃ³n opcional mÃ­nima para que no aceptes basura (puedes ajustar)
-        $request->validate([
-            // ejemplos (opcionales). Si todavÃ­a no guardarÃ¡s, puedes dejar vacÃ­o.
-            // 'servicio_km' => ['nullable','integer','min:0'],
+    if ($section === 'vehiculos') {
+        $data = $request->validate([
+            'vehiculo_servicio_km' => ['required', 'integer', 'min:1', 'max:1000000'],
+            'vehiculo_servicio_meses' => ['required', 'integer', 'min:1', 'max:120'],
+            'vehiculo_alerta_km' => ['required', 'integer', 'min:0', 'max:1000000'],
+            'vehiculo_alerta_dias' => ['required', 'integer', 'min:0', 'max:365'],
+            'vehiculo_alertas_activas' => ['nullable', 'boolean'],
+            'destinatarios' => ['nullable', 'array'],
+            'destinatarios.*.id' => ['nullable', 'integer', 'exists:empresa_alerta_destinatarios,id'],
+            'destinatarios.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'destinatarios.*.email' => ['nullable', 'email', 'max:255'],
+            'destinatarios.*.notificar_correo' => ['nullable', 'boolean'],
+            'destinatarios.*.notificar_sistema' => ['nullable', 'boolean'],
+            'destinatarios.*.activo' => ['nullable', 'boolean'],
+            'nuevo_destinatario.user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'nuevo_destinatario.email' => ['nullable', 'email', 'max:255'],
+            'nuevo_destinatario.notificar_correo' => ['nullable', 'boolean'],
+            'nuevo_destinatario.notificar_sistema' => ['nullable', 'boolean'],
+            'nuevo_destinatario.activo' => ['nullable', 'boolean'],
         ]);
 
-        return back()->with('success', 'ConfiguraciÃ³n guardada.');
+        $data['vehiculo_alertas_activas'] = $request->boolean('vehiculo_alertas_activas');
+
+        $config->update(collect($data)->only([
+            'vehiculo_servicio_km',
+            'vehiculo_servicio_meses',
+            'vehiculo_alerta_km',
+            'vehiculo_alerta_dias',
+            'vehiculo_alertas_activas',
+        ])->all());
+
+        $this->guardarDestinatariosAlertaVehiculos($config, $data, $request);
+
+        return redirect()
+            ->route('empresa_config.edit', ['tab' => 'vehiculos'])
+            ->with('success', 'Configuracion de vehiculos guardada.');
     }
 
-    return back()->with('error', 'SecciÃ³n de configuraciÃ³n invÃ¡lida.');
+    if (in_array($section, ['rrhh', 'comisiones', 'reglas', 'alertas'], true)) {
+        $request->validate([]);
+
+        return back()->with('success', 'Configuracion guardada.');
+    }
+
+    return back()->with('error', 'SecciÃƒÂ³n de configuraciÃƒÂ³n invÃƒÂ¡lida.');
 }
+private function guardarDestinatariosAlertaVehiculos(EmpresaConfig $config, array $data, Request $request): void
+{
+    foreach ($data['destinatarios'] ?? [] as $destinatarioData) {
+        if (empty($destinatarioData['id'])) {
+            continue;
+        }
+
+        $destinatario = EmpresaAlertaDestinatario::query()
+            ->where('empresa_config_id', $config->id)
+            ->modulo('vehiculos')
+            ->find($destinatarioData['id']);
+
+        if (! $destinatario) {
+            continue;
+        }
+
+        $this->persistirDestinatarioAlerta($destinatario, $destinatarioData, $request, 'destinatarios.' . $destinatarioData['id']);
+    }
+
+    $nuevo = $data['nuevo_destinatario'] ?? [];
+    $hayNuevo = !empty($nuevo['user_id']) || !empty($nuevo['email']);
+
+    if ($hayNuevo) {
+        $destinatario = new EmpresaAlertaDestinatario([
+            'empresa_config_id' => $config->id,
+            'modulo' => 'vehiculos',
+        ]);
+
+        $this->persistirDestinatarioAlerta($destinatario, $nuevo, $request, 'nuevo_destinatario');
+    }
+}
+
+private function persistirDestinatarioAlerta(EmpresaAlertaDestinatario $destinatario, array $data, Request $request, string $prefix): void
+{
+    $user = !empty($data['user_id']) ? User::find($data['user_id']) : null;
+    $email = $data['email'] ?? $user?->email;
+    $nombre = $data['nombre'] ?? $destinatario->nombre ?? $user?->name ?? $email;
+
+    if (! $user && ! $email) {
+        return;
+    }
+
+    $destinatario->fill([
+        'user_id' => $user?->id,
+        'nombre' => $nombre,
+        'email' => $email,
+        'notificar_correo' => $request->boolean($prefix . '.notificar_correo'),
+        'notificar_sistema' => $request->boolean($prefix . '.notificar_sistema') && (bool) $user,
+        'activo' => $request->boolean($prefix . '.activo'),
+    ]);
+
+    if (! $destinatario->notificar_correo && ! $destinatario->notificar_sistema) {
+        $destinatario->notificar_correo = (bool) $email;
+    }
+
+    $destinatario->save();
+}
+
 public function updateFolioObra(Request $request, ObraFolio $folio)
 {
     $data = $request->validate([
@@ -322,7 +430,7 @@ public function updateTipoObraConfiguracion(Request $request, ObraTipoConfigurac
 
     return redirect()
         ->route('empresa_config.edit', ['tab' => 'folios'])
-        ->with('success', 'ConfiguraciÃ³n de tipo de obra actualizada.');
+        ->with('success', 'ConfiguraciÃƒÂ³n de tipo de obra actualizada.');
 }
 
 private function ultimoConsecutivoObraExistente(string $prefijo, int $anio): int
@@ -363,7 +471,7 @@ public function storeCuentaBanco(Request $request)
 
     $data['activa'] = true;
 
-    // si es la primera cuenta -> principal automÃ¡tica
+    // si es la primera cuenta -> principal automÃƒÂ¡tica
     $data['principal'] = CuentaBancoEmpresa::count() === 0;
 
     CuentaBancoEmpresa::create($data);
