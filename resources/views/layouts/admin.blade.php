@@ -74,6 +74,14 @@
                     <span class="sidebar-text">Agenda</span>
                 </a>
                 @endif
+                @if($canMenu('agenda.access'))
+                <a href="{{ route('calendario-operacional.index') }}"
+                   class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('calendario-operacional.*') ? 'bg-white/10' : '' }}"
+                   title="Calendario operacional">
+                    <span class="text-lg">🗓️</span>
+                    <span class="sidebar-text">Calendario</span>
+                </a>
+                @endif
                 @if($canMenu('obras.access'))
                 <a href="{{ route('presupuesto.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('presupuesto.*') ? 'bg-white/10' : '' }}"

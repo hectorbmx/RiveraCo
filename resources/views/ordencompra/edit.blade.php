@@ -38,6 +38,16 @@
             @endif
 
 
+            @canany(['ordenes_compra.print.access', 'ordenes_compra.imprimir'])
+                <a href="{{ route('ordenes_compra.print', $oc->id) }}"
+                   target="_blank"
+                   class="inline-flex items-center gap-2 bg-slate-900 text-white px-3 py-1 rounded hover:bg-slate-700"
+                   title="Imprimir OC">
+                    <span aria-hidden="true">??</span>
+                    <span>Imprimir</span>
+                </a>
+            @endcanany
+
             <a href="{{ route('ordenes_compra.index') }}"
                class="bg-gray-600 text-white px-3 py-1 rounded">
                 Ver

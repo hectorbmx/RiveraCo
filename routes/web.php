@@ -77,6 +77,7 @@ use App\Http\Controllers\ObraReposicionGastoController;
 use App\Http\Controllers\CajaChicaController;
 use App\Http\Controllers\EquipoComputoController;
 use App\Http\Controllers\AgendaController;
+use App\Http\Controllers\CalendarioOperacionalController;
 
 
 
@@ -285,6 +286,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/unread-json', [\App\Http\Controllers\NotificationController::class, 'unreadJson'])->name('unreadJson');
     });
 
+    Route::prefix('calendario-operacional')
+        ->name('calendario-operacional.')
+        ->group(function () {
+            Route::get('/', [CalendarioOperacionalController::class, 'index'])->name('index');
+            Route::get('/events', [CalendarioOperacionalController::class, 'events'])->name('events');
+        });
     Route::prefix('usuarios')
     ->name('usuarios.')
     ->group(function () {
