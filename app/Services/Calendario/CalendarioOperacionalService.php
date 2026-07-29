@@ -6,6 +6,7 @@ use App\Models\Empleado;
 use App\Models\Mantenimiento;
 use App\Models\Maquina;
 use App\Models\Obra;
+use App\Models\ObraFacturaBorrador;
 use App\Models\OrdenCompra;
 use App\Models\Seguro;
 use App\Models\Vehiculo;
@@ -93,6 +94,11 @@ class CalendarioOperacionalService
     {
         $obras = Obra::query()
             ->with(['cliente', 'responsable'])
+            ->withSum(['facturas as facturado_total' => fn ($query) => $query->where('estado', '!=', 'cancelada')], 'monto')
+            ->withSum(['facturas as facturado_sin_pago' => fn ($query) => $query->whereNull('fecha_pago')->where('estado', '!=', 'cancelada')], 'monto')
+            ->withSum(['facturas as cobrado_total' => fn ($query) => $query->whereNotNull('fecha_pago')->where('estado', '!=', 'cancelada')], 'monto')
+            ->withCount(['facturaBorradores as borradores_count' => fn ($query) => $query->whereNotIn('estatus', [ObraFacturaBorrador::ESTATUS_FACTURADO, ObraFacturaBorrador::ESTATUS_CANCELADO])])
+            ->withSum(['facturaBorradores as borradores_total' => fn ($query) => $query->whereNotIn('estatus', [ObraFacturaBorrador::ESTATUS_FACTURADO, ObraFacturaBorrador::ESTATUS_CANCELADO])], 'total')
             ->when($filtros['obra_id'] ?? null, fn ($query, $obraId) => $query->whereKey($obraId))
             ->when($filtros['cliente_id'] ?? null, fn ($query, $clienteId) => $query->where('cliente_id', $clienteId))
             ->when($filtros['responsable_id'] ?? null, fn ($query, $responsableId) => $query->where('responsable_id', $responsableId))
@@ -135,6 +141,18 @@ class CalendarioOperacionalService
                         'cliente' => $obra->cliente->nombre ?? null,
                         'responsable' => $obra->responsable->nombre_completo ?? null,
                         'clave_obra' => $obra->clave_obra ?? null,
+                        'fecha_inicio_programada' => $obra->fecha_inicio_programada?->toDateString(),
+                        'fecha_inicio_real' => $obra->fecha_inicio_real?->toDateString(),
+                        'fecha_fin_programada' => $obra->fecha_fin_programada?->toDateString(),
+                        'fecha_fin_real' => $obra->fecha_fin_real?->toDateString(),
+                        'monto_contratado' => $obra->monto_contratado,
+                        'monto_modificado' => $obra->monto_modificado,
+                        'monto_base_cobro' => $obra->monto_modificado ?: $obra->monto_contratado,
+                        'facturado_total' => $obra->facturado_total,
+                        'facturado_sin_pago' => $obra->facturado_sin_pago,
+                        'cobrado_total' => $obra->cobrado_total,
+                        'borradores_count' => $obra->borradores_count,
+                        'borradores_total' => $obra->borradores_total,
                     ]
                 );
             })->filter();
@@ -195,9 +213,20 @@ class CalendarioOperacionalService
                 status: $mantenimiento->estatus,
                 url: route('mantenimiento.mantenimientos.edit', $mantenimiento),
                 meta: [
+                    'equipo' => $equipo,
+                    'tipo_mantenimiento' => $mantenimiento->tipo,
+                    'categoria_mantenimiento' => $mantenimiento->categoria_mantenimiento,
+                    'estatus' => $mantenimiento->estatus,
+                    'descripcion' => $mantenimiento->descripcion,
+                    'fecha_programada' => $mantenimiento->fecha_programada?->toIso8601String(),
+                    'fecha_inicio' => $mantenimiento->fecha_inicio?->toIso8601String(),
+                    'fecha_fin' => $mantenimiento->fecha_fin?->toIso8601String(),
                     'mecanico' => $mantenimiento->mecanico->nombre_completo ?? null,
                     'obra' => $mantenimiento->obra->nombre ?? null,
-                    'categoria_mantenimiento' => $mantenimiento->categoria_mantenimiento,
+                    'km_actuales' => $mantenimiento->km_actuales,
+                    'km_proximo_servicio' => $mantenimiento->km_proximo_servicio,
+                    'horometro' => $mantenimiento->horometro,
+                    'costo_total' => $mantenimiento->costo_total,
                 ]
             );
         });
@@ -297,6 +326,7 @@ class CalendarioOperacionalService
     private function eventosRh(CarbonInterface $inicio, CarbonInterface $fin, array $filtros): Collection
     {
         $empleados = Empleado::query()
+            ->with('areaRef')
             ->where('Estatus', 1)
             ->where(function ($query) {
                 $query->whereNotNull('Fecha_nacimiento')
@@ -332,7 +362,7 @@ class CalendarioOperacionalService
                     url: route('empleados.edit', $empleado),
                     meta: [
                         'puesto' => $empleado->Puesto,
-                        'area' => $empleado->Area,
+                        'area' => $empleado->areaRef->nombre ?? $empleado->Area,
                     ]
                 );
             });
@@ -368,7 +398,7 @@ class CalendarioOperacionalService
                     url: route('empleados.edit', $empleado),
                     meta: [
                         'puesto' => $empleado->Puesto,
-                        'area' => $empleado->Area,
+                        'area' => $empleado->areaRef->nombre ?? $empleado->Area,
                         'fecha_ingreso' => $empleado->Fecha_ingreso->toDateString(),
                         'anios' => $anios,
                     ]

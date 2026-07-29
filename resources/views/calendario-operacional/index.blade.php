@@ -171,7 +171,7 @@
 
             <div class="flex flex-col-reverse gap-2 border-t border-slate-200 px-5 py-4 sm:flex-row sm:justify-end">
                 <button type="button" @click="closeEventModal()" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cerrar</button>
-                <a x-show="selectedEvent?.url" :href="selectedEvent?.url" class="rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-slate-700">Ver empleado</a>
+                <a x-show="selectedEvent?.url" :href="selectedEvent?.url" class="rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-slate-700"><span x-text="selectedEventActionLabel"></span></a>
             </div>
         </div>
     </div>
@@ -315,6 +315,41 @@
                 const meta = this.selectedEvent.meta || {};
                 const rows = [];
 
+                if (this.selectedEvent.category === 'obras') {
+                    if (meta.cliente) rows.push({ label: 'Cliente', value: meta.cliente });
+                    if (meta.responsable) rows.push({ label: 'Responsable', value: meta.responsable });
+                    if (meta.clave_obra) rows.push({ label: 'Clave', value: meta.clave_obra });
+                    if (meta.fecha_inicio_programada) rows.push({ label: 'Inicio programado', value: this.formatLongDate(meta.fecha_inicio_programada) });
+                    if (meta.fecha_inicio_real) rows.push({ label: 'Inicio real', value: this.formatLongDate(meta.fecha_inicio_real) });
+                    if (meta.fecha_fin_programada) rows.push({ label: 'Fin programado', value: this.formatLongDate(meta.fecha_fin_programada) });
+                    if (meta.fecha_fin_real) rows.push({ label: 'Fin real', value: this.formatLongDate(meta.fecha_fin_real) });
+                    rows.push({ label: 'Monto contratado', value: this.formatMoney(meta.monto_contratado) });
+                    if (Number(meta.monto_modificado || 0) > 0) rows.push({ label: 'Monto modificado', value: this.formatMoney(meta.monto_modificado) });
+                    rows.push({ label: 'Avance de cobro', value: this.formatMoney(meta.cobrado_total) });
+                    rows.push({ label: 'Facturado', value: this.formatMoney(meta.facturado_total) });
+                    rows.push({ label: 'Facturado sin pago registrado', value: this.formatMoney(meta.facturado_sin_pago) });
+                    rows.push({ label: 'Borradores', value: `${meta.borradores_count || 0} / ${this.formatMoney(meta.borradores_total)}` });
+                    return rows;
+                }
+
+                if (['vehiculos', 'maquinaria'].includes(this.selectedEvent.category)) {
+                    if (meta.equipo) rows.push({ label: 'Equipo', value: meta.equipo });
+                    if (meta.tipo_mantenimiento) rows.push({ label: 'Tipo', value: meta.tipo_mantenimiento });
+                    if (meta.categoria_mantenimiento) rows.push({ label: 'Categoria', value: meta.categoria_mantenimiento });
+                    if (meta.estatus) rows.push({ label: 'Estatus', value: meta.estatus });
+                    if (meta.fecha_programada) rows.push({ label: 'Programado', value: this.formatLongDate(meta.fecha_programada) });
+                    if (meta.fecha_inicio) rows.push({ label: 'Inicio servicio', value: this.formatLongDate(meta.fecha_inicio) });
+                    if (meta.fecha_fin) rows.push({ label: 'Fin servicio', value: this.formatLongDate(meta.fecha_fin) });
+                    if (meta.mecanico) rows.push({ label: 'Mecanico', value: meta.mecanico });
+                    if (meta.obra) rows.push({ label: 'Obra', value: meta.obra });
+                    if (meta.km_actuales) rows.push({ label: 'Km actuales', value: meta.km_actuales });
+                    if (meta.km_proximo_servicio) rows.push({ label: 'Proximo servicio km', value: meta.km_proximo_servicio });
+                    if (meta.horometro) rows.push({ label: 'Horometro', value: meta.horometro });
+                    rows.push({ label: 'Costo total', value: this.formatMoney(meta.costo_total) });
+                    if (meta.descripcion) rows.push({ label: 'Descripcion', value: meta.descripcion });
+                    return rows;
+                }
+
                 if (meta.puesto) rows.push({ label: 'Puesto', value: meta.puesto });
                 if (meta.area) rows.push({ label: 'Area', value: meta.area });
                 if (meta.fecha_ingreso) rows.push({ label: 'Fecha de ingreso', value: this.formatLongDate(meta.fecha_ingreso) });
@@ -323,8 +358,23 @@
                 return rows;
             },
 
+            get selectedEventActionLabel() {
+                if (!this.selectedEvent) return 'Ver detalle';
+
+                const labels = {
+                    rh: 'Ver empleado',
+                    obras: 'Ver obra',
+                    vehiculos: 'Ver servicio',
+                    maquinaria: 'Ver servicio',
+                };
+
+                return labels[this.selectedEvent.category] || 'Ver detalle';
+            },
+
             openEvent(event) {
-                if (event.category !== 'rh' && event.url) {
+                const modalCategories = ['rh', 'obras', 'vehiculos', 'maquinaria'];
+
+                if (!modalCategories.includes(event.category) && event.url) {
                     window.location.href = event.url;
                     return;
                 }
@@ -374,6 +424,10 @@
                 return labels[type] || String(type || '').replaceAll('_', ' ');
             },
 
+            formatMoney(value) {
+                const amount = Number(value || 0);
+                return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
+            },
             formatLongDate(value) {
                 const date = this.parseDate(value);
                 return new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
