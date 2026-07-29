@@ -208,6 +208,12 @@ class TelephonyExtensionController extends Controller
             $tab = 'calls';
         }
 
+        if (config('grandstream.mode') === 'agent') {
+            return redirect()
+                ->route('telephony.extensions.index', ['tab' => $tab])
+                ->with('error', 'La importacion de llamadas se ejecuta desde el agente local en la red del UCM. En este servidor no se conecta directo a Grandstream.');
+        }
+
         $exitCode = Artisan::call('grandstream:import-cdr', [
             '--today' => true,
         ]);
