@@ -1554,7 +1554,11 @@ private function facturasSatObra(Obra $obra): Collection
         ->get()
         ->groupBy(fn (ObraFacturaPago $pago) => strtoupper($pago->factura_uuid));
 
-    $facturasApi = SatFactura::with(['empresa', 'cliente'])
+    $facturasApi = SatFactura::with([
+            'empresa',
+            'cliente',
+            'pagos' => fn ($query) => $query->whereIn('estado', ['timbrado', 'registrado']),
+        ])
         ->where('obra_id', $obra->id)
         ->whereNotNull('uuid')
         ->orderByDesc('fecha_emision')
@@ -1574,6 +1578,7 @@ private function facturasSatObra(Obra $obra): Collection
             'moneda' => $factura->moneda ?? 'MXN',
             'estado' => $factura->estado,
             'metodo_pago' => $factura->metodo_pago,
+            'complementos_pago' => $factura->pagos,
             'pdf_route' => route('sat.facturacion.pdf', $factura),
         ]);
 
@@ -1596,6 +1601,7 @@ private function facturasSatObra(Obra $obra): Collection
             'moneda' => $cfdi->moneda ?? 'MXN',
             'estado' => null,
             'metodo_pago' => $cfdi->metodo_pago,
+            'complementos_pago' => collect(),
             'pdf_route' => route('sat.cfdis.pdf', $cfdi),
         ]);
 
@@ -1605,17 +1611,24 @@ private function facturasSatObra(Obra $obra): Collection
         ->unique(fn ($factura) => strtoupper($factura['uuid']))
         ->map(function (array $factura) use ($pagosPorUuid) {
             $pagos = $pagosPorUuid->get(strtoupper($factura['uuid']), collect())->values();
-            $pagado = (float) $pagos->sum('monto');
+            $requiereComplemento = strtoupper((string) ($factura['metodo_pago'] ?? '')) === 'PPD';
+            $complementos = collect($factura['complementos_pago'] ?? [])->values();
+            $pagadoAdministrativo = (float) $pagos->sum('monto');
+            $pagadoFiscal = (float) $complementos->sum('monto');
+            $pagado = $requiereComplemento ? $pagadoFiscal : $pagadoAdministrativo;
             $total = (float) $factura['total'];
             $saldo = max(0, round($total - $pagado, 2));
 
             $factura['pagos'] = $pagos;
+            $factura['complementos_pago'] = $complementos;
+            $factura['pagado_administrativo'] = $pagadoAdministrativo;
+            $factura['pagado_fiscal'] = $pagadoFiscal;
             $factura['pagado'] = $pagado;
             $factura['saldo'] = $saldo;
             $factura['estado_pago'] = $saldo <= 0
                 ? 'pagada'
                 : ($pagado > 0 ? 'parcial' : 'pendiente');
-            $factura['requiere_complemento_pago'] = strtoupper((string) ($factura['metodo_pago'] ?? '')) === 'PPD';
+            $factura['requiere_complemento_pago'] = $requiereComplemento;
 
             return $factura;
         })
