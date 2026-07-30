@@ -4640,19 +4640,19 @@ function relacionFacturasModal() {
                                         : 'bg-amber-100 text-amber-800') }}">
                                 {{ ucfirst($factura['estado_pago']) }}
                             </span>
-                            @if($factura['requiere_complemento_pago'] && $factura['pagado'] > 0)
+                            @if($factura['requiere_complemento_pago'])
                                 @php
-                                    $pagosConComplemento = $factura['pagos']->filter(fn ($pago) => filled($pago->sat_factura_pago_id));
+                                    $complementosTimbrados = collect($factura['complementos_pago'] ?? []);
                                     $pagosSinComplemento = $factura['pagos']->filter(fn ($pago) => blank($pago->sat_factura_pago_id));
                                 @endphp
 
-                                @if($pagosSinComplemento->isNotEmpty())
+                                @if($pagosSinComplemento->isNotEmpty() && $factura['saldo'] > 0)
                                     <div class="mt-1 text-[10px] font-semibold text-amber-700">
                                         Requiere complemento
                                     </div>
                                 @endif
 
-                                @if($pagosConComplemento->isNotEmpty())
+                                @if($complementosTimbrados->isNotEmpty())
                                     <div class="mt-1 text-[10px] font-semibold text-emerald-700">
                                         Complemento timbrado
                                     </div>
@@ -4668,12 +4668,19 @@ function relacionFacturasModal() {
                         </td>
                         <td class="px-3 py-2 text-center">
                             <div class="flex flex-col items-center gap-1.5">
-                                @if($factura['saldo'] > 0)
+                                @if($factura['saldo'] > 0 && $factura['requiere_complemento_pago'] && $factura['source'] === 'sat_facturas')
+                                    <a href="{{ route('sat.complementos-pago.create', ['factura_id' => $factura['id']]) }}"
+                                       class="text-xs font-semibold text-emerald-700 hover:underline">
+                                        Agregar complemento
+                                    </a>
+                                @elseif($factura['saldo'] > 0 && ! $factura['requiere_complemento_pago'])
                                     <button type="button"
                                             @click="openPagoModal(@js($factura))"
                                             class="text-xs font-semibold text-emerald-700 hover:underline">
                                         Registrar pago
                                     </button>
+                                @elseif($factura['saldo'] > 0)
+                                    <span class="text-xs text-slate-400">Complemento no disponible</span>
                                 @else
                                     <span class="text-xs text-slate-400">Sin saldo</span>
                                 @endif
