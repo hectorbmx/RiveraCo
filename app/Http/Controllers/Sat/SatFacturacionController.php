@@ -1380,6 +1380,10 @@ $invoice = $facturapi->Invoices->create($payload);
         'conceptos',
     ]);
 
+    $borradorFacturado = ObraFacturaBorrador::with('facturador')
+        ->where('sat_factura_id', $factura->id)
+        ->first();
+
     $zipUrl = URL::temporarySignedRoute(
         'sat.facturacion.zip',
         now()->addMinutes(30),
@@ -1399,7 +1403,7 @@ $invoice = $facturapi->Invoices->create($payload);
 
     $whatsappUrl = 'https://wa.me/?text=' . rawurlencode($whatsappMessage);
 
-    return view('sat.facturacion.show', compact('factura', 'zipUrl', 'whatsappUrl'));
+    return view('sat.facturacion.show', compact('factura', 'zipUrl', 'whatsappUrl', 'borradorFacturado'));
 }
 
 public function downloadXml(SatFactura $factura)

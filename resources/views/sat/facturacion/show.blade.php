@@ -85,6 +85,18 @@
                             {{ ucfirst($factura->estado) }}
                         </span>
                     </div>
+                    <div>
+                        <span class="text-slate-500 block">Fecha de timbrado</span>
+                        <p class="font-medium text-slate-800">
+                            {{ $factura->fecha_timbrado?->format('d/m/Y H:i') ?? 'No registrada' }}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 block">Timbrado por</span>
+                        <p class="font-medium {{ $borradorFacturado?->facturador ? 'text-slate-800' : 'text-slate-400' }}">
+                            {{ $borradorFacturado?->facturador?->name ?? 'No registrado' }}
+                        </p>
+                    </div>
                 </div>
             </div>
 
