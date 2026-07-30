@@ -4,7 +4,7 @@
 
 @section('content')
 @php
-    $facturasPayload = $facturasPendientes->map(function ($factura) {
+    $facturasPayload = collect($facturaSeleccionada ? [$facturaSeleccionada] : [])->map(function ($factura) {
         return [
             'id' => $factura->id,
             'folio' => trim(($factura->serie ? $factura->serie . '-' : '') . $factura->folio) ?: 'Factura #' . $factura->id,
@@ -49,15 +49,25 @@
                 <div class="space-y-5">
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-2">Factura PPD</label>
-                        <select x-model.number="form.factura_id"
-                                name="factura_id"
-                                @change="selectFactura()"
-                                required
-                                class="w-full rounded-xl border-slate-200 text-sm focus:border-slate-400 focus:ring-slate-200">
-                            <template x-for="factura in facturas" :key="factura.id">
-                                <option :value="factura.id" x-text="`${factura.folio} - ${factura.cliente} - $${moneyNumber(factura.saldo)}`"></option>
-                            </template>
-                        </select>
+                        <input type="hidden" name="factura_id" x-model="form.factura_id">
+
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
+                                <div>
+                                    <div class="text-base font-semibold text-slate-900" x-text="selected?.folio || 'Factura seleccionada'"></div>
+                                    <div class="text-sm text-slate-700 mt-1" x-text="selected?.cliente || '-'"></div>
+                                    <div class="text-xs text-slate-500 mt-1" x-text="selected?.rfc || '-'"></div>
+                                </div>
+                                <div class="text-left md:text-right">
+                                    <div class="text-xs font-semibold text-slate-500 uppercase">Saldo pendiente</div>
+                                    <div class="text-base font-bold text-amber-700" x-text="money(selected?.saldo || 0)"></div>
+                                </div>
+                            </div>
+                            <div class="mt-3 border-t border-slate-200 pt-3">
+                                <div class="text-xs font-semibold text-slate-500 uppercase">UUID factura</div>
+                                <div class="font-mono text-xs text-slate-700 break-all" x-text="selected?.uuid || '-'"></div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -185,9 +195,6 @@ function complementoPagoForm(facturas, selectedId) {
         },
         money(value) {
             return Number(value || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
-        },
-        moneyNumber(value) {
-            return Number(value || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         },
     };
 }
