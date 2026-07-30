@@ -24,7 +24,8 @@ class EmpleadoController extends Controller
 public function index(Request $request)
 {
     $search  = $request->get('q');
-    $estatus = $request->get('estatus'); // activo / baja / todos
+    $estatus = $request->get('estatus', 'activo'); // activo / baja / todos
+    $estatus = in_array($estatus, ['activo', 'baja', 'todos'], true) ? $estatus : 'activo';
     $area    = $request->get('area');    // id de area
 
     $areas = Area::query()
