@@ -355,8 +355,12 @@
 </div>
 
                     {{-- Complemento Servicios Parciales de Construcción --}}
+@php
+    $complementoConstruccion = old('complemento_construccion', $prefill['complemento_construccion'] ?? []);
+    $usarComplementoConstruccion = old('usar_complemento_construccion', $prefill['usar_complemento_construccion'] ?? false);
+@endphp
 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mt-6"
-     x-data="{ usarComplementoConstruccion: false }">
+     x-data="{ usarComplementoConstruccion: @js((bool) $usarComplementoConstruccion) }">
 
     <div class="flex items-start justify-between gap-4">
         <div>
@@ -388,7 +392,7 @@
             </label>
             <input type="text"
                    name="complemento_construccion[num_per_lico_aut]"
-                   value="{{ old('complemento_construccion.num_per_lico_aut') }}"
+                   value="{{ old('complemento_construccion.num_per_lico_aut', data_get($complementoConstruccion, 'num_per_lico_aut')) }}"
                    class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                    placeholder="Ej. DEUR-1698/24">
         </div>
@@ -396,14 +400,14 @@
         <div class="md:col-span-2">
             <label class="block text-sm font-medium text-slate-700">Calle del inmueble</label>
             <input type="text" name="complemento_construccion[calle]"
-                   value="{{ old('complemento_construccion.calle') }}"
+                   value="{{ old('complemento_construccion.calle', data_get($complementoConstruccion, 'calle')) }}"
                    class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
         </div>
 
         <div>
             <label class="block text-sm font-medium text-slate-700">Código postal</label>
             <input type="text" name="complemento_construccion[codigo_postal]"
-                   value="{{ old('complemento_construccion.codigo_postal') }}"
+                   value="{{ old('complemento_construccion.codigo_postal', data_get($complementoConstruccion, 'codigo_postal')) }}"
                    maxlength="5"
                    class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
         </div>
@@ -411,42 +415,42 @@
         <div>
             <label class="block text-sm font-medium text-slate-700">No. exterior</label>
             <input type="text" name="complemento_construccion[no_exterior]"
-                   value="{{ old('complemento_construccion.no_exterior', '.') }}"
+                   value="{{ old('complemento_construccion.no_exterior', data_get($complementoConstruccion, 'no_exterior', '.')) }}"
                    class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
         </div>
 
         <div>
             <label class="block text-sm font-medium text-slate-700">No. interior</label>
             <input type="text" name="complemento_construccion[no_interior]"
-                   value="{{ old('complemento_construccion.no_interior', '.') }}"
+                   value="{{ old('complemento_construccion.no_interior', data_get($complementoConstruccion, 'no_interior', '.')) }}"
                    class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
         </div>
 
         <div>
             <label class="block text-sm font-medium text-slate-700">Colonia</label>
             <input type="text" name="complemento_construccion[colonia]"
-                   value="{{ old('complemento_construccion.colonia', '.') }}"
+                   value="{{ old('complemento_construccion.colonia', data_get($complementoConstruccion, 'colonia', '.')) }}"
                    class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
         </div>
 
         <div>
             <label class="block text-sm font-medium text-slate-700">Localidad</label>
             <input type="text" name="complemento_construccion[localidad]"
-                   value="{{ old('complemento_construccion.localidad') }}"
+                   value="{{ old('complemento_construccion.localidad', data_get($complementoConstruccion, 'localidad')) }}"
                    class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
         </div>
 
         <div>
             <label class="block text-sm font-medium text-slate-700">Municipio</label>
             <input type="text" name="complemento_construccion[municipio]"
-                   value="{{ old('complemento_construccion.municipio') }}"
+                   value="{{ old('complemento_construccion.municipio', data_get($complementoConstruccion, 'municipio')) }}"
                    class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
         </div>
 
         <div>
             <label class="block text-sm font-medium text-slate-700">Estado</label>
             <input type="text" name="complemento_construccion[estado]"
-                   value="{{ old('complemento_construccion.estado') }}"
+                   value="{{ old('complemento_construccion.estado', data_get($complementoConstruccion, 'estado')) }}"
                    maxlength="2"
                    placeholder="Ej. 18"
                    class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
@@ -455,7 +459,7 @@
         <div class="md:col-span-3">
             <label class="block text-sm font-medium text-slate-700">Referencia</label>
             <input type="text" name="complemento_construccion[referencia]"
-                   value="{{ old('complemento_construccion.referencia', '.') }}"
+                   value="{{ old('complemento_construccion.referencia', data_get($complementoConstruccion, 'referencia', '.')) }}"
                    class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
         </div>
     </div>

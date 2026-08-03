@@ -1069,11 +1069,14 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
         */
         $usarComplementoConstruccion = $request->boolean('usar_complemento_construccion');
 
+$cc = [];
 $complementoConstruccionXml = null;
 $complementoConstruccionPdf = null;
+$complementoConstruccionLocal = null;
 
 if ($usarComplementoConstruccion) {
-    $cc = $request->input('complemento_construccion');
+    $cc = $request->input('complemento_construccion', []);
+    $complementoConstruccionLocal = $cc;
 
     $escapeXml = fn ($value) => htmlspecialchars($value ?? '.', ENT_XML1 | ENT_QUOTES, 'UTF-8');
 
@@ -1208,7 +1211,8 @@ $invoice = $facturapi->Invoices->create($payload);
             $subtotalBase,
             $tipoIva,
             $ivaTasaNum,
-            $borrador
+            $borrador,
+            $complementoConstruccionLocal
         ) {
 \Log::info('ANTES INVOICE');
             $totalFactura = max(0, round($total - $retenciones, 2));
@@ -1253,7 +1257,12 @@ $invoice = $facturapi->Invoices->create($payload);
                 'xml_path' => $xmlPath,
                 'pdf_path' => $pdfPath,
 
-                'facturapi_response' => json_decode(json_encode($invoice), true),
+                'facturapi_response' => array_filter([
+                    ...json_decode(json_encode($invoice), true),
+                    '_local' => $complementoConstruccionLocal ? [
+                        'complemento_construccion' => $complementoConstruccionLocal,
+                    ] : null,
+                ], fn ($value) => $value !== null),
             ]);
 
             if ($borrador) {
@@ -1398,8 +1407,9 @@ $invoice = $facturapi->Invoices->create($payload);
     ]);
 
     $whatsappUrl = 'https://wa.me/?text=' . rawurlencode($whatsappMessage);
+    $complementoConstruccion = data_get($factura->facturapi_response, '_local.complemento_construccion');
 
-    return view('sat.facturacion.show', compact('factura', 'zipUrl', 'whatsappUrl', 'borradorFacturado'));
+    return view('sat.facturacion.show', compact('factura', 'zipUrl', 'whatsappUrl', 'borradorFacturado', 'complementoConstruccion'));
 }
 
 public function downloadXml(SatFactura $factura)
@@ -1589,12 +1599,17 @@ private function actualizarEstadoLocalDesdeFacturapi(SatFactura $factura, array 
         default => $factura->estado,
     };
 
+    $localResponse = data_get($factura->facturapi_response, '_local');
+
     $factura->update([
         'estado' => $nuevoEstado,
         'fecha_cancelacion' => $nuevoEstado === 'cancelada'
             ? ($factura->fecha_cancelacion ?? now())
             : null,
-        'facturapi_response' => $body,
+        'facturapi_response' => array_filter([
+            ...$body,
+            '_local' => $localResponse,
+        ], fn ($value) => $value !== null),
         'error_message' => null,
     ]);
 

@@ -100,6 +100,53 @@
                 </div>
             </div>
 
+            @if(!empty($complementoConstruccion))
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-sm">
+                    <h2 class="text-lg font-semibold text-slate-900 mb-4 uppercase tracking-wider">Complemento Servicios Parciales de Construccion</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <span class="text-slate-500 block">Permiso, licencia o autorizacion</span>
+                            <p class="font-medium text-slate-900">{{ data_get($complementoConstruccion, 'num_per_lico_aut') ?: '-' }}</p>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">Codigo postal</span>
+                            <p class="font-medium text-slate-900">{{ data_get($complementoConstruccion, 'codigo_postal') ?: '-' }}</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <span class="text-slate-500 block">Calle del inmueble</span>
+                            <p class="font-medium text-slate-900">{{ data_get($complementoConstruccion, 'calle') ?: '-' }}</p>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">No. exterior</span>
+                            <p class="font-medium text-slate-900">{{ data_get($complementoConstruccion, 'no_exterior') ?: '-' }}</p>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">No. interior</span>
+                            <p class="font-medium text-slate-900">{{ data_get($complementoConstruccion, 'no_interior') ?: '-' }}</p>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">Colonia</span>
+                            <p class="font-medium text-slate-900">{{ data_get($complementoConstruccion, 'colonia') ?: '-' }}</p>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">Localidad</span>
+                            <p class="font-medium text-slate-900">{{ data_get($complementoConstruccion, 'localidad') ?: '-' }}</p>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">Municipio</span>
+                            <p class="font-medium text-slate-900">{{ data_get($complementoConstruccion, 'municipio') ?: '-' }}</p>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">Estado</span>
+                            <p class="font-medium text-slate-900">{{ data_get($complementoConstruccion, 'estado') ?: '-' }}</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <span class="text-slate-500 block">Referencia</span>
+                            <p class="font-medium text-slate-900">{{ data_get($complementoConstruccion, 'referencia') ?: '-' }}</p>
+                        </div>
+                    </div>
+                </div>
+            @endif
             {{-- TABLA CONCEPTOS --}}
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-sm">
                 <div class="px-6 py-4 border-b border-slate-200"><h2 class="text-lg font-semibold text-slate-900">Conceptos</h2></div>
