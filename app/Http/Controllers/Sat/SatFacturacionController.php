@@ -223,10 +223,6 @@ class SatFacturacionController extends Controller
     if ($request->filled('cfdi_borrador_id')) {
         $cfdiBorrador = SatFacturaBorrador::with(['cliente', 'obra', 'empresa'])
             ->where('estado', 'borrador')
-            ->where(function ($query) {
-                $query->whereNull('user_id')
-                    ->orWhere('user_id', auth()->id());
-            })
             ->findOrFail($request->integer('cfdi_borrador_id'));
 
         $prefill = $this->prefillFromCfdiBorrador($cfdiBorrador);
