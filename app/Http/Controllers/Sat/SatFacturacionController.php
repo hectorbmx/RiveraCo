@@ -630,7 +630,7 @@ public function preview(Request $request, FacturapiService $facturapiService)
         'retenciones' => ['nullable', 'numeric', 'min:0'],
 
         'conceptos' => ['required', 'array', 'min:1'],
-        'conceptos.*.descripcion' => ['required', 'string', 'max:255'],
+        'conceptos.*.descripcion' => ['required', 'string', 'max:1000'],
         'conceptos.*.clave_producto_servicio' => ['required', 'string', 'max:20'],
         'conceptos.*.clave_unidad' => ['required', 'string', 'max:20'],
         'conceptos.*.unidad' => ['nullable', 'string', 'max:100'],
@@ -835,7 +835,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
 
                 'conceptos' => ['required', 'array', 'min:1'],
                 'conceptos.*.sat_concepto_id' => ['nullable', 'exists:sat_conceptos,id'],
-                'conceptos.*.descripcion' => ['required', 'string', 'max:255'],
+                'conceptos.*.descripcion' => ['required', 'string', 'max:1000'],
                 'conceptos.*.clave_producto_servicio' => ['required', 'string', 'max:20'],
                 'conceptos.*.clave_unidad' => ['required', 'string', 'max:20'],
                 'conceptos.*.unidad' => ['nullable', 'string', 'max:100'],

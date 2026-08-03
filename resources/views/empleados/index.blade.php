@@ -16,6 +16,10 @@
 
         <div class="flex items-center gap-3">
             <form action="{{ route('empleados.index') }}" method="GET" class="flex items-center gap-2">
+                <input type="hidden" name="estatus" value="{{ $estatus }}">
+                @if($area)
+                    <input type="hidden" name="area" value="{{ $area }}">
+                @endif
                 <input type="text" name="q" placeholder="Buscar por nombre, área o puesto"
                        value="{{ $search }}"
                        class="rounded-xl border-slate-200 text-sm shadow-sm px-3 py-2 focus:border-[#FFC107] focus:ring-[#FFC107]">
@@ -38,9 +42,9 @@
             Baja
         </a>
 
-        <a href="{{ route('empleados.index') }}"
+        <a href="{{ route('empleados.index', ['estatus' => 'todos']) }}"
             class="px-3 py-2 text-xs rounded-xl
-            {{ !$estatus ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
+            {{ $estatus === 'todos' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
             Todos
         </a>
 
