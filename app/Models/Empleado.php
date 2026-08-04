@@ -192,6 +192,10 @@ public function getAreaIdAttribute()
             return $this->hasMany(EmpleadoDocumento::class, 'empleado_id', 'id_Empleado')
                 ->latestOfMany();
         }
+    public function eppEntregas()
+    {
+        return $this->hasMany(\App\Models\EmpleadoEppEntrega::class, 'empleado_id', 'id_Empleado')
+            ->orderByDesc('fecha_entrega')
+            ->orderByDesc('id');
+    }
 }
-
-

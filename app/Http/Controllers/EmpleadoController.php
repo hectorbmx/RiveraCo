@@ -27,11 +27,16 @@ public function index(Request $request)
     $estatus = $request->get('estatus', 'activo'); // activo / baja / todos
     $estatus = in_array($estatus, ['activo', 'baja', 'todos'], true) ? $estatus : 'activo';
     $area    = $request->get('area');    // id de area
+    $areaCodigo = $request->get('area_codigo');
 
     $areas = Area::query()
         ->where('activo', 1)
         ->orderBy('nombre')
         ->get(['id', 'nombre', 'codigo']);
+    if ($areaCodigo && !$area) {
+        $area = Area::where('codigo', $areaCodigo)->value('id');
+    }
+
     $empresa = EmpresaConfig::firstOrFail();
 
         $documentosObligatorios = EmpresaDocumentoTipo::query()
@@ -229,6 +234,10 @@ if ($tab === 'documentos') {
         ->orderBy('orden')
         ->orderBy('nombre')
         ->get();
+}
+
+if ($tab === 'epp') {
+    $empleado->load(['eppEntregas.entregadoPor']);
 }
 
     $areas = Area::where('activo', true)

@@ -39,6 +39,7 @@
                 'nomina'    => 'Nómina',
                 'kardex'    => 'Kardex',
                 'documentos'=> 'Documentos',
+                'epp'       => 'EPP',
             ];
         @endphp
 
@@ -106,6 +107,12 @@
                 ])
     @endif
 
+    @if($tab === 'epp')
+        @include('empleados.partials._epp', [
+            'empleado' => $empleado,
+            'entregas' => $empleado->eppEntregas ?? collect(),
+        ])
+    @endif
     </div>
 </div>
 @endsection

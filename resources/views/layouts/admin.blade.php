@@ -202,6 +202,29 @@
     </div>
 </div>
 @endif
+                @if($canMenu('giralda.access'))
+<div x-data="{ openGiralda: false }" class="w-full">
+    <button @click="openGiralda = !openGiralda"
+        class="w-full flex items-center justify-between gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('giralda.*') ? 'bg-white/10' : '' }}">
+        <div class="flex items-center gap-3">
+            <span class="text-lg">GL</span>
+            <span class="sidebar-text">GIRALDA</span>
+        </div>
+        <svg class="w-4 h-4 transition-transform"
+             :class="{ 'rotate-180': openGiralda }"
+             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 9l-7 7-7-7"></path>
+        </svg>
+    </button>
+    <div x-show="openGiralda" x-transition class="ml-10">
+        <a href="{{ route('giralda.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10">Panel</a>
+        <a href="{{ route('giralda.empleados') }}" class="block px-4 py-2 text-sm hover:bg-white/10">Empleados</a>
+        <a href="{{ route('ordenes_compra.index', ['area_codigo' => 'GL']) }}" class="block px-4 py-2 text-sm hover:bg-white/10">Ordenes de compra</a>
+        <a href="{{ route('inventario.stock.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10">Almacen</a>
+    </div>
+</div>
+@endif
                 <!-- @can('sat.access') -->
                 
 <!-- <div x-data="{ open: false }">
@@ -288,21 +311,6 @@
                     <span class="text-lg">📦</span>
                     <span class="sidebar-text">Productos</span>
                 </a>
-             
-                <li class="menu-item has-children">
-                    <a href="#"  class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
-                                    title="Inventario">
-                        📦 Inventario
-                    </a>
-                    <ul class="submenu">
-                        <li><a href="{{ route('inventario.documentos.index') }}"  class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
-                                    title="Documentos">📄 Documentos</a></li>
-                        <li><a href="{{ route('inventario.stock.index') }}" class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
-                                    title="Stock">📊 Stock</a></li>
-                        <li><a href="{{ route('inventario.kardex.index') }}" class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
-                                    title="Kardex">📚 Kardex</a></li>
-                    </ul>
-                </li>
 
                 @endif
                 @if($canMenu('proveedores.access'))    
@@ -323,14 +331,7 @@
                     <span class="sidebar-text">Reportes</span>
                 </a>
                 @endif
-                @if($canMenu('empresa.access'))
-                <a href="{{ route('telephony.extensions.index') }}"
-                   class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('telephony.*') ? 'bg-white/10' : '' }}"
-                   title="Telefonia">
-                    <span class="text-lg">TEL</span>
-                    <span class="sidebar-text">Telefonia</span>
-                </a>
-                @endif
+           
 
                    @if($canMenu('agenda.access'))
                 <a href="{{ route('telephony.extensions.index') }}"

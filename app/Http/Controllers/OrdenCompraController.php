@@ -60,6 +60,13 @@ class OrdenCompraController extends Controller
             $q->where('area_id', $request->area_id);
         }
 
+        if ($request->filled('area_codigo')) {
+            $areaFiltro = Area::where('codigo', $request->area_codigo)->first();
+            if ($areaFiltro) {
+                $q->where('area_id', $areaFiltro->id);
+            }
+        }
+
         if ($request->filled('obra_id')) {
             $q->where('obra_id', $request->obra_id);
         }
@@ -99,8 +106,13 @@ class OrdenCompraController extends Controller
     $obras = Obra::orderBy('nombre')->get();
     $centrosCosto = CentroCosto::where('activo', true)->orderBy('nombre')->get();
     $tiposIva = TipoIva::where('activo', true)->orderBy('porcentaje')->get();
+    $selectedAreaId = null;
 
-    return view('ordencompra.create', compact('proveedores','areas','obras','centrosCosto','tiposIva'));
+    if (request()->filled('area_codigo')) {
+        $selectedAreaId = Area::where('codigo', request('area_codigo'))->value('id');
+    }
+
+    return view('ordencompra.create', compact('proveedores','areas','obras','centrosCosto','tiposIva','selectedAreaId'));
 }
 
     /**

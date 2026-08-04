@@ -43,7 +43,7 @@
                 <label>Área</label>
                 <select name="area_id" class="w-full border p-2">
                     @foreach($areas as $a)
-                        <option value="{{ $a->id }}">{{ $a->nombre }}</option>
+                        <option value="{{ $a->id }}" {{ (old('area_id', $selectedAreaId ?? null) == $a->id) ? 'selected' : '' }}>{{ $a->nombre }}</option>
                     @endforeach
                 </select>
             </div>

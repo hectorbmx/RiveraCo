@@ -29,6 +29,8 @@ use App\Http\Controllers\OrdenCompraDetalleController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\EmpleadoDocumentoController;
+use App\Http\Controllers\GiraldaController;
+use App\Http\Controllers\EmpleadoEppEntregaController;
 
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Admin\EmpresaSecurityController;
@@ -597,6 +599,14 @@ Route::middleware('auth','verified')->group(function () {
     Route::post('/obras/{obra}/factura-borradores/{borrador}/autorizar', [ObraController::class, 'autorizarFacturaBorrador'])->name('obras.factura-borradores.autorizar');
     Route::post('/obras/{obra}/factura-borradores/{borrador}/rechazar', [ObraController::class, 'rechazarFacturaBorrador'])->name('obras.factura-borradores.rechazar');
     Route::post('/obras/{obra}/factura-borradores/{borrador}/revocar-autorizacion', [ObraController::class, 'revocarAutorizacionFacturaBorrador'])->name('obras.factura-borradores.revocar-autorizacion');
+    Route::prefix('giralda')->name('giralda.')->group(function () {
+        Route::get('/', [GiraldaController::class, 'index'])->name('index');
+        Route::get('/empleados', [GiraldaController::class, 'empleados'])->name('empleados');
+        Route::post('/horas-extras', [GiraldaController::class, 'storeHoraExtra'])->name('horas-extras.store');
+        Route::post('/horas-extras/{horaExtra}/autorizar', [GiraldaController::class, 'autorizarHoraExtra'])->name('horas-extras.autorizar');
+        Route::get('/horas-extras/imprimir', [GiraldaController::class, 'printHorasExtras'])->name('horas-extras.print');
+        Route::get('/horas-extras/exportar', [GiraldaController::class, 'exportHorasExtras'])->name('horas-extras.export');
+    });
     Route::resource('ordenes_compra', OrdenCompraController::class)->except(['show','destroy']);
     Route::post('ordenes_compra/{id}/autorizar', [OrdenCompraController::class, 'autorizar'])->name('ordenes_compra.autorizar');
     Route::post('ordenes_compra/{id}/cancelar', [OrdenCompraController::class, 'cancelar'])->name('ordenes_compra.cancelar');
@@ -742,6 +752,9 @@ Route::middleware('auth','verified')->group(function () {
 
     Route::delete('empleados/{empleado}/contactos/{contacto}', [EmpleadoContactoEmergenciaController::class, 'destroy'])
         ->name('empleados.contactos.destroy');
+
+    Route::post('empleados/{empleado}/epp-entregas', [EmpleadoEppEntregaController::class, 'store'])
+        ->name('empleados.epp.store');
 
     Route::post('empleados/{empleado}/documentos', [EmpleadoDocumentoController::class, 'store'])
         ->name('empleados.documentos.store');
