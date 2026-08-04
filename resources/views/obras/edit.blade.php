@@ -2000,7 +2000,7 @@
                 </button>
             </div>
 
-           <form action="{{ route('obras.reposicion-gastos.store', $obra) }}" method="POST" @submit="prepararEnvio($event)">
+            <form action="{{ route('obras.reposicion-gastos.store', $obra) }}" method="POST" enctype="multipart/form-data" @submit="prepararEnvio($event)">
                 @csrf
                     <input
                         type="hidden"
@@ -2330,7 +2330,7 @@
                             </div>
 
                             <div class="md:col-span-2 rounded-xl border border-emerald-200 bg-white px-4 py-3">
-                                <p class="text-xs font-bold uppercase text-emerald-600">Total calculado</p>
+                                <p class="text-xs font-bold uppercase text-emerald-600">Total calculated</p>
                                 <p class="mt-1 text-xl font-black text-emerald-700" x-text="formatoMoneda(totalViatico())"></p>
                             </div>
                         </div>
@@ -2371,6 +2371,7 @@
                                     <th class="p-3 text-left">Tipo</th>
                                     <th class="p-3 text-left">Proveedor / Descripción</th>
                                     <th class="p-3 text-left">Comprobante</th>
+                                    <th class="p-3 text-left">Adjunto (PDF/Img)</th>
                                     <th class="p-3 text-right">Monto</th>
                                     <th class="p-3 text-center">Acción</th>
                                 </tr>
@@ -2409,6 +2410,15 @@
                                             </template>
                                         </td>
 
+                                        <td class="p-3 text-xs">
+                                            <input
+                                                type="file"
+                                                :name="'evidencias[' + index + ']'"
+                                                accept="image/*,application/pdf"
+                                                class="block w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                                            >
+                                        </td>
+
                                         <td class="p-3 text-right font-bold text-slate-800">
                                             $<span x-text="Number(concepto.monto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })"></span>
                                         </td>
@@ -2426,7 +2436,7 @@
                                 </template>
 
                                 <tr x-show="conceptos.length === 0">
-                                    <td colspan="5" class="p-8 text-center text-slate-400">
+                                    <td colspan="6" class="p-8 text-center text-slate-400">
                                         Aún no has agregado conceptos a la reposición.
                                     </td>
                                 </tr>

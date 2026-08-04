@@ -15,6 +15,7 @@ use App\Models\ObraReposicionGastoDetalle;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\CuentaBancoEmpresa;
 use App\Models\MetodoPagoEmpresa;
+use App\Services\Contracts\ImageOptimizerInterface;
 
 
 class ObraReposicionGastoController extends Controller
@@ -92,7 +93,7 @@ class ObraReposicionGastoController extends Controller
         ]);
     }
 
-    public function store(Request $request, Obra $obra)
+    public function store(Request $request, Obra $obra, ImageOptimizerInterface $optimizer)
     {
         $request->merge([
             'conceptos' => json_decode($request->conceptos ?? '[]', true) ?? [],
@@ -122,6 +123,7 @@ class ObraReposicionGastoController extends Controller
             'conceptos.*.empresa_viatico_tarifa_id' => 'nullable|exists:empresa_viatico_tarifas,id',
             'conceptos.*.obra_empleado_id' => 'nullable|exists:obra_empleado,id',
             'conceptos.*.partida_id' => 'nullable|integer',
+            'evidencias.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
         ];
 
         if ($tipoReposicion === 'caja_chica') {
@@ -200,6 +202,8 @@ class ObraReposicionGastoController extends Controller
             return $concepto;
         });
 
+        $uploadedFiles = $request->file('evidencias', []);
+
         DB::beginTransaction();
 
         try {
@@ -215,7 +219,16 @@ class ObraReposicionGastoController extends Controller
                 'total' => $conceptos->sum('monto'),
             ]);
 
-            foreach ($conceptos as $concepto) {
+            foreach ($conceptos as $index => $concepto) {
+                $evidenciaPath = null;
+                if (isset($uploadedFiles[$index]) && $uploadedFiles[$index]->isValid()) {
+                    $evidenciaPath = $optimizer->optimizeAndStore(
+                        $uploadedFiles[$index],
+                        'reposiciones_evidencias',
+                        'public'
+                    );
+                }
+
                 ObraReposicionGastoDetalle::create([
                     'obra_reposicion_gasto_id' => $reposicion->id,
                     'tipo' => $concepto['tipo'] ?? null,
@@ -235,6 +248,7 @@ class ObraReposicionGastoController extends Controller
                     'empresa_viatico_tarifa_id' => $concepto['empresa_viatico_tarifa_id'] ?? null,
                     'obra_empleado_id' => $concepto['obra_empleado_id'] ?? null,
                     'partida_id' => $concepto['partida_id'] ?? $request->partida_id,
+                    'evidencia_path' => $evidenciaPath,
                 ]);
             }
 

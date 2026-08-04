@@ -42,6 +42,13 @@ class ObraReposicionGastoDetalle extends Model
         'importe_unitario' => 'decimal:2',
     ];
 
+    protected $appends = ['evidencia_url'];
+
+    public function getEvidenciaUrlAttribute(): ?string
+    {
+        return $this->evidencia_path ? \Illuminate\Support\Facades\Storage::url($this->evidencia_path) : null;
+    }
+
     public function reposicion()
     {
         return $this->belongsTo(

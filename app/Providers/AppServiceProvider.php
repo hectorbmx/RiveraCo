@@ -12,7 +12,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(
+            \App\Services\Contracts\ImageOptimizerInterface::class,
+            \App\Services\Image\InterventionImageOptimizer::class
+        );
     }
 
     /**
