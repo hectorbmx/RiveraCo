@@ -408,6 +408,7 @@ Route::middleware('auth','verified')->group(function () {
         Route::get('/configuracion-empresa', [EmpresaConfigController::class, 'edit'])->name('empresa_config.edit');
         Route::put('/configuracion-empresa', [EmpresaConfigController::class, 'update'])->name('empresa_config.update');
         Route::post('/configuracion-empresa/cuentas-banco', [EmpresaConfigController::class,'storeCuentaBanco'])->name('empresa_config.cuentas.store');
+        Route::post('/configuracion-empresa/viaticos-tarifas', [EmpresaConfigController::class, 'storeViaticoTarifa'])->name('empresa_config.viaticos.store');
         Route::patch('/configuracion-empresa/cuentas-banco/{cuenta}/toggle-activa', [EmpresaConfigController::class,'toggleCuentaBancoActiva'])->name('empresa_config.cuentas.toggle-activa');
         Route::patch('/configuracion-empresa/cuentas-banco/{cuenta}/principal', [EmpresaConfigController::class,'marcarCuentaBancoPrincipal'])->name('empresa_config.cuentas.principal');
         // Documentos de empleado configurables por empresa

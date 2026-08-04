@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Obra;
+use App\Models\ObraEmpleado;
 use App\Models\SatCfdi;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use App\Models\ObraReposicionGasto;
 use App\Models\ObraReposicionGastoDetalle;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -89,70 +92,165 @@ class ObraReposicionGastoController extends Controller
     }
 
     public function store(Request $request, Obra $obra)
-{
-   $request->merge([
-        'conceptos' => json_decode($request->conceptos ?? '[]', true) ?? []
-    ]);
-    $request->validate([
-        'tipo_reposicion' => 'required|in:caja_chica,viaticos,gastos_varios',
-        'partida_id' => 'required',
-        'semana' => 'required',
-        'conceptos' => 'required|array|min:1',
-        'conceptos.*.tipo' => 'required|string',
-        'conceptos.*.monto' => 'required|numeric|min:0.01',
-    ]);
-
-    DB::beginTransaction();
-
-    try {
-
-        $reposicion = ObraReposicionGasto::create([
-
-            'obra_id' => $obra->id,
-            'tipo_reposicion' => $request->tipo_reposicion,
-            'partida_id' => $request->partida_id,
-            'semana' => $request->semana,
-            'estatus' => 'solicitado',
-            'observaciones' => $request->observaciones,
-            'solicitado_por' => auth()->id(),
-            'solicitado_at' => now(),
-            'total' => collect($request->conceptos)->sum('monto'),
+    {
+        $request->merge([
+            'conceptos' => json_decode($request->conceptos ?? '[]', true) ?? [],
         ]);
 
-        foreach ($request->conceptos as $concepto) {
+        $tipoReposicion = $request->input('tipo_reposicion');
 
-            ObraReposicionGastoDetalle::create([
+        $rules = [
+            'tipo_reposicion' => 'required|in:caja_chica,viaticos,gastos_varios',
+            'partida_id' => 'required',
+            'semana' => 'required',
+            'conceptos' => 'required|array|min:1',
+            'conceptos.*.tipo' => 'required|string',
+            'conceptos.*.descripcion' => 'nullable|string|max:1000',
+            'conceptos.*.proveedor' => 'nullable|string|max:255',
+            'conceptos.*.rfc' => 'nullable|string|max:20',
+            'conceptos.*.uuid' => 'nullable|string|max:80',
+            'conceptos.*.fecha' => 'nullable|date',
+            'conceptos.*.fecha_inicio' => 'nullable|date',
+            'conceptos.*.fecha_fin' => 'nullable|date',
+            'conceptos.*.monto' => 'required|numeric|min:0.01',
+            'conceptos.*.comprobante_tipo' => 'nullable|in:cfdi,nota,viatico',
+            'conceptos.*.numero_nota' => 'nullable|string|max:80',
+            'conceptos.*.dias' => 'nullable|integer|min:1|max:365',
+            'conceptos.*.importe_unitario' => 'nullable|numeric|min:0.01',
+            'conceptos.*.sat_cfdi_id' => 'nullable|exists:sat_cfdis,id',
+            'conceptos.*.empresa_viatico_tarifa_id' => 'nullable|exists:empresa_viatico_tarifas,id',
+            'conceptos.*.obra_empleado_id' => 'nullable|exists:obra_empleado,id',
+            'conceptos.*.partida_id' => 'nullable|integer',
+        ];
 
-                'obra_reposicion_gasto_id' => $reposicion->id,
-                'tipo' => $concepto['tipo'] ?? null,
-                'descripcion' => $concepto['descripcion'] ?? null,
-                'proveedor' => $concepto['proveedor'] ?? null,
-                'rfc' => $concepto['rfc'] ?? null,
-                'uuid' => $concepto['uuid'] ?? null,
-                'fecha' => $concepto['fecha'] ?? null,
-                'monto' => $concepto['monto'] ?? 0,
-                'sat_cfdi_id' => $concepto['sat_cfdi_id'] ?? null,
-                'partida_id' => $concepto['partida_id'] ?? $request->partida_id,
-
-            ]);
+        if ($tipoReposicion === 'caja_chica') {
+            $rules['conceptos.*.sat_cfdi_id'] = 'required|exists:sat_cfdis,id';
+            $rules['conceptos.*.uuid'] = 'required|string';
         }
 
-        DB::commit();
+        if ($tipoReposicion === 'viaticos') {
+            $rules['conceptos.*.fecha_inicio'] = 'required|date';
+            $rules['conceptos.*.fecha_fin'] = 'required|date';
+            $rules['conceptos.*.descripcion'] = 'required|string|max:1000';
+            $rules['conceptos.*.importe_unitario'] = 'required|numeric|min:0.01';
+            $rules['conceptos.*.empresa_viatico_tarifa_id'] = 'required|exists:empresa_viatico_tarifas,id';
+            $rules['conceptos.*.obra_empleado_id'] = 'required|exists:obra_empleado,id';
+        }
 
-        return redirect()
-            ->back()
-            ->with('success', 'Reposición registrada correctamente.');
-    } catch (\Throwable $e) {
+        $validated = $request->validate($rules);
 
-        DB::rollBack();
-        report($e);
-        return redirect()
-            ->back()
-            ->with('error', 'Error al guardar la reposición.');
+        if ($tipoReposicion === 'viaticos') {
+            $empleadoIds = collect($validated['conceptos'])
+                ->pluck('obra_empleado_id')
+                ->filter()
+                ->unique()
+                ->values();
 
+            $empleadosValidos = ObraEmpleado::query()
+                ->where('obra_id', $obra->id)
+                ->where('activo', true)
+                ->whereIn('id', $empleadoIds)
+                ->count();
+
+            if ($empleadosValidos !== $empleadoIds->count()) {
+                throw ValidationException::withMessages([
+                    'conceptos' => 'Selecciona empleados activos asignados a esta obra para registrar viaticos.',
+                ]);
+            }
+        }
+
+        $conceptos = collect($validated['conceptos'])->map(function (array $concepto) use ($tipoReposicion) {
+            if ($tipoReposicion === 'viaticos') {
+                $inicio = Carbon::parse($concepto['fecha_inicio'])->startOfDay();
+                $fin = Carbon::parse($concepto['fecha_fin'])->startOfDay();
+
+                if ($fin->lt($inicio)) {
+                    throw ValidationException::withMessages([
+                        'conceptos' => 'La fecha final del viatico no puede ser menor a la fecha inicial.',
+                    ]);
+                }
+
+                $dias = $inicio->diffInDays($fin) + 1;
+
+                $concepto['comprobante_tipo'] = 'viatico';
+                $concepto['proveedor'] = null;
+                $concepto['rfc'] = null;
+                $concepto['uuid'] = null;
+                $concepto['sat_cfdi_id'] = null;
+                $concepto['fecha'] = $inicio->toDateString();
+                $concepto['fecha_inicio'] = $inicio->toDateString();
+                $concepto['fecha_fin'] = $fin->toDateString();
+                $concepto['dias'] = $dias;
+                $concepto['monto'] = round(((float) $concepto['importe_unitario']) * $dias, 2);
+            }
+
+            if ($tipoReposicion === 'caja_chica') {
+                $concepto['comprobante_tipo'] = 'cfdi';
+            }
+
+            if ($tipoReposicion === 'gastos_varios' && !empty($concepto['sat_cfdi_id'])) {
+                $concepto['comprobante_tipo'] = 'cfdi';
+            }
+
+            if ($tipoReposicion === 'gastos_varios' && empty($concepto['sat_cfdi_id'])) {
+                $concepto['comprobante_tipo'] = 'nota';
+            }
+
+            return $concepto;
+        });
+
+        DB::beginTransaction();
+
+        try {
+            $reposicion = ObraReposicionGasto::create([
+                'obra_id' => $obra->id,
+                'tipo_reposicion' => $tipoReposicion,
+                'partida_id' => $request->partida_id,
+                'semana' => $request->semana,
+                'estatus' => 'solicitado',
+                'observaciones' => $request->observaciones,
+                'solicitado_por' => auth()->id(),
+                'solicitado_at' => now(),
+                'total' => $conceptos->sum('monto'),
+            ]);
+
+            foreach ($conceptos as $concepto) {
+                ObraReposicionGastoDetalle::create([
+                    'obra_reposicion_gasto_id' => $reposicion->id,
+                    'tipo' => $concepto['tipo'] ?? null,
+                    'descripcion' => $concepto['descripcion'] ?? null,
+                    'proveedor' => $concepto['proveedor'] ?? null,
+                    'rfc' => $concepto['rfc'] ?? null,
+                    'uuid' => $concepto['uuid'] ?? null,
+                    'fecha' => $concepto['fecha'] ?? null,
+                    'fecha_inicio' => $concepto['fecha_inicio'] ?? null,
+                    'fecha_fin' => $concepto['fecha_fin'] ?? null,
+                    'monto' => $concepto['monto'] ?? 0,
+                    'comprobante_tipo' => $concepto['comprobante_tipo'] ?? null,
+                    'numero_nota' => $concepto['numero_nota'] ?? null,
+                    'dias' => $concepto['dias'] ?? null,
+                    'importe_unitario' => $concepto['importe_unitario'] ?? null,
+                    'sat_cfdi_id' => $concepto['sat_cfdi_id'] ?? null,
+                    'empresa_viatico_tarifa_id' => $concepto['empresa_viatico_tarifa_id'] ?? null,
+                    'obra_empleado_id' => $concepto['obra_empleado_id'] ?? null,
+                    'partida_id' => $concepto['partida_id'] ?? $request->partida_id,
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'reposicion-gastos'])
+                ->with('success', 'Reposicion registrada correctamente.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            report($e);
+
+            return redirect()
+                ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'reposicion-gastos'])
+                ->with('error', 'Error al guardar la reposicion.');
+        }
     }
-}
-
 public function show(Obra $obra, ObraReposicionGasto $reposicion)
 {
     abort_if($reposicion->obra_id !== $obra->id, 404);
@@ -327,3 +425,4 @@ public function rechazar(Request $request, Obra $obra, ObraReposicionGasto $repo
     return back()->with('success', 'Reposición rechazada correctamente.');
 }
 }
+

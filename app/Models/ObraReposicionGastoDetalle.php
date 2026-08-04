@@ -14,20 +14,32 @@ class ObraReposicionGastoDetalle extends Model
     protected $fillable = [
         'obra_reposicion_gasto_id',
         'sat_cfdi_id',
+        'empresa_viatico_tarifa_id',
+        'obra_empleado_id',
         'tipo',
         'descripcion',
         'proveedor',
         'rfc',
         'uuid',
         'fecha',
+        'fecha_inicio',
+        'fecha_fin',
         'monto',
+        'comprobante_tipo',
+        'numero_nota',
+        'dias',
+        'importe_unitario',
         'evidencia_path',
         'partida_id',
     ];
 
     protected $casts = [
         'fecha' => 'date',
+        'fecha_inicio' => 'date',
+        'fecha_fin' => 'date',
         'monto' => 'decimal:2',
+        'dias' => 'integer',
+        'importe_unitario' => 'decimal:2',
     ];
 
     public function reposicion()
@@ -45,6 +57,17 @@ class ObraReposicionGastoDetalle extends Model
             'sat_cfdi_id'
         );
     }
+
+    public function viaticoTarifa()
+    {
+        return $this->belongsTo(EmpresaViaticoTarifa::class, 'empresa_viatico_tarifa_id');
+    }
+
+    public function obraEmpleado()
+    {
+        return $this->belongsTo(ObraEmpleado::class, 'obra_empleado_id');
+    }
+
     public function partida()
     {
         return $this->belongsTo(ObraPlaneacionGasto::class, 'partida_id');

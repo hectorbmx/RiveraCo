@@ -164,8 +164,7 @@
             <th class="p-3 border text-left">Tipo</th>
             <th class="p-3 border text-left">Partida</th>
             <th class="p-3 border text-left">Proveedor / Descripción</th>
-            <th class="p-3 border text-left">RFC</th>
-            <th class="p-3 border text-left">UUID</th>
+            <th class="p-3 border text-left">Comprobante</th>
             <th class="p-3 border text-left">Fecha</th>
             <th class="p-3 border text-right">Monto</th>
         </tr>
@@ -215,14 +214,20 @@
                     </div>
                 </td>
 
-                {{-- RFC --}}
+                {{-- COMPROBANTE --}}
                 <td class="p-3 border text-xs text-slate-600">
-                    {{ $detalle->rfc ?? '-' }}
-                </td>
-
-                {{-- UUID --}}
-                <td class="p-3 border text-xs text-slate-500">
-                    {{ $detalle->uuid ?? '-' }}
+                    @if($detalle->comprobante_tipo === 'cfdi')
+                        <div>{{ $detalle->rfc ?? '-' }}</div>
+                        <div class="text-slate-400">{{ $detalle->uuid ?? '-' }}</div>
+                    @elseif($detalle->comprobante_tipo === 'nota')
+                        <div class="font-semibold text-slate-700">Nota</div>
+                        <div class="text-slate-400">{{ $detalle->numero_nota ?? '-' }}</div>
+                    @elseif($detalle->comprobante_tipo === 'viatico')
+                        <div>{{ $detalle->dias ?? 0 }} dia(s)</div>
+                        <div class="text-slate-400">${{ number_format((float) $detalle->importe_unitario, 2) }} por dia</div>
+                    @else
+                        -
+                    @endif
                 </td>
 
                 {{-- FECHA --}}

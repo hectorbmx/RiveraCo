@@ -1979,7 +1979,7 @@
     >
         <div
             @click.away="closeModal()"
-            class="bg-white rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden"
+            class="relative bg-white rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden"
         >
             <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <div>
@@ -2000,13 +2000,25 @@
                 </button>
             </div>
 
-           <form action="{{ route('obras.reposicion-gastos.store', $obra) }}" method="POST">
+           <form action="{{ route('obras.reposicion-gastos.store', $obra) }}" method="POST" @submit="prepararEnvio($event)">
                 @csrf
                     <input
                         type="hidden"
                         name="conceptos"
                         :value="JSON.stringify(conceptos)"
                     >
+                <div
+                    x-show="saving"
+                    x-cloak
+                    class="absolute inset-0 z-20 flex items-center justify-center bg-white/80 backdrop-blur-sm"
+                >
+                    <div class="rounded-2xl border border-blue-100 bg-white px-8 py-6 text-center shadow-xl">
+                        <div class="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600"></div>
+                        <p class="text-sm font-bold text-slate-800">Guardando reposicion...</p>
+                        <p class="mt-1 text-xs text-slate-500">Espera un momento, estamos registrando la solicitud.</p>
+                    </div>
+                </div>
+
                 <div class="p-6 overflow-y-auto max-h-[calc(90vh-140px)] space-y-6">
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -2018,6 +2030,7 @@
                             <select
                                 name="tipo_reposicion"
                                 x-model="tipoReposicion"
+                                @change="cambiarTipo()"
                                 class="w-full rounded-xl border-slate-200 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             >
                                 <option value="">Seleccionar...</option>
@@ -2026,8 +2039,14 @@
                                 <option value="gastos_varios">Gastos varios</option>
                             </select>
 
-                            <p x-show="tipoReposicion === 'caja_chica'" class="text-xs text-red-500 mt-2">
+                            <p x-show="esCajaChica()" class="text-xs text-red-500 mt-2">
                                 * Caja chica requiere factura obligatoria.
+                            </p>
+                            <p x-show="esGastosVarios()" class="text-xs text-slate-500 mt-2">
+                                Puedes usar factura CFDI o capturar una nota manual.
+                            </p>
+                            <p x-show="esViaticos()" class="text-xs text-slate-500 mt-2">
+                                El total se calcula con importe diario por dias.
                             </p>
                         </div>
 
@@ -2070,7 +2089,7 @@
 
                     {{-- BUSCADOR FACTURAS --}}
                     <div
-                        x-show="tipoReposicion === 'caja_chica'"
+                        x-show="usaBuscadorCfdi()"
                         class="rounded-xl border border-blue-200 bg-blue-50 p-4"
                     >
                         <div class="mb-4">
@@ -2082,7 +2101,7 @@
                             </p>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-3" @keydown.enter.prevent="buscarCfdis()">
                             <input
                                 type="text"
                                 x-model="busqueda.rfc"
@@ -2148,17 +2167,7 @@
                                 <template x-for="cfdi in resultadosCfdi" :key="cfdi.id">
                                        <button
                                                 type="button"
-                                                @click="agregarConcepto({
-                                                    sat_cfdi_id: cfdi.id,
-                                                    partida_id: partidaSeleccionada,
-                                                    tipo: 'Caja chica',
-                                                    proveedor: cfdi.emisor_nombre,
-                                                    descripcion: 'CFDI SAT',
-                                                    rfc: cfdi.rfc_emisor,
-                                                    uuid: cfdi.uuid,
-                                                    monto: cfdi.total,
-                                                    fecha: cfdi.fecha
-                                                })"
+                                                @click="agregarDesdeCfdi(cfdi)"
                                                 class="w-full px-4 py-3 text-left hover:bg-blue-50 flex justify-between gap-4"
                                             >
                                         <div>
@@ -2187,60 +2196,156 @@
                         </div>
                     </div>
 
-                    {{-- CAPTURA MANUAL --}}
+                    {{-- CAPTURA GASTOS VARIOS --}}
                     <div
-                        x-show="tipoReposicion !== 'caja_chica'"
+                        x-show="esGastosVarios()"
                         class="rounded-xl border border-slate-200 bg-slate-50 p-4"
                     >
                         <div class="mb-4">
-                            <h4 class="font-bold text-slate-800">
-                                Agregar concepto manual
-                            </h4>
-                            <p class="text-xs text-slate-500">
-                                Para viáticos o gastos varios puedes capturar notas, tickets o evidencias.
-                            </p>
+                            <h4 class="font-bold text-slate-800">Gasto con nota</h4>
+                            <p class="text-xs text-slate-500">Captura el concepto con espacio amplio. La nota aplica cuando no hay factura.</p>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-                            <input
-                                type="text"
-                                x-model="manual.descripcion"
-                                placeholder="Descripción"
-                                class="rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            >
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div class="md:col-span-4">
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Concepto</label>
+                                <textarea x-model="manual.descripcion" rows="4" placeholder="Describe el gasto con detalle" class="w-full rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+                            </div>
 
-                            <input
-                                type="text"
-                                x-model="manual.proveedor"
-                                placeholder="Proveedor / comercio"
-                                class="rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            >
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Proveedor / comercio</label>
+                                <input type="text" x-model="manual.proveedor" placeholder="Opcional" class="w-full rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
 
-                            <input
-                                type="date"
-                                x-model="manual.fecha"
-                                class="rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            >
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Numero de nota</label>
+                                <input type="text" x-model="manual.numero_nota" placeholder="Nota o ticket" class="w-full rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
 
-                            <input
-                                type="number"
-                                step="0.01"
-                                x-model="manual.monto"
-                                placeholder="Monto"
-                                class="rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            >
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha</label>
+                                <input type="date" x-model="manual.fecha" class="w-full rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
 
-                            <button
-                                type="button"
-                                @click="agregarManual()"
-                                class="rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
-                            >
-                                Agregar
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Importe</label>
+                                <input type="number" step="0.01" x-model="manual.monto" placeholder="0.00" class="w-full rounded-xl border-slate-200 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex justify-end">
+                            <button type="button" @click="agregarNotaManual()" class="rounded-xl bg-slate-800 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-700">
+                                Agregar nota
                             </button>
                         </div>
                     </div>
 
-                    {{-- TABLA CONCEPTOS --}}
+                    {{-- CAPTURA VIATICOS --}}
+                    <div
+                        x-show="esViaticos()"
+                        class="rounded-xl border border-emerald-200 bg-emerald-50 p-4"
+                    >
+                        <div class="mb-4 flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                            <div>
+                                <h4 class="font-bold text-emerald-900">Viaticos</h4>
+                                <p class="text-xs text-emerald-700">Selecciona empleado y rango. El total se calcula con la tarifa diaria vigente.</p>
+                            </div>
+
+                            <div class="rounded-xl border border-emerald-200 bg-white px-4 py-3 md:min-w-[220px]">
+                                <p class="text-xs font-bold uppercase text-emerald-600">Tarifa diaria vigente</p>
+                                <p class="mt-1 text-xl font-black text-emerald-700" x-text="formatoMoneda(tarifaViatico.importe_diario || 0)"></p>
+                                <p class="mt-1 text-xs text-slate-500" x-show="tarifaViatico.vigencia_desde" x-text="'Desde ' + formatoFechaCorta(tarifaViatico.vigencia_desde)"></p>
+                                <p class="mt-1 text-xs font-semibold text-red-600" x-show="!tarifaViatico.id">Configura una tarifa de viaticos antes de capturar.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Empleado en obra</label>
+                                <select
+                                    x-model="manual.obra_empleado_id"
+                                    @change="actualizarConceptoViatico()"
+                                    class="w-full rounded-xl border-slate-200 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                                >
+                                    <option value="">Seleccionar empleado...</option>
+                                    <template x-for="empleado in empleadosViaticos" :key="empleado.obra_empleado_id">
+                                        <option :value="empleado.obra_empleado_id" x-text="empleado.nombre + (empleado.puesto ? ' - ' + empleado.puesto : '')"></option>
+                                    </template>
+                                </select>
+                                <p x-show="empleadosViaticos.length === 0" class="mt-2 text-xs text-red-600">No hay empleados activos asignados a esta obra.</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Desde</label>
+                                <input
+                                    type="date"
+                                    x-model="manual.fecha_inicio"
+                                    @change="actualizarConceptoViatico()"
+                                    class="w-full rounded-xl border-slate-200 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                                >
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Hasta</label>
+                                <input
+                                    type="date"
+                                    x-model="manual.fecha_fin"
+                                    @change="actualizarConceptoViatico()"
+                                    class="w-full rounded-xl border-slate-200 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                                >
+                            </div>
+
+                            <div class="md:col-span-4">
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Concepto</label>
+                                <textarea
+                                    x-model="manual.descripcion"
+                                    rows="4"
+                                    placeholder="Se generara automaticamente al seleccionar empleado y rango"
+                                    class="w-full rounded-xl border-slate-200 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                                ></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Importe por dia</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    x-model="manual.importe_unitario"
+                                    @input="actualizarConceptoViatico()"
+                                    class="w-full rounded-xl border-slate-200 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                                >
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Dias</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    :value="diasViatico()"
+                                    readonly
+                                    class="w-full rounded-xl border-slate-200 bg-slate-100 text-sm shadow-sm"
+                                >
+                            </div>
+
+                            <div class="md:col-span-2 rounded-xl border border-emerald-200 bg-white px-4 py-3">
+                                <p class="text-xs font-bold uppercase text-emerald-600">Total calculado</p>
+                                <p class="mt-1 text-xl font-black text-emerald-700" x-text="formatoMoneda(totalViatico())"></p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex justify-end">
+                            <button
+                                type="button"
+                                @click="agregarViatico()"
+                                class="rounded-xl bg-emerald-700 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+                                :disabled="!tarifaViatico.id || empleadosViaticos.length === 0"
+                            >
+                                Agregar viatico
+                            </button>
+                        </div>
+                    </div>                    {{-- TABLA CONCEPTOS --}}
                     <div class="rounded-xl border border-slate-200 overflow-hidden">
                         <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
                             <div>
@@ -2265,7 +2370,7 @@
                                 <tr>
                                     <th class="p-3 text-left">Tipo</th>
                                     <th class="p-3 text-left">Proveedor / Descripción</th>
-                                    <th class="p-3 text-left">RFC / UUID</th>
+                                    <th class="p-3 text-left">Comprobante</th>
                                     <th class="p-3 text-right">Monto</th>
                                     <th class="p-3 text-center">Acción</th>
                                 </tr>
@@ -2284,8 +2389,24 @@
                                         </td>
 
                                         <td class="p-3 text-xs text-slate-500">
-                                            <div x-text="concepto.rfc || '-'"></div>
-                                            <div x-text="concepto.uuid || '-'"></div>
+                                            <template x-if="concepto.comprobante_tipo === 'cfdi'">
+                                                <div>
+                                                    <div x-text="concepto.rfc || '-'"></div>
+                                                    <div x-text="concepto.uuid || '-'"></div>
+                                                </div>
+                                            </template>
+                                            <template x-if="concepto.comprobante_tipo === 'nota'">
+                                                <div>
+                                                    <div>Nota</div>
+                                                    <div x-text="concepto.numero_nota || '-'"></div>
+                                                </div>
+                                            </template>
+                                            <template x-if="concepto.comprobante_tipo === 'viatico'">
+                                                <div>
+                                                    <div x-text="(concepto.dias || 0) + ' dia(s)'"></div>
+                                                    <div x-text="formatoMoneda(concepto.importe_unitario || 0) + ' por dia'"></div>
+                                                </div>
+                                            </template>
                                         </td>
 
                                         <td class="p-3 text-right font-bold text-slate-800">
@@ -2331,16 +2452,19 @@
                     <button
                         type="button"
                         @click="closeModal()"
-                        class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-200"
+                        class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-200 disabled:opacity-50"
+                        :disabled="saving"
                     >
                         Cancelar
                     </button>
 
                     <button
                         type="submit"
-                        class="px-5 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700"
+                        class="px-5 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60"
+                        :disabled="saving"
                     >
-                        Guardar reposición
+                        <span x-show="!saving">Guardar reposicion</span>
+                        <span x-show="saving">Guardando...</span>
                     </button>
                 </div>
             </form>
@@ -2355,73 +2479,57 @@
             modalOpen: false,
             tipoReposicion: '',
             loadingCfdi: false,
+            saving: false,
             resultadosCfdi: [],
             partidaSeleccionada: '',
-
-            busqueda: {
-                rfc: '',
-                fecha: '',
-                monto: '',
-                uuid4: ''
-            },
-
+            empleadosViaticos: @js($empleadosViaticosObra ?? []),
+            tarifaViatico: @js($tarifaViaticoActual ? [
+                'id' => $tarifaViaticoActual->id,
+                'importe_diario' => (float) $tarifaViaticoActual->importe_diario,
+                'vigencia_desde' => optional($tarifaViaticoActual->vigencia_desde)->toDateString(),
+            ] : ['id' => null, 'importe_diario' => 0, 'vigencia_desde' => null]),
+            busqueda: { rfc: '', fecha: '', monto: '', uuid4: '' },
             manual: {
-                descripcion: '',
-                proveedor: '',
-                fecha: '',
-                monto: ''
+                descripcion: '', proveedor: '', numero_nota: '', fecha: '', monto: '',
+                dias: 1, importe_unitario: '', obra_empleado_id: '', fecha_inicio: '', fecha_fin: ''
             },
-
             conceptos: [],
 
-            openModal() {
-                this.modalOpen = true;
-            },
+            openModal() { this.modalOpen = true; },
+            closeModal() { if (!this.saving) this.modalOpen = false; },
+            esCajaChica() { return this.tipoReposicion === 'caja_chica'; },
+            esGastosVarios() { return this.tipoReposicion === 'gastos_varios'; },
+            esViaticos() { return this.tipoReposicion === 'viaticos'; },
+            usaBuscadorCfdi() { return this.esCajaChica() || this.esGastosVarios(); },
 
-            closeModal() {
-                this.modalOpen = false;
+            cambiarTipo() {
+                this.resultadosCfdi = [];
+                this.limpiarBusqueda();
+                this.limpiarManual();
+                if (this.esViaticos()) {
+                    this.manual.importe_unitario = this.tarifaViatico.importe_diario || '';
+                }
             },
 
             async buscarCfdis() {
+                if (!this.usaBuscadorCfdi()) return;
                 this.loadingCfdi = true;
                 this.resultadosCfdi = [];
 
                 try {
                     const params = new URLSearchParams();
+                    if (this.busqueda.rfc) params.append('rfc_emisor', this.busqueda.rfc);
+                    if (this.busqueda.fecha) params.append('fecha', this.busqueda.fecha);
+                    if (this.busqueda.monto) params.append('monto', this.busqueda.monto);
+                    if (this.busqueda.uuid4) params.append('uuid4', this.busqueda.uuid4);
 
-                    if (this.busqueda.rfc) {
-                        params.append('rfc_emisor', this.busqueda.rfc);
-                    }
+                    const response = await fetch("{{ route('obras.reposicion-gastos.buscar-cfdis', $obra) }}?" + params.toString(), {
+                        headers: { 'Accept': 'application/json' }
+                    });
 
-                    if (this.busqueda.fecha) {
-                        params.append('fecha', this.busqueda.fecha);
-                    }
-
-                    if (this.busqueda.monto) {
-                        params.append('monto', this.busqueda.monto);
-                    }
-
-                    if (this.busqueda.uuid4) {
-                        params.append('uuid4', this.busqueda.uuid4);
-                    }
-
-                    const response = await fetch(
-                        "{{ route('obras.reposicion-gastos.buscar-cfdis', $obra) }}?" + params.toString(),
-                        {
-                            headers: {
-                                'Accept': 'application/json'
-                            }
-                        }
-                    );
-
-                    if (!response.ok) {
-                        throw new Error('Error en la búsqueda de CFDIs');
-                    }
-
+                    if (!response.ok) throw new Error('Error en la busqueda de CFDIs');
                     const data = await response.json();
-
                     this.resultadosCfdi = data.data || [];
-
                 } catch (error) {
                     console.error(error);
                     alert('Error al buscar CFDIs.');
@@ -2430,51 +2538,137 @@
                 }
             },
 
-            agregarConcepto(concepto) {
-                const existe = this.conceptos.some(item => item.uuid && item.uuid === concepto.uuid);
-
-                if (existe) {
+            agregarDesdeCfdi(cfdi) {
+                if (this.conceptos.some(item => item.uuid && item.uuid === cfdi.uuid)) {
                     alert('Esta factura ya fue agregada.');
                     return;
                 }
 
-                this.conceptos.push(concepto);
+                this.conceptos.push({
+                    sat_cfdi_id: cfdi.id,
+                    partida_id: this.partidaSeleccionada,
+                    tipo: this.esCajaChica() ? 'Caja chica' : 'Gastos varios',
+                    comprobante_tipo: 'cfdi',
+                    proveedor: cfdi.emisor_nombre,
+                    descripcion: cfdi.emisor_nombre || 'CFDI SAT',
+                    rfc: cfdi.rfc_emisor,
+                    uuid: cfdi.uuid,
+                    monto: Number(cfdi.total || 0),
+                    fecha: cfdi.fecha
+                });
+
+                this.resultadosCfdi = [];
+                this.limpiarBusqueda();
             },
 
-            agregarManual() {
+            agregarNotaManual() {
                 if (!this.manual.descripcion || !this.manual.monto) {
-                    alert('Captura descripción y monto.');
+                    alert('Captura concepto e importe.');
                     return;
                 }
-                // if (!this.partidaSeleccionada) {
-                //     alert('Selecciona una partida.');
-                //     return;
-                // }
 
                 this.conceptos.push({
-                partida_id: this.partidaSeleccionada,
+                    partida_id: this.partidaSeleccionada,
+                    tipo: 'Gastos varios',
+                    comprobante_tipo: 'nota',
+                    descripcion: this.manual.descripcion,
+                    proveedor: this.manual.proveedor,
+                    numero_nota: this.manual.numero_nota,
+                    fecha: this.manual.fecha,
+                    monto: Number(this.manual.monto || 0),
+                    rfc: '',
+                    uuid: ''
+                });
 
-                tipo: this.tipoReposicion === 'viaticos' ? 'Viáticos' : 'Gastos varios',
-                descripcion: this.manual.descripcion,
-                proveedor: this.manual.proveedor,
-                fecha: this.manual.fecha,
-                monto: Number(this.manual.monto || 0),
-                rfc: '',
-                uuid: ''
-            });
-
-                this.manual = {
-                    descripcion: '',
-                    proveedor: '',
-                    fecha: '',
-                    monto: ''
-                };
+                this.limpiarManual();
             },
 
-            totalConceptos() {
-                return this.conceptos.reduce((total, item) => {
-                    return total + Number(item.monto || 0);
-                }, 0);
+            agregarViatico() {
+                const empleado = this.empleadoViaticoSeleccionado();
+                const dias = this.diasViatico();
+
+                if (!this.tarifaViatico.id) return alert('Configura una tarifa vigente de viaticos en configuracion de empresa.');
+                if (!empleado) return alert('Selecciona un empleado asignado a la obra.');
+                if (!this.manual.fecha_inicio || !this.manual.fecha_fin) return alert('Captura el rango desde y hasta.');
+                if (dias <= 0) return alert('El rango de fechas debe ser valido.');
+                if (!this.manual.descripcion || !this.manual.importe_unitario) return alert('Captura concepto e importe por dia.');
+
+                this.conceptos.push({
+                    partida_id: this.partidaSeleccionada,
+                    tipo: 'Viaticos',
+                    comprobante_tipo: 'viatico',
+                    descripcion: this.manual.descripcion,
+                    proveedor: empleado.nombre,
+                    obra_empleado_id: empleado.obra_empleado_id,
+                    empresa_viatico_tarifa_id: this.tarifaViatico.id,
+                    fecha: this.manual.fecha_inicio,
+                    fecha_inicio: this.manual.fecha_inicio,
+                    fecha_fin: this.manual.fecha_fin,
+                    dias: dias,
+                    importe_unitario: Number(this.manual.importe_unitario || 0),
+                    monto: this.totalViatico(),
+                    rfc: '',
+                    uuid: ''
+                });
+
+                this.limpiarManual();
+                this.manual.importe_unitario = this.tarifaViatico.importe_diario || '';
+            },
+
+            prepararEnvio(event) {
+                if (!this.tipoReposicion) return this.detenerEnvio(event, 'Selecciona el tipo de reposicion.');
+                if (!this.partidaSeleccionada) return this.detenerEnvio(event, 'Selecciona una partida.');
+                if (this.conceptos.length === 0) return this.detenerEnvio(event, 'Agrega al menos un concepto.');
+                if (this.esCajaChica() && this.conceptos.some(item => item.comprobante_tipo !== 'cfdi')) {
+                    return this.detenerEnvio(event, 'Caja chica solo permite conceptos con factura CFDI.');
+                }
+                this.saving = true;
+            },
+
+            detenerEnvio(event, mensaje) {
+                event.preventDefault();
+                alert(mensaje);
+            },
+
+            empleadoViaticoSeleccionado() {
+                return this.empleadosViaticos.find(item => String(item.obra_empleado_id) === String(this.manual.obra_empleado_id));
+            },
+
+            diasViatico() {
+                if (!this.manual.fecha_inicio || !this.manual.fecha_fin) return 0;
+                const inicio = new Date(this.manual.fecha_inicio + 'T00:00:00');
+                const fin = new Date(this.manual.fecha_fin + 'T00:00:00');
+                if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime()) || fin < inicio) return 0;
+                return Math.floor((fin - inicio) / 86400000) + 1;
+            },
+
+            totalViatico() {
+                return Number(this.manual.importe_unitario || 0) * this.diasViatico();
+            },
+
+            actualizarConceptoViatico() {
+                const empleado = this.empleadoViaticoSeleccionado();
+                const dias = this.diasViatico();
+                if (!empleado || !this.manual.fecha_inicio || !this.manual.fecha_fin || dias <= 0) return;
+
+                const inicio = this.fechaLarga(this.manual.fecha_inicio);
+                const fin = this.fechaLarga(this.manual.fecha_fin);
+                const importe = Number(this.manual.importe_unitario || 0).toLocaleString('es-MX', { maximumFractionDigits: 2 });
+                this.manual.descripcion = `${empleado.nombre.toUpperCase()} VIATICOS DE LA SEMANA DEL ${inicio} AL ${fin} ${importe} PESOS POR DIA POR ${dias} DIAS`;
+            },
+
+            totalConceptos() { return this.conceptos.reduce((total, item) => total + Number(item.monto || 0), 0); },
+            formatoMoneda(valor) { return '$' + Number(valor || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 }); },
+            formatoFechaCorta(fecha) { return fecha ? new Date(fecha + 'T00:00:00').toLocaleDateString('es-MX') : ''; },
+            fechaLarga(fecha) {
+                return new Date(fecha + 'T00:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
+            },
+            limpiarBusqueda() { this.busqueda = { rfc: '', fecha: '', monto: '', uuid4: '' }; },
+            limpiarManual() {
+                this.manual = {
+                    descripcion: '', proveedor: '', numero_nota: '', fecha: '', monto: '',
+                    dias: 1, importe_unitario: '', obra_empleado_id: '', fecha_inicio: '', fecha_fin: ''
+                };
             }
         }
     }

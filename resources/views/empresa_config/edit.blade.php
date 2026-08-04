@@ -58,6 +58,7 @@
                                 'centros_costo' => ['label' => 'Centros de costo', 'desc' => 'Gastos fuera de obra'],
                                 'iva' => ['label' => 'IVA', 'desc' => 'Tipos de IVA utilizables'],
                                 'comisiones'=> ['label' => 'Comisiones', 'desc' => 'Reglas por tipo de trabajo'],
+                                'viaticos'=> ['label' => 'Viaticos', 'desc' => 'Tarifa diaria e historico'],
                                 'reglas'    => ['label' => 'Reglas', 'desc' => 'PolÃ­ticas y flujos'],
                                 'alertas'   => ['label' => 'Alertas', 'desc' => 'Notificaciones y avisos'],
                                 'areas'   => ['label' => 'Areas', 'desc' => 'Areas de la empresa'],
@@ -1180,9 +1181,152 @@
     </form>
 </div>
 
+{{-- ======================
+     VIATICOS
+======================= --}}
+<div x-show="tab === 'viaticos'" x-cloak class="space-y-6" x-data="{ savingViatico: false }">
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900">Viaticos</h2>
+            <p class="text-sm text-gray-600">Tarifa diaria vigente e historico de cambios para reposiciones.</p>
+        </div>
+
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 min-w-[240px]">
+            <p class="text-xs font-semibold uppercase text-emerald-700">Tarifa actual</p>
+            @if($tarifaViaticoActual)
+                <p class="mt-1 text-2xl font-bold text-emerald-900">
+                    ${{ number_format((float) $tarifaViaticoActual->importe_diario, 2) }}
+                </p>
+                <p class="mt-1 text-xs text-emerald-700">
+                    Vigente desde {{ optional($tarifaViaticoActual->vigencia_desde)->format('d/m/Y') }}
+                </p>
+            @else
+                <p class="mt-1 text-sm font-semibold text-amber-700">Sin tarifa configurada</p>
+                <p class="mt-1 text-xs text-amber-700">Registra una tarifa para usarla en viaticos.</p>
+            @endif
+        </div>
+    </div>
+
+    <div class="relative rounded-xl border border-gray-200 bg-gray-50 p-5">
+        <div
+            x-show="savingViatico"
+            x-cloak
+            class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/80 backdrop-blur-sm"
+        >
+            <div class="rounded-2xl border border-gray-200 bg-white px-8 py-6 text-center shadow-xl">
+                <div class="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-gray-100 border-t-gray-900"></div>
+                <p class="text-sm font-bold text-gray-900">Guardando tarifa...</p>
+                <p class="mt-1 text-xs text-gray-500">Cerrando la tarifa anterior y registrando el nuevo importe.</p>
+            </div>
+        </div>
+
+        <h3 class="text-sm font-bold text-gray-800 mb-4">Registrar nueva tarifa diaria</h3>
+
+        <form method="POST" action="{{ route('empresa_config.viaticos.store') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4" @submit="savingViatico = true">
+            @csrf
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Importe diario</label>
+                <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    name="importe_diario"
+                    required
+                    value="{{ old('importe_diario') }}"
+                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20"
+                    placeholder="300.00"
+                >
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Vigencia desde</label>
+                <input
+                    type="date"
+                    name="vigencia_desde"
+                    required
+                    value="{{ old('vigencia_desde', now('America/Mexico_City')->toDateString()) }}"
+                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20"
+                >
+            </div>
+
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700">Notas</label>
+                <input
+                    type="text"
+                    name="notas"
+                    value="{{ old('notas') }}"
+                    class="mt-1 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-gray-900/20"
+                    placeholder="Motivo del cambio o referencia interna"
+                >
+            </div>
+
+            <div class="flex justify-end md:col-span-4">
+                <button
+                    type="submit"
+                    class="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-gray-800 disabled:opacity-60"
+                    :disabled="savingViatico"
+                >
+                    <span x-show="!savingViatico">Registrar tarifa</span>
+                    <span x-show="savingViatico">Guardando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <div class="p-4 bg-gray-50 border-b border-gray-200">
+            <h3 class="text-sm font-bold text-gray-800">Historico de tarifas</h3>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+                <thead class="bg-gray-100 text-xs uppercase text-gray-500">
+                    <tr>
+                        <th class="p-3 border text-left">Importe diario</th>
+                        <th class="p-3 border text-left">Vigencia desde</th>
+                        <th class="p-3 border text-left">Vigencia hasta</th>
+                        <th class="p-3 border text-center">Estado</th>
+                        <th class="p-3 border text-left">Notas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($historialViaticoTarifas as $tarifa)
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-3 border font-semibold text-gray-900">
+                                ${{ number_format((float) $tarifa->importe_diario, 2) }}
+                            </td>
+                            <td class="p-3 border text-gray-700">
+                                {{ optional($tarifa->vigencia_desde)->format('d/m/Y') }}
+                            </td>
+                            <td class="p-3 border text-gray-700">
+                                {{ optional($tarifa->vigencia_hasta)->format('d/m/Y') ?? '-' }}
+                            </td>
+                            <td class="p-3 border text-center">
+                                <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $tarifa->activo ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600' }}">
+                                    {{ $tarifa->activo ? 'Actual' : 'Historica' }}
+                                </span>
+                            </td>
+                            <td class="p-3 border text-gray-600">
+                                {{ $tarifa->notas ?: '-' }}
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="p-8 text-center text-gray-400">
+                                Aun no hay tarifas de viaticos registradas.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
                 {{-- ======================
                      REGLAS
                 ======================= --}}
+
                 <div x-show="tab === 'reglas'" x-cloak class="space-y-6">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">Reglas de Negocio</h2>

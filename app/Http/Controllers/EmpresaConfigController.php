@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EmpresaConfig;
+use App\Models\EmpresaViaticoTarifa;
 use App\Models\EmpresaAlertaDestinatario;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -28,6 +29,7 @@ use App\Models\NominaListaRaya;
 use App\Models\Almacen;
 use App\Services\Nomina\ListaRayaResolver;
 use App\Services\Maquinas\PreventivoMaquinaService;
+use App\Services\Empresa\EmpresaViaticoTarifaService;
 
 class EmpresaConfigController extends Controller
 {
@@ -127,6 +129,12 @@ public function index(){
             ->orderBy('porcentaje')
             ->get();
 
+        $tarifaViaticoActual = EmpresaViaticoTarifa::actual();
+        $historialViaticoTarifas = EmpresaViaticoTarifa::query()
+            ->orderByDesc('vigencia_desde')
+            ->orderByDesc('id')
+            ->get();
+
         $anioFoliosObra = (int) request()->integer('folio_anio', now('America/Mexico_City')->year);
         foreach (self::TIPOS_OBRA_FOLIO as $tipoObra => $prefijo) {
             ObraFolio::firstOrCreate(
@@ -223,6 +231,8 @@ public function index(){
         'empleadosResponsables',
         'centrosCosto',
         'tiposIva',
+        'tarifaViaticoActual',
+        'historialViaticoTarifas',
         'foliosObra',
         'tiposObraConfiguraciones',
         'anioFoliosObra',
@@ -385,6 +395,25 @@ private function persistirDestinatarioAlerta(EmpresaAlertaDestinatario $destinat
     $destinatario->save();
 }
 
+public function storeViaticoTarifa(Request $request, EmpresaViaticoTarifaService $tarifaService)
+{
+    $data = $request->validate([
+        'importe_diario' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
+        'vigencia_desde' => ['required', 'date'],
+        'notas' => ['nullable', 'string', 'max:2000'],
+    ]);
+
+    $tarifaService->registrarNuevaTarifa(
+        importeDiario: (float) $data['importe_diario'],
+        vigenciaDesde: $data['vigencia_desde'],
+        creadoPor: auth()->id(),
+        notas: $data['notas'] ?? null,
+    );
+
+    return redirect()
+        ->route('empresa_config.edit')
+        ->with('success', 'Tarifa de viaticos registrada correctamente.');
+}
 public function updateFolioObra(Request $request, ObraFolio $folio)
 {
     $data = $request->validate([

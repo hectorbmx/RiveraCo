@@ -16,6 +16,7 @@ use App\Models\MetodoPagoEmpresa;
 use App\Models\SatConcepto;
 use App\Models\User;
 use App\Models\Empleado;
+use App\Models\EmpresaViaticoTarifa;
 use App\Models\Area;
 use App\Models\ObraTipoConfiguracion;
 use App\Models\ObraEmpleado;
@@ -561,6 +562,21 @@ $presupuestosDisponibles = Presupuesto::whereDoesntHave('obras', function($query
     $asignaciones           = $obra->empleadosAsignados;
     $asignacionesActivas    = $asignaciones->where('activo', true);
     $asignacionesHistoricas = $asignaciones->where('activo', false);
+    $empleadosViaticosObra = $asignacionesActivas
+        ->loadMissing(['empleado'])
+        ->map(function (ObraEmpleado $asignacion) {
+            $empleado = $asignacion->empleado;
+
+            return [
+                'obra_empleado_id' => $asignacion->id,
+                'empleado_id' => $asignacion->empleado_id,
+                'nombre' => trim(($empleado->Nombre ?? '') . ' ' . ($empleado->Apellidos ?? '')),
+                'puesto' => $asignacion->puesto_en_obra ?: ($empleado->Puesto ?? ''),
+                'fecha_alta' => optional($asignacion->fecha_alta)->toDateString(),
+            ];
+        })
+        ->filter(fn (array $empleado) => $empleado['nombre'] !== '')
+        ->values();
 
      $statuses = Obra::estatusLabels();
     $asistencias = collect();
@@ -722,6 +738,8 @@ if ($tab === 'asistencias') {
         })->values();
     }
 }
+
+$tarifaViaticoActual = EmpresaViaticoTarifa::actual();
 
 $reposicionesGastos = ObraReposicionGasto::with([
              'partida',
@@ -1194,6 +1212,8 @@ return view('obras.edit', [
     'asignacionesActivas'         => $asignacionesActivas,
     'asignacionesHistoricas'      => $asignacionesHistoricas,
     'empleadosAsignables'         => $empleadosAsignables,
+    'empleadosViaticosObra'       => $empleadosViaticosObra,
+    'tarifaViaticoActual'         => $tarifaViaticoActual,
     'actividades'                 => $actividades,
 
     'maquinasAsignadasActivas'    => $maquinasAsignadasActivas,
