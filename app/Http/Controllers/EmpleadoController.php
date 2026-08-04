@@ -237,7 +237,15 @@ if ($tab === 'documentos') {
 }
 
 if ($tab === 'epp') {
-    $empleado->load(['eppEntregas.entregadoPor']);
+    $empleado->load(['eppEntregas.entregadoPor', 'eppEntregas.obra', 'eppEntregas.area']);
+}
+
+$obrasActivas = collect();
+if ($tab === 'epp') {
+    $obrasActivas = \App\Models\Obra::query()
+        ->whereNotIn('estatus_nuevo', [\App\Models\Obra::ESTATUS_TERMINADA, \App\Models\Obra::ESTATUS_CANCELADA])
+        ->orderBy('nombre')
+        ->get(['id', 'nombre', 'clave_obra', 'estatus_nuevo']);
 }
 
     $areas = Area::where('activo', true)
@@ -260,7 +268,8 @@ if ($tab === 'epp') {
         'areas',
         'roles',
         'listasRaya',
-        'documentosTipos'
+        'documentosTipos',
+        'obrasActivas'
     ));
 }
 

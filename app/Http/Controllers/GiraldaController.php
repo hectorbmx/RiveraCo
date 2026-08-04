@@ -6,6 +6,7 @@ use App\Models\Area;
 use App\Models\Empleado;
 use App\Models\EmpleadoEppEntrega;
 use App\Models\GiraldaHoraExtra;
+use App\Models\Obra;
 use App\Models\OrdenCompra;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -76,7 +77,7 @@ class GiraldaController extends Controller
         $estatus = $request->query('estatus', 'activo');
         $estatus = in_array($estatus, ['activo', 'baja', 'todos'], true) ? $estatus : 'activo';
 
-        $empleados = Empleado::with(['areaRef', 'eppEntregas.entregadoPor'])
+        $empleados = Empleado::with(['areaRef', 'eppEntregas.entregadoPor', 'eppEntregas.obra', 'eppEntregas.area'])->withCount(['eppEntregas', 'giraldaHorasExtras'])
             ->where('Area', $areaGiralda?->id)
             ->when($estatus === 'activo', fn ($q) => $q->where('Estatus', 1))
             ->when($estatus === 'baja', fn ($q) => $q->where('Estatus', 2))
@@ -96,7 +97,16 @@ class GiraldaController extends Controller
             ->paginate(20, ['*'], 'horas_page')
             ->withQueryString();
 
-        $eppEntregas = EmpleadoEppEntrega::with(['empleado', 'entregadoPor'])
+        $obrasActivas = Obra::query()
+            ->whereNotIn('estatus_nuevo', [Obra::ESTATUS_TERMINADA, Obra::ESTATUS_CANCELADA])
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'clave_obra', 'estatus_nuevo']);
+
+        $areas = Area::query()
+            ->where('activo', true)
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'codigo']);
+        $eppEntregas = EmpleadoEppEntrega::with(['empleado', 'entregadoPor', 'obra', 'area'])
             ->when($areaGiralda, function ($query) use ($areaGiralda) {
                 $query->whereHas('empleado', fn ($empleado) => $empleado->where('Area', $areaGiralda->id));
             })
@@ -115,7 +125,9 @@ class GiraldaController extends Controller
             'desde',
             'hasta',
             'empleadoId',
-            'estatus'
+            'estatus',
+            'obrasActivas',
+            'areas'
         ));
     }
     public function storeHoraExtra(Request $request)

@@ -15,6 +15,8 @@ class EmpleadoEppEntrega extends Model
         'talla',
         'fecha_entrega',
         'condicion',
+        'obra_id',
+        'area_id',
         'obra_area',
         'entregado_por',
         'observaciones',
@@ -37,5 +39,14 @@ class EmpleadoEppEntrega extends Model
     public function entregadoPor()
     {
         return $this->belongsTo(User::class, 'entregado_por');
+    }
+    public function obra()
+    {
+        return $this->belongsTo(Obra::class, 'obra_id');
+    }
+
+    public function area()
+    {
+        return $this->belongsTo(Area::class, 'area_id');
     }
 }

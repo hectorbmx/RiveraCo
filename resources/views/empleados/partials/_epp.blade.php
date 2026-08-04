@@ -39,17 +39,32 @@
             </select>
         </div>
         <div>
-            <label class="block text-sm font-medium mb-1">Obra o area</label>
-            <input name="obra_area" value="{{ $empleado->areaRef?->nombre }}" class="w-full border rounded p-2">
+            <label class="block text-sm font-medium mb-1">Area</label>
+            <select name="area_id" class="w-full border rounded p-2">
+                <option value="">Sin area</option>
+                @foreach(($areas ?? collect()) as $area)
+                    <option value="{{ $area->id }}" @selected((int)($empleado->Area ?? 0) === (int)$area->id)>
+                        {{ $area->codigo ? $area->codigo . ' - ' : '' }}{{ $area->nombre }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">Obra</label>
+            <select name="obra_id" class="w-full border rounded p-2">
+                <option value="">Sin obra especifica</option>
+                @foreach(($obrasActivas ?? collect()) as $obra)
+                    <option value="{{ $obra->id }}">
+                        {{ $obra->clave_obra ? $obra->clave_obra . ' - ' : '' }}{{ $obra->nombre }}
+                    </option>
+                @endforeach
+            </select>
         </div>
         <div class="md:col-span-2">
             <label class="block text-sm font-medium mb-1">Observaciones</label>
             <input name="observaciones" class="w-full border rounded p-2">
         </div>
-        <label class="flex items-center gap-2 text-sm md:col-span-2">
-            <input type="checkbox" name="confirmado_por_empleado" value="1" class="rounded">
-            Confirmado por empleado
-        </label>
+
         <div class="md:col-span-2 flex justify-end">
             <button class="px-4 py-2 rounded bg-[#0B265A] text-white">Registrar entrega</button>
         </div>
@@ -64,9 +79,10 @@
                     <th class="text-right p-3">Cantidad</th>
                     <th class="text-left p-3">Talla</th>
                     <th class="text-left p-3">Condicion</th>
-                    <th class="text-left p-3">Obra/area</th>
+                    <th class="text-left p-3">Obra</th>
+                    <th class="text-left p-3">Area</th>
                     <th class="text-left p-3">Entrega</th>
-                    <th class="text-left p-3">Confirmacion</th>
+
                 </tr>
             </thead>
             <tbody class="divide-y">
@@ -77,15 +93,10 @@
                         <td class="p-3 text-right">{{ number_format((float)$entrega->cantidad, 2) }}</td>
                         <td class="p-3">{{ $entrega->talla ?: '-' }}</td>
                         <td class="p-3">{{ ucfirst($entrega->condicion) }}</td>
-                        <td class="p-3">{{ $entrega->obra_area ?: '-' }}</td>
+                        <td class="p-3">{{ $entrega->obra ? trim(($entrega->obra->clave_obra ? $entrega->obra->clave_obra . ' - ' : '') . $entrega->obra->nombre) : '-' }}</td>
+                        <td class="p-3">{{ $entrega->area?->nombre ?? '-' }}</td>
                         <td class="p-3">{{ $entrega->entregadoPor?->name ?? '-' }}</td>
-                        <td class="p-3">
-                            @if($entrega->confirmado_por_empleado)
-                                <span class="text-green-700">Confirmado</span>
-                            @else
-                                <span class="text-slate-400">Pendiente</span>
-                            @endif
-                        </td>
+
                     </tr>
                     @if($entrega->observaciones)
                         <tr>
@@ -95,7 +106,7 @@
                     @endif
                 @empty
                     <tr>
-                        <td colspan="8" class="p-6 text-center text-slate-400">Sin entregas registradas.</td>
+                        <td colspan="7" class="p-6 text-center text-slate-400">Sin entregas registradas.</td>
                     </tr>
                 @endforelse
             </tbody>

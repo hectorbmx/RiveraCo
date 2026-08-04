@@ -198,4 +198,10 @@ public function getAreaIdAttribute()
             ->orderByDesc('fecha_entrega')
             ->orderByDesc('id');
     }
+    public function giraldaHorasExtras()
+    {
+        return $this->hasMany(\App\Models\GiraldaHoraExtra::class, 'empleado_id', 'id_Empleado')
+            ->orderByDesc('fecha')
+            ->orderByDesc('id');
+    }
 }
