@@ -8,6 +8,7 @@ use App\Models\SatCfdi;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use App\Models\ObraReposicionGasto;
 use App\Models\ObraReposicionGastoDetalle;
@@ -289,18 +290,91 @@ public function pdf(Obra $obra, ObraReposicionGasto $reposicion)
         'partida',
         'detalles.partida',
         'detalles.cfdi',
+        'detalles.obraEmpleado.empleado',
+        'detalles.viaticoTarifa',
         'solicitadoPor',
         'revisadoPor',
         'aprobadoPor',
         'pagadoPor',
     ]);
 
-    $pdf = Pdf::loadView('obras.reposicion-gastos.pdf', [
+    $seccionesPdf = $this->resolverSeccionesPdf($reposicion);
+    $tipo = $seccionesPdf->count() === 1
+        ? $seccionesPdf->first()['tipo']
+        : 'mixta';
+
+    $view = match ($tipo) {
+        'caja_chica' => 'obras.reposicion-gastos.pdf.caja-chica',
+        'gastos_varios' => 'obras.reposicion-gastos.pdf.gastos-varios',
+        'viaticos' => 'obras.reposicion-gastos.pdf.viaticos',
+        'mixta' => 'obras.reposicion-gastos.pdf.mixta',
+        default => 'obras.reposicion-gastos.pdf',
+    };
+
+    $filenamePrefix = match ($tipo) {
+        'caja_chica' => 'reposicion-caja-chica',
+        'gastos_varios' => 'reposicion-gastos-varios',
+        'viaticos' => 'reposicion-viaticos',
+        'mixta' => 'reposicion-gastos-por-tipo',
+        default => 'reposicion-gastos',
+    };
+
+    $pdf = Pdf::loadView($view, [
         'obra' => $obra,
         'reposicion' => $reposicion,
+        'seccionesPdf' => $seccionesPdf,
     ])->setPaper('letter', 'portrait');
 
-    return $pdf->stream('reposicion-gastos-REP-' . str_pad($reposicion->id, 5, '0', STR_PAD_LEFT) . '.pdf');
+    return $pdf->stream($filenamePrefix . '-REP-' . str_pad($reposicion->id, 5, '0', STR_PAD_LEFT) . '.pdf');
+}
+
+private function resolverSeccionesPdf(ObraReposicionGasto $reposicion)
+{
+    $titulos = [
+        'caja_chica' => 'REPOSICION CAJA CHICA',
+        'gastos_varios' => 'REPOSICION GASTOS VARIOS',
+        'viaticos' => 'VIATICOS',
+    ];
+
+    $orden = ['caja_chica', 'gastos_varios', 'viaticos'];
+
+    $detallesPorTipo = $reposicion->detalles->groupBy(function (ObraReposicionGastoDetalle $detalle) {
+        return $this->resolverTipoDetallePdf($detalle);
+    });
+
+    return collect($orden)
+        ->filter(fn (string $tipo) => $detallesPorTipo->has($tipo))
+        ->map(function (string $tipo) use ($detallesPorTipo, $titulos) {
+            $detalles = $detallesPorTipo->get($tipo)->values();
+
+            return [
+                'tipo' => $tipo,
+                'titulo' => $titulos[$tipo],
+                'detalles' => $detalles,
+                'total' => $detalles->sum('monto'),
+            ];
+        })
+        ->values();
+}
+
+private function resolverTipoDetallePdf(ObraReposicionGastoDetalle $detalle): string
+{
+    if ($detalle->comprobante_tipo === 'viatico') {
+        return 'viaticos';
+    }
+
+    $tipo = Str::of($detalle->tipo ?? '')
+        ->ascii()
+        ->lower()
+        ->replace([' ', '-'], '_')
+        ->toString();
+
+    return match ($tipo) {
+        'caja_chica' => 'caja_chica',
+        'gastos_varios' => 'gastos_varios',
+        'viaticos' => 'viaticos',
+        default => $detalle->comprobante_tipo === 'cfdi' ? 'caja_chica' : 'gastos_varios',
+    };
 }
 public function programar(Request $request, Obra $obra, ObraReposicionGasto $reposicion)
 {
