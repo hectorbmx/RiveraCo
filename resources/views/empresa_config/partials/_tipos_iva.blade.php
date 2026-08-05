@@ -95,4 +95,101 @@
             </table>
         </div>
     </div>
+
+    {{-- ============ SECCIÓN RETENCIONES ============ --}}
+    <div class="border-t border-slate-200 pt-6">
+        <div class="mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">Tipos de Retención</h2>
+            <p class="text-sm text-gray-600">Catálogo de retenciones aplicables en órdenes de compra (ISR, IVA retenido, etc.).</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {{-- Formulario nuevo tipo retención --}}
+            <div class="rounded-2xl border border-orange-200 bg-white shadow-sm">
+                <div class="border-b border-orange-200 px-6 py-5">
+                    <h3 class="text-base font-semibold text-slate-900">Nueva retención</h3>
+                    <p class="text-sm text-slate-500 mt-1">Agrega retenciones que se apliquen por producto en compras.</p>
+                </div>
+
+                <form method="POST" action="{{ route('empresa_config.tipos-retencion.store') }}" class="p-6 space-y-4">
+                    @csrf
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
+                        <input name="nombre" value="{{ old('nombre_retencion') }}" required
+                               class="w-full rounded-xl border-slate-300"
+                               placeholder="ISR 10%">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Porcentaje (%)</label>
+                        <input type="number" step="0.01" min="0" max="100"
+                               name="porcentaje" value="{{ old('porcentaje_retencion') }}" required
+                               class="w-full rounded-xl border-slate-300"
+                               placeholder="10">
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button class="rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700">
+                            Guardar retención
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {{-- Listado de retenciones --}}
+            <div class="lg:col-span-2 rounded-2xl border border-orange-200 bg-white shadow-sm overflow-hidden">
+                <div class="border-b border-orange-200 px-6 py-5">
+                    <h3 class="text-base font-semibold text-slate-900">Listado</h3>
+                    <p class="text-sm text-slate-500 mt-1">{{ ($tiposRetencion ?? collect())->count() }} tipo(s) registrados.</p>
+                </div>
+
+                <table class="min-w-full text-sm">
+                    <thead class="bg-orange-50 text-slate-600">
+                        <tr>
+                            <th class="px-5 py-3 text-left font-semibold">Nombre</th>
+                            <th class="px-5 py-3 text-left font-semibold">Porcentaje</th>
+                            <th class="px-5 py-3 text-left font-semibold">Estado</th>
+                            <th class="px-5 py-3 text-right font-semibold">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @forelse($tiposRetencion ?? [] as $retencion)
+                            <tr class="hover:bg-orange-50/40">
+                                <td class="px-5 py-4 font-medium text-slate-900">{{ $retencion->nombre }}</td>
+                                <td class="px-5 py-4">{{ number_format((float) $retencion->porcentaje, 2) }}%</td>
+                                <td class="px-5 py-4">
+                                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium
+                                        {{ $retencion->activo
+                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                            : 'bg-slate-50 text-slate-600 border border-slate-200' }}">
+                                        {{ $retencion->activo ? 'Activo' : 'Inactivo' }}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-4 text-right">
+                                    <form method="POST"
+                                          action="{{ route('empresa_config.tipos-retencion.toggle-activo', $retencion) }}"
+                                          class="inline">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                                            {{ $retencion->activo ? 'Deshabilitar' : 'Habilitar' }}
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="px-5 py-10 text-center text-slate-500">
+                                    Aun no hay tipos de retención registrados.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {{-- ============ FIN RETENCIONES ============ --}}
+
 </div>

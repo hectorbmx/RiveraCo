@@ -424,6 +424,11 @@ Route::middleware('auth','verified')->group(function () {
     Route::patch('/configuracion-empresa/folios-obra/{folio}', [EmpresaConfigController::class, 'updateFolioObra'])->name('empresa_config.folios-obra.update');
     Route::patch('/configuracion-empresa/tipos-obra/{tipo}', [EmpresaConfigController::class, 'updateTipoObraConfiguracion'])->name('empresa_config.tipos-obra.update');
 
+    // Tipos de Retención
+    Route::post('/configuracion-empresa/tipos-retencion', [EmpresaConfigController::class, 'storeTipoRetencion'])->name('empresa_config.tipos-retencion.store');
+    Route::patch('/configuracion-empresa/tipos-retencion/{tipoRetencion}/toggle-activo', [EmpresaConfigController::class, 'toggleTipoRetencion'])->name('empresa_config.tipos-retencion.toggle-activo');
+
+
         Route::get('/configuracion-empresa/equipos-computo/buscar-facturas', [EquipoComputoController::class, 'buscarFacturas'])->name('empresa_config.equipos-computo.buscar-facturas');
         Route::get('/configuracion-empresa/equipos-computo/fotos/{foto}', [EquipoComputoController::class, 'verFoto'])->name('empresa_config.equipos-computo.fotos.show');
         Route::get('/configuracion-empresa/equipos-computo/{equipo}/archivo/{tipo}', [EquipoComputoController::class, 'verArchivo'])->name('empresa_config.equipos-computo.archivo');

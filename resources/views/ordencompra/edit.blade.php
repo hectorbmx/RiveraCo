@@ -361,7 +361,7 @@
     {{-- Agregar detalle --}}
     @if(!$bloqueado)
     <form method="POST" action="{{ route('ordenes_compra.detalles.store',$oc->id) }}"
-          class="grid grid-cols-6 gap-2 mb-4">
+          class="grid grid-cols-7 gap-2 mb-4">
         @csrf
         
   <!-- <input id="descProducto" name="descripcion"class="border p-2 col-span-2" placeholder="Descripción / buscar producto..."  autocomplete="off"> -->
@@ -409,6 +409,23 @@
         </select>
         <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">% IVA</span>
     </div>
+    {{-- Retención --}}
+<div>
+    <select name="tipo_retencion_id" class="w-full border p-2 rounded">
+        <option value="">Sin retención</option>
+
+        @foreach($tiposRetencion as $retencion)
+            <option value="{{ $retencion->id }}">
+                {{ $retencion->nombre }}
+                ({{ number_format((float) $retencion->porcentaje, 2) }}%)
+            </option>
+        @endforeach
+    </select>
+
+    <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">
+        Retención
+    </span>
+</div>
         <div class="flex flex-col">
         <button class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 transition-colors">
             Agregar
@@ -426,45 +443,85 @@
             <th class="p-2 border">Cant</th>
             <th class="p-2 border">Precio</th>
             <th class="p-2 border">SubTotal</th>
-            <th class="p-2 border">%IVA</th>
             <th class="p-2 border">IVA</th>
+            <th class="p-2 border">Retencion</th>
             <th class="p-2 border">Importe</th>
             <th class="p-2 border"></th>
         </tr>
         </thead>
-        <tbody>
-        @foreach($oc->detalles as $d)
-        
-            <tr>
-                <td class="p-2 text-center">
-                    <div>{{ $d->descripcion }}</div>
-                    @if($d->producto)
-                        <div class="mt-1 text-[11px] text-slate-400">
-                            SKU: {{ $d->producto->sku ?: '-' }}
-                            @if($d->producto->descripcion)
-                                · {{ $d->producto->descripcion }}
-                            @endif
-                        </div>
+      <tbody>
+@foreach($oc->detalles as $d)
+    <tr>
+        <td class="p-2 text-center">
+            <div>{{ $d->descripcion }}</div>
+
+            @if($d->producto)
+                <div class="mt-1 text-[11px] text-slate-400">
+                    SKU: {{ $d->producto->sku ?: '-' }}
+
+                    @if($d->producto->descripcion)
+                        · {{ $d->producto->descripcion }}
                     @endif
-                </td>
-                <td class="p-2 text-center">{{ $d->cantidad }}</td>
-                <td class="p-2 text-center">${{ number_format($d->precio_unitario,2) }}</td>
-                <td class="p-2 text-center">${{ number_format($d->precio_unitario*$d->cantidad,2) }}</td>
-                <td class="p-2 text-center">%{{ number_format($d->iva) }}</td>
-                <td class="p-2 text-center">${{ number_format($d->iva_calculado,2) }}</td>
-                <td class="p-2 text-center">${{ number_format($d->total,2) }}</td>
-                <td class="p-2 text-center">
-                    @if(!$bloqueado)
-                    <form method="POST"
-                          action="{{ route('ordenes_compra.detalles.destroy',[$oc->id,$d->id]) }}">
-                        @csrf @method('DELETE')
-                        <button class="text-red-600">Eliminar</button>
-                    </form>
-                    @endif
-                </td>
-            </tr>
-        @endforeach
-        </tbody>
+                </div>
+            @endif
+        </td>
+
+        <td class="p-2 text-center">
+            {{ $d->cantidad }}
+        </td>
+
+        <td class="p-2 text-center">
+            ${{ number_format((float) $d->precio_unitario, 2) }}
+        </td>
+
+        <td class="p-2 text-center">
+            ${{ number_format((float) $d->precio_unitario * (float) $d->cantidad, 2) }}
+        </td>
+
+        {{-- Ya no mostramos el porcentaje de IVA, solo el importe --}}
+        <td class="p-2 text-center">
+            ${{ number_format((float) $d->iva_calculado, 2) }}
+        </td>
+
+        {{-- Retención --}}
+        <td class="p-2 text-center">
+            @if($d->tipoRetencion)
+                <div class="font-medium text-slate-700">
+                    {{ $d->tipoRetencion->nombre }}
+                </div>
+
+                <div class="text-xs text-slate-500">
+                    {{ number_format((float) $d->retencion_porcentaje, 2) }}%
+                </div>
+
+                <div class="text-sm text-red-600">
+                    -${{ number_format((float) $d->retenciones, 2) }}
+                </div>
+            @else
+                <span class="text-slate-400">Sin retención</span>
+            @endif
+        </td>
+
+        <td class="p-2 text-center font-semibold">
+            ${{ number_format((float) $d->total, 2) }}
+        </td>
+
+        <td class="p-2 text-center">
+            @if(!$bloqueado)
+                <form method="POST"
+                      action="{{ route('ordenes_compra.detalles.destroy', [$oc->id, $d->id]) }}">
+                    @csrf
+                    @method('DELETE')
+
+                    <button class="text-red-600">
+                        Eliminar
+                    </button>
+                </form>
+            @endif
+        </td>
+    </tr>
+@endforeach
+</tbody>
     </table>
 </div>
 @endsection

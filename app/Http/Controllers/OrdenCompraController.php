@@ -10,6 +10,7 @@ use App\Models\Obra;
 use App\Models\OrdenCompra;
 use App\Models\CentroCosto;
 use App\Models\TipoIva;
+use App\Models\TipoRetencion;
 use App\Services\OrdenCompraNotificationService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
@@ -176,32 +177,94 @@ class OrdenCompraController extends Controller
 
 public function edit($id)
 {
-    $this->authorizeAny(['ordenes_compra.edit.access', 'ordenes de compra.access']);
-    $oc = OrdenCompra::with(['detalles.producto','proveedor','obra','centroCosto','areaCatalogo'])->findOrFail($id);
-    $areas = Area::where('activo', 1)->orderBy('nombre')->get();
-    $proveedores = Proveedor::where('activo', 1)->orderBy('nombre')->get();
+    $this->authorizeAny([
+        'ordenes_compra.edit.access',
+        'ordenes de compra.access',
+    ]);
+
+    $oc = OrdenCompra::with([
+        'detalles.producto',
+        'detalles.tipoRetencion',
+        'proveedor',
+        'obra',
+        'centroCosto',
+        'areaCatalogo',
+    ])->findOrFail($id);
+
+    $areas = Area::where('activo', 1)
+        ->orderBy('nombre')
+        ->get();
+
+    $proveedores = Proveedor::where('activo', 1)
+        ->orderBy('nombre')
+        ->get();
+
     $obras = Obra::orderBy('nombre')->get();
-    $centrosCosto = CentroCosto::where('activo', true)->orderBy('nombre')->get();
-    $tiposIva = TipoIva::where('activo', true)->orderBy('porcentaje')->get();
+
+    $centrosCosto = CentroCosto::where('activo', true)
+        ->orderBy('nombre')
+        ->get();
+
+    $tiposIva = TipoIva::where('activo', true)
+        ->orderBy('porcentaje')
+        ->get();
+
+    $tiposRetencion = TipoRetencion::where('activo', true)
+        ->orderBy('nombre')
+        ->get();
 
     $subtotalGeneral = 0;
     $ivaMontoGeneral = 0;
+    $otrosGeneral = 0;
+    $retencionesGeneral = 0;
 
     foreach ($oc->detalles as $detalle) {
-        $detalle->subtotal = $detalle->precio_unitario * $detalle->cantidad;
-        $detalle->iva_calculado = ($detalle->subtotal * $detalle->iva) / 100; // detalle->iva = %
-        $detalle->total = $detalle->subtotal + $detalle->iva_calculado;
+        $detalle->subtotal = round(
+            (float) $detalle->precio_unitario * (float) $detalle->cantidad,
+            2
+        );
+
+        $detalle->iva_calculado = round(
+            ($detalle->subtotal * (float) $detalle->iva) / 100,
+            2
+        );
+
+        $detalle->total = round(
+            $detalle->subtotal
+            + $detalle->iva_calculado
+            + (float) $detalle->otros_impuestos
+            - (float) $detalle->retenciones,
+            2
+        );
 
         $subtotalGeneral += $detalle->subtotal;
         $ivaMontoGeneral += $detalle->iva_calculado;
+        $otrosGeneral += (float) $detalle->otros_impuestos;
+        $retencionesGeneral += (float) $detalle->retenciones;
     }
 
-    // ✅ NO PISES $oc->iva (ese es el % base)
-    $oc->subtotal_calc = $subtotalGeneral;
-    $oc->iva_monto_calc = $ivaMontoGeneral;
-    $oc->total_calc = $subtotalGeneral + $ivaMontoGeneral + ((float)($oc->otros_impuestos ?? 0));
+    $oc->subtotal_calc = round($subtotalGeneral, 2);
+    $oc->iva_monto_calc = round($ivaMontoGeneral, 2);
+    $oc->otros_monto_calc = round($otrosGeneral, 2);
+    $oc->retenciones_monto_calc = round($retencionesGeneral, 2);
 
-    return view('ordencompra.edit', compact('oc','areas','proveedores','obras','centrosCosto','tiposIva'));
+    $oc->total_calc = round(
+        $subtotalGeneral
+        + $ivaMontoGeneral
+        + $otrosGeneral
+        - $retencionesGeneral,
+        2
+    );
+
+    return view('ordencompra.edit', compact(
+        'oc',
+        'areas',
+        'proveedores',
+        'obras',
+        'centrosCosto',
+        'tiposIva',
+        'tiposRetencion'
+    ));
 }
 
 
@@ -367,312 +430,989 @@ public function autorizar($id, OrdenCompraNotificationService $notifications)
 /**
  * Imprimir OC en PDF
  */
+/**
+ * Imprimir OC en PDF
+ */
 public function print(OrdenCompra $orden_compra)
 {
-    $this->authorizeAny(['ordenes_compra.print.access', 'ordenes_compra.imprimir'], 'No tienes permiso para imprimir ordenes de compra.');
+    $this->authorizeAny(
+        [
+            'ordenes_compra.print.access',
+            'ordenes_compra.imprimir',
+        ],
+        'No tienes permiso para imprimir ordenes de compra.'
+    );
 
-    $oc = $orden_compra->load(['proveedor', 'obra', 'centroCosto', 'areaCatalogo', 'detalles']);
+    $oc = $orden_compra->load([
+        'proveedor',
+        'obra',
+        'centroCosto',
+        'areaCatalogo',
+        'detalles.producto',
+        'detalles.tipoRetencion',
+    ]);
+
+    /*
+     * La columna de retención solo se muestra cuando al menos una
+     * partida tiene un tipo de retención o un importe retenido.
+     */
+    $mostrarRetenciones = $oc->detalles->contains(function ($detalle) {
+        return ! empty($detalle->tipo_retencion_id)
+            || (float) $detalle->retenciones > 0;
+    });
 
     $pdf = new \FPDF('P', 'mm', 'Letter');
     $pdf->AddPage();
     $pdf->SetAutoPageBreak(true, 12);
 
-    $utf8 = fn($t) => utf8_decode((string) $t);
+    $utf8 = fn ($texto) => utf8_decode((string) $texto);
 
-    // ====== Config layout ======
-    $M = 10;                 // margen
-    $W = 216 - ($M * 2);     // ancho útil carta (216mm aprox)
+    // ====== Configuración del layout ======
+    $M = 10;
+    $W = 216 - ($M * 2);
     $X0 = $M;
     $Y = $M;
 
-    // Colores (aprox legacy)
-    $BLUE = [0, 74, 173];     // azul
+    $BLUE = [0, 74, 173];
     $GRAY = [240, 240, 240];
 
-    $setBlue = function() use ($pdf, $BLUE) { $pdf->SetDrawColor($BLUE[0], $BLUE[1], $BLUE[2]); };
-    $setFillBlue = function() use ($pdf, $BLUE) { $pdf->SetFillColor($BLUE[0], $BLUE[1], $BLUE[2]); };
-    $setFillGray = function() use ($pdf, $GRAY) { $pdf->SetFillColor($GRAY[0], $GRAY[1], $GRAY[2]); };
+    $setBlue = function () use ($pdf, $BLUE) {
+        $pdf->SetDrawColor($BLUE[0], $BLUE[1], $BLUE[2]);
+    };
 
-    // Helpers
-    $money = fn($n) => '$' . number_format((float)$n, 2);
+    $setFillBlue = function () use ($pdf, $BLUE) {
+        $pdf->SetFillColor($BLUE[0], $BLUE[1], $BLUE[2]);
+    };
+
+    $setFillGray = function () use ($pdf, $GRAY) {
+        $pdf->SetFillColor($GRAY[0], $GRAY[1], $GRAY[2]);
+    };
+
+    $money = fn ($numero) => '$' . number_format((float) $numero, 2);
+
     $fecha = (string) ($oc->fecha ?? '');
-    if ($fecha) $fecha = substr($fecha, 0, 10);
+
+    if ($fecha) {
+        $fecha = substr($fecha, 0, 10);
+    }
 
     $proveedorNombre = $oc->proveedor->nombre ?? '-';
     $area = $oc->areaCatalogo->nombre ?? ($oc->area ?? '-');
+
     $centroCostoNombre = $oc->centroCosto
-        ? trim(($oc->centroCosto->codigo ? $oc->centroCosto->codigo . ' - ' : '') . $oc->centroCosto->nombre)
+        ? trim(
+            ($oc->centroCosto->codigo
+                ? $oc->centroCosto->codigo . ' - '
+                : '')
+            . $oc->centroCosto->nombre
+        )
         : null;
+
     $obraNombre = $oc->obra
-        ? trim(($oc->obra->clave_obra ? $oc->obra->clave_obra . ' - ' : '') . ($oc->obra->nombre ?? ''))
-        : ($centroCostoNombre ? 'Compra general / ' . $centroCostoNombre : 'Compra general');
-    $obraFolio = $oc->obra->clave_obra ?? ($centroCostoNombre ?: 'Compra general');
+        ? trim(
+            ($oc->obra->clave_obra
+                ? $oc->obra->clave_obra . ' - '
+                : '')
+            . ($oc->obra->nombre ?? '')
+        )
+        : (
+            $centroCostoNombre
+                ? 'Compra general / ' . $centroCostoNombre
+                : 'Compra general'
+        );
+
+    $obraFolio = $oc->obra->clave_obra
+        ?? ($centroCostoNombre ?: 'Compra general');
+
     $datoBancario = function ($valor): string {
         $valor = trim((string) $valor);
+
         return $valor === '0' ? '' : $valor;
     };
-    $proveedorBanco = $datoBancario($oc->proveedor->banco ?? '');
-    $proveedorCuenta = $datoBancario($oc->proveedor->cuenta ?? '');
-    $proveedorClabe = $datoBancario($oc->proveedor->clabe ?? '');
+
+    $proveedorBanco = $datoBancario(
+        $oc->proveedor->banco ?? ''
+    );
+
+    $proveedorCuenta = $datoBancario(
+        $oc->proveedor->cuenta ?? ''
+    );
+
+    $proveedorClabe = $datoBancario(
+        $oc->proveedor->clabe ?? ''
+    );
+
     $proveedorCuentaLabel = $proveedorCuenta
         ? 'CUENTA: ' . $proveedorCuenta
-        : ($proveedorClabe ? 'CLABE: ' . $proveedorClabe : 'CUENTA: -');
+        : (
+            $proveedorClabe
+                ? 'CLABE: ' . $proveedorClabe
+                : 'CUENTA: -'
+        );
 
-    // ====== HEADER (logo + titulo + lineas azules + datos empresa) ======
+    // ====== HEADER ======
     $pdf->SetXY($X0, $Y);
 
-    // Logo (ajusta ruta)
-    $logoPath = public_path('images/logoAzul.png'); // <-- pon tu logo real
+    $logoPath = public_path('images/logoAzul.png');
+
     if (is_file($logoPath)) {
-        $pdf->Image($logoPath, $X0, $Y, 35); // ancho 35mm aprox
+        $pdf->Image($logoPath, $X0, $Y, 35);
     }
 
-    // Título a la derecha del logo
     $pdf->SetXY($X0 + 40, $Y + 2);
     $pdf->SetFont('Arial', 'B', 18);
     $pdf->SetTextColor($BLUE[0], $BLUE[1], $BLUE[2]);
-    $pdf->Cell(90, 8, $utf8('ORDEN DE COMPRA'), 0, 0, 'L');
-    // $pdf->SetXY($X0 + 40, $Y + 12);
-    // $pdf->Cell(90, 8, $utf8('DE COMPRA'), 0, 0, 'L');
+    $pdf->Cell(
+        90,
+        8,
+        $utf8('ORDEN DE COMPRA'),
+        0,
+        0,
+        'L'
+    );
 
-    // Datos empresa (arriba derecha)
-    $pdf->SetTextColor(60,60,60);
+    // Datos de empresa
+    $pdf->SetTextColor(60, 60, 60);
     $pdf->SetFont('Arial', '', 8);
     $pdf->SetXY($X0 + 135, $Y + 2);
-    $pdf->MultiCell(0, 4, $utf8("JUSTO SIERRA NO. 2469 COL. LADRON DE GUEVARA\nGUADALAJARA, JALISCO, MEXICO C.P. 44600\nTEL: 33) 3615-0741 3630-1056"), 0, 'R');
 
-    // Líneas azules tipo “doble”
-    // $setBlue();
-    // $pdf->Line($X0, $Y + 28, $X0 + $W, $Y + 28);
-    // $pdf->Line($X0, $Y + 30, $X0 + $W, $Y + 30);
+    $pdf->MultiCell(
+        0,
+        4,
+        $utf8(
+            "JUSTO SIERRA NO. 2469 COL. LADRON DE GUEVARA\n"
+            . "GUADALAJARA, JALISCO, MEXICO C.P. 44600\n"
+            . "TEL: 33) 3615-0741 3630-1056"
+        ),
+        0,
+        'R'
+    );
 
-    // ====== BLOQUE “DATOS PROVEEDOR” + CAJAS (como legacy) ======
-    $Y = $Y + 34;
+    // ====== DATOS DEL PROVEEDOR ======
+    $Y += 34;
+
     $pdf->SetTextColor($BLUE[0], $BLUE[1], $BLUE[2]);
     $pdf->SetFont('Arial', 'B', 14);
     $pdf->SetXY($X0, $Y);
     $pdf->Cell(35);
-    $pdf->Cell(85, 5, $utf8('DATOS PROVEEDOR'), 0, 0, 'L');
+    $pdf->Cell(
+        85,
+        5,
+        $utf8('DATOS PROVEEDOR'),
+        0,
+        0,
+        'L'
+    );
 
-    // Caja No. Orden / No. Obra (arriba derecha con borde rojo)
+    // Número de orden y obra
     $pdf->SetDrawColor(255, 0, 0);
     $pdf->SetFont('Arial', 'B', 9);
+
     $pdf->SetXY($X0 + 125, $Y - 4);
-    $pdf->Cell(71, 6, $utf8('NO. DE ORDEN: ') . $utf8($oc->folio), 1, 1, 'L');
+    $pdf->Cell(
+        71,
+        6,
+        $utf8('NO. DE ORDEN: ') . $utf8($oc->folio),
+        1,
+        1,
+        'L'
+    );
+
     $pdf->SetXY($X0 + 125, $Y + 2);
-    $pdf->Cell(71, 6, $utf8('NO. DE OBRA: ') . $utf8($obraFolio), 1, 1, 'L');
+    $pdf->Cell(
+        71,
+        6,
+        $utf8('NO. DE OBRA: ') . $utf8($obraFolio),
+        1,
+        1,
+        'L'
+    );
 
-    // Reset azul para cuadros
     $setBlue();
-    $pdf->SetDrawColor($BLUE[0], $BLUE[1], $BLUE[2]);
+    $pdf->SetDrawColor(
+        $BLUE[0],
+        $BLUE[1],
+        $BLUE[2]
+    );
 
-    // Caja grande proveedor (tabla de 2 columnas como legacy)
+    // Caja del proveedor
     $Y += 8;
     $boxH = 32;
+
     $pdf->Rect($X0, $Y, $W, $boxH);
 
-    // Divisiones internas
     $midX = $X0 + 125;
-    $pdf->Line($midX, $Y, $midX, $Y + $boxH);
 
-    // Filas
+    $pdf->Line(
+        $midX,
+        $Y,
+        $midX,
+        $Y + $boxH
+    );
+
     $row1 = $Y + 8;
     $row2 = $Y + 16;
     $row3 = $Y + 24;
+
     $pdf->Line($X0, $row1, $X0 + $W, $row1);
     $pdf->Line($X0, $row2, $X0 + $W, $row2);
     $pdf->Line($X0, $row3, $X0 + $W, $row3);
 
-    // Texto dentro
-    $pdf->SetTextColor(0,0,0);
+    $pdf->SetTextColor(0, 0, 0);
     $pdf->SetFont('Arial', 'B', 9);
 
     $pdf->SetXY($X0 + 2, $Y + 2);
-    $pdf->Cell(0, 6, $utf8('NOMBRE: ') . $utf8($proveedorNombre), 0, 0, 'L');
+    $pdf->Cell(
+        0,
+        6,
+        $utf8('NOMBRE: ')
+        . $utf8($proveedorNombre),
+        0,
+        0,
+        'L'
+    );
 
     $pdf->SetXY($X0 + 2, $Y + 10);
-    $pdf->Cell(0, 6, $utf8('ATENCION: ') . $utf8($oc->atencion ?? ($oc->proveedor->contacto ?? '')), 0, 0, 'L');
+    $pdf->Cell(
+        0,
+        6,
+        $utf8('ATENCION: ')
+        . $utf8(
+            $oc->atencion
+            ?? ($oc->proveedor->contacto ?? '')
+        ),
+        0,
+        0,
+        'L'
+    );
 
     $pdf->SetXY($X0 + 2, $Y + 18);
-    $pdf->Cell(0, 6, $utf8('DOMICILIO: ') . $utf8($oc->proveedor->domicilio ?? ''), 0, 0, 'L');
+    $pdf->Cell(
+        0,
+        6,
+        $utf8('DOMICILIO: ')
+        . $utf8($oc->proveedor->domicilio ?? ''),
+        0,
+        0,
+        'L'
+    );
 
     $pdf->SetXY($X0 + 2, $Y + 26);
     $pdf->SetFont('Arial', '', 8);
-    $pdf->Cell($midX - $X0 - 4, 5, $utf8('RFC: ') . $utf8($oc->proveedor->rfc ?? ''), 0, 0, 'L');
+
+    $pdf->Cell(
+        $midX - $X0 - 4,
+        5,
+        $utf8('RFC: ')
+        . $utf8($oc->proveedor->rfc ?? ''),
+        0,
+        0,
+        'L'
+    );
 
     // Columna derecha
     $pdf->SetFont('Arial', 'B', 9);
+
     $pdf->SetXY($midX + 2, $Y + 2);
-    $pdf->Cell(0, 6, $utf8('FECHA: ') . $utf8($fecha), 0, 0, 'L');
+    $pdf->Cell(
+        0,
+        6,
+        $utf8('FECHA: ') . $utf8($fecha),
+        0,
+        0,
+        'L'
+    );
 
     $pdf->SetXY($midX + 2, $Y + 10);
-    $pdf->Cell(0, 6, $utf8('AREA: ') . $utf8($area), 0, 0, 'L');
+    $pdf->Cell(
+        0,
+        6,
+        $utf8('AREA: ') . $utf8($area),
+        0,
+        0,
+        'L'
+    );
 
     $pdf->SetXY($midX + 2, $Y + 18);
-    $pdf->Cell(0, 6, $utf8('OBRA: ') . $utf8($obraNombre), 0, 0, 'L');
+    $pdf->Cell(
+        0,
+        6,
+        $utf8('OBRA: ') . $utf8($obraNombre),
+        0,
+        0,
+        'L'
+    );
 
     $pdf->SetXY($midX + 2, $Y + 26);
     $pdf->SetFont('Arial', '', 7.5);
-    $pdf->MultiCell($X0 + $W - $midX - 4, 3.5, $utf8('BANCO: ') . $utf8($proveedorBanco ?: '-') . "\n" . $utf8($proveedorCuentaLabel), 0, 'L');
 
-    // ====== TABLA DETALLES (header azul) ======
-    $Y += $boxH + 6;
-    $pdf->SetXY($X0, $Y);
+    $pdf->MultiCell(
+        $X0 + $W - $midX - 4,
+        3.5,
+        $utf8('BANCO: ')
+        . $utf8($proveedorBanco ?: '-')
+        . "\n"
+        . $utf8($proveedorCuentaLabel),
+        0,
+        'L'
+    );
 
-    $wCant = 15;
-    $wUni  = 18;
-    $wDesc = 95;
-    $wPU   = 28;
-    $wIVA  = 22;
-    $wImp  = $W - ($wCant + $wUni + $wDesc + $wPU + $wIVA);
+    // ====== TABLA DE DETALLES ======
+$Y += $boxH + 6;
+$pdf->SetXY($X0, $Y);
 
-    // Header
-    $setFillBlue();
-    $pdf->SetTextColor(255,255,255);
-    $pdf->SetFont('Arial', 'B', 8);
+$wCant = 13;
+$wUni  = 16;
+$wPU   = 23;
+$wIVA  = 18;
+$wRet  = $mostrarRetenciones ? 19 : 0;
+$wImp  = 23;
 
-    $pdf->Cell($wCant, 7, $utf8('CANT'), 1, 0, 'C', true);
-    $pdf->Cell($wUni,  7, $utf8('UNIDAD'), 1, 0, 'C', true);
-    $pdf->Cell($wDesc, 7, $utf8('DESCRIPCION'), 1, 0, 'C', true);
-    $pdf->Cell($wPU,   7, $utf8('P. UNITARIO'), 1, 0, 'C', true);
-    $pdf->Cell($wIVA,  7, $utf8('IVA'), 1, 0, 'C', true);
-    $pdf->Cell($wImp,  7, $utf8('TOTAL S/IVA'), 1, 1, 'C', true);
+// Todo el espacio restante se entrega a la descripción.
+$wDesc = $W - (
+    $wCant
+    + $wUni
+    + $wPU
+    + $wIVA
+    + $wRet
+    + $wImp
+);
 
-    // Body
-    $pdf->SetTextColor(0,0,0);
-    $pdf->SetFont('Arial', '', 9);
+// Encabezado
+$setFillBlue();
+$pdf->SetTextColor(255, 255, 255);
+$pdf->SetFont('Arial', 'B', 7.5);
 
-    $subCalc = 0.0;
-    $ivaCalc = 0.0;
+$pdf->Cell($wCant, 7, $utf8('CANT'), 1, 0, 'C', true);
+$pdf->Cell($wUni,  7, $utf8('UNIDAD'), 1, 0, 'C', true);
+$pdf->Cell($wDesc, 7, $utf8('DESCRIPCION'), 1, 0, 'C', true);
+$pdf->Cell($wPU,   7, $utf8('P. UNIT.'), 1, 0, 'C', true);
+$pdf->Cell($wIVA,  7, $utf8('IVA'), 1, 0, 'C', true);
 
-    foreach ($oc->detalles as $d) {
-        $cant = (float) ($d->cantidad ?? 0);
-        $uni  = (string) ($d->unidad ?? '');
-        $desc = (string) ($d->descripcion ?? '');
-        $pu   = (float) ($d->precio_unitario ?? 0);
-        $imp  = (float) ($d->importe ?? ($cant * $pu));
+if ($mostrarRetenciones) {
+    $pdf->Cell($wRet, 7, $utf8('RET.'), 1, 0, 'C', true);
+}
 
-        $ivaPctLinea = is_numeric($d->iva ?? null) ? (float) $d->iva : (float) ($oc->iva ?? 0);
-        $ivaLinea = $imp * ($ivaPctLinea / 100);
+$pdf->Cell($wImp, 7, $utf8('IMPORTE'), 1, 1, 'C', true);
 
-        $subCalc += $imp;
-        $ivaCalc += $ivaLinea;
+// Cuerpo
+$pdf->SetTextColor(0, 0, 0);
+$pdf->SetFont('Arial', '', 8);
 
-        // MultiCell para descripción manteniendo altura de fila
-        $x = $pdf->GetX();
-        $y = $pdf->GetY();
+$subCalc   = 0.0;
+$ivaCalc   = 0.0;
+$retCalc   = 0.0;
+$otrosCalc = 0.0;
 
-        $pdf->Cell($wCant, 7, number_format($cant, 1), 1, 0, 'C');
-        $pdf->Cell($wUni,  7, $utf8($uni ?: '-'), 1, 0, 'C');
+/*
+ * Calcula aproximadamente la cantidad de líneas que ocupará
+ * un texto dentro de un ancho determinado.
+ */
+$calcularLineas = function (
+    \FPDF $pdf,
+    string $texto,
+    float $ancho
+): int {
+    $texto = trim($texto);
 
-        $pdf->SetXY($x + $wCant + $wUni, $y);
-        $pdf->MultiCell($wDesc, 7, $utf8($desc), 1, 'L');
-
-        $newY = $pdf->GetY();
-        $rowH = $newY - $y;
-
-        $pdf->SetXY($x + $wCant + $wUni + $wDesc, $y);
-        $pdf->Cell($wPU,  $rowH, $money($pu), 1, 0, 'R');
-        $pdf->Cell($wIVA, $rowH, $money($ivaLinea), 1, 0, 'R');
-        $pdf->Cell($wImp, $rowH, $money($imp), 1, 1, 'R');
+    if ($texto === '') {
+        return 1;
     }
 
-    // ====== NOTAS + TOTALES (caja derecha) ======
+    $anchoUtil = $ancho - 4;
+    $palabras = preg_split('/\s+/', $texto);
+    $lineas = 1;
+    $lineaActual = '';
+
+    foreach ($palabras as $palabra) {
+        $prueba = $lineaActual === ''
+            ? $palabra
+            : $lineaActual . ' ' . $palabra;
+
+        if ($pdf->GetStringWidth($prueba) <= $anchoUtil) {
+            $lineaActual = $prueba;
+        } else {
+            $lineas++;
+            $lineaActual = $palabra;
+        }
+    }
+
+    return max(1, $lineas);
+};
+
+foreach ($oc->detalles as $detalle) {
+    $cant = (float) ($detalle->cantidad ?? 0);
+    $uni  = (string) ($detalle->unidad ?? '');
+    $desc = (string) ($detalle->descripcion ?? '');
+    $pu   = (float) ($detalle->precio_unitario ?? 0);
+
+    $subtotalLinea = (float) (
+        $detalle->importe
+        ?? ($cant * $pu)
+    );
+
+    $ivaPctLinea = is_numeric($detalle->iva ?? null)
+        ? (float) $detalle->iva
+        : (float) ($oc->iva ?? 0);
+
+    $ivaLinea = round(
+        $subtotalLinea * ($ivaPctLinea / 100),
+        2
+    );
+
+    $retencionLinea = round(
+        (float) ($detalle->retenciones ?? 0),
+        2
+    );
+
+    $otrosLinea = round(
+        (float) ($detalle->otros_impuestos ?? 0),
+        2
+    );
+
+    $importeLinea = round(
+        $subtotalLinea
+        + $ivaLinea
+        + $otrosLinea
+        - $retencionLinea,
+        2
+    );
+
+    $subCalc   += $subtotalLinea;
+    $ivaCalc   += $ivaLinea;
+    $retCalc   += $retencionLinea;
+    $otrosCalc += $otrosLinea;
+
+    /*
+     * Primero calculamos la altura requerida por la descripción.
+     * Todas las celdas usarán exactamente esta misma altura.
+     */
+    $lineHeight = 6;
+    $lineasDescripcion = $calcularLineas(
+        $pdf,
+        $utf8($desc),
+        $wDesc
+    );
+
+    $rowH = max(
+        7,
+        $lineasDescripcion * $lineHeight
+    );
+
+    $x = $pdf->GetX();
+    $y = $pdf->GetY();
+
+    /*
+     * Dibujamos primero todos los bordes con la misma altura.
+     */
+    $cursorX = $x;
+
+    $pdf->Rect($cursorX, $y, $wCant, $rowH);
+    $cursorX += $wCant;
+
+    $pdf->Rect($cursorX, $y, $wUni, $rowH);
+    $cursorX += $wUni;
+
+    $pdf->Rect($cursorX, $y, $wDesc, $rowH);
+    $cursorX += $wDesc;
+
+    $pdf->Rect($cursorX, $y, $wPU, $rowH);
+    $cursorX += $wPU;
+
+    $pdf->Rect($cursorX, $y, $wIVA, $rowH);
+    $cursorX += $wIVA;
+
+    if ($mostrarRetenciones) {
+        $pdf->Rect($cursorX, $y, $wRet, $rowH);
+        $cursorX += $wRet;
+    }
+
+    $pdf->Rect($cursorX, $y, $wImp, $rowH);
+
+    /*
+     * Cantidad
+     */
+    $pdf->SetXY($x, $y);
+    $pdf->Cell(
+        $wCant,
+        $rowH,
+        number_format($cant, 1),
+        0,
+        0,
+        'C'
+    );
+
+    /*
+     * Unidad
+     */
+    $pdf->SetXY($x + $wCant, $y);
+    $pdf->Cell(
+        $wUni,
+        $rowH,
+        $utf8($uni ?: '-'),
+        0,
+        0,
+        'C'
+    );
+
+    /*
+     * Descripción. El borde ya fue dibujado con Rect(),
+     * por eso MultiCell no lleva borde.
+     */
+    $pdf->SetXY(
+        $x + $wCant + $wUni + 1,
+        $y + 1
+    );
+
+    $pdf->MultiCell(
+        $wDesc - 2,
+        $lineHeight,
+        $utf8($desc),
+        0,
+        'L'
+    );
+
+    /*
+     * Precio unitario
+     */
+    $precioX = $x
+        + $wCant
+        + $wUni
+        + $wDesc;
+
+    $pdf->SetXY($precioX, $y);
+    $pdf->Cell(
+        $wPU,
+        $rowH,
+        $money($pu),
+        0,
+        0,
+        'R'
+    );
+
+    /*
+     * IVA: solo importe.
+     */
+    $ivaX = $precioX + $wPU;
+
+    $pdf->SetXY($ivaX, $y);
+    $pdf->Cell(
+        $wIVA,
+        $rowH,
+        $money($ivaLinea),
+        0,
+        0,
+        'R'
+    );
+
+    /*
+     * Retención: únicamente el importe para ahorrar espacio.
+     */
+    $siguienteX = $ivaX + $wIVA;
+
+    if ($mostrarRetenciones) {
+        $pdf->SetXY($siguienteX, $y);
+
+        $textoRetencion = $retencionLinea > 0
+            ? '-$' . number_format($retencionLinea, 2)
+            : '-';
+
+        $pdf->SetFont('Arial', '', 7.5);
+
+        $pdf->Cell(
+            $wRet,
+            $rowH,
+            $textoRetencion,
+            0,
+            0,
+            $retencionLinea > 0 ? 'R' : 'C'
+        );
+
+        $pdf->SetFont('Arial', '', 8);
+
+        $siguienteX += $wRet;
+    }
+
+    /*
+     * Importe final.
+     */
+    $pdf->SetXY($siguienteX, $y);
+    $pdf->SetFont('Arial', 'B', 8);
+
+    $pdf->Cell(
+        $wImp,
+        $rowH,
+        $money($importeLinea),
+        0,
+        0,
+        'R'
+    );
+
+    $pdf->SetFont('Arial', '', 8);
+
+    /*
+     * Avanzamos manualmente exactamente la altura de la fila.
+     */
+    $pdf->SetXY(
+        $X0,
+        $y + $rowH
+    );
+}
+
+    // ====== NOTAS Y TOTALES ======
     $Y = $pdf->GetY() + 6;
 
-    $subtotal = $subCalc;
-    $ivaMonto = $ivaCalc;
-    $total    = $subtotal + $ivaMonto;
+    $subtotal = round($subCalc, 2);
+    $ivaMonto = round($ivaCalc, 2);
+    $retencionesMonto = round($retCalc, 2);
+    $otrosMonto = round($otrosCalc, 2);
+
+    $total = round(
+        $subtotal
+        + $ivaMonto
+        + $otrosMonto
+        - $retencionesMonto,
+        2
+    );
+
     $ivaPctMostrado = (float) ($oc->iva ?? 0);
 
     // Notas
     $pdf->SetFont('Arial', 'B', 9);
     $pdf->SetXY($X0, $Y);
-    $pdf->Cell(15, 6, $utf8('NOTAS:'), 0, 0, 'L');
-    $pdf->SetFont('Arial', '', 9);
-    $pdf->MultiCell(130, 6, $utf8($oc->comentarios ?? ''), 0, 'L');
+    $pdf->Cell(
+        15,
+        6,
+        $utf8('NOTAS:'),
+        0,
+        0,
+        'L'
+    );
 
-    // Totales caja derecha
+    $pdf->SetFont('Arial', '', 9);
+
+    $pdf->MultiCell(
+        115,
+        6,
+        $utf8($oc->comentarios ?? ''),
+        0,
+        'L'
+    );
+
+    /*
+     * Construcción dinámica de las filas del resumen.
+     * Retenciones y otros impuestos solamente aparecen cuando existen.
+     */
+    $filasTotales = [
+        [
+            'label' => 'Subtotal:',
+            'monto' => $subtotal,
+            'total' => false,
+        ],
+        [
+            'label' => 'IVA ('
+                . number_format($ivaPctMostrado, 0)
+                . '%):',
+            'monto' => $ivaMonto,
+            'total' => false,
+        ],
+    ];
+
+    if ($retencionesMonto > 0) {
+        $filasTotales[] = [
+            'label' => 'Retenciones:',
+            'monto' => -$retencionesMonto,
+            'total' => false,
+        ];
+    }
+
+    if ($otrosMonto != 0) {
+        $filasTotales[] = [
+            'label' => 'Otros impuestos:',
+            'monto' => $otrosMonto,
+            'total' => false,
+        ];
+    }
+
+    $filasTotales[] = [
+        'label' => 'Total M.N.:',
+        'monto' => $total,
+        'total' => true,
+    ];
+
+    // Caja de totales
     $totX = $X0 + 120;
     $totY = $Y;
-    $pdf->SetDrawColor($BLUE[0], $BLUE[1], $BLUE[2]);
-    $pdf->Rect($totX, $totY, 76, 24);
+    $altoFilaTotal = 8;
+    $totH = count($filasTotales) * $altoFilaTotal;
+
+    $pdf->SetDrawColor(
+        $BLUE[0],
+        $BLUE[1],
+        $BLUE[2]
+    );
+
+    $pdf->Rect(
+        $totX,
+        $totY,
+        76,
+        $totH
+    );
 
     $pdf->SetXY($totX, $totY);
-    $pdf->SetFont('Arial', 'B', 9);
-    $pdf->Cell(50, 8, $utf8('Subtotal:'), 0, 0, 'R');
-    $pdf->SetFont('Arial', '', 9);
-    $pdf->Cell(26, 8, $money($subtotal), 0, 1, 'R');
 
-    $pdf->SetX($totX);
-    $pdf->SetFont('Arial', 'B', 9);
-    $pdf->Cell(50, 8, $utf8('IVA ('.number_format($ivaPctMostrado,0).'%) :'), 0, 0, 'R');
-    $pdf->SetFont('Arial', '', 9);
-    $pdf->Cell(26, 8, $money($ivaMonto), 0, 1, 'R');
+    foreach ($filasTotales as $fila) {
+        $esTotal = $fila['total'];
 
-    $pdf->SetX($totX);
-    $pdf->SetFont('Arial', 'B', 10);
-    $pdf->Cell(50, 8, $utf8('Total M.N.:'), 0, 0, 'R');
-    $pdf->Cell(26, 8, $money($total), 0, 1, 'R');
+        $pdf->SetX($totX);
+        $pdf->SetFont(
+            'Arial',
+            'B',
+            $esTotal ? 10 : 9
+        );
 
-    // ====== DATOS DE FACTURACION (bloque inferior) ======
-    $Y = max($pdf->GetY() + 8, $totY + 28);
+        $pdf->Cell(
+            50,
+            $altoFilaTotal,
+            $utf8($fila['label']),
+            0,
+            0,
+            'R'
+        );
+
+        /*
+         * Las retenciones se imprimen con signo negativo.
+         */
+        $montoTexto = $fila['monto'] < 0
+            ? '-'
+                . $money(abs($fila['monto']))
+            : $money($fila['monto']);
+
+        $pdf->SetFont(
+            'Arial',
+            $esTotal ? 'B' : '',
+            $esTotal ? 10 : 9
+        );
+
+        $pdf->Cell(
+            26,
+            $altoFilaTotal,
+            $montoTexto,
+            0,
+            1,
+            'R'
+        );
+    }
+
+    // ====== DATOS DE FACTURACIÓN ======
+    $Y = max(
+        $pdf->GetY() + 8,
+        $totY + $totH + 4
+    );
+
     $pdf->SetXY($X0, $Y);
     $pdf->SetFont('Arial', 'B', 9);
-    $pdf->SetTextColor($BLUE[0], $BLUE[1], $BLUE[2]);
-    $pdf->Cell(0, 6, $utf8('DATOS DE FACTURACION:'), 0, 1, 'L');
+    $pdf->SetTextColor(
+        $BLUE[0],
+        $BLUE[1],
+        $BLUE[2]
+    );
 
-    $pdf->SetTextColor(0,0,0);
-    $pdf->SetDrawColor($BLUE[0], $BLUE[1], $BLUE[2]);
-    $pdf->Rect($X0, $Y + 6, $W, 22);
+    $pdf->Cell(
+        0,
+        6,
+        $utf8('DATOS DE FACTURACION:'),
+        0,
+        1,
+        'L'
+    );
+
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->SetDrawColor(
+        $BLUE[0],
+        $BLUE[1],
+        $BLUE[2]
+    );
+
+    $pdf->Rect(
+        $X0,
+        $Y + 6,
+        $W,
+        22
+    );
 
     $pdf->SetFont('Arial', '', 8);
     $pdf->SetXY($X0 + 2, $Y + 8);
-    $pdf->MultiCell(100, 4, $utf8("Razon Social: Rivera Construcciones\nRFC: RCO820921T86\nDomicilio: Justo Sierra #2469\nUso del CFDI: G03 Gastos en general"), 0, 'L');
+
+    $pdf->MultiCell(
+        100,
+        4,
+        $utf8(
+            "Razon Social: Rivera Construcciones\n"
+            . "RFC: RCO820921T86\n"
+            . "Domicilio: Justo Sierra #2469\n"
+            . "Uso del CFDI: G03 Gastos en general"
+        ),
+        0,
+        'L'
+    );
 
     $pdf->SetXY($X0 + 105, $Y + 8);
-    $pdf->MultiCell(0, 4, $utf8("Regimen del Capital: S.A. de C.V.\nRegimen fiscal: General de ley\nColonia: Ladron de Guevara, Gdl\nMetodo de pago: Pago en una sola exhibicion"), 0, 'L');
+
+    $pdf->MultiCell(
+        0,
+        4,
+        $utf8(
+            "Regimen del Capital: S.A. de C.V.\n"
+            . "Regimen fiscal: General de ley\n"
+            . "Colonia: Ladron de Guevara, Gdl\n"
+            . "Metodo de pago: Pago en una sola exhibicion"
+        ),
+        0,
+        'L'
+    );
 
     // ====== Firmas ======
-    $Y = $Y + 34;
-    $pdf->SetDrawColor(120,120,120);
-    $pdf->Line($X0 + 5,  $Y + 12, $X0 + 55, $Y + 12);
-    $pdf->Line($X0 + 60, $Y + 12, $X0 + 110, $Y + 12);
-    $pdf->Line($X0 + 115,$Y + 12, $X0 + 165, $Y + 12);
-    $pdf->Line($X0 + 170,$Y + 12, $X0 + 205, $Y + 12);
+    $Y += 34;
+
+    $pdf->SetDrawColor(120, 120, 120);
+
+    $pdf->Line(
+        $X0 + 5,
+        $Y + 12,
+        $X0 + 55,
+        $Y + 12
+    );
+
+    $pdf->Line(
+        $X0 + 60,
+        $Y + 12,
+        $X0 + 110,
+        $Y + 12
+    );
+
+    $pdf->Line(
+        $X0 + 115,
+        $Y + 12,
+        $X0 + 165,
+        $Y + 12
+    );
+
+    $pdf->Line(
+        $X0 + 170,
+        $Y + 12,
+        $X0 + 205,
+        $Y + 12
+    );
 
     $pdf->SetFont('Arial', 'B', 8);
+
     $pdf->SetXY($X0 + 5, $Y + 13);
-    $pdf->Cell(50, 5, $utf8(auth()->user()->name ?? ''), 0, 0, 'C');
+    $pdf->Cell(
+        50,
+        5,
+        $utf8(auth()->user()->name ?? ''),
+        0,
+        0,
+        'C'
+    );
+
     $pdf->SetXY($X0 + 60, $Y + 13);
-    $pdf->Cell(50, 5, $utf8($oc->usuario_autoriza  ?? ''), 0, 0, 'C');
+    $pdf->Cell(
+        50,
+        5,
+        $utf8($oc->usuario_autoriza ?? ''),
+        0,
+        0,
+        'C'
+    );
+
     $pdf->SetXY($X0 + 115, $Y + 13);
-    $pdf->Cell(50, 5, $utf8(''), 0, 0, 'C');
+    $pdf->Cell(
+        50,
+        5,
+        '',
+        0,
+        0,
+        'C'
+    );
+
     $pdf->SetXY($X0 + 170, $Y + 13);
-    $pdf->Cell(35, 5, $utf8(''), 0, 0, 'C');
+    $pdf->Cell(
+        35,
+        5,
+        '',
+        0,
+        0,
+        'C'
+    );
 
-    $pdf->SetTextColor(200,0,0);
+    $pdf->SetTextColor(200, 0, 0);
     $pdf->SetFont('Arial', 'B', 8);
-    $pdf->SetXY($X0 + 5, $Y + 18);
-    $pdf->Cell(50, 5, $utf8('SOLICITA'), 0, 0, 'C');
-    $pdf->SetXY($X0 + 60, $Y + 18);
-    $pdf->Cell(50, 5, $utf8('AUTORIZA'), 0, 0, 'C');
-    $pdf->SetXY($X0 + 115, $Y + 18);
-    $pdf->Cell(50, 5, $utf8('VoBo'), 0, 0, 'C');
-    $pdf->SetXY($X0 + 170, $Y + 18);
-    $pdf->Cell(35, 5, $utf8('ENTERADO'), 0, 0, 'C');
 
-    // Page footer
-    $pdf->SetTextColor(120,120,120);
+    $pdf->SetXY($X0 + 5, $Y + 18);
+    $pdf->Cell(
+        50,
+        5,
+        $utf8('SOLICITA'),
+        0,
+        0,
+        'C'
+    );
+
+    $pdf->SetXY($X0 + 60, $Y + 18);
+    $pdf->Cell(
+        50,
+        5,
+        $utf8('AUTORIZA'),
+        0,
+        0,
+        'C'
+    );
+
+    $pdf->SetXY($X0 + 115, $Y + 18);
+    $pdf->Cell(
+        50,
+        5,
+        $utf8('VoBo'),
+        0,
+        0,
+        'C'
+    );
+
+    $pdf->SetXY($X0 + 170, $Y + 18);
+    $pdf->Cell(
+        35,
+        5,
+        $utf8('ENTERADO'),
+        0,
+        0,
+        'C'
+    );
+
+    // Pie de página
+    $pdf->SetTextColor(120, 120, 120);
     $pdf->SetFont('Arial', 'I', 8);
     $pdf->SetXY($X0, 270);
-    $pdf->Cell(0, 5, $utf8('Page 1/1'), 0, 0, 'C');
+
+    $pdf->Cell(
+        0,
+        5,
+        $utf8('Page 1/1'),
+        0,
+        0,
+        'C'
+    );
 
     return response($pdf->Output('S'))
         ->header('Content-Type', 'application/pdf')
-        ->header('Content-Disposition', 'inline; filename="OC_'.$oc->folio.'.pdf"');
+        ->header(
+            'Content-Disposition',
+            'inline; filename="OC_'
+            . $oc->folio
+            . '.pdf"'
+        );
 }
-
 // public function print(OrdenCompra $orden_compra)
 // {
 //     if (!auth()->user()->can('ordenes_compra.imprimir')) {

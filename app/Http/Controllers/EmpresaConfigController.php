@@ -27,6 +27,8 @@ use App\Models\ObraFolio;
 use App\Models\ObraTipoConfiguracion;
 use App\Models\NominaListaRaya;
 use App\Models\Almacen;
+use App\Models\TipoRetencion;
+use Illuminate\Validation\Rule;
 use App\Services\Nomina\ListaRayaResolver;
 use App\Services\Maquinas\PreventivoMaquinaService;
 use App\Services\Empresa\EmpresaViaticoTarifaService;
@@ -125,6 +127,10 @@ public function index(){
             ->get();
 
         $tiposIva = TipoIva::query()
+            ->orderByDesc('activo')
+            ->orderBy('porcentaje')
+            ->get();
+        $tiposRetencion = TipoRetencion::query()
             ->orderByDesc('activo')
             ->orderBy('porcentaje')
             ->get();
@@ -231,6 +237,7 @@ public function index(){
         'empleadosResponsables',
         'centrosCosto',
         'tiposIva',
+        'tiposRetencion',
         'tarifaViaticoActual',
         'historialViaticoTarifas',
         'foliosObra',
@@ -702,6 +709,33 @@ public function marcarTipoIvaDefault(TipoIva $tipoIva)
     return redirect()
         ->route('empresa_config.edit', ['tab' => 'iva'])
         ->with('success', 'IVA por defecto actualizado.');
+}
+public function storeTipoRetencion(Request $request)
+{
+    $validated = $request->validate([
+        'nombre' => [
+            'required',
+            'string',
+            'max:100',
+            Rule::unique('tipos_retencion', 'nombre'),
+        ],
+        'porcentaje' => [
+            'required',
+            'numeric',
+            'min:0',
+            'max:100',
+        ],
+    ]);
+
+    TipoRetencion::create([
+        'nombre' => trim($validated['nombre']),
+        'porcentaje' => $validated['porcentaje'],
+        'activo' => true,
+    ]);
+
+    return redirect()
+        ->route('empresa_config.edit', ['tab' => 'tipos_iva'])
+        ->with('success', 'El tipo de retención fue creado correctamente.');
 }
 }
 

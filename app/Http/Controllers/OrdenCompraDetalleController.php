@@ -6,6 +6,7 @@ use App\Http\Requests\StoreOrdenCompraDetalleRequest;
 use App\Http\Requests\UpdateOrdenCompraDetalleRequest;
 use App\Models\OrdenCompra;
 use App\Models\OrdenCompraDetalle;
+use App\Models\TipoRetencion;
 use App\Services\OrdenCompraTotalesService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,58 +16,94 @@ use Illuminate\Support\Facades\Schema;
 class OrdenCompraDetalleController extends Controller
 {
     public function store(StoreOrdenCompraDetalleRequest $request, $ordenCompraId)
-    {
-        $oc = OrdenCompra::findOrFail($ordenCompraId);
+{
+    $oc = OrdenCompra::findOrFail($ordenCompraId);
 
-        if (in_array($oc->estado_normalizado, ['autorizada','cancelada'], true)) {
-            return back()->with('error', 'No puedes modificar detalles en una orden autorizada o cancelada.');
-        }
-        logger()->info('OC Detalle request', $request->all());
-
-        return DB::transaction(function () use ($request, $oc) {
-
-            $cantidad = (float)$request->cantidad;
-            $precio   = (float)$request->precio_unitario;
-
-            // Si no viene importe, lo calculamos
-            $importe = $request->filled('importe')
-                ? (float)$request->importe
-                : round($cantidad * $precio, 2);
-            $detalle = new OrdenCompraDetalle();
-            $detalle->orden_compra_id = $oc->id;
-            $detalle->producto_id     = $request->producto_id;
-            $detalle->legacy_prod_id  = $request->legacy_prod_id;
-            $detalle->descripcion     = $request->descripcion;
-            $detalle->unidad          = $request->unidad;
-            $detalle->cantidad        = $cantidad;
-            $detalle->precio_unitario = $precio;
-            $detalle->importe         = $importe;
-            $detalle->iva             = $request->filled('iva') ? (float)$request->iva : 0;
-            $detalle->retenciones     = $request->filled('retenciones') ? (float)$request->retenciones : 0;
-            $detalle->otros_impuestos = $request->filled('otros_impuestos') ? (float)$request->otros_impuestos : 0;
-            // tipo_cambio por línea (si quieres copiar del encabezado)
-            if (is_null($detalle->tipo_cambio)) {
-                $detalle->tipo_cambio = $oc->tipo_cambio;
-            }
-            $detalle->notas           = $request->notas;
-            $detalle->save();
-            logger()->info('OC Detalle guardado', [
-                'oc_id' => $oc->id,
-                'detalle_id' => $detalle->id,
-                'proveedor_id' => $oc->proveedor_id,
-                'producto_id' => $detalle->producto_id,
-                'legacy_prod_id' => $detalle->legacy_prod_id,
-                'descripcion' => $detalle->descripcion,
-                'precio_unitario' => $detalle->precio_unitario,
-            ]);
-
-            $this->syncProductoProveedorDesdeDetalle($oc, $detalle);
-            OrdenCompraTotalesService::recalcular($oc);
-            return back()->with('success', 'Detalle agregado y totales recalculados.');
-        });
+    if (in_array($oc->estado_normalizado, ['autorizada', 'cancelada'], true)) {
+        return back()->with(
+            'error',
+            'No puedes modificar detalles en una orden autorizada o cancelada.'
+        );
     }
 
+    logger()->info('OC Detalle request', $request->all());
 
+    return DB::transaction(function () use ($request, $oc) {
+        $cantidad = (float) $request->cantidad;
+        $precio = (float) $request->precio_unitario;
+
+        $importe = $request->filled('importe')
+            ? (float) $request->importe
+            : round($cantidad * $precio, 2);
+
+        $tipoRetencion = null;
+        $retencionPorcentaje = 0;
+        $retencionImporte = 0;
+
+        if ($request->filled('tipo_retencion_id')) {
+            $tipoRetencion = TipoRetencion::query()
+                ->where('activo', true)
+                ->findOrFail($request->integer('tipo_retencion_id'));
+
+            $retencionPorcentaje = (float) $tipoRetencion->porcentaje;
+
+            $retencionImporte = round(
+                $importe * ($retencionPorcentaje / 100),
+                2
+            );
+        }
+
+        $detalle = new OrdenCompraDetalle();
+        $detalle->orden_compra_id = $oc->id;
+        $detalle->producto_id = $request->producto_id;
+        $detalle->legacy_prod_id = $request->legacy_prod_id;
+        $detalle->descripcion = $request->descripcion;
+        $detalle->unidad = $request->unidad;
+        $detalle->cantidad = $cantidad;
+        $detalle->precio_unitario = $precio;
+        $detalle->importe = $importe;
+        $detalle->iva = $request->filled('iva')
+            ? (float) $request->iva
+            : 0;
+
+        $detalle->tipo_retencion_id = $tipoRetencion?->id;
+        $detalle->retencion_porcentaje = $retencionPorcentaje;
+        $detalle->retenciones = $retencionImporte;
+
+        $detalle->otros_impuestos = $request->filled('otros_impuestos')
+            ? (float) $request->otros_impuestos
+            : 0;
+
+        if (is_null($detalle->tipo_cambio)) {
+            $detalle->tipo_cambio = $oc->tipo_cambio;
+        }
+
+        $detalle->notas = $request->notas;
+        $detalle->save();
+
+        logger()->info('OC Detalle guardado', [
+            'oc_id' => $oc->id,
+            'detalle_id' => $detalle->id,
+            'proveedor_id' => $oc->proveedor_id,
+            'producto_id' => $detalle->producto_id,
+            'legacy_prod_id' => $detalle->legacy_prod_id,
+            'descripcion' => $detalle->descripcion,
+            'precio_unitario' => $detalle->precio_unitario,
+            'tipo_retencion_id' => $detalle->tipo_retencion_id,
+            'retencion_porcentaje' => $detalle->retencion_porcentaje,
+            'retenciones' => $detalle->retenciones,
+        ]);
+
+        $this->syncProductoProveedorDesdeDetalle($oc, $detalle);
+
+        OrdenCompraTotalesService::recalcular($oc);
+
+        return back()->with(
+            'success',
+            'Detalle agregado y totales recalculados.'
+        );
+    });
+}
 private function syncProductoProveedorDesdeDetalle(OrdenCompra $oc, OrdenCompraDetalle $detalle): void
 {
     $proveedorId = (int) $oc->proveedor_id;

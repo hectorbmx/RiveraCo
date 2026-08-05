@@ -14,22 +14,78 @@ class StoreOrdenCompraDetalleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'producto_id'     => ['nullable','integer','exists:productos,id'],
-            'legacy_prod_id'  => ['nullable','string','max:50'],
+            'producto_id' => [
+                'nullable',
+                'integer',
+                'exists:productos,id',
+            ],
 
-            'descripcion'     => ['required','string','max:255'],
-            'unidad'          => ['nullable','string','max:50'],
+            'legacy_prod_id' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
 
-            'cantidad'        => ['required','numeric','min:0.0001'],
-            'precio_unitario' => ['required','numeric','min:0'],
+            'descripcion' => [
+                'required',
+                'string',
+                'max:255',
+            ],
 
-            // Importes por línea (pueden venir o calcularse)
-            'importe'         => ['nullable','numeric','min:0'],
-            'iva'             => ['nullable','numeric','min:0'],
-            'retenciones'     => ['nullable','numeric','min:0'],
-            'otros_impuestos' => ['nullable','numeric','min:0'],
+            'unidad' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
 
-            'notas'           => ['nullable','string','max:255'],
+            'cantidad' => [
+                'required',
+                'numeric',
+                'min:0.0001',
+            ],
+
+            'precio_unitario' => [
+                'required',
+                'numeric',
+                'min:0',
+            ],
+
+            'importe' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            'iva' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                'max:100',
+            ],
+
+            'tipo_retencion_id' => [
+                'nullable',
+                'integer',
+                'exists:tipos_retencion,id',
+            ],
+
+            'retenciones' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            'otros_impuestos' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            'notas' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
         ];
     }
 }
