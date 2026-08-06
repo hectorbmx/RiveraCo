@@ -1871,7 +1871,7 @@ public function exportarListaPagos(
     ]);
 
     /*
-     * Formas de pago permitidas para este reporte.
+     * Formas de pago permitidas.
      */
     $formasPago = [
         '01' => 'PAGOS EN EFECTIVO',
@@ -1883,17 +1883,12 @@ public function exportarListaPagos(
     }
 
     /*
-     * Obtener y normalizar el código de área enviado
-     * como query string.
+     * Área permitida.
      */
     $areaCodigo = strtoupper(
         trim((string) $request->query('area_codigo'))
     );
 
-    /*
-     * Por el momento, este reporte solamente está
-     * habilitado para el área Giralda.
-     */
     if ($areaCodigo !== 'GL') {
         abort(
             403,
@@ -1901,12 +1896,46 @@ public function exportarListaPagos(
         );
     }
 
-    /*
-     * Resolver el área desde el catálogo.
-     */
     $areaCatalogo = Area::query()
         ->where('codigo', $areaCodigo)
         ->firstOrFail();
+
+    /*
+     * Semana seleccionada.
+     *
+     * Si no viene el parámetro, se utiliza la semana actual.
+     * Cualquier fecha válida se normaliza al lunes de su semana.
+     */
+    try {
+        $fechaSemana = $request->filled('semana')
+            ? Carbon::createFromFormat(
+                'Y-m-d',
+                (string) $request->query('semana')
+            )->startOfWeek(Carbon::MONDAY)
+            : now()->startOfWeek(Carbon::MONDAY);
+    } catch (\Throwable $e) {
+        abort(422, 'La semana seleccionada no tiene un formato válido.');
+    }
+
+    $inicioSemanaActual = now()
+        ->startOfWeek(Carbon::MONDAY)
+        ->startOfDay();
+
+    /*
+     * No permitir exportar semanas futuras.
+     */
+    if ($fechaSemana->greaterThan($inicioSemanaActual)) {
+        abort(422, 'No se pueden exportar semanas futuras.');
+    }
+
+    $inicioSemana = $fechaSemana
+        ->copy()
+        ->startOfDay();
+
+    $finSemana = $fechaSemana
+        ->copy()
+        ->endOfWeek(Carbon::SUNDAY)
+        ->endOfDay();
 
     $titulo = $formasPago[$formaPago];
 
@@ -1916,26 +1945,27 @@ public function exportarListaPagos(
      * - Autorizadas.
      * - De la forma de pago solicitada.
      * - Del área Giralda.
+     * - Con folio OC-GL-%.
+     * - Con fecha dentro de la semana seleccionada.
      */
- $ordenes = OrdenCompra::query()
-    ->with([
-        'proveedor',
-        'obra',
-        'centroCosto',
-        'areaCatalogo',
-    ])
-    ->where('estado', 'AUTORIZADA')
-    ->where('forma_pago', $formaPago)
-
-    // Área real relacionada
-    ->where('area_id', $areaCatalogo->id)
-
-    // Protección adicional: solamente folios Giralda
-    ->where('folio', 'like', 'OC-GL-%')
-
-    ->orderBy('fecha')
-    ->orderBy('folio')
-    ->get();
+    $ordenes = OrdenCompra::query()
+        ->with([
+            'proveedor',
+            'obra',
+            'centroCosto',
+            'areaCatalogo',
+        ])
+        ->where('estado', 'AUTORIZADA')
+        ->where('forma_pago', $formaPago)
+        ->where('area_id', $areaCatalogo->id)
+        ->where('folio', 'like', 'OC-GL-%')
+        ->whereBetween('fecha', [
+            $inicioSemana->toDateString(),
+            $finSemana->toDateString(),
+        ])
+        ->orderBy('fecha')
+        ->orderBy('folio')
+        ->get();
 
     /*
      * PDF horizontal tamaño carta.
@@ -1957,8 +1987,7 @@ public function exportarListaPagos(
     $GRAY = [240, 240, 240];
 
     /*
-     * Encabezado reutilizable para la primera página
-     * y para cada salto de página.
+     * Encabezado reutilizable.
      */
     $imprimirEncabezado = function () use (
         $pdf,
@@ -1966,6 +1995,8 @@ public function exportarListaPagos(
         $titulo,
         $formaPago,
         $areaCatalogo,
+        $inicioSemana,
+        $finSemana,
         $BLUE
     ) {
         $pdf->SetTextColor(
@@ -1996,6 +2027,10 @@ public function exportarListaPagos(
                 . $areaCatalogo->nombre
                 . ' | Forma de pago: '
                 . $formaPago
+                . ' | Periodo: '
+                . $inicioSemana->format('d/m/Y')
+                . ' al '
+                . $finSemana->format('d/m/Y')
                 . ' | Solo órdenes autorizadas'
                 . ' | Generado: '
                 . now()->format('d/m/Y H:i')
@@ -2019,65 +2054,12 @@ public function exportarListaPagos(
         $pdf->SetTextColor(255, 255, 255);
         $pdf->SetFont('Arial', 'B', 8);
 
-        $pdf->Cell(
-            30,
-            8,
-            $utf8('FOLIO'),
-            1,
-            0,
-            'C',
-            true
-        );
-
-        $pdf->Cell(
-            68,
-            8,
-            $utf8('PROVEEDOR'),
-            1,
-            0,
-            'C',
-            true
-        );
-
-        $pdf->Cell(
-            30,
-            8,
-            $utf8('AREA'),
-            1,
-            0,
-            'C',
-            true
-        );
-
-        $pdf->Cell(
-            65,
-            8,
-            $utf8('DESTINO'),
-            1,
-            0,
-            'C',
-            true
-        );
-
-        $pdf->Cell(
-            25,
-            8,
-            $utf8('FECHA'),
-            1,
-            0,
-            'C',
-            true
-        );
-
-        $pdf->Cell(
-            38,
-            8,
-            $utf8('TOTAL'),
-            1,
-            1,
-            'C',
-            true
-        );
+        $pdf->Cell(30, 8, $utf8('FOLIO'), 1, 0, 'C', true);
+        $pdf->Cell(68, 8, $utf8('PROVEEDOR'), 1, 0, 'C', true);
+        $pdf->Cell(30, 8, $utf8('AREA'), 1, 0, 'C', true);
+        $pdf->Cell(65, 8, $utf8('DESTINO'), 1, 0, 'C', true);
+        $pdf->Cell(25, 8, $utf8('FECHA'), 1, 0, 'C', true);
+        $pdf->Cell(38, 8, $utf8('TOTAL'), 1, 1, 'C', true);
 
         $pdf->SetTextColor(0, 0, 0);
     };
@@ -2087,7 +2069,7 @@ public function exportarListaPagos(
     $totalGeneral = 0.0;
 
     /*
-     * Mensaje cuando no existen órdenes coincidentes.
+     * Mensaje cuando no existen órdenes.
      */
     if ($ordenes->isEmpty()) {
         $pdf->SetFont('Arial', '', 10);
@@ -2099,6 +2081,10 @@ public function exportarListaPagos(
                 'No existen órdenes autorizadas con esta forma de pago '
                 . 'para el área '
                 . $areaCatalogo->nombre
+                . ' en el periodo '
+                . $inicioSemana->format('d/m/Y')
+                . ' al '
+                . $finSemana->format('d/m/Y')
                 . '.'
             ),
             1,
@@ -2111,10 +2097,6 @@ public function exportarListaPagos(
      * Cuerpo del reporte.
      */
     foreach ($ordenes as $indice => $oc) {
-        /*
-         * Crear una página nueva antes de alcanzar
-         * el límite inferior.
-         */
         if ($pdf->GetY() > 185) {
             $pdf->AddPage();
             $imprimirEncabezado();
@@ -2158,9 +2140,6 @@ public function exportarListaPagos(
 
         $totalGeneral += $total;
 
-        /*
-         * Alternar el fondo de las filas.
-         */
         $relleno = ($indice % 2) !== 0;
 
         if ($relleno) {
@@ -2311,11 +2290,20 @@ public function exportarListaPagos(
     }
 
     /*
-     * Nombre del archivo.
+     * Nombre del archivo con periodo.
      */
-    $nombreArchivo = $formaPago === '01'
-        ? 'OC_Giralda_pagos_efectivo.pdf'
-        : 'OC_Giralda_pagos_tarjeta_credito.pdf';
+    $tipoArchivo = $formaPago === '01'
+        ? 'efectivo'
+        : 'tarjeta_credito';
+
+    $nombreArchivo =
+        'OC_Giralda_'
+        . $tipoArchivo
+        . '_'
+        . $inicioSemana->format('Y-m-d')
+        . '_al_'
+        . $finSemana->format('Y-m-d')
+        . '.pdf';
 
     return response($pdf->Output('S'))
         ->header('Content-Type', 'application/pdf')
