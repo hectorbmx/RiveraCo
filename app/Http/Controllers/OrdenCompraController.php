@@ -1683,8 +1683,10 @@ foreach ($oc->detalles as $detalle) {
  
     return response()->json($resultado->values());
 }
-public function exportarListaPagos(string $formaPago)
-{
+public function exportarListaPagos(
+    Request $request,
+    string $formaPago
+) {
     $this->authorizeAny([
         'ordenes_compra.view.access',
         'ordenes_compra.print.access',
@@ -1704,30 +1706,72 @@ public function exportarListaPagos(string $formaPago)
         abort(404, 'Forma de pago no válida.');
     }
 
+    /*
+     * Obtener y normalizar el código de área enviado
+     * como query string.
+     */
+    $areaCodigo = strtoupper(
+        trim((string) $request->query('area_codigo'))
+    );
+
+    /*
+     * Por el momento, este reporte solamente está
+     * habilitado para el área Giralda.
+     */
+    if ($areaCodigo !== 'GL') {
+        abort(
+            403,
+            'Este reporte solamente está disponible para el área Giralda.'
+        );
+    }
+
+    /*
+     * Resolver el área desde el catálogo.
+     */
+    $areaCatalogo = Area::query()
+        ->where('codigo', $areaCodigo)
+        ->firstOrFail();
+
     $titulo = $formasPago[$formaPago];
 
     /*
-     * Solamente órdenes autorizadas.
+     * Solo se exportan órdenes:
+     *
+     * - Autorizadas.
+     * - De la forma de pago solicitada.
+     * - Del área Giralda.
      */
-    $ordenes = OrdenCompra::query()
-        ->with([
-            'proveedor',
-            'obra',
-            'centroCosto',
-            'areaCatalogo',
-        ])
-        ->where('estado', 'AUTORIZADA')
-        ->where('forma_pago', $formaPago)
-        ->orderBy('fecha')
-        ->orderBy('folio')
-        ->get();
+ $ordenes = OrdenCompra::query()
+    ->with([
+        'proveedor',
+        'obra',
+        'centroCosto',
+        'areaCatalogo',
+    ])
+    ->where('estado', 'AUTORIZADA')
+    ->where('forma_pago', $formaPago)
 
+    // Área real relacionada
+    ->where('area_id', $areaCatalogo->id)
+
+    // Protección adicional: solamente folios Giralda
+    ->where('folio', 'like', 'OC-GL-%')
+
+    ->orderBy('fecha')
+    ->orderBy('folio')
+    ->get();
+
+    /*
+     * PDF horizontal tamaño carta.
+     */
     $pdf = new \FPDF('L', 'mm', 'Letter');
+
     $pdf->SetMargins(10, 10, 10);
     $pdf->SetAutoPageBreak(true, 15);
     $pdf->AddPage();
 
     $utf8 = fn ($texto) => utf8_decode((string) $texto);
+
     $money = fn ($cantidad) => '$' . number_format(
         (float) $cantidad,
         2
@@ -1738,15 +1782,15 @@ public function exportarListaPagos(string $formaPago)
 
     /*
      * Encabezado reutilizable para la primera página
-     * y para los saltos de página.
+     * y para cada salto de página.
      */
     $imprimirEncabezado = function () use (
         $pdf,
         $utf8,
         $titulo,
         $formaPago,
-        $BLUE,
-        $GRAY
+        $areaCatalogo,
+        $BLUE
     ) {
         $pdf->SetTextColor(
             $BLUE[0],
@@ -1755,6 +1799,7 @@ public function exportarListaPagos(string $formaPago)
         );
 
         $pdf->SetFont('Arial', 'B', 16);
+
         $pdf->Cell(
             0,
             8,
@@ -1771,9 +1816,12 @@ public function exportarListaPagos(string $formaPago)
             0,
             6,
             $utf8(
-                'Forma de pago: '
+                'Área: '
+                . $areaCatalogo->nombre
+                . ' | Forma de pago: '
                 . $formaPago
-                . ' | Solo ordenes autorizadas | Generado: '
+                . ' | Solo órdenes autorizadas'
+                . ' | Generado: '
                 . now()->format('d/m/Y H:i')
             ),
             0,
@@ -1795,20 +1843,76 @@ public function exportarListaPagos(string $formaPago)
         $pdf->SetTextColor(255, 255, 255);
         $pdf->SetFont('Arial', 'B', 8);
 
-        $pdf->Cell(30, 8, $utf8('FOLIO'), 1, 0, 'C', true);
-        $pdf->Cell(68, 8, $utf8('PROVEEDOR'), 1, 0, 'C', true);
-        $pdf->Cell(30, 8, $utf8('AREA'), 1, 0, 'C', true);
-        $pdf->Cell(65, 8, $utf8('DESTINO'), 1, 0, 'C', true);
-        $pdf->Cell(25, 8, $utf8('FECHA'), 1, 0, 'C', true);
-        $pdf->Cell(38, 8, $utf8('TOTAL'), 1, 1, 'C', true);
+        $pdf->Cell(
+            30,
+            8,
+            $utf8('FOLIO'),
+            1,
+            0,
+            'C',
+            true
+        );
+
+        $pdf->Cell(
+            68,
+            8,
+            $utf8('PROVEEDOR'),
+            1,
+            0,
+            'C',
+            true
+        );
+
+        $pdf->Cell(
+            30,
+            8,
+            $utf8('AREA'),
+            1,
+            0,
+            'C',
+            true
+        );
+
+        $pdf->Cell(
+            65,
+            8,
+            $utf8('DESTINO'),
+            1,
+            0,
+            'C',
+            true
+        );
+
+        $pdf->Cell(
+            25,
+            8,
+            $utf8('FECHA'),
+            1,
+            0,
+            'C',
+            true
+        );
+
+        $pdf->Cell(
+            38,
+            8,
+            $utf8('TOTAL'),
+            1,
+            1,
+            'C',
+            true
+        );
 
         $pdf->SetTextColor(0, 0, 0);
     };
 
     $imprimirEncabezado();
 
-    $totalGeneral = 0;
+    $totalGeneral = 0.0;
 
+    /*
+     * Mensaje cuando no existen órdenes coincidentes.
+     */
     if ($ordenes->isEmpty()) {
         $pdf->SetFont('Arial', '', 10);
 
@@ -1816,7 +1920,10 @@ public function exportarListaPagos(string $formaPago)
             0,
             12,
             $utf8(
-                'No existen ordenes autorizadas con esta forma de pago.'
+                'No existen órdenes autorizadas con esta forma de pago '
+                . 'para el área '
+                . $areaCatalogo->nombre
+                . '.'
             ),
             1,
             1,
@@ -1824,36 +1931,43 @@ public function exportarListaPagos(string $formaPago)
         );
     }
 
-    foreach ($ordenes as $oc) {
+    /*
+     * Cuerpo del reporte.
+     */
+    foreach ($ordenes as $indice => $oc) {
         /*
-         * Agregar una página nueva antes de que la fila
-         * quede demasiado cerca del pie.
+         * Crear una página nueva antes de alcanzar
+         * el límite inferior.
          */
         if ($pdf->GetY() > 185) {
             $pdf->AddPage();
             $imprimirEncabezado();
         }
 
-        $proveedor = $oc->proveedor->nombre
-            ?? $oc->proveedor->razon_social
-            ?? 'SIN PROVEEDOR';
+        $proveedorNombre = $oc->proveedor?->nombre
+            ?: $oc->proveedor?->razon_social
+            ?: 'SIN PROVEEDOR';
 
-        $area = $oc->areaCatalogo->nombre
-            ?? $oc->area
-            ?? '-';
+        $areaNombre = $oc->areaCatalogo?->nombre
+            ?: $oc->area
+            ?: '-';
 
         if ($oc->obra) {
             $destino = trim(
-                ($oc->obra->clave_obra
-                    ? $oc->obra->clave_obra . ' - '
-                    : '')
+                (
+                    $oc->obra->clave_obra
+                        ? $oc->obra->clave_obra . ' - '
+                        : ''
+                )
                 . ($oc->obra->nombre ?? '')
             );
         } elseif ($oc->centroCosto) {
             $destino = trim(
-                ($oc->centroCosto->codigo
-                    ? $oc->centroCosto->codigo . ' - '
-                    : '')
+                (
+                    $oc->centroCosto->codigo
+                        ? $oc->centroCosto->codigo . ' - '
+                        : ''
+                )
                 . ($oc->centroCosto->nombre ?? '')
             );
         } else {
@@ -1865,12 +1979,13 @@ public function exportarListaPagos(string $formaPago)
             : '-';
 
         $total = (float) $oc->total;
+
         $totalGeneral += $total;
 
         /*
-         * Alternar fondo para mejorar la lectura.
+         * Alternar el fondo de las filas.
          */
-        $relleno = ($ordenes->search($oc) % 2) !== 0;
+        $relleno = ($indice % 2) !== 0;
 
         if ($relleno) {
             $pdf->SetFillColor(
@@ -1897,7 +2012,14 @@ public function exportarListaPagos(string $formaPago)
         $pdf->Cell(
             68,
             8,
-            $utf8(mb_strimwidth($proveedor, 0, 42, '...')),
+            $utf8(
+                mb_strimwidth(
+                    $proveedorNombre,
+                    0,
+                    42,
+                    '...'
+                )
+            ),
             1,
             0,
             'L',
@@ -1907,7 +2029,14 @@ public function exportarListaPagos(string $formaPago)
         $pdf->Cell(
             30,
             8,
-            $utf8(mb_strimwidth($area, 0, 18, '...')),
+            $utf8(
+                mb_strimwidth(
+                    $areaNombre,
+                    0,
+                    18,
+                    '...'
+                )
+            ),
             1,
             0,
             'L',
@@ -1917,7 +2046,14 @@ public function exportarListaPagos(string $formaPago)
         $pdf->Cell(
             65,
             8,
-            $utf8(mb_strimwidth($destino, 0, 39, '...')),
+            $utf8(
+                mb_strimwidth(
+                    $destino,
+                    0,
+                    39,
+                    '...'
+                )
+            ),
             1,
             0,
             'L',
@@ -1948,7 +2084,7 @@ public function exportarListaPagos(string $formaPago)
     }
 
     /*
-     * Total general del reporte.
+     * Resumen final.
      */
     if ($ordenes->isNotEmpty()) {
         if ($pdf->GetY() > 188) {
@@ -1982,7 +2118,7 @@ public function exportarListaPagos(string $formaPago)
         $pdf->Cell(
             218,
             7,
-            $utf8('Numero de ordenes:'),
+            $utf8('Número de órdenes:'),
             0,
             0,
             'R'
@@ -1998,9 +2134,12 @@ public function exportarListaPagos(string $formaPago)
         );
     }
 
+    /*
+     * Nombre del archivo.
+     */
     $nombreArchivo = $formaPago === '01'
-        ? 'OC_pagos_efectivo.pdf'
-        : 'OC_pagos_tarjeta_credito.pdf';
+        ? 'OC_Giralda_pagos_efectivo.pdf'
+        : 'OC_Giralda_pagos_tarjeta_credito.pdf';
 
     return response($pdf->Output('S'))
         ->header('Content-Type', 'application/pdf')
