@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Carbon\Carbon;
 use App\Http\Requests\StoreOrdenCompraRequest;
 use App\Http\Requests\UpdateOrdenCompraRequest;
 use App\Models\Area;
@@ -24,77 +24,253 @@ class OrdenCompraController extends Controller
      * Listado básico
      */
     public function index(Request $request)
-    {
-        $this->authorizeAny(['ordenes_compra.view.access', 'ordenes de compra.access']);
-        $search = $request->query('search');
-        $estado = $request->query('estado');
+{
+    $this->authorizeAny([
+        'ordenes_compra.view.access',
+        'ordenes de compra.access',
+    ]);
 
-        $q = OrdenCompra::query()
-            ->with(['proveedor','obra','centroCosto','areaCatalogo','detalles','pagoProveedorActivo'])
-            ->when($search, function ($query, $search) {
-                $query->whereHas('proveedor', function ($q) use ($search) {
-                    $q->where('nombre', 'like', "%{$search}%")
-                      ->orWhere('razon_social', 'like', "%{$search}%")
-                      ->orWhere('rfc', 'like', "%{$search}%");
-                });
-            })
-            ->when($estado, function ($query, $estado) {
-                $legacyStatus = $this->estadoToLegacy($estado);
-                $query->where('estado', $legacyStatus);
-            })
-            ->orderByDesc('fecha')
-            ->orderByDesc('id');
+    $search = $request->query('search');
+    $estado = $request->query('estado');
+
+    /*
+     * Navegación semanal.
+     *
+     * El parámetro "semana" puede contener cualquier fecha,
+     * pero se normaliza siempre al lunes de esa semana.
+     */
+    try {
+        $fechaSemana = $request->filled('semana')
+            ? Carbon::createFromFormat(
+                'Y-m-d',
+                (string) $request->query('semana')
+            )->startOfWeek(Carbon::MONDAY)
+            : now()->startOfWeek(Carbon::MONDAY);
+    } catch (\Throwable $e) {
+        $fechaSemana = now()->startOfWeek(Carbon::MONDAY);
+    }
+
+    $inicioSemanaActual = now()
+        ->startOfWeek(Carbon::MONDAY)
+        ->startOfDay();
+
+    /*
+     * No permitir navegar a semanas futuras.
+     */
+    if ($fechaSemana->greaterThan($inicioSemanaActual)) {
+        $fechaSemana = $inicioSemanaActual->copy();
+    }
+
+    $inicioSemana = $fechaSemana
+        ->copy()
+        ->startOfDay();
+
+    $finSemana = $fechaSemana
+        ->copy()
+        ->endOfWeek(Carbon::SUNDAY)
+        ->endOfDay();
+
+    $semanaAnterior = $inicioSemana
+        ->copy()
+        ->subWeek()
+        ->format('Y-m-d');
+
+    $semanaSiguienteCarbon = $inicioSemana
+        ->copy()
+        ->addWeek();
+
+    $esSemanaActual = $inicioSemana->isSameDay(
+        $inicioSemanaActual
+    );
+
+    /*
+     * La semana siguiente solo se habilita cuando
+     * estamos consultando una semana anterior.
+     */
+    $semanaSiguiente = $esSemanaActual
+        ? null
+        : $semanaSiguienteCarbon->format('Y-m-d');
+
+    /*
+     * Código de área normalizado.
+     */
+    $areaCodigo = strtoupper(
+        trim((string) $request->query('area_codigo'))
+    );
+
+    $q = OrdenCompra::query()
+        ->with([
+            'proveedor',
+            'obra',
+            'centroCosto',
+            'areaCatalogo',
+            'detalles',
+            'pagoProveedorActivo',
+        ])
+        ->when($search, function ($query, $search) {
+            $query->whereHas(
+                'proveedor',
+                function ($q) use ($search) {
+                    $q->where(
+                        'nombre',
+                        'like',
+                        "%{$search}%"
+                    )
+                    ->orWhere(
+                        'razon_social',
+                        'like',
+                        "%{$search}%"
+                    )
+                    ->orWhere(
+                        'rfc',
+                        'like',
+                        "%{$search}%"
+                    );
+                }
+            );
+        })
+        ->when($estado, function ($query, $estado) {
+            $legacyStatus = $this->estadoToLegacy($estado);
+
+            $query->where(
+                'estado',
+                $legacyStatus
+            );
+        })
+        ->orderByDesc('fecha')
+        ->orderByDesc('id');
 
     $proveedores = Proveedor::where('activo', 1)
         ->orderBy('nombre')
         ->get();
 
-    $areas = Area::orderBy('nombre')->get();
-    $obras = Obra::orderBy('nombre')->get();
-    $centrosCosto = CentroCosto::where('activo', true)->orderBy('nombre')->get();
+    $areas = Area::orderBy('nombre')
+        ->get();
 
-        if ($request->filled('proveedor_id')) {
-            $q->where('proveedor_id', $request->proveedor_id);
-        }
+    $obras = Obra::orderBy('nombre')
+        ->get();
 
-        if ($request->filled('area_id')) {
-            $q->where('area_id', $request->area_id);
-        }
+    $centrosCosto = CentroCosto::where('activo', true)
+        ->orderBy('nombre')
+        ->get();
 
-        if ($request->filled('area_codigo')) {
-            $areaFiltro = Area::where('codigo', $request->area_codigo)->first();
-            if ($areaFiltro) {
-                $q->where('area_id', $areaFiltro->id);
-            }
-        }
-
-        if ($request->filled('obra_id')) {
-            $q->where('obra_id', $request->obra_id);
-        }
-
-        $ordenes = $q->paginate(20)->withQueryString();
-
-        foreach ($ordenes as $oc) {
-            $subtotal = 0;
-            $iva = 0;
-
-            foreach ($oc->detalles as $detalle) {
-                $lineaSubtotal = $detalle->precio_unitario * $detalle->cantidad;
-                $lineaIva = ($lineaSubtotal * ($detalle->iva ?? 0)) / 100;
-
-                $subtotal += $lineaSubtotal;
-                $iva += $lineaIva;
-            }
-
-            $oc->subtotal = $subtotal;
-            $oc->iva = $iva;
-            $oc->otros_impuestos = (float) ($oc->otros_impuestos ?? 0);
-            $oc->total = $subtotal + $iva + $oc->otros_impuestos;
-        }
-
-        return view('ordencompra.index', compact('ordenes','areas','obras','proveedores','centrosCosto', 'search', 'estado'));
+    /*
+     * Filtro por proveedor.
+     */
+    if ($request->filled('proveedor_id')) {
+        $q->where(
+            'proveedor_id',
+            $request->proveedor_id
+        );
     }
 
+    /*
+     * Filtro directo por area_id.
+     */
+    if ($request->filled('area_id')) {
+        $q->where(
+            'area_id',
+            $request->area_id
+        );
+    }
+
+    /*
+     * Filtro por código de área.
+     */
+    if ($areaCodigo !== '') {
+        $areaFiltro = Area::query()
+            ->where('codigo', $areaCodigo)
+            ->first();
+
+        if ($areaFiltro) {
+            $q->where(
+                'area_id',
+                $areaFiltro->id
+            );
+        }
+    }
+
+    /*
+     * Filtro por obra.
+     */
+    if ($request->filled('obra_id')) {
+        $q->where(
+            'obra_id',
+            $request->obra_id
+        );
+    }
+
+    /*
+     * El filtro semanal solo aplica al listado especial
+     * del área Giralda.
+     *
+     * Se utiliza la fecha capturada en la orden.
+     */
+    if ($areaCodigo === 'GL') {
+        $q->whereBetween('fecha', [
+            $inicioSemana->toDateString(),
+            $finSemana->toDateString(),
+        ]);
+    }
+
+    $ordenes = $q
+        ->paginate(20)
+        ->withQueryString();
+
+    /*
+     * Recalcular totales mostrados en el listado
+     * a partir de los detalles.
+     */
+    foreach ($ordenes as $oc) {
+        $subtotal = 0.0;
+        $iva = 0.0;
+
+        foreach ($oc->detalles as $detalle) {
+            $lineaSubtotal =
+                (float) $detalle->precio_unitario
+                * (float) $detalle->cantidad;
+
+            $lineaIva =
+                (
+                    $lineaSubtotal
+                    * (float) ($detalle->iva ?? 0)
+                ) / 100;
+
+            $subtotal += $lineaSubtotal;
+            $iva += $lineaIva;
+        }
+
+        $oc->subtotal = $subtotal;
+        $oc->iva = $iva;
+
+        $oc->otros_impuestos = (float) (
+            $oc->otros_impuestos ?? 0
+        );
+
+        $oc->total =
+            $subtotal
+            + $iva
+            + $oc->otros_impuestos;
+    }
+
+    return view(
+        'ordencompra.index',
+        compact(
+            'ordenes',
+            'areas',
+            'obras',
+            'proveedores',
+            'centrosCosto',
+            'search',
+            'estado',
+            'inicioSemana',
+            'finSemana',
+            'semanaAnterior',
+            'semanaSiguiente',
+            'esSemanaActual'
+        )
+    );
+}
    public function create()
 {
     $this->authorizeAny(['ordenes_compra.create.access', 'ordenes de compra.access']);

@@ -60,72 +60,184 @@
         </form>
     </div>
 @if (request('area_codigo') === 'GL')
-    <div class="flex items-center gap-3 mb-4">
-        <a
-            href="{{ route('ordenes_compra.exportar_pagos', [
-                'formaPago' => '01',
-                'area_codigo' => request('area_codigo'),
-            ]) }}"
-            target="_blank"
-            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors shadow-sm"
-        >
-            <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+    @php
+        $filtrosSemana = request()->except([
+            'page',
+            'semana',
+        ]);
+    @endphp
+
+    <div class="mb-4 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+
+        {{-- Navegador de semanas --}}
+        <div class="flex items-center gap-3">
+
+            {{-- Semana anterior --}}
+            <a
+                href="{{ route('ordenes_compra.index', array_merge(
+                    $filtrosSemana,
+                    ['semana' => $semanaAnterior]
+                )) }}"
+                class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-100"
+                title="Semana anterior"
             >
-                <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-            </svg>
+                <svg
+                    class="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 19l-7-7 7-7"
+                    />
+                </svg>
+            </a>
 
-            Exportar efectivo
-        </a>
+            {{-- Periodo seleccionado --}}
+            <div class="min-w-[230px] text-center">
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Semana seleccionada
+                </p>
 
-        <a
-            href="{{ route('ordenes_compra.exportar_pagos', [
-                'formaPago' => '04',
-                'area_codigo' => request('area_codigo'),
-            ]) }}"
-            target="_blank"
-            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors shadow-sm"
-        >
-            <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                <p class="text-sm font-semibold text-slate-800">
+                    {{ $inicioSemana->format('d/m/Y') }}
+                    al
+                    {{ $finSemana->format('d/m/Y') }}
+                </p>
+            </div>
+
+            {{-- Semana siguiente --}}
+            @if ($semanaSiguiente)
+                <a
+                    href="{{ route('ordenes_compra.index', array_merge(
+                        $filtrosSemana,
+                        ['semana' => $semanaSiguiente]
+                    )) }}"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-100"
+                    title="Semana siguiente"
+                >
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 5l7 7-7 7"
+                        />
+                    </svg>
+                </a>
+            @else
+                <span
+                    class="inline-flex h-10 w-10 cursor-not-allowed items-center justify-center rounded-lg border border-slate-200 bg-slate-100 text-slate-300"
+                    title="Ya estás en la semana actual"
+                >
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 5l7 7-7 7"
+                        />
+                    </svg>
+                </span>
+            @endif
+        </div>
+
+        {{-- Acciones --}}
+        <div class="flex flex-wrap items-center gap-3">
+
+            {{-- Volver a semana actual --}}
+            @if (!$esSemanaActual)
+                <a
+                    href="{{ route('ordenes_compra.index', $filtrosSemana) }}"
+                    class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100"
+                >
+                    Semana actual
+                </a>
+            @endif
+
+            {{-- Exportar efectivo --}}
+            <a
+                href="{{ route('ordenes_compra.exportar_pagos', [
+                    'formaPago' => '01',
+                    'area_codigo' => request('area_codigo'),
+                    'semana' => $inicioSemana->format('Y-m-d'),
+                ]) }}"
+                target="_blank"
+                class="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100"
             >
-                <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-            </svg>
+                <svg
+                    class="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                </svg>
 
-            Exportar TC
-        </a>
+                Exportar efectivo
+            </a>
+
+            {{-- Exportar tarjeta --}}
+            <a
+                href="{{ route('ordenes_compra.exportar_pagos', [
+                    'formaPago' => '04',
+                    'area_codigo' => request('area_codigo'),
+                    'semana' => $inicioSemana->format('Y-m-d'),
+                ]) }}"
+                target="_blank"
+                class="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm transition-colors hover:bg-indigo-100"
+            >
+                <svg
+                    class="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                </svg>
+
+                Exportar TC
+            </a>
+        </div>
     </div>
 @endif
-    <div class="bg-white rounded-2xl shadow overflow-hidden">
-@php
-    $estadoBadge = function ($estado) {
-        $estado = strtolower(trim((string) $estado));
+<div class="bg-white rounded-2xl shadow overflow-hidden">
+    @php
+        $estadoBadge = function ($estado) {
+            $estado = strtolower(trim((string) $estado));
 
-        return match ($estado) {
-            'autorizada', 'autorizado' => 'bg-green-100 text-green-800 border-green-200',
-            'cancelada', 'cancelado'   => 'bg-red-100 text-red-800 border-red-200',
-            'borrador'                 => 'bg-gray-100 text-gray-800 border-gray-200',
-            'pendiente'                => 'bg-amber-100 text-amber-800 border-amber-200',
-            default                    => 'bg-slate-100 text-slate-800 border-slate-200',
+            return match ($estado) {
+                'autorizada', 'autorizado' => 'bg-green-100 text-green-800 border-green-200',
+                'cancelada', 'cancelado' => 'bg-red-100 text-red-800 border-red-200',
+                'borrador' => 'bg-gray-100 text-gray-800 border-gray-200',
+                'pendiente' => 'bg-amber-100 text-amber-800 border-amber-200',
+                default => 'bg-slate-100 text-slate-800 border-slate-200',
+            };
         };
-    };
-@endphp
+    @endphp
 
     <div class="bg-white rounded-2xl shadow overflow-x-auto">
         <table class="w-full text-sm">
