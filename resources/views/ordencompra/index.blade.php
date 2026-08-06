@@ -59,7 +59,29 @@
             </div>
         </form>
     </div>
+<div class="flex items-center gap-3 mb-4">
+    <a
+        href="{{ route('ordenes_compra.exportar_pagos', '01') }}"
+        target="_blank"
+        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors shadow-sm"
+    >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Exportar efectivo
+    </a>
 
+    <a
+        href="{{ route('ordenes_compra.exportar_pagos', '04') }}"
+        target="_blank"
+        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors shadow-sm"
+    >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Exportar TC
+    </a>
+</div>
     <div class="bg-white rounded-2xl shadow overflow-hidden">
 @php
     $estadoBadge = function ($estado) {
@@ -85,6 +107,7 @@
                     <th class="py-3 px-4 text-left">Destino</th>
                     <th class="py-3 px-4 text-center">Fecha</th>
                     <th class="py-3 px-4 text-center">Estado</th>
+                    <th class="py-3 px-4 text-center">F.Pago</th>
                     <th class="py-3 px-4 text-right">Total</th>
                     <th class="py-3 px-4 text-right">Acciones</th>
                 </tr>
@@ -125,6 +148,21 @@
                             {{ ucfirst($oc->estado) }}
                         </span>
                     </td>
+                    <td class="py-3 px-4 text-center text-slate-600">
+    @php
+        $formaPago = match ((string) $oc->forma_pago) {
+            '01' => 'Efectivo',
+            '02' => 'Cheque nominativo',
+            '03' => 'Transferencia electrónica',
+            '04' => 'Tarjeta de crédito',
+            '28' => 'Tarjeta de débito',
+            '99' => 'Por definir',
+            default => 'Sin definir',
+        };
+    @endphp
+
+    {{ $formaPago }}
+</td>
 
                     <td class="py-3 px-4 text-right font-bold text-[#0B265A]">${{ number_format($oc->total,2) }}</td>
                     <td class="py-3 px-4">

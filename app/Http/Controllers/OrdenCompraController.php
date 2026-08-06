@@ -1683,4 +1683,330 @@ foreach ($oc->detalles as $detalle) {
  
     return response()->json($resultado->values());
 }
+public function exportarListaPagos(string $formaPago)
+{
+    $this->authorizeAny([
+        'ordenes_compra.view.access',
+        'ordenes_compra.print.access',
+        'ordenes_compra.imprimir',
+        'ordenes de compra.access',
+    ]);
+
+    /*
+     * Formas de pago permitidas para este reporte.
+     */
+    $formasPago = [
+        '01' => 'PAGOS EN EFECTIVO',
+        '04' => 'PAGOS CON TARJETA DE CREDITO',
+    ];
+
+    if (!array_key_exists($formaPago, $formasPago)) {
+        abort(404, 'Forma de pago no válida.');
+    }
+
+    $titulo = $formasPago[$formaPago];
+
+    /*
+     * Solamente órdenes autorizadas.
+     */
+    $ordenes = OrdenCompra::query()
+        ->with([
+            'proveedor',
+            'obra',
+            'centroCosto',
+            'areaCatalogo',
+        ])
+        ->where('estado', 'AUTORIZADA')
+        ->where('forma_pago', $formaPago)
+        ->orderBy('fecha')
+        ->orderBy('folio')
+        ->get();
+
+    $pdf = new \FPDF('L', 'mm', 'Letter');
+    $pdf->SetMargins(10, 10, 10);
+    $pdf->SetAutoPageBreak(true, 15);
+    $pdf->AddPage();
+
+    $utf8 = fn ($texto) => utf8_decode((string) $texto);
+    $money = fn ($cantidad) => '$' . number_format(
+        (float) $cantidad,
+        2
+    );
+
+    $BLUE = [0, 74, 173];
+    $GRAY = [240, 240, 240];
+
+    /*
+     * Encabezado reutilizable para la primera página
+     * y para los saltos de página.
+     */
+    $imprimirEncabezado = function () use (
+        $pdf,
+        $utf8,
+        $titulo,
+        $formaPago,
+        $BLUE,
+        $GRAY
+    ) {
+        $pdf->SetTextColor(
+            $BLUE[0],
+            $BLUE[1],
+            $BLUE[2]
+        );
+
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->Cell(
+            0,
+            8,
+            $utf8($titulo),
+            0,
+            1,
+            'C'
+        );
+
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->SetTextColor(70, 70, 70);
+
+        $pdf->Cell(
+            0,
+            6,
+            $utf8(
+                'Forma de pago: '
+                . $formaPago
+                . ' | Solo ordenes autorizadas | Generado: '
+                . now()->format('d/m/Y H:i')
+            ),
+            0,
+            1,
+            'C'
+        );
+
+        $pdf->Ln(4);
+
+        /*
+         * Cabecera de la tabla.
+         */
+        $pdf->SetFillColor(
+            $BLUE[0],
+            $BLUE[1],
+            $BLUE[2]
+        );
+
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->SetFont('Arial', 'B', 8);
+
+        $pdf->Cell(30, 8, $utf8('FOLIO'), 1, 0, 'C', true);
+        $pdf->Cell(68, 8, $utf8('PROVEEDOR'), 1, 0, 'C', true);
+        $pdf->Cell(30, 8, $utf8('AREA'), 1, 0, 'C', true);
+        $pdf->Cell(65, 8, $utf8('DESTINO'), 1, 0, 'C', true);
+        $pdf->Cell(25, 8, $utf8('FECHA'), 1, 0, 'C', true);
+        $pdf->Cell(38, 8, $utf8('TOTAL'), 1, 1, 'C', true);
+
+        $pdf->SetTextColor(0, 0, 0);
+    };
+
+    $imprimirEncabezado();
+
+    $totalGeneral = 0;
+
+    if ($ordenes->isEmpty()) {
+        $pdf->SetFont('Arial', '', 10);
+
+        $pdf->Cell(
+            0,
+            12,
+            $utf8(
+                'No existen ordenes autorizadas con esta forma de pago.'
+            ),
+            1,
+            1,
+            'C'
+        );
+    }
+
+    foreach ($ordenes as $oc) {
+        /*
+         * Agregar una página nueva antes de que la fila
+         * quede demasiado cerca del pie.
+         */
+        if ($pdf->GetY() > 185) {
+            $pdf->AddPage();
+            $imprimirEncabezado();
+        }
+
+        $proveedor = $oc->proveedor->nombre
+            ?? $oc->proveedor->razon_social
+            ?? 'SIN PROVEEDOR';
+
+        $area = $oc->areaCatalogo->nombre
+            ?? $oc->area
+            ?? '-';
+
+        if ($oc->obra) {
+            $destino = trim(
+                ($oc->obra->clave_obra
+                    ? $oc->obra->clave_obra . ' - '
+                    : '')
+                . ($oc->obra->nombre ?? '')
+            );
+        } elseif ($oc->centroCosto) {
+            $destino = trim(
+                ($oc->centroCosto->codigo
+                    ? $oc->centroCosto->codigo . ' - '
+                    : '')
+                . ($oc->centroCosto->nombre ?? '')
+            );
+        } else {
+            $destino = 'Compra general';
+        }
+
+        $fecha = $oc->fecha
+            ? $oc->fecha->format('d/m/Y')
+            : '-';
+
+        $total = (float) $oc->total;
+        $totalGeneral += $total;
+
+        /*
+         * Alternar fondo para mejorar la lectura.
+         */
+        $relleno = ($ordenes->search($oc) % 2) !== 0;
+
+        if ($relleno) {
+            $pdf->SetFillColor(
+                $GRAY[0],
+                $GRAY[1],
+                $GRAY[2]
+            );
+        } else {
+            $pdf->SetFillColor(255, 255, 255);
+        }
+
+        $pdf->SetFont('Arial', '', 8);
+
+        $pdf->Cell(
+            30,
+            8,
+            $utf8($oc->folio),
+            1,
+            0,
+            'L',
+            true
+        );
+
+        $pdf->Cell(
+            68,
+            8,
+            $utf8(mb_strimwidth($proveedor, 0, 42, '...')),
+            1,
+            0,
+            'L',
+            true
+        );
+
+        $pdf->Cell(
+            30,
+            8,
+            $utf8(mb_strimwidth($area, 0, 18, '...')),
+            1,
+            0,
+            'L',
+            true
+        );
+
+        $pdf->Cell(
+            65,
+            8,
+            $utf8(mb_strimwidth($destino, 0, 39, '...')),
+            1,
+            0,
+            'L',
+            true
+        );
+
+        $pdf->Cell(
+            25,
+            8,
+            $utf8($fecha),
+            1,
+            0,
+            'C',
+            true
+        );
+
+        $pdf->SetFont('Arial', 'B', 8);
+
+        $pdf->Cell(
+            38,
+            8,
+            $money($total),
+            1,
+            1,
+            'R',
+            true
+        );
+    }
+
+    /*
+     * Total general del reporte.
+     */
+    if ($ordenes->isNotEmpty()) {
+        if ($pdf->GetY() > 188) {
+            $pdf->AddPage();
+            $imprimirEncabezado();
+        }
+
+        $pdf->Ln(3);
+        $pdf->SetFont('Arial', 'B', 11);
+
+        $pdf->Cell(
+            218,
+            9,
+            $utf8('TOTAL GENERAL:'),
+            1,
+            0,
+            'R'
+        );
+
+        $pdf->Cell(
+            38,
+            9,
+            $money($totalGeneral),
+            1,
+            1,
+            'R'
+        );
+
+        $pdf->SetFont('Arial', '', 9);
+
+        $pdf->Cell(
+            218,
+            7,
+            $utf8('Numero de ordenes:'),
+            0,
+            0,
+            'R'
+        );
+
+        $pdf->Cell(
+            38,
+            7,
+            (string) $ordenes->count(),
+            0,
+            1,
+            'R'
+        );
+    }
+
+    $nombreArchivo = $formaPago === '01'
+        ? 'OC_pagos_efectivo.pdf'
+        : 'OC_pagos_tarjeta_credito.pdf';
+
+    return response($pdf->Output('S'))
+        ->header('Content-Type', 'application/pdf')
+        ->header(
+            'Content-Disposition',
+            'inline; filename="' . $nombreArchivo . '"'
+        );
+}
 }

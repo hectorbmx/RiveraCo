@@ -625,6 +625,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::get('ordenes_compra/{orden_compra}/print', [OrdenCompraController::class, 'print'])->name('ordenes_compra.print');
     
     Route::get('ordenes-compra/partidas-obra/{obra_id}', [OrdenCompraController::class, 'partidasPorObra'])->name('ordenes_compra.partidas_obra');
+    Route::get('ordenes-compra/exportar-pagos/{formaPago}',[OrdenCompraController::class, 'exportarListaPagos'])->name('ordenes_compra.exportar_pagos');
 
     Route::get('proveedores/buscar', [ProveedorController::class, 'buscar'])->name('proveedores.buscar');
     Route::post('proveedores/{proveedor}/telefonia/llamar/{phoneNumber}', [TelephonyClickToCallController::class, 'proveedor'])->name('proveedores.telephony.call');
