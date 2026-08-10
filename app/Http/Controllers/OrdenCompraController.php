@@ -32,6 +32,7 @@ class OrdenCompraController extends Controller
 
     $search = $request->query('search');
     $estado = $request->query('estado');
+    $resumenSemanaGl = null;
 
     /*
      * Navegación semanal.
@@ -213,6 +214,52 @@ class OrdenCompraController extends Controller
         ]);
     }
 
+    if ($areaCodigo === 'GL') {
+        $ordenesResumen = OrdenCompra::query()
+            ->with('detalles')
+            ->whereHas('areaCatalogo', function ($query) {
+                $query->where('codigo', 'GL');
+            })
+            ->whereBetween('fecha', [
+                $inicioSemana->toDateString(),
+                $finSemana->toDateString(),
+            ])
+            ->whereIn('estado', ['AUTORIZADA', 'VERIFICADA'])
+            ->get();
+
+        $totalAutorizado = 0.0;
+        $totalVerificado = 0.0;
+        $pendientesVerificar = 0;
+        $verificadas = 0;
+
+        foreach ($ordenesResumen as $ordenResumen) {
+            $totalOrden = 0.0;
+
+            foreach ($ordenResumen->detalles as $detalle) {
+                $lineaSubtotal = (float) $detalle->precio_unitario * (float) $detalle->cantidad;
+                $lineaIva = ($lineaSubtotal * (float) ($detalle->iva ?? 0)) / 100;
+                $totalOrden += $lineaSubtotal + $lineaIva + (float) ($detalle->otros_impuestos ?? 0);
+            }
+
+            if ($ordenResumen->estado === 'VERIFICADA') {
+                $totalVerificado += $totalOrden;
+                $verificadas++;
+            } else {
+                $totalAutorizado += $totalOrden;
+                $pendientesVerificar++;
+            }
+        }
+
+        $resumenSemanaGl = [
+            'total_acumulado' => $totalAutorizado + $totalVerificado,
+            'total_pendiente_verificar' => $totalAutorizado,
+            'total_verificado' => $totalVerificado,
+            'pendientes_verificar' => $pendientesVerificar,
+            'verificadas' => $verificadas,
+            'reposicion_sugerida' => $finSemana->copy()->next(Carbon::TUESDAY),
+        ];
+    }
+
     $ordenes = $q
         ->paginate(20)
         ->withQueryString();
@@ -267,7 +314,8 @@ class OrdenCompraController extends Controller
             'finSemana',
             'semanaAnterior',
             'semanaSiguiente',
-            'esSemanaActual'
+            'esSemanaActual',
+            'resumenSemanaGl'
         )
     );
 }

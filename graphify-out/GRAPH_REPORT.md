@@ -1,16 +1,16 @@
 # Graph Report - rivera-v2  (2026-08-10)
 
 ## Corpus Check
-- 1028 files · ~990,183 words
+- 1028 files · ~990,571 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 4122 nodes · 7019 edges · 793 communities (744 shown, 49 thin omitted)
+- 4122 nodes · 7019 edges · 792 communities (744 shown, 48 thin omitted)
 - Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 470 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4bceaf16`
+- Built from commit: `d6a467f2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -210,7 +210,6 @@
 - empleados.blade.php
 - NotificationController
 - ReportesController
-- 183899c4c94e3c118550fd426d31f353.php
 
 ## God Nodes (most connected - your core abstractions)
 1. `Controller` - 168 edges
@@ -239,7 +238,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (793 total, 49 thin omitted)
+## Communities (792 total, 48 thin omitted)
 
 ### Community 0 - "Seeder"
 Cohesion: 0.05
@@ -375,7 +374,7 @@ Nodes (42): 1. Servicio generado o registrado, 2. Coordinacion, 3. Confirmacion,
 
 ### Community 37 - "MaquinaEstadoCambiado"
 Cohesion: 0.06
-Nodes (11): Request, AttendanceDeviceCheckpoint, CatalogoPila, ClienteContacto, ComisionEtapaFoto, ObraContrato, ObraFolio, ObraTipoConfiguracion (+3 more)
+Nodes (10): AttendanceDeviceCheckpoint, ClienteContacto, ComisionEtapaFoto, ComisionEtapaPersonal, ObraContrato, ObraFolio, ObraTipoConfiguracion, PlaneacionGasto (+2 more)
 
 ### Community 38 - "Mantenimiento"
 Cohesion: 0.17
@@ -386,8 +385,8 @@ Cohesion: 0.22
 Nodes (3): CatalogoRolController, Request, CatalogoRol
 
 ### Community 40 - "OrdenCompraDetalleController.php"
-Cohesion: 0.09
-Nodes (3): AgendaController, Request, SatFacturaConcepto
+Cohesion: 0.08
+Nodes (5): AgendaController, Request, Request, CatalogoPila, SatFacturaConcepto
 
 ### Community 41 - "PagoProveedor"
 Cohesion: 0.14
@@ -832,7 +831,7 @@ Nodes (4): InventarioImportStockCsv, InventarioSeedCatalogoStock, Almacen, HasMa
 ## Knowledge Gaps
 - **570 isolated node(s):** `name`, `type`, `description`, `laravel`, `framework` (+565 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **49 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **48 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
