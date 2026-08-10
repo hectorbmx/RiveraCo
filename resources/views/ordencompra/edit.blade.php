@@ -2,13 +2,16 @@
 
 @section('content')
 @php
-  $bloqueado = in_array($oc->estado_normalizado, ['autorizada','cancelada']);
+  $bloqueado = in_array($oc->estado_normalizado, ['autorizada','verificada','cancelada']);
 @endphp
 
 <div class="p-6">
     <div class="flex justify-between mb-4">
         <h1 class="text-xl font-semibold">
             Orden {{ $oc->folio }}
+            @if($oc->es_caja_chica)
+                <span class="ml-2 align-middle rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">Caja chica</span>
+            @endif
         </h1>
 
         <div class="space-x-2">
@@ -41,16 +44,22 @@
             @canany(['ordenes_compra.print.access', 'ordenes_compra.imprimir'])
                 <a href="{{ route('ordenes_compra.print', $oc->id) }}"
                    target="_blank"
-                   class="inline-flex items-center gap-2 bg-slate-900 text-white px-3 py-1 rounded hover:bg-slate-700"
+                   class="inline-flex items-center gap-2 rounded bg-slate-900 px-3 py-1 text-white hover:bg-slate-700"
                    title="Imprimir OC">
-                    <span aria-hidden="true">??</span>
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z" />
+                    </svg>
                     <span>Imprimir</span>
                 </a>
             @endcanany
 
-            <a href="{{ route('ordenes_compra.index') }}"
-               class="bg-gray-600 text-white px-3 py-1 rounded">
-                Ver
+            <a href="{{ url()->previous() !== url()->current() ? url()->previous() : route('ordenes_compra.index') }}"
+               class="inline-flex items-center gap-2 rounded bg-gray-600 px-3 py-1 text-white hover:bg-gray-700"
+               title="Regresar">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Regresar</span>
             </a>
         </div>
     </div>
@@ -228,8 +237,16 @@
 
     <div class="bg-white border rounded-xl p-4 mb-4 grid grid-cols-1 md:grid-cols-4 gap-3">
         <div>
+            <label class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+                <input form="formEncabezadoOc" type="checkbox" name="es_caja_chica" value="1" class="rounded border-amber-300" @checked(old('es_caja_chica', $oc->es_caja_chica)) @disabled($bloqueado)>
+                Caja chica
+            </label>
+        </div>
+
+        <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Proveedor</label>
             <select form="formEncabezadoOc" name="proveedor_id" id="oc_proveedor_id" class="w-full border p-2 rounded" @disabled($bloqueado)>
+                <option value="" @selected(! old('proveedor_id', $oc->proveedor_id))>Sin proveedor</option>
                 @foreach($proveedores as $p)
                     <option value="{{ $p->id }}" @selected(old('proveedor_id', $oc->proveedor_id) == $p->id)>{{ $p->nombre }}</option>
                 @endforeach

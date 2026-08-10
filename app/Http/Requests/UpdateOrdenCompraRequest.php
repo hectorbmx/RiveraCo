@@ -15,7 +15,8 @@ class UpdateOrdenCompraRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'proveedor_id' => ['required','integer','exists:proveedores,id'],
+            'es_caja_chica' => ['nullable','boolean'],
+            'proveedor_id' => ['nullable','required_unless:es_caja_chica,1','integer','exists:proveedores,id'],
             'obra_id'      => ['nullable','integer','exists:obras,id'],
             'centro_costo_id' => ['nullable','integer','exists:centros_costo,id'],
 

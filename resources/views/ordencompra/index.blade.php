@@ -158,7 +158,7 @@
         @if($resumenSemanaGl)
             <div class="grid min-w-[260px] grid-cols-2 gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600 lg:min-w-[390px] lg:grid-cols-4">
                 <div>
-                    <p class="font-medium uppercase text-slate-400">Acumulado</p>
+                    <p class="font-medium uppercase text-slate-400">Caja chica</p>
                     <p class="text-sm font-bold text-[#0B265A]">${{ number_format($resumenSemanaGl['total_acumulado'], 2) }}</p>
                 </div>
 
@@ -284,7 +284,12 @@
             <tbody>
             @foreach($ordenes as $oc)
                 <tr class="border-b hover:bg-slate-50 transition">
-                    <td class="py-3 px-4 text-center font-medium">{{ $oc->folio }}</td>
+                                        <td class="py-3 px-4 text-center font-medium">
+                        <div>{{ $oc->folio }}</div>
+                        @if($oc->es_caja_chica)
+                            <span class="mt-1 inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700">Caja chica</span>
+                        @endif
+                    </td>
                     <td class="py-3 px-4">
                         @if($oc->proveedor)
                             <div class="flex flex-col">
@@ -297,7 +302,11 @@
                                 @endif
                             </div>
                         @else
-                            -
+                            @if($oc->es_caja_chica)
+                                <span class="text-xs font-semibold text-amber-700">Caja chica sin proveedor</span>
+                            @else
+                                -
+                            @endif
                         @endif
                     </td>
                     
@@ -356,7 +365,7 @@
                                 Editar
                             </a>
 
-                            @if(request('area_codigo') === 'GL' && $oc->estado_normalizado === 'autorizada')
+                            @if(request('area_codigo') === 'GL' && $oc->es_caja_chica && $oc->estado_normalizado === 'autorizada')
                                 @can('ordenes_compra.verify.access')
                                     <form method="POST" action="{{ route('ordenes_compra.verificar', $oc->id) }}" class="inline">
                                         @csrf
@@ -369,7 +378,7 @@
                                 @endcan
                             @endif
 
-                            @if($oc->estado_normalizado === 'autorizada' && !$oc->pagoProveedorActivo && auth()->user()?->can('pagos_proveedores.schedule.access'))
+                            @if(! $oc->es_caja_chica && $oc->estado_normalizado === 'autorizada' && !$oc->pagoProveedorActivo && auth()->user()?->can('pagos_proveedores.schedule.access'))
                                 <a href="{{ route('pagos-proveedores.create', ['orden_compra_id' => $oc->id]) }}"
                                    class="text-amber-600 hover:text-amber-800 font-medium text-sm transition">
                                     Pagar
@@ -380,7 +389,7 @@
                                 $estadoNorm = strtolower(trim((string) ($oc->estado ?? 'borrador')));
                             @endphp
 
-                            @if(!in_array($estadoNorm, ['autorizada','autorizado','cancelada','cancelado']))
+                            @if(!in_array($estadoNorm, ['autorizada','autorizado','verificada','verificado','cancelada','cancelado']))
                                 @canany(['ordenes_compra.authorize.access', 'ordenes_compra.autorizar'])
                                     <form method="POST" action="{{ route('ordenes_compra.autorizar', $oc->id) }}" class="inline">
                                         @csrf
@@ -394,7 +403,7 @@
                             @endif
 
                             {{-- Cancelar (solo si NO está cancelada) --}}
-                            @if(!in_array($oc->estado_normalizado, ['cancelada','cancelado']) && auth()->user()?->can('ordenes_compra.cancel.access'))
+                            @if(!in_array($oc->estado_normalizado, ['autorizada','autorizado','verificada','verificado','cancelada','cancelado']) && auth()->user()?->can('ordenes_compra.cancel.access'))
                                 <form method="POST" action="{{ route('ordenes_compra.cancelar', $oc->id) }}" class="inline">
                                     @csrf
                                     <button type="submit"

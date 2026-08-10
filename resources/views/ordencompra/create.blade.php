@@ -7,6 +7,11 @@
     <form method="POST" action="{{ route('ordenes_compra.store') }}" class="space-y-4">
         @csrf
 
+        <label class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+            <input type="checkbox" name="es_caja_chica" value="1" class="rounded border-amber-300" @checked(old('es_caja_chica'))>
+            Orden de caja chica
+        </label>
+
         <div class="grid grid-cols-2 gap-4">
           <div class="relative">
     <label class="block text-sm font-medium mb-1">Proveedor</label>
@@ -20,7 +25,7 @@
         type="text"
         id="proveedor_busqueda"
         class="w-full border p-2 rounded"
-        placeholder="Escribe al menos 3 caracteres..."
+        placeholder="Proveedor opcional si es caja chica..."
         autocomplete="off"
         value="{{ old('proveedor_texto') }}"
     >

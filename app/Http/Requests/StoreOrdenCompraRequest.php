@@ -15,7 +15,8 @@ class StoreOrdenCompraRequest extends FormRequest
     public function rules(): array
     {
        return [
-        'proveedor_id'         => ['required', 'integer', 'exists:proveedores,id'],
+        'es_caja_chica'      => ['nullable', 'boolean'],
+        'proveedor_id'         => ['nullable', 'required_unless:es_caja_chica,1', 'integer', 'exists:proveedores,id'],
         'obra_id'              => ['nullable', 'integer', 'exists:obras,id'],
         'centro_costo_id'      => ['nullable', 'integer', 'exists:centros_costo,id'],
         'planeacion_gasto_id'  => ['nullable', 'integer', 'exists:obra_planeacion_gastos,id'],  // NUEVO
@@ -60,6 +61,7 @@ class StoreOrdenCompraRequest extends FormRequest
     {
         return [
             'proveedor_id.required' => 'Selecciona un proveedor.',
+            'proveedor_id.required_unless' => 'Selecciona un proveedor o marca la orden como caja chica.',
             'area_id.required'      => 'Selecciona un área.',
             'fecha.required'        => 'La fecha es obligatoria.',
         ];

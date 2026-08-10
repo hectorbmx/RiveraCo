@@ -224,6 +224,7 @@ class OrdenCompraController extends Controller
                 $inicioSemana->toDateString(),
                 $finSemana->toDateString(),
             ])
+            ->where('es_caja_chica', true)
             ->whereIn('estado', ['AUTORIZADA', 'VERIFICADA'])
             ->get();
 
@@ -349,17 +350,19 @@ class OrdenCompraController extends Controller
         return DB::transaction(function () use ($request, $notifications) {
 
             $area = Area::findOrFail($request->area_id);
+            $esCajaChica = $request->boolean('es_caja_chica');
 
             $oc = new OrdenCompra();
 
             $oc->folio        = $this->generarFolioPorArea($area); // folio por área
-            $oc->proveedor_id = (int) $request->proveedor_id;
+            $oc->proveedor_id = $request->filled('proveedor_id') ? (int) $request->proveedor_id : null;
             $oc->obra_id      = $request->obra_id ? (int)$request->obra_id : null;
             $oc->centro_costo_id = $request->centro_costo_id ? (int)$request->centro_costo_id : null;
             $oc->planeacion_gasto_id = $oc->obra_id && $request->planeacion_gasto_id ? (int)$request->planeacion_gasto_id : null;
 
             // nuevo
             $oc->area_id      = (int) $request->area_id;
+            $oc->es_caja_chica = $esCajaChica;
             $oc->moneda       = $request->moneda;
             $oc->tipo_cambio  = $request->tipo_cambio;
 
@@ -503,20 +506,22 @@ public function edit($id)
 
         // Regla: si ya está autorizada o cancelada, no se edita encabezado
         $estadoNorm = $oc->estado_normalizado;
-        if (in_array($estadoNorm, ['autorizada','cancelada'], true)) {
+        if (in_array($estadoNorm, ['autorizada','verificada','cancelada'], true)) {
             return back()->with('error', 'No puedes editar una orden autorizada o cancelada.');
         }
 
         return DB::transaction(function () use ($request, $oc) {
 
             $area = Area::findOrFail($request->area_id);
+            $esCajaChica = $request->boolean('es_caja_chica');
 
-            $oc->proveedor_id = (int) $request->proveedor_id;
+            $oc->proveedor_id = $request->filled('proveedor_id') ? (int) $request->proveedor_id : null;
             $oc->obra_id      = $request->obra_id ? (int)$request->obra_id : null;
             $oc->centro_costo_id = $request->centro_costo_id ? (int)$request->centro_costo_id : null;
             $oc->planeacion_gasto_id = $oc->obra_id && $request->planeacion_gasto_id ? (int)$request->planeacion_gasto_id : null;
 
             $oc->area_id      = (int) $request->area_id;
+            $oc->es_caja_chica = $esCajaChica;
             $oc->moneda       = $request->moneda;
             $oc->tipo_cambio  = $request->tipo_cambio;
 
@@ -604,7 +609,7 @@ public function autorizar($id, OrdenCompraNotificationService $notifications)
         return back()->with('error', 'No puedes autorizar una orden cancelada.');
     }
  
-    if ($oc->estado_normalizado === 'autorizada') {
+    if (in_array($oc->estado_normalizado, ['autorizada', 'verificada'], true)) {
         return back()->with('success', 'La orden ya estaba autorizada.');
     }
  
@@ -1796,8 +1801,8 @@ foreach ($oc->detalles as $detalle) {
     {
         $oc = OrdenCompra::findOrFail($id);
 
-        if ($oc->estado_normalizado === 'autorizada') {
-            return back()->with('error', 'No puedes cancelar una orden ya autorizada (definamos si aplica flujo de cancelación avanzada).');
+        if (in_array($oc->estado_normalizado, ['autorizada', 'verificada'], true)) {
+            return back()->with('error', 'No puedes cancelar una orden autorizada o verificada.');
         }
 
         if ($oc->estado_normalizado === 'cancelada') {
@@ -1841,6 +1846,10 @@ foreach ($oc->detalles as $detalle) {
         $areaCodigo = strtoupper(trim((string) ($oc->areaCatalogo->codigo ?? '')));
         if ($areaCodigo !== 'GL') {
             return back()->with('error', 'La verificacion semanal aplica solo para ordenes del almacen GL.');
+        }
+
+        if (! $oc->es_caja_chica) {
+            return back()->with('error', 'Solo puedes verificar ordenes marcadas como caja chica.');
         }
 
         $oc->estado = 'VERIFICADA';
@@ -2037,9 +2046,10 @@ public function exportarListaPagos(
     /*
      * Solo se exportan órdenes:
      *
-     * - Autorizadas.
+     * - Autorizadas o verificadas.
      * - De la forma de pago solicitada.
      * - Del área Giralda.
+     * - Marcadas como caja chica.
      * - Con folio OC-GL-%.
      * - Con fecha dentro de la semana seleccionada.
      */
@@ -2050,7 +2060,8 @@ public function exportarListaPagos(
             'centroCosto',
             'areaCatalogo',
         ])
-        ->where('estado', 'AUTORIZADA')
+        ->whereIn('estado', ['AUTORIZADA', 'VERIFICADA'])
+        ->where('es_caja_chica', true)
         ->where('forma_pago', $formaPago)
         ->where('area_id', $areaCatalogo->id)
         ->where('folio', 'like', 'OC-GL-%')
@@ -2126,7 +2137,7 @@ public function exportarListaPagos(
                 . $inicioSemana->format('d/m/Y')
                 . ' al '
                 . $finSemana->format('d/m/Y')
-                . ' | Solo órdenes autorizadas'
+                . ' | Solo caja chica autorizada/verificada'
                 . ' | Generado: '
                 . now()->format('d/m/Y H:i')
             ),
@@ -2173,7 +2184,7 @@ public function exportarListaPagos(
             0,
             12,
             $utf8(
-                'No existen órdenes autorizadas con esta forma de pago '
+                'No existen órdenes de caja chica autorizadas o verificadas con esta forma de pago '
                 . 'para el área '
                 . $areaCatalogo->nombre
                 . ' en el periodo '
