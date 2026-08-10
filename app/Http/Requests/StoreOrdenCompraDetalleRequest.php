@@ -50,6 +50,13 @@ class StoreOrdenCompraDetalleRequest extends FormRequest
                 'min:0',
             ],
 
+            'descuento_porcentaje' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                'max:100',
+            ],
+
             'importe' => [
                 'nullable',
                 'numeric',

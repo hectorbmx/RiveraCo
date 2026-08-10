@@ -19,10 +19,10 @@ class OrdenCompraDetalleController extends Controller
 {
     $oc = OrdenCompra::findOrFail($ordenCompraId);
 
-    if (in_array($oc->estado_normalizado, ['autorizada', 'cancelada'], true)) {
+    if (in_array($oc->estado_normalizado, ['autorizada', 'verificada', 'cancelada'], true)) {
         return back()->with(
             'error',
-            'No puedes modificar detalles en una orden autorizada o cancelada.'
+            'No puedes modificar detalles en una orden autorizada, verificada o cancelada.'
         );
     }
 
@@ -31,10 +31,10 @@ class OrdenCompraDetalleController extends Controller
     return DB::transaction(function () use ($request, $oc) {
         $cantidad = (float) $request->cantidad;
         $precio = (float) $request->precio_unitario;
-
-        $importe = $request->filled('importe')
-            ? (float) $request->importe
-            : round($cantidad * $precio, 2);
+        $importes = $this->calcularImportesPartida($request, $cantidad, $precio);
+        $descuentoPorcentaje = $importes['descuento_porcentaje'];
+        $descuentoImporte = $importes['descuento_importe'];
+        $importe = $importes['importe'];
 
         $tipoRetencion = null;
         $retencionPorcentaje = 0;
@@ -61,6 +61,8 @@ class OrdenCompraDetalleController extends Controller
         $detalle->unidad = $request->unidad;
         $detalle->cantidad = $cantidad;
         $detalle->precio_unitario = $precio;
+        $detalle->descuento_porcentaje = $descuentoPorcentaje;
+        $detalle->descuento_importe = $descuentoImporte;
         $detalle->importe = $importe;
         $detalle->iva = $request->filled('iva')
             ? (float) $request->iva
@@ -104,6 +106,28 @@ class OrdenCompraDetalleController extends Controller
         );
     });
 }
+
+    private function calcularImportesPartida(Request $request, float $cantidad, float $precio): array
+    {
+        $bruto = round($cantidad * $precio, 2);
+        $descuentoPorcentaje = $request->filled('descuento_porcentaje')
+            ? (float) $request->descuento_porcentaje
+            : 0.0;
+
+        $descuentoPorcentaje = min(100, max(0, $descuentoPorcentaje));
+        $descuentoImporte = round($bruto * ($descuentoPorcentaje / 100), 2);
+
+        $importe = $request->filled('importe')
+            ? (float) $request->importe
+            : round($bruto - $descuentoImporte, 2);
+
+        return [
+            'bruto' => $bruto,
+            'descuento_porcentaje' => $descuentoPorcentaje,
+            'descuento_importe' => $descuentoImporte,
+            'importe' => max(0, $importe),
+        ];
+    }
 private function syncProductoProveedorDesdeDetalle(OrdenCompra $oc, OrdenCompraDetalle $detalle): void
 {
     $proveedorId = (int) $oc->proveedor_id;
@@ -196,8 +220,8 @@ private function syncProductoProveedorDesdeDetalle(OrdenCompra $oc, OrdenCompraD
     {
         $oc = OrdenCompra::findOrFail($ordenCompraId);
 
-        if (in_array($oc->estado_normalizado, ['autorizada','cancelada'], true)) {
-            return back()->with('error', 'No puedes modificar detalles en una orden autorizada o cancelada.');
+        if (in_array($oc->estado_normalizado, ['autorizada','verificada','cancelada'], true)) {
+            return back()->with('error', 'No puedes modificar detalles en una orden autorizada, verificada o cancelada.');
         }
 
         $detalle = OrdenCompraDetalle::where('orden_compra_id', $oc->id)->findOrFail($detalleId);
@@ -206,10 +230,10 @@ private function syncProductoProveedorDesdeDetalle(OrdenCompra $oc, OrdenCompraD
 
             $cantidad = (float)$request->cantidad;
             $precio   = (float)$request->precio_unitario;
-
-            $importe = $request->filled('importe')
-                ? (float)$request->importe
-                : round($cantidad * $precio, 2);
+            $importes = $this->calcularImportesPartida($request, $cantidad, $precio);
+            $descuentoPorcentaje = $importes['descuento_porcentaje'];
+            $descuentoImporte = $importes['descuento_importe'];
+            $importe = $importes['importe'];
 
             $detalle->producto_id     = $request->producto_id;
             $detalle->legacy_prod_id  = $request->legacy_prod_id;
@@ -219,10 +243,28 @@ private function syncProductoProveedorDesdeDetalle(OrdenCompra $oc, OrdenCompraD
 
             $detalle->cantidad        = $cantidad;
             $detalle->precio_unitario = $precio;
+            $detalle->descuento_porcentaje = $descuentoPorcentaje;
+            $detalle->descuento_importe = $descuentoImporte;
 
             $detalle->importe         = $importe;
             $detalle->iva             = $request->filled('iva') ? (float)$request->iva : 0;
-            $detalle->retenciones     = $request->filled('retenciones') ? (float)$request->retenciones : 0;
+
+            $tipoRetencion = null;
+            $retencionPorcentaje = 0;
+            $retencionImporte = 0;
+
+            if ($request->filled('tipo_retencion_id')) {
+                $tipoRetencion = TipoRetencion::query()
+                    ->where('activo', true)
+                    ->findOrFail($request->integer('tipo_retencion_id'));
+
+                $retencionPorcentaje = (float) $tipoRetencion->porcentaje;
+                $retencionImporte = round($importe * ($retencionPorcentaje / 100), 2);
+            }
+
+            $detalle->tipo_retencion_id = $tipoRetencion?->id;
+            $detalle->retencion_porcentaje = $retencionPorcentaje;
+            $detalle->retenciones     = $retencionImporte;
             $detalle->otros_impuestos = $request->filled('otros_impuestos') ? (float)$request->otros_impuestos : 0;
 
             $detalle->notas           = $request->notas;
@@ -242,8 +284,8 @@ private function syncProductoProveedorDesdeDetalle(OrdenCompra $oc, OrdenCompraD
     {
         $oc = OrdenCompra::findOrFail($ordenCompraId);
 
-        if (in_array($oc->estado_normalizado, ['autorizada','cancelada'], true)) {
-            return back()->with('error', 'No puedes modificar detalles en una orden autorizada o cancelada.');
+        if (in_array($oc->estado_normalizado, ['autorizada','verificada','cancelada'], true)) {
+            return back()->with('error', 'No puedes modificar detalles en una orden autorizada, verificada o cancelada.');
         }
 
         $detalle = OrdenCompraDetalle::where('orden_compra_id', $oc->id)->findOrFail($detalleId);

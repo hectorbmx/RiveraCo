@@ -23,8 +23,9 @@ class UpdateOrdenCompraDetalleRequest extends FormRequest
             'cantidad'        => ['required','numeric','min:0.0001'],
             'precio_unitario' => ['required','numeric','min:0'],
 
+            'descuento_porcentaje' => ['nullable','numeric','min:0','max:100'],
             'importe'         => ['nullable','numeric','min:0'],
-            'iva'             => ['nullable','numeric','min:0'],
+            'iva'             => ['nullable','numeric','min:0','max:100'],
             'retenciones'     => ['nullable','numeric','min:0'],
             'otros_impuestos' => ['nullable','numeric','min:0'],
 

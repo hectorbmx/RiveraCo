@@ -237,9 +237,9 @@ class OrdenCompraController extends Controller
             $totalOrden = 0.0;
 
             foreach ($ordenResumen->detalles as $detalle) {
-                $lineaSubtotal = (float) $detalle->precio_unitario * (float) $detalle->cantidad;
+                $lineaSubtotal = (float) ($detalle->importe ?? ((float) $detalle->precio_unitario * (float) $detalle->cantidad));
                 $lineaIva = ($lineaSubtotal * (float) ($detalle->iva ?? 0)) / 100;
-                $totalOrden += $lineaSubtotal + $lineaIva + (float) ($detalle->otros_impuestos ?? 0);
+                $totalOrden += $lineaSubtotal + $lineaIva + (float) ($detalle->otros_impuestos ?? 0) - (float) ($detalle->retenciones ?? 0);
             }
 
             if ($ordenResumen->estado === 'VERIFICADA') {
@@ -273,32 +273,23 @@ class OrdenCompraController extends Controller
         $subtotal = 0.0;
         $iva = 0.0;
 
-        foreach ($oc->detalles as $detalle) {
-            $lineaSubtotal =
-                (float) $detalle->precio_unitario
-                * (float) $detalle->cantidad;
+        $otros = 0.0;
+        $retenciones = 0.0;
 
-            $lineaIva =
-                (
-                    $lineaSubtotal
-                    * (float) ($detalle->iva ?? 0)
-                ) / 100;
+        foreach ($oc->detalles as $detalle) {
+            $lineaSubtotal = (float) ($detalle->importe ?? ((float) $detalle->precio_unitario * (float) $detalle->cantidad));
+            $lineaIva = ($lineaSubtotal * (float) ($detalle->iva ?? 0)) / 100;
 
             $subtotal += $lineaSubtotal;
             $iva += $lineaIva;
+            $otros += (float) ($detalle->otros_impuestos ?? 0);
+            $retenciones += (float) ($detalle->retenciones ?? 0);
         }
 
         $oc->subtotal = $subtotal;
         $oc->iva = $iva;
-
-        $oc->otros_impuestos = (float) (
-            $oc->otros_impuestos ?? 0
-        );
-
-        $oc->total =
-            $subtotal
-            + $iva
-            + $oc->otros_impuestos;
+        $oc->otros_impuestos = $otros;
+        $oc->total = $subtotal + $iva + $otros - $retenciones;
     }
 
     return view(
@@ -446,8 +437,18 @@ public function edit($id)
     $retencionesGeneral = 0;
 
     foreach ($oc->detalles as $detalle) {
-        $detalle->subtotal = round(
+        $detalle->subtotal_bruto = round(
             (float) $detalle->precio_unitario * (float) $detalle->cantidad,
+            2
+        );
+
+        $detalle->descuento_calculado = round(
+            (float) ($detalle->descuento_importe ?? 0),
+            2
+        );
+
+        $detalle->subtotal = round(
+            (float) ($detalle->importe ?? ($detalle->subtotal_bruto - $detalle->descuento_calculado)),
             2
         );
 
@@ -690,6 +691,11 @@ public function print(OrdenCompra $orden_compra)
     $mostrarRetenciones = $oc->detalles->contains(function ($detalle) {
         return ! empty($detalle->tipo_retencion_id)
             || (float) $detalle->retenciones > 0;
+    });
+
+    $mostrarDescuentos = $oc->detalles->contains(function ($detalle) {
+        return (float) ($detalle->descuento_importe ?? 0) > 0
+            || (float) ($detalle->descuento_porcentaje ?? 0) > 0;
     });
 
     $pdf = new \FPDF('P', 'mm', 'Letter');
@@ -995,6 +1001,7 @@ $pdf->SetXY($X0, $Y);
 $wCant = 13;
 $wUni  = 16;
 $wPU   = 23;
+$wDescuento = $mostrarDescuentos ? 18 : 0;
 $wIVA  = 18;
 $wRet  = $mostrarRetenciones ? 19 : 0;
 $wImp  = 23;
@@ -1004,6 +1011,7 @@ $wDesc = $W - (
     $wCant
     + $wUni
     + $wPU
+    + $wDescuento
     + $wIVA
     + $wRet
     + $wImp
@@ -1018,6 +1026,11 @@ $pdf->Cell($wCant, 7, $utf8('CANT'), 1, 0, 'C', true);
 $pdf->Cell($wUni,  7, $utf8('UNIDAD'), 1, 0, 'C', true);
 $pdf->Cell($wDesc, 7, $utf8('DESCRIPCION'), 1, 0, 'C', true);
 $pdf->Cell($wPU,   7, $utf8('P. UNIT.'), 1, 0, 'C', true);
+
+if ($mostrarDescuentos) {
+    $pdf->Cell($wDescuento, 7, $utf8('DESC.'), 1, 0, 'C', true);
+}
+
 $pdf->Cell($wIVA,  7, $utf8('IVA'), 1, 0, 'C', true);
 
 if ($mostrarRetenciones) {
@@ -1076,10 +1089,17 @@ foreach ($oc->detalles as $detalle) {
     $uni  = (string) ($detalle->unidad ?? '');
     $desc = (string) ($detalle->descripcion ?? '');
     $pu   = (float) ($detalle->precio_unitario ?? 0);
+    $brutoLinea = round($cant * $pu, 2);
+    $descuentoPctLinea = (float) ($detalle->descuento_porcentaje ?? 0);
+    $descuentoLinea = round((float) ($detalle->descuento_importe ?? 0), 2);
+
+    if ($descuentoLinea <= 0 && $descuentoPctLinea > 0) {
+        $descuentoLinea = round($brutoLinea * ($descuentoPctLinea / 100), 2);
+    }
 
     $subtotalLinea = (float) (
         $detalle->importe
-        ?? ($cant * $pu)
+        ?? max(0, $brutoLinea - $descuentoLinea)
     );
 
     $ivaPctLinea = is_numeric($detalle->iva ?? null)
@@ -1149,6 +1169,11 @@ foreach ($oc->detalles as $detalle) {
 
     $pdf->Rect($cursorX, $y, $wPU, $rowH);
     $cursorX += $wPU;
+
+    if ($mostrarDescuentos) {
+        $pdf->Rect($cursorX, $y, $wDescuento, $rowH);
+        $cursorX += $wDescuento;
+    }
 
     $pdf->Rect($cursorX, $y, $wIVA, $rowH);
     $cursorX += $wIVA;
@@ -1221,10 +1246,32 @@ foreach ($oc->detalles as $detalle) {
         'R'
     );
 
+    $descuentoX = $precioX + $wPU;
+
+    if ($mostrarDescuentos) {
+        $pdf->SetXY($descuentoX, $y);
+        $pdf->SetFont('Arial', '', 7.5);
+
+        $textoDescuento = $descuentoLinea > 0
+            ? '-$' . number_format($descuentoLinea, 2)
+            : '-';
+
+        $pdf->Cell(
+            $wDescuento,
+            $rowH,
+            $textoDescuento,
+            0,
+            0,
+            $descuentoLinea > 0 ? 'R' : 'C'
+        );
+
+        $pdf->SetFont('Arial', '', 8);
+    }
+
     /*
      * IVA: solo importe.
      */
-    $ivaX = $precioX + $wPU;
+    $ivaX = $descuentoX + $wDescuento;
 
     $pdf->SetXY($ivaX, $y);
     $pdf->Cell(

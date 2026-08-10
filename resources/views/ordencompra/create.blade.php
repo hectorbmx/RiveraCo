@@ -4,7 +4,7 @@
 <div class="p-6 max-w-4xl">
     <h1 class="text-xl font-semibold mb-4">Nueva orden de compra</h1>
 
-    <form method="POST" action="{{ route('ordenes_compra.store') }}" class="space-y-4">
+    <form method="POST" action="{{ route('ordenes_compra.store') }}" class="space-y-4" data-loading-form data-loading-message="Creando orden de compra...">
         @csrf
 
         <label class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
@@ -298,6 +298,41 @@
         </button>
     </form>
 </div>
+
+<div id="ocLoadingOverlay" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-slate-950/45 backdrop-blur-sm">
+    <div class="w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-2xl">
+        <div class="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-[#0B265A]"></div>
+        <div id="ocLoadingMessage" class="text-sm font-semibold text-slate-800">Guardando...</div>
+        <div class="mt-1 text-xs text-slate-500">Espera un momento.</div>
+    </div>
+</div>
+<script>
+(function () {
+    const overlay = document.getElementById('ocLoadingOverlay');
+    const message = document.getElementById('ocLoadingMessage');
+
+    window.mostrarCargaOc = function (texto) {
+        if (message) message.textContent = texto || 'Guardando...';
+        overlay?.classList.remove('hidden');
+        overlay?.classList.add('flex');
+    };
+
+    window.ocultarCargaOc = function () {
+        overlay?.classList.add('hidden');
+        overlay?.classList.remove('flex');
+    };
+
+    document.querySelectorAll('form[data-loading-form]').forEach((form) => {
+        form.addEventListener('submit', () => {
+            window.mostrarCargaOc(form.dataset.loadingMessage || 'Guardando...');
+            form.querySelectorAll('button[type="submit"], button:not([type])').forEach((button) => {
+                button.disabled = true;
+                button.classList.add('opacity-70', 'cursor-not-allowed');
+            });
+        });
+    });
+})();
+</script>
 @stack('scripts')
 
 @endsection

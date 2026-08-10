@@ -28,7 +28,7 @@
           </button>
 
             @if(!$bloqueado)
-                <form method="POST" action="{{ route('ordenes_compra.update', $oc->id) }}" id="formEncabezadoOc" class="inline">
+                <form method="POST" action="{{ route('ordenes_compra.update', $oc->id) }}" id="formEncabezadoOc" class="inline" data-loading-form data-loading-message="Guardando orden de compra...">
                     @csrf
                     @method('PUT')
 
@@ -181,6 +181,7 @@
 
         const btnSave = document.getElementById('btnGuardarProducto');
         btnSave.disabled = true;
+        window.mostrarCargaOc?.('Creando producto...');
 
         try {
             const payload = {
@@ -225,9 +226,11 @@
             closeModal();
 
         } catch (err) {
+            window.ocultarCargaOc?.();
             errorBox.innerText = err.message || 'Error desconocido.';
             errorBox.classList.remove('hidden');
         } finally {
+            window.ocultarCargaOc?.();
             btnSave.disabled = false;
         }
     });
@@ -369,16 +372,16 @@
 
     {{-- Totales --}}
     <div class="grid grid-cols-4 gap-4 mb-4">
-        <div>Subtotal: ${{ number_format($oc->subtotal,2) }}</div>
-        <div>IVA: ${{ number_format($oc->iva,2) }}</div>
-        <div>Otros: ${{ number_format($oc->otros_impuestos,2) }}</div>
-        <div class="font-semibold">Total: ${{ number_format($oc->total,2) }}</div>
+        <div>Subtotal: ${{ number_format($oc->subtotal_calc,2) }}</div>
+        <div>IVA: ${{ number_format($oc->iva_monto_calc,2) }}</div>
+        <div>Otros: ${{ number_format($oc->otros_monto_calc,2) }}</div>
+        <div class="font-semibold">Total: ${{ number_format($oc->total_calc,2) }}</div>
     </div>
 
     {{-- Agregar detalle --}}
     @if(!$bloqueado)
     <form method="POST" action="{{ route('ordenes_compra.detalles.store',$oc->id) }}"
-          class="grid grid-cols-7 gap-2 mb-4">
+          class="grid grid-cols-1 md:grid-cols-8 gap-2 mb-4" data-loading-form data-loading-message="Agregando producto a la orden...">
         @csrf
         
   <!-- <input id="descProducto" name="descripcion"class="border p-2 col-span-2" placeholder="Descripción / buscar producto..."  autocomplete="off"> -->
@@ -413,6 +416,12 @@
     <div>
         <input name="precio_unitario" id="precio_unitario" type="number" step="0.0001" placeholder="0.00" class="w-full border p-2 rounded">
         <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">Precio Unit.</span>
+    </div>
+
+    <!-- Descuento -->
+    <div>
+        <input name="descuento_porcentaje" type="number" step="0.01" min="0" max="100" placeholder="0.00" class="w-full border p-2 rounded">
+        <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">% Desc.</span>
     </div>
 
     <!-- IVA -->
@@ -460,6 +469,7 @@
             <th class="p-2 border">Cant</th>
             <th class="p-2 border">Precio</th>
             <th class="p-2 border">SubTotal</th>
+            <th class="p-2 border">Desc.</th>
             <th class="p-2 border">IVA</th>
             <th class="p-2 border">Retencion</th>
             <th class="p-2 border">Importe</th>
@@ -492,7 +502,19 @@
         </td>
 
         <td class="p-2 text-center">
-            ${{ number_format((float) $d->precio_unitario * (float) $d->cantidad, 2) }}
+            <div>${{ number_format((float) $d->subtotal_bruto, 2) }}</div>
+            @if((float) $d->descuento_calculado > 0)
+                <div class="text-[11px] text-slate-500">Neto: ${{ number_format((float) $d->subtotal, 2) }}</div>
+            @endif
+        </td>
+
+        <td class="p-2 text-center">
+            @if((float) $d->descuento_calculado > 0)
+                <div class="text-red-600">-${{ number_format((float) $d->descuento_calculado, 2) }}</div>
+                <div class="text-xs text-slate-500">{{ number_format((float) $d->descuento_porcentaje, 2) }}%</div>
+            @else
+                <span class="text-slate-400">-</span>
+            @endif
         </td>
 
         {{-- Ya no mostramos el porcentaje de IVA, solo el importe --}}
@@ -541,6 +563,42 @@
 </tbody>
     </table>
 </div>
+
+<div id="ocLoadingOverlay" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-slate-950/45 backdrop-blur-sm">
+    <div class="w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-2xl">
+        <div class="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-[#0B265A]"></div>
+        <div id="ocLoadingMessage" class="text-sm font-semibold text-slate-800">Guardando...</div>
+        <div class="mt-1 text-xs text-slate-500">Espera un momento.</div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const overlay = document.getElementById('ocLoadingOverlay');
+    const message = document.getElementById('ocLoadingMessage');
+
+    window.mostrarCargaOc = function (texto) {
+        if (message) message.textContent = texto || 'Guardando...';
+        overlay?.classList.remove('hidden');
+        overlay?.classList.add('flex');
+    };
+
+    window.ocultarCargaOc = function () {
+        overlay?.classList.add('hidden');
+        overlay?.classList.remove('flex');
+    };
+
+    document.querySelectorAll('form[data-loading-form]').forEach((form) => {
+        form.addEventListener('submit', () => {
+            window.mostrarCargaOc(form.dataset.loadingMessage || 'Guardando...');
+            form.querySelectorAll('button[type="submit"], button:not([type])').forEach((button) => {
+                button.disabled = true;
+                button.classList.add('opacity-70', 'cursor-not-allowed');
+            });
+        });
+    });
+})();
+</script>
 @endsection
 <script>
 document.addEventListener('DOMContentLoaded', () => {

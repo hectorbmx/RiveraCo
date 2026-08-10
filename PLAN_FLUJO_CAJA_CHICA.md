@@ -479,3 +479,501 @@ Validacion tecnica:
 - `php -l app/Http/Controllers/OrdenCompraController.php`: OK.
 - `php -l routes/web.php`: OK.
 - `php -l database/migrations/2026_08_10_090000_add_verification_fields_to_ordenes_compra.php`: OK.
+---
+
+# Plan de accion: descuentos por partida en ordenes de compra
+
+## Objetivo
+
+Permitir que cada renglon/producto de una orden de compra tenga un descuento independiente en porcentaje.
+
+El descuento debe afectar la base de la linea antes de IVA, retenciones, otros impuestos y total.
+
+Formula objetivo:
+
+```text
+bruto = cantidad * precio_unitario
+descuento_importe = bruto * (descuento_porcentaje / 100)
+importe = bruto - descuento_importe
+iva_monto = importe * (iva / 100)
+total_linea = importe + iva_monto + otros_impuestos - retenciones
+```
+
+## Principios
+
+- El usuario captura el descuento como porcentaje.
+- El sistema guarda tambien el importe descontado para auditoria.
+- Si no hay descuento, el comportamiento actual debe quedar igual.
+- El descuento se aplica antes del IVA.
+- El descuento debe reflejarse igual en pantalla, totales, PDF, exportes y autorizacion.
+- No se debe permitir descuento negativo.
+- El descuento maximo recomendado es 100%.
+
+## Fase 1: base de datos y modelo
+
+### Paso 1.1: crear migracion
+
+Agregar columnas a `orden_compra_detalles`:
+
+```text
+descuento_porcentaje decimal(5,2) default 0
+descuento_importe decimal(12,2) default 0
+```
+
+Checkpoint:
+
+- Migracion creada.
+- Migracion reversible.
+- Valores default en cero para no afectar detalles existentes.
+
+### Paso 1.2: actualizar modelo `OrdenCompraDetalle`
+
+Agregar a `fillable`:
+
+```text
+descuento_porcentaje
+descuento_importe
+```
+
+Agregar casts:
+
+```text
+descuento_porcentaje => decimal:2
+descuento_importe => decimal:2
+```
+
+Checkpoint:
+
+- Modelo acepta y castea los nuevos campos.
+- Detalles existentes siguen funcionando con cero descuento.
+
+## Fase 2: validacion de requests
+
+### Paso 2.1: actualizar `StoreOrdenCompraDetalleRequest`
+
+Agregar regla:
+
+```text
+descuento_porcentaje nullable numeric min:0 max:100
+```
+
+Checkpoint:
+
+- Se puede crear detalle sin descuento.
+- Se puede crear detalle con descuento entre 0 y 100.
+- No acepta descuento negativo.
+- No acepta descuento mayor a 100.
+
+### Paso 2.2: actualizar `UpdateOrdenCompraDetalleRequest`
+
+Agregar la misma regla:
+
+```text
+descuento_porcentaje nullable numeric min:0 max:100
+```
+
+Checkpoint:
+
+- Si en el futuro se edita detalle, mantiene la misma regla.
+
+## Fase 3: calculo al guardar detalles
+
+### Paso 3.1: ajustar `OrdenCompraDetalleController@store`
+
+Cambiar calculo actual:
+
+```text
+importe = cantidad * precio_unitario
+```
+
+por:
+
+```text
+bruto = cantidad * precio_unitario
+descuento_porcentaje = request descuento o 0
+descuento_importe = bruto * descuento_porcentaje / 100
+importe = bruto - descuento_importe
+```
+
+Guardar:
+
+```text
+descuento_porcentaje
+descuento_importe
+importe
+```
+
+Checkpoint:
+
+- Con 0% descuento, `importe` queda igual que hoy.
+- Con 10% descuento, `importe` baja correctamente.
+- Retenciones se calculan sobre el importe ya descontado.
+
+### Paso 3.2: ajustar `OrdenCompraDetalleController@update`
+
+Aplicar el mismo calculo en actualizacion de detalles.
+
+Checkpoint:
+
+- Store y update calculan igual.
+- No hay doble descuento.
+
+### Paso 3.3: revisar sincronizacion de precio proveedor
+
+Actualmente se guarda `precio_unitario` como precio historico del proveedor.
+
+Decision recomendada:
+
+```text
+producto_proveedor.precio_lista = precio_unitario antes de descuento
+```
+
+Motivo:
+
+- El descuento es una condicion comercial de esa OC.
+- El precio unitario del proveedor no debe contaminarse con precio neto descontado.
+
+Checkpoint:
+
+- No cambiar sincronizacion de precio proveedor.
+- Guardar descuento solo en detalle de OC.
+
+## Fase 4: recalculo de totales
+
+### Paso 4.1: revisar `OrdenCompraTotalesService`
+
+Hoy suma:
+
+```text
+SUM(importe)
+SUM(importe * iva/100)
+```
+
+Si `importe` ya queda neto de descuento, no requiere cambiar la formula.
+
+Checkpoint:
+
+- Confirmar que `importe` representa base neta despues de descuento.
+- Totales de cabecera se recalculan correctamente.
+
+### Paso 4.2: revisar calculos manuales en `OrdenCompraController@index`
+
+Actualmente hay calculos manuales con:
+
+```text
+precio_unitario * cantidad
+```
+
+Deben cambiar a:
+
+```text
+detalle->importe ?? precio_unitario * cantidad
+```
+
+Checkpoint:
+
+- Listado muestra total correcto con descuentos.
+- Resumen semanal caja chica usa importes descontados.
+
+### Paso 4.3: revisar `OrdenCompraController@edit`
+
+Actualmente calcula subtotal visual con:
+
+```text
+precio_unitario * cantidad
+```
+
+Debe usar:
+
+```text
+bruto = precio_unitario * cantidad
+descuento_importe = detalle->descuento_importe
+subtotal = detalle->importe
+```
+
+Checkpoint:
+
+- El subtotal de cada renglon muestra base neta.
+- El total de la OC coincide con el guardado.
+- Si se quiere mostrar bruto y descuento, ambos se ven claramente.
+
+## Fase 5: interfaz de captura en edit
+
+### Paso 5.1: agregar input de descuento al formulario de detalle
+
+Agregar campo:
+
+```text
+name="descuento_porcentaje"
+type="number"
+step="0.01"
+min="0"
+max="100"
+placeholder="0"
+```
+
+Etiqueta visible:
+
+```text
+Desc. %
+```
+
+Checkpoint:
+
+- El campo cabe en la fila de captura.
+- Cantidad y precio unitario quedan mas compactos.
+- El usuario puede dejarlo vacio o en cero.
+
+### Paso 5.2: ajustar layout de captura
+
+Actualmente el formulario usa varias columnas.
+
+Propuesta:
+
+```text
+Descripcion: ancho principal
+Cantidad: compacto
+P. Unit: compacto
+Desc %: compacto
+IVA: compacto
+Retencion: compacto
+Agregar: compacto
+```
+
+Checkpoint:
+
+- No se enciman campos.
+- En desktop se ve todo en una fila usable.
+- En pantallas chicas puede bajar de linea sin romperse.
+
+### Paso 5.3: mostrar descuento en tabla de detalles
+
+Agregar columna:
+
+```text
+Desc.
+```
+
+Mostrar:
+
+```text
+10.00%
+-$125.00
+```
+
+Si no hay descuento:
+
+```text
+-
+```
+
+Checkpoint:
+
+- Las filas antiguas muestran `-`.
+- Las filas con descuento muestran porcentaje e importe.
+
+## Fase 6: PDF de orden de compra
+
+### Paso 6.1: decidir columnas del PDF
+
+Opcion recomendada:
+
+```text
+CANT | UNIDAD | DESCRIPCION | P. UNIT. | DESC. | IVA | RET. | IMPORTE
+```
+
+Si no hay descuentos en ninguna partida, se puede ocultar la columna `DESC.` para conservar espacio.
+
+Checkpoint:
+
+- PDF no se desborda horizontalmente.
+- Cuando no hay descuentos, PDF queda casi igual que hoy.
+- Cuando hay descuentos, el proveedor/verificador entiende el neto.
+
+### Paso 6.2: ajustar calculos del PDF
+
+El PDF debe usar:
+
+```text
+subtotalLinea = detalle->importe
+ivaLinea = subtotalLinea * iva%
+importeLinea = subtotalLinea + ivaLinea + otros - retenciones
+```
+
+Y mostrar descuento si aplica:
+
+```text
+-$descuento_importe
+```
+
+o:
+
+```text
+10.00%
+-$descuento_importe
+```
+
+Checkpoint:
+
+- El subtotal del PDF coincide con la cabecera.
+- El IVA se calcula sobre base descontada.
+- El total final coincide con la OC.
+
+## Fase 7: exportes y resumen semanal
+
+### Paso 7.1: revisar exportes de GL/caja chica
+
+Los exportes deben usar el total guardado/calculado con `importe` neto.
+
+Checkpoint:
+
+- Export efectivo respeta descuentos.
+- Export TC respeta descuentos.
+- No hay diferencia contra PDF.
+
+### Paso 7.2: revisar resumen semanal caja chica
+
+El badge semanal debe sumar usando:
+
+```text
+detalle->importe
+```
+
+no:
+
+```text
+precio_unitario * cantidad
+```
+
+Checkpoint:
+
+- Acumulado semanal respeta descuentos.
+- Pendiente/verificado respeta descuentos.
+
+## Fase 8: autorizacion y presupuesto
+
+### Paso 8.1: revisar validacion de presupuesto al autorizar
+
+La autorizacion compara contra:
+
+```text
+oc->total
+```
+
+Si `oc->total` ya fue recalculado con descuento, no requiere cambio.
+
+Checkpoint:
+
+- Una OC con descuento reduce el total contra presupuesto.
+- No se autoriza con total bruto por error.
+
+### Paso 8.2: bloquear modificaciones post autorizacion/verificacion
+
+Regla existente:
+
+```text
+autorizada/verificada/cancelada no se modifica
+```
+
+Checkpoint:
+
+- No se puede agregar descuento despues de autorizar.
+- Si hay error, se cancela y se crea otra OC.
+
+## Fase 9: pruebas manuales
+
+### Paso 9.1: detalle sin descuento
+
+Crear detalle:
+
+```text
+cantidad = 10
+precio = 100
+descuento = 0
+iva = 16
+```
+
+Esperado:
+
+```text
+subtotal = 1000
+iva = 160
+total = 1160
+```
+
+Checkpoint:
+
+- Resultado igual que flujo actual.
+
+### Paso 9.2: detalle con descuento
+
+Crear detalle:
+
+```text
+cantidad = 10
+precio = 100
+descuento = 10
+iva = 16
+```
+
+Esperado:
+
+```text
+bruto = 1000
+descuento = 100
+subtotal neto = 900
+iva = 144
+total = 1044
+```
+
+Checkpoint:
+
+- Vista edit muestra descuento.
+- Cabecera muestra total 1044.
+- PDF muestra total 1044.
+
+### Paso 9.3: mezcla de productos
+
+Crear OC con:
+
+```text
+producto A sin descuento
+producto B con 5%
+producto C con 20%
+```
+
+Checkpoint:
+
+- Cada renglon calcula independiente.
+- Total general coincide con suma de lineas.
+
+### Paso 9.4: caja chica con descuento
+
+Crear OC GL caja chica con descuento.
+
+Checkpoint:
+
+- Acumulado semanal respeta descuento.
+- Verificacion sigue funcionando.
+
+## Orden recomendado de implementacion
+
+1. Migracion de campos descuento.
+2. Modelo y requests.
+3. Calculo store/update de detalle.
+4. Servicio y calculos manuales de listado/edit/resumen.
+5. UI de captura y tabla detalle.
+6. PDF.
+7. Exportes/resumen semanal.
+8. Pruebas manuales.
+
+## Checkpoint final
+
+La implementacion queda lista cuando:
+
+- Una partida puede tener descuento porcentual.
+- El importe guardado es neto de descuento.
+- IVA se calcula sobre el importe neto.
+- Totales de OC coinciden en vista, PDF y exportes.
+- El flujo sin descuento se comporta igual que antes.
+- Caja chica y proveedores normales respetan los mismos calculos.

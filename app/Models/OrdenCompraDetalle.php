@@ -31,6 +31,8 @@ class OrdenCompraDetalle extends Model
     'unidad',
     'cantidad',
     'precio_unitario',
+    'descuento_porcentaje',
+    'descuento_importe',
     'importe',
     'iva',
     'tipo_retencion_id',
@@ -44,6 +46,8 @@ class OrdenCompraDetalle extends Model
     protected $casts = [
         'cantidad' => 'decimal:3',
         'precio_unitario' => 'decimal:4',
+        'descuento_porcentaje' => 'decimal:2',
+        'descuento_importe' => 'decimal:2',
         'importe' => 'decimal:2',
         'iva' => 'decimal:2',
         'retenciones' => 'decimal:2',
