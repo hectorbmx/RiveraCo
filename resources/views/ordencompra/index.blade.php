@@ -158,12 +158,12 @@
         @if($resumenSemanaGl)
             <div class="grid min-w-[260px] grid-cols-2 gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600 lg:min-w-[390px] lg:grid-cols-4">
                 <div>
-                    <p class="font-medium uppercase text-slate-400">Caja chica</p>
+                    <p class="font-medium uppercase text-slate-400">Total GL</p>
                     <p class="text-sm font-bold text-[#0B265A]">${{ number_format($resumenSemanaGl['total_acumulado'], 2) }}</p>
                 </div>
 
                 <div>
-                    <p class="font-medium uppercase text-slate-400">Pendiente</p>
+                    <p class="font-medium uppercase text-slate-400">Autorizada</p>
                     <p class="text-sm font-bold text-amber-700">${{ number_format($resumenSemanaGl['total_pendiente_verificar'], 2) }}</p>
                     <p class="text-[11px] text-slate-400">{{ $resumenSemanaGl['pendientes_verificar'] }} OC</p>
                 </div>

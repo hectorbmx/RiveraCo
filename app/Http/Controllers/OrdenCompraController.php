@@ -224,7 +224,6 @@ class OrdenCompraController extends Controller
                 $inicioSemana->toDateString(),
                 $finSemana->toDateString(),
             ])
-            ->where('es_caja_chica', true)
             ->whereIn('estado', ['AUTORIZADA', 'VERIFICADA'])
             ->get();
 

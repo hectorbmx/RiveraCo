@@ -1,7 +1,7 @@
 # Graph Report - rivera-v2  (2026-08-10)
 
 ## Corpus Check
-- 1029 files · ~994,383 words
+- 1029 files · ~994,381 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `9c05c434`
+- Built from commit: `a9579ee2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -474,7 +474,7 @@ Cohesion: 0.13
 Nodes (6): MaquinasGerencialController, Request, ObraMaquinaHorasController, Request, ObraMaquina, ObraMaquinaRegistro
 
 ### Community 59 - "SatDownloadRequest"
-Cohesion: 0.19
+Cohesion: 0.20
 Nodes (3): Request, SatDownloadController, SatDownloadRequest
 
 ### Community 61 - "SatMassDownloadService"
@@ -542,7 +542,7 @@ Cohesion: 0.19
 Nodes (5): TelephonyMatchCalls, TelephonyTestMatcher, PhoneCall, Collection, TelephonyCallMatcher
 
 ### Community 77 - ".create"
-Cohesion: 0.24
+Cohesion: 0.27
 Nodes (3): SatMassDownloadService, Service, SimpleXMLElement
 
 ### Community 78 - "composer.json"
@@ -909,7 +909,7 @@ Nodes (3): giralda.partials._modal_epp, giralda.partials._modal_epp_historial, g
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Controller` connect `.edit` to `Seeder`, `ObraReposicionGasto`, `User`, `SatCfdiEstadisticaController.php`, `ResidenteComisionesService`, `Proveedor`, `EquipoComputo`, `Obra`, `InventarioDocumento`, `SatFactura`, `ObraMaquina`, `Presupuesto`, `.edit`, `ObraController`, `SatDocumentRequest`, `MaquinariaReporteSnapshot`, `Producto`, `NominaListaRaya`, `ObraSolicitudGasto`, `ObraEmpleado`, `Seguro`, `Mantenimiento`, `2026_05_27_000003_add_payment_flow_indexes_to_ordenes_compra_table.php`, `OrdenCompraDetalleController.php`, `InventarioKardexGerencialController.php`, `web.php`, `MaquinaService`, `PagoProveedor`, `CsfRequestService`, `InventarioKardexController.php`, `UsuarioController.php`, `Cliente`, `OrdenCompra`, `SatFacturaPago`, `Vehiculo`, `api.php`, `VehiculoEmpleado`, `DatabaseCaptchaResolver.php`, `SatDownloadRequest`, `OrdenCompra`, `ImportProductosCsv`, `EmpresaConfig`, `LoginRequest`, `SatFacturacionController.php`, `ResidenteComisionController`, `auth.php`, `SatConcepto`, `ObraAsistencia`, `.create`, `SatCfdiPago`, `EmpleadoNota`, `CatalogoRol`, `ProveedorController`, `ZkDeviceClient`, `ObraFacturaPago`, `PasswordResetLinkController.php`, `RegisteredUserController.php`, `InventarioKardexGerencialController.php`, `LoginRequest`, `InventarioSeedInicial.php`, `RouteServiceProvider.php`, `ComisionPersonal`, `ComisionEtapaPersonal`, `2014_10_12_000000_create_users_table.php`, `AgentNotificationController`, `2025_12_02_185346_create_proveedores_table.php`, `2025_12_11_192236_create_vehiculos_table.php`, `2025_12_11_192314_create_mantenimiento_detalles_table.php`, `InventarioGerencialController.php`, `2026_01_08_193757_alter_usuarios_app_add_user_id_and_is_active.php`, `2026_01_16_192603_create_maquinaria_reporte_snapshots_tables.php`, `FacturaBorradorAutorizado`, `2026_02_03_171828_create_inventario_stock_table.php`, `SatCfdiConcepto.php`, `SatCfdiPago`, `2026_02_25_160241_create_facturas_table.php`, `2026_03_13_193201_create_empleado_documentos_table.php`, `2026_04_09_173414_create_obra_planeacion_gastos_table.php`, `2026_04_10_190703_create_obra_planeacion_semanal_table.php`, `NotificationController`, `SnapshotsController.php`, `2026_05_26_000004_create_centros_costo_table.php`, `2026_04_10_185239_create_planeacion_gastos_table.php`, `2026_06_23_120000_create_obra_factura_pagos_table.php`?**
+- **Why does `Controller` connect `.edit` to `Seeder`, `ObraReposicionGasto`, `User`, `SatCfdiEstadisticaController.php`, `ResidenteComisionesService`, `Proveedor`, `EquipoComputo`, `Obra`, `InventarioDocumento`, `SatFactura`, `ObraMaquina`, `Presupuesto`, `.edit`, `ObraController`, `SatDocumentRequest`, `MaquinariaReporteSnapshot`, `Producto`, `NominaListaRaya`, `ObraSolicitudGasto`, `ObraEmpleado`, `Seguro`, `Mantenimiento`, `2026_05_27_000003_add_payment_flow_indexes_to_ordenes_compra_table.php`, `OrdenCompraDetalleController.php`, `InventarioKardexGerencialController.php`, `web.php`, `MaquinaService`, `PagoProveedor`, `CsfRequestService`, `InventarioKardexController.php`, `UsuarioController.php`, `Cliente`, `OrdenCompra`, `SatFacturaPago`, `Vehiculo`, `api.php`, `VehiculoEmpleado`, `DatabaseCaptchaResolver.php`, `SatDownloadRequest`, `OrdenCompra`, `ImportProductosCsv`, `EmpresaConfig`, `LoginRequest`, `SatFacturacionController.php`, `ResidenteComisionController`, `auth.php`, `SatConcepto`, `ObraAsistencia`, `SatCfdiPago`, `EmpleadoNota`, `CatalogoRol`, `ProveedorController`, `ZkDeviceClient`, `ObraFacturaPago`, `PasswordResetLinkController.php`, `RegisteredUserController.php`, `InventarioKardexGerencialController.php`, `LoginRequest`, `InventarioSeedInicial.php`, `RouteServiceProvider.php`, `ComisionPersonal`, `ComisionEtapaPersonal`, `2014_10_12_000000_create_users_table.php`, `AgentNotificationController`, `2025_12_02_185346_create_proveedores_table.php`, `2025_12_11_192236_create_vehiculos_table.php`, `2025_12_11_192314_create_mantenimiento_detalles_table.php`, `InventarioGerencialController.php`, `2026_01_08_193757_alter_usuarios_app_add_user_id_and_is_active.php`, `2026_01_16_192603_create_maquinaria_reporte_snapshots_tables.php`, `FacturaBorradorAutorizado`, `2026_02_03_171828_create_inventario_stock_table.php`, `SatCfdiConcepto.php`, `SatCfdiPago`, `2026_02_25_160241_create_facturas_table.php`, `2026_03_13_193201_create_empleado_documentos_table.php`, `2026_04_09_173414_create_obra_planeacion_gastos_table.php`, `2026_04_10_190703_create_obra_planeacion_semanal_table.php`, `NotificationController`, `SnapshotsController.php`, `2026_05_26_000004_create_centros_costo_table.php`, `2026_04_10_185239_create_planeacion_gastos_table.php`, `2026_06_23_120000_create_obra_factura_pagos_table.php`?**
   _High betweenness centrality (0.104) - this node is a cross-community bridge._
 - **Why does `Obra` connect `Obra` to `SatCfdiEstadisticaController.php`, `AttendanceUser`, `Model`, `ResidenteComisionesService`, `InventarioDocumento`, `SatFactura`, `.edit`, `ObraController`, `NominaListaRaya`, `ObraSolicitudGasto`, `HasFactory`, `Seguro`, `MaquinaEstadoCambiado`, `Mantenimiento`, `OrdenCompraDetalleController.php`, `2025_12_11_192236_create_vehiculos_table.php`, `EmailVerificationPromptController.php`, `Controller`, `CsfRequestService`, `UsuarioController.php`, `SatFacturaPago`, `Vehiculo`, `VehiculoEmpleado`, `DatabaseCaptchaResolver.php`, `OrdenCompra`, `EmpresaConfig`, `2026_01_07_184728_create_comision_tarifario_detalles_table.php`, `SatFacturacionController.php`, `ResidenteComisionController`, `ObraAsistencia`, `ZkDeviceClient`, `ObraFacturaPago`, `2026_02_25_160241_create_facturas_table.php`, `InventarioKardexGerencialController.php`, `UserFactory`?**
   _High betweenness centrality (0.035) - this node is a cross-community bridge._
