@@ -615,6 +615,7 @@ Route::middleware('auth','verified')->group(function () {
     });
     Route::resource('ordenes_compra', OrdenCompraController::class)->except(['show','destroy']);
     Route::post('ordenes_compra/{id}/autorizar', [OrdenCompraController::class, 'autorizar'])->name('ordenes_compra.autorizar');
+    Route::post('ordenes_compra/{id}/verificar', [OrdenCompraController::class, 'verificar'])->name('ordenes_compra.verificar');
     Route::post('ordenes_compra/{id}/cancelar', [OrdenCompraController::class, 'cancelar'])->name('ordenes_compra.cancelar');
                     // Detalles anidados
     Route::post('ordenes_compra/{orden}/detalles', [OrdenCompraDetalleController::class, 'store'])->name('ordenes_compra.detalles.store');

@@ -775,6 +775,8 @@
   "773": "NotificationController",
   "774": "f9f29eccbfd6f376a2e68e564f18853e.php",
   "775": "ff312738df1900a815882ba1cea204aa.php",
+  "776": "2026_06_30_104500_add_facturado_fields_to_obra_factura_borradores_table.php",
+  "777": "2026_07_23_130000_create_cliente_portales_table.php",
   "778": "ReportesController",
   "779": "2026_04_10_185239_create_planeacion_gastos_table.php",
   "780": "2026_04_23_180936_add_captcha_fields_to_sat_document_requests_table.php",
@@ -783,5 +785,11 @@
   "783": "2026_07_16_120000_create_telephony_phone_numbers_table.php",
   "784": "2026_07_24_140000_create_cliente_contactos_table.php",
   "785": "2026_08_04_130000_create_empresa_viatico_tarifas_table.php",
-  "786": "2026_08_04_140000_add_viatico_fields_to_obra_reposicion_gasto_detalles_table.php"
+  "786": "2026_08_04_140000_add_viatico_fields_to_obra_reposicion_gasto_detalles_table.php",
+  "787": "2026_08_05_000001_create_tipos_retencion_table.php",
+  "788": "2026_08_05_171602_add_tipo_retencion_to_orden_compra_detalles_table.php",
+  "789": "0fa42f7ca363c84d8c13d2f1d42fff20.php",
+  "790": "183899c4c94e3c118550fd426d31f353.php",
+  "799": "92699fb55b9efb166cdcf4169351f6ec.php",
+  "815": "f30fae91b7f964826e30b99a32dff0f5.php"
 }

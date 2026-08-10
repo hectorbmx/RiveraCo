@@ -33,12 +33,16 @@ class OrdenCompra extends Model
         'usuario_autoriza',
         'autorizado_por',
         'fecha_autorizacion',
+        'usuario_verifica',
+        'verificado_por',
+        'fecha_verificacion',
         'comentarios',
     ];
 
     protected $casts = [
         'fecha' => 'date',
         'fecha_autorizacion' => 'date',
+        'fecha_verificacion' => 'datetime',
         'subtotal' => 'decimal:2',
         'iva' => 'decimal:2',
         'otros_impuestos' => 'decimal:2',
@@ -53,6 +57,7 @@ class OrdenCompra extends Model
         return match ($e) {
             'BORRADOR', 'PROGRAMADA' => 'programada',
             'AUTORIZADA' => 'autorizada',
+            'VERIFICADA' => 'verificada',
             'CANCELADA' => 'cancelada',
             default => strtolower($e),
         };
@@ -91,6 +96,11 @@ class OrdenCompra extends Model
     public function autorizadoPor()
     {
         return $this->belongsTo(User::class, 'autorizado_por');
+    }
+
+    public function verificadoPor()
+    {
+        return $this->belongsTo(User::class, 'verificado_por');
     }
 
     public function pagosProveedor()

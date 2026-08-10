@@ -624,6 +624,8 @@ public function print(OrdenCompra $orden_compra)
         'obra',
         'centroCosto',
         'areaCatalogo',
+        'registradoPor',
+        'autorizadoPor',
         'detalles.producto',
         'detalles.tipoRetencion',
     ]);
@@ -1481,13 +1483,21 @@ foreach ($oc->detalles as $detalle) {
         $Y + 12
     );
 
+    $solicitaNombre = $oc->registradoPor->name
+        ?? $oc->usuario_registro
+        ?? '';
+
+    $autorizaNombre = $oc->autorizadoPor->name
+        ?? $oc->usuario_autoriza
+        ?? '';
+
     $pdf->SetFont('Arial', 'B', 8);
 
     $pdf->SetXY($X0 + 5, $Y + 13);
     $pdf->Cell(
         50,
         5,
-        $utf8(auth()->user()->name ?? ''),
+        $utf8($solicitaNombre),
         0,
         0,
         'C'
@@ -1497,7 +1507,7 @@ foreach ($oc->detalles as $detalle) {
     $pdf->Cell(
         50,
         5,
-        $utf8($oc->usuario_autoriza ?? ''),
+        $utf8($autorizaNombre),
         0,
         0,
         'C'
@@ -1756,7 +1766,43 @@ foreach ($oc->detalles as $detalle) {
 
         return back()->with('success', 'Orden cancelada.');
     }
+    /**
+     * Verificar OC de almacen para corte semanal.
+     */
+    public function verificar($id)
+    {
+        $this->authorizeAny(
+            ['ordenes_compra.verify.access'],
+            'No tienes permiso para verificar ordenes de compra.'
+        );
 
+        $oc = OrdenCompra::with('areaCatalogo')->findOrFail($id);
+
+        if ($oc->estado_normalizado === 'cancelada') {
+            return back()->with('error', 'No puedes verificar una orden cancelada.');
+        }
+
+        if ($oc->estado_normalizado === 'verificada') {
+            return back()->with('success', 'La orden ya estaba verificada.');
+        }
+
+        if ($oc->estado_normalizado !== 'autorizada') {
+            return back()->with('error', 'Solo puedes verificar ordenes autorizadas.');
+        }
+
+        $areaCodigo = strtoupper(trim((string) ($oc->areaCatalogo->codigo ?? '')));
+        if ($areaCodigo !== 'GL') {
+            return back()->with('error', 'La verificacion semanal aplica solo para ordenes del almacen GL.');
+        }
+
+        $oc->estado = 'VERIFICADA';
+        $oc->fecha_verificacion = now();
+        $oc->usuario_verifica = $this->usuarioActualNombre();
+        $oc->verificado_por = auth()->id();
+        $oc->save();
+
+        return back()->with('success', 'Orden verificada para el corte semanal.');
+    }
     // ============================
     // Helpers
     // ============================
@@ -1766,6 +1812,7 @@ foreach ($oc->detalles as $detalle) {
         return match ($estado) {
             'programada' => 'BORRADOR',
             'autorizada' => 'AUTORIZADA',
+            'verificada' => 'VERIFICADA',
             'cancelada'  => 'CANCELADA',
             default      => strtoupper($estado),
         };

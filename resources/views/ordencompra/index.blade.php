@@ -231,6 +231,7 @@
 
             return match ($estado) {
                 'autorizada', 'autorizado' => 'bg-green-100 text-green-800 border-green-200',
+                'verificada', 'verificado' => 'bg-teal-100 text-teal-800 border-teal-200',
                 'cancelada', 'cancelado' => 'bg-red-100 text-red-800 border-red-200',
                 'borrador' => 'bg-gray-100 text-gray-800 border-gray-200',
                 'pendiente' => 'bg-amber-100 text-amber-800 border-amber-200',
@@ -328,6 +329,19 @@
                             class="text-blue-600 hover:text-blue-800 font-medium text-sm transition">
                                 Editar
                             </a>
+
+                            @if(request('area_codigo') === 'GL' && $oc->estado_normalizado === 'autorizada')
+                                @can('ordenes_compra.verify.access')
+                                    <form method="POST" action="{{ route('ordenes_compra.verificar', $oc->id) }}" class="inline">
+                                        @csrf
+                                        <button type="submit"
+                                                class="text-teal-600 hover:text-teal-800 font-medium text-sm transition"
+                                                onclick="return confirm('¿Verificar la orden {{ $oc->folio }} para el corte semanal?');">
+                                            Verificar
+                                        </button>
+                                    </form>
+                                @endcan
+                            @endif
 
                             @if($oc->estado_normalizado === 'autorizada' && !$oc->pagoProveedorActivo && auth()->user()?->can('pagos_proveedores.schedule.access'))
                                 <a href="{{ route('pagos-proveedores.create', ['orden_compra_id' => $oc->id]) }}"
