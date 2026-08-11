@@ -9,10 +9,20 @@ class Area extends Model
 {
     use HasFactory;
 
-      protected $fillable = [
+    protected $fillable = [
         'codigo',
         'nombre',
         'descripcion',
-        'activo'
+        'activo',
     ];
+
+    public function horarios()
+    {
+        return $this->hasMany(AreaHorario::class);
+    }
+
+    public function horarioActivo()
+    {
+        return $this->hasOne(AreaHorario::class)->where('activo', true)->latestOfMany();
+    }
 }

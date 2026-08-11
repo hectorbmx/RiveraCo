@@ -41,7 +41,7 @@ private const TIPOS_OBRA_FOLIO = [
 ];
 
 public function index(){
-      $areas = Area::orderBy('codigo')->orderBy('nombre')->get();
+      $areas = Area::with('horarioActivo')->orderBy('codigo')->orderBy('nombre')->get();
     return view('empresa_config.index',compact('areas'));
 }
 
@@ -64,7 +64,7 @@ public function index(){
             'iva_por_defecto' => 16.00,
             'activa'          => true,
         ]);
-        $areas = Area::orderBy('codigo')->orderBy('nombre')->get();
+        $areas = Area::with('horarioActivo')->orderBy('codigo')->orderBy('nombre')->get();
         app(ListaRayaResolver::class)->syncObrasVivas();
         $listasRaya = NominaListaRaya::query()
             ->with(['area', 'obra', 'almacen'])
