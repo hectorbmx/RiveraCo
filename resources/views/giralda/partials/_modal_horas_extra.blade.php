@@ -1,3 +1,9 @@
+@php
+    $horarioBase = $areaGiralda?->horarioActivo;
+    $horaEntradaBase = $horarioBase?->hora_entrada ? substr((string) $horarioBase->hora_entrada, 0, 5) : null;
+    $horaSalidaBase = $horarioBase?->hora_salida ? substr((string) $horarioBase->hora_salida, 0, 5) : null;
+@endphp
+
 <div x-data="{ open: false }" class="inline-block text-left">
     <button type="button" @click="open = true" class="px-3 py-1.5 rounded bg-[#0B265A] text-white hover:bg-blue-900">
         Dar horas
@@ -17,18 +23,24 @@
                 @csrf
                 <input type="hidden" name="empleado_id" value="{{ $empleado->id_Empleado }}">
 
+                @if($horarioBase)
+                    <div class="rounded bg-blue-50 px-3 py-2 text-xs text-blue-800">
+                        Horario base: {{ $horaEntradaBase ?? '--:--' }} - {{ $horaSalidaBase ?? '--:--' }}
+                    </div>
+                @endif
+
                 <div class="grid grid-cols-3 gap-2">
                     <div>
                         <label class="block text-sm font-medium mb-1">Fecha</label>
-                        <input type="date" name="fecha" value="{{ now()->toDateString() }}" class="w-full border rounded p-2" required>
+                        <input type="date" name="fecha" value="{{ old('fecha', now()->toDateString()) }}" class="w-full border rounded p-2" required>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Inicio</label>
-                        <input type="time" name="hora_inicio" class="w-full border rounded p-2" required>
+                        <input type="time" name="hora_inicio" value="{{ old('hora_inicio', $horaSalidaBase) }}" class="w-full border rounded p-2" required>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Fin</label>
-                        <input type="time" name="hora_fin" class="w-full border rounded p-2" required>
+                        <input type="time" name="hora_fin" value="{{ old('hora_fin', $horaSalidaBase) }}" class="w-full border rounded p-2" required>
                     </div>
                 </div>
 

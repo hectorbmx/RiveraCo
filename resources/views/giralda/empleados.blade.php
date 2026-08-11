@@ -96,7 +96,7 @@
                         <tr>
                             <td class="p-3">
                                 <div class="font-medium text-slate-900">{{ $empleado->nombre_completo }}</div>
-                                <div class="text-xs text-slate-500">ID {{ $empleado->id_Empleado }} · {{ $empleado->areaRef?->nombre ?? 'Giralda' }}</div>
+                                <div class="text-xs text-slate-500">ID {{ $empleado->id_Empleado }} - {{ $empleado->areaRef?->nombre ?? 'Giralda' }}</div>
                             </td>
                             <td class="p-3">{{ $empleado->Puesto ?? '-' }}</td>
                             <td class="p-3">
@@ -108,7 +108,7 @@
                             @if($tab === 'horas_extras')
                                 <td class="p-3 text-right">{{ $empleado->giralda_horas_extras_count ?? 0 }}</td>
                                 <td class="p-3 text-right">
-                                    @include('giralda.partials._modal_horas_extra', ['empleado' => $empleado])
+                                    @include('giralda.partials._modal_horas_extra', ['empleado' => $empleado, 'areaGiralda' => $areaGiralda])
                                 </td>
                             @elseif($tab === 'epp')
                                 <td class="p-3 text-right">

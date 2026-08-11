@@ -69,6 +69,10 @@ class GiraldaController extends Controller
         $this->authorizeAny(['giralda.access']);
 
         $areaGiralda = $this->areaGiralda();
+
+        if ($areaGiralda) {
+            $areaGiralda->loadMissing('horarioActivo');
+        }
         $tab = $request->query('tab', 'listado');
         $tab = in_array($tab, ['listado', 'epp', 'horas_extras'], true) ? $tab : 'listado';
         $desde = $request->query('desde', now()->startOfMonth()->toDateString());
