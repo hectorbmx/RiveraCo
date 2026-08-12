@@ -344,7 +344,9 @@
                                 </button>
                             </div>
                         </form>
-                    </div>                    {{-- TAB: PERMISOS --}}
+                    </div>
+
+                    {{-- TAB: PERMISOS --}}
                     <div x-show="tab === 'permisos'" x-transition>
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
                             <div>
@@ -352,9 +354,9 @@
                                 <p class="text-sm text-gray-500 mt-1">Ajusta permisos directos sin cambiar los permisos del rol.</p>
                             </div>
                             <div class="flex flex-wrap gap-2 text-xs">
-                                <span class="px-2 py-1 rounded bg-blue-100 text-blue-700">{{ count($rolePermissionIds ? []) }} por rol</span>
-                                <span class="px-2 py-1 rounded bg-green-100 text-green-700">{{ count($directPermissionIds ? []) }} agregados</span>
-                                <span class="px-2 py-1 rounded bg-red-100 text-red-700">{{ count($deniedPermissionIds ? []) }} quitados</span>
+                                <span class="px-2 py-1 rounded bg-blue-100 text-blue-700">{{ count($rolePermissionIds ?? []) }} por rol</span>
+                                <span class="px-2 py-1 rounded bg-green-100 text-green-700">{{ count($directPermissionIds ?? []) }} agregados</span>
+                                <span class="px-2 py-1 rounded bg-red-100 text-red-700">{{ count($deniedPermissionIds ?? []) }} quitados</span>
                             </div>
                         </div>
 
@@ -376,10 +378,10 @@
                                     <tbody>
                                         @forelse($permissions as $permission)
                                             @php
-                                                $isFromRole = in_array($permission->id, $rolePermissionIds ? []);
-                                                $isDirect = in_array($permission->id, $directPermissionIds ? []);
-                                                $isDenied = in_array($permission->id, $deniedPermissionIds ? []);
-                                                $isEffective = in_array($permission->id, $effectivePermissionIds ? []);
+                                                $isFromRole = in_array($permission->id, $rolePermissionIds ?? []);
+                                                $isDirect = in_array($permission->id, $directPermissionIds ?? []);
+                                                $isDenied = in_array($permission->id, $deniedPermissionIds ?? []);
+                                                $isEffective = in_array($permission->id, $effectivePermissionIds ?? []);
                                                 $currentEffect = $isDenied ? 'deny' : ($isDirect ? 'grant' : 'inherit');
                                             @endphp
                                             <tr class="hover:bg-gray-50">
@@ -468,14 +470,14 @@
                                             <td class="px-4 py-2 border-b">
                                                 <span class="font-bold text-blue-700">{{ $pila['pila'] }}</span>
                                             </td>
-                                            <td class="px-4 py-2 border-b text-gray-600 font-mono text-xs">{{ $pila['folio'] ? 'S/F' }}</td>
+                                            <td class="px-4 py-2 border-b text-gray-600 font-mono text-xs">{{ $pila['folio'] ?? 'S/F' }}</td>
                                             <td class="px-4 py-2 border-b text-center text-gray-500">
                                                 {{ $pila['fecha'] ? \Carbon\Carbon::parse($pila['fecha'])->format('d/m/Y') : '-' }}
                                             </td>
                                             <td class="px-4 py-2 border-b text-center">
                                                 <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase
-                                                    {{ ($pila['estado'] ? '') === 'cerrada' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700' }}">
-                                                    {{ $pila['estado'] ? 'Abierta' }}
+                                                    {{ ($pila['estado'] ?? '') === 'cerrada' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700' }}">
+                                                    {{ $pila['estado'] ?? 'Abierta' }}
                                                 </span>
                                             </td>
                                         </tr>
