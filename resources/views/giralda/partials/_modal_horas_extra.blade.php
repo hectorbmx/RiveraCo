@@ -4,7 +4,7 @@
     $horaSalidaBase = $horarioBase?->hora_salida ? substr((string) $horarioBase->hora_salida, 0, 5) : null;
 @endphp
 
-<div x-data="{ open: false }" class="inline-block text-left">
+<div x-data="horasExtraModal({ inicio: @js(old('hora_inicio', $horaSalidaBase)), fin: @js(old('hora_fin', $horaSalidaBase)), total: @js(old('total_horas')) })" x-init="recalcular()" class="inline-block text-left">
     <button type="button" @click="open = true" class="px-3 py-1.5 rounded bg-[#0B265A] text-white hover:bg-blue-900">
         Dar horas
     </button>
@@ -22,6 +22,7 @@
             <form method="POST" action="{{ route('giralda.horas-extras.store', ['tab' => 'horas_extras']) }}" class="p-4 space-y-3">
                 @csrf
                 <input type="hidden" name="empleado_id" value="{{ $empleado->id_Empleado }}">
+                <input type="hidden" name="semana" value="{{ $semana ?? now()->startOfWeek()->toDateString() }}">
 
                 @if($horarioBase)
                     <div class="rounded bg-blue-50 px-3 py-2 text-xs text-blue-800">
@@ -36,11 +37,21 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Inicio</label>
-                        <input type="time" name="hora_inicio" value="{{ old('hora_inicio', $horaSalidaBase) }}" class="w-full border rounded p-2" required>
+                        <input type="time" name="hora_inicio" x-model="inicio" @input="activarCalculoAutomatico()" class="w-full border rounded p-2" required>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Fin</label>
-                        <input type="time" name="hora_fin" value="{{ old('hora_fin', $horaSalidaBase) }}" class="w-full border rounded p-2" required>
+                        <input type="time" name="hora_fin" x-model="fin" @input="activarCalculoAutomatico()" class="w-full border rounded p-2" required>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Horas extra</label>
+                        <input type="number" name="total_horas" x-model="total" @input="actualizarFinDesdeTotal()" min="0" step="0.25" class="w-full border rounded p-2" required>
+                    </div>
+                    <div class="md:col-span-2 flex items-end">
+                        <div class="text-xs text-slate-500" x-text="manual ? 'Captura manual' : 'Calculado con inicio y fin'"></div>
                     </div>
                 </div>
 
@@ -73,3 +84,83 @@
         </div>
     </div>
 </div>
+
+@once
+<script>
+function horasExtraModal(defaults) {
+    return {
+        open: false,
+        inicio: defaults.inicio ?? '',
+        fin: defaults.fin ?? '',
+        total: defaults.total ?? '0.00',
+        manual: defaults.total !== null && defaults.total !== undefined && defaults.total !== '',
+
+        activarCalculoAutomatico() {
+            this.manual = false;
+            this.recalcular();
+        },
+
+        recalcular() {
+            if (this.manual || !this.inicio || !this.fin) {
+                return;
+            }
+
+            const inicio = this.minutos(this.inicio);
+            let fin = this.minutos(this.fin);
+
+            if (inicio === null || fin === null) {
+                return;
+            }
+
+            if (fin < inicio) {
+                fin += 24 * 60;
+            }
+
+            this.total = ((fin - inicio) / 60).toFixed(2);
+        },
+
+        actualizarFinDesdeTotal() {
+            this.manual = true;
+
+            const inicio = this.minutos(this.inicio);
+            const total = this.horasCapturadas();
+
+            if (inicio === null || total === null) {
+                return;
+            }
+
+            this.fin = this.formatoHora(inicio + Math.round(total * 60));
+        },
+
+        horasCapturadas() {
+            const total = Number(String(this.total).replace(',', '.'));
+
+            return Number.isFinite(total) && total >= 0 ? total : null;
+        },
+
+        formatoHora(minutosTotales) {
+            const minutosDia = ((minutosTotales % 1440) + 1440) % 1440;
+            const horas = Math.floor(minutosDia / 60);
+            const minutos = minutosDia % 60;
+
+            return `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
+        },
+
+        minutos(valor) {
+            const partes = String(valor).split(':');
+
+            if (partes.length !== 2) {
+                return null;
+            }
+
+            const horas = Number(partes[0]);
+            const minutos = Number(partes[1]);
+
+            return Number.isFinite(horas) && Number.isFinite(minutos)
+                ? (horas * 60) + minutos
+                : null;
+        },
+    };
+}
+</script>
+@endonce

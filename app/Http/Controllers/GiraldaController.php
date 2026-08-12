@@ -75,13 +75,47 @@ class GiraldaController extends Controller
         }
         $tab = $request->query('tab', 'listado');
         $tab = in_array($tab, ['listado', 'epp', 'horas_extras'], true) ? $tab : 'listado';
-        $desde = $request->query('desde', now()->startOfMonth()->toDateString());
-        $hasta = $request->query('hasta', now()->endOfMonth()->toDateString());
+        try {
+            $semanaInicio = $request->query('semana')
+                ? Carbon::parse($request->query('semana'))->startOfWeek(Carbon::MONDAY)
+                : now()->startOfWeek(Carbon::MONDAY);
+        } catch (\Throwable $exception) {
+            $semanaInicio = now()->startOfWeek(Carbon::MONDAY);
+        }
+
+        $semanaFin = $semanaInicio->copy()->endOfWeek(Carbon::SUNDAY);
+        $semana = $semanaInicio->toDateString();
+        $semanaAnterior = $semanaInicio->copy()->subWeek()->toDateString();
+        $semanaSiguiente = $semanaInicio->copy()->addWeek()->toDateString();
+        $semanaActual = now()->startOfWeek(Carbon::MONDAY)->toDateString();
+        $semanaTitulo = $semanaInicio->format('d/m/Y') . ' al ' . $semanaFin->format('d/m/Y');
+
+        $desde = $tab === 'horas_extras'
+            ? $semanaInicio->toDateString()
+            : $request->query('desde', now()->startOfMonth()->toDateString());
+        $hasta = $tab === 'horas_extras'
+            ? $semanaFin->toDateString()
+            : $request->query('hasta', now()->endOfMonth()->toDateString());
         $empleadoId = $request->query('empleado_id');
         $estatus = $request->query('estatus', 'activo');
         $estatus = in_array($estatus, ['activo', 'baja', 'todos'], true) ? $estatus : 'activo';
 
-        $empleados = Empleado::with(['areaRef', 'eppEntregas.entregadoPor', 'eppEntregas.obra', 'eppEntregas.area'])->withCount(['eppEntregas', 'giraldaHorasExtras'])
+        $empleados = Empleado::with(['areaRef', 'eppEntregas.entregadoPor', 'eppEntregas.obra', 'eppEntregas.area'])
+            ->withCount([
+                'eppEntregas',
+                'giraldaHorasExtras' => function ($query) use ($tab, $desde, $hasta) {
+                    $query->when($tab === 'horas_extras', function ($horas) use ($desde, $hasta) {
+                        $horas->whereDate('fecha', '>=', $desde)
+                            ->whereDate('fecha', '<=', $hasta);
+                    });
+                },
+            ])
+            ->withSum([
+                'giraldaHorasExtras as giralda_horas_extras_semana_horas' => function ($query) use ($desde, $hasta) {
+                    $query->whereDate('fecha', '>=', $desde)
+                        ->whereDate('fecha', '<=', $hasta);
+                },
+            ], 'total_horas')
             ->where('Area', $areaGiralda?->id)
             ->when($estatus === 'activo', fn ($q) => $q->where('Estatus', 1))
             ->when($estatus === 'baja', fn ($q) => $q->where('Estatus', 2))
@@ -130,10 +164,56 @@ class GiraldaController extends Controller
             'hasta',
             'empleadoId',
             'estatus',
+            'semana',
+            'semanaAnterior',
+            'semanaSiguiente',
+            'semanaActual',
+            'semanaTitulo',
             'obrasActivas',
             'areas'
         ));
     }
+    public function horasExtrasEmpleado(Request $request, Empleado $empleado)
+    {
+        $this->authorizeAny(['giralda.access']);
+
+        $areaGiralda = $this->areaGiralda();
+        abort_if($areaGiralda && (int) $empleado->Area !== (int) $areaGiralda->id, 422, 'El empleado no pertenece a Giralda.');
+
+        $semanaData = $this->resolverSemana($request->query('semana'));
+        $semanaInicio = $semanaData['inicio'];
+        $semanaFin = $semanaData['fin'];
+
+        $registros = GiraldaHoraExtra::with('autorizadoPor')
+            ->where('empleado_id', $empleado->id_Empleado)
+            ->whereDate('fecha', '>=', $semanaInicio->toDateString())
+            ->whereDate('fecha', '<=', $semanaFin->toDateString())
+            ->orderBy('fecha')
+            ->orderBy('hora_inicio')
+            ->get();
+
+        $totalHoras = (float) $registros->sum('total_horas');
+        $semana = $semanaData['semana'];
+        $semanaAnterior = $semanaData['anterior'];
+        $semanaSiguiente = $semanaData['siguiente'];
+        $semanaActual = $semanaData['actual'];
+        $semanaTitulo = $semanaData['titulo'];
+        $esSemanaActual = $semana === $semanaActual;
+
+        return view('giralda.horas-extras-empleado', compact(
+            'areaGiralda',
+            'empleado',
+            'registros',
+            'totalHoras',
+            'semana',
+            'semanaAnterior',
+            'semanaSiguiente',
+            'semanaActual',
+            'semanaTitulo',
+            'esSemanaActual'
+        ));
+    }
+
     public function storeHoraExtra(Request $request)
     {
         $this->authorizeAny(['giralda.access']);
@@ -145,6 +225,7 @@ class GiraldaController extends Controller
             'fecha' => ['required', 'date'],
             'hora_inicio' => ['required', 'date_format:H:i'],
             'hora_fin' => ['required', 'date_format:H:i'],
+            'total_horas' => ['nullable', 'numeric', 'min:0', 'max:24'],
             'motivo' => ['required', 'string', 'max:255'],
             'responsable_solicita' => ['required', 'string', 'max:150'],
             'responsable_autoriza' => ['nullable', 'string', 'max:150'],
@@ -154,13 +235,19 @@ class GiraldaController extends Controller
         $empleado = Empleado::findOrFail($data['empleado_id']);
         abort_if($areaGiralda && (int) $empleado->Area !== (int) $areaGiralda->id, 422, 'El empleado no pertenece a Giralda.');
 
-        $data['total_horas'] = $this->calcularTotalHoras($data['hora_inicio'], $data['hora_fin']);
+        if ($request->filled('total_horas')) {
+            $data['total_horas'] = round((float) $data['total_horas'], 2);
+            $data['hora_fin'] = $this->calcularHoraFinDesdeTotal($data['hora_inicio'], $data['total_horas']);
+        } else {
+            $data['total_horas'] = $this->calcularTotalHoras($data['hora_inicio'], $data['hora_fin']);
+        }
+
         $data['estado'] = 'pendiente';
 
         GiraldaHoraExtra::create($data);
 
         return redirect()
-            ->route('giralda.empleados', array_merge($request->only(['desde', 'hasta', 'empleado_id']), ['tab' => 'horas_extras']))
+            ->route('giralda.empleados', array_merge($request->only(['desde', 'hasta', 'empleado_id', 'semana', 'estatus']), ['tab' => 'horas_extras']))
             ->with('success', 'Horas extra registradas.');
     }
 
@@ -180,6 +267,88 @@ class GiraldaController extends Controller
         ]);
 
         return back()->with('success', 'Horas extra autorizadas.');
+    }
+
+    public function updateHoraExtra(Request $request, GiraldaHoraExtra $horaExtra)
+    {
+        $this->authorizeAny(['giralda.horas_extras.edit.access']);
+
+        $horaExtra->loadMissing('empleado');
+        $areaGiralda = $this->areaGiralda();
+
+        abort_if(
+            $areaGiralda && (int) $horaExtra->empleado?->Area !== (int) $areaGiralda->id,
+            422,
+            'El registro no pertenece a Giralda.'
+        );
+
+        abort_unless(
+            $horaExtra->fecha?->betweenIncluded(now()->startOfWeek(Carbon::MONDAY), now()->endOfWeek(Carbon::SUNDAY)),
+            422,
+            'Solo se pueden editar registros de la semana actual.'
+        );
+
+        $data = $request->validate([
+            'fecha' => ['required', 'date'],
+            'hora_inicio' => ['required', 'date_format:H:i'],
+            'hora_fin' => ['required', 'date_format:H:i'],
+            'total_horas' => ['required', 'numeric', 'min:0', 'max:24'],
+            'motivo' => ['required', 'string', 'max:255'],
+            'responsable_solicita' => ['required', 'string', 'max:150'],
+            'responsable_autoriza' => ['nullable', 'string', 'max:150'],
+            'observaciones' => ['nullable', 'string'],
+        ]);
+
+        $fecha = Carbon::parse($data['fecha']);
+        abort_unless(
+            $fecha->betweenIncluded(now()->startOfWeek(Carbon::MONDAY), now()->endOfWeek(Carbon::SUNDAY)),
+            422,
+            'La fecha editada debe pertenecer a la semana actual.'
+        );
+
+        $data['total_horas'] = round((float) $data['total_horas'], 2);
+        $data['hora_fin'] = $this->calcularHoraFinDesdeTotal($data['hora_inicio'], $data['total_horas']);
+        $data['estado'] = 'pendiente';
+        $data['autorizado_por'] = null;
+        $data['fecha_autorizacion'] = null;
+
+        $horaExtra->update($data);
+
+        return redirect()
+            ->route('giralda.empleados.horas-extras', [
+                'empleado' => $horaExtra->empleado_id,
+                'semana' => $request->query('semana', now()->startOfWeek(Carbon::MONDAY)->toDateString()),
+            ])
+            ->with('success', 'Registro de horas extras actualizado.');
+    }
+
+    public function destroyHoraExtra(Request $request, GiraldaHoraExtra $horaExtra)
+    {
+        $this->authorizeAny(['giralda.horas_extras.delete.access']);
+
+        $horaExtra->loadMissing('empleado');
+        $areaGiralda = $this->areaGiralda();
+
+        abort_if(
+            $areaGiralda && (int) $horaExtra->empleado?->Area !== (int) $areaGiralda->id,
+            422,
+            'El registro no pertenece a Giralda.'
+        );
+
+        abort_unless(
+            $horaExtra->fecha?->betweenIncluded(now()->startOfWeek(Carbon::MONDAY), now()->endOfWeek(Carbon::SUNDAY)),
+            422,
+            'Solo se pueden eliminar registros de la semana actual.'
+        );
+
+        $empleadoId = $horaExtra->empleado_id;
+        $semana = $request->query('semana', now()->startOfWeek(Carbon::MONDAY)->toDateString());
+
+        $horaExtra->delete();
+
+        return redirect()
+            ->route('giralda.empleados.horas-extras', ['empleado' => $empleadoId, 'semana' => $semana])
+            ->with('success', 'Registro de horas extras eliminado.');
     }
 
     public function printHorasExtras(Request $request)
@@ -235,6 +404,29 @@ class GiraldaController extends Controller
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
+    private function resolverSemana(?string $semana): array
+    {
+        try {
+            $inicio = $semana
+                ? Carbon::parse($semana)->startOfWeek(Carbon::MONDAY)
+                : now()->startOfWeek(Carbon::MONDAY);
+        } catch (\Throwable $exception) {
+            $inicio = now()->startOfWeek(Carbon::MONDAY);
+        }
+
+        $fin = $inicio->copy()->endOfWeek(Carbon::SUNDAY);
+
+        return [
+            'inicio' => $inicio,
+            'fin' => $fin,
+            'semana' => $inicio->toDateString(),
+            'anterior' => $inicio->copy()->subWeek()->toDateString(),
+            'siguiente' => $inicio->copy()->addWeek()->toDateString(),
+            'actual' => now()->startOfWeek(Carbon::MONDAY)->toDateString(),
+            'titulo' => $inicio->format('d/m/Y') . ' al ' . $fin->format('d/m/Y'),
+        ];
+    }
+
     private function horasExtrasFiltradas(?string $desde, ?string $hasta, ?string $empleadoId)
     {
         $areaGiralda = $this->areaGiralda();
@@ -258,12 +450,19 @@ class GiraldaController extends Controller
             ->first();
     }
 
+    private function calcularHoraFinDesdeTotal(string $inicio, float $totalHoras): string
+    {
+        return Carbon::createFromFormat('H:i', $inicio)
+            ->addMinutes((int) round($totalHoras * 60))
+            ->format('H:i');
+    }
+
     private function calcularTotalHoras(string $inicio, string $fin): float
     {
         $inicioAt = Carbon::createFromFormat('H:i', $inicio);
         $finAt = Carbon::createFromFormat('H:i', $fin);
 
-        if ($finAt->lessThanOrEqualTo($inicioAt)) {
+        if ($finAt->lessThan($inicioAt)) {
             $finAt->addDay();
         }
 

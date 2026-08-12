@@ -45,7 +45,13 @@
                     <option value="todos" @selected($estatus === 'todos')>Todos</option>
                 </select>
             </div>
-            <div class="md:col-span-3 flex gap-2">
+            @if($tab === 'horas_extras')
+                <div>
+                    <label class="block text-sm font-medium mb-1">Semana</label>
+                    <input type="date" name="semana" value="{{ $semana }}" class="w-full border rounded p-2">
+                </div>
+            @endif
+            <div class="{{ $tab === 'horas_extras' ? 'md:col-span-2' : 'md:col-span-3' }} flex gap-2">
                 <button class="px-4 py-2 rounded bg-[#0B265A] text-white">Filtrar</button>
                 <a href="{{ route('giralda.empleados', ['tab' => $tab]) }}" class="px-4 py-2 rounded bg-slate-200">Limpiar</a>
             </div>
@@ -64,9 +70,16 @@
                 <p class="text-xs text-slate-500">{{ $empleados->count() }} empleados encontrados</p>
             </div>
             @if($tab === 'horas_extras')
-                <div class="flex gap-2">
-                    <a href="{{ route('giralda.horas-extras.print') }}" target="_blank" class="px-3 py-2 rounded border text-sm">Imprimir historial</a>
-                    <a href="{{ route('giralda.horas-extras.export') }}" class="px-3 py-2 rounded border text-sm">Exportar CSV</a>
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                    <div class="mr-2 text-right">
+                        <div class="text-xs uppercase tracking-wide text-slate-400">Semana seleccionada</div>
+                        <div class="text-sm font-semibold text-[#0B265A]">{{ $semanaTitulo }}</div>
+                    </div>
+                    <a href="{{ route('giralda.empleados', ['tab' => 'horas_extras', 'estatus' => $estatus, 'semana' => $semanaAnterior]) }}" class="px-3 py-2 rounded border text-sm">Anterior</a>
+                    <a href="{{ route('giralda.empleados', ['tab' => 'horas_extras', 'estatus' => $estatus, 'semana' => $semanaActual]) }}" class="px-3 py-2 rounded border text-sm">Semana actual</a>
+                    <a href="{{ route('giralda.empleados', ['tab' => 'horas_extras', 'estatus' => $estatus, 'semana' => $semanaSiguiente]) }}" class="px-3 py-2 rounded border text-sm">Siguiente</a>
+                    <a href="{{ route('giralda.horas-extras.print', ['desde' => $desde, 'hasta' => $hasta, 'empleado_id' => $empleadoId]) }}" target="_blank" class="px-3 py-2 rounded border text-sm">Imprimir semana</a>
+                    <a href="{{ route('giralda.horas-extras.export', ['desde' => $desde, 'hasta' => $hasta, 'empleado_id' => $empleadoId]) }}" class="px-3 py-2 rounded border text-sm">Exportar CSV</a>
                 </div>
             @endif
         </div>
@@ -79,7 +92,7 @@
                         <th class="text-left p-3">Puesto</th>
                         <th class="text-left p-3">Estatus</th>
                         @if($tab === 'horas_extras')
-                            <th class="text-right p-3">Registros HE</th>
+                            <th class="text-right p-3">Horas semana</th>
                             <th class="text-right p-3">Accion</th>
                         @elseif($tab === 'epp')
                             <th class="text-right p-3">Entregas EPP</th>
@@ -106,9 +119,9 @@
                             </td>
 
                             @if($tab === 'horas_extras')
-                                <td class="p-3 text-right">{{ $empleado->giralda_horas_extras_count ?? 0 }}</td>
+                                <td class="p-3 text-right"><a href="{{ route('giralda.empleados.horas-extras', ['empleado' => $empleado->id_Empleado, 'semana' => $semana]) }}" class="inline-flex min-w-16 justify-center rounded bg-blue-50 px-3 py-1.5 font-semibold text-[#0B265A] hover:bg-blue-100">{{ number_format((float) ($empleado->giralda_horas_extras_semana_horas ?? 0), 2) }}</a></td>
                                 <td class="p-3 text-right">
-                                    @include('giralda.partials._modal_horas_extra', ['empleado' => $empleado, 'areaGiralda' => $areaGiralda])
+                                    @include('giralda.partials._modal_horas_extra', ['empleado' => $empleado, 'areaGiralda' => $areaGiralda, 'semana' => $semana])
                                 </td>
                             @elseif($tab === 'epp')
                                 <td class="p-3 text-right">

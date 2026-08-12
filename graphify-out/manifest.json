@@ -3380,8 +3380,8 @@
     "semantic_hash": "62bfb59371c073b4ec966528fdd9c3f9"
   },
   "routes/web.php": {
-    "mtime": 1786378537.1718564,
-    "ast_hash": "f83c94a683dc1c8e75a58441c37571ae",
+    "mtime": 1786557657.802508,
+    "ast_hash": "f37a644a507276110ea81ebe944669d9",
     "semantic_hash": ""
   },
   "tailwind.config.js": {
@@ -4644,19 +4644,14 @@
     "ast_hash": "9069e2ee2f181636d6547b319678c34d",
     "semantic_hash": ""
   },
-  "storage/framework/views/f30fae91b7f964826e30b99a32dff0f5.php": {
-    "mtime": 1786393386.6422691,
-    "ast_hash": "39c0767357d7fda5cb4d6020c14b5654",
-    "semantic_hash": ""
-  },
   "app/Http/Controllers/EmpleadoEppEntregaController.php": {
     "mtime": 1785860888.860559,
     "ast_hash": "6f70308b0c36de733fac94daa8456dc0",
     "semantic_hash": ""
   },
   "app/Http/Controllers/GiraldaController.php": {
-    "mtime": 1785860550.5447185,
-    "ast_hash": "0d5c4301f8f405a6e9e452972445d8ce",
+    "mtime": 1786476138.3764465,
+    "ast_hash": "ffbc835c3fe2555809a9037c452cc203",
     "semantic_hash": ""
   },
   "app/Models/EmpleadoEppEntrega.php": {
@@ -4690,8 +4685,8 @@
     "semantic_hash": ""
   },
   "resources/views/giralda/empleados.blade.php": {
-    "mtime": 1785860550.5527222,
-    "ast_hash": "7f6f38a3c1ba3bd81fec90637d200d11",
+    "mtime": 1786474045.3145118,
+    "ast_hash": "024e924d701e842ac12dc2020fb0b302",
     "semantic_hash": ""
   },
   "resources/views/giralda/horas-extras-print.blade.php": {
@@ -4710,8 +4705,8 @@
     "semantic_hash": ""
   },
   "resources/views/giralda/partials/_modal_horas_extra.blade.php": {
-    "mtime": 1785859751.2648187,
-    "ast_hash": "1d35d54f968961fd63f6ff3fc916fbe2",
+    "mtime": 1786474875.5799618,
+    "ast_hash": "dcb44d94afefba902af42fff26e5886f",
     "semantic_hash": ""
   },
   "database/migrations/2026_08_04_090000_add_obra_area_to_empleado_epp_entregas_table.php": {
@@ -4849,34 +4844,94 @@
     "ast_hash": "f2f855eb7e0ef401cc6eeb3f6858b36a",
     "semantic_hash": ""
   },
+  "app/Models/AreaHorario.php": {
+    "mtime": 1786391692.7619047,
+    "ast_hash": "57186193fd9d531d23078545606b7100",
+    "semantic_hash": ""
+  },
+  "resources/views/giralda/horas-extras-empleado.blade.php": {
+    "mtime": 1786476109.4637425,
+    "ast_hash": "e23a70de4b5862c37bdbf9178fc068e3",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f30fae91b7f964826e30b99a32dff0f5.php": {
+    "mtime": 1786476176.058805,
+    "ast_hash": "39c0767357d7fda5cb4d6020c14b5654",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_11_090000_add_giralda_horas_extras_delete_permission.php": {
+    "mtime": 1786475312.909981,
+    "ast_hash": "f4397ebf915f770c09c7a2a7cd6a7edc",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_11_091000_add_giralda_horas_extras_edit_permission.php": {
+    "mtime": 1786475947.7128549,
+    "ast_hash": "3efb3d657667c4e5f03607adf7742ec6",
+    "semantic_hash": ""
+  },
   "storage/framework/views/a6cc69d0243ac14d0f695b5e3c29ba47.php": {
-    "mtime": 1786393386.4716234,
+    "mtime": 1786476175.8997846,
     "ast_hash": "349f8c2b191e327504c54a7cad91ee4f",
     "semantic_hash": ""
   },
   "storage/framework/views/bd8bcc87553bf7a614cd75508306a304.php": {
-    "mtime": 1786393384.493776,
+    "mtime": 1786476174.0852299,
     "ast_hash": "c35a54c8354a754d03a762db9dab34f6",
     "semantic_hash": ""
   },
   "storage/framework/views/cd43adc221585e8e0f51b00cc182689c.php": {
-    "mtime": 1786393386.476621,
+    "mtime": 1786476175.9047832,
     "ast_hash": "002ba5ad45f25e3bb38bed65915216cb",
     "semantic_hash": ""
   },
   "storage/framework/views/fdef57f438fe631d7f2b855041ee1e86.php": {
-    "mtime": 1786393385.891833,
+    "mtime": 1786476175.380864,
     "ast_hash": "4ae6aa9fdd58b507bf07ac78927656b5",
     "semantic_hash": ""
   },
   "storage/framework/views/feac7e9d859789ab087db5189081da25.php": {
-    "mtime": 1786393385.8766332,
+    "mtime": 1786476175.3605797,
     "ast_hash": "ca870d9b1b3577b5bcacea00212b6b2b",
     "semantic_hash": ""
   },
-  "app/Models/AreaHorario.php": {
-    "mtime": 1786391692.7619047,
-    "ast_hash": "57186193fd9d531d23078545606b7100",
+  "bootstrap/cache/config.php": {
+    "mtime": 1786557674.270503,
+    "ast_hash": "393d1c2f43580b718d30bb46a131c3fd",
+    "semantic_hash": ""
+  },
+  "bootstrap/cache/routes-v7.php": {
+    "mtime": 1786557674.9397225,
+    "ast_hash": "0f50caa556cc8fcb39bf3e3ae14eca99",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/0fa42f7ca363c84d8c13d2f1d42fff20.php": {
+    "mtime": 1786478437.3787804,
+    "ast_hash": "606b467310d28bad31cc811c77c364a9",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/33a20a6d632ad312fad8cdd4111df02b.php": {
+    "mtime": 1786478460.7469387,
+    "ast_hash": "4c2b2401d3763eb2c1c08f6b6b377c8b",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/4c7d182fc9f693ff99ac057e5e7296bc.php": {
+    "mtime": 1786478448.4721322,
+    "ast_hash": "15e15028971f0efa2594921bc4f82055",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/4d9cc8c0b59d26e345d12a370f815152.php": {
+    "mtime": 1786478456.738803,
+    "ast_hash": "3d4ceb855207afd52f310319c1da5e40",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/92699fb55b9efb166cdcf4169351f6ec.php": {
+    "mtime": 1786478437.803284,
+    "ast_hash": "80ab552d32370683c6a337e56e6bd7e7",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f61d8c7856bb47ccd63bcd85a4c55d1f.php": {
+    "mtime": 1786478448.761859,
+    "ast_hash": "c3e4731a97138d0f5b59365f8a3e2883",
     "semantic_hash": ""
   }
 }

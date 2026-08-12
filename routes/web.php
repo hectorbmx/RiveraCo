@@ -155,7 +155,7 @@ Route::middleware(['auth', 'verified'])
         */
         Route::get('/estadisticas', [SatCfdiEstadisticaController::class, 'index'])->name('estadisticas');
         Route::get('/estadisticas/data', [SatCfdiEstadisticaController::class, 'data'])->name('estadisticas.data');
-        Route::get('/estadisticas/{empresa}', [SatCfdiEstadisticaController::class, 'index'])->name('estadisticas');
+        Route::get('/estadisticas/{empresa}', [SatCfdiEstadisticaController::class, 'index'])->name('estadisticas.empresa');
         Route::get('/estadisticas/{empresa}/detalle-mes', [SatCfdiEstadisticaController::class, 'detalleMes'])->name('estadisticas.detalleMes');
 
 
@@ -608,8 +608,11 @@ Route::middleware('auth','verified')->group(function () {
     Route::prefix('giralda')->name('giralda.')->group(function () {
         Route::get('/', [GiraldaController::class, 'index'])->name('index');
         Route::get('/empleados', [GiraldaController::class, 'empleados'])->name('empleados');
+        Route::get('/empleados/{empleado}/horas-extras', [GiraldaController::class, 'horasExtrasEmpleado'])->name('empleados.horas-extras');
         Route::post('/horas-extras', [GiraldaController::class, 'storeHoraExtra'])->name('horas-extras.store');
         Route::post('/horas-extras/{horaExtra}/autorizar', [GiraldaController::class, 'autorizarHoraExtra'])->name('horas-extras.autorizar');
+        Route::match(['put', 'patch'], '/horas-extras/{horaExtra}', [GiraldaController::class, 'updateHoraExtra'])->name('horas-extras.update');
+        Route::delete('/horas-extras/{horaExtra}', [GiraldaController::class, 'destroyHoraExtra'])->name('horas-extras.destroy');
         Route::get('/horas-extras/imprimir', [GiraldaController::class, 'printHorasExtras'])->name('horas-extras.print');
         Route::get('/horas-extras/exportar', [GiraldaController::class, 'exportHorasExtras'])->name('horas-extras.export');
     });
