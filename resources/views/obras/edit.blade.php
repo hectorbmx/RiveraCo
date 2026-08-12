@@ -5044,7 +5044,15 @@ function relacionFacturasModal() {
                         <option value="0">IVA 0%</option>
                     </select>
                     <input type="hidden" name="iva" :value="Number(borradorForm.iva || 0).toFixed(2)">
-                    <p class="mt-1 text-[11px] text-slate-500" x-text="'Importe: ' + money(borradorForm.iva)"></p>
+                </div>
+
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">IVA generado</label>
+                    <input type="text"
+                           readonly
+                           tabindex="-1"
+                           :value="money(borradorForm.iva)"
+                           class="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-2xl font-bold text-[#0B265A] shadow-sm focus:border-amber-300 focus:ring-amber-300">
                 </div>
 
                 <div>
@@ -5080,9 +5088,30 @@ function relacionFacturasModal() {
                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
                 </div>
 
-                <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                    <div class="text-[11px] font-semibold text-slate-500 uppercase">Total automatico</div>
-                    <div class="text-lg font-semibold text-slate-900" x-text="money(totalBorrador())"></div>
+                <div class="md:col-span-3 rounded-xl border border-blue-100 bg-blue-50/80 px-5 py-4 shadow-sm">
+                    <div class="mb-3 text-[11px] font-black uppercase tracking-widest text-[#0B265A]">DESGLOSE</div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center justify-between gap-4">
+                            <span class="font-semibold text-slate-600">SUB-TOTAL</span>
+                            <span class="font-bold text-slate-900" x-text="money(borradorForm.subtotal)"></span>
+                        </div>
+                        <div class="flex items-center justify-between gap-4">
+                            <span class="font-semibold text-slate-600">IVA</span>
+                            <span class="font-bold text-slate-900" x-text="money(borradorForm.iva)"></span>
+                        </div>
+                        <div x-show="Number(borradorForm.retenciones || 0) > 0" x-cloak class="flex items-center justify-between gap-4 text-red-700">
+                            <span class="font-semibold">RETENCIONES</span>
+                            <span class="font-bold" x-text="'- ' + money(borradorForm.retenciones)"></span>
+                        </div>
+                        <div x-show="Number(borradorForm.descuentos || 0) > 0" x-cloak class="flex items-center justify-between gap-4 text-red-700">
+                            <span class="font-semibold">DESCUENTOS</span>
+                            <span class="font-bold" x-text="'- ' + money(borradorForm.descuentos)"></span>
+                        </div>
+                        <div class="border-t border-blue-200 pt-3 flex items-center justify-between gap-4">
+                            <span class="text-base font-black text-[#0B265A]">TOTAL</span>
+                            <span class="text-2xl font-black text-[#0B265A]" x-text="money(totalBorrador())"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
