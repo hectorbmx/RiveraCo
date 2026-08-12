@@ -24,7 +24,15 @@
     <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
       <h3 class="mb-4 text-sm font-semibold text-slate-700">Subir nuevo documento</h3>
 
-      <form method="POST" action="{{ route('clientes.documentos.store', $cliente) }}" enctype="multipart/form-data" class="space-y-4">
+      <div id="clienteDocumentoLoadingOverlay" class="hidden fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900/60 px-4 backdrop-blur-sm">
+        <div class="w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-2xl">
+          <div class="mx-auto mb-4 h-14 w-14 animate-spin rounded-full border-4 border-slate-200 border-t-[#0B265A]"></div>
+          <h3 class="text-base font-semibold text-slate-900">Subiendo documento</h3>
+          <p class="mt-2 text-sm text-slate-500">Estamos procesando el archivo. No cierres esta ventana.</p>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ route('clientes.documentos.store', $cliente) }}" enctype="multipart/form-data" class="space-y-4" onsubmit="const overlay = document.getElementById('clienteDocumentoLoadingOverlay'); const button = this.querySelector('button[type=submit]'); if (overlay) overlay.classList.remove('hidden'); if (button) { button.disabled = true; button.textContent = 'Subiendo...'; }">
         @csrf
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -86,7 +94,7 @@
         </div>
 
         <div class="pt-2">
-          <button type="submit" class="inline-flex items-center rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-medium text-white hover:bg-[#091f47]">
+          <button type="submit" class="inline-flex items-center rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-medium text-white hover:bg-[#091f47] disabled:cursor-not-allowed disabled:opacity-60">
             Guardar documento
           </button>
         </div>

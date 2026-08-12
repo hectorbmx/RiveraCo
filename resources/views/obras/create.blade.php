@@ -23,7 +23,8 @@
             </div>
         @endif
 
-        <form action="{{ route('obras.store') }}" method="POST" class="space-y-5">
+        <form action="{{ route('obras.store') }}" method="POST" class="space-y-5"
+              @submit="if (guardandoObra) { $event.preventDefault(); return; } guardandoObra = true;">
             @csrf
 
             {{-- Cliente y clave --}}
@@ -284,13 +285,32 @@
                 </a>
 
                 <button type="submit"
+                        :disabled="guardandoObra"
                         class="px-5 py-2 rounded-xl bg-[#FFC107] text-[#0B265A] text-sm font-semibold
-                               shadow hover:bg-[#e0ac05]">
-                    Guardar Obra
+                               shadow hover:bg-[#e0ac05] disabled:cursor-not-allowed disabled:opacity-60">
+                    <span x-show="!guardandoObra">Guardar Obra</span>
+                    <span x-show="guardandoObra" x-cloak>Guardando...</span>
                 </button>
             </div>
 
         </form>
+    </div>
+
+    <div x-show="guardandoObra"
+         x-cloak
+         class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 px-4"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="modal_guardando_obra_titulo">
+        <div class="w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-2xl">
+            <div class="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-[#FFC107]"></div>
+            <h2 id="modal_guardando_obra_titulo" class="text-base font-semibold text-slate-900">
+                Guardando obra
+            </h2>
+            <p class="mt-2 text-sm text-slate-500">
+                Estamos creando la obra. No cierres esta ventana.
+            </p>
+        </div>
     </div>
 </div>
 
@@ -335,6 +355,7 @@ function obraCreateForm() {
         claveObra: @json((string) old('clave_obra', '')),
         folioMensaje: '',
         folioCargando: false,
+        guardandoObra: false,
 
         init() {
             const cliente = this.clientes.find((item) => item.id === this.clienteId);
