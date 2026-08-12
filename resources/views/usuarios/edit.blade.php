@@ -22,7 +22,7 @@
                         </span>
                     @else
                         <span class="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">
-                            Sin vÃ­nculo
+                            Sin vínculo
                         </span>
                     @endif
                 </div>
@@ -35,7 +35,7 @@
                             <span class="font-medium">{{ $empleado->Nombre }} {{ $empleado->Apellidos }}</span>
                         </div>
                         <div><span class="text-gray-500">Email:</span> <span class="font-medium">{{ $empleado->Email }}</span></div>
-                        <div><span class="text-gray-500">Ãrea:</span> <span class="font-medium">{{ $empleado->Area }}</span></div>
+                        <div><span class="text-gray-500">Área:</span> <span class="font-medium">{{ $empleado->Area }}</span></div>
                         <div><span class="text-gray-500">Puesto:</span> <span class="font-medium">{{ $empleado->Puesto }}</span></div>
                     </div>
                 @else
@@ -73,18 +73,18 @@
                     <hr class="my-4">
 
                     <div>
-                        <label class="block text-sm font-medium mb-1">Nueva contraseÃ±a (opcional)</label>
+                        <label class="block text-sm font-medium mb-1">Nueva contraseña (opcional)</label>
                         <input type="password" name="password"
                                class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                                autocomplete="new-password">
                         @error('password')
                             <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                         @enderror
-                        <p class="text-xs text-gray-500 mt-1">DÃ©jalo vacÃ­o para mantener la contraseÃ±a actual.</p>
+                        <p class="text-xs text-gray-500 mt-1">Déjalo vacío para mantener la contraseña actual.</p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-1">Confirmar nueva contraseÃ±a</label>
+                        <label class="block text-sm font-medium mb-1">Confirmar nueva contraseña</label>
                         <input type="password" name="password_confirmation"
                                class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                                autocomplete="new-password">
@@ -114,22 +114,22 @@
                     <button @click="tab = 'autorizaciones'"
                             :class="tab === 'autorizaciones' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
                             class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
-                        ðŸ›¡ï¸ Autorizaciones
+                        Autorizaciones
                     </button>
                     <button @click="tab = 'compras'"
                             :class="tab === 'compras' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
                             class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
-                        ðŸ›’ Compras y Gastos
+                        Compras y Gastos
                     </button>
                     <button @click="tab = 'operaciones'"
                             :class="tab === 'operaciones' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
                             class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
-                        ðŸ—ï¸ Operaciones
+                        Operaciones
                     </button>
                     <button @click="tab = 'bitacora'"
                             :class="tab === 'bitacora' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
                             class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
-                        ðŸ“ BitÃ¡cora
+                        Bitácora
                     </button>
                     <button @click="tab = 'permisos'"
                             :class="tab === 'permisos' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
@@ -144,7 +144,7 @@
                     <button @click="tab = 'pilas'"
                             :class="tab === 'pilas' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
                             class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
-                        ðŸ—ï¸ Pilas (Comisiones)
+                        Pilas (Comisiones)
                     </button>
                 </div>
 
@@ -153,7 +153,7 @@
 
                     {{-- TAB: AUTORIZACIONES --}}
                     <div x-show="tab === 'autorizaciones'" x-transition>
-                        <h3 class="font-semibold text-gray-800 mb-4">Ãšltimas autorizaciones registradas</h3>
+                        <h3 class="font-semibold text-gray-800 mb-4">Últimas autorizaciones registradas</h3>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left border">
                                 <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
@@ -233,7 +233,7 @@
                                 <div class="flex items-start gap-3 p-3 border rounded hover:bg-gray-50 transition shadow-sm">
                                     <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center
                                         {{ $item['tipo'] === 'Inventario' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600' }}">
-                                        {!! $item['tipo'] === 'Inventario' ? 'ðŸ“¦' : 'ðŸ‘¥' !!}
+                                        {{ $item['tipo'] === 'Inventario' ? 'INV' : 'OP' }}
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <div class="flex justify-between items-start">
@@ -252,7 +252,7 @@
                         </div>
                     </div>
 
-                    {{-- TAB: BITÃCORA --}}
+                    {{-- TAB: BITÁCORA --}}
                     <div x-show="tab === 'bitacora'" x-transition>
                         <h3 class="font-semibold text-gray-800 mb-4">Notas y actividad registrada por el usuario</h3>
                         <div class="space-y-4">
@@ -269,7 +269,7 @@
                                     <p class="text-sm text-gray-700 leading-relaxed">{{ $item->contenido }}</p>
                                 </div>
                             @empty
-                                <div class="py-8 text-center text-gray-400 italic border rounded">El usuario no ha registrado notas o actividad reciente en la bitÃ¡cora.</div>
+                                <div class="py-8 text-center text-gray-400 italic border rounded">El usuario no ha registrado notas o actividad reciente en la bitácora.</div>
                             @endforelse
                         </div>
                     </div>
