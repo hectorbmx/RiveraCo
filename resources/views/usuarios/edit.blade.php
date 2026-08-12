@@ -3,11 +3,11 @@
 @section('content')
 <div class="p-6">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {{-- COLUMNA IZQUIERDA: DATOS DEL USUARIO --}}
         <div class="lg:col-span-1 space-y-6">
             <h1 class="text-xl font-semibold mb-4">Editar usuario App</h1>
-            
+
             @php
                 $empleado = $usuario->usuarioApp?->empleado;
             @endphp
@@ -22,7 +22,7 @@
                         </span>
                     @else
                         <span class="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">
-                            Sin vínculo
+                            Sin vÃ­nculo
                         </span>
                     @endif
                 </div>
@@ -35,7 +35,7 @@
                             <span class="font-medium">{{ $empleado->Nombre }} {{ $empleado->Apellidos }}</span>
                         </div>
                         <div><span class="text-gray-500">Email:</span> <span class="font-medium">{{ $empleado->Email }}</span></div>
-                        <div><span class="text-gray-500">Área:</span> <span class="font-medium">{{ $empleado->Area }}</span></div>
+                        <div><span class="text-gray-500">Ãrea:</span> <span class="font-medium">{{ $empleado->Area }}</span></div>
                         <div><span class="text-gray-500">Puesto:</span> <span class="font-medium">{{ $empleado->Puesto }}</span></div>
                     </div>
                 @else
@@ -73,18 +73,18 @@
                     <hr class="my-4">
 
                     <div>
-                        <label class="block text-sm font-medium mb-1">Nueva contraseña (opcional)</label>
+                        <label class="block text-sm font-medium mb-1">Nueva contraseÃ±a (opcional)</label>
                         <input type="password" name="password"
                                class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                                autocomplete="new-password">
                         @error('password')
                             <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                         @enderror
-                        <p class="text-xs text-gray-500 mt-1">Déjalo vacío para mantener la contraseña actual.</p>
+                        <p class="text-xs text-gray-500 mt-1">DÃ©jalo vacÃ­o para mantener la contraseÃ±a actual.</p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-1">Confirmar nueva contraseña</label>
+                        <label class="block text-sm font-medium mb-1">Confirmar nueva contraseÃ±a</label>
                         <input type="password" name="password_confirmation"
                                class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                                autocomplete="new-password">
@@ -106,49 +106,54 @@
         </div>
 
         {{-- COLUMNA DERECHA: HISTORIAL DE MOVIMIENTOS --}}
-        <div class="lg:col-span-2" x-data="{ tab: @js(in_array(request('tab'), ['autorizaciones', 'compras', 'operaciones', 'bitacora', 'permisos', 'pilas']) ? request('tab') : 'autorizaciones') }">
+        <div class="lg:col-span-2" x-data="{ tab: @js(in_array(request('tab'), ['autorizaciones', 'compras', 'operaciones', 'bitacora', 'permisos', 'pilas', 'firmas']) ? request('tab') : 'autorizaciones') }">
             <div class="bg-white rounded-lg shadow-sm border min-h-[600px] flex flex-col">
-                
+
                 {{-- TABS NAVIGATION --}}
                 <div class="flex border-b overflow-x-auto">
-                    <button @click="tab = 'autorizaciones'" 
+                    <button @click="tab = 'autorizaciones'"
                             :class="tab === 'autorizaciones' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
                             class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
-                        🛡️ Autorizaciones
+                        ðŸ›¡ï¸ Autorizaciones
                     </button>
-                    <button @click="tab = 'compras'" 
+                    <button @click="tab = 'compras'"
                             :class="tab === 'compras' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
                             class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
-                        🛒 Compras y Gastos
+                        ðŸ›’ Compras y Gastos
                     </button>
-                    <button @click="tab = 'operaciones'" 
+                    <button @click="tab = 'operaciones'"
                             :class="tab === 'operaciones' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
                             class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
-                        🏗️ Operaciones
+                        ðŸ—ï¸ Operaciones
                     </button>
-                    <button @click="tab = 'bitacora'" 
+                    <button @click="tab = 'bitacora'"
                             :class="tab === 'bitacora' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
                             class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
-                        📝 Bitácora
+                        ðŸ“ BitÃ¡cora
                     </button>
-                    <button @click="tab = 'permisos'" 
+                    <button @click="tab = 'permisos'"
                             :class="tab === 'permisos' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
                             class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
                         Permisos
                     </button>
-                    <button @click="tab = 'pilas'" 
+                    <button @click="tab = 'firmas'"
+                            :class="tab === 'firmas' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                            class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
+                        Firmas impresas
+                    </button>
+                    <button @click="tab = 'pilas'"
                             :class="tab === 'pilas' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
                             class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
-                        🏗️ Pilas (Comisiones)
+                        ðŸ—ï¸ Pilas (Comisiones)
                     </button>
                 </div>
 
                 {{-- TABS CONTENT --}}
                 <div class="p-6 flex-1">
-                    
+
                     {{-- TAB: AUTORIZACIONES --}}
                     <div x-show="tab === 'autorizaciones'" x-transition>
-                        <h3 class="font-semibold text-gray-800 mb-4">Últimas autorizaciones registradas</h3>
+                        <h3 class="font-semibold text-gray-800 mb-4">Ãšltimas autorizaciones registradas</h3>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left border">
                                 <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
@@ -226,9 +231,9 @@
                         <div class="space-y-3">
                             @forelse($operaciones->sortByDesc('fecha') as $item)
                                 <div class="flex items-start gap-3 p-3 border rounded hover:bg-gray-50 transition shadow-sm">
-                                    <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center 
+                                    <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center
                                         {{ $item['tipo'] === 'Inventario' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600' }}">
-                                        {!! $item['tipo'] === 'Inventario' ? '📦' : '👥' !!}
+                                        {!! $item['tipo'] === 'Inventario' ? 'ðŸ“¦' : 'ðŸ‘¥' !!}
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <div class="flex justify-between items-start">
@@ -238,7 +243,7 @@
                                             </span>
                                         </div>
                                         <p class="text-xs text-gray-500">{{ $item['detalle'] }}</p>
-                                        <p class="text-[10px] text-blue-500 font-medium mt-1">{{ $item['tipo'] }} — {{ \Carbon\Carbon::parse($item['fecha'])->format('d/m/Y H:i') }}</p>
+                                        <p class="text-[10px] text-blue-500 font-medium mt-1">{{ $item['tipo'] }} â€” {{ \Carbon\Carbon::parse($item['fecha'])->format('d/m/Y H:i') }}</p>
                                     </div>
                                 </div>
                             @empty
@@ -247,7 +252,7 @@
                         </div>
                     </div>
 
-                    {{-- TAB: BITÁCORA --}}
+                    {{-- TAB: BITÃCORA --}}
                     <div x-show="tab === 'bitacora'" x-transition>
                         <h3 class="font-semibold text-gray-800 mb-4">Notas y actividad registrada por el usuario</h3>
                         <div class="space-y-4">
@@ -264,11 +269,82 @@
                                     <p class="text-sm text-gray-700 leading-relaxed">{{ $item->contenido }}</p>
                                 </div>
                             @empty
-                                <div class="py-8 text-center text-gray-400 italic border rounded">El usuario no ha registrado notas o actividad reciente en la bitácora.</div>
+                                <div class="py-8 text-center text-gray-400 italic border rounded">El usuario no ha registrado notas o actividad reciente en la bitÃ¡cora.</div>
                             @endforelse
                         </div>
                     </div>
-                    {{-- TAB: PERMISOS --}}
+                    {{-- TAB: FIRMAS IMPRESAS --}}
+                    <div x-show="tab === 'firmas'" x-transition>
+                        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
+                            <div>
+                                <h3 class="font-semibold text-gray-800">Firmas impresas</h3>
+                                <p class="text-sm text-gray-500 mt-1">Configura los nombres fijos que se imprimen en VoBo y ENTERADO de ordenes de compra.</p>
+                            </div>
+                        </div>
+                        <form method="POST" action="{{ route('usuarios.firmas-impresas.sync', $usuario->id) }}" class="space-y-4">
+                            @csrf
+                            @method('PUT')
+                            @php
+                                $firmaVobo = $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_VOBO);
+                                $firmaEnterado = $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_ENTERADO);
+                                $firmasOrdenCompra = [
+                                    \App\Models\DocumentoFirmante::CAMPO_VOBO => [
+                                        'label' => 'VoBo',
+                                        'firma' => $firmaVobo,
+                                    ],
+                                    \App\Models\DocumentoFirmante::CAMPO_ENTERADO => [
+                                        'label' => 'ENTERADO',
+                                        'firma' => $firmaEnterado,
+                                    ],
+                                ];
+                            @endphp
+                            <div class="border rounded overflow-hidden">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                                        <tr>
+                                            <th class="px-4 py-3 border-b">Campo</th>
+                                            <th class="px-4 py-3 border-b">Asignado actual</th>
+                                            <th class="px-4 py-3 border-b text-center">Usar este usuario</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($firmasOrdenCompra as $campo => $config)
+                                            @php
+                                                $firma = $config['firma'];
+                                                $asignadoAUsuario = (int) ($firma?->user_id ?? 0) === (int) $usuario->id;
+                                            @endphp
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-3 border-b font-semibold text-gray-800">
+                                                    {{ $config['label'] }}
+                                                </td>
+                                                <td class="px-4 py-3 border-b text-gray-600">
+                                                    {{ $firma?->user?->name ?? 'Sin asignar' }}
+                                                </td>
+                                                <td class="px-4 py-3 border-b text-center">
+                                                    <input type="hidden" name="firmas_impresas[{{ $campo }}]" value="0">
+                                                    <label class="inline-flex items-center justify-center gap-2 cursor-pointer">
+                                                        <input type="checkbox"
+                                                               name="firmas_impresas[{{ $campo }}]"
+                                                               value="1"
+                                                               class="text-blue-600 focus:ring-blue-500 rounded"
+                                                               {{ $asignadoAUsuario ? 'checked' : '' }}>
+                                                        <span class="text-xs text-gray-500">
+                                                            {{ $asignadoAUsuario ? 'Asignado' : 'Asignar' }}
+                                                        </span>
+                                                    </label>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="flex justify-end pt-2">
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition shadow-sm">
+                                    Guardar firmas
+                                </button>
+                            </div>
+                        </form>
+                    </div>                    {{-- TAB: PERMISOS --}}
                     <div x-show="tab === 'permisos'" x-transition>
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
                             <div>
@@ -276,9 +352,9 @@
                                 <p class="text-sm text-gray-500 mt-1">Ajusta permisos directos sin cambiar los permisos del rol.</p>
                             </div>
                             <div class="flex flex-wrap gap-2 text-xs">
-                                <span class="px-2 py-1 rounded bg-blue-100 text-blue-700">{{ count($rolePermissionIds ?? []) }} por rol</span>
-                                <span class="px-2 py-1 rounded bg-green-100 text-green-700">{{ count($directPermissionIds ?? []) }} agregados</span>
-                                <span class="px-2 py-1 rounded bg-red-100 text-red-700">{{ count($deniedPermissionIds ?? []) }} quitados</span>
+                                <span class="px-2 py-1 rounded bg-blue-100 text-blue-700">{{ count($rolePermissionIds ? []) }} por rol</span>
+                                <span class="px-2 py-1 rounded bg-green-100 text-green-700">{{ count($directPermissionIds ? []) }} agregados</span>
+                                <span class="px-2 py-1 rounded bg-red-100 text-red-700">{{ count($deniedPermissionIds ? []) }} quitados</span>
                             </div>
                         </div>
 
@@ -300,10 +376,10 @@
                                     <tbody>
                                         @forelse($permissions as $permission)
                                             @php
-                                                $isFromRole = in_array($permission->id, $rolePermissionIds ?? []);
-                                                $isDirect = in_array($permission->id, $directPermissionIds ?? []);
-                                                $isDenied = in_array($permission->id, $deniedPermissionIds ?? []);
-                                                $isEffective = in_array($permission->id, $effectivePermissionIds ?? []);
+                                                $isFromRole = in_array($permission->id, $rolePermissionIds ? []);
+                                                $isDirect = in_array($permission->id, $directPermissionIds ? []);
+                                                $isDenied = in_array($permission->id, $deniedPermissionIds ? []);
+                                                $isEffective = in_array($permission->id, $effectivePermissionIds ? []);
                                                 $currentEffect = $isDenied ? 'deny' : ($isDirect ? 'grant' : 'inherit');
                                             @endphp
                                             <tr class="hover:bg-gray-50">
@@ -392,14 +468,14 @@
                                             <td class="px-4 py-2 border-b">
                                                 <span class="font-bold text-blue-700">{{ $pila['pila'] }}</span>
                                             </td>
-                                            <td class="px-4 py-2 border-b text-gray-600 font-mono text-xs">{{ $pila['folio'] ?? 'S/F' }}</td>
+                                            <td class="px-4 py-2 border-b text-gray-600 font-mono text-xs">{{ $pila['folio'] ? 'S/F' }}</td>
                                             <td class="px-4 py-2 border-b text-center text-gray-500">
                                                 {{ $pila['fecha'] ? \Carbon\Carbon::parse($pila['fecha'])->format('d/m/Y') : '-' }}
                                             </td>
                                             <td class="px-4 py-2 border-b text-center">
                                                 <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase
-                                                    {{ ($pila['estado'] ?? '') === 'cerrada' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700' }}">
-                                                    {{ $pila['estado'] ?? 'Abierta' }}
+                                                    {{ ($pila['estado'] ? '') === 'cerrada' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700' }}">
+                                                    {{ $pila['estado'] ? 'Abierta' }}
                                                 </span>
                                             </td>
                                         </tr>
@@ -420,4 +496,3 @@
     </div>
 </div>
 @endsection
-

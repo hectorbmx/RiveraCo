@@ -223,7 +223,7 @@ Route::middleware(['auth', 'verified'])
             Route::get('/pagos/{pago}/pdf', [SatFacturaPagoController::class, 'pdf'])->name('pagos.pdf');
             Route::post('/pagos/{pago}/enviar', [SatFacturaPagoController::class, 'enviar'])->name('pagos.enviar');
             Route::post('/pagos/{pago}/cancelar', [SatFacturaPagoController::class, 'cancelar'])->name('pagos.cancelar');
-            
+
 
         });
 
@@ -257,7 +257,7 @@ Route::middleware(['auth', 'verified'])
            Route::get('/{documentRequest}/pdf', [SatEmpresaController::class, 'downloadPdf'])->name('pdf');
            Route::patch('/{documentRequest}/cancel', [SatEmpresaController::class, 'cancelDocumentRequest'])->name('cancel');
            Route::delete('/{documentRequest}', [SatEmpresaController::class, 'destroyDocumentRequest']) ->name('destroy');
-                
+
         });
 
         /*
@@ -307,6 +307,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/{usuario}/edit', [UsuarioController::class, 'edit'])->name('edit');
         Route::put('/{usuario}', [UsuarioController::class, 'update'])->name('update');
         Route::put('/{usuario}/permisos', [UsuarioController::class, 'syncPermissions'])->name('permissions.sync');
+        Route::put('/{usuario}/firmas-impresas', [UsuarioController::class, 'syncFirmasImpresas'])->name('firmas-impresas.sync');
 
     });
     //rutas nomina
@@ -320,14 +321,14 @@ Route::middleware(['auth','verified'])
         Route::post('promedios/empleados/{empleado}/recalcular', [NominaPromedioController::class, 'recalcular'])->name('promedios.empleados.recalcular');
 
         Route::post('corridas',[NominaCorridaController::class, 'store'])->name('corridas.store');
-        
+
         Route::get('corridas/{corrida}',[NominaCorridaController::class, 'show'])->name('corridas.show');
         Route::post('corridas/{corrida}/recibos/generar',[NominaCorridaController::class, 'generarRecibos'])->name('corridas.recibos.generar');
         Route::post('corridas/{corrida}/recibos/guardar',[NominaCorridaController::class, 'guardarRecibos'])->name('corridas.recibos.guardar');
         Route::post('corridas/{corrida}/recibos/{recibo}/autosave',[NominaCorridaController::class, 'autosave'])->name('corridas.recibos.autosave');
         Route::delete('corridas/{corrida}/recibos',[NominaCorridaController::class, 'destroyRecibos'])->name('corridas.recibos.destroy');
         Route::delete('corridas/{corrida}',[NominaCorridaController::class, 'destroy'])->name('corridas.destroy');
-        
+
         Route::post('corridas/{corrida}/cerrar', [NominaCorridaController::class, 'cerrar'])->name('corridas.cerrar');
         Route::post('corridas/{corrida}/pagar',  [NominaCorridaController::class, 'marcarPagada'])->name('corridas.pagar');
         Route::post('corridas/{corrida}/reabrir',[NominaCorridaController::class, 'reabrir'])->name('corridas.reabrir');
@@ -338,9 +339,9 @@ Route::middleware('auth','verified')->group(function () {
 
 
     Route::prefix('factura')->group(function(){
-        
+
             Route::get('facturas',[FacturaController::class,'index'])->name('facturas.index');
-            
+
     });
 
     Route::prefix('presupuesto')->group(function(){
@@ -375,7 +376,7 @@ Route::middleware('auth','verified')->group(function () {
     // STOCK
     // STOCK
         Route::get('stock', [InventarioStockController::class, 'view'])->name('inventario.stock.index');
-        
+
         Route::get('documentos/buscar-proveedor', [InventarioDocumentoController::class, 'buscarProveedor'])->name('inventario.documentos.buscar-proveedor');
         Route::get('documentos/buscar-producto',  [InventarioDocumentoController::class, 'buscarProducto'])->name('inventario.documentos.buscar-producto');
 
@@ -397,7 +398,7 @@ Route::middleware('auth','verified')->group(function () {
         Route::post('documentos/{doc}/aplicar', [InventarioDocumentoController::class, 'aplicar'])->name('inventario.documentos.aplicar');
         // Cancelar (crea documento cancelacion)
         Route::post('documentos/{doc}/cancelar', [InventarioDocumentoController::class, 'cancelar'])->name('inventario.documentos.cancelar');
-        
+
         Route::get('kardex', [InventarioKardexController::class, 'index'])->name('inventario.kardex.index');
         Route::get('kardex/productos/{producto}', [InventarioKardexController::class, 'producto'])
             ->name('inventario.kardex.producto');
@@ -453,7 +454,7 @@ Route::middleware('auth','verified')->group(function () {
         Route::put('/permisos/{permission}', [EmpresaSecurityController::class, 'permissionUpdate'])->name('permissions.update');
         Route::delete('/permisos/{permission}', [EmpresaSecurityController::class, 'permissionDestroy'])->name('permissions.destroy');
 
-        
+
        Route::post('catalogo-roles', [CatalogoRolController::class, 'store'])->name('catalogo_roles.store');
        Route::put('catalogo-roles/{rol}', [CatalogoRolController::class, 'update'])->name('catalogo_roles.update');
        Route::delete('catalogo-roles/{rol}', [CatalogoRolController::class, 'destroy'])->name('catalogo_roles.destroy');
@@ -487,7 +488,7 @@ Route::middleware('auth','verified')->group(function () {
 
     Route::get('/configuracion-empresa/maquinas/{maquina}/edit', [EmpresaConfigMaquinaController::class, 'edit'])->name('empresa_config.maquinas.edit');
 
-    
+
     Route::get('/reportes/maquinaria/diario', [MaquinasReporteDiarioController::class, 'index'])
         ->name('reportes.maquinaria.reporte_diario');
 
@@ -577,7 +578,7 @@ Route::middleware('auth','verified')->group(function () {
 
     Route::patch('obras/{obra}/empleados/{asignacion}/baja', [ObraEmpleadoController::class, 'baja'])
     ->name('obras.empleados.baja');
-    
+
     Route::post('obras/{obra}/facturas', [ObraFacturaController::class, 'store'])
         ->name('obras.facturas.store');
 
@@ -627,13 +628,13 @@ Route::middleware('auth','verified')->group(function () {
 
     Route::delete('ordenes_compra/{orden}/detalles/{detalle}', [OrdenCompraDetalleController::class, 'destroy'])->name('ordenes_compra.detalles.destroy');
     Route::get('ordenes_compra/{orden_compra}/print', [OrdenCompraController::class, 'print'])->name('ordenes_compra.print');
-    
+
     Route::get('ordenes-compra/partidas-obra/{obra_id}', [OrdenCompraController::class, 'partidasPorObra'])->name('ordenes_compra.partidas_obra');
     Route::get('ordenes-compra/exportar-pagos/{formaPago}',[OrdenCompraController::class, 'exportarListaPagos'])->name('ordenes_compra.exportar_pagos');
 
     Route::get('proveedores/buscar', [ProveedorController::class, 'buscar'])->name('proveedores.buscar');
     Route::post('proveedores/{proveedor}/telefonia/llamar/{phoneNumber}', [TelephonyClickToCallController::class, 'proveedor'])->name('proveedores.telephony.call');
-    
+
     Route::get('proveedores/{proveedor}/facturas/{cfdi}', [ProveedorController::class, 'showFactura'])->name('proveedores.facturas.show');
 
     Route::post('proveedores/{proveedor}/facturas/{cfdi}/relacionar',[ProveedorController::class, 'relacionarFactura'])->name('proveedores.facturas.relacionar');
@@ -662,7 +663,7 @@ Route::middleware('auth','verified')->group(function () {
               // Asignar vehiculo a empleado
         Route::post('vehiculos/{vehiculo}/asignar', [VehiculoController::class, 'asignar'])
         ->name('vehiculos.asignar');
-        
+
         // Route::post('vehiculos/{vehiculo}/seguro', [VehiculoController::class, 'guardarSeguro'])
         // ->name('vehiculos.seguro.store');
         // Mantenimientos de vehiculos
@@ -672,7 +673,7 @@ Route::middleware('auth','verified')->group(function () {
     });
 //ara la vista de maquinas en el menu (no es el de la empresa config)
     Route::prefix('maquinas')->name('maquinas.')->group(function(){
-        
+
         Route::get('/', [MaquinaController::class, 'index'])->name('index');
         Route::get('maquinas/{maquina}', [MaquinaController::class, 'show'])->name('show');
     // acciones puntuales (NO crear maquina, solo cambiar estado/ubicacion y agregar seguro)
@@ -804,7 +805,7 @@ Route::prefix('programacion-pagos')
         Route::post('/store', [ProgramacionPagosController::class, 'store'])->name('store');
         Route::patch('/{programacion}/revisar', [ProgramacionPagosController::class, 'revisar'])->name('revisar');
         Route::patch('/{programacion}/autorizar', [ProgramacionPagosController::class, 'autorizar'])->name('autorizar');
-        
+
 
     });
 
@@ -825,7 +826,7 @@ Route::prefix('pagos-proveedores')
     ->middleware(['auth'])
     ->group(function () {
         Route::get('/{obra}/reposicion-gastos', [ObraReposicionGastoController::class,'index'])->name('reposicion-gastos.index');
-        
+
         Route::get('/{obra}/reposicion-gastos/buscar-cfdis', [ObraReposicionGastoController::class,'buscarCfdis'])->name('reposicion-gastos.buscar-cfdis');
         Route::post('/{obra}/reposicion-gastos', [ObraReposicionGastoController::class,'store'])->name('reposicion-gastos.store');
         Route::get('/{obra}/reposicion-gastos/{reposicion}', [ObraReposicionGastoController::class,'show'])->name('reposicion-gastos.show');
@@ -834,14 +835,14 @@ Route::prefix('pagos-proveedores')
         Route::patch('{obra}/reposicion-gastos/{reposicion}/aprovisionar',[ObraReposicionGastoController::class, 'aprovisionar'])->name('reposicion-gastos.aprovisionar');
         Route::patch('/{obra}/reposicion-gastos/{reposicion}/autorizar',[ObraReposicionGastoController::class, 'autorizar'])->name('reposicion-gastos.autorizar');
         Route::patch('/{obra}/reposicion-gastos/{reposicion}/rechazar',[ObraReposicionGastoController::class, 'rechazar'])->name('reposicion-gastos.rechazar');
-        
+
         // SOLICITUDES DE GASTO
         Route::get('/{obra}/solicitudes-gastos/create', [\App\Http\Controllers\ObraSolicitudGastoController::class, 'create'])->name('solicitudes-gastos.create');
         Route::post('/{obra}/solicitudes-gastos', [\App\Http\Controllers\ObraSolicitudGastoController::class, 'store'])->name('solicitudes-gastos.store');
         Route::get('/{obra}/solicitudes-gastos/{solicitud}', [\App\Http\Controllers\ObraSolicitudGastoController::class, 'show'])->name('solicitudes-gastos.show');
         Route::post('/{obra}/solicitudes-gastos/{solicitud}/autorizar', [\App\Http\Controllers\ObraSolicitudGastoController::class, 'autorizar'])->name('solicitudes-gastos.autorizar');
         Route::post('/{obra}/solicitudes-gastos/{solicitud}/rechazar', [\App\Http\Controllers\ObraSolicitudGastoController::class, 'rechazar'])->name('solicitudes-gastos.rechazar');
-        
+
         });
 
         Route::prefix('cajas-chicas')

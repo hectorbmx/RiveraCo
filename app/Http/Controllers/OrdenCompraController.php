@@ -11,12 +11,13 @@ use App\Models\OrdenCompra;
 use App\Models\CentroCosto;
 use App\Models\TipoIva;
 use App\Models\TipoRetencion;
+use App\Models\DocumentoFirmante;
 use App\Services\OrdenCompraNotificationService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use FDPF; 
+use FDPF;
 
 class OrdenCompraController extends Controller
 {
@@ -380,7 +381,7 @@ class OrdenCompraController extends Controller
 
             $oc->otros_impuestos = 0;
             $oc->total = 0;
-            
+
 
             $oc->save();
 
@@ -602,36 +603,36 @@ public function edit($id)
 public function autorizar($id, OrdenCompraNotificationService $notifications)
 {
     $this->authorizeAny(['ordenes_compra.authorize.access', 'ordenes_compra.autorizar'], 'No tienes permiso para autorizar ordenes de compra.');
- 
+
     $oc = OrdenCompra::findOrFail($id);
- 
+
     if ($oc->estado_normalizado === 'cancelada') {
         return back()->with('error', 'No puedes autorizar una orden cancelada.');
     }
- 
+
     if (in_array($oc->estado_normalizado, ['autorizada', 'verificada'], true)) {
         return back()->with('success', 'La orden ya estaba autorizada.');
     }
- 
+
     if ($oc->detalles()->count() === 0) {
         return back()->with('error', 'No puedes autorizar una orden sin detalles.');
     }
- 
+
     // ── NUEVO: validación de saldo disponible ────────────────────────────────
     if ($oc->planeacion_gasto_id) {
         $gasto = \App\Models\ObraPlaneacionGasto::find($oc->planeacion_gasto_id);
- 
+
         if ($gasto) {
             $tope = (float) $gasto->precio_unitario * (float) $gasto->cantidad;
- 
+
             // Suma de OCs ya autorizadas para esta partida (excluyendo la actual)
             $gastadoPrevio = OrdenCompra::where('planeacion_gasto_id', $gasto->id)
                 ->where('estado', 'AUTORIZADA')
                 ->where('id', '!=', $oc->id)
                 ->sum('total');
- 
+
             $totalConEsta = (float) $gastadoPrevio + (float) $oc->total;
- 
+
             if ($totalConEsta > $tope) {
                 $exceso = number_format($totalConEsta - $tope, 2);
                 $topeF  = number_format($tope, 2);
@@ -644,7 +645,7 @@ public function autorizar($id, OrdenCompraNotificationService $notifications)
         }
     }
     // ── FIN validación ───────────────────────────────────────────────────────
- 
+
     $oc->estado             = 'AUTORIZADA';
     $oc->fecha_autorizacion = now()->toDateString();
     $oc->usuario_autoriza   = $this->usuarioActualNombre();
@@ -652,7 +653,7 @@ public function autorizar($id, OrdenCompraNotificationService $notifications)
     $oc->save();
 
     $notifications->autorizada($oc);
- 
+
     return back()->with('success', 'Orden autorizada.');
 }
 
@@ -1590,6 +1591,29 @@ foreach ($oc->detalles as $detalle) {
         ?? $oc->usuario_autoriza
         ?? '';
 
+    $firmasImpresas = DocumentoFirmante::query()
+        ->with('user:id,name')
+        ->where('documento', DocumentoFirmante::DOCUMENTO_ORDEN_COMPRA)
+        ->where('activo', true)
+        ->whereIn('campo', [
+            DocumentoFirmante::CAMPO_VOBO,
+            DocumentoFirmante::CAMPO_ENTERADO,
+        ])
+        ->get()
+        ->keyBy('campo');
+
+    $voboNombre = $firmasImpresas
+        ->get(DocumentoFirmante::CAMPO_VOBO)
+        ?->user
+        ?->name
+        ?? '';
+
+    $enteradoNombre = $firmasImpresas
+        ->get(DocumentoFirmante::CAMPO_ENTERADO)
+        ?->user
+        ?->name
+        ?? '';
+
     $pdf->SetFont('Arial', 'B', 8);
 
     $pdf->SetXY($X0 + 5, $Y + 13);
@@ -1616,7 +1640,7 @@ foreach ($oc->detalles as $detalle) {
     $pdf->Cell(
         50,
         5,
-        '',
+        $utf8($voboNombre),
         0,
         0,
         'C'
@@ -1626,7 +1650,7 @@ foreach ($oc->detalles as $detalle) {
     $pdf->Cell(
         35,
         5,
-        '',
+        $utf8($enteradoNombre),
         0,
         0,
         'C'
@@ -1768,10 +1792,10 @@ foreach ($oc->detalles as $detalle) {
 //     // Subtotal desde detalles (por si hay inconsistencias)
 //     $subCalc = 0.0;
 //     $ivaCalc = 0.0;
-    
+
 //     foreach ($oc->detalles as $d) {
 //         $iva = $d->precio_unitario * $d->iva / 100;
-        
+
 //          $wImp  = 22;
 //         $cant = (float) ($d->cantidad ?? 0);
 //         $uni  = (string) ($d->unidad ?? '');
@@ -1971,10 +1995,10 @@ foreach ($oc->detalles as $detalle) {
     public function partidasPorObra($obra_id)
 {
     $obra = \App\Models\Obra::findOrFail($obra_id);
- 
+
     // IDs de presupuestos vinculados a esta obra
     $presupuestoIds = $obra->presupuestos_vinculados()->pluck('presupuestos.id');
- 
+
     // Filas base (numero_semana = 0) de la planeación de esta obra
     $gastos = \App\Models\ObraPlaneacionGasto::query()
         ->where(function ($q) use ($obra, $presupuestoIds) {
@@ -1983,7 +2007,7 @@ foreach ($oc->detalles as $detalle) {
         })
         ->where('numero_semana', 0)
         ->get();
- 
+
     // Para cada partida calculamos el gastado autorizado sumando OCs autorizadas
     $gastadoPorPartida = \App\Models\OrdenCompra::query()
         ->whereIn('planeacion_gasto_id', $gastos->pluck('id'))
@@ -1991,12 +2015,12 @@ foreach ($oc->detalles as $detalle) {
         ->selectRaw('planeacion_gasto_id, SUM(total) as total_gastado')
         ->groupBy('planeacion_gasto_id')
         ->pluck('total_gastado', 'planeacion_gasto_id');
- 
+
     $resultado = $gastos->map(function ($g) use ($gastadoPorPartida) {
         $tope     = (float) $g->precio_unitario * (float) $g->cantidad;
         $gastado  = (float) ($gastadoPorPartida[$g->id] ?? 0);
         $disponible = max(0, $tope - $gastado);
- 
+
         return [
             'id'         => $g->id,
             'partida'    => $g->partida,
@@ -2006,7 +2030,7 @@ foreach ($oc->detalles as $detalle) {
             'disponible' => $disponible,
         ];
     });
- 
+
     return response()->json($resultado->values());
 }
 public function exportarListaPagos(
