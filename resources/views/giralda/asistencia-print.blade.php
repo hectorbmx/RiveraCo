@@ -24,6 +24,9 @@
     </style>
 </head>
 <body>
+    @php
+        $dayLabels = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM'];
+    @endphp
     <button class="no-print" onclick="window.print()">Imprimir</button>
     <h1>Asistencia semanal Giralda</h1>
     <div>Periodo: {{ $semanaData['titulo'] }}</div>
@@ -36,7 +39,7 @@
                 <th>Puesto</th>
                 @foreach($weekDays as $day)
                     <th class="center day">
-                        <div>{{ strtoupper($day->locale('es')->translatedFormat('D')) }}</div>
+                        <div>{{ $dayLabels[$loop->index] }}</div>
                         <div class="muted">{{ $day->format('d/m') }}</div>
                     </th>
                 @endforeach
@@ -59,7 +62,7 @@
                         @endphp
                         <td class="center">
                             @if($asistencia?->estado === 'presente')
-                                <span class="check">âœ“</span>
+                                <span class="check">&#10003;</span>
                             @elseif($asistencia?->estado === 'ausente')
                                 <span class="absent">-</span>
                             @else
