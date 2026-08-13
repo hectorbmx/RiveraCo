@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Area;
 use App\Models\Empleado;
 use App\Models\EmpleadoEppEntrega;
+use App\Models\GiraldaAsistencia;
 use App\Models\GiraldaHoraExtra;
 use App\Models\Obra;
 use App\Models\OrdenCompra;
@@ -74,7 +75,7 @@ class GiraldaController extends Controller
             $areaGiralda->loadMissing('horarioActivo');
         }
         $tab = $request->query('tab', 'listado');
-        $tab = in_array($tab, ['listado', 'epp', 'horas_extras'], true) ? $tab : 'listado';
+        $tab = in_array($tab, ['listado', 'asistencia', 'epp', 'horas_extras'], true) ? $tab : 'listado';
         try {
             $semanaInicio = $request->query('semana')
                 ? Carbon::parse($request->query('semana'))->startOfWeek(Carbon::MONDAY)
@@ -83,17 +84,25 @@ class GiraldaController extends Controller
             $semanaInicio = now()->startOfWeek(Carbon::MONDAY);
         }
 
+        $semanaActualInicio = now()->startOfWeek(Carbon::MONDAY);
+        if ($tab === 'asistencia' && $semanaInicio->gt($semanaActualInicio)) {
+            $semanaInicio = $semanaActualInicio->copy();
+        }
+
         $semanaFin = $semanaInicio->copy()->endOfWeek(Carbon::SUNDAY);
         $semana = $semanaInicio->toDateString();
         $semanaAnterior = $semanaInicio->copy()->subWeek()->toDateString();
         $semanaSiguiente = $semanaInicio->copy()->addWeek()->toDateString();
-        $semanaActual = now()->startOfWeek(Carbon::MONDAY)->toDateString();
+        $semanaActual = $semanaActualInicio->toDateString();
         $semanaTitulo = $semanaInicio->format('d/m/Y') . ' al ' . $semanaFin->format('d/m/Y');
-
-        $desde = $tab === 'horas_extras'
+        $weekDays = collect(range(0, 6))->map(fn (int $offset) => $semanaInicio->copy()->addDays($offset));
+        $hoy = now()->toDateString();
+        $asistenciaEditableFecha = $weekDays->first(fn (Carbon $day) => $day->toDateString() === $hoy)?->toDateString();
+        $esSemanaActual = $semana === $semanaActual;
+        $desde = in_array($tab, ['horas_extras', 'asistencia'], true)
             ? $semanaInicio->toDateString()
             : $request->query('desde', now()->startOfMonth()->toDateString());
-        $hasta = $tab === 'horas_extras'
+        $hasta = in_array($tab, ['horas_extras', 'asistencia'], true)
             ? $semanaFin->toDateString()
             : $request->query('hasta', now()->endOfMonth()->toDateString());
         $empleadoId = $request->query('empleado_id');
@@ -135,6 +144,13 @@ class GiraldaController extends Controller
             ->paginate(20, ['*'], 'horas_page')
             ->withQueryString();
 
+        $asistencias = GiraldaAsistencia::query()
+            ->whereDate('fecha', '>=', $semanaInicio->toDateString())
+            ->whereDate('fecha', '<=', $semanaFin->toDateString())
+            ->whereIn('empleado_id', $empleados->pluck('id_Empleado'))
+            ->get()
+            ->keyBy(fn (GiraldaAsistencia $asistencia) => $asistencia->empleado_id . '|' . $asistencia->fecha->toDateString());
+
         $obrasActivas = Obra::query()
             ->whereNotIn('estatus_nuevo', [Obra::ESTATUS_TERMINADA, Obra::ESTATUS_CANCELADA])
             ->orderBy('nombre')
@@ -169,8 +185,122 @@ class GiraldaController extends Controller
             'semanaSiguiente',
             'semanaActual',
             'semanaTitulo',
+            'weekDays',
+            'hoy',
+            'asistenciaEditableFecha',
+            'esSemanaActual',
+            'asistencias',
             'obrasActivas',
             'areas'
+        ));
+    }
+    public function storeAsistencia(Request $request)
+    {
+        $this->authorizeAny(['giralda.asistencia.edit.access', 'giralda.access']);
+
+        $areaGiralda = $this->areaGiralda();
+        abort_unless($areaGiralda, 422, 'No existe un area Giralda activa para registrar asistencia.');
+        $hoy = now()->toDateString();
+
+        $data = $request->validate([
+            'fecha' => ['required', 'date'],
+            'empleados' => ['required', 'array'],
+            'empleados.*' => ['integer', 'exists:empleados,id_Empleado'],
+            'presentes' => ['nullable', 'array'],
+            'presentes.*' => ['integer', 'exists:empleados,id_Empleado'],
+        ]);
+
+        $fecha = Carbon::parse($data['fecha'])->toDateString();
+        abort_unless($fecha === $hoy, 422, 'Solo se puede guardar asistencia del dia actual.');
+
+        $empleadoIds = collect($data['empleados'])->map(fn ($id) => (int) $id)->unique()->values();
+        $presentes = collect($data['presentes'] ?? [])->map(fn ($id) => (int) $id)->unique();
+
+        $empleados = Empleado::query()
+            ->whereIn('id_Empleado', $empleadoIds)
+            ->where('Area', $areaGiralda?->id)
+            ->get(['id_Empleado', 'Area'])
+            ->keyBy('id_Empleado');
+
+        abort_unless($empleados->count() === $empleadoIds->count(), 422, 'La lista incluye empleados que no pertenecen a Giralda.');
+
+        foreach ($empleadoIds as $empleadoId) {
+            $asistencia = GiraldaAsistencia::firstOrNew([
+                'empleado_id' => $empleadoId,
+                'fecha' => $fecha,
+            ]);
+
+            if (!$asistencia->exists) {
+                $asistencia->registrado_por = auth()->id();
+            }
+
+            $asistencia->fill([
+                'area_id' => $areaGiralda?->id,
+                'estado' => $presentes->contains($empleadoId) ? 'presente' : 'ausente',
+                'origen' => 'manual',
+                'actualizado_por' => auth()->id(),
+            ]);
+            $asistencia->save();
+        }
+
+        return redirect()
+            ->route('giralda.empleados', [
+                'tab' => 'asistencia',
+                'estatus' => $request->input('estatus', 'activo'),
+                'semana' => now()->startOfWeek(Carbon::MONDAY)->toDateString(),
+            ])
+            ->with('success', 'Asistencia del dia guardada.');
+    }
+
+    public function printAsistencia(Request $request)
+    {
+        $this->authorizeAny(['giralda.access']);
+
+        $areaGiralda = $this->areaGiralda();
+        $semanaData = $this->resolverSemana($request->query('semana'));
+        $semanaInicio = $semanaData['inicio'];
+        $semanaFin = $semanaData['fin'];
+        $estatus = $request->query('estatus', 'activo');
+        $estatus = in_array($estatus, ['activo', 'baja', 'todos'], true) ? $estatus : 'activo';
+        $weekDays = collect(range(0, 6))->map(fn (int $offset) => $semanaInicio->copy()->addDays($offset));
+
+        $empleados = Empleado::with('areaRef')
+            ->where('Area', $areaGiralda?->id)
+            ->when($estatus === 'activo', fn ($q) => $q->where('Estatus', 1))
+            ->when($estatus === 'baja', fn ($q) => $q->where('Estatus', 2))
+            ->orderBy('Nombre')
+            ->orderBy('Apellidos')
+            ->get();
+
+        $asistencias = GiraldaAsistencia::query()
+            ->whereDate('fecha', '>=', $semanaInicio->toDateString())
+            ->whereDate('fecha', '<=', $semanaFin->toDateString())
+            ->whereIn('empleado_id', $empleados->pluck('id_Empleado'))
+            ->get()
+            ->keyBy(fn (GiraldaAsistencia $asistencia) => $asistencia->empleado_id . '|' . $asistencia->fecha->toDateString());
+
+        $horasExtrasPorDia = GiraldaHoraExtra::query()
+            ->selectRaw('empleado_id, fecha, SUM(total_horas) as total_horas')
+            ->whereDate('fecha', '>=', $semanaInicio->toDateString())
+            ->whereDate('fecha', '<=', $semanaFin->toDateString())
+            ->whereIn('empleado_id', $empleados->pluck('id_Empleado'))
+            ->groupBy('empleado_id', 'fecha')
+            ->get()
+            ->keyBy(fn (GiraldaHoraExtra $horaExtra) => $horaExtra->empleado_id . '|' . $horaExtra->fecha->toDateString());
+
+        $totalesHorasExtras = $horasExtrasPorDia
+            ->groupBy('empleado_id')
+            ->map(fn ($registros) => (float) $registros->sum('total_horas'));
+
+        return view('giralda.asistencia-print', compact(
+            'areaGiralda',
+            'empleados',
+            'weekDays',
+            'asistencias',
+            'horasExtrasPorDia',
+            'totalesHorasExtras',
+            'estatus',
+            'semanaData'
         ));
     }
     public function horasExtrasEmpleado(Request $request, Empleado $empleado)

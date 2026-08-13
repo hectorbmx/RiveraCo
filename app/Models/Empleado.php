@@ -204,4 +204,11 @@ public function getAreaIdAttribute()
             ->orderByDesc('fecha')
             ->orderByDesc('id');
     }
+
+    public function giraldaAsistencias()
+    {
+        return $this->hasMany(\App\Models\GiraldaAsistencia::class, 'empleado_id', 'id_Empleado')
+            ->orderByDesc('fecha')
+            ->orderByDesc('id');
+    }
 }
