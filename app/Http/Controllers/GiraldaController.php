@@ -97,7 +97,23 @@ class GiraldaController extends Controller
         $semanaTitulo = $semanaInicio->format('d/m/Y') . ' al ' . $semanaFin->format('d/m/Y');
         $weekDays = collect(range(0, 6))->map(fn (int $offset) => $semanaInicio->copy()->addDays($offset));
         $hoy = now()->toDateString();
-        $asistenciaEditableFecha = $weekDays->first(fn (Carbon $day) => $day->toDateString() === $hoy)?->toDateString();
+        $puedeOverrideAsistencia = auth()->user()?->can('giralda.asistencia.override.access') ?? false;
+        $asistenciaOverrideDesde = now()->startOfWeek(Carbon::MONDAY)->subWeek()->startOfDay();
+        $asistenciaEditableFechas = $weekDays
+            ->filter(function (Carbon $day) use ($hoy, $puedeOverrideAsistencia, $asistenciaOverrideDesde) {
+                if ($day->isAfter(now()->startOfDay())) {
+                    return false;
+                }
+
+                if ($puedeOverrideAsistencia) {
+                    return $day->greaterThanOrEqualTo($asistenciaOverrideDesde);
+                }
+
+                return $day->toDateString() === $hoy;
+            })
+            ->map(fn (Carbon $day) => $day->toDateString())
+            ->values();
+        $asistenciaEditableFecha = $asistenciaEditableFechas->first();
         $esSemanaActual = $semana === $semanaActual;
         $desde = in_array($tab, ['horas_extras', 'asistencia'], true)
             ? $semanaInicio->toDateString()
@@ -188,6 +204,8 @@ class GiraldaController extends Controller
             'weekDays',
             'hoy',
             'asistenciaEditableFecha',
+            'asistenciaEditableFechas',
+            'puedeOverrideAsistencia',
             'esSemanaActual',
             'asistencias',
             'obrasActivas',
@@ -196,26 +214,44 @@ class GiraldaController extends Controller
     }
     public function storeAsistencia(Request $request)
     {
-        $this->authorizeAny(['giralda.asistencia.edit.access', 'giralda.access']);
+        $this->authorizeAny(['giralda.asistencia.edit.access', 'giralda.asistencia.override.access']);
 
         $areaGiralda = $this->areaGiralda();
         abort_unless($areaGiralda, 422, 'No existe un area Giralda activa para registrar asistencia.');
-        $hoy = now()->toDateString();
 
         $data = $request->validate([
-            'fecha' => ['required', 'date'],
+            'fechas' => ['nullable', 'array'],
+            'fechas.*' => ['date'],
+            'fecha' => ['nullable', 'date'],
             'empleados' => ['required', 'array'],
             'empleados.*' => ['integer', 'exists:empleados,id_Empleado'],
             'presentes' => ['nullable', 'array'],
-            'presentes.*' => ['integer', 'exists:empleados,id_Empleado'],
+            'presentes.*' => ['array'],
+            'presentes.*.*' => ['integer', 'exists:empleados,id_Empleado'],
         ]);
 
-        $fecha = Carbon::parse($data['fecha'])->toDateString();
-        abort_unless($fecha === $hoy, 422, 'Solo se puede guardar asistencia del dia actual.');
+        $hoy = now()->toDateString();
+        $puedeOverride = auth()->user()?->can('giralda.asistencia.override.access') ?? false;
+        $overrideDesde = now()->startOfWeek(Carbon::MONDAY)->subWeek()->toDateString();
+        $fechas = collect($data['fechas'] ?? [$data['fecha'] ?? null])
+            ->filter()
+            ->map(fn ($fecha) => Carbon::parse($fecha)->toDateString())
+            ->unique()
+            ->values();
+
+        abort_if($fechas->isEmpty(), 422, 'Selecciona al menos una fecha para guardar asistencia.');
+
+        foreach ($fechas as $fecha) {
+            abort_if($fecha > $hoy, 422, 'No se puede guardar asistencia futura.');
+
+            if ($puedeOverride) {
+                abort_if($fecha < $overrideDesde, 422, 'Solo se puede corregir asistencia de la semana actual o la semana anterior.');
+            } else {
+                abort_unless($fecha === $hoy, 422, 'Solo se puede guardar asistencia del dia actual.');
+            }
+        }
 
         $empleadoIds = collect($data['empleados'])->map(fn ($id) => (int) $id)->unique()->values();
-        $presentes = collect($data['presentes'] ?? [])->map(fn ($id) => (int) $id)->unique();
-
         $empleados = Empleado::query()
             ->whereIn('id_Empleado', $empleadoIds)
             ->where('Area', $areaGiralda?->id)
@@ -224,34 +260,40 @@ class GiraldaController extends Controller
 
         abort_unless($empleados->count() === $empleadoIds->count(), 422, 'La lista incluye empleados que no pertenecen a Giralda.');
 
-        foreach ($empleadoIds as $empleadoId) {
-            $asistencia = GiraldaAsistencia::firstOrNew([
-                'empleado_id' => $empleadoId,
-                'fecha' => $fecha,
-            ]);
+        $presentesPorFecha = collect($data['presentes'] ?? [])
+            ->map(fn ($ids) => collect($ids)->map(fn ($id) => (int) $id)->unique());
 
-            if (!$asistencia->exists) {
-                $asistencia->registrado_por = auth()->id();
+        foreach ($fechas as $fecha) {
+            $presentes = $presentesPorFecha->get($fecha, collect());
+
+            foreach ($empleadoIds as $empleadoId) {
+                $asistencia = GiraldaAsistencia::firstOrNew([
+                    'empleado_id' => $empleadoId,
+                    'fecha' => $fecha,
+                ]);
+
+                if (!$asistencia->exists) {
+                    $asistencia->registrado_por = auth()->id();
+                }
+
+                $asistencia->fill([
+                    'area_id' => $areaGiralda?->id,
+                    'estado' => $presentes->contains($empleadoId) ? 'presente' : 'ausente',
+                    'origen' => 'manual',
+                    'actualizado_por' => auth()->id(),
+                ]);
+                $asistencia->save();
             }
-
-            $asistencia->fill([
-                'area_id' => $areaGiralda?->id,
-                'estado' => $presentes->contains($empleadoId) ? 'presente' : 'ausente',
-                'origen' => 'manual',
-                'actualizado_por' => auth()->id(),
-            ]);
-            $asistencia->save();
         }
 
         return redirect()
             ->route('giralda.empleados', [
                 'tab' => 'asistencia',
                 'estatus' => $request->input('estatus', 'activo'),
-                'semana' => now()->startOfWeek(Carbon::MONDAY)->toDateString(),
+                'semana' => $request->input('semana', now()->startOfWeek(Carbon::MONDAY)->toDateString()),
             ])
-            ->with('success', 'Asistencia del dia guardada.');
+            ->with('success', $fechas->count() > 1 ? 'Asistencia semanal guardada.' : 'Asistencia del dia guardada.');
     }
-
     public function printAsistencia(Request $request)
     {
         $this->authorizeAny(['giralda.access']);

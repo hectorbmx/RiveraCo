@@ -97,21 +97,30 @@
         @if($tab === 'asistencia')
             <div class="px-4 py-3 border-b bg-blue-50 text-sm text-[#0B265A] flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    Pase de lista semanal. Solo el dia actual se puede editar; pasado y futuro quedan bloqueados.
+                    {{ $puedeOverrideAsistencia ? 'Pase de lista semanal. Puedes corregir la semana actual o la semana anterior; el futuro queda bloqueado.' : 'Pase de lista semanal. Solo el dia actual se puede editar; pasado y futuro quedan bloqueados.' }}
                 </div>
-                @if($asistenciaEditableFecha)
-                    <div class="font-semibold">Editando hoy: {{ \Carbon\Carbon::parse($asistenciaEditableFecha)->format('d/m/Y') }}</div>
+                @if($asistenciaEditableFechas->isNotEmpty())
+                    <div class="font-semibold">
+                        @if($puedeOverrideAsistencia)
+                            Corrigiendo fechas permitidas
+                        @else
+                            Editando hoy: {{ \Carbon\Carbon::parse($asistenciaEditableFecha)->format('d/m/Y') }}
+                        @endif
+                    </div>
                 @else
                     <div class="font-semibold text-slate-500">Semana historica, solo lectura.</div>
                 @endif
             </div>
         @endif
 
-        @if($tab === 'asistencia' && $asistenciaEditableFecha)
+        @if($tab === 'asistencia' && $asistenciaEditableFechas->isNotEmpty())
             <form method="POST" action="{{ route('giralda.asistencia.store') }}" x-data="{ submitting: false }" @submit="submitting = true">
                 @csrf
-                <input type="hidden" name="fecha" value="{{ $asistenciaEditableFecha }}">
+                @foreach($asistenciaEditableFechas as $editableFecha)
+                    <input type="hidden" name="fechas[]" value="{{ $editableFecha }}">
+                @endforeach
                 <input type="hidden" name="estatus" value="{{ $estatus }}">
+                <input type="hidden" name="semana" value="{{ $semana }}">
         @endif
 
         <div class="overflow-x-auto">
@@ -145,7 +154,7 @@
                     @forelse($empleados as $empleado)
                         <tr>
                             <td class="p-3">
-                                @if($tab === 'asistencia' && $asistenciaEditableFecha)
+                                @if($tab === 'asistencia' && $asistenciaEditableFechas->isNotEmpty())
                                     <input type="hidden" name="empleados[]" value="{{ $empleado->id_Empleado }}">
                                 @endif
                                 <div class="font-medium text-slate-900">{{ $empleado->nombre_completo }}</div>
@@ -164,14 +173,14 @@
                                         $date = $day->toDateString();
                                         $registro = $asistencias->get($empleado->id_Empleado . '|' . $date);
                                         $isFuture = $day->isAfter(now()->startOfDay());
-                                        $isEditable = $date === $asistenciaEditableFecha;
+                                        $isEditable = $asistenciaEditableFechas->contains($date);
                                         $checked = $isEditable ? (($registro?->estado ?? 'presente') !== 'ausente') : ($registro?->estado === 'presente');
                                     @endphp
                                     <td class="p-3 text-center">
                                         @if($isFuture)
                                             <span class="inline-flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-slate-50 text-slate-300">-</span>
                                         @elseif($isEditable)
-                                            <input type="checkbox" name="presentes[]" value="{{ $empleado->id_Empleado }}" @checked($checked) class="h-5 w-5 rounded border-slate-300 text-[#0B265A] focus:ring-[#FFC107]">
+                                            <input type="checkbox" name="presentes[{{ $date }}][]" value="{{ $empleado->id_Empleado }}" @checked($checked) class="h-5 w-5 rounded border-slate-300 text-[#0B265A] focus:ring-[#FFC107]">
                                         @else
                                             <input type="checkbox" @checked($checked) disabled class="h-5 w-5 rounded border-slate-300 text-[#0B265A] disabled:opacity-70">
                                         @endif
@@ -214,10 +223,10 @@
             </table>
         </div>
 
-        @if($tab === 'asistencia' && $asistenciaEditableFecha)
+        @if($tab === 'asistencia' && $asistenciaEditableFechas->isNotEmpty())
                 <div class="border-t bg-slate-50 p-4 flex justify-end">
                     <button class="px-4 py-2 rounded bg-[#0B265A] text-white font-semibold disabled:cursor-not-allowed disabled:opacity-70" :disabled="submitting">
-                        <span x-show="!submitting">Guardar asistencia de hoy</span>
+                        <span x-show="!submitting">{{ $puedeOverrideAsistencia ? 'Guardar asistencia semanal' : 'Guardar asistencia de hoy' }}</span>
                         <span x-show="submitting" x-cloak>Guardando...</span>
                     </button>
                 </div>
@@ -230,7 +239,7 @@
                     <div class="w-full max-w-sm rounded-lg bg-white p-6 text-center shadow-xl">
                         <div class="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-[#0B265A]"></div>
                         <h3 id="modal_guardando_asistencia_titulo" class="text-base font-semibold text-[#0B265A]">Guardando asistencia</h3>
-                        <p class="mt-2 text-sm text-slate-500">Estamos registrando el pase de lista de hoy.</p>
+                        <p class="mt-2 text-sm text-slate-500">{{ $puedeOverrideAsistencia ? 'Estamos registrando los ajustes de la semana visible.' : 'Estamos registrando el pase de lista de hoy.' }}</p>
                     </div>
                 </div>
             </form>
