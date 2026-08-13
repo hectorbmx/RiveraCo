@@ -425,7 +425,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::patch('/configuracion-empresa/folios-obra/{folio}', [EmpresaConfigController::class, 'updateFolioObra'])->name('empresa_config.folios-obra.update');
     Route::patch('/configuracion-empresa/tipos-obra/{tipo}', [EmpresaConfigController::class, 'updateTipoObraConfiguracion'])->name('empresa_config.tipos-obra.update');
 
-    // Tipos de RetenciÃ³n
+    // Tipos de Retencion
     Route::post('/configuracion-empresa/tipos-retencion', [EmpresaConfigController::class, 'storeTipoRetencion'])->name('empresa_config.tipos-retencion.store');
     Route::patch('/configuracion-empresa/tipos-retencion/{tipoRetencion}/toggle-activo', [EmpresaConfigController::class, 'toggleTipoRetencion'])->name('empresa_config.tipos-retencion.toggle-activo');
 
@@ -609,6 +609,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::prefix('giralda')->name('giralda.')->group(function () {
         Route::get('/', [GiraldaController::class, 'index'])->name('index');
         Route::get('/empleados', [GiraldaController::class, 'empleados'])->name('empleados');
+        Route::get('/asistencia', fn () => redirect()->route('giralda.empleados', ['tab' => 'asistencia']))->name('asistencia.index');
         Route::post('/asistencia', [GiraldaController::class, 'storeAsistencia'])->name('asistencia.store');
         Route::get('/asistencia/imprimir', [GiraldaController::class, 'printAsistencia'])->name('asistencia.print');
         Route::get('/empleados/{empleado}/horas-extras', [GiraldaController::class, 'horasExtrasEmpleado'])->name('empleados.horas-extras');
