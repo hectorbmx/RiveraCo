@@ -3,6 +3,7 @@
 @section('content')
 @php
   $bloqueado = in_array($oc->estado_normalizado, ['autorizada','verificada','cancelada']);
+  $esObraCivil = in_array(strtoupper((string) ($oc->obra->tipo_obra ?? '')), ['OBRA_CIVIL', 'CIVIL'], true);
 @endphp
 
 <div class="p-6">
@@ -21,11 +22,13 @@
                     <button class="bg-green-600 text-white px-3 py-1 rounded">Autorizar</button>
                 </form>
             @endif -->
+            @unless($esObraCivil)
             <button type="button"
                   id="btnModalProducto"
                   class="px-3 py-2 rounded-xl text-sm border border-slate-200 text-slate-700 hover:bg-slate-50">
               + Producto
           </button>
+            @endunless
 
             @if(!$bloqueado)
                 <form method="POST" action="{{ route('ordenes_compra.update', $oc->id) }}" id="formEncabezadoOc" class="inline" data-loading-form data-loading-message="Guardando orden de compra...">
@@ -386,14 +389,15 @@
         
   <!-- <input id="descProducto" name="descripcion"class="border p-2 col-span-2" placeholder="Descripción / buscar producto..."  autocomplete="off"> -->
    <div class="col-span-2">
-        <input id="descProducto" name="descripcion" class="w-full border p-2 rounded" placeholder="Descripción / buscar producto..." autocomplete="off">
-        <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">Descripción del Producto</span>
+        <input id="descProducto" name="descripcion" class="w-full border p-2 rounded" placeholder="{{ $esObraCivil ? 'Descripcion / buscar concepto civil...' : 'Descripcion / buscar producto...' }}" autocomplete="off">
+        <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">{{ $esObraCivil ? 'Concepto civil' : 'Descripcion del producto' }}</span>
         
         <div id="producto_meta" class="text-[11px] text-slate-400 mt-1 ml-1 leading-tight"></div>
         <div id="sugerenciasProductos" class="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow hidden max-h-60 overflow-auto"></div>
     </div>
 
   <input type="hidden" name="producto_id" id="producto_id">
+  <input type="hidden" name="civil_concept_id" id="civil_concept_id">
   <input type="hidden" name="legacy_prod_id" id="legacy_prod_id">
   <input type="hidden" name="unidad" id="unidad">
 
@@ -408,8 +412,9 @@
         <input name="iva" type="number" step="0.01" placeholder="IVA" class="border p-2" value=""> -->
         <!-- Cantidad -->
     <div>
-        <input name="cantidad" type="number" step="0.001" placeholder="0.000" class="w-full border p-2 rounded">
+        <input name="cantidad" id="cantidad" type="number" step="0.001" placeholder="0.000" class="w-full border p-2 rounded">
         <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">Cantidad</span>
+        <span id="civil_cantidad_alerta" class="hidden text-[11px] text-amber-600 block mt-1 ml-1 leading-tight"></span>
     </div>
 
     <!-- Precio -->
@@ -605,51 +610,110 @@ document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('descProducto');
     const box   = document.getElementById('sugerenciasProductos');
 
-    // IDs actualizados para coincidir con tu formulario de detalles
+    const esObraCivil = @json($esObraCivil);
+    const urlProductos = "{{ route('productos.buscar') }}";
+    const urlConceptosCivil = "{{ route('ordenes_compra.conceptos_civiles.buscar', $oc->id) }}";
+
     const productoId = document.getElementById('detalle_producto_id') || document.getElementById('producto_id');
+    const civilConceptId = document.getElementById('civil_concept_id');
     const legacyId   = document.getElementById('detalle_legacy_prod_id') || document.getElementById('legacy_prod_id');
     const unidad     = document.getElementById('detalle_unidad') || document.getElementById('unidad');
     const meta        = document.getElementById('producto_meta');
     const proveedor   = document.getElementById('oc_proveedor_id');
     const precioInput = document.getElementById('precio_unitario');
+    const cantidadInput = document.getElementById('cantidad');
+    const cantidadAlerta = document.getElementById('civil_cantidad_alerta');
 
-    if (!input || !box || !productoId) {
+    if (!input || !box || (!productoId && !civilConceptId)) {
         console.warn('Autocomplete: Faltan elementos esenciales en el DOM');
         return;
     }
 
     let timer = null;
 
+    function limpiarSeleccion() {
+        if (productoId) productoId.value = '';
+        if (civilConceptId) civilConceptId.value = '';
+        if (legacyId) legacyId.value = '';
+        if (meta) meta.innerText = '';
+        if (precioInput) precioInput.value = '';
+        if (cantidadInput) cantidadInput.classList.remove('border-amber-500', 'bg-amber-50');
+        if (cantidadAlerta) {
+            cantidadAlerta.classList.add('hidden');
+            cantidadAlerta.innerText = '';
+        }
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function formatNumber(value, decimals = 2) {
+        const number = Number(value ?? 0);
+        return Number.isFinite(number) ? number.toLocaleString('es-MX', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) : '0.00';
+    }
+
+    function formatMoney(value) {
+        const number = Number(value ?? 0);
+        return Number.isFinite(number) ? number.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' }) : '$0.00';
+    }
+
+    function civilDisponibleTexto(data) {
+        const unidadTexto = data.unidad ? ` ${data.unidad}` : '';
+        const ordenes = Number(data.ordenes_count ?? 0);
+        const ordenesTexto = ordenes > 0 ? ` - OCs: ${ordenes}` : '';
+        return `Disponible: ${formatNumber(data.cantidad_disponible)}${unidadTexto} / ${formatMoney(data.importe_disponible)}${ordenesTexto}`;
+    }
+
+    function validarCantidadCivilDisponible() {
+        if (!esObraCivil || !cantidadInput || !cantidadAlerta || !civilConceptId?.value) {
+            return;
+        }
+
+        const cantidad = Number(cantidadInput.value || 0);
+        const disponible = Number(cantidadInput.dataset.cantidadDisponible || 0);
+        const unidadTexto = cantidadInput.dataset.unidad ? ` ${cantidadInput.dataset.unidad}` : '';
+
+        if (cantidad > disponible) {
+            cantidadInput.classList.add('border-amber-500', 'bg-amber-50');
+            cantidadAlerta.classList.remove('hidden');
+            cantidadAlerta.innerText = `Excede disponible: ${formatNumber(disponible)}${unidadTexto}. Se validara al autorizar.`;
+            return;
+        }
+
+        cantidadInput.classList.remove('border-amber-500', 'bg-amber-50');
+        cantidadAlerta.classList.add('hidden');
+        cantidadAlerta.innerText = '';
+    }
+
     input.addEventListener('input', () => {
         clearTimeout(timer);
 
         const q = input.value.trim();
-        
-        // Limpiar campos si el texto es muy corto
+
         if (q.length < 2) {
             box.classList.add('hidden');
             box.innerHTML = '';
-            productoId.value = '';
-            if(legacyId) legacyId.value = '';
-            if(meta) meta.innerText = '';
-            if(precioInput) precioInput.value = '';
+            limpiarSeleccion();
             return;
         }
 
         timer = setTimeout(async () => {
             try {
-                /** 
-                 * SOLUCIÓN A SUBDOMINIOS Y CARPETAS:
-                 * Usamos el helper route() de Laravel para que la URL sea absoluta y correcta
-                 * sin importar si estás en /v2/public/ o en la raíz.
-                 */
-                const urlBusqueda = "{{ route('productos.buscar') }}";
-                
+                const urlBusqueda = esObraCivil ? urlConceptosCivil : urlProductos;
                 const params = new URLSearchParams({ q });
-                if (proveedor?.value) params.set('proveedor_id', proveedor.value);
+
+                if (!esObraCivil && proveedor?.value) {
+                    params.set('proveedor_id', proveedor.value);
+                }
 
                 const res = await fetch(`${urlBusqueda}?${params.toString()}`, {
-                    headers: { 
+                    headers: {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     }
@@ -665,42 +729,75 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                // Generar lista de sugerencias
-                box.innerHTML = data.map(p => `
+                box.innerHTML = data.map(p => {
+                    const precio = p.ultimo_precio !== null && p.ultimo_precio !== undefined && p.ultimo_precio !== ''
+                        ? Number(p.ultimo_precio).toFixed(4)
+                        : '';
+                    const metaLinea = esObraCivil
+                        ? `Clave: ${escapeHtml(p.sku ?? '-')} - Unidad: ${escapeHtml(p.unidad ?? '-')} - P.U.: ${precio ? Number(precio).toFixed(2) : '-'}`
+                        : `SKU: ${escapeHtml(p.sku ?? '-')} - Unidad: ${escapeHtml(p.unidad ?? '-')}${precio ? ` - Ultimo precio: ${Number(precio).toFixed(2)} ${escapeHtml(p.moneda_precio ?? '')}` : ''}`;
+                    const disponibleLinea = esObraCivil ? civilDisponibleTexto(p) : '';
+                    const extra = esObraCivil && p.descripcion
+                        ? `<div class="text-xs text-slate-400">${escapeHtml(p.descripcion)}</div>`
+                        : (p.descripcion ? `<div class="text-xs text-slate-400">${escapeHtml(p.descripcion)}</div>` : '');
+
+                    return `
                     <div class="px-3 py-2 hover:bg-slate-100 cursor-pointer border-b border-slate-50 last:border-0"
-                         data-id="${p.id}"
-                         data-legacy="${p.legacy_prod_id ?? ''}"
-                         data-nombre="${(p.nombre ?? '').replace(/"/g,'&quot;')}"
-                         data-unidad="${p.unidad ?? ''}"
-                         data-sku="${(p.sku ?? '').replace(/"/g,'&quot;')}"
-                         data-descripcion="${(p.descripcion ?? '').replace(/"/g,'&quot;')}"
-                         data-precio="${p.ultimo_precio ?? ''}"
-                         data-moneda="${p.moneda_precio ?? ''}">
-                        <div class="font-semibold text-slate-800">${p.nombre}</div>
-                        <div class="text-xs text-slate-500">
-                            SKU: ${p.sku ?? '-'} - Unidad: ${p.unidad ?? '-'}${p.ultimo_precio !== null && p.ultimo_precio !== undefined ? ` - Ultimo precio: ${Number(p.ultimo_precio).toFixed(2)} ${p.moneda_precio ?? ''}` : ''}
-                        </div>
-                        ${p.descripcion ? `<div class="text-xs text-slate-400">${p.descripcion}</div>` : ``}
-                    </div>
-                `).join('');
+                         data-id="${escapeHtml(p.id)}"
+                         data-civil-id="${escapeHtml(p.civil_concept_id ?? '')}"
+                         data-legacy="${escapeHtml(p.legacy_prod_id ?? '')}"
+                         data-nombre="${escapeHtml(p.nombre ?? '')}"
+                         data-unidad="${escapeHtml(p.unidad ?? '')}"
+                         data-sku="${escapeHtml(p.sku ?? '')}"
+                         data-descripcion="${escapeHtml(p.descripcion ?? '')}"
+                         data-precio="${escapeHtml(precio)}"
+                         data-moneda="${escapeHtml(p.moneda_precio ?? '')}"
+                         data-cantidad-disponible="${escapeHtml(p.cantidad_disponible ?? '')}"
+                         data-importe-disponible="${escapeHtml(p.importe_disponible ?? '')}"
+                         data-ordenes-count="${escapeHtml(p.ordenes_count ?? 0)}">
+                        <div class="font-semibold text-slate-800">${escapeHtml(p.nombre)}</div>
+                        <div class="text-xs text-slate-500">${metaLinea}</div>
+                        ${disponibleLinea ? `<div class="text-xs text-slate-400">${escapeHtml(disponibleLinea)}</div>` : ''}
+                        ${extra}
+                    </div>`;
+                }).join('');
 
                 box.classList.remove('hidden');
 
-                // Eventos para seleccionar producto
                 box.querySelectorAll('[data-id]').forEach(item => {
-                    // Cambiado a 'click' simple para mayor agilidad
                     item.addEventListener('click', () => {
-                        productoId.value = item.dataset.id;
-                        if(legacyId) legacyId.value = item.dataset.legacy || '';
-                        if(unidad)   unidad.value   = item.dataset.unidad || '';
-                        if(precioInput) precioInput.value = item.dataset.precio !== '' ? Number(item.dataset.precio).toFixed(4) : '';
-                        
+                        if (esObraCivil) {
+                            if (civilConceptId) civilConceptId.value = item.dataset.civilId || item.dataset.id || '';
+                            if (productoId) productoId.value = '';
+                            if (legacyId) legacyId.value = '';
+                        } else {
+                            if (productoId) productoId.value = item.dataset.id || '';
+                            if (civilConceptId) civilConceptId.value = '';
+                            if (legacyId) legacyId.value = item.dataset.legacy || '';
+                        }
+
+                        if (unidad) unidad.value = item.dataset.unidad || '';
+                        if (precioInput) precioInput.value = item.dataset.precio !== '' ? Number(item.dataset.precio).toFixed(4) : '';
+                        if (cantidadInput) {
+                            cantidadInput.dataset.cantidadDisponible = item.dataset.cantidadDisponible || '0';
+                            cantidadInput.dataset.unidad = item.dataset.unidad || '';
+                            validarCantidadCivilDisponible();
+                        }
+
                         input.value = item.dataset.nombre || input.value;
-                        if(meta) {
-                            const sku = item.dataset.sku || '-';
+                        if (meta) {
+                            const clave = item.dataset.sku || '-';
                             const descripcion = item.dataset.descripcion || '';
-                            const precio = item.dataset.precio !== '' ? ` - Ultimo precio: ${Number(item.dataset.precio).toFixed(2)} ${item.dataset.moneda || ''}` : '';
-                            meta.innerText = descripcion ? `SKU: ${sku} - ${descripcion}${precio}` : `SKU: ${sku}${precio}`;
+                            const precio = item.dataset.precio !== '' ? ` - P.U.: ${Number(item.dataset.precio).toFixed(2)} ${item.dataset.moneda || ''}` : '';
+                            const disponible = esObraCivil ? civilDisponibleTexto({
+                                unidad: item.dataset.unidad || '',
+                                cantidad_disponible: item.dataset.cantidadDisponible || 0,
+                                importe_disponible: item.dataset.importeDisponible || 0,
+                                ordenes_count: item.dataset.ordenesCount || 0,
+                            }) : '';
+                            meta.innerText = esObraCivil
+                                ? `Clave: ${clave}${descripcion ? ' - ' + descripcion : ''}${precio}${disponible ? ' | ' + disponible : ''}`
+                                : (descripcion ? `SKU: ${clave} - ${descripcion}${precio}` : `SKU: ${clave}${precio}`);
                         }
 
                         box.classList.add('hidden');
@@ -709,12 +806,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
             } catch (error) {
-                console.error('Error en el fetch de productos:', error);
+                console.error(esObraCivil ? 'Error en el fetch de conceptos civiles:' : 'Error en el fetch de productos:', error);
             }
         }, 300);
     });
 
-    // Cerrar el buscador si el usuario hace clic fuera de él
+    cantidadInput?.addEventListener('input', validarCantidadCivilDisponible);
+
     document.addEventListener('click', (e) => {
         if (!input.contains(e.target) && !box.contains(e.target)) {
             box.classList.add('hidden');

@@ -40,7 +40,7 @@
             </div>
 
 
-            {{-- MENU --}}
+            {{-- MENU: production icons are intentional; preserve UTF-8 and do not normalize them. --}}
             <nav class="flex-1 py-6 space-y-1">
                  @if($canMenu('dashboard.access'))
                 <a href="{{ route('dashboard') }}"
@@ -95,6 +95,13 @@
                    title="Obras">
                     <span class="text-lg">🏗️</span>
                     <span class="sidebar-text">Obras</span>
+                </a>
+
+                <a href="{{ route('obra_civil.index') }}"
+                   class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->is('obra_civil*') ? 'bg-white/10' : '' }}"
+                   title="Obra Civil">
+                    <span class="text-lg">🏛️</span>
+                    <span class="sidebar-text">Obra Civil</span>
                 </a>
                 @endif
                 @if($canMenu('vehiculos.access'))

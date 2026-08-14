@@ -11,6 +11,8 @@ class OrdenCompraDetalle extends Model
     // protected $fillable = [
     //     'orden_compra_id',
     //     'producto_id',
+    //     'civil_concept_id',
+    //     'civil_concept_snapshot',
     //     'legacy_prod_id',
     //     'descripcion',
     //     'unidad',
@@ -26,6 +28,8 @@ class OrdenCompraDetalle extends Model
     protected $fillable = [
     'orden_compra_id',
     'producto_id',
+    'civil_concept_id',
+    'civil_concept_snapshot',
     'legacy_prod_id',
     'descripcion',
     'unidad',
@@ -53,6 +57,7 @@ class OrdenCompraDetalle extends Model
         'retenciones' => 'decimal:2',
         'otros_impuestos' => 'decimal:2',
         'tipo_cambio' => 'decimal:4',
+        'civil_concept_snapshot' => 'array',
         'tipo_retencion_id' => 'integer',
         'retencion_porcentaje' => 'decimal:4',
     ];
@@ -70,4 +75,10 @@ class OrdenCompraDetalle extends Model
     {
         return $this->belongsTo(TipoRetencion::class, 'tipo_retencion_id');
     }
+    public function civilConcept()
+    {
+        return $this->belongsTo(CivilConcept::class, 'civil_concept_id');
+    }
 }
+
+

@@ -12,6 +12,7 @@ use App\Models\CentroCosto;
 use App\Models\TipoIva;
 use App\Models\TipoRetencion;
 use App\Models\DocumentoFirmante;
+use App\Services\CivilConceptBalanceService;
 use App\Services\OrdenCompraNotificationService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
@@ -600,7 +601,7 @@ public function edit($id)
 //     return back()->with('success', 'Orden autorizada.');
 // }
 //nueva funcion autorizar con la parte de las partidas
-public function autorizar($id, OrdenCompraNotificationService $notifications)
+public function autorizar(Request $request, $id, OrdenCompraNotificationService $notifications)
 {
     $this->authorizeAny(['ordenes_compra.authorize.access', 'ordenes_compra.autorizar'], 'No tienes permiso para autorizar ordenes de compra.');
 
@@ -646,6 +647,13 @@ public function autorizar($id, OrdenCompraNotificationService $notifications)
     }
     // ── FIN validación ───────────────────────────────────────────────────────
 
+    $civilExcesses = $this->civilAuthorizationExcesses($oc);
+
+    if (!empty($civilExcesses) && !$request->boolean('confirmar_sobregiro_civil')) {
+        return back()
+            ->with('error', $this->civilAuthorizationExcessMessage($civilExcesses))
+            ->with('civil_sobregiro_confirm_oc_id', $oc->id);
+    }
     $oc->estado             = 'AUTORIZADA';
     $oc->fecha_autorizacion = now()->toDateString();
     $oc->usuario_autoriza   = $this->usuarioActualNombre();
@@ -657,6 +665,80 @@ public function autorizar($id, OrdenCompraNotificationService $notifications)
     return back()->with('success', 'Orden autorizada.');
 }
 
+private function civilAuthorizationExcessMessage(array $excesses): string
+{
+    $first = $excesses[0] ?? [];
+    $total = count($excesses);
+    $code = $first['code'] ?? ('ID ' . ($first['civil_concept_id'] ?? '-'));
+    $description = $first['description'] ?? 'Concepto civil';
+    $unit = $first['unit'] ?? '';
+    $requestedQuantity = number_format((float) ($first['requested_quantity'] ?? 0), 4);
+    $availableQuantity = number_format((float) ($first['available_quantity'] ?? 0), 4);
+    $requestedAmount = number_format((float) ($first['requested_amount'] ?? 0), 2);
+    $availableAmount = number_format((float) ($first['available_amount'] ?? 0), 2);
+    $extra = $total > 1 ? ' Hay ' . ($total - 1) . ' concepto(s) adicional(es) excedidos.' : '';
+
+    return 'No se puede autorizar: la OC excede el disponible del concepto civil '
+        . $code . ' - ' . $description . '. Solicitado: '
+        . $requestedQuantity . ($unit ? ' ' . $unit : '') . ' / $' . $requestedAmount
+        . '. Disponible: ' . $availableQuantity . ($unit ? ' ' . $unit : '') . ' / $' . $availableAmount
+        . '. Para continuar se requiere confirmacion de sobregiro.' . $extra;
+}
+private function civilAuthorizationExcesses(OrdenCompra $oc): array
+{
+    if (!$oc->obra || !$this->esObraCivil($oc->obra)) {
+        return [];
+    }
+
+    $detalles = $oc->detalles()
+        ->with('civilConcept')
+        ->whereNotNull('civil_concept_id')
+        ->get();
+
+    if ($detalles->isEmpty()) {
+        return [];
+    }
+
+    $conceptIds = $detalles->pluck('civil_concept_id')->filter()->unique()->values();
+    $balances = app(CivilConceptBalanceService::class)->summaries($conceptIds, $oc->id);
+
+    return $detalles
+        ->groupBy('civil_concept_id')
+        ->map(function ($items, $conceptId) use ($balances) {
+            $first = $items->first();
+            $concept = $first?->civilConcept;
+            $balance = $balances->get((int) $conceptId, []);
+
+            $requestedQuantity = (float) $items->sum('cantidad');
+            $requestedAmount = (float) $items->sum('importe');
+            $availableQuantity = (float) ($balance['available_quantity'] ?? 0);
+            $availableAmount = (float) ($balance['available_amount'] ?? 0);
+            $exceedsQuantity = $requestedQuantity > $availableQuantity;
+            $exceedsAmount = $requestedAmount > $availableAmount;
+
+            if (!$exceedsQuantity && !$exceedsAmount) {
+                return null;
+            }
+
+            return [
+                'civil_concept_id' => (int) $conceptId,
+                'code' => $concept?->excel_code,
+                'description' => $concept?->description ?? $first?->descripcion,
+                'unit' => $concept?->unit ?? $first?->unidad,
+                'requested_quantity' => $requestedQuantity,
+                'available_quantity' => $availableQuantity,
+                'excess_quantity' => $requestedQuantity - $availableQuantity,
+                'requested_amount' => $requestedAmount,
+                'available_amount' => $availableAmount,
+                'excess_amount' => $requestedAmount - $availableAmount,
+                'exceeds_quantity' => $exceedsQuantity,
+                'exceeds_amount' => $exceedsAmount,
+            ];
+        })
+        ->filter()
+        ->values()
+        ->all();
+}
 /**
  * Imprimir OC en PDF
  */
@@ -1996,10 +2078,19 @@ foreach ($oc->detalles as $detalle) {
 {
     $obra = \App\Models\Obra::findOrFail($obra_id);
 
+    if ($this->esObraCivil($obra)) {
+        return response()->json($this->partidasCivilPorObra($obra));
+    }
+
+    return response()->json($this->partidasPlaneacionPorObra($obra));
+}
+
+private function partidasPlaneacionPorObra(Obra $obra)
+{
     // IDs de presupuestos vinculados a esta obra
     $presupuestoIds = $obra->presupuestos_vinculados()->pluck('presupuestos.id');
 
-    // Filas base (numero_semana = 0) de la planeación de esta obra
+    // Filas base (numero_semana = 0) de la planeacion de esta obra
     $gastos = \App\Models\ObraPlaneacionGasto::query()
         ->where(function ($q) use ($obra, $presupuestoIds) {
             $q->where('obra_id', $obra->id)
@@ -2016,23 +2107,135 @@ foreach ($oc->detalles as $detalle) {
         ->groupBy('planeacion_gasto_id')
         ->pluck('total_gastado', 'planeacion_gasto_id');
 
-    $resultado = $gastos->map(function ($g) use ($gastadoPorPartida) {
+    return $gastos->map(function ($g) use ($gastadoPorPartida) {
         $tope     = (float) $g->precio_unitario * (float) $g->cantidad;
         $gastado  = (float) ($gastadoPorPartida[$g->id] ?? 0);
         $disponible = max(0, $tope - $gastado);
 
         return [
             'id'         => $g->id,
+            'source'     => 'planeacion',
             'partida'    => $g->partida,
             'concepto'   => $g->concepto,
             'tope'       => $tope,
             'gastado'    => $gastado,
             'disponible' => $disponible,
         ];
-    });
-
-    return response()->json($resultado->values());
+    })->values();
 }
+
+private function partidasCivilPorObra(Obra $obra)
+{
+    $import = \App\Models\CivilCatalogImport::query()
+        ->where('obra_id', $obra->id)
+        ->whereIn('status', ['imported', 'validated'])
+        ->latest()
+        ->first();
+
+    if (!$import) {
+        return collect();
+    }
+
+    $partidas = \App\Models\CivilPartida::query()
+        ->with('building')
+        ->whereHas('building', function ($query) use ($import) {
+            $query->where('civil_catalog_import_id', $import->id);
+        })
+        ->orderBy('sort_order')
+        ->orderBy('id')
+        ->get();
+
+    $gastadoPorPartida = DB::table('orden_compra_detalles as ocd')
+        ->join('civil_concepts as cc', 'cc.id', '=', 'ocd.civil_concept_id')
+        ->join('ordenes_compra as oc', 'oc.id', '=', 'ocd.orden_compra_id')
+        ->whereIn('cc.civil_partida_id', $partidas->pluck('id'))
+        ->where('oc.estado', 'AUTORIZADA')
+        ->selectRaw('cc.civil_partida_id, SUM(ocd.importe) as total_gastado')
+        ->groupBy('cc.civil_partida_id')
+        ->pluck('total_gastado', 'cc.civil_partida_id');
+
+    return $partidas->map(function ($partida) use ($gastadoPorPartida) {
+        $tope = (float) $partida->budget_amount;
+        $gastado = (float) ($gastadoPorPartida[$partida->id] ?? 0);
+
+        return [
+            'id'         => $partida->id,
+            'source'     => 'civil',
+            'partida'    => $partida->building?->name ?: 'Obra civil',
+            'concepto'   => trim(($partida->code ? $partida->code . ' ' : '') . $partida->name),
+            'tope'       => $tope,
+            'gastado'    => $gastado,
+            'disponible' => max(0, $tope - $gastado),
+        ];
+    })->values();
+}
+
+private function esObraCivil(Obra $obra): bool
+{
+    return in_array(strtoupper((string) $obra->tipo_obra), ['OBRA_CIVIL', 'CIVIL'], true);
+}
+
+public function buscarConceptosCivil(Request $request, OrdenCompra $orden_compra)
+{
+    $term = trim((string) $request->get('q', ''));
+
+    if (mb_strlen($term) < 2 || !$orden_compra->obra_id || !$orden_compra->obra || !$this->esObraCivil($orden_compra->obra)) {
+        return response()->json([]);
+    }
+
+    $import = \App\Models\CivilCatalogImport::query()
+        ->where('obra_id', $orden_compra->obra_id)
+        ->whereIn('status', ['imported', 'validated'])
+        ->latest()
+        ->first();
+
+    if (!$import) {
+        return response()->json([]);
+    }
+
+    $conceptos = \App\Models\CivilConcept::query()
+        ->with('partida.building')
+        ->where('is_active', true)
+        ->whereHas('partida.building', function ($query) use ($import) {
+            $query->where('civil_catalog_import_id', $import->id);
+        })
+        ->where(function ($query) use ($term) {
+            $query->where('description', 'like', "%{$term}%")
+                ->orWhere('excel_code', 'like', "%{$term}%");
+        })
+        ->orderBy('sort_order')
+        ->orderBy('id')
+        ->limit(20)
+        ->get();
+
+    $balances = app(CivilConceptBalanceService::class)->summaries($conceptos->pluck('id'));
+
+    return response()->json($conceptos->map(function ($concepto) use ($balances) {
+        $partida = $concepto->partida;
+        $building = $partida?->building;
+        $balance = $balances->get($concepto->id, []);
+
+        return [
+            'id' => $concepto->id,
+            'civil_concept_id' => $concepto->id,
+            'legacy_prod_id' => null,
+            'nombre' => $concepto->description,
+            'descripcion' => trim(($building?->name ? $building->name . ' / ' : '') . (($partida?->code || $partida?->name) ? trim(($partida?->code ? $partida->code . ' ' : '') . ($partida?->name ?? '')) : '')),
+            'unidad' => $concepto->unit,
+            'sku' => $concepto->excel_code,
+            'ultimo_precio' => (float) $concepto->unit_price,
+            'moneda_precio' => 'MXN',
+            'cantidad_presupuesto' => (float) $concepto->budget_quantity,
+            'importe_presupuesto' => (float) $concepto->budget_amount,
+            'cantidad_usada' => (float) ($balance['used_quantity'] ?? 0),
+            'importe_usado' => (float) ($balance['used_amount'] ?? 0),
+            'cantidad_disponible' => (float) ($balance['available_quantity'] ?? $concepto->budget_quantity),
+            'importe_disponible' => (float) ($balance['available_amount'] ?? $concepto->budget_amount),
+            'ordenes_count' => (int) ($balance['orders_count'] ?? 0),
+        ];
+    }));
+}
+
 public function exportarListaPagos(
     Request $request,
     string $formaPago
@@ -2489,3 +2692,4 @@ public function exportarListaPagos(
         );
 }
 }
+

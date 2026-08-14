@@ -132,6 +132,12 @@ modulo/
     partials/
 ```
 
+Regla de UX para formularios:
+
+* Siempre que se agregue o modifique una accion `store`, `update`, `patch` o cualquier formulario que persista datos, la vista debe mostrar un modal/overlay de carga al enviar.
+* El boton de envio debe quedar deshabilitado mientras se procesa para evitar doble submit.
+* El mensaje debe explicar la accion en curso, por ejemplo: `Guardando asistencia`, `Guardando cambios` o `Procesando solicitud`.
+
 ---
 
 # Módulos implementados

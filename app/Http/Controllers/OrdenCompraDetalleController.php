@@ -53,10 +53,25 @@ class OrdenCompraDetalleController extends Controller
             );
         }
 
+        $civilConcept = null;
+
+        if ($request->filled('civil_concept_id')) {
+            $civilConcept = \App\Models\CivilConcept::query()
+                ->with('partida.building.catalogImport')
+                ->where('id', $request->integer('civil_concept_id'))
+                ->where('is_active', true)
+                ->whereHas('partida.building.catalogImport', function ($query) use ($oc) {
+                    $query->where('obra_id', $oc->obra_id)
+                        ->whereIn('status', ['imported', 'validated']);
+                })
+                ->firstOrFail();
+        }
+
         $detalle = new OrdenCompraDetalle();
         $detalle->orden_compra_id = $oc->id;
-        $detalle->producto_id = $request->producto_id;
-        $detalle->legacy_prod_id = $request->legacy_prod_id;
+        $detalle->producto_id = $civilConcept ? null : $request->producto_id;
+        $detalle->civil_concept_id = $civilConcept?->id;
+        $detalle->legacy_prod_id = $civilConcept ? null : $request->legacy_prod_id;
         $detalle->descripcion = $request->descripcion;
         $detalle->unidad = $request->unidad;
         $detalle->cantidad = $cantidad;
@@ -81,6 +96,28 @@ class OrdenCompraDetalleController extends Controller
         }
 
         $detalle->notas = $request->notas;
+
+        if ($civilConcept) {
+            $partida = $civilConcept->partida;
+            $building = $partida?->building;
+            $import = $building?->catalogImport;
+
+            $detalle->civil_concept_snapshot = [
+                'civil_catalog_import_id' => $import?->id,
+                'filename' => $import?->filename,
+                'building' => $building?->name,
+                'partida_id' => $partida?->id,
+                'partida_code' => $partida?->code,
+                'partida_name' => $partida?->name,
+                'excel_code' => $civilConcept->excel_code,
+                'description' => $civilConcept->description,
+                'unit' => $civilConcept->unit,
+                'budget_quantity' => (float) $civilConcept->budget_quantity,
+                'unit_price' => (float) $civilConcept->unit_price,
+                'budget_amount' => (float) $civilConcept->budget_amount,
+            ];
+        }
+
         $detalle->save();
 
         logger()->info('OC Detalle guardado', [

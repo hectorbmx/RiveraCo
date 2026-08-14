@@ -20,6 +20,12 @@ class StoreOrdenCompraDetalleRequest extends FormRequest
                 'exists:productos,id',
             ],
 
+            'civil_concept_id' => [
+                'nullable',
+                'integer',
+                'exists:civil_concepts,id',
+            ],
+
             'legacy_prod_id' => [
                 'nullable',
                 'string',
@@ -29,7 +35,7 @@ class StoreOrdenCompraDetalleRequest extends FormRequest
             'descripcion' => [
                 'required',
                 'string',
-                'max:255',
+                'max:5000',
             ],
 
             'unidad' => [

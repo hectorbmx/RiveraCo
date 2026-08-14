@@ -20,6 +20,7 @@ class StoreOrdenCompraRequest extends FormRequest
         'obra_id'              => ['nullable', 'integer', 'exists:obras,id'],
         'centro_costo_id'      => ['nullable', 'integer', 'exists:centros_costo,id'],
         'planeacion_gasto_id'  => ['nullable', 'integer', 'exists:obra_planeacion_gastos,id'],  // NUEVO
+        'civil_partida_id'     => ['nullable', 'integer', 'exists:civil_partidas,id'],
  
         'area_id'              => ['required', 'integer', 'exists:areas,id'],
  
@@ -69,3 +70,4 @@ class StoreOrdenCompraRequest extends FormRequest
 
     
 }
+

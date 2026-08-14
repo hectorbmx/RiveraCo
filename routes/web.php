@@ -7,6 +7,7 @@ use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ClienteDocumentoController;
 use App\Http\Controllers\ClientePortalController;
 use App\Http\Controllers\ObraController;
+use App\Http\Controllers\ObraCivilController;
 use App\Http\Controllers\ObraContratoController;
 use App\Http\Controllers\ObraPlanoController;
 use App\Http\Controllers\ObraPresupuestoController;
@@ -423,6 +424,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::patch('/configuracion-empresa/tipos-iva/{tipoIva}/toggle-activo', [EmpresaConfigController::class, 'toggleTipoIva'])->name('empresa_config.tipos-iva.toggle-activo');
     Route::patch('/configuracion-empresa/tipos-iva/{tipoIva}/default', [EmpresaConfigController::class, 'marcarTipoIvaDefault'])->name('empresa_config.tipos-iva.default');
     Route::patch('/configuracion-empresa/folios-obra/{folio}', [EmpresaConfigController::class, 'updateFolioObra'])->name('empresa_config.folios-obra.update');
+    Route::post('/configuracion-empresa/tipos-obra', [EmpresaConfigController::class, 'storeTipoObraConfiguracion'])->name('empresa_config.tipos-obra.store');
     Route::patch('/configuracion-empresa/tipos-obra/{tipo}', [EmpresaConfigController::class, 'updateTipoObraConfiguracion'])->name('empresa_config.tipos-obra.update');
 
     // Tipos de Retencion
@@ -551,10 +553,20 @@ Route::middleware('auth','verified')->group(function () {
     Route::resource('clientes', ClienteController::class)->except(['show']);
     Route::get('obras/folio-siguiente', [ObraController::class, 'folioSiguiente'])->name('obras.folio-siguiente');
     Route::resource('obras', ObraController::class)->except(['show']);
+    Route::prefix('obra_civil')->name('obra_civil.')->group(function () {
+        Route::get('/', [ObraCivilController::class, 'index'])->name('index');
+        Route::post('{obra}/catalogo', [ObraCivilController::class, 'uploadCatalog'])->name('catalog.upload');
+        Route::get('{obra}/catalogo/preview/{import}', [ObraCivilController::class, 'preview'])->name('catalog.preview');
+        Route::delete('{obra}/catalogo/{import}', [ObraCivilController::class, 'destroyCatalog'])->name('catalog.destroy');
+        Route::post('{obra}/catalogo/preview/{import}', [ObraCivilController::class, 'confirmCatalog'])->name('catalog.confirm');
+        Route::get('{obra}/detalles', [ObraCivilController::class, 'details'])->name('details');
+        Route::get('{obra}/conceptos/{concept}/ordenes', [ObraCivilController::class, 'conceptOrders'])->name('concept.orders');
+    });
     Route::get('obras/{obra}/asistencias/reporte', [ObraController::class, 'reporteAsistencias'])
         ->name('obras.asistencias.reporte');
 
     // Route::resource('obras', ObraController::class)->except(['show']);
+
 
     // Contratos de obra (solo store y destroy por ahora)
     Route::post('obras/{obra}/contratos', [ObraContratoController::class, 'store'])
@@ -633,6 +645,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::get('ordenes_compra/{orden_compra}/print', [OrdenCompraController::class, 'print'])->name('ordenes_compra.print');
 
     Route::get('ordenes-compra/partidas-obra/{obra_id}', [OrdenCompraController::class, 'partidasPorObra'])->name('ordenes_compra.partidas_obra');
+    Route::get('ordenes-compra/{orden_compra}/conceptos-civiles/buscar', [OrdenCompraController::class, 'buscarConceptosCivil'])->name('ordenes_compra.conceptos_civiles.buscar');
     Route::get('ordenes-compra/exportar-pagos/{formaPago}',[OrdenCompraController::class, 'exportarListaPagos'])->name('ordenes_compra.exportar_pagos');
 
     Route::get('proveedores/buscar', [ProveedorController::class, 'buscar'])->name('proveedores.buscar');

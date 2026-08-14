@@ -323,17 +323,38 @@ private function abortarSiObraFueraDeArea(Obra $obra): void
     }
 }
 
+private function prefijoParaTipoObra(string $tipoObra): ?string
+{
+    $tipoObra = strtoupper(trim($tipoObra));
+
+    $prefijoConfigurado = ObraTipoConfiguracion::query()
+        ->where('tipo_obra', $tipoObra)
+        ->where('activo', true)
+        ->value('prefijo');
+
+    if ($prefijoConfigurado) {
+        return strtoupper(trim($prefijoConfigurado));
+    }
+
+    return self::TIPOS_OBRA_FOLIO[$tipoObra] ?? null;
+}
+
 private function resolverClaveObra(?string $tipoObra, ?string $claveActual): string
 {
-    $tipoObra = $tipoObra ? strtoupper($tipoObra) : null;
+    $tipoObra = $tipoObra ? strtoupper(trim($tipoObra)) : null;
     $claveActual = trim((string) $claveActual);
 
-    if (!$tipoObra || !isset(self::TIPOS_OBRA_FOLIO[$tipoObra])) {
+    if (!$tipoObra) {
+        return $claveActual;
+    }
+
+    $prefijo = $this->prefijoParaTipoObra($tipoObra);
+
+    if (!$prefijo) {
         return $claveActual;
     }
 
     $anio = (int) Carbon::now('America/Mexico_City')->format('Y');
-    $prefijo = self::TIPOS_OBRA_FOLIO[$tipoObra];
     $patronAuto = '/^' . preg_quote($prefijo, '/') . '-' . $anio . '-\d+$/';
 
     if ($claveActual !== '' && !preg_match($patronAuto, $claveActual)) {
@@ -342,7 +363,6 @@ private function resolverClaveObra(?string $tipoObra, ?string $claveActual): str
 
     return $this->reservarFolio($tipoObra, $anio);
 }
-
 private function folioPreview(string $tipoObra, int $anio): string
 {
     $folio = $this->folioBase($tipoObra, $anio);
@@ -361,8 +381,14 @@ private function reservarFolio(string $tipoObra, int $anio): string
 
 private function folioBase(string $tipoObra, int $anio, bool $lock = false): ObraFolio
 {
-    $tipoObra = strtoupper($tipoObra);
-    $prefijo = self::TIPOS_OBRA_FOLIO[$tipoObra];
+    $tipoObra = strtoupper(trim($tipoObra));
+    $prefijo = $this->prefijoParaTipoObra($tipoObra);
+
+    if (!$prefijo) {
+        throw ValidationException::withMessages([
+            'tipo_obra' => 'El tipo de obra seleccionado no tiene prefijo de folio configurado.',
+        ]);
+    }
 
     $query = ObraFolio::where('tipo_obra', $tipoObra)->where('anio', $anio);
 
@@ -383,7 +409,6 @@ private function folioBase(string $tipoObra, int $anio, bool $lock = false): Obr
         'ultimo_consecutivo' => $this->ultimoConsecutivoExistente($prefijo, $anio),
     ]);
 }
-
 private function ultimoConsecutivoExistente(string $prefijo, int $anio): int
 {
     return Obra::where('clave_obra', 'like', "{$prefijo}-{$anio}-%")

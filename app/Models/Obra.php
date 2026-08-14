@@ -12,8 +12,8 @@ class Obra extends Model
 {
 
     public static $estatusLabels = [
-    1 => 'Planeación',
-    2 => 'En ejecución',
+    1 => 'PlaneaciÃ³n',
+    2 => 'En ejecuciÃ³n',
     3 => 'Suspendida',
     4 => 'Terminada',
     5 => 'Cancelada',
@@ -28,8 +28,8 @@ class Obra extends Model
     public static function estatusLabels(): array
     {
         return [
-            self::ESTATUS_PLANEACION => 'Planeación',
-            self::ESTATUS_EJECUCION => 'En ejecución',
+            self::ESTATUS_PLANEACION => 'PlaneaciÃ³n',
+            self::ESTATUS_EJECUCION => 'En ejecuciÃ³n',
             self::ESTATUS_SUSPENDIDA => 'Suspendida',
             self::ESTATUS_TERMINADA => 'Terminada',
             self::ESTATUS_CANCELADA => 'Cancelada',
@@ -113,13 +113,13 @@ class Obra extends Model
 ];
 
 
-    // Relación con Cliente
+    // RelaciÃ³n con Cliente
     public function cliente()
     {
         return $this->belongsTo(Cliente::class);
     }
 
-    // Relación con Empleado (responsable)
+    // RelaciÃ³n con Empleado (responsable)
     public function facturaBorradores()
     {
         return $this->hasMany(ObraFacturaBorrador::class);
@@ -203,7 +203,7 @@ class Obra extends Model
 
    public function presupuestos_vinculados()
     {
-        // Apuntamos a la cabecera 'Presupuesto' a través de la tabla pivote 'obra_presupuesto'
+        // Apuntamos a la cabecera 'Presupuesto' a travÃ©s de la tabla pivote 'obra_presupuesto'
         return $this->belongsToMany(Presupuesto::class, 'obra_presupuesto', 'obra_id', 'presupuesto_id');
     }
 // app/Models/Obra.php
@@ -238,4 +238,8 @@ public function cfdis()
 {
     return $this->hasMany(SatCfdi::class, 'obra_id');
 }
+    public function civilCatalogImports()
+    {
+        return $this->hasMany(CivilCatalogImport::class, 'obra_id');
+    }
 }

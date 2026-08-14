@@ -127,7 +127,7 @@
                                         Solicitar D32
                                     </button>
                                 </form>
-                                <a href="{{ route('sat.cfdis.estadisticas', $empresa->id) }}"
+                                <a href="{{ route('sat.cfdis.estadisticas.empresa', $empresa) }}"
                                     class="text-sm font-medium text-emerald-600 hover:text-emerald-800">
                                         Estadísticas
                                     </a>

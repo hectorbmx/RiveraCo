@@ -11,10 +11,24 @@ use Illuminate\Support\Facades\DB;
 class SatCfdiEstadisticaController extends Controller
 {
     //
-   public function index(SatEmpresa $empresa)
+   public function index(Request $request, ?SatEmpresa $empresa = null)
 {
+    if (!$empresa || !$empresa->exists) {
+        $empresaId = $request->route('empresa') ?: $request->query('empresa');
+
+        if (!$empresaId) {
+            $numericQueryKey = collect(array_keys($request->query()))
+                ->first(fn ($key) => is_numeric($key));
+            $empresaId = $numericQueryKey ?: null;
+        }
+
+        $empresa = $empresaId
+            ? SatEmpresa::findOrFail($empresaId)
+            : SatEmpresa::query()->orderBy('id')->firstOrFail();
+    }
+
     $empresaRfc = $empresa->rfc;
-    $year = (int) request('year', now()->year);
+    $year = (int) $request->input('year', now()->year);
 
     $years = DB::table('sat_cfdis')
     ->selectRaw('YEAR(fecha_emision) as year')

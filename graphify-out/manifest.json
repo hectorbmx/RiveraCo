@@ -90,8 +90,8 @@
     "semantic_hash": "8263ecd1958b4155cb33cda29d7ee5e9"
   },
   "app/Http/Controllers/Admin/UsuarioController.php": {
-    "mtime": 1784745029.6237035,
-    "ast_hash": "b81a483c9f452b2c3ddff1e8ce060acc",
+    "mtime": 1786562009.7407515,
+    "ast_hash": "765e035c483da9041686221a59f3b507",
     "semantic_hash": ""
   },
   "app/Http/Controllers/Api/Agent/AgentAuthController.php": {
@@ -305,8 +305,8 @@
     "semantic_hash": "99e434de7ae01139e9d503fe166e6212"
   },
   "app/Http/Controllers/EmpresaConfigController.php": {
-    "mtime": 1786391811.7550535,
-    "ast_hash": "659d15711540db1e6809cdf670da8a92",
+    "mtime": 1786645688.2508416,
+    "ast_hash": "6889714b327e52e05b3bb43567c0a30a",
     "semantic_hash": ""
   },
   "app/Http/Controllers/EmpresaConfigMaquinaController.php": {
@@ -390,8 +390,8 @@
     "semantic_hash": "4e27f21d653e72b5a53d1d39b1d59826"
   },
   "app/Http/Controllers/ObraController.php": {
-    "mtime": 1785868146.5884397,
-    "ast_hash": "1835cdb5af84b2e4110e1164a54b3d11",
+    "mtime": 1786647841.0715594,
+    "ast_hash": "f725b25f6fe02a39979d0ed1cfca2ed0",
     "semantic_hash": ""
   },
   "app/Http/Controllers/ObraEmpleadoController.php": {
@@ -440,13 +440,13 @@
     "semantic_hash": "c21468edce01faf20e972131a2718608"
   },
   "app/Http/Controllers/OrdenCompraController.php": {
-    "mtime": 1786390063.7884195,
-    "ast_hash": "6785b07a84c33d76d1ed49f4573fac0b",
+    "mtime": 1786728006.2613864,
+    "ast_hash": "034d8ac24b2cc151b6b141d27b777f9a",
     "semantic_hash": ""
   },
   "app/Http/Controllers/OrdenCompraDetalleController.php": {
-    "mtime": 1786384584.7792897,
-    "ast_hash": "df05a7d997e634e28b0910303f5fd159",
+    "mtime": 1786651983.935053,
+    "ast_hash": "1dc819164fd14d9ad1625cc979ab3046",
     "semantic_hash": ""
   },
   "app/Http/Controllers/PagoProveedorController.php": {
@@ -500,9 +500,9 @@
     "semantic_hash": "1d54849ef621d38250988e46a6259ab9"
   },
   "app/Http/Controllers/Sat/SatCfdiEstadisticaController.php": {
-    "mtime": 1777315586.3422594,
-    "ast_hash": "dcc5808aa8759d98cf4dc014e8e83b9b",
-    "semantic_hash": "dcc5808aa8759d98cf4dc014e8e83b9b"
+    "mtime": 1786729866.2271311,
+    "ast_hash": "0a5f5192fe33c079eab26fe592149285",
+    "semantic_hash": ""
   },
   "app/Http/Controllers/Sat/SatCfdiPagoController.php": {
     "mtime": 1777573493.2781518,
@@ -620,23 +620,23 @@
     "semantic_hash": "4dc24cadcf89ed567b66e998dc68d962"
   },
   "app/Http/Requests/StoreOrdenCompraDetalleRequest.php": {
-    "mtime": 1786384374.9897056,
-    "ast_hash": "eaf3b6d05da120bf22c5c1526baccacd",
+    "mtime": 1786652188.2403889,
+    "ast_hash": "e082e73a58e83a0a5edd18e9989e200b",
     "semantic_hash": ""
   },
   "app/Http/Requests/StoreOrdenCompraRequest.php": {
-    "mtime": 1786381846.9398813,
-    "ast_hash": "0d6bedc8f3510751351d65409c4082d8",
+    "mtime": 1786651256.438025,
+    "ast_hash": "af24427757a282bb2d3b421f9d9668a2",
     "semantic_hash": ""
   },
   "app/Http/Requests/UpdateOrdenCompraDetalleRequest.php": {
-    "mtime": 1786384584.7792897,
-    "ast_hash": "9f0ea782b3f4f30d126532c5f7520667",
+    "mtime": 1786652188.2403889,
+    "ast_hash": "db3aa2a9a9ebaa30061b110f64f31e93",
     "semantic_hash": ""
   },
   "app/Http/Requests/UpdateOrdenCompraRequest.php": {
-    "mtime": 1786381846.9423897,
-    "ast_hash": "8acd24102bc0c1eb789a5269f7fa5955",
+    "mtime": 1786651183.2995193,
+    "ast_hash": "9d7e38f148dbf4a3e4c9f452d94ba923",
     "semantic_hash": ""
   },
   "app/Jobs/Sat/ProcessSatCsfRequestJob.php": {
@@ -785,8 +785,8 @@
     "semantic_hash": "b25e0d7e38e923eadb1322b3c001fda6"
   },
   "app/Models/Empleado.php": {
-    "mtime": 1785859762.9773524,
-    "ast_hash": "336ddd18537dd35d6b864b54b68ec872",
+    "mtime": 1786637637.3311293,
+    "ast_hash": "c48d41404a2814857c70b74c4ef742a8",
     "semantic_hash": ""
   },
   "app/Models/EmpleadoContactoEmergencia.php": {
@@ -925,9 +925,9 @@
     "semantic_hash": "24c77623ed6a99e4424b1a598b2b90be"
   },
   "app/Models/Obra.php": {
-    "mtime": 1782406790.3762584,
-    "ast_hash": "2e72d0950af2c66062038d0e1259f3ba",
-    "semantic_hash": "2e72d0950af2c66062038d0e1259f3ba"
+    "mtime": 1786644780.5767496,
+    "ast_hash": "08668c048961d5afd7a3a456ca7841ff",
+    "semantic_hash": ""
   },
   "app/Models/ObraAsistencia.php": {
     "mtime": 1769616796.9263902,
@@ -1030,8 +1030,8 @@
     "semantic_hash": ""
   },
   "app/Models/OrdenCompraDetalle.php": {
-    "mtime": 1786383986.1282952,
-    "ast_hash": "c339d6a26b770d8a4a3b8b652c43166d",
+    "mtime": 1786644757.4342005,
+    "ast_hash": "a3cc7d7446eab07cfcaadaaef84c0e0f",
     "semantic_hash": ""
   },
   "app/Models/PagoProveedor.php": {
@@ -1380,12 +1380,12 @@
     "semantic_hash": "602c20aacb6ff929c61a540d6dc508b2"
   },
   "bootstrap/cache/packages.php": {
-    "mtime": 1785867376.778545,
+    "mtime": 1786647884.7310424,
     "ast_hash": "cf7dc07766bced438e9a1e415effc101",
     "semantic_hash": "cf7dc07766bced438e9a1e415effc101"
   },
   "bootstrap/cache/services.php": {
-    "mtime": 1785867376.850852,
+    "mtime": 1786647884.7872388,
     "ast_hash": "f5d2ee6b567e936beb2ea17b77d909cb",
     "semantic_hash": "f5d2ee6b567e936beb2ea17b77d909cb"
   },
@@ -2785,8 +2785,8 @@
     "semantic_hash": "9e0ffaed7de9e3c0b8c6be5df4ee206a"
   },
   "resources/views/empresa_config/edit.blade.php": {
-    "mtime": 1786393234.7231429,
-    "ast_hash": "515c23d60063c201f91b66799e1f1c4e",
+    "mtime": 1786645688.269843,
+    "ast_hash": "61977ffa6335d48b3515bceeb5f9455a",
     "semantic_hash": ""
   },
   "resources/views/empresa_config/index.blade.php": {
@@ -2850,8 +2850,8 @@
     "semantic_hash": "c600599e6be3e82e7152cf51cb47b385"
   },
   "resources/views/layouts/admin.blade.php": {
-    "mtime": 1785857676.682536,
-    "ast_hash": "fad4e283ab14537862e2c41523ff7a54",
+    "mtime": 1786647335.094359,
+    "ast_hash": "c2e83b2b69488e8404fb48d02f7bc92e",
     "semantic_hash": ""
   },
   "resources/views/layouts/app.blade.php": {
@@ -2970,13 +2970,13 @@
     "semantic_hash": "8370fb16be91a5cc809451619cac190a"
   },
   "resources/views/obras/create.blade.php": {
-    "mtime": 1782314800.7208614,
-    "ast_hash": "52d736df4d1524430e4473bcf2db11c9",
-    "semantic_hash": "52d736df4d1524430e4473bcf2db11c9"
+    "mtime": 1786558363.1648126,
+    "ast_hash": "83784bca02393d6f23831cd30c06b5b4",
+    "semantic_hash": ""
   },
   "resources/views/obras/edit.blade.php": {
-    "mtime": 1785872724.0700166,
-    "ast_hash": "155040ef1c17329895693649577663f3",
+    "mtime": 1786558624.7184968,
+    "ast_hash": "08f638236bc8ab7a3003744c216f1958",
     "semantic_hash": ""
   },
   "resources/views/obras/factura-borradores/print.blade.php": {
@@ -3020,18 +3020,18 @@
     "semantic_hash": "6e41996f4abbeb500d80ef4f0689a02d"
   },
   "resources/views/ordencompra/create.blade.php": {
-    "mtime": 1786384930.2945626,
-    "ast_hash": "328e15d24cd73d5fb1b248bc1a7e4a6c",
+    "mtime": 1786651294.1212103,
+    "ast_hash": "084c68bf805af742ca28fd3fcc57b6d6",
     "semantic_hash": ""
   },
   "resources/views/ordencompra/edit.blade.php": {
-    "mtime": 1786385043.2638304,
-    "ast_hash": "10726b5f84ff5b9fc2e1a5c7d9acef35",
+    "mtime": 1786725978.242621,
+    "ast_hash": "105674867a5b92e5dd595be5e8741f1b",
     "semantic_hash": ""
   },
   "resources/views/ordencompra/index.blade.php": {
-    "mtime": 1786390063.7884195,
-    "ast_hash": "ac501222c5a46ba28341383f651a465a",
+    "mtime": 1786728098.9817224,
+    "ast_hash": "d31a9bf437174650d8fdc0578f44294d",
     "semantic_hash": ""
   },
   "resources/views/ordencompra/show.blade.php": {
@@ -3265,9 +3265,9 @@
     "semantic_hash": "ff718ecaef2dc607f297c373d30e9acf"
   },
   "resources/views/sat/empresas/index.blade.php": {
-    "mtime": 1779810785.0960677,
-    "ast_hash": "63553fbbf5c64a5dbb6aa860b75a89b8",
-    "semantic_hash": "63553fbbf5c64a5dbb6aa860b75a89b8"
+    "mtime": 1786729866.2099092,
+    "ast_hash": "a80b967a85683250aa08fa00f9353cc4",
+    "semantic_hash": ""
   },
   "resources/views/sat/facturacion/cliente.blade.php": {
     "mtime": 1779814392.978454,
@@ -3305,8 +3305,8 @@
     "semantic_hash": "bec502e83dafa0d7eb050b5d53ed42e5"
   },
   "resources/views/usuarios/edit.blade.php": {
-    "mtime": 1784745029.6258783,
-    "ast_hash": "6bf411eb169c70f95c11f7c2400ddcdb",
+    "mtime": 1786562910.4447381,
+    "ast_hash": "dda50f3ee6a116122e667623cf292d1e",
     "semantic_hash": ""
   },
   "resources/views/usuarios/index.blade.php": {
@@ -3380,8 +3380,8 @@
     "semantic_hash": "62bfb59371c073b4ec966528fdd9c3f9"
   },
   "routes/web.php": {
-    "mtime": 1786557657.802508,
-    "ast_hash": "f37a644a507276110ea81ebe944669d9",
+    "mtime": 1786726742.9789717,
+    "ast_hash": "2bffc239db6a1cc2adc8f4b045553327",
     "semantic_hash": ""
   },
   "tailwind.config.js": {
@@ -3515,8 +3515,8 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1785262867.5650575,
-    "ast_hash": "6a47d64fcc136324ca395065a707ef76",
+    "mtime": 1786647323.4101305,
+    "ast_hash": "73e7e54f11091969c83211be7a3eb176",
     "semantic_hash": ""
   },
   "README.md": {
@@ -3530,8 +3530,8 @@
     "semantic_hash": ""
   },
   "docs/PROJECT_CONTEXT.md": {
-    "mtime": 1781545965.2210026,
-    "ast_hash": "fbe53d33c094f2d74ab98e9f063c6bff",
+    "mtime": 1786638120.200685,
+    "ast_hash": "a2053fe1c1f07a5832be3a4f1834eb81",
     "semantic_hash": ""
   },
   "docs/REFERENCIA_GENERAL_GRAFO.md": {
@@ -4500,8 +4500,8 @@
     "semantic_hash": ""
   },
   "resources/views/clientes/partials/_documentos.blade.php": {
-    "mtime": 1784910204.6600294,
-    "ast_hash": "b992e40d3d09ffcc6dd724c92613bd71",
+    "mtime": 1786559694.9179068,
+    "ast_hash": "76db4b8e6592a54bbcfee277ed48f102",
     "semantic_hash": ""
   },
   "app/Http/Controllers/ClienteContactoController.php": {
@@ -4650,8 +4650,8 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/GiraldaController.php": {
-    "mtime": 1786476138.3764465,
-    "ast_hash": "ffbc835c3fe2555809a9037c452cc203",
+    "mtime": 1786639511.462371,
+    "ast_hash": "56a534c30743aa551ac5c58bc8acd164",
     "semantic_hash": ""
   },
   "app/Models/EmpleadoEppEntrega.php": {
@@ -4685,8 +4685,8 @@
     "semantic_hash": ""
   },
   "resources/views/giralda/empleados.blade.php": {
-    "mtime": 1786474045.3145118,
-    "ast_hash": "024e924d701e842ac12dc2020fb0b302",
+    "mtime": 1786639511.4663684,
+    "ast_hash": "2cc460e5350746a44d4e1da161c86e4c",
     "semantic_hash": ""
   },
   "resources/views/giralda/horas-extras-print.blade.php": {
@@ -4725,8 +4725,8 @@
     "semantic_hash": ""
   },
   "docs/MODULO_GIRALDA.md": {
-    "mtime": 1785861501.8433757,
-    "ast_hash": "911c91f8dd506e000b1c5a09caa8b3a3",
+    "mtime": 1786639611.010177,
+    "ast_hash": "0c70dffa6df3251386177bf3a66ffbd1",
     "semantic_hash": ""
   },
   "docs/PENDIENTES_OPERATIVOS_SEMANA_2026-08-09.md": {
@@ -4854,11 +4854,6 @@
     "ast_hash": "e23a70de4b5862c37bdbf9178fc068e3",
     "semantic_hash": ""
   },
-  "storage/framework/views/f30fae91b7f964826e30b99a32dff0f5.php": {
-    "mtime": 1786476176.058805,
-    "ast_hash": "39c0767357d7fda5cb4d6020c14b5654",
-    "semantic_hash": ""
-  },
   "database/migrations/2026_08_11_090000_add_giralda_horas_extras_delete_permission.php": {
     "mtime": 1786475312.909981,
     "ast_hash": "f4397ebf915f770c09c7a2a7cd6a7edc",
@@ -4869,69 +4864,144 @@
     "ast_hash": "3efb3d657667c4e5f03607adf7742ec6",
     "semantic_hash": ""
   },
-  "storage/framework/views/a6cc69d0243ac14d0f695b5e3c29ba47.php": {
-    "mtime": 1786476175.8997846,
-    "ast_hash": "349f8c2b191e327504c54a7cad91ee4f",
+  "app/Models/DocumentoFirmante.php": {
+    "mtime": 1786561960.7003744,
+    "ast_hash": "fb1bdd167c09e7605a761c3820e4103a",
     "semantic_hash": ""
   },
-  "storage/framework/views/bd8bcc87553bf7a614cd75508306a304.php": {
-    "mtime": 1786476174.0852299,
-    "ast_hash": "c35a54c8354a754d03a762db9dab34f6",
+  "database/migrations/2026_08_12_090000_create_documento_firmantes_table.php": {
+    "mtime": 1786561960.7013724,
+    "ast_hash": "f4c6ae837997a415fa279c363d225ca9",
     "semantic_hash": ""
   },
-  "storage/framework/views/cd43adc221585e8e0f51b00cc182689c.php": {
-    "mtime": 1786476175.9047832,
-    "ast_hash": "002ba5ad45f25e3bb38bed65915216cb",
+  "app/Models/GiraldaAsistencia.php": {
+    "mtime": 1786637060.5354798,
+    "ast_hash": "fbcb536a7fd272857decaaa86be8cd76",
     "semantic_hash": ""
   },
-  "storage/framework/views/fdef57f438fe631d7f2b855041ee1e86.php": {
-    "mtime": 1786476175.380864,
-    "ast_hash": "4ae6aa9fdd58b507bf07ac78927656b5",
+  "database/migrations/2026_08_13_100000_create_giralda_asistencias_table.php": {
+    "mtime": 1786637060.5354798,
+    "ast_hash": "733a15a4554f26477b8a63a535346cf8",
     "semantic_hash": ""
   },
-  "storage/framework/views/feac7e9d859789ab087db5189081da25.php": {
-    "mtime": 1786476175.3605797,
-    "ast_hash": "ca870d9b1b3577b5bcacea00212b6b2b",
+  "database/migrations/2026_08_13_100100_add_giralda_asistencia_permission.php": {
+    "mtime": 1786637465.1677155,
+    "ast_hash": "f342fbfedda8dd6092aeb911df7b2e52",
     "semantic_hash": ""
   },
-  "bootstrap/cache/config.php": {
-    "mtime": 1786557674.270503,
-    "ast_hash": "393d1c2f43580b718d30bb46a131c3fd",
+  "storage/framework/views/f30fae91b7f964826e30b99a32dff0f5.php": {
+    "mtime": 1786729907.8102882,
+    "ast_hash": "208102c85c151f5be07c2e4a4f78c439",
     "semantic_hash": ""
   },
-  "bootstrap/cache/routes-v7.php": {
-    "mtime": 1786557674.9397225,
-    "ast_hash": "0f50caa556cc8fcb39bf3e3ae14eca99",
+  "resources/views/giralda/asistencia-print.blade.php": {
+    "mtime": 1786639936.9869678,
+    "ast_hash": "b6708a4b95cb61a53524ab13e0086e71",
     "semantic_hash": ""
   },
-  "storage/framework/views/0fa42f7ca363c84d8c13d2f1d42fff20.php": {
-    "mtime": 1786478437.3787804,
-    "ast_hash": "606b467310d28bad31cc811c77c364a9",
+  "database/migrations/2026_08_13_100200_add_giralda_asistencia_override_permission.php": {
+    "mtime": 1786639459.7971294,
+    "ast_hash": "cd88bc2118f819e1f8d7b55a63c8dd3c",
     "semantic_hash": ""
   },
-  "storage/framework/views/33a20a6d632ad312fad8cdd4111df02b.php": {
-    "mtime": 1786478460.7469387,
-    "ast_hash": "4c2b2401d3763eb2c1c08f6b6b377c8b",
+  "app/Models/CivilBuilding.php": {
+    "mtime": 1786644612.7685342,
+    "ast_hash": "6879675c6c38c7588baad55112bcaad3",
     "semantic_hash": ""
   },
-  "storage/framework/views/4c7d182fc9f693ff99ac057e5e7296bc.php": {
-    "mtime": 1786478448.4721322,
-    "ast_hash": "15e15028971f0efa2594921bc4f82055",
+  "app/Models/CivilCatalogImport.php": {
+    "mtime": 1786644612.7665327,
+    "ast_hash": "44501684dcb2a9c2fba7a9a90081a7ac",
     "semantic_hash": ""
   },
-  "storage/framework/views/4d9cc8c0b59d26e345d12a370f815152.php": {
-    "mtime": 1786478456.738803,
-    "ast_hash": "3d4ceb855207afd52f310319c1da5e40",
+  "app/Models/CivilConcept.php": {
+    "mtime": 1786644612.7705338,
+    "ast_hash": "b9e5568d8e52149a3ad2723255954f00",
     "semantic_hash": ""
   },
-  "storage/framework/views/92699fb55b9efb166cdcf4169351f6ec.php": {
-    "mtime": 1786478437.803284,
-    "ast_hash": "80ab552d32370683c6a337e56e6bd7e7",
+  "app/Models/CivilPartida.php": {
+    "mtime": 1786644612.7695336,
+    "ast_hash": "9a429b1844c92a5a467b52327e41850d",
     "semantic_hash": ""
   },
-  "storage/framework/views/f61d8c7856bb47ccd63bcd85a4c55d1f.php": {
-    "mtime": 1786478448.761859,
-    "ast_hash": "c3e4731a97138d0f5b59365f8a3e2883",
+  "app/Services/CivilConceptBalanceService.php": {
+    "mtime": 1786723500.7163074,
+    "ast_hash": "73596fcd6b5fd3499d43c1ebcc97c436",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_13_000001_create_civil_catalog_tables.php": {
+    "mtime": 1786644573.457937,
+    "ast_hash": "b1aff77b1872f8d05cea7a3077fca11a",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_13_000002_add_civil_concept_to_orden_compra_detalles.php": {
+    "mtime": 1786644585.619965,
+    "ast_hash": "e6cc174daf08fdc8643d44f112c894f7",
+    "semantic_hash": ""
+  },
+  "docs/obra_civil.md": {
+    "mtime": 1786728440.666401,
+    "ast_hash": "b09a92b45c7f5d44949f45ccd9217b3f",
+    "semantic_hash": ""
+  },
+  "docs/obra_civil_fase_0.md": {
+    "mtime": 1786644393.2117207,
+    "ast_hash": "62642b331556b4500df7c04e6878d423",
+    "semantic_hash": ""
+  },
+  "obra_civil.md": {
+    "mtime": 1786643702.836027,
+    "ast_hash": "98765914619d6fa81da2202affde53e5",
+    "semantic_hash": ""
+  },
+  "obra_civil_fase_0.md": {
+    "mtime": 1786644393.2117207,
+    "ast_hash": "62642b331556b4500df7c04e6878d423",
+    "semantic_hash": ""
+  },
+  "app/Http/Controllers/ObraCivilController.php": {
+    "mtime": 1786726903.8638608,
+    "ast_hash": "1287c8cd68054aa936d9309064b0f37b",
+    "semantic_hash": ""
+  },
+  "resources/views/obra_civil/index.blade.php": {
+    "mtime": 1786721936.6031287,
+    "ast_hash": "50fabd6c2f7d40cf1ff1ba8b5606ae15",
+    "semantic_hash": ""
+  },
+  "resources/views/obra_civil/details.blade.php": {
+    "mtime": 1786726915.1253014,
+    "ast_hash": "03e6ffd5b1b0bbd6840ee1731daffdb4",
+    "semantic_hash": ""
+  },
+  "resources/views/obra_civil/preview.blade.php": {
+    "mtime": 1786650249.6592786,
+    "ast_hash": "8aeec5b075f57a4280ce58d39e847a41",
+    "semantic_hash": ""
+  },
+  "app/Services/CivilCatalogExcelParser.php": {
+    "mtime": 1786649796.5081024,
+    "ast_hash": "a639ff0b63b54dbb0b127267710c8945",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_13_000003_change_descripcion_to_text_on_orden_compra_detalles.php": {
+    "mtime": 1786652158.208088,
+    "ast_hash": "0ae937457f0ac51fcfc5db3c9b547c75",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/25e3db28462b57d2c943d7a559563ea9.php": {
+    "mtime": 1786729907.2367113,
+    "ast_hash": "f3084c8cf9cc4cb4c8261423dfc5e449",
+    "semantic_hash": ""
+  },
+  "resources/views/obra_civil/concept_orders.blade.php": {
+    "mtime": 1786726798.0114374,
+    "ast_hash": "38be9591af7c6be2103f65d1a1883eeb",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/741d04adff1ab2e2be2b93a115324ce1.php": {
+    "mtime": 1786729909.1898825,
+    "ast_hash": "626e78e743893bd20e8d1f270dd60680",
     "semantic_hash": ""
   }
 }

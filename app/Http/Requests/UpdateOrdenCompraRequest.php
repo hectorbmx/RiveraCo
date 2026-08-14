@@ -22,6 +22,7 @@ class UpdateOrdenCompraRequest extends FormRequest
 
             'area_id'      => ['required','integer','exists:areas,id'],
             'planeacion_gasto_id' => ['nullable','integer','exists:obra_planeacion_gastos,id'],
+            'civil_partida_id' => ['nullable','integer','exists:civil_partidas,id'],
 
             'moneda'       => ['required', Rule::in(['MXN','USD','EUR'])],
             'tipo_cambio'  => ['nullable','numeric','min:0'],
@@ -56,3 +57,4 @@ class UpdateOrdenCompraRequest extends FormRequest
         });
     }
 }
+

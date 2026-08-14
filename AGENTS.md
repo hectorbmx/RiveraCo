@@ -10,3 +10,6 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+## Protected UI
+
+- Do not replace, normalize, or remove the production sidebar/navbar icons in `resources/views/layouts/admin.blade.php` unless the user explicitly asks for an icon change. Preserve UTF-8 encoding when editing this file; avoid broad text rewrites that can corrupt emoji/accented characters.

@@ -152,6 +152,19 @@ public function index(){
             );
         }
 
+
+        // Tipos configurados dinamicamente, por ejemplo OBRA_CIVIL.
+        ObraTipoConfiguracion::query()
+            ->get()
+            ->each(function (ObraTipoConfiguracion $tipo) use ($anioFoliosObra) {
+                ObraFolio::firstOrCreate(
+                    ['tipo_obra' => $tipo->tipo_obra, 'anio' => $anioFoliosObra],
+                    [
+                        'prefijo' => $tipo->prefijo,
+                        'ultimo_consecutivo' => $this->ultimoConsecutivoObraExistente($tipo->prefijo, $anioFoliosObra),
+                    ]
+                );
+            });
         $foliosObra = ObraFolio::query()
             ->where('anio', $anioFoliosObra)
             ->orderBy('tipo_obra')
@@ -175,7 +188,7 @@ public function index(){
         $catalogoRoles = CatalogoRol::orderBy('nombre')->get();    
         $tarifarios = ComisionTarifario::orderByDesc('vigente_desde')->orderByDesc('id')->get();
 
-        // Ã¢â‚¬Å“vigenteÃ¢â‚¬Â = el mÃƒÂ¡s reciente (por ahora solo 1)
+        // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“vigenteÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â = el mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡s reciente (por ahora solo 1)
         $tarifarioVigente = $tarifarios->first();
 
         // detalles del vigente (si existe)
@@ -187,7 +200,7 @@ public function index(){
                 ->get()
             : collect();
 
-        // Ã¢Å“â€¦ Seguridad (solo para admin/super-admin)
+        // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Seguridad (solo para admin/super-admin)
         $roles = collect();
         $permissions = collect();
         
@@ -208,7 +221,7 @@ public function index(){
                 ->orderBy('name')
                 ->get();
 
-            // SelecciÃƒÂ³n de rol: por query (?role=ID) o el primero
+            // SelecciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de rol: por query (?role=ID) o el primero
             $roleId = request()->integer('role');
             $selectedRole = $roleId
                 ? $roles->firstWhere('id', $roleId)
@@ -275,14 +288,14 @@ public function index(){
 
         $config->update($data);
 
-        return back()->with('success', 'ConfiguraciÃƒÂ³n general actualizada.');
+        return back()->with('success', 'ConfiguraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n general actualizada.');
     }
 
     /**
      * Secciones nuevas (tabs): por ahora no persisten en empresa_config
      * pero tampoco rompen la app.
      *
-     * AquÃƒÂ­ despuÃƒÂ©s conectamos a tabla meta o a tablas especÃƒÂ­ficas.
+     * AquÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­ despuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s conectamos a tabla meta o a tablas especÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­ficas.
      */
     if ($section === 'maquinaria') {
         $data = $request->validate([
@@ -295,7 +308,7 @@ public function index(){
 
         return redirect()
             ->route('empresa_config.edit', ['tab' => 'maquinaria'])
-            ->with('success', 'ConfiguraciÃƒÆ’Ã‚Â³n de maquinaria guardada.');
+            ->with('success', 'ConfiguraciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n de maquinaria guardada.');
     }
 
     if ($section === 'vehiculos') {
@@ -342,7 +355,7 @@ public function index(){
         return back()->with('success', 'Configuracion guardada.');
     }
 
-    return back()->with('error', 'SecciÃƒÂ³n de configuraciÃƒÂ³n invÃƒÂ¡lida.');
+    return back()->with('error', 'SecciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de configuraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lida.');
 }
 private function guardarDestinatariosAlertaVehiculos(EmpresaConfig $config, array $data, Request $request): void
 {
@@ -421,6 +434,51 @@ public function storeViaticoTarifa(Request $request, EmpresaViaticoTarifaService
         ->route('empresa_config.edit')
         ->with('success', 'Tarifa de viaticos registrada correctamente.');
 }
+
+public function storeTipoObraConfiguracion(Request $request)
+{
+    $data = $request->validate([
+        'tipo_obra' => ['required', 'string', 'max:50', 'regex:/^[A-Z0-9_]+$/i', 'unique:obra_tipo_configuraciones,tipo_obra'],
+        'label' => ['required', 'string', 'max:100'],
+        'prefijo' => ['required', 'string', 'max:10', 'regex:/^[A-Z0-9]+$/i'],
+        'area_id' => ['nullable', 'exists:areas,id'],
+        'activo' => ['nullable', 'boolean'],
+        'folio_anio' => ['required', 'integer', 'min:2020', 'max:2100'],
+        'ultimo_consecutivo' => ['nullable', 'integer', 'min:0', 'max:999999'],
+    ], [
+        'tipo_obra.regex' => 'El tipo de obra solo puede usar letras, numeros y guion bajo.',
+        'prefijo.regex' => 'El prefijo solo puede usar letras y numeros.',
+    ]);
+
+    $tipoObra = strtoupper(trim($data['tipo_obra']));
+    $prefijo = strtoupper(trim($data['prefijo']));
+    $anio = (int) $data['folio_anio'];
+
+    $minimo = $this->ultimoConsecutivoObraExistente($prefijo, $anio);
+    $ultimoConsecutivo = max($minimo, (int) ($data['ultimo_consecutivo'] ?? $minimo));
+
+    DB::transaction(function () use ($data, $tipoObra, $prefijo, $anio, $ultimoConsecutivo) {
+        ObraTipoConfiguracion::create([
+            'tipo_obra' => $tipoObra,
+            'label' => trim($data['label']),
+            'prefijo' => $prefijo,
+            'area_id' => $data['area_id'] ?? null,
+            'activo' => request()->boolean('activo'),
+        ]);
+
+        ObraFolio::firstOrCreate(
+            ['tipo_obra' => $tipoObra, 'anio' => $anio],
+            [
+                'prefijo' => $prefijo,
+                'ultimo_consecutivo' => $ultimoConsecutivo,
+            ]
+        );
+    });
+
+    return redirect()
+        ->route('empresa_config.edit', ['tab' => 'folios', 'folio_anio' => $anio])
+        ->with('success', 'Tipo de obra creado correctamente.');
+}
 public function updateFolioObra(Request $request, ObraFolio $folio)
 {
     $data = $request->validate([
@@ -466,7 +524,7 @@ public function updateTipoObraConfiguracion(Request $request, ObraTipoConfigurac
 
     return redirect()
         ->route('empresa_config.edit', ['tab' => 'folios'])
-        ->with('success', 'ConfiguraciÃƒÂ³n de tipo de obra actualizada.');
+        ->with('success', 'ConfiguraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de tipo de obra actualizada.');
 }
 
 private function ultimoConsecutivoObraExistente(string $prefijo, int $anio): int
@@ -507,7 +565,7 @@ public function storeCuentaBanco(Request $request)
 
     $data['activa'] = true;
 
-    // si es la primera cuenta -> principal automÃƒÂ¡tica
+    // si es la primera cuenta -> principal automÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡tica
     $data['principal'] = CuentaBancoEmpresa::count() === 0;
 
     CuentaBancoEmpresa::create($data);
@@ -735,7 +793,7 @@ public function storeTipoRetencion(Request $request)
 
     return redirect()
         ->route('empresa_config.edit', ['tab' => 'tipos_iva'])
-        ->with('success', 'El tipo de retención fue creado correctamente.');
+        ->with('success', 'El tipo de retenciÃƒÂ³n fue creado correctamente.');
 }
 }
 

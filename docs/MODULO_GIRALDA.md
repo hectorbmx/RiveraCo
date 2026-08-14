@@ -106,7 +106,82 @@ Punto critico pendiente:
 - Cada entrega debe afectar inventario usando la trazabilidad existente.
 - No se debe descontar stock directo desde EPP si ya existe un flujo formal de documentos/movimientos.
 
-### 3. Horas extras
+### 3. Asistencia diaria
+
+Objetivo:
+
+- Agregar un tab `Asistencia` dentro de `Giralda -> Empleados`.
+- Permitir registrar asistencia diaria del personal de Giralda de forma rapida.
+- Mantener la base preparada para que, en una etapa cercana, estos datos puedan sincronizarse con un checador digital que traiga timestamps reales.
+
+Vista objetivo:
+
+- `/giralda/empleados?tab=asistencia`
+- Mantener la misma lista de empleados filtrados por area Giralda.
+- Mostrar una semana completa renderizada en columnas:
+  - Lunes.
+  - Martes.
+  - Miercoles.
+  - Jueves.
+  - Viernes.
+  - Sabado.
+  - Domingo.
+- Mostrar por default la semana en curso.
+- Agregar navegador para consultar semanas anteriores.
+- No permitir navegar a semanas futuras.
+
+Reglas de captura:
+
+- Solo el dia actual es editable.
+- Los dias pasados se muestran solo lectura.
+- Los dias futuros se muestran bloqueados.
+- No se puede modificar asistencia pasada desde esta pantalla.
+- No se puede registrar asistencia futura.
+- Al abrir el dia actual, todos los empleados aparecen marcados como presentes por default.
+- El usuario responsable solo desmarca a quien no asistio.
+- Un boton `Guardar asistencia de hoy` persiste los cambios.
+- No se deben guardar registros solo por abrir la pantalla; se guardan hasta confirmar.
+
+Datos por registro:
+
+- Empleado.
+- Fecha.
+- Estatus: `presente` o `ausente`.
+- Origen: `manual` por ahora.
+- Usuario que registra.
+- Usuario que actualiza, si aplica.
+- Area.
+- Notas opcionales.
+
+Campos preparados para checador digital:
+
+- `entrada_at`, nullable.
+- `salida_at`, nullable.
+- `attendance_device_id`, nullable.
+- `attendance_enroll_id`, nullable.
+- `origen`, con valores esperados como `manual` y `checador`.
+
+Decision tomada:
+
+- En esta primera etapa no se manejaran horas de entrada/salida.
+- Se manejara asistencia por dia.
+- La estructura debe dejar lista la evolucion a checador digital sin redisenar el flujo.
+- Cuando exista integracion con checador, los timestamps del dispositivo alimentaran `entrada_at` y `salida_at`.
+
+Relacion con horas extras:
+
+- La asistencia diaria servira como base operativa para validar horas extras.
+- Si un empleado esta marcado como ausente en una fecha, el registro de horas extras de ese dia deberia mostrar advertencia o requerir autorizacion especial.
+- En una etapa posterior, cuando existan timestamps, las horas extras podran sugerirse o validarse contra entrada/salida reales.
+
+Punto critico pendiente:
+
+- Definir si se guardan presentes y ausentes explicitamente al guardar el dia. Recomendacion inicial: guardar ambos para distinguir entre falta real y dia no capturado.
+- Definir permisos para capturar asistencia diaria.
+- Definir si el mismo usuario puede corregir el dia actual despues de guardar.
+- Definir si existira un cierre diario que bloquee cambios antes de terminar el dia.
+
+### 4. Horas extras
 
 Objetivo:
 
@@ -135,7 +210,7 @@ Vista objetivo:
 - Generar formato requerido.
 - Exportar o imprimir.
 
-### 4. Ordenes de compra Giralda
+### 5. Ordenes de compra Giralda
 
 Objetivo:
 
@@ -150,7 +225,7 @@ Pendiente por definir:
 - Que permisos tendra Giralda para crear, ver, autorizar o dar seguimiento a OC.
 - Si Giralda solo vera sus OC o tambien referencias cruzadas con compras generales.
 
-### 5. Almacen Giralda
+### 6. Almacen Giralda
 
 Objetivo:
 
@@ -172,6 +247,7 @@ Se ha trabajado una primera base del modulo:
 - Vista principal del modulo.
 - Vista de empleados Giralda con tabs.
 - Tab `Listado`.
+- Tab `Asistencia` implementado como pase de lista diario manual.
 - Tab `Horas extras`.
 - Tab `EPP`.
 - Modal para registrar horas extras.
@@ -303,7 +379,52 @@ Salida esperada:
 - Stock actualizado.
 - Auditoria completa desde EPP hacia inventario.
 
-### Fase 3 - Horas extras operativas
+### Fase 3 - Asistencia diaria Giralda
+
+Objetivo:
+
+- Implementar el tab `Asistencia` como pase de lista diario manual.
+- Dejar la estructura preparada para sincronizacion futura con checador digital.
+
+Checklist:
+
+- Revisar con grafo si conviene reutilizar `ObraAsistencia`, `AttendanceLog` o crear una tabla propia para asistencia Giralda.
+- Definir modelo y migracion para asistencia diaria manual.
+- Incluir campos futuros nullable para checador digital.
+- Agregar tab `Asistencia` en `Giralda -> Empleados`.
+- Renderizar semana completa con columnas lunes a domingo.
+- Mostrar semana en curso por default.
+- Agregar navegador de semanas hacia atras.
+- Bloquear semanas futuras.
+- Bloquear dias futuros dentro de la semana visible.
+- Bloquear dias pasados como solo lectura.
+- Permitir editar solo el dia actual.
+- Marcar por default como presentes a empleados sin registro del dia actual.
+- Permitir desmarcar ausentes.
+- Guardar presentes y ausentes al confirmar el dia.
+- Registrar usuario que captura.
+- Evitar duplicados por empleado/fecha.
+- Mostrar estado guardado por dia.
+- Mostrar mensaje claro cuando una semana ya es historica y no editable.
+
+Salida esperada:
+
+- Tab `Asistencia` funcional.
+- Semana visible con checks por empleado.
+- Captura rapida del dia actual.
+- Historial semanal consultable.
+- Base de datos preparada para timestamps futuros de checador digital.
+
+Validaciones:
+
+- No se puede guardar futuro.
+- No se puede modificar pasado.
+- El mismo empleado no puede tener dos registros para la misma fecha.
+- Al guardar, queda claro si el empleado estuvo presente o ausente.
+- El origen queda como `manual`.
+- Campos de checador quedan nulos en captura manual.
+
+### Fase 4 - Horas extras operativas
 
 Objetivo:
 
@@ -327,8 +448,9 @@ Salida esperada:
 - Reporte por periodo.
 - Historial individual.
 - Flujo basico de autorizacion.
+- Advertencia o validacion contra asistencia diaria cuando exista registro.
 
-### Fase 4 - Ordenes de compra Giralda
+### Fase 5 - Ordenes de compra Giralda
 
 Objetivo:
 
@@ -351,7 +473,7 @@ Salida esperada:
 - Consulta filtrada.
 - Trazabilidad con proveedores/pagos existentes.
 
-### Fase 5 - Almacen Giralda
+### Fase 6 - Almacen Giralda
 
 Objetivo:
 
@@ -373,7 +495,7 @@ Salida esperada:
 - Menos ruido en navbar.
 - Inventario con trazabilidad completa.
 
-### Fase 6 - Reportes, auditoria y cierre
+### Fase 7 - Reportes, auditoria y cierre
 
 Objetivo:
 
@@ -384,6 +506,8 @@ Checklist:
 - Reporte de EPP por empleado.
 - Reporte de EPP por periodo.
 - Reporte de EPP por obra/area.
+- Reporte de asistencia diaria por empleado.
+- Reporte de asistencia diaria por semana.
 - Reporte de horas extras por empleado.
 - Reporte de horas extras por periodo.
 - Reporte de OC Giralda.
@@ -395,6 +519,13 @@ Salida esperada:
 - GIRALDA como modulo operativo completo.
 - Trazabilidad desde empleado hasta inventario/documentos.
 - Reportes utiles para control y auditoria.
+Nota para reporte semanal de asistencia:
+
+- El formato imprimible semanal debe cruzar asistencia diaria con horas extras por dia.
+- En cada celda diaria se muestra el check de asistencia y, debajo, la cantidad de horas extras del dia cuando existan.
+- Al final del renglon se muestra la suma semanal de horas extras por empleado.
+- Por el momento no se imprime sueldo por sensibilidad del dato.
+- Si despues se agrega sueldo al reporte, debe tomarse de `empleados.Sueldo_real` y revisarse el permiso de acceso antes de exponerlo.
 
 ## Decisiones abiertas
 
@@ -406,6 +537,13 @@ Salida esperada:
 - Confirmar si se debe hacer backfill de entregas EPP existentes sin area/obra.
 - Confirmar roles que pueden ver GIRALDA.
 - Confirmar roles que pueden autorizar horas extras.
+- Confirmar roles que pueden capturar asistencia diaria.
+- Permiso `giralda.asistencia.edit.access`: captura operativa solo del dia actual.
+- Permiso `giralda.asistencia.override.access`: correccion de asistencia para super-admin, limitada a semana actual y semana anterior, nunca futuro.
+- Confirmar si asistencia diaria guardara presentes y ausentes explicitamente.
+- Confirmar si asistencia diaria permitira corregir el dia actual despues de guardar.
+- Confirmar si habra cierre diario para asistencia.
+- Confirmar si horas extras deben bloquearse o solo advertir cuando el empleado tenga ausencia registrada.
 - Confirmar si OC Giralda requiere flujo de autorizacion distinto.
 - Confirmar si fotos y notas se reutilizaran desde expediente del empleado o tendran vista resumida en Giralda.
 
@@ -416,6 +554,10 @@ Salida esperada:
 - Crear documentos incompletos sin folio o sin detalle.
 - Dejar entregas EPP guardadas cuando falle inventario.
 - Mostrar empleados fuera de Giralda a usuarios Giralda.
+- Permitir captura de asistencia futura.
+- Permitir modificaciones historicas sin control.
+- Confundir asistencia manual diaria con checada de entrada/salida.
+- No dejar preparada la estructura para checador digital.
 - Permisos incompletos que oculten el menu o permitan acceso directo indebido.
 - Registros historicos con datos nulos por migraciones previas.
 - Concurrencia de stock cuando dos usuarios entregan el mismo articulo.
@@ -440,6 +582,7 @@ Cada bloque se considera listo cuando cumpla:
 
 Checkpoint inmediato:
 
+- Validar en operacion el tab `Asistencia` con usuarios de Giralda.
 - Revisar a detalle el flujo actual de documentos de inventario.
 - Definir como una entrega EPP genera una salida formal.
 - Proponer la migracion de enlaces entre `empleado_epp_entregas` e inventario.
@@ -461,4 +604,3 @@ php artisan view:cache
 php artisan migrate
 graphify update .
 ```
-

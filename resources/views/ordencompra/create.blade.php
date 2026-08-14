@@ -64,6 +64,7 @@
             </div> -->
             {{-- Hidden para planeacion_gasto_id --}}
 <input type="hidden" name="planeacion_gasto_id" id="planeacion_gasto_id" value="{{ old('planeacion_gasto_id') }}">
+<input type="hidden" name="civil_partida_id" id="civil_partida_id" value="{{ old('civil_partida_id') }}">
  
 <div>
     <label class="block text-sm font-medium mb-1">Obra</label>
@@ -108,7 +109,7 @@
         <option value="">— Selecciona una partida —</option>
     </select>
     <p id="partidas_cargando" class="text-xs text-slate-400 mt-1 hidden">Cargando partidas…</p>
-    <p id="partidas_sin_datos" class="text-xs text-slate-400 mt-1 hidden">Esta obra no tiene partidas de planeación.</p>
+    <p id="partidas_sin_datos" class="text-xs text-slate-400 mt-1 hidden">Esta obra no tiene partidas disponibles.</p>
 </div>
  
 {{-- ─────────────────────────────────────────────────────────────────────────
@@ -121,6 +122,7 @@
     const partidasWrapper = document.getElementById('partidas_wrapper');
     const partidaSelect   = document.getElementById('partida_select');
     const hiddenPartida   = document.getElementById('planeacion_gasto_id');
+    const hiddenCivilPartida = document.getElementById('civil_partida_id');
     const centroCostoSelect = document.getElementById('centro_costo_id');
     const msgCargando     = document.getElementById('partidas_cargando');
     const msgSinDatos     = document.getElementById('partidas_sin_datos');
@@ -141,6 +143,7 @@
     function limpiarPartidas() {
         partidaSelect.innerHTML = '<option value="">— Selecciona una partida —</option>';
         hiddenPartida.value = '';
+        if (hiddenCivilPartida) hiddenCivilPartida.value = '';
     }
  
     async function cargarPartidas(obraId) {
@@ -179,6 +182,7 @@
                     const opt = document.createElement('option');
                     opt.value = p.id;
                     opt.dataset.disponible = p.disponible;
+                    opt.dataset.source = p.source || 'planeacion';
  
                     const disponibleStr = formatMonto(p.disponible);
                     const topeStr       = formatMonto(p.tope);
@@ -194,10 +198,14 @@
             });
  
             // Si venía un valor previo (old input), restaurarlo
-            const oldVal = '{{ old('planeacion_gasto_id') }}';
-            if (oldVal) {
-                partidaSelect.value = oldVal;
-                hiddenPartida.value = oldVal;
+            const oldPlaneacionVal = '{{ old('planeacion_gasto_id') }}';
+            const oldCivilVal = '{{ old('civil_partida_id') }}';
+            if (oldPlaneacionVal) {
+                partidaSelect.value = oldPlaneacionVal;
+                hiddenPartida.value = oldPlaneacionVal;
+            } else if (oldCivilVal) {
+                partidaSelect.value = oldCivilVal;
+                if (hiddenCivilPartida) hiddenCivilPartida.value = oldCivilVal;
             }
  
         } catch (e) {
@@ -224,7 +232,13 @@
  
     // Al cambiar la partida seleccionada
     partidaSelect.addEventListener('change', function () {
-        hiddenPartida.value = this.value || '';
+        const selectedOption = this.selectedOptions?.[0];
+        const source = selectedOption?.dataset?.source || 'planeacion';
+
+        hiddenPartida.value = source === 'planeacion' ? (this.value || '') : '';
+        if (hiddenCivilPartida) {
+            hiddenCivilPartida.value = source === 'civil' ? (this.value || '') : '';
+        }
     });
 
     centroCostoSelect?.addEventListener('change', function () {
@@ -485,3 +499,4 @@
 })();
 </script>
 @endpush
+

@@ -387,16 +387,20 @@
 
                             @php
                                 $estadoNorm = strtolower(trim((string) ($oc->estado ?? 'borrador')));
+                                $confirmarSobregiroCivil = (int) session('civil_sobregiro_confirm_oc_id') === (int) $oc->id;
                             @endphp
 
                             @if(!in_array($estadoNorm, ['autorizada','autorizado','verificada','verificado','cancelada','cancelado']))
                                 @canany(['ordenes_compra.authorize.access', 'ordenes_compra.autorizar'])
                                     <form method="POST" action="{{ route('ordenes_compra.autorizar', $oc->id) }}" class="inline">
                                         @csrf
+                                        @if($confirmarSobregiroCivil)
+                                            <input type="hidden" name="confirmar_sobregiro_civil" value="1">
+                                        @endif
                                         <button type="submit"
-                                                class="text-green-600 hover:text-green-800 font-medium text-sm transition"
-                                                onclick="return confirm('¿Autorizar la orden {{ $oc->folio }}?');">
-                                            Autorizar
+                                                class="{{ $confirmarSobregiroCivil ? 'text-amber-700 hover:text-amber-900' : 'text-green-600 hover:text-green-800' }} font-medium text-sm transition"
+                                                onclick="return confirm('{{ $confirmarSobregiroCivil ? 'La orden excede el disponible civil. Si continuas, el saldo quedara negativo. ¿Autorizar con sobregiro?' : '¿Autorizar la orden ' . $oc->folio . '?' }}');">
+                                            {{ $confirmarSobregiroCivil ? 'Autorizar con sobregiro' : 'Autorizar' }}
                                         </button>
                                     </form>
                                 @endcanany
