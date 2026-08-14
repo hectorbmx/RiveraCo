@@ -31,6 +31,11 @@
             {{ session('success') }}
         </div>
     @endif
+    @if(isset($catalogTablesReady) && !$catalogTablesReady)
+        <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+            El modulo de obra civil esta instalado, pero faltan migraciones de catalogo civil en esta base de datos. Ejecuta las migraciones antes de cargar catalogos.
+        </div>
+    @endif
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
         <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
@@ -82,11 +87,15 @@
                                             Ver detalle
                                         </a>
                                     @endif
-                                    <button type="button"
-                                            class="font-semibold text-[#0B265A] hover:underline"
-                                            @click="open(@js($obra->nombre), @js(route('obra_civil.catalog.upload', $obra)))">
-                                        Cargar
-                                    </button>
+                                    @if(isset($catalogTablesReady) && $catalogTablesReady)
+                                        <button type="button"
+                                                class="font-semibold text-[#0B265A] hover:underline"
+                                                @click="open(@js($obra->nombre), @js(route('obra_civil.catalog.upload', $obra)))">
+                                            Cargar
+                                        </button>
+                                    @else
+                                        <span class="text-xs font-semibold text-slate-400">Migraciones pendientes</span>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

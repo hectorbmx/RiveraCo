@@ -925,8 +925,8 @@
     "semantic_hash": "24c77623ed6a99e4424b1a598b2b90be"
   },
   "app/Models/Obra.php": {
-    "mtime": 1786644780.5767496,
-    "ast_hash": "08668c048961d5afd7a3a456ca7841ff",
+    "mtime": 1786737953.5958796,
+    "ast_hash": "1895ff23a3801e8cd5892e36ecefa9b9",
     "semantic_hash": ""
   },
   "app/Models/ObraAsistencia.php": {
@@ -3515,8 +3515,8 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1786647323.4101305,
-    "ast_hash": "73e7e54f11091969c83211be7a3eb176",
+    "mtime": 1786737983.630677,
+    "ast_hash": "a22fd41e09f8b29f6588e9f7e1eee8df",
     "semantic_hash": ""
   },
   "README.md": {
@@ -4960,13 +4960,13 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/ObraCivilController.php": {
-    "mtime": 1786726903.8638608,
-    "ast_hash": "1287c8cd68054aa936d9309064b0f37b",
+    "mtime": 1786731207.954362,
+    "ast_hash": "d7145d4ead0859431236c6f5522e52aa",
     "semantic_hash": ""
   },
   "resources/views/obra_civil/index.blade.php": {
-    "mtime": 1786721936.6031287,
-    "ast_hash": "50fabd6c2f7d40cf1ff1ba8b5606ae15",
+    "mtime": 1786731258.2283075,
+    "ast_hash": "afea2429bfa2f1d0de4541277ea1eb8c",
     "semantic_hash": ""
   },
   "resources/views/obra_civil/details.blade.php": {
@@ -5002,6 +5002,36 @@
   "storage/framework/views/741d04adff1ab2e2be2b93a115324ce1.php": {
     "mtime": 1786729909.1898825,
     "ast_hash": "626e78e743893bd20e8d1f270dd60680",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/76c05cc9e101e4fd0f9e94febf7b1fa4.php": {
+    "mtime": 1786733711.8919141,
+    "ast_hash": "ec643b6f66a5441a16497e3a72acfaf6",
+    "semantic_hash": ""
+  },
+  "tools/check_mojibake.php": {
+    "mtime": 1786737926.4254887,
+    "ast_hash": "c54e46c1003e53572366bdd1ef39995b",
+    "semantic_hash": ""
+  },
+  "ROADMAP_ESTIMACIONES.md": {
+    "mtime": 1786734345.514714,
+    "ast_hash": "24624f51b065b81ecf91653f3ed29cfd",
+    "semantic_hash": ""
+  },
+  "docs/PENDIENTES_OPERATIVOS_LUNES_2026-08-17.md": {
+    "mtime": 1786736556.2391877,
+    "ast_hash": "ba62f5dc53be44bbb1edb84eb4a10835",
+    "semantic_hash": ""
+  },
+  "docs/ROADMAP_ESTIMACIONES.md": {
+    "mtime": 1786734345.514714,
+    "ast_hash": "24624f51b065b81ecf91653f3ed29cfd",
+    "semantic_hash": ""
+  },
+  "docs/ROADMAP_INSUMOS_ORDENES_COMPRA.md": {
+    "mtime": 1786735511.3762112,
+    "ast_hash": "c5d82439feff6213ede091bb86f9a147",
     "semantic_hash": ""
   }
 }

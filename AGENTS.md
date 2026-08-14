@@ -13,3 +13,7 @@ Rules:
 ## Protected UI
 
 - Do not replace, normalize, or remove the production sidebar/navbar icons in `resources/views/layouts/admin.blade.php` unless the user explicitly asks for an icon change. Preserve UTF-8 encoding when editing this file; avoid broad text rewrites that can corrupt emoji/accented characters.
+## Encoding
+
+- All source, Blade, config, route, docs, and test files must stay UTF-8. Do not save files as Windows-1252/ANSI.
+- Before finishing changes that touch user-facing Spanish text, run `php tools/check_mojibake.php <touched files>` and fix any `Ã`, `Â`, `â€`, or replacement-character output. Run `php tools/check_mojibake.php` for a full cleanup/release gate.

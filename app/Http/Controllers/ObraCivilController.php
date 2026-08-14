@@ -10,6 +10,7 @@ use App\Services\CivilConceptBalanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -17,29 +18,43 @@ class ObraCivilController extends Controller
 {
     public function index()
     {
-        $obras = Obra::query()
+        $catalogTablesReady = Schema::hasTable('civil_catalog_imports')
+            && Schema::hasTable('civil_buildings')
+            && Schema::hasTable('civil_partidas')
+            && Schema::hasTable('civil_concepts');
+
+        $obrasQuery = Obra::query()
             ->whereIn('tipo_obra', ['OBRA_CIVIL', 'CIVIL'])
             ->with('cliente')
-            ->withCount('civilCatalogImports')
-            ->orderBy('nombre')
-            ->get();
+            ->orderBy('nombre');
 
-        $catalogImports = CivilCatalogImport::query()
-            ->with(['obra', 'importedBy'])
-            ->latest()
-            ->limit(8)
-            ->get();
+        if ($catalogTablesReady) {
+            $obrasQuery->withCount('civilCatalogImports');
+        }
+
+        $obras = $obrasQuery->get();
+
+        if (!$catalogTablesReady) {
+            $obras->each(fn ($obra) => $obra->civil_catalog_imports_count = 0);
+        }
+
+        $catalogImports = $catalogTablesReady
+            ? CivilCatalogImport::query()
+                ->with(['obra', 'importedBy'])
+                ->latest()
+                ->limit(8)
+                ->get()
+            : collect();
 
         $stats = [
             'obras' => $obras->count(),
-            'catalogos' => CivilCatalogImport::count(),
-            'conceptos' => CivilConcept::count(),
-            'importe' => (float) CivilConcept::sum('budget_amount'),
+            'catalogos' => $catalogTablesReady ? CivilCatalogImport::count() : 0,
+            'conceptos' => $catalogTablesReady ? CivilConcept::count() : 0,
+            'importe' => $catalogTablesReady ? (float) CivilConcept::sum('budget_amount') : 0.0,
         ];
 
-        return view('obra_civil.index', compact('obras', 'catalogImports', 'stats'));
+        return view('obra_civil.index', compact('obras', 'catalogImports', 'stats', 'catalogTablesReady'));
     }
-
     public function uploadCatalog(Request $request, Obra $obra, CivilCatalogExcelParser $parser)
     {
         $this->abortUnlessCivil($obra);
