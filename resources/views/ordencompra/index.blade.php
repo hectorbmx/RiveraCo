@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+﻿@extends('layouts.admin')
 
 @section('content')
 <div class="p-6">
@@ -247,6 +247,58 @@
 
                 Exportar TC
             </a>
+
+            {{-- Exportar gastos sin factura --}}
+            <a
+                href="{{ route('ordenes_compra.exportar_gastos_sin_factura', [
+                    'area_codigo' => request('area_codigo'),
+                    'semana' => $inicioSemana->format('Y-m-d'),
+                ]) }}"
+                target="_blank"
+                class="inline-flex items-center gap-2 rounded-lg border border-purple-200 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 shadow-sm transition-colors hover:bg-purple-100"
+            >
+                <svg
+                    class="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                </svg>
+
+                Exportar sin factura
+            </a>
+
+            {{-- Imprimir caratula --}}
+            <a
+                href="{{ route('ordenes_compra.caratula_giralda', [
+                    'area_codigo' => request('area_codigo'),
+                    'semana' => $inicioSemana->format('Y-m-d'),
+                ]) }}"
+                target="_blank"
+                class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100"
+            >
+                <svg
+                    class="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 12h6m-6 4h6M7 4h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"
+                    />
+                </svg>
+
+                Imprimir caratula
+            </a>
         </div>
     </div>
 @endif
@@ -286,9 +338,14 @@
                 <tr class="border-b hover:bg-slate-50 transition">
                                         <td class="py-3 px-4 text-center font-medium">
                         <div>{{ $oc->folio }}</div>
-                        @if($oc->es_caja_chica)
-                            <span class="mt-1 inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700">Caja chica</span>
-                        @endif
+                        <div class="flex flex-col items-center gap-1 mt-1">
+                            @if($oc->es_caja_chica)
+                                <span class="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700">Caja chica</span>
+                            @endif
+                            @if($oc->gastos_sin_factura)
+                                <span class="inline-flex rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-purple-700">Sin Factura</span>
+                            @endif
+                        </div>
                     </td>
                     <td class="py-3 px-4">
                         @if($oc->proveedor)
@@ -302,8 +359,8 @@
                                 @endif
                             </div>
                         @else
-                            @if($oc->es_caja_chica)
-                                <span class="text-xs font-semibold text-amber-700">Caja chica sin proveedor</span>
+                            @if($oc->es_caja_chica || $oc->gastos_sin_factura)
+                                <span class="text-xs font-semibold text-slate-500">Sin proveedor</span>
                             @else
                                 -
                             @endif

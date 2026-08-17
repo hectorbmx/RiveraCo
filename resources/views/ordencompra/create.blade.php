@@ -7,10 +7,17 @@
     <form method="POST" action="{{ route('ordenes_compra.store') }}" class="space-y-4" data-loading-form data-loading-message="Creando orden de compra...">
         @csrf
 
-        <label class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
-            <input type="checkbox" name="es_caja_chica" value="1" class="rounded border-amber-300" @checked(old('es_caja_chica'))>
-            Orden de caja chica
-        </label>
+        <div class="flex flex-wrap items-center gap-3">
+            <label class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+                <input type="checkbox" name="es_caja_chica" value="1" class="rounded border-amber-300" @checked(old('es_caja_chica'))>
+                Orden de caja chica
+            </label>
+
+            <label class="inline-flex items-center gap-2 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-sm font-medium text-purple-800">
+                <input type="checkbox" name="gastos_sin_factura" value="1" class="rounded border-purple-300" @checked(old('gastos_sin_factura'))>
+                Gastos sin factura
+            </label>
+        </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div class="relative">
@@ -25,7 +32,7 @@
         type="text"
         id="proveedor_busqueda"
         class="w-full border p-2 rounded"
-        placeholder="Proveedor opcional si es caja chica..."
+        placeholder="Proveedor opcional si es caja chica / sin factura..."
         autocomplete="off"
         value="{{ old('proveedor_texto') }}"
     >

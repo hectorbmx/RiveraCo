@@ -15,8 +15,9 @@ class UpdateOrdenCompraRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'es_caja_chica' => ['nullable','boolean'],
-            'proveedor_id' => ['nullable','required_unless:es_caja_chica,1','integer','exists:proveedores,id'],
+            'es_caja_chica'      => ['nullable', 'boolean'],
+            'gastos_sin_factura' => ['nullable', 'boolean'],
+            'proveedor_id'       => ['nullable', Rule::requiredIf(fn() => !$this->boolean('es_caja_chica') && !$this->boolean('gastos_sin_factura')), 'integer', 'exists:proveedores,id'],
             'obra_id'      => ['nullable','integer','exists:obras,id'],
             'centro_costo_id' => ['nullable','integer','exists:centros_costo,id'],
 

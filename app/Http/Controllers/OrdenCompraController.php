@@ -343,6 +343,7 @@ class OrdenCompraController extends Controller
 
             $area = Area::findOrFail($request->area_id);
             $esCajaChica = $request->boolean('es_caja_chica');
+            $gastosSinFactura = $request->boolean('gastos_sin_factura');
 
             $oc = new OrdenCompra();
 
@@ -355,6 +356,7 @@ class OrdenCompraController extends Controller
             // nuevo
             $oc->area_id      = (int) $request->area_id;
             $oc->es_caja_chica = $esCajaChica;
+            $oc->gastos_sin_factura = $gastosSinFactura;
             $oc->moneda       = $request->moneda;
             $oc->tipo_cambio  = $request->tipo_cambio;
 
@@ -516,6 +518,7 @@ public function edit($id)
 
             $area = Area::findOrFail($request->area_id);
             $esCajaChica = $request->boolean('es_caja_chica');
+            $gastosSinFactura = $request->boolean('gastos_sin_factura');
 
             $oc->proveedor_id = $request->filled('proveedor_id') ? (int) $request->proveedor_id : null;
             $oc->obra_id      = $request->obra_id ? (int)$request->obra_id : null;
@@ -524,6 +527,7 @@ public function edit($id)
 
             $oc->area_id      = (int) $request->area_id;
             $oc->es_caja_chica = $esCajaChica;
+            $oc->gastos_sin_factura = $gastosSinFactura;
             $oc->moneda       = $request->moneda;
             $oc->tipo_cambio  = $request->tipo_cambio;
 
@@ -889,6 +893,20 @@ public function print(OrdenCompra $orden_compra)
         0,
         'L'
     );
+
+    if (!empty($oc->gastos_sin_factura)) {
+        $pdf->SetXY($X0 + 40, $Y + 11);
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->SetTextColor(220, 38, 38);
+        $pdf->Cell(
+            90,
+            5,
+            $utf8('GASTO SIN FACTURA'),
+            0,
+            0,
+            'L'
+        );
+    }
 
     // Datos de empresa
     $pdf->SetTextColor(60, 60, 60);
@@ -2691,5 +2709,415 @@ public function exportarListaPagos(
             'inline; filename="' . $nombreArchivo . '"'
         );
 }
-}
 
+    public function exportarGastosSinFactura(Request $request)
+    {
+        $this->authorizeAny([
+            'ordenes_compra.view.access',
+            'ordenes_compra.print.access',
+            'ordenes_compra.imprimir',
+            'ordenes de compra.access',
+        ]);
+
+        $areaCodigo = strtoupper(trim((string) $request->query('area_codigo')));
+
+        if ($areaCodigo !== 'GL') {
+            abort(403, 'Este reporte solamente está disponible para el área Giralda.');
+        }
+
+        $areaCatalogo = Area::query()
+            ->where('codigo', $areaCodigo)
+            ->firstOrFail();
+
+        try {
+            $fechaSemana = $request->filled('semana')
+                ? Carbon::createFromFormat('Y-m-d', (string) $request->query('semana'))->startOfWeek(Carbon::MONDAY)
+                : now()->startOfWeek(Carbon::MONDAY);
+        } catch (\Throwable $e) {
+            abort(422, 'La semana seleccionada no tiene un formato válido.');
+        }
+
+        $inicioSemanaActual = now()->startOfWeek(Carbon::MONDAY)->startOfDay();
+
+        if ($fechaSemana->greaterThan($inicioSemanaActual)) {
+            abort(422, 'No se pueden exportar semanas futuras.');
+        }
+
+        $inicioSemana = $fechaSemana->copy()->startOfDay();
+        $finSemana = $fechaSemana->copy()->endOfWeek(Carbon::SUNDAY)->endOfDay();
+        $titulo = 'GASTOS SIN FACTURA';
+
+        $ordenes = OrdenCompra::query()
+            ->with([
+                'proveedor',
+                'obra',
+                'centroCosto',
+                'areaCatalogo',
+            ])
+            ->whereIn('estado', ['AUTORIZADA', 'VERIFICADA'])
+            ->where('gastos_sin_factura', true)
+            ->where('area_id', $areaCatalogo->id)
+            ->where('folio', 'like', 'OC-GL-%')
+            ->whereBetween('fecha', [
+                $inicioSemana->toDateString(),
+                $finSemana->toDateString(),
+            ])
+            ->orderBy('fecha')
+            ->orderBy('folio')
+            ->get();
+
+        $pdf = new \FPDF('L', 'mm', 'Letter');
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(true, 15);
+        $pdf->AddPage();
+
+        $utf8 = fn ($texto) => utf8_decode((string) $texto);
+        $money = fn ($cantidad) => '$' . number_format((float) $cantidad, 2);
+
+        $BLUE = [0, 74, 173];
+        $GRAY = [240, 240, 240];
+
+        $imprimirEncabezado = function () use (
+            $pdf,
+            $utf8,
+            $titulo,
+            $areaCatalogo,
+            $inicioSemana,
+            $finSemana,
+            $BLUE
+        ) {
+            $pdf->SetTextColor($BLUE[0], $BLUE[1], $BLUE[2]);
+            $pdf->SetFont('Arial', 'B', 16);
+            $pdf->Cell(0, 8, $utf8($titulo), 0, 1, 'C');
+
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->SetTextColor(70, 70, 70);
+
+            $pdf->Cell(
+                0,
+                6,
+                $utf8(
+                    'Área: '
+                    . $areaCatalogo->nombre
+                    . ' | Periodo: '
+                    . $inicioSemana->format('d/m/Y')
+                    . ' al '
+                    . $finSemana->format('d/m/Y')
+                    . ' | Solo gastos sin factura autorizados/verificados'
+                    . ' | Generado: '
+                    . now()->format('d/m/Y H:i')
+                ),
+                0,
+                1,
+                'C'
+            );
+
+            $pdf->Ln(4);
+
+            $pdf->SetFillColor($BLUE[0], $BLUE[1], $BLUE[2]);
+            $pdf->SetTextColor(255, 255, 255);
+            $pdf->SetFont('Arial', 'B', 8);
+
+            $pdf->Cell(30, 8, $utf8('FOLIO'), 1, 0, 'C', true);
+            $pdf->Cell(68, 8, $utf8('PROVEEDOR'), 1, 0, 'C', true);
+            $pdf->Cell(30, 8, $utf8('AREA'), 1, 0, 'C', true);
+            $pdf->Cell(65, 8, $utf8('DESTINO'), 1, 0, 'C', true);
+            $pdf->Cell(25, 8, $utf8('FECHA'), 1, 0, 'C', true);
+            $pdf->Cell(38, 8, $utf8('TOTAL'), 1, 1, 'C', true);
+
+            $pdf->SetTextColor(0, 0, 0);
+        };
+
+        $imprimirEncabezado();
+        $totalGeneral = 0.0;
+
+        if ($ordenes->isEmpty()) {
+            $pdf->SetFont('Arial', '', 10);
+            $pdf->Cell(
+                0,
+                12,
+                $utf8(
+                    'No existen órdenes de gastos sin factura autorizadas o verificadas para el área '
+                    . $areaCatalogo->nombre
+                    . ' en el periodo '
+                    . $inicioSemana->format('d/m/Y')
+                    . ' al '
+                    . $finSemana->format('d/m/Y')
+                    . '.'
+                ),
+                1,
+                1,
+                'C'
+            );
+        }
+
+        foreach ($ordenes as $indice => $oc) {
+            if ($pdf->GetY() > 185) {
+                $pdf->AddPage();
+                $imprimirEncabezado();
+            }
+
+            $proveedorNombre = $oc->proveedor?->nombre
+                ?: $oc->proveedor?->razon_social
+                ?: 'SIN PROVEEDOR';
+
+            $areaNombre = $oc->areaCatalogo?->nombre
+                ?: $oc->area
+                ?: '-';
+
+            if ($oc->obra) {
+                $destino = trim(
+                    ($oc->obra->clave_obra ? $oc->obra->clave_obra . ' - ' : '')
+                    . ($oc->obra->nombre ?? '')
+                );
+            } elseif ($oc->centroCosto) {
+                $destino = trim(
+                    ($oc->centroCosto->codigo ? $oc->centroCosto->codigo . ' - ' : '')
+                    . ($oc->centroCosto->nombre ?? '')
+                );
+            } else {
+                $destino = 'Compra general';
+            }
+
+            $fecha = $oc->fecha ? $oc->fecha->format('d/m/Y') : '-';
+            $total = (float) $oc->total;
+            $totalGeneral += $total;
+
+            $relleno = ($indice % 2) !== 0;
+            if ($relleno) {
+                $pdf->SetFillColor($GRAY[0], $GRAY[1], $GRAY[2]);
+            } else {
+                $pdf->SetFillColor(255, 255, 255);
+            }
+
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->Cell(30, 8, $utf8($oc->folio), 1, 0, 'L', true);
+            $pdf->Cell(68, 8, $utf8(mb_strimwidth($proveedorNombre, 0, 42, '...')), 1, 0, 'L', true);
+            $pdf->Cell(30, 8, $utf8(mb_strimwidth($areaNombre, 0, 18, '...')), 1, 0, 'L', true);
+            $pdf->Cell(65, 8, $utf8(mb_strimwidth($destino, 0, 39, '...')), 1, 0, 'L', true);
+            $pdf->Cell(25, 8, $utf8($fecha), 1, 0, 'C', true);
+
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->Cell(38, 8, $money($total), 1, 1, 'R', true);
+        }
+
+        if ($ordenes->isNotEmpty()) {
+            if ($pdf->GetY() > 188) {
+                $pdf->AddPage();
+                $imprimirEncabezado();
+            }
+
+            $pdf->Ln(3);
+            $pdf->SetFont('Arial', 'B', 11);
+            $pdf->Cell(218, 9, $utf8('TOTAL GENERAL:'), 1, 0, 'R');
+            $pdf->Cell(38, 9, $money($totalGeneral), 1, 1, 'R');
+
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->Cell(218, 7, $utf8('Número de órdenes:'), 0, 0, 'R');
+            $pdf->Cell(38, 7, (string) $ordenes->count(), 0, 1, 'R');
+        }
+
+        $nombreArchivo = 'OC_Giralda_gastos_sin_factura_'
+            . $inicioSemana->format('Y-m-d')
+            . '_al_'
+            . $finSemana->format('Y-m-d')
+            . '.pdf';
+
+        return response($pdf->Output('S'))
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"');
+    }
+
+    public function exportarCaratulaGiralda(Request $request)
+    {
+        $this->authorizeAny([
+            'ordenes_compra.view.access',
+            'ordenes_compra.print.access',
+            'ordenes_compra.imprimir',
+            'ordenes de compra.access',
+        ]);
+
+        $areaCodigo = strtoupper(trim((string) $request->query('area_codigo')));
+
+        if ($areaCodigo !== 'GL') {
+            abort(403, 'Esta caratula solamente esta disponible para el area Giralda.');
+        }
+
+        $areaCatalogo = Area::query()
+            ->where('codigo', $areaCodigo)
+            ->firstOrFail();
+
+        try {
+            $fechaSemana = $request->filled('semana')
+                ? Carbon::createFromFormat('Y-m-d', (string) $request->query('semana'))->startOfWeek(Carbon::MONDAY)
+                : now()->startOfWeek(Carbon::MONDAY);
+        } catch (\Throwable $e) {
+            abort(422, 'La semana seleccionada no tiene un formato valido.');
+        }
+
+        $inicioSemanaActual = now()->startOfWeek(Carbon::MONDAY)->startOfDay();
+
+        if ($fechaSemana->greaterThan($inicioSemanaActual)) {
+            abort(422, 'No se pueden imprimir semanas futuras.');
+        }
+
+        $inicioSemana = $fechaSemana->copy()->startOfDay();
+        $finSemana = $fechaSemana->copy()->endOfWeek(Carbon::SUNDAY)->endOfDay();
+
+        $ordenes = OrdenCompra::query()
+            ->with(['proveedor', 'obra', 'centroCosto', 'areaCatalogo'])
+            ->whereIn('estado', ['AUTORIZADA', 'VERIFICADA'])
+            ->where('area_id', $areaCatalogo->id)
+            ->where('folio', 'like', 'OC-GL-%')
+            ->whereBetween('fecha', [
+                $inicioSemana->toDateString(),
+                $finSemana->toDateString(),
+            ])
+            ->orderBy('fecha')
+            ->orderBy('folio')
+            ->get();
+
+        $grupos = collect([
+            'caja_efectivo' => [
+                'titulo' => 'Caja chica - efectivo',
+                'ordenes' => $ordenes->filter(fn ($oc) => $oc->es_caja_chica && (string) $oc->forma_pago === '01')->values(),
+            ],
+            'caja_tarjeta' => [
+                'titulo' => 'Caja chica - tarjeta de credito',
+                'ordenes' => $ordenes->filter(fn ($oc) => $oc->es_caja_chica && (string) $oc->forma_pago === '04')->values(),
+            ],
+            'gastos_sin_factura' => [
+                'titulo' => 'Gastos sin factura',
+                'ordenes' => $ordenes->filter(fn ($oc) => (bool) $oc->gastos_sin_factura)->values(),
+            ],
+            'otras' => [
+                'titulo' => 'Otras ordenes GL',
+                'ordenes' => $ordenes->filter(fn ($oc) => ! $oc->es_caja_chica && ! $oc->gastos_sin_factura)->values(),
+            ],
+        ]);
+
+        $pdf = new \FPDF('P', 'mm', 'Letter');
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(true, 12);
+        $pdf->AddPage();
+
+        $utf8 = fn ($texto) => utf8_decode((string) $texto);
+        $money = fn ($cantidad) => '$' . number_format((float) $cantidad, 2);
+        $BLUE = [0, 74, 173];
+        $GRAY = [242, 244, 247];
+
+        $pdf->SetTextColor($BLUE[0], $BLUE[1], $BLUE[2]);
+        $pdf->SetFont('Arial', 'B', 18);
+        $pdf->Cell(0, 9, $utf8('CARATULA DE ORDENES DE COMPRA'), 0, 1, 'C');
+
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->SetTextColor(70, 70, 70);
+        $pdf->Cell(0, 6, $utf8('Area: ' . $areaCatalogo->nombre . ' | Periodo: ' . $inicioSemana->format('d/m/Y') . ' al ' . $finSemana->format('d/m/Y')), 0, 1, 'C');
+        $pdf->Cell(0, 6, $utf8('Generado: ' . now()->format('d/m/Y H:i')), 0, 1, 'C');
+        $pdf->Ln(5);
+
+        $pdf->SetFillColor($BLUE[0], $BLUE[1], $BLUE[2]);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(88, 8, $utf8('TIPO'), 1, 0, 'C', true);
+        $pdf->Cell(30, 8, $utf8('ORDENES'), 1, 0, 'C', true);
+        $pdf->Cell(38, 8, $utf8('TOTAL'), 1, 0, 'C', true);
+        $pdf->Cell(40, 8, $utf8('FOLIOS'), 1, 1, 'C', true);
+
+        $totalGeneral = 0.0;
+        $totalOrdenes = 0;
+
+        foreach ($grupos as $grupo) {
+            $items = $grupo['ordenes'];
+            $totalGrupo = (float) $items->sum(fn ($oc) => (float) $oc->total);
+            $folios = $items->pluck('folio')->implode(', ');
+            $totalGeneral += $totalGrupo;
+            $totalOrdenes += $items->count();
+
+            $pdf->SetFillColor($GRAY[0], $GRAY[1], $GRAY[2]);
+            $pdf->SetTextColor(20, 20, 20);
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->Cell(88, 8, $utf8($grupo['titulo']), 1, 0, 'L', true);
+            $pdf->Cell(30, 8, (string) $items->count(), 1, 0, 'C', true);
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->Cell(38, 8, $money($totalGrupo), 1, 0, 'R', true);
+            $pdf->SetFont('Arial', '', 7);
+            $pdf->Cell(40, 8, $utf8(mb_strimwidth($folios ?: '-', 0, 28, '...')), 1, 1, 'L', true);
+        }
+
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->Cell(88, 9, $utf8('TOTAL GENERAL'), 1, 0, 'R');
+        $pdf->Cell(30, 9, (string) $totalOrdenes, 1, 0, 'C');
+        $pdf->Cell(38, 9, $money($totalGeneral), 1, 0, 'R');
+        $pdf->Cell(40, 9, '', 1, 1, 'L');
+        $pdf->Ln(7);
+
+        foreach ($grupos as $grupo) {
+            $items = $grupo['ordenes'];
+
+            if ($pdf->GetY() > 235) {
+                $pdf->AddPage();
+            }
+
+            $pdf->SetFillColor($BLUE[0], $BLUE[1], $BLUE[2]);
+            $pdf->SetTextColor(255, 255, 255);
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Cell(0, 7, $utf8($grupo['titulo'] . ' (' . $items->count() . ')'), 1, 1, 'L', true);
+
+            $pdf->SetFillColor(248, 250, 252);
+            $pdf->SetTextColor(70, 70, 70);
+            $pdf->SetFont('Arial', 'B', 7);
+            $pdf->Cell(28, 7, $utf8('FOLIO'), 1, 0, 'C', true);
+            $pdf->Cell(61, 7, $utf8('PROVEEDOR'), 1, 0, 'C', true);
+            $pdf->Cell(53, 7, $utf8('DESTINO'), 1, 0, 'C', true);
+            $pdf->Cell(24, 7, $utf8('FECHA'), 1, 0, 'C', true);
+            $pdf->Cell(30, 7, $utf8('TOTAL'), 1, 1, 'C', true);
+
+            if ($items->isEmpty()) {
+                $pdf->SetFont('Arial', '', 8);
+                $pdf->SetTextColor(90, 90, 90);
+                $pdf->Cell(196, 7, $utf8('Sin ordenes para este tipo.'), 1, 1, 'C');
+                $pdf->Ln(3);
+                continue;
+            }
+
+            foreach ($items as $oc) {
+                if ($pdf->GetY() > 250) {
+                    $pdf->AddPage();
+                }
+
+                $proveedorNombre = $oc->proveedor?->nombre ?: $oc->proveedor?->razon_social ?: 'SIN PROVEEDOR';
+
+                if ($oc->obra) {
+                    $destino = trim(($oc->obra->clave_obra ? $oc->obra->clave_obra . ' - ' : '') . ($oc->obra->nombre ?? ''));
+                } elseif ($oc->centroCosto) {
+                    $destino = trim(($oc->centroCosto->codigo ? $oc->centroCosto->codigo . ' - ' : '') . ($oc->centroCosto->nombre ?? ''));
+                } else {
+                    $destino = 'Compra general';
+                }
+
+                $pdf->SetFont('Arial', '', 7);
+                $pdf->SetTextColor(20, 20, 20);
+                $pdf->Cell(28, 7, $utf8($oc->folio), 1, 0, 'L');
+                $pdf->Cell(61, 7, $utf8(mb_strimwidth($proveedorNombre, 0, 39, '...')), 1, 0, 'L');
+                $pdf->Cell(53, 7, $utf8(mb_strimwidth($destino, 0, 34, '...')), 1, 0, 'L');
+                $pdf->Cell(24, 7, $utf8($oc->fecha ? $oc->fecha->format('d/m/Y') : '-'), 1, 0, 'C');
+                $pdf->SetFont('Arial', 'B', 7);
+                $pdf->Cell(30, 7, $money($oc->total), 1, 1, 'R');
+            }
+
+            $pdf->Ln(4);
+        }
+
+        $nombreArchivo = 'OC_Giralda_caratula_'
+            . $inicioSemana->format('Y-m-d')
+            . '_al_'
+            . $finSemana->format('Y-m-d')
+            . '.pdf';
+
+        return response($pdf->Output('S'))
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"');
+    }
+}
