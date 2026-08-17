@@ -12,6 +12,7 @@ use App\Models\OrdenCompra;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class GiraldaController extends Controller
@@ -115,6 +116,7 @@ class GiraldaController extends Controller
             ->values();
         $asistenciaEditableFecha = $asistenciaEditableFechas->first();
         $esSemanaActual = $semana === $semanaActual;
+        $esSemanaHorasExtrasEditable = $this->isHoraExtraSemanaEditable($semanaInicio);
         $desde = in_array($tab, ['horas_extras', 'asistencia'], true)
             ? $semanaInicio->toDateString()
             : $request->query('desde', now()->startOfMonth()->toDateString());
@@ -207,6 +209,7 @@ class GiraldaController extends Controller
             'asistenciaEditableFechas',
             'puedeOverrideAsistencia',
             'esSemanaActual',
+            'esSemanaHorasExtrasEditable',
             'asistencias',
             'obrasActivas',
             'areas'
@@ -371,6 +374,7 @@ class GiraldaController extends Controller
         $semanaActual = $semanaData['actual'];
         $semanaTitulo = $semanaData['titulo'];
         $esSemanaActual = $semana === $semanaActual;
+        $esSemanaHorasExtrasEditable = $this->isHoraExtraSemanaEditable($semanaInicio);
 
         return view('giralda.horas-extras-empleado', compact(
             'areaGiralda',
@@ -382,7 +386,8 @@ class GiraldaController extends Controller
             'semanaSiguiente',
             'semanaActual',
             'semanaTitulo',
-            'esSemanaActual'
+            'esSemanaActual',
+            'esSemanaHorasExtrasEditable'
         ));
     }
 
@@ -406,6 +411,10 @@ class GiraldaController extends Controller
 
         $empleado = Empleado::findOrFail($data['empleado_id']);
         abort_if($areaGiralda && (int) $empleado->Area !== (int) $areaGiralda->id, 422, 'El empleado no pertenece a Giralda.');
+        $fecha = Carbon::parse($data['fecha']);
+        if (!$this->isHoraExtraFechaEditable($fecha)) {
+            return $this->horaExtraStoreErrorResponse($request, $empleado, 'Solo se pueden registrar horas extras de la semana actual o la semana anterior.', 'fecha');
+        }
 
         if ($request->filled('total_horas')) {
             $data['total_horas'] = round((float) $data['total_horas'], 2);
@@ -441,6 +450,16 @@ class GiraldaController extends Controller
         return back()->with('success', 'Horas extra autorizadas.');
     }
 
+    public function redirectHoraExtra(Request $request, GiraldaHoraExtra $horaExtra)
+    {
+        return redirect()->route('giralda.empleados.horas-extras', [
+            'empleado' => $horaExtra->empleado_id,
+            'semana' => $request->query(
+                'semana',
+                $horaExtra->fecha?->copy()->startOfWeek(Carbon::MONDAY)->toDateString() ?? now()->startOfWeek(Carbon::MONDAY)->toDateString()
+            ),
+        ]);
+    }
     public function updateHoraExtra(Request $request, GiraldaHoraExtra $horaExtra)
     {
         $this->authorizeAny(['giralda.horas_extras.edit.access']);
@@ -448,19 +467,15 @@ class GiraldaController extends Controller
         $horaExtra->loadMissing('empleado');
         $areaGiralda = $this->areaGiralda();
 
-        abort_if(
-            $areaGiralda && (int) $horaExtra->empleado?->Area !== (int) $areaGiralda->id,
-            422,
-            'El registro no pertenece a Giralda.'
-        );
+        if ($areaGiralda && (int) $horaExtra->empleado?->Area !== (int) $areaGiralda->id) {
+            return $this->horaExtraErrorResponse($request, $horaExtra, 'El registro no pertenece a Giralda.');
+        }
 
-        abort_unless(
-            $horaExtra->fecha?->betweenIncluded(now()->startOfWeek(Carbon::MONDAY), now()->endOfWeek(Carbon::SUNDAY)),
-            422,
-            'Solo se pueden editar registros de la semana actual.'
-        );
+        if (!$this->isHoraExtraFechaEditable($horaExtra->fecha)) {
+            return $this->horaExtraErrorResponse($request, $horaExtra, 'Solo se pueden editar registros de la semana actual o la semana anterior.');
+        }
 
-        $data = $request->validate([
+        $validator = Validator::make($request->all(), [
             'fecha' => ['required', 'date'],
             'hora_inicio' => ['required', 'date_format:H:i'],
             'hora_fin' => ['required', 'date_format:H:i'],
@@ -471,12 +486,15 @@ class GiraldaController extends Controller
             'observaciones' => ['nullable', 'string'],
         ]);
 
+        if ($validator->fails()) {
+            return $this->horaExtraErrorResponse($request, $horaExtra, $validator->errors()->first(), $validator->errors()->keys()[0] ?? 'hora_extra');
+        }
+
+        $data = $validator->validated();
         $fecha = Carbon::parse($data['fecha']);
-        abort_unless(
-            $fecha->betweenIncluded(now()->startOfWeek(Carbon::MONDAY), now()->endOfWeek(Carbon::SUNDAY)),
-            422,
-            'La fecha editada debe pertenecer a la semana actual.'
-        );
+        if (!$this->isHoraExtraFechaEditable($fecha)) {
+            return $this->horaExtraErrorResponse($request, $horaExtra, 'La fecha editada debe pertenecer a la semana actual o la semana anterior.', 'fecha');
+        }
 
         $data['total_horas'] = round((float) $data['total_horas'], 2);
         $data['hora_fin'] = $this->calcularHoraFinDesdeTotal($data['hora_inicio'], $data['total_horas']);
@@ -501,17 +519,13 @@ class GiraldaController extends Controller
         $horaExtra->loadMissing('empleado');
         $areaGiralda = $this->areaGiralda();
 
-        abort_if(
-            $areaGiralda && (int) $horaExtra->empleado?->Area !== (int) $areaGiralda->id,
-            422,
-            'El registro no pertenece a Giralda.'
-        );
+        if ($areaGiralda && (int) $horaExtra->empleado?->Area !== (int) $areaGiralda->id) {
+            return $this->horaExtraErrorResponse($request, $horaExtra, 'El registro no pertenece a Giralda.');
+        }
 
-        abort_unless(
-            $horaExtra->fecha?->betweenIncluded(now()->startOfWeek(Carbon::MONDAY), now()->endOfWeek(Carbon::SUNDAY)),
-            422,
-            'Solo se pueden eliminar registros de la semana actual.'
-        );
+        if (!$this->isHoraExtraFechaEditable($horaExtra->fecha)) {
+            return $this->horaExtraErrorResponse($request, $horaExtra, 'Solo se pueden eliminar registros de la semana actual o la semana anterior.');
+        }
 
         $empleadoId = $horaExtra->empleado_id;
         $semana = $request->query('semana', now()->startOfWeek(Carbon::MONDAY)->toDateString());
@@ -523,6 +537,55 @@ class GiraldaController extends Controller
             ->with('success', 'Registro de horas extras eliminado.');
     }
 
+    private function horaExtraEditableDesde(): Carbon
+    {
+        return now()->startOfWeek(Carbon::MONDAY)->subWeek()->startOfDay();
+    }
+
+    private function horaExtraEditableHasta(): Carbon
+    {
+        return now()->endOfWeek(Carbon::SUNDAY)->endOfDay();
+    }
+
+    private function isHoraExtraFechaEditable(?Carbon $fecha): bool
+    {
+        return $fecha?->betweenIncluded($this->horaExtraEditableDesde(), $this->horaExtraEditableHasta()) ?? false;
+    }
+
+    private function isHoraExtraSemanaEditable(Carbon $semanaInicio): bool
+    {
+        return $semanaInicio->betweenIncluded(
+            now()->startOfWeek(Carbon::MONDAY)->subWeek(),
+            now()->startOfWeek(Carbon::MONDAY)
+        );
+    }
+
+    private function horaExtraStoreErrorResponse(Request $request, Empleado $empleado, string $message, string $field = 'hora_extra')
+    {
+        return redirect()
+            ->route('giralda.empleados', [
+                'tab' => 'horas_extras',
+                'estatus' => $request->input('estatus', 'activo'),
+                'semana' => $request->input('semana', now()->startOfWeek(Carbon::MONDAY)->toDateString()),
+            ])
+            ->withErrors([$field => $message])
+            ->withInput();
+    }
+    private function horaExtraErrorResponse(Request $request, GiraldaHoraExtra $horaExtra, string $message, string $field = 'hora_extra')
+    {
+        $semana = $request->query(
+            'semana',
+            $horaExtra->fecha?->copy()->startOfWeek(Carbon::MONDAY)->toDateString() ?? now()->startOfWeek(Carbon::MONDAY)->toDateString()
+        );
+
+        return redirect()
+            ->route('giralda.empleados.horas-extras', [
+                'empleado' => $horaExtra->empleado_id,
+                'semana' => $semana,
+            ])
+            ->withErrors([$field => $message])
+            ->withInput();
+    }
     public function printHorasExtras(Request $request)
     {
         $this->authorizeAny(['giralda.access']);

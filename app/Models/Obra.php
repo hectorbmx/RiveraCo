@@ -242,4 +242,9 @@ public function cfdis()
     {
         return $this->hasMany(CivilCatalogImport::class, 'obra_id');
     }
+
+    public function civilEstimations()
+    {
+        return $this->hasMany(CivilEstimation::class, 'obra_id');
+    }
 }

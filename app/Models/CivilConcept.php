@@ -43,5 +43,9 @@ class CivilConcept extends Model
     {
         return $this->hasMany(OrdenCompraDetalle::class, 'civil_concept_id');
     }
-}
 
+    public function estimationItems()
+    {
+        return $this->hasMany(CivilEstimationItem::class, 'civil_concept_id');
+    }
+}

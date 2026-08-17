@@ -7,6 +7,8 @@
     $puedeEditarHe = auth()->user()?->can('giralda.horas_extras.edit.access');
     $puedeEliminarHe = auth()->user()?->can('giralda.horas_extras.delete.access');
     $mostrarAccionesHe = $puedeEditarHe || $puedeEliminarHe;
+    $fechaHorasExtraMin = now()->startOfWeek(\Carbon\Carbon::MONDAY)->subWeek()->toDateString();
+    $fechaHorasExtraMax = now()->endOfWeek(\Carbon\Carbon::SUNDAY)->toDateString();
 @endphp
 
 <div class="max-w-7xl mx-auto space-y-6">
@@ -19,12 +21,29 @@
         <div class="text-right">
             <div class="text-xs uppercase tracking-wide text-slate-400">Semana seleccionada</div>
             <div class="text-sm font-semibold text-[#0B265A]">{{ $semanaTitulo }}</div>
-            <div class="mt-1 text-xs {{ $esSemanaActual ? 'text-emerald-600' : 'text-amber-600' }}">
-                {{ $esSemanaActual ? 'Semana editable' : 'Solo lectura: semana cerrada' }}
+            <div class="mt-1 text-xs {{ $esSemanaHorasExtrasEditable ? 'text-emerald-600' : 'text-amber-600' }}">
+                {{ $esSemanaHorasExtrasEditable ? 'Semana editable' : 'Solo lectura: semana cerrada' }}
             </div>
         </div>
     </div>
 
+    @if ($errors->any())
+        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+            {{ $errors->first() }}
+        </div>
+    @endif
+
+    @if (session('success'))
+        <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+            {{ session('error') }}
+        </div>
+    @endif
     <div class="bg-white rounded-lg shadow p-4 flex flex-wrap items-center justify-between gap-3">
         <div>
             <div class="text-xs uppercase tracking-wide text-slate-400">Total horas semana</div>
@@ -75,7 +94,7 @@
                             </td>
                             @if($mostrarAccionesHe)
                                 <td class="p-3 text-right">
-                                    @if($esSemanaActual)
+                                    @if($esSemanaHorasExtrasEditable)
                                         <div class="flex justify-end gap-3" x-data="{ editOpen: false }">
                                             @if($puedeEditarHe)
                                                 <button type="button" @click="editOpen = true" class="text-blue-600 hover:underline">Editar</button>
@@ -97,7 +116,7 @@
                                                             <div class="grid grid-cols-3 gap-2">
                                                                 <div>
                                                                     <label class="mb-1 block text-sm font-medium">Fecha</label>
-                                                                    <input type="date" name="fecha" value="{{ optional($registro->fecha)->toDateString() }}" class="w-full rounded border p-2" required>
+                                                                    <input type="date" name="fecha" value="{{ optional($registro->fecha)->toDateString() }}" min="{{ $fechaHorasExtraMin }}" max="{{ $fechaHorasExtraMax }}" class="w-full rounded border p-2" required>
                                                                 </div>
                                                                 <div>
                                                                     <label class="mb-1 block text-sm font-medium">Inicio</label>

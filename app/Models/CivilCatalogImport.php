@@ -53,5 +53,9 @@ class CivilCatalogImport extends Model
     {
         return $this->belongsTo(User::class, 'validated_by');
     }
-}
 
+    public function estimations()
+    {
+        return $this->hasMany(CivilEstimation::class, 'civil_catalog_import_id');
+    }
+}

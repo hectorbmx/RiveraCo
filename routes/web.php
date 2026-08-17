@@ -560,6 +560,9 @@ Route::middleware('auth','verified')->group(function () {
         Route::delete('{obra}/catalogo/{import}', [ObraCivilController::class, 'destroyCatalog'])->name('catalog.destroy');
         Route::post('{obra}/catalogo/preview/{import}', [ObraCivilController::class, 'confirmCatalog'])->name('catalog.confirm');
         Route::get('{obra}/detalles', [ObraCivilController::class, 'details'])->name('details');
+        Route::get('{obra}/estimaciones', [ObraCivilController::class, 'estimationsIndex'])->name('estimations.index');
+        Route::post('{obra}/estimaciones', [ObraCivilController::class, 'storeEstimation'])->name('estimations.store');
+        Route::get('{obra}/estimaciones/{estimation}', [ObraCivilController::class, 'showEstimation'])->name('estimations.show');
         Route::get('{obra}/conceptos/{concept}/ordenes', [ObraCivilController::class, 'conceptOrders'])->name('concept.orders');
     });
     Route::get('obras/{obra}/asistencias/reporte', [ObraController::class, 'reporteAsistencias'])
@@ -631,6 +634,7 @@ Route::middleware('auth','verified')->group(function () {
         Route::delete('/horas-extras/{horaExtra}', [GiraldaController::class, 'destroyHoraExtra'])->name('horas-extras.destroy');
         Route::get('/horas-extras/imprimir', [GiraldaController::class, 'printHorasExtras'])->name('horas-extras.print');
         Route::get('/horas-extras/exportar', [GiraldaController::class, 'exportHorasExtras'])->name('horas-extras.export');
+        Route::get('/horas-extras/{horaExtra}', [GiraldaController::class, 'redirectHoraExtra'])->name('horas-extras.redirect');
     });
     Route::resource('ordenes_compra', OrdenCompraController::class)->except(['show','destroy']);
     Route::post('ordenes_compra/{id}/autorizar', [OrdenCompraController::class, 'autorizar'])->name('ordenes_compra.autorizar');

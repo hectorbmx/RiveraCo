@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CivilCatalogImport;
 use App\Models\CivilConcept;
+use App\Models\CivilEstimation;
 use App\Models\Obra;
 use App\Services\CivilCatalogExcelParser;
 use App\Services\CivilConceptBalanceService;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class ObraCivilController extends Controller
@@ -156,8 +158,13 @@ class ObraCivilController extends Controller
             ->latest()
             ->get();
 
+        $estimations = CivilEstimation::query()
+            ->where('obra_id', $obra->id)
+            ->with('createdBy')
+            ->latest()
+            ->limit(20)
+            ->get();
         $balances = collect();
-        $movementCounts = collect();
 
         if ($activeImport) {
             $conceptIds = $activeImport->buildings
@@ -166,16 +173,157 @@ class ObraCivilController extends Controller
                 ->pluck('id');
 
             $balances = app(CivilConceptBalanceService::class)->summaries($conceptIds);
-            $movementCounts = DB::table('orden_compra_detalles')
-                ->whereIn('civil_concept_id', $conceptIds)
-                ->selectRaw('civil_concept_id, COUNT(DISTINCT orden_compra_id) as orders_count')
-                ->groupBy('civil_concept_id')
-                ->pluck('orders_count', 'civil_concept_id');
         }
 
-        return view('obra_civil.details', compact('obra', 'imports', 'activeImport', 'drafts', 'balances', 'movementCounts'));
+        return view('obra_civil.details', compact('obra', 'imports', 'activeImport', 'drafts', 'balances'));
     }
 
+    public function estimationsIndex(Obra $obra)
+    {
+        $this->abortUnlessCivil($obra);
+
+        $obra->load('cliente');
+
+        $estimations = CivilEstimation::query()
+            ->where('obra_id', $obra->id)
+            ->with(['createdBy', 'catalogImport'])
+            ->withCount('items')
+            ->latest()
+            ->get();
+
+        $totals = [
+            'count' => $estimations->count(),
+            'items' => $estimations->sum('total_items'),
+            'quantity' => $estimations->sum(fn ($estimation) => (float) $estimation->total_quantity),
+            'subtotal' => $estimations->sum(fn ($estimation) => (float) $estimation->subtotal),
+        ];
+
+        return view('obra_civil.estimations.index', compact('obra', 'estimations', 'totals'));
+    }
+
+    public function showEstimation(Obra $obra, CivilEstimation $estimation)
+    {
+        $this->abortUnlessCivil($obra);
+        $this->abortUnlessEstimationBelongsToObra($obra, $estimation);
+
+        $obra->load('cliente');
+        $estimation->load(['createdBy', 'catalogImport', 'items.concept']);
+
+        return view('obra_civil.estimations.show', compact('obra', 'estimation'));
+    }
+    public function storeEstimation(Request $request, Obra $obra)
+    {
+        $this->abortUnlessCivil($obra);
+
+        $activeImport = CivilCatalogImport::query()
+            ->where('obra_id', $obra->id)
+            ->whereIn('status', ['imported', 'validated'])
+            ->latest()
+            ->first();
+
+        if (!$activeImport) {
+            return back()->with('error', 'Esta obra civil todavia no tiene un catalogo activo para estimar.');
+        }
+
+        $data = $request->validate([
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.concept_id' => ['required', 'integer', 'distinct', 'exists:civil_concepts,id'],
+            'items.*.quantity' => ['required', 'numeric', 'gt:0'],
+        ]);
+
+        $conceptIds = collect($data['items'])->pluck('concept_id')->map(fn ($id) => (int) $id)->values();
+        $concepts = CivilConcept::query()
+            ->with('partida.building')
+            ->whereIn('id', $conceptIds)
+            ->whereHas('partida.building', function ($query) use ($activeImport) {
+                $query->where('civil_catalog_import_id', $activeImport->id);
+            })
+            ->get()
+            ->keyBy('id');
+
+        if ($concepts->count() !== $conceptIds->unique()->count()) {
+            throw ValidationException::withMessages([
+                'items' => 'Uno o mas conceptos no pertenecen al catalogo activo de esta obra.',
+            ]);
+        }
+
+        $balances = app(CivilConceptBalanceService::class)->summaries($conceptIds);
+
+        $lines = [];
+        $totalQuantity = 0.0;
+        $subtotal = 0.0;
+
+        foreach ($data['items'] as $item) {
+            $concept = $concepts->get((int) $item['concept_id']);
+            $quantity = round((float) $item['quantity'], 4);
+            $budgetQuantity = (float) $concept->budget_quantity;
+
+            $availableQuantity = (float) ($balances->get($concept->id)['available_quantity'] ?? $budgetQuantity);
+
+            if ($quantity > $availableQuantity) {
+                throw ValidationException::withMessages([
+                    'items' => 'La cantidad de ' . ($concept->excel_code ?: 'un concepto') . ' excede la cantidad disponible por estimar.',
+                ]);
+            }
+
+            $unitPrice = round((float) $concept->unit_price, 4);
+            $amount = round($quantity * $unitPrice, 2);
+            $partida = $concept->partida;
+            $building = $partida?->building;
+
+            $totalQuantity += $quantity;
+            $subtotal += $amount;
+
+            $lines[] = [
+                'civil_concept_id' => $concept->id,
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'amount' => $amount,
+                'concept_snapshot' => [
+                    'building' => $building?->name,
+                    'partida_code' => $partida?->code,
+                    'partida_name' => $partida?->name,
+                    'excel_code' => $concept->excel_code,
+                    'description' => $concept->description,
+                    'unit' => $concept->unit,
+                    'budget_quantity' => $budgetQuantity,
+                    'unit_price' => $unitPrice,
+                    'budget_amount' => (float) $concept->budget_amount,
+                ],
+            ];
+        }
+
+        $estimation = DB::transaction(function () use ($obra, $activeImport, $lines, $totalQuantity, $subtotal) {
+            $nextNumber = CivilEstimation::query()
+                ->where('obra_id', $obra->id)
+                ->lockForUpdate()
+                ->count() + 1;
+            $obraKey = Str::upper(Str::slug($obra->clave_obra ?: (string) $obra->id));
+
+            $estimation = CivilEstimation::create([
+                'obra_id' => $obra->id,
+                'civil_catalog_import_id' => $activeImport->id,
+                'folio' => sprintf('EST-%s-%03d', $obraKey, $nextNumber),
+                'status' => 'confirmed',
+                'total_items' => count($lines),
+                'total_quantity' => round($totalQuantity, 4),
+                'subtotal' => round($subtotal, 2),
+                'created_by' => auth()->id(),
+                'confirmed_at' => now(),
+                'metadata' => [
+                    'source' => 'obra_civil_details_modal',
+                ],
+            ]);
+
+            $estimation->items()->createMany($lines);
+
+            return $estimation;
+        });
+
+        return redirect()
+            ->route('obra_civil.estimations.show', [$obra, $estimation])
+            ->with('success', 'Estimacion ' . $estimation->folio . ' guardada correctamente.');
+    }
     public function conceptOrders(Obra $obra, CivilConcept $concept)
     {
         $this->abortUnlessCivil($obra);
@@ -250,6 +398,10 @@ class ObraCivilController extends Controller
         abort_unless(in_array(strtoupper((string) $obra->tipo_obra), ['OBRA_CIVIL', 'CIVIL'], true), 404);
     }
 
+    private function abortUnlessEstimationBelongsToObra(Obra $obra, CivilEstimation $estimation): void
+    {
+        abort_unless((int) $estimation->obra_id === (int) $obra->id, 404);
+    }
     private function abortUnlessImportBelongsToObra(Obra $obra, CivilCatalogImport $import): void
     {
         abort_unless((int) $import->obra_id === (int) $obra->id, 404);

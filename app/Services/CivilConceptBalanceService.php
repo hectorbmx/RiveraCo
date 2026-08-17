@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class CivilConceptBalanceService
 {
-    public const COMMITTED_STATES = ['AUTORIZADA', 'VERIFICADA'];
+    public const COMMITTED_STATES = ['confirmed'];
 
     public function summary(CivilConcept|int $concept, ?int $excludeOrdenCompraId = null): array
     {
@@ -34,18 +34,17 @@ class CivilConceptBalanceService
             ->get(['id', 'budget_quantity', 'budget_amount'])
             ->keyBy('id');
 
-        $used = DB::table('orden_compra_detalles as d')
-            ->join('ordenes_compra as oc', 'oc.id', '=', 'd.orden_compra_id')
-            ->whereIn('d.civil_concept_id', $ids)
-            ->whereIn('oc.estado', self::COMMITTED_STATES)
-            ->when($excludeOrdenCompraId, fn ($query) => $query->where('oc.id', '!=', $excludeOrdenCompraId))
+        $used = DB::table('civil_estimation_items as i')
+            ->join('civil_estimations as e', 'e.id', '=', 'i.civil_estimation_id')
+            ->whereIn('i.civil_concept_id', $ids)
+            ->whereIn('e.status', self::COMMITTED_STATES)
             ->selectRaw('
-                d.civil_concept_id,
-                COALESCE(SUM(d.cantidad), 0) as used_quantity,
-                COALESCE(SUM(d.importe), 0) as used_amount,
-                COUNT(DISTINCT oc.id) as orders_count
+                i.civil_concept_id,
+                COALESCE(SUM(i.quantity), 0) as used_quantity,
+                COALESCE(SUM(i.amount), 0) as used_amount,
+                COUNT(DISTINCT e.id) as estimations_count
             ')
-            ->groupBy('d.civil_concept_id')
+            ->groupBy('i.civil_concept_id')
             ->get()
             ->keyBy('civil_concept_id');
 
@@ -67,7 +66,7 @@ class CivilConceptBalanceService
                     'used_amount' => $usedAmount,
                     'available_quantity' => $budgetQuantity - $usedQuantity,
                     'available_amount' => $budgetAmount - $usedAmount,
-                    'orders_count' => (int) ($spent->orders_count ?? 0),
+                    'estimations_count' => (int) ($spent->estimations_count ?? 0),
                 ],
             ];
         });
@@ -93,7 +92,7 @@ class CivilConceptBalanceService
             'used_amount' => 0.0,
             'available_quantity' => 0.0,
             'available_amount' => 0.0,
-            'orders_count' => 0,
+            'estimations_count' => 0,
         ];
     }
 }

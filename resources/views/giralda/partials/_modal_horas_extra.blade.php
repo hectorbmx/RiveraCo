@@ -2,12 +2,20 @@
     $horarioBase = $areaGiralda?->horarioActivo;
     $horaEntradaBase = $horarioBase?->hora_entrada ? substr((string) $horarioBase->hora_entrada, 0, 5) : null;
     $horaSalidaBase = $horarioBase?->hora_salida ? substr((string) $horarioBase->hora_salida, 0, 5) : null;
+    $semanaHorasExtraInicio = \Carbon\Carbon::parse($semana ?? now()->startOfWeek(\Carbon\Carbon::MONDAY)->toDateString())->startOfWeek(\Carbon\Carbon::MONDAY);
+    $fechaHorasExtraDefault = $semanaHorasExtraInicio->isSameWeek(now()) ? now()->toDateString() : $semanaHorasExtraInicio->toDateString();
+    $fechaHorasExtraMin = now()->startOfWeek(\Carbon\Carbon::MONDAY)->subWeek()->toDateString();
+    $fechaHorasExtraMax = now()->endOfWeek(\Carbon\Carbon::SUNDAY)->toDateString();
 @endphp
 
 <div x-data="horasExtraModal({ inicio: @js(old('hora_inicio', $horaSalidaBase)), fin: @js(old('hora_fin', $horaSalidaBase)), total: @js(old('total_horas')) })" x-init="recalcular()" class="inline-block text-left">
-    <button type="button" @click="open = true" class="px-3 py-1.5 rounded bg-[#0B265A] text-white hover:bg-blue-900">
-        Dar horas
-    </button>
+    @if($esSemanaHorasExtrasEditable ?? true)
+        <button type="button" @click="open = true" class="px-3 py-1.5 rounded bg-[#0B265A] text-white hover:bg-blue-900">
+            Dar horas
+        </button>
+    @else
+        <span class="px-3 py-1.5 rounded bg-slate-100 text-sm font-semibold text-slate-400">Cerrado</span>
+    @endif
 
     <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
         <div @click.away="open = false" class="w-full max-w-xl bg-white rounded-lg shadow-xl">
@@ -33,7 +41,7 @@
                 <div class="grid grid-cols-3 gap-2">
                     <div>
                         <label class="block text-sm font-medium mb-1">Fecha</label>
-                        <input type="date" name="fecha" value="{{ old('fecha', now()->toDateString()) }}" class="w-full border rounded p-2" required>
+                        <input type="date" name="fecha" value="{{ old('fecha', $fechaHorasExtraDefault) }}" min="{{ $fechaHorasExtraMin }}" max="{{ $fechaHorasExtraMax }}" class="w-full border rounded p-2" required>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Inicio</label>

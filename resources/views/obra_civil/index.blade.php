@@ -86,6 +86,10 @@
                                            class="font-semibold text-slate-600 hover:underline">
                                             Ver detalle
                                         </a>
+                                        <a href="{{ route('obra_civil.estimations.index', $obra) }}"
+                                           class="font-semibold text-[#0B265A] hover:underline">
+                                            Estimaciones
+                                        </a>
                                     @endif
                                     @if(isset($catalogTablesReady) && $catalogTablesReady)
                                         <button type="button"
