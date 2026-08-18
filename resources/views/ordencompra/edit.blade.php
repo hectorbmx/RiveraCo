@@ -394,7 +394,7 @@
     {{-- Agregar detalle --}}
     @if(!$bloqueado)
     <form method="POST" action="{{ route('ordenes_compra.detalles.store',$oc->id) }}"
-          class="grid grid-cols-1 md:grid-cols-8 gap-2 mb-4" data-loading-form data-loading-message="Agregando producto a la orden...">
+          class="grid grid-cols-1 md:grid-cols-9 gap-2 mb-4" data-loading-form data-loading-message="Agregando producto a la orden...">
         @csrf
         
   <!-- <input id="descProducto" name="descripcion"class="border p-2 col-span-2" placeholder="Descripción / buscar producto..."  autocomplete="off"> -->
@@ -409,7 +409,11 @@
   <input type="hidden" name="producto_id" id="producto_id">
   <input type="hidden" name="civil_concept_id" id="civil_concept_id">
   <input type="hidden" name="legacy_prod_id" id="legacy_prod_id">
-  <input type="hidden" name="unidad" id="unidad">
+  <div>
+      <input name="unidad" id="unidad" type="text" class="w-full border p-2 rounded uppercase" placeholder="PZA, KG, M, ML...">
+      <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">Unidad</span>
+      <span class="text-[10px] text-slate-400 block mt-1 ml-1 leading-tight">Si el producto viene sin unidad, capturala aqui antes de guardar.</span>
+  </div>
 
   <div id="sugerenciasProductos"
        class="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow hidden max-h-60 overflow-auto">
