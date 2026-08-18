@@ -1512,8 +1512,20 @@ foreach ($oc->detalles as $detalle) {
         ];
     }
 
+    $monedaStr = strtoupper(trim((string) ($oc->moneda ?? 'MXN')));
+
+    if (in_array($monedaStr, ['USD', 'DOLARES', 'DÓLARES'], true)) {
+        $labelTotal = 'Total USD:';
+    } elseif (in_array($monedaStr, ['EUR', 'EUROS'], true)) {
+        $labelTotal = 'Total EUR:';
+    } elseif ($monedaStr !== '' && ! in_array($monedaStr, ['MXN', 'MXP', 'PESOS', 'MN', 'M.N.'], true)) {
+        $labelTotal = 'Total ' . $monedaStr . ':';
+    } else {
+        $labelTotal = 'Total:';
+    }
+
     $filasTotales[] = [
-        'label' => 'Total M.N.:',
+        'label' => $labelTotal,
         'monto' => $total,
         'total' => true,
     ];
