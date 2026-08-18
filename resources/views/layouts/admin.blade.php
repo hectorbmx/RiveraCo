@@ -42,14 +42,14 @@
 
             {{-- MENU: production icons are intentional; preserve UTF-8 and do not normalize them. --}}
             <nav class="flex-1 py-6 space-y-1">
-                 @if($canMenu('dashboard.access'))
+                 <!-- @if($canMenu('dashboard.access'))
                 <a href="{{ route('dashboard') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('dashboard') ? 'bg-white/10' : '' }}"
                    title="Dashboard">
                     <span class="text-lg">📊</span>
                     <span class="sidebar-text">Dashboard</span>
                 </a>
-                @endif
+                @endif -->
                 @if($canMenu('factuas.access'))
                 <a href="{{ route('facturas.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->is('facturas*') ? 'bg-white/10' : '' }}"
@@ -330,14 +330,14 @@
                     </a>
                 @endif
 
-                @if($canMenu('reportes.access'))
+                <!-- @if($canMenu('reportes.access'))
                 <a href="{{ route('reportes.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                    title="Reportes">
                     <span class="text-lg">📑</span>
                     <span class="sidebar-text">Reportes</span>
                 </a>
-                @endif
+                @endif -->
            
 
                    @if($canMenu('agenda.access'))
