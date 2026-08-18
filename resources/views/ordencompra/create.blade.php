@@ -268,27 +268,35 @@
             </div>
 
             <div>
-                <label>Moneda</label>
-                <select name="moneda" class="w-full border p-2">
-                    <option value="MXN">MXN</option>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
+                <label class="block text-sm font-medium mb-1">Moneda</label>
+                <select name="moneda" id="moneda_select" class="w-full border p-2 rounded">
+                    <option value="MXN" @selected(old('moneda', 'MXN') === 'MXN')>MXN (Pesos)</option>
+                    <option value="USD" @selected(old('moneda') === 'USD')>USD (Dólares)</option>
+                    <option value="EUR" @selected(old('moneda') === 'EUR')>EUR (Euros)</option>
                 </select>
+                @error('moneda')
+                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                @enderror
             </div>
             <div>
-            <label>IVA base (%)</label>
-                    <select name="iva" class="w-full border p-2">
-                        @foreach($tiposIva as $tipo)
-                            <option value="{{ (float) $tipo->porcentaje }}" @selected($tipo->default)>
-                                {{ $tipo->nombre }} ({{ number_format((float) $tipo->porcentaje, 2) }}%)
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                <label class="block text-sm font-medium mb-1">IVA base (%)</label>
+                <select name="iva" class="w-full border p-2 rounded">
+                    @foreach($tiposIva as $tipo)
+                        <option value="{{ (float) $tipo->porcentaje }}" @selected(old('iva', $tipo->default ? $tipo->porcentaje : null) == $tipo->porcentaje)>
+                            {{ $tipo->nombre }} ({{ number_format((float) $tipo->porcentaje, 2) }}%)
+                        </option>
+                    @endforeach
+                </select>
+            </div>
 
             <div>
-                <label>Tipo de cambio</label>
-                <input type="number" step="0.0001" name="tipo_cambio" class="w-full border p-2">
+                <label class="block text-sm font-medium mb-1">
+                    Tipo de cambio <span id="tc_required_label" class="text-xs text-red-600 font-bold {{ old('moneda', 'MXN') === 'MXN' ? 'hidden' : '' }}">* (Obligatorio para USD/EUR)</span>
+                </label>
+                <input type="number" step="0.0001" min="0.0001" name="tipo_cambio" id="tipo_cambio_input" class="w-full border p-2 rounded" value="{{ old('tipo_cambio', old('moneda', 'MXN') === 'MXN' ? '1' : '') }}" placeholder="Ej. 18.50">
+                @error('tipo_cambio')
+                    <p class="text-sm text-red-600 mt-1 font-medium">{{ $message }}</p>
+                @enderror
             </div>
 
             <div>
@@ -332,6 +340,33 @@
     const overlay = document.getElementById('ocLoadingOverlay');
     const message = document.getElementById('ocLoadingMessage');
 
+    const monedaSelect = document.getElementById('moneda_select');
+    const tcInput = document.getElementById('tipo_cambio_input');
+    const tcLabel = document.getElementById('tc_required_label');
+
+    function syncTipoCambio() {
+        if (!monedaSelect || !tcInput) return;
+        const isMxn = monedaSelect.value === 'MXN';
+        if (!isMxn) {
+            tcLabel?.classList.remove('hidden');
+            tcInput.setAttribute('required', 'required');
+            tcInput.classList.add('border-amber-400', 'bg-amber-50');
+            if (tcInput.value === '1' || tcInput.value === '1.0000') {
+                tcInput.value = '';
+            }
+        } else {
+            tcLabel?.classList.add('hidden');
+            tcInput.removeAttribute('required');
+            tcInput.classList.remove('border-amber-400', 'bg-amber-50');
+            if (!tcInput.value || parseFloat(tcInput.value) <= 0) {
+                tcInput.value = '1';
+            }
+        }
+    }
+
+    monedaSelect?.addEventListener('change', syncTipoCambio);
+    syncTipoCambio();
+
     window.mostrarCargaOc = function (texto) {
         if (message) message.textContent = texto || 'Guardando...';
         overlay?.classList.remove('hidden');
@@ -344,7 +379,16 @@
     };
 
     document.querySelectorAll('form[data-loading-form]').forEach((form) => {
-        form.addEventListener('submit', () => {
+        form.addEventListener('submit', (e) => {
+            if (monedaSelect && tcInput && monedaSelect.value !== 'MXN') {
+                const val = parseFloat(tcInput.value);
+                if (isNaN(val) || val <= 0) {
+                    e.preventDefault();
+                    alert('Debes ingresar un tipo de cambio válido mayor a 0 cuando la moneda es ' + monedaSelect.value + '.');
+                    tcInput.focus();
+                    return false;
+                }
+            }
             window.mostrarCargaOc(form.dataset.loadingMessage || 'Guardando...');
             form.querySelectorAll('button[type="submit"], button:not([type])').forEach((button) => {
                 button.disabled = true;

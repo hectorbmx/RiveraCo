@@ -358,7 +358,7 @@ class OrdenCompraController extends Controller
             $oc->es_caja_chica = $esCajaChica;
             $oc->gastos_sin_factura = $gastosSinFactura;
             $oc->moneda       = $request->moneda;
-            $oc->tipo_cambio  = $request->tipo_cambio;
+            $oc->tipo_cambio  = $request->moneda === 'MXN' ? ($request->tipo_cambio ?: 1) : $request->tipo_cambio;
 
             // legacy útil
             $oc->area         = $area->nombre; // mantenemos el texto por compatibilidad/histórico
@@ -529,7 +529,7 @@ public function edit($id)
             $oc->es_caja_chica = $esCajaChica;
             $oc->gastos_sin_factura = $gastosSinFactura;
             $oc->moneda       = $request->moneda;
-            $oc->tipo_cambio  = $request->tipo_cambio;
+            $oc->tipo_cambio  = $request->moneda === 'MXN' ? ($request->tipo_cambio ?: 1) : $request->tipo_cambio;
 
             $oc->area         = $area->nombre;
             $oc->cotizacion   = $request->cotizacion;
@@ -1631,6 +1631,23 @@ foreach ($oc->detalles as $detalle) {
         22
     );
 
+    $tiposPagoMap = [
+        'PUE' => 'PUE - Pago en una sola exhibicion',
+        'PPD' => 'PPD - Pago en parcialidades o diferido',
+    ];
+
+    $formasPagoMap = [
+        '01' => '01 - Efectivo',
+        '02' => '02 - Cheque nominativo',
+        '03' => '03 - Transferencia electronica de fondos',
+        '04' => '04 - Tarjeta de credito',
+        '28' => '28 - Tarjeta de debito',
+        '99' => '99 - Por definir',
+    ];
+
+    $tipoPagoTexto  = $tiposPagoMap[$oc->tipo_pago] ?? ($oc->tipo_pago ?: '-');
+    $formaPagoTexto = $formasPagoMap[$oc->forma_pago] ?? ($oc->forma_pago ?: '-');
+
     $pdf->SetFont('Arial', '', 8);
     $pdf->SetXY($X0 + 2, $Y + 8);
 
@@ -1640,7 +1657,7 @@ foreach ($oc->detalles as $detalle) {
         $utf8(
             "Razon Social: Rivera Construcciones\n"
             . "RFC: RCO820921T86\n"
-            . "Domicilio: Justo Sierra #2469\n"
+            . "Domicilio: Justo Sierra #2469, Col. Ladron de Guevara\n"
             . "Uso del CFDI: G03 Gastos en general"
         ),
         0,
@@ -1655,8 +1672,8 @@ foreach ($oc->detalles as $detalle) {
         $utf8(
             "Regimen del Capital: S.A. de C.V.\n"
             . "Regimen fiscal: General de ley\n"
-            . "Colonia: Ladron de Guevara, Gdl\n"
-            . "Metodo de pago: Pago en una sola exhibicion"
+            . "Metodo de pago: " . $tipoPagoTexto . "\n"
+            . "Forma de pago: " . $formaPagoTexto
         ),
         0,
         'L'

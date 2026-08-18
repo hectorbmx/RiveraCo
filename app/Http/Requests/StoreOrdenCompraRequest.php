@@ -45,8 +45,8 @@ class StoreOrdenCompraRequest extends FormRequest
             $moneda = $this->input('moneda', 'MXN');
             $tc     = $this->input('tipo_cambio');
 
-            if ($moneda !== 'MXN' && (is_null($tc) || (float)$tc <= 0)) {
-                $v->errors()->add('tipo_cambio', 'Tipo de cambio es obligatorio y debe ser mayor a 0 cuando la moneda no es MXN.');
+            if ($moneda !== 'MXN' && (is_null($tc) || $tc === '' || (float)$tc <= 0)) {
+                $v->errors()->add('tipo_cambio', 'El tipo de cambio del día es obligatorio y debe ser mayor a 0 cuando la moneda es diferente a MXN.');
             }
 
             if ($this->filled('obra_id') && $this->filled('centro_costo_id')) {

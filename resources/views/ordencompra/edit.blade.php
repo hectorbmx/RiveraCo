@@ -310,7 +310,7 @@
 
         <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Moneda</label>
-            <select form="formEncabezadoOc" name="moneda" class="w-full border p-2 rounded" @disabled($bloqueado)>
+            <select form="formEncabezadoOc" name="moneda" id="edit_moneda_select" class="w-full border p-2 rounded" @disabled($bloqueado)>
                 @foreach(['MXN','USD','EUR'] as $moneda)
                     <option value="{{ $moneda }}" @selected(old('moneda', $oc->moneda ?? 'MXN') === $moneda)>{{ $moneda }}</option>
                 @endforeach
@@ -319,8 +319,10 @@
         </div>
 
         <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de cambio</label>
-            <input form="formEncabezadoOc" type="number" step="0.0001" name="tipo_cambio" value="{{ old('tipo_cambio', $oc->tipo_cambio) }}" class="w-full border p-2 rounded" @disabled($bloqueado)>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">
+                Tipo de cambio <span id="edit_tc_required_label" class="text-xs text-red-600 font-bold {{ old('moneda', $oc->moneda ?? 'MXN') === 'MXN' ? 'hidden' : '' }}">* (Obligatorio para USD/EUR)</span>
+            </label>
+            <input form="formEncabezadoOc" type="number" step="0.0001" min="0.0001" name="tipo_cambio" id="edit_tipo_cambio_input" value="{{ old('tipo_cambio', $oc->tipo_cambio ?? ($oc->moneda === 'MXN' || !$oc->moneda ? '1' : '')) }}" class="w-full border p-2 rounded" @disabled($bloqueado)>
             @error('tipo_cambio')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
         </div>
 
@@ -590,6 +592,33 @@
     const overlay = document.getElementById('ocLoadingOverlay');
     const message = document.getElementById('ocLoadingMessage');
 
+    const monedaSelect = document.getElementById('edit_moneda_select');
+    const tcInput = document.getElementById('edit_tipo_cambio_input');
+    const tcLabel = document.getElementById('edit_tc_required_label');
+
+    function syncTipoCambio() {
+        if (!monedaSelect || !tcInput) return;
+        const isMxn = monedaSelect.value === 'MXN';
+        if (!isMxn) {
+            tcLabel?.classList.remove('hidden');
+            tcInput.setAttribute('required', 'required');
+            tcInput.classList.add('border-amber-400', 'bg-amber-50');
+            if (tcInput.value === '1' || tcInput.value === '1.0000') {
+                tcInput.value = '';
+            }
+        } else {
+            tcLabel?.classList.add('hidden');
+            tcInput.removeAttribute('required');
+            tcInput.classList.remove('border-amber-400', 'bg-amber-50');
+            if (!tcInput.value || parseFloat(tcInput.value) <= 0) {
+                tcInput.value = '1';
+            }
+        }
+    }
+
+    monedaSelect?.addEventListener('change', syncTipoCambio);
+    syncTipoCambio();
+
     window.mostrarCargaOc = function (texto) {
         if (message) message.textContent = texto || 'Guardando...';
         overlay?.classList.remove('hidden');
@@ -602,7 +631,16 @@
     };
 
     document.querySelectorAll('form[data-loading-form]').forEach((form) => {
-        form.addEventListener('submit', () => {
+        form.addEventListener('submit', (e) => {
+            if (monedaSelect && tcInput && monedaSelect.value !== 'MXN' && form.id === 'formEncabezadoOc') {
+                const val = parseFloat(tcInput.value);
+                if (isNaN(val) || val <= 0) {
+                    e.preventDefault();
+                    alert('Debes ingresar un tipo de cambio válido mayor a 0 cuando la moneda es ' + monedaSelect.value + '.');
+                    tcInput.focus();
+                    return false;
+                }
+            }
             window.mostrarCargaOc(form.dataset.loadingMessage || 'Guardando...');
             form.querySelectorAll('button[type="submit"], button:not([type])').forEach((button) => {
                 button.disabled = true;
