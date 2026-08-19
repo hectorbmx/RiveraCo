@@ -149,6 +149,7 @@
                                     <form method="POST"
                                           action="{{ route('obra_civil.catalog.destroy', [$import->obra, $import]) }}"
                                           class="inline"
+                                          data-loading-message="Eliminando catalogo civil..."
                                           onsubmit="return confirm('Eliminar este catalogo civil? Esta accion tambien borra sus edificios, partidas y conceptos si no estan usados en ordenes de compra.');">
                                         @csrf
                                         @method('DELETE')
@@ -157,7 +158,17 @@
                                         </button>
                                     </form>
                                 @else
-                                    <span class="text-xs text-slate-400">-</span>
+                                    <form method="POST"
+                                          action="{{ route('obra_civil.catalog.destroy-orphan', $import) }}"
+                                          class="inline"
+                                          data-loading-message="Eliminando catalogo civil..."
+                                          onsubmit="return confirm('Eliminar este catalogo civil sin obra relacionada? Esta accion tambien borra sus edificios, partidas y conceptos si no estan usados en ordenes de compra.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="font-semibold text-red-600 hover:underline">
+                                            Eliminar
+                                        </button>
+                                    </form>
                                 @endif
                             </td>
                         </tr>
@@ -180,7 +191,7 @@
                 <p class="mt-1 text-sm text-slate-500" x-text="obraNombre"></p>
             </div>
 
-            <form :action="actionUrl" method="POST" enctype="multipart/form-data" class="space-y-4 px-5 py-5">
+            <form :action="actionUrl" method="POST" enctype="multipart/form-data" class="space-y-4 px-5 py-5" data-loading-message="Subiendo y leyendo catalogo civil...">
                 @csrf
                 <div>
                     <label for="catalogo" class="block text-sm font-semibold text-slate-700">Archivo Excel</label>
@@ -231,3 +242,4 @@ function obraCivilUploadModal() {
 }
 </script>
 @endpush
+

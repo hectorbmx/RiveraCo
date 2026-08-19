@@ -54,9 +54,9 @@ class ObraCivilController extends Controller
 
         $stats = [
             'obras' => $obras->count(),
-            'catalogos' => $catalogTablesReady ? CivilCatalogImport::count() : 0,
-            'conceptos' => $catalogTablesReady ? CivilConcept::count() : 0,
-            'importe' => $catalogTablesReady ? (float) CivilConcept::sum('budget_amount') : 0.0,
+            'catalogos' => $catalogTablesReady ? CivilCatalogImport::whereHas('obra')->count() : 0,
+            'conceptos' => $catalogTablesReady ? CivilConcept::whereHas('partida.building.catalogImport.obra')->count() : 0,
+            'importe' => $catalogTablesReady ? (float) CivilConcept::whereHas('partida.building.catalogImport.obra')->sum('budget_amount') : 0.0,
         ];
 
         return view('obra_civil.index', compact('obras', 'catalogImports', 'stats', 'catalogTablesReady'));
@@ -542,6 +542,20 @@ class ObraCivilController extends Controller
         $this->abortUnlessCivil($obra);
         $this->abortUnlessImportBelongsToObra($obra, $import);
 
+        return $this->deleteCatalogImport($import);
+    }
+
+    public function destroyOrphanCatalog(CivilCatalogImport $import)
+    {
+        if ($import->obra_id !== null && Obra::whereKey($import->obra_id)->exists()) {
+            abort(404);
+        }
+
+        return $this->deleteCatalogImport($import);
+    }
+
+    private function deleteCatalogImport(CivilCatalogImport $import)
+    {
         $conceptIds = CivilConcept::query()
             ->whereHas('partida.building', function ($query) use ($import) {
                 $query->where('civil_catalog_import_id', $import->id);
@@ -585,4 +599,6 @@ class ObraCivilController extends Controller
         abort_unless((int) $import->obra_id === (int) $obra->id, 404);
     }
 }
+
+
 

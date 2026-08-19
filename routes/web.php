@@ -556,6 +556,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::prefix('obra_civil')->name('obra_civil.')->group(function () {
         Route::get('/', [ObraCivilController::class, 'index'])->name('index');
         Route::post('{obra}/catalogo', [ObraCivilController::class, 'uploadCatalog'])->name('catalog.upload');
+        Route::delete('catalogos/{import}', [ObraCivilController::class, 'destroyOrphanCatalog'])->name('catalog.destroy-orphan');
         Route::post('{obra}/insumos', [ObraCivilController::class, 'uploadInsumos'])->name('insumos.upload');
         Route::get('{obra}/insumos', [ObraCivilController::class, 'insumos'])->name('insumos.index');
         Route::delete('{obra}/insumos/{import}', [ObraCivilController::class, 'destroyInsumoImport'])->name('insumos.destroy');

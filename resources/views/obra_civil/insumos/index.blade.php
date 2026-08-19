@@ -42,7 +42,7 @@
                 <h2 class="text-lg font-semibold text-slate-900">Cargar o reemplazar insumos</h2>
                 <p class="text-sm text-slate-500">Al cargar un nuevo Excel, los insumos activos anteriores se desactivan y queda vigente la nueva explosion.</p>
             </div>
-            <form method="POST" action="{{ route('obra_civil.insumos.upload', $obra) }}" enctype="multipart/form-data" class="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <form method="POST" action="{{ route('obra_civil.insumos.upload', $obra) }}" enctype="multipart/form-data" class="flex flex-col gap-2 sm:flex-row sm:items-center" data-loading-message="Subiendo y leyendo explosion de insumos...">
                 @csrf
                 <input name="insumos"
                        type="file"
@@ -223,6 +223,7 @@
                             <td class="px-5 py-3 text-right">
                                 <form method="POST"
                                       action="{{ route('obra_civil.insumos.destroy', [$obra, $import]) }}"
+                                      data-loading-message="Eliminando carga de insumos..."
                                       onsubmit="return confirm('Eliminar esta carga de insumos? Tambien se eliminaran sus renglones asociados.');">
                                     @csrf
                                     @method('DELETE')
