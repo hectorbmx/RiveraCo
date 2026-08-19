@@ -16,6 +16,7 @@ class UpdateOrdenCompraDetalleRequest extends FormRequest
         return [
             'producto_id'     => ['nullable','integer','exists:productos,id'],
             'civil_concept_id' => ['nullable','integer','exists:civil_concepts,id'],
+            'obra_civil_insumo_id' => ['nullable','integer','exists:obra_civil_insumos,id'],
             'legacy_prod_id'  => ['nullable','string','max:50'],
 
             'descripcion'     => ['required','string','max:5000'],

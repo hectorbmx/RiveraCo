@@ -26,6 +26,12 @@ class StoreOrdenCompraDetalleRequest extends FormRequest
                 'exists:civil_concepts,id',
             ],
 
+            'obra_civil_insumo_id' => [
+                'nullable',
+                'integer',
+                'exists:obra_civil_insumos,id',
+            ],
+
             'legacy_prod_id' => [
                 'nullable',
                 'string',

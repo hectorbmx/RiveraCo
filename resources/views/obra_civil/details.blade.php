@@ -90,6 +90,50 @@
     @endif
 
     <section class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div class="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">Explosion de insumos</h2>
+                <p class="text-sm text-slate-500">Insumos/materiales cargados para preparar el flujo de ordenes de compra.</p>
+            </div>
+            <a href="{{ route('obra_civil.insumos.index', $obra) }}"
+               class="inline-flex items-center justify-center rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#12346f]">
+                Ver insumos
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 p-5 md:grid-cols-5">
+            <div>
+                <div class="text-xs font-semibold uppercase text-slate-500">Insumos activos</div>
+                <div class="mt-1 text-xl font-bold text-slate-900">{{ number_format($insumoStats['total'] ?? 0) }}</div>
+            </div>
+            <div>
+                <div class="text-xs font-semibold uppercase text-slate-500">Materiales</div>
+                <div class="mt-1 text-xl font-bold text-slate-900">{{ number_format($insumoStats['materiales'] ?? 0) }}</div>
+            </div>
+            <div>
+                <div class="text-xs font-semibold uppercase text-slate-500">Mano de obra</div>
+                <div class="mt-1 text-xl font-bold text-slate-900">{{ number_format($insumoStats['mano_obra'] ?? 0) }}</div>
+            </div>
+            <div>
+                <div class="text-xs font-semibold uppercase text-slate-500">Equipo</div>
+                <div class="mt-1 text-xl font-bold text-slate-900">{{ number_format($insumoStats['equipo_herramienta'] ?? 0) }}</div>
+            </div>
+            <div>
+                <div class="text-xs font-semibold uppercase text-slate-500">Importe materiales</div>
+                <div class="mt-1 text-xl font-bold text-slate-900">${{ number_format((float) ($insumoStats['importe_materiales'] ?? 0), 2) }}</div>
+            </div>
+        </div>
+
+        @if($activeInsumoImport)
+            <div class="border-t border-slate-100 px-5 py-3 text-sm text-slate-600">
+                Ultima carga: <span class="font-semibold text-slate-900">{{ $activeInsumoImport->filename }}</span>
+                / hoja {{ $activeInsumoImport->sheet_name ?: '-' }}
+                / {{ $activeInsumoImport->created_at->format('d/m/Y H:i') }}
+            </div>
+        @endif
+    </section>
+
+    <section class="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-200 px-5 py-4">
             <h2 class="text-lg font-semibold text-slate-900">Catalogo activo</h2>
         </div>
@@ -99,11 +143,7 @@
                 Esta obra civil todavia no tiene un catalogo guardado.
             </div>
         @else
-            @php
-                $subtotal = (float) $activeImport->total_amount;
-                $iva = $subtotal * 0.16;
-                $total = $subtotal + $iva;
-            @endphp
+
             <div class="grid grid-cols-1 gap-4 border-b border-slate-100 p-5 md:grid-cols-3 xl:grid-cols-6">
                 <div>
                     <div class="text-xs font-semibold uppercase text-slate-500">Archivo</div>
@@ -119,15 +159,15 @@
                 </div>
                 <div>
                     <div class="text-xs font-semibold uppercase text-slate-500">Importe</div>
-                    <div class="mt-1 font-semibold text-slate-900">${{ number_format($subtotal, 2) }}</div>
+                    <div class="mt-1 font-semibold text-slate-900">${{ number_format((float) $activeImport->total_amount, 2) }}</div>
                 </div>
                 <div>
                     <div class="text-xs font-semibold uppercase text-slate-500">IVA</div>
-                    <div class="mt-1 font-semibold text-slate-900">${{ number_format($iva, 2) }}</div>
+                    <div class="mt-1 font-semibold text-slate-900">${{ number_format(((float) $activeImport->total_amount) * 0.16, 2) }}</div>
                 </div>
                 <div>
                     <div class="text-xs font-semibold uppercase text-slate-500">Total</div>
-                    <div class="mt-1 font-semibold text-slate-900">${{ number_format($total, 2) }}</div>
+                    <div class="mt-1 font-semibold text-slate-900">${{ number_format(((float) $activeImport->total_amount) * 1.16, 2) }}</div>
                 </div>
             </div>
 
@@ -159,15 +199,15 @@
                                                 </tr>
                                             </thead>
                                             <tbody class="divide-y divide-slate-100">
-                                                @foreach($partida->concepts as $concept)
-                                                    @php
+                                                <?php foreach ($partida->concepts as $concept): ?>
+                                                    <?php
                                                         $balance = $balances->get($concept->id, []);
                                                         $usedQuantity = (float) ($balance['used_quantity'] ?? 0);
                                                         $usedAmount = (float) ($balance['used_amount'] ?? 0);
                                                         $availableQuantity = (float) ($balance['available_quantity'] ?? $concept->budget_quantity);
                                                         $availableAmount = (float) ($balance['available_amount'] ?? $concept->budget_amount);
                                                         $isExceeded = $availableQuantity < 0 || $availableAmount < 0;
-                                                    @endphp
+                                                    ?>
                                                     <tr class="align-top hover:bg-slate-50 {{ $isExceeded ? 'bg-amber-50/60' : '' }}">
                                                         <td class="px-4 py-2 font-mono text-xs text-slate-600">{{ $concept->excel_code }}</td>
                                                         <td class="px-4 py-2 text-slate-800">{{ $concept->description }}</td>
@@ -178,14 +218,13 @@
                                                         <td class="px-4 py-2 text-right tabular-nums text-slate-600">
                                                             <div>{{ number_format($usedQuantity, 4) }}</div>
                                                             <div class="text-xs">${{ number_format($usedAmount, 2) }}</div>
-
                                                         </td>
                                                         <td class="px-4 py-2 text-right tabular-nums font-semibold {{ $isExceeded ? 'text-red-700' : 'text-slate-800' }}">
                                                             <div>{{ number_format($availableQuantity, 4) }}</div>
                                                             <div class="text-xs">${{ number_format($availableAmount, 2) }}</div>
                                                         </td>
                                                     </tr>
-                                                @endforeach
+                                                <?php endforeach; ?>
                                             </tbody>
                                         </table>
                                     </div>

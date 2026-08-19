@@ -30,6 +30,8 @@ class OrdenCompraDetalle extends Model
     'producto_id',
     'civil_concept_id',
     'civil_concept_snapshot',
+    'obra_civil_insumo_id',
+    'obra_civil_insumo_snapshot',
     'legacy_prod_id',
     'descripcion',
     'unidad',
@@ -58,6 +60,8 @@ class OrdenCompraDetalle extends Model
         'otros_impuestos' => 'decimal:2',
         'tipo_cambio' => 'decimal:4',
         'civil_concept_snapshot' => 'array',
+        'obra_civil_insumo_id' => 'integer',
+        'obra_civil_insumo_snapshot' => 'array',
         'tipo_retencion_id' => 'integer',
         'retencion_porcentaje' => 'decimal:4',
     ];
@@ -78,6 +82,11 @@ class OrdenCompraDetalle extends Model
     public function civilConcept()
     {
         return $this->belongsTo(CivilConcept::class, 'civil_concept_id');
+    }
+
+    public function obraCivilInsumo()
+    {
+        return $this->belongsTo(ObraCivilInsumo::class, 'obra_civil_insumo_id');
     }
 }
 

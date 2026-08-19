@@ -6,8 +6,12 @@ use App\Models\CivilCatalogImport;
 use App\Models\CivilConcept;
 use App\Models\CivilEstimation;
 use App\Models\Obra;
+use App\Models\ObraCivilInsumo;
+use App\Models\ObraCivilInsumoImport;
 use App\Services\CivilCatalogExcelParser;
 use App\Services\CivilConceptBalanceService;
+use App\Services\ObraCivilInsumoExcelParser;
+use App\Services\ObraCivilInsumoBalanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -104,6 +108,56 @@ class ObraCivilController extends Controller
         return redirect()->route('obra_civil.catalog.preview', [$obra, $import]);
     }
 
+    public function uploadInsumos(Request $request, Obra $obra, ObraCivilInsumoExcelParser $parser)
+    {
+        $this->abortUnlessCivil($obra);
+
+        $data = $request->validate([
+            'insumos' => ['required', 'file', 'mimes:xlsx,xlsm', 'max:20480'],
+        ]);
+
+        $file = $data['insumos'];
+        $originalName = $file->getClientOriginalName();
+        $safeName = now()->format('Ymd_His') . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME));
+        $extension = strtolower($file->getClientOriginalExtension());
+        $filename = $safeName . '.' . $extension;
+        $path = $file->storeAs("obra_civil/{$obra->id}/insumos", $filename);
+
+        $import = ObraCivilInsumoImport::create([
+            'obra_id' => $obra->id,
+            'filename' => $originalName,
+            'original_path' => $path,
+            'status' => 'processing',
+            'imported_by' => auth()->id(),
+            'metadata' => [
+                'stored_filename' => $filename,
+                'mime_type' => $file->getClientMimeType(),
+                'size' => $file->getSize(),
+                'parser_status' => 'pending',
+                'warnings' => [],
+            ],
+        ]);
+
+        try {
+            $summary = $parser->parse($import, Storage::path($path));
+        } catch (Throwable $exception) {
+            $import->update([
+                'status' => 'failed',
+                'metadata' => array_merge($import->metadata ?? [], [
+                    'parser_status' => 'failed',
+                    'warnings' => [
+                        'El archivo se cargo, pero no se pudo leer automaticamente: ' . $exception->getMessage(),
+                    ],
+                ]),
+            ]);
+
+            return back()->with('error', 'No se pudo importar la explosion de insumos: ' . $exception->getMessage());
+        }
+
+        return redirect()
+            ->route('obra_civil.details', $obra)
+            ->with('success', 'Explosion de insumos importada: ' . number_format($summary['insumos']) . ' insumos detectados.');
+    }
     public function preview(Obra $obra, CivilCatalogImport $import)
     {
         $this->abortUnlessCivil($obra);
@@ -158,6 +212,24 @@ class ObraCivilController extends Controller
             ->latest()
             ->get();
 
+        $activeInsumoImport = ObraCivilInsumoImport::query()
+            ->where('obra_id', $obra->id)
+            ->where('status', 'imported')
+            ->latest()
+            ->first();
+
+        $activeInsumos = ObraCivilInsumo::query()
+            ->where('obra_id', $obra->id)
+            ->where('is_active', true);
+
+        $insumoStats = [
+            'total' => (clone $activeInsumos)->count(),
+            'materiales' => (clone $activeInsumos)->where('tipo', 'material')->count(),
+            'mano_obra' => (clone $activeInsumos)->where('tipo', 'mano_obra')->count(),
+            'equipo_herramienta' => (clone $activeInsumos)->where('tipo', 'equipo_herramienta')->count(),
+            'importe_materiales' => (float) (clone $activeInsumos)->where('tipo', 'material')->sum('importe_importado'),
+            'importe_total' => (float) (clone $activeInsumos)->sum('importe_importado'),
+        ];
         $estimations = CivilEstimation::query()
             ->where('obra_id', $obra->id)
             ->with('createdBy')
@@ -175,9 +247,80 @@ class ObraCivilController extends Controller
             $balances = app(CivilConceptBalanceService::class)->summaries($conceptIds);
         }
 
-        return view('obra_civil.details', compact('obra', 'imports', 'activeImport', 'drafts', 'balances'));
+        return view('obra_civil.details', compact('obra', 'imports', 'activeImport', 'drafts', 'balances', 'activeInsumoImport', 'insumoStats'));
     }
 
+    public function insumos(Request $request, Obra $obra)
+    {
+        $this->abortUnlessCivil($obra);
+
+        $obra->load('cliente');
+
+        $insumoImports = ObraCivilInsumoImport::query()
+            ->where('obra_id', $obra->id)
+            ->with('importedBy')
+            ->latest()
+            ->get();
+
+        $activeInsumoImport = ObraCivilInsumoImport::query()
+            ->where('obra_id', $obra->id)
+            ->where('status', 'imported')
+            ->latest()
+            ->first();
+
+        $search = trim((string) $request->query('q', ''));
+        $activeInsumosQuery = ObraCivilInsumo::query()
+            ->where('obra_id', $obra->id)
+            ->where('is_active', true);
+
+        $allActiveInsumos = (clone $activeInsumosQuery)->get();
+        $allInsumoBalances = app(ObraCivilInsumoBalanceService::class)->summaries($allActiveInsumos->pluck('id'));
+
+        $insumosQuery = (clone $activeInsumosQuery)
+            ->when($search !== '', function ($query) use ($search) {
+                $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $search) . '%';
+
+                $query->where(function ($query) use ($like) {
+                    $query->where('codigo', 'like', $like)
+                        ->orWhere('concepto', 'like', $like)
+                        ->orWhere('unidad', 'like', $like)
+                        ->orWhere('tipo', 'like', $like);
+                });
+            })
+            ->orderBy('sort_order');
+
+        $insumos = $insumosQuery->get();
+        $insumoBalances = $allInsumoBalances->only($insumos->pluck('id')->all());
+
+        $insumoStats = [
+            'total' => $allActiveInsumos->count(),
+            'materiales' => $allActiveInsumos->where('tipo', 'material')->count(),
+            'mano_obra' => $allActiveInsumos->where('tipo', 'mano_obra')->count(),
+            'equipo_herramienta' => $allActiveInsumos->where('tipo', 'equipo_herramienta')->count(),
+            'importe_materiales' => $allActiveInsumos->where('tipo', 'material')->sum(fn ($item) => (float) $item->importe_importado),
+            'importe_total' => $allActiveInsumos->sum(fn ($item) => (float) $item->importe_importado),
+            'usado_total' => $allInsumoBalances->sum(fn ($balance) => (float) ($balance['used_amount'] ?? 0)),
+        ];
+
+        return view('obra_civil.insumos.index', compact('obra', 'insumoImports', 'activeInsumoImport', 'insumos', 'insumoStats', 'insumoBalances', 'search'));
+    }
+
+    public function destroyInsumoImport(Obra $obra, ObraCivilInsumoImport $import)
+    {
+        $this->abortUnlessCivil($obra);
+        abort_unless((int) $import->obra_id === (int) $obra->id, 404);
+
+        $path = $import->original_path;
+        $import->delete();
+
+        if ($path && Storage::exists($path)) {
+            Storage::delete($path);
+        }
+
+        return redirect()
+            ->route('obra_civil.insumos.index', $obra)
+            ->with('success', 'Carga de insumos eliminada correctamente.');
+    }
     public function estimationsIndex(Obra $obra)
     {
         $this->abortUnlessCivil($obra);
@@ -359,6 +502,41 @@ class ObraCivilController extends Controller
 
         return view('obra_civil.concept_orders', compact('obra', 'concept', 'balance', 'detalles'));
     }
+
+    public function insumoOrders(Obra $obra, ObraCivilInsumo $insumo)
+    {
+        $this->abortUnlessCivil($obra);
+        abort_unless((int) $insumo->obra_id === (int) $obra->id, 404);
+
+        $insumo->load('import');
+        $balance = app(ObraCivilInsumoBalanceService::class)->summary($insumo);
+
+        $detalles = DB::table('orden_compra_detalles as d')
+            ->join('ordenes_compra as oc', 'oc.id', '=', 'd.orden_compra_id')
+            ->leftJoin('proveedores as p', 'p.id', '=', 'oc.proveedor_id')
+            ->where('d.obra_civil_insumo_id', $insumo->id)
+            ->select([
+                'd.id as detalle_id',
+                'd.orden_compra_id',
+                'd.descripcion',
+                'd.unidad',
+                'd.cantidad',
+                'd.precio_unitario',
+                'd.importe',
+                'd.iva',
+                'd.retenciones',
+                'd.otros_impuestos',
+                'oc.folio',
+                'oc.estado',
+                'oc.fecha',
+                'p.nombre as proveedor_nombre',
+            ])
+            ->orderByDesc('oc.id')
+            ->orderByDesc('d.id')
+            ->get();
+
+        return view('obra_civil.insumos.orders', compact('obra', 'insumo', 'balance', 'detalles'));
+    }
     public function destroyCatalog(Obra $obra, CivilCatalogImport $import)
     {
         $this->abortUnlessCivil($obra);
@@ -407,3 +585,4 @@ class ObraCivilController extends Controller
         abort_unless((int) $import->obra_id === (int) $obra->id, 404);
     }
 }
+

@@ -4,24 +4,37 @@
 
 Crear un nuevo flujo para cargar la explosion de insumos de una obra civil y usar esos insumos como base real para generar ordenes de compra.
 
-La orden de compra existente se conserva, pero se ajustara su fuente de datos. En lugar de seleccionar partidas/conceptos del presupuesto general, debera seleccionar insumos de la explosion de insumos asociada a la obra.
+La orden de compra existente se conserva, pero el flujo que actualmente toma partidas/conceptos del presupuesto general no se usara como fuente para compras de obra civil.
+
+La fuente correcta para generar ordenes de compra sera un nuevo importador de explosion de insumos, enfocado inicialmente en materiales.
 
 ## Contexto
 
 Actualmente existe un mecanismo de ordenes de compra que permite seleccionar elementos, capturar cantidades y generar registros con detalle.
 
-Ese mecanismo puede aprovecharse, pero el origen correcto para las ordenes de compra no son las partidas del presupuesto, sino la explosion de insumos.
+Ese mecanismo puede aprovecharse en la parte de captura, totales, autorizacion e impresion, pero el origen correcto para las ordenes de compra no son las partidas del presupuesto, sino la explosion de insumos.
+
+El primer Excel cargado al sistema corresponde a partidas, acciones o trabajos por realizar. Ese flujo sirve para generar estimaciones.
+
+La explosion de insumos sera un segundo Excel y un segundo importador. Ese flujo servira para cargar materiales y alimentar las ordenes de compra.
 
 Separacion conceptual esperada:
 
 ```text
 Obra civil
- ├─ Partidas/conceptos del presupuesto
- │   └─ Estimaciones
- │
- └─ Explosion de insumos
-     └─ Ordenes de compra
+ +-- Partidas/conceptos del presupuesto
+ |   +-- Estimaciones
+ |
+ +-- Explosion de insumos/materiales
+     +-- Ordenes de compra
 ```
+
+Decision actual:
+
+- No se borran las ordenes de compra existentes.
+- Las ordenes existentes no se toman como referencia funcional para este nuevo flujo de insumos.
+- La explosion de insumos aun no esta cargada.
+- No existen todavia ordenes ligadas a insumos.
 
 ## Hallazgos Del Excel T23
 
@@ -80,6 +93,8 @@ Grupos principales detectados:
 - `MATERIALES`
 - `MANO DE OBRA`
 - `EQUIPO Y HERRAMIENTA`
+
+Para el MVP de ordenes de compra, la decision funcional es usar materiales. Mano de obra y equipo/herramienta quedan detectados por el importador, pero no necesariamente disponibles para compra hasta confirmar regla de negocio.
 
 ## Regla Principal De Importacion
 
@@ -159,6 +174,7 @@ entonces ese texto pertenece al concepto anterior.
        continuar
 
    Si A esta vacia y B es categoria conocida:
+       guardar current_insumo pendiente, si existe
        current_tipo = categoria
        continuar
 
@@ -203,27 +219,39 @@ obra_civil_insumos
 Campos sugeridos:
 
 - `id`
-- `obra_civil_id`
+- `obra_id`
 - `tipo`
 - `codigo`
 - `concepto`
 - `unidad`
 - `cantidad_presupuestada`
 - `precio_unitario`
-- `importe`
+- `importe_importado`
+- `importe_calculado`
 - `incidencia`
 - `source_file`
 - `source_sheet`
 - `source_row`
+- `is_active`
 - `created_at`
 - `updated_at`
 
 Notas:
 
+- `obra_id` mantiene consistencia con `ordenes_compra.obra_id`.
 - `tipo` puede guardar valores como `material`, `mano_obra`, `equipo_herramienta`.
 - `codigo` debe conservar el valor original del Excel.
 - `concepto` debe guardar el texto ya unido.
 - `source_row` ayuda a rastrear errores de importacion.
+- Para MVP, los insumos disponibles para orden de compra seran `tipo = material`.
+
+Regla unica sugerida:
+
+```text
+obra_id + tipo + codigo
+```
+
+Esto evita colisiones si un mismo codigo aparece en secciones diferentes del Excel.
 
 ## Relacion Con Ordenes De Compra
 
@@ -233,10 +261,10 @@ Flujo esperado:
 
 ```text
 Obra civil
- -> Cargar insumos
+ -> Cargar explosion de insumos/materiales
  -> Lista de insumos disponibles
  -> Generar orden de compra
- -> Seleccionar insumos
+ -> Seleccionar materiales/insumos
  -> Capturar cantidades a comprar
  -> Guardar orden de compra
 ```
@@ -250,6 +278,11 @@ Cada detalle de orden de compra debe guardar snapshot del insumo:
 - Precio unitario.
 - Importe.
 - Referencia al insumo original.
+
+Campos nuevos sugeridos en `orden_compra_detalles`:
+
+- `obra_civil_insumo_id`
+- `obra_civil_insumo_snapshot`
 
 Esto evita que cambios posteriores en la explosion de insumos alteren ordenes ya generadas.
 
@@ -270,21 +303,21 @@ Agregar:
 
 Indicadores sugeridos:
 
-- Total de insumos.
-- Total presupuestado de insumos.
+- Total de insumos materiales.
+- Total presupuestado de materiales.
 - Total comprado.
 - Total pendiente por comprar.
-- Ordenes de compra generadas.
+- Ordenes de compra generadas desde insumos.
 
 Ejemplo:
 
 ```text
-Insumos: 742 | Presupuesto insumos: $19,630,000.00 | Comprado: $850,000.00 | Pendiente: $18,780,000.00
+Materiales: 742 | Presupuesto materiales: $19,630,000.00 | Comprado: $850,000.00 | Pendiente: $18,780,000.00
 ```
 
 ## Modal Cargar Insumos
 
-El boton `Cargar insumos` debe permitir subir un archivo Excel.
+El boton `Cargar insumos` debe permitir subir un archivo Excel de explosion de insumos.
 
 Comportamiento sugerido:
 
@@ -296,7 +329,7 @@ Comportamiento sugerido:
 - Mostrar advertencias de filas omitidas.
 - Confirmar importacion.
 
-Opciones:
+Opciones futuras:
 
 - Reemplazar insumos existentes de la obra.
 - Agregar nuevos insumos.
@@ -305,25 +338,27 @@ Opciones:
 Para MVP, se recomienda:
 
 ```text
-Reemplazar insumos existentes de la obra
+Reemplazar insumos existentes de la obra solo si aun no existen ordenes de compra ligadas a insumos.
 ```
 
-Esto evita duplicados mientras se valida el flujo.
+Como actualmente no existen ordenes ligadas a insumos, el primer importador puede limpiar y volver a cargar la explosion completa durante pruebas.
+
+Cuando existan ordenes ligadas a insumos, no se deben borrar registros usados por historico. En ese escenario conviene desactivar registros anteriores o versionar importaciones.
 
 ## Modal Generar Orden De Compra
 
-El modal actual de ordenes de compra se puede reutilizar con nueva fuente.
+El modal actual de ordenes de compra se puede reutilizar en captura, calculo de importes y guardado, pero debe cambiar su fuente para obra civil.
 
-Fuente anterior:
+Fuente para estimaciones:
 
 ```text
-partidas/conceptos de presupuesto
+partidas/conceptos del presupuesto civil
 ```
 
-Nueva fuente:
+Fuente para ordenes de compra:
 
 ```text
-obra_civil_insumos
+obra_civil_insumos, filtrado inicialmente por materiales
 ```
 
 Columnas sugeridas:
@@ -348,19 +383,25 @@ Validaciones:
 - No crear orden vacia.
 - Guardar snapshot del insumo en el detalle de orden.
 
+Endpoints sugeridos:
+
+- `insumosPorObra($obra_id)` para listar resumen de insumos/materiales disponibles.
+- `buscarInsumosObra(Request $request, OrdenCompra $orden_compra)` para buscar por codigo o concepto desde el modal.
+
+Estos endpoints deben ser separados de los endpoints actuales de partidas/conceptos para no afectar estimaciones.
+
 ## Estados De Orden De Compra
 
 Si ya existen estados, conservarlos.
 
-Estados que podrian manejarse mas adelante:
+Estados actuales observados en el sistema:
 
-- `creada`
-- `autorizada`
-- `enviada`
-- `recibida`
-- `cancelada`
+- `BORRADOR` / `PROGRAMADA`
+- `AUTORIZADA`
+- `VERIFICADA`
+- `CANCELADA`
 
-Para este ajuste, el foco no es redisenar estados, sino cambiar la fuente de datos a insumos.
+Para este ajuste, el foco no es redisenar estados, sino cambiar la fuente de datos de las ordenes de compra a insumos/materiales.
 
 ## Roadmap Por Fases
 
@@ -374,12 +415,13 @@ Pasos:
 - [ ] Identificar tablas actuales de detalle de orden de compra.
 - [ ] Revisar controlador que genera ordenes de compra.
 - [ ] Revisar vista/modal actual de ordenes de compra.
-- [ ] Identificar como se cargan partidas/conceptos actuales.
+- [ ] Identificar endpoints actuales que cargan partidas/conceptos.
+- [ ] Confirmar que el flujo de partidas se conserva para estimaciones.
 - [ ] Confirmar si ya existe algun modelo reusable para importacion de Excel.
 
 Checkpoint:
 
-- [ ] Sabemos que partes se reutilizan y que partes se cambian.
+- [ ] Sabemos que partes se reutilizan y que partes se cambian sin afectar estimaciones.
 
 ### Fase 2: Modelo De Insumos
 
@@ -389,10 +431,11 @@ Pasos:
 
 - [ ] Crear migracion `obra_civil_insumos`.
 - [ ] Crear modelo `ObraCivilInsumo`.
-- [ ] Agregar relacion en modelo de obra civil.
+- [ ] Agregar relacion en modelo de obra.
 - [ ] Definir casts numericos.
 - [ ] Definir normalizacion de `tipo`.
-- [ ] Definir regla unica sugerida: `obra_civil_id + codigo`.
+- [ ] Definir regla unica sugerida: `obra_id + tipo + codigo`.
+- [ ] Agregar campos `obra_civil_insumo_id` y `obra_civil_insumo_snapshot` a `orden_compra_detalles`.
 
 Checkpoint:
 
@@ -404,7 +447,7 @@ Objetivo: leer el Excel de explosion de insumos y guardarlo limpio.
 
 Pasos:
 
-- [ ] Crear servicio importador de insumos.
+- [ ] Crear servicio importador de insumos independiente del importador de partidas/estimaciones.
 - [ ] Buscar encabezado por columna A = `Codigo`.
 - [ ] Leer filas desde encabezado + 1.
 - [ ] Detectar categorias conocidas.
@@ -462,36 +505,54 @@ Objetivo: usar insumos como fuente para generar ordenes de compra.
 
 Pasos:
 
-- [ ] Cambiar consulta del modal de ordenes para traer insumos.
+- [ ] Crear endpoint para buscar insumos de la obra.
+- [ ] Cambiar el modal de ordenes para traer insumos/materiales cuando la obra sea civil.
+- [ ] Mantener partidas/conceptos para el flujo de estimaciones.
 - [ ] Ajustar columnas visibles del modal.
 - [ ] Calcular cantidad ya comprada por insumo.
 - [ ] Calcular cantidad disponible.
 - [ ] Validar cantidades contra disponibilidad.
 - [ ] Guardar referencia a `obra_civil_insumo_id` en detalle de orden.
-- [ ] Guardar snapshot de codigo, concepto, unidad y precio.
+- [ ] Guardar snapshot de codigo, concepto, unidad, cantidad presupuestada y precio.
 
 Checkpoint:
 
-- [ ] Las ordenes de compra se generan desde insumos, no desde partidas.
+- [ ] Las ordenes de compra se generan desde insumos/materiales, no desde partidas.
 
-### Fase 7: Resumen De Compras En Obra
+### Fase 7: Servicio De Balance De Insumos
+
+Objetivo: centralizar el calculo de comprado y disponible por insumo.
+
+Pasos:
+
+- [ ] Crear servicio tipo `ObraCivilInsumoBalanceService`.
+- [ ] Sumar cantidades compradas desde `orden_compra_detalles.obra_civil_insumo_id`.
+- [ ] Sumar importes comprados.
+- [ ] Excluir ordenes canceladas.
+- [ ] Exponer `used_quantity`, `used_amount`, `available_quantity`, `available_amount` y `orders_count`.
+
+Checkpoint:
+
+- [ ] El modal y la vista usan la misma logica de disponibilidad.
+
+### Fase 8: Resumen De Compras En Obra
 
 Objetivo: mostrar avance de compras desde la vista de obra.
 
 Pasos:
 
-- [ ] Calcular total presupuestado de insumos.
+- [ ] Calcular total presupuestado de materiales.
 - [ ] Calcular total comprado.
 - [ ] Calcular total pendiente.
-- [ ] Calcular numero de ordenes de compra.
+- [ ] Calcular numero de ordenes de compra generadas desde insumos.
 - [ ] Excluir ordenes canceladas, si aplica.
 - [ ] Mostrar indicadores en header o seccion de compras.
 
 Checkpoint:
 
-- [ ] La obra muestra cuanto se ha comprado y cuanto falta por comprar.
+- [ ] La obra muestra cuanto material se ha comprado y cuanto falta por comprar.
 
-### Fase 8: Pruebas
+### Fase 9: Pruebas
 
 Objetivo: validar que el ajuste sea confiable.
 
@@ -502,22 +563,23 @@ Pasos:
 - [ ] Probar deteccion de `MATERIALES`.
 - [ ] Probar deteccion de `MANO DE OBRA`.
 - [ ] Probar deteccion de `EQUIPO Y HERRAMIENTA`.
+- [ ] Probar que solo materiales aparezcan para orden de compra en MVP.
 - [ ] Probar orden de compra con un insumo.
 - [ ] Probar orden de compra con varios insumos.
 - [ ] Probar bloqueo por cantidad mayor a disponible.
-- [ ] Probar que ordenes anteriores no cambien si se reimportan insumos.
+- [ ] Probar que ordenes anteriores no se borren ni se afecten.
 - [ ] Probar que el flujo de estimaciones no se afecte.
 
 Checkpoint:
 
-- [ ] El flujo de ordenes de compra queda alineado con explosion de insumos.
+- [ ] El flujo de ordenes de compra queda alineado con explosion de insumos/materiales.
 
 ## Decisiones Pendientes
 
 - [ ] Si `codigo` sera unico por obra o puede repetirse por tipo.
-- [ ] Si el MVP reemplaza todos los insumos al reimportar.
+- [ ] Si el MVP reemplaza todos los insumos al reimportar mientras no existan compras ligadas.
 - [ ] Si se permitira comprar mas que la cantidad presupuestada.
-- [ ] Si mano de obra y equipo tambien deben aparecer en ordenes de compra o solo materiales.
+- [ ] Si mano de obra y equipo deben quedar solo como referencia o aparecer despues en compras.
 - [ ] Si se creara una pantalla separada de insumos o solo una seccion en detalles de obra.
 - [ ] Si se guardara importe importado, importe calculado o ambos.
 - [ ] Si se permitira editar insumos manualmente despues de importarlos.
@@ -525,21 +587,22 @@ Checkpoint:
 ## Riesgos A Cuidar
 
 - Confundir partidas de estimacion con insumos de compra.
+- Reutilizar endpoints de partidas y afectar estimaciones.
 - Duplicar insumos al cargar varias veces el mismo archivo.
 - Interpretar renglones continuados como categorias.
 - Perder descripcion completa de conceptos largos.
-- Que una reimportacion modifique ordenes de compra historicas.
+- Que una reimportacion futura modifique ordenes de compra historicas.
 - Que las cantidades compradas no se acumulen correctamente.
 - Que conceptos de mano de obra o equipo entren al flujo de compra sin decision de negocio.
 
 ## Checkpoints Globales
 
-- [ ] Roadmap de insumos creado.
+- [ ] Roadmap de insumos actualizado.
 - [ ] Modelo de insumos definido.
 - [ ] Importador de insumos creado.
 - [ ] Boton `Cargar insumos` agregado.
 - [ ] Vista/lista de insumos agregada.
-- [ ] Ordenes de compra reconectadas a insumos.
+- [ ] Ordenes de compra reconectadas a insumos/materiales.
 - [ ] Resumen de compras agregado.
 - [ ] Pruebas manuales completadas con T23.
 
@@ -549,4 +612,4 @@ Checkpoint:
 | --- | --- | --- | --- |
 | 2026-08-14 | Analisis inicial de T23 | Completado | Se detecto encabezado por `Codigo`, grupos principales y renglones continuados. |
 | 2026-08-14 | Roadmap inicial creado | Completado | Se definio plan para `Cargar insumos` y reconectar ordenes de compra al nuevo modelo. |
-
+| 2026-08-18 | Aclaracion de alcance | Completado | Se separo el flujo de partidas/estimaciones del nuevo flujo de explosion de insumos/materiales para ordenes de compra. |

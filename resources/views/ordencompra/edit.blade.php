@@ -399,8 +399,8 @@
         
   <!-- <input id="descProducto" name="descripcion"class="border p-2 col-span-2" placeholder="Descripción / buscar producto..."  autocomplete="off"> -->
    <div class="col-span-2">
-        <input id="descProducto" name="descripcion" class="w-full border p-2 rounded" placeholder="{{ $esObraCivil ? 'Descripcion / buscar concepto civil...' : 'Descripcion / buscar producto...' }}" autocomplete="off">
-        <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">{{ $esObraCivil ? 'Concepto civil' : 'Descripcion del producto' }}</span>
+        <input id="descProducto" name="descripcion" class="w-full border p-2 rounded" placeholder="{{ $esObraCivil ? 'Descripcion / buscar insumo de la explosion...' : 'Descripcion / buscar producto...' }}" autocomplete="off">
+        <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">{{ $esObraCivil ? 'Insumo de explosion' : 'Descripcion del producto' }}</span>
         
         <div id="producto_meta" class="text-[11px] text-slate-400 mt-1 ml-1 leading-tight"></div>
         <div id="sugerenciasProductos" class="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow hidden max-h-60 overflow-auto"></div>
@@ -408,6 +408,7 @@
 
   <input type="hidden" name="producto_id" id="producto_id">
   <input type="hidden" name="civil_concept_id" id="civil_concept_id">
+  <input type="hidden" name="obra_civil_insumo_id" id="obra_civil_insumo_id">
   <input type="hidden" name="legacy_prod_id" id="legacy_prod_id">
   <div>
       <input name="unidad" id="unidad" type="text" class="w-full border p-2 rounded uppercase" placeholder="PZA, KG, M, ML...">
@@ -428,7 +429,8 @@
     <div>
         <input name="cantidad" id="cantidad" type="number" step="0.001" placeholder="0.000" class="w-full border p-2 rounded">
         <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">Cantidad</span>
-        <span id="civil_cantidad_alerta" class="hidden text-[11px] text-amber-600 block mt-1 ml-1 leading-tight"></span>
+        <span id="civil_cantidad_disponible" class="hidden text-[11px] text-red-600 block mt-1 ml-1 leading-tight"></span>
+        <span id="civil_cantidad_alerta" class="hidden text-[11px] text-red-600 block mt-1 ml-1 leading-tight"></span>
     </div>
 
     <!-- Precio -->
@@ -662,10 +664,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const esObraCivil = @json($esObraCivil);
     const urlProductos = "{{ route('productos.buscar') }}";
-    const urlConceptosCivil = "{{ route('ordenes_compra.conceptos_civiles.buscar', $oc->id) }}";
+    const urlInsumosObra = "{{ route('ordenes_compra.insumos_obra.buscar', $oc->id) }}";
 
     const productoId = document.getElementById('detalle_producto_id') || document.getElementById('producto_id');
     const civilConceptId = document.getElementById('civil_concept_id');
+    const obraCivilInsumoId = document.getElementById('obra_civil_insumo_id');
     const legacyId   = document.getElementById('detalle_legacy_prod_id') || document.getElementById('legacy_prod_id');
     const unidad     = document.getElementById('detalle_unidad') || document.getElementById('unidad');
     const meta        = document.getElementById('producto_meta');
@@ -673,8 +676,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const precioInput = document.getElementById('precio_unitario');
     const cantidadInput = document.getElementById('cantidad');
     const cantidadAlerta = document.getElementById('civil_cantidad_alerta');
+    const cantidadDisponible = document.getElementById('civil_cantidad_disponible');
 
-    if (!input || !box || (!productoId && !civilConceptId)) {
+    if (!input || !box || (!productoId && !civilConceptId && !obraCivilInsumoId)) {
         console.warn('Autocomplete: Faltan elementos esenciales en el DOM');
         return;
     }
@@ -684,10 +688,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function limpiarSeleccion() {
         if (productoId) productoId.value = '';
         if (civilConceptId) civilConceptId.value = '';
+        if (obraCivilInsumoId) obraCivilInsumoId.value = '';
         if (legacyId) legacyId.value = '';
         if (meta) meta.innerText = '';
         if (precioInput) precioInput.value = '';
         if (cantidadInput) cantidadInput.classList.remove('border-amber-500', 'bg-amber-50');
+        if (cantidadDisponible) {
+            cantidadDisponible.classList.add('hidden');
+            cantidadDisponible.innerText = '';
+        }
         if (cantidadAlerta) {
             cantidadAlerta.classList.add('hidden');
             cantidadAlerta.innerText = '';
@@ -713,15 +722,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return Number.isFinite(number) ? number.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' }) : '$0.00';
     }
 
-    function civilDisponibleTexto(data) {
-        const unidadTexto = data.unidad ? ` ${data.unidad}` : '';
-        const ordenes = Number(data.ordenes_count ?? 0);
-        const ordenesTexto = ordenes > 0 ? ` - OCs: ${ordenes}` : '';
-        return `Disponible: ${formatNumber(data.cantidad_disponible)}${unidadTexto} / ${formatMoney(data.importe_disponible)}${ordenesTexto}`;
+
+    function actualizarCantidadCivilDisponible() {
+        if (!esObraCivil || !cantidadDisponible || !obraCivilInsumoId?.value) {
+            return;
+        }
+
+        const disponible = Number(cantidadInput?.dataset.cantidadDisponible || 0);
+        const importeDisponible = Number(cantidadInput?.dataset.importeDisponible || 0);
+        const unidadTexto = cantidadInput?.dataset.unidad ? ` ${cantidadInput.dataset.unidad}` : '';
+
+        cantidadDisponible.classList.remove('hidden');
+        cantidadDisponible.innerText = `Disponible: ${formatNumber(disponible)}${unidadTexto} / ${formatMoney(importeDisponible)}`;
     }
 
     function validarCantidadCivilDisponible() {
-        if (!esObraCivil || !cantidadInput || !cantidadAlerta || !civilConceptId?.value) {
+        if (!esObraCivil || !cantidadInput || !cantidadAlerta || !obraCivilInsumoId?.value) {
             return;
         }
 
@@ -732,7 +748,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cantidad > disponible) {
             cantidadInput.classList.add('border-amber-500', 'bg-amber-50');
             cantidadAlerta.classList.remove('hidden');
-            cantidadAlerta.innerText = `Excede disponible: ${formatNumber(disponible)}${unidadTexto}. Se validara al autorizar.`;
+            cantidadAlerta.innerText = `Excede disponible: ${formatNumber(disponible)}${unidadTexto}. El disponible quedara negativo.`;
             return;
         }
 
@@ -755,7 +771,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         timer = setTimeout(async () => {
             try {
-                const urlBusqueda = esObraCivil ? urlConceptosCivil : urlProductos;
+                const urlBusqueda = esObraCivil ? urlInsumosObra : urlProductos;
                 const params = new URLSearchParams({ q });
 
                 if (!esObraCivil && proveedor?.value) {
@@ -784,9 +800,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         ? Number(p.ultimo_precio).toFixed(4)
                         : '';
                     const metaLinea = esObraCivil
-                        ? `Clave: ${escapeHtml(p.sku ?? '-')} - Unidad: ${escapeHtml(p.unidad ?? '-')} - P.U.: ${precio ? Number(precio).toFixed(2) : '-'}`
+                        ? `Codigo: ${escapeHtml(p.sku ?? '-')} - Unidad: ${escapeHtml(p.unidad ?? '-')} - P.U.: ${precio ? Number(precio).toFixed(2) : '-'}`
                         : `SKU: ${escapeHtml(p.sku ?? '-')} - Unidad: ${escapeHtml(p.unidad ?? '-')}${precio ? ` - Ultimo precio: ${Number(precio).toFixed(2)} ${escapeHtml(p.moneda_precio ?? '')}` : ''}`;
-                    const disponibleLinea = esObraCivil ? civilDisponibleTexto(p) : '';
+
                     const extra = esObraCivil && p.descripcion
                         ? `<div class="text-xs text-slate-400">${escapeHtml(p.descripcion)}</div>`
                         : (p.descripcion ? `<div class="text-xs text-slate-400">${escapeHtml(p.descripcion)}</div>` : '');
@@ -795,6 +811,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="px-3 py-2 hover:bg-slate-100 cursor-pointer border-b border-slate-50 last:border-0"
                          data-id="${escapeHtml(p.id)}"
                          data-civil-id="${escapeHtml(p.civil_concept_id ?? '')}"
+                         data-insumo-id="${escapeHtml(p.obra_civil_insumo_id ?? '')}"
                          data-legacy="${escapeHtml(p.legacy_prod_id ?? '')}"
                          data-nombre="${escapeHtml(p.nombre ?? '')}"
                          data-unidad="${escapeHtml(p.unidad ?? '')}"
@@ -807,7 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
                          data-ordenes-count="${escapeHtml(p.ordenes_count ?? 0)}">
                         <div class="font-semibold text-slate-800">${escapeHtml(p.nombre)}</div>
                         <div class="text-xs text-slate-500">${metaLinea}</div>
-                        ${disponibleLinea ? `<div class="text-xs text-slate-400">${escapeHtml(disponibleLinea)}</div>` : ''}
+
                         ${extra}
                     </div>`;
                 }).join('');
@@ -817,12 +834,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 box.querySelectorAll('[data-id]').forEach(item => {
                     item.addEventListener('click', () => {
                         if (esObraCivil) {
-                            if (civilConceptId) civilConceptId.value = item.dataset.civilId || item.dataset.id || '';
+                            if (obraCivilInsumoId) obraCivilInsumoId.value = item.dataset.insumoId || item.dataset.id || '';
+                            if (civilConceptId) civilConceptId.value = '';
                             if (productoId) productoId.value = '';
                             if (legacyId) legacyId.value = '';
                         } else {
                             if (productoId) productoId.value = item.dataset.id || '';
                             if (civilConceptId) civilConceptId.value = '';
+                            if (obraCivilInsumoId) obraCivilInsumoId.value = '';
                             if (legacyId) legacyId.value = item.dataset.legacy || '';
                         }
 
@@ -830,7 +849,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (precioInput) precioInput.value = item.dataset.precio !== '' ? Number(item.dataset.precio).toFixed(4) : '';
                         if (cantidadInput) {
                             cantidadInput.dataset.cantidadDisponible = item.dataset.cantidadDisponible || '0';
+                            cantidadInput.dataset.importeDisponible = item.dataset.importeDisponible || '0';
                             cantidadInput.dataset.unidad = item.dataset.unidad || '';
+                            actualizarCantidadCivilDisponible();
                             validarCantidadCivilDisponible();
                         }
 
@@ -839,14 +860,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             const clave = item.dataset.sku || '-';
                             const descripcion = item.dataset.descripcion || '';
                             const precio = item.dataset.precio !== '' ? ` - P.U.: ${Number(item.dataset.precio).toFixed(2)} ${item.dataset.moneda || ''}` : '';
-                            const disponible = esObraCivil ? civilDisponibleTexto({
-                                unidad: item.dataset.unidad || '',
-                                cantidad_disponible: item.dataset.cantidadDisponible || 0,
-                                importe_disponible: item.dataset.importeDisponible || 0,
-                                ordenes_count: item.dataset.ordenesCount || 0,
-                            }) : '';
                             meta.innerText = esObraCivil
-                                ? `Clave: ${clave}${descripcion ? ' - ' + descripcion : ''}${precio}${disponible ? ' | ' + disponible : ''}`
+                                ? `Codigo: ${clave}${descripcion ? ' - ' + descripcion : ''}${precio}`
                                 : (descripcion ? `SKU: ${clave} - ${descripcion}${precio}` : `SKU: ${clave}${precio}`);
                         }
 
@@ -856,7 +871,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
             } catch (error) {
-                console.error(esObraCivil ? 'Error en el fetch de conceptos civiles:' : 'Error en el fetch de productos:', error);
+                console.error(esObraCivil ? 'Error en el fetch de insumos de obra:' : 'Error en el fetch de productos:', error);
             }
         }, 300);
     });
@@ -870,3 +885,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
+
+
+
+
+

@@ -6,6 +6,7 @@ use App\Http\Requests\StoreOrdenCompraDetalleRequest;
 use App\Http\Requests\UpdateOrdenCompraDetalleRequest;
 use App\Models\OrdenCompra;
 use App\Models\OrdenCompraDetalle;
+use App\Models\ObraCivilInsumo;
 use App\Models\TipoRetencion;
 use App\Services\OrdenCompraTotalesService;
 use Illuminate\Http\Request;
@@ -54,8 +55,9 @@ class OrdenCompraDetalleController extends Controller
         }
 
         $civilConcept = null;
+        $obraCivilInsumo = $this->resolveObraCivilInsumo($request, $oc);
 
-        if ($request->filled('civil_concept_id')) {
+        if (!$obraCivilInsumo && $request->filled('civil_concept_id')) {
             $civilConcept = \App\Models\CivilConcept::query()
                 ->with('partida.building.catalogImport')
                 ->where('id', $request->integer('civil_concept_id'))
@@ -69,9 +71,10 @@ class OrdenCompraDetalleController extends Controller
 
         $detalle = new OrdenCompraDetalle();
         $detalle->orden_compra_id = $oc->id;
-        $detalle->producto_id = $civilConcept ? null : $request->producto_id;
-        $detalle->civil_concept_id = $civilConcept?->id;
-        $detalle->legacy_prod_id = $civilConcept ? null : $request->legacy_prod_id;
+        $detalle->producto_id = ($civilConcept || $obraCivilInsumo) ? null : $request->producto_id;
+        $detalle->civil_concept_id = $obraCivilInsumo ? null : $civilConcept?->id;
+        $detalle->obra_civil_insumo_id = $obraCivilInsumo?->id;
+        $detalle->legacy_prod_id = ($civilConcept || $obraCivilInsumo) ? null : $request->legacy_prod_id;
         $detalle->descripcion = $request->descripcion;
         $detalle->unidad = $request->unidad;
         $detalle->cantidad = $cantidad;
@@ -98,6 +101,7 @@ class OrdenCompraDetalleController extends Controller
         $detalle->notas = $request->notas;
 
         if ($civilConcept) {
+            $detalle->obra_civil_insumo_snapshot = null;
             $partida = $civilConcept->partida;
             $building = $partida?->building;
             $import = $building?->catalogImport;
@@ -118,6 +122,11 @@ class OrdenCompraDetalleController extends Controller
             ];
         }
 
+        if ($obraCivilInsumo) {
+            $detalle->civil_concept_snapshot = null;
+            $detalle->obra_civil_insumo_snapshot = $this->buildObraCivilInsumoSnapshot($obraCivilInsumo);
+        }
+
         $detalle->save();
 
         logger()->info('OC Detalle guardado', [
@@ -125,6 +134,8 @@ class OrdenCompraDetalleController extends Controller
             'detalle_id' => $detalle->id,
             'proveedor_id' => $oc->proveedor_id,
             'producto_id' => $detalle->producto_id,
+            'civil_concept_id' => $detalle->civil_concept_id,
+            'obra_civil_insumo_id' => $detalle->obra_civil_insumo_id,
             'legacy_prod_id' => $detalle->legacy_prod_id,
             'descripcion' => $detalle->descripcion,
             'precio_unitario' => $detalle->precio_unitario,
@@ -144,6 +155,41 @@ class OrdenCompraDetalleController extends Controller
     });
 }
 
+
+    private function resolveObraCivilInsumo(Request $request, OrdenCompra $oc): ?ObraCivilInsumo
+    {
+        if (!$request->filled('obra_civil_insumo_id')) {
+            return null;
+        }
+
+        return ObraCivilInsumo::query()
+            ->with('import')
+            ->where('id', $request->integer('obra_civil_insumo_id'))
+            ->where('obra_id', $oc->obra_id)
+            ->where('is_active', true)
+            ->where('tipo', 'material')
+            ->firstOrFail();
+    }
+
+    private function buildObraCivilInsumoSnapshot(ObraCivilInsumo $insumo): array
+    {
+        $import = $insumo->import;
+
+        return [
+            'obra_civil_insumo_import_id' => $import?->id,
+            'filename' => $import?->filename,
+            'sheet_name' => $import?->sheet_name,
+            'source_row' => $insumo->source_row,
+            'tipo' => $insumo->tipo,
+            'codigo' => $insumo->codigo,
+            'concepto' => $insumo->concepto,
+            'unidad' => $insumo->unidad,
+            'cantidad_presupuestada' => (float) $insumo->cantidad_presupuestada,
+            'precio_unitario' => (float) $insumo->precio_unitario,
+            'importe_importado' => (float) $insumo->importe_importado,
+            'importe_calculado' => (float) $insumo->importe_calculado,
+        ];
+    }
     private function calcularImportesPartida(Request $request, float $cantidad, float $precio): array
     {
         $bruto = round($cantidad * $precio, 2);
@@ -272,8 +318,18 @@ private function syncProductoProveedorDesdeDetalle(OrdenCompra $oc, OrdenCompraD
             $descuentoImporte = $importes['descuento_importe'];
             $importe = $importes['importe'];
 
-            $detalle->producto_id     = $request->producto_id;
-            $detalle->legacy_prod_id  = $request->legacy_prod_id;
+            $obraCivilInsumo = $this->resolveObraCivilInsumo($request, $oc);
+
+            $detalle->producto_id     = $obraCivilInsumo ? null : $request->producto_id;
+            $detalle->civil_concept_id = $obraCivilInsumo ? null : $request->civil_concept_id;
+            $detalle->obra_civil_insumo_id = $obraCivilInsumo?->id;
+            $detalle->legacy_prod_id  = $obraCivilInsumo ? null : $request->legacy_prod_id;
+            if ($obraCivilInsumo) {
+                $detalle->civil_concept_snapshot = null;
+                $detalle->obra_civil_insumo_snapshot = $this->buildObraCivilInsumoSnapshot($obraCivilInsumo);
+            } else {
+                $detalle->obra_civil_insumo_snapshot = null;
+            }
 
             $detalle->descripcion     = $request->descripcion;
             $detalle->unidad          = $request->unidad;

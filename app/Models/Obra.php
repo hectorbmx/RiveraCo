@@ -243,6 +243,15 @@ public function cfdis()
         return $this->hasMany(CivilCatalogImport::class, 'obra_id');
     }
 
+    public function obraCivilInsumoImports()
+    {
+        return $this->hasMany(ObraCivilInsumoImport::class, 'obra_id');
+    }
+
+    public function obraCivilInsumos()
+    {
+        return $this->hasMany(ObraCivilInsumo::class, 'obra_id');
+    }
     public function civilEstimations()
     {
         return $this->hasMany(CivilEstimation::class, 'obra_id');

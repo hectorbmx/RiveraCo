@@ -1,18 +1,20 @@
 <?php
-
 namespace App\Http\Controllers;
+
 use Carbon\Carbon;
 use App\Http\Requests\StoreOrdenCompraRequest;
 use App\Http\Requests\UpdateOrdenCompraRequest;
 use App\Models\Area;
 use App\Models\Proveedor;
 use App\Models\Obra;
+use App\Models\ObraCivilInsumo;
 use App\Models\OrdenCompra;
 use App\Models\CentroCosto;
 use App\Models\TipoIva;
 use App\Models\TipoRetencion;
 use App\Models\DocumentoFirmante;
 use App\Services\CivilConceptBalanceService;
+use App\Services\ObraCivilInsumoBalanceService;
 use App\Services\OrdenCompraNotificationService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
@@ -2283,6 +2285,55 @@ public function buscarConceptosCivil(Request $request, OrdenCompra $orden_compra
     }));
 }
 
+public function buscarInsumosObra(Request $request, OrdenCompra $orden_compra)
+{
+    $term = trim((string) $request->get('q', ''));
+
+    if (mb_strlen($term) < 2 || !$orden_compra->obra_id || !$orden_compra->obra || !$this->esObraCivil($orden_compra->obra)) {
+        return response()->json([]);
+    }
+
+    $insumos = ObraCivilInsumo::query()
+        ->where('obra_id', $orden_compra->obra_id)
+        ->where('is_active', true)
+        ->where('tipo', 'material')
+        ->where(function ($query) use ($term) {
+            $query->where('concepto', 'like', "%{$term}%")
+                ->orWhere('codigo', 'like', "%{$term}%");
+        })
+        ->orderBy('sort_order')
+        ->orderBy('id')
+        ->limit(20)
+        ->get();
+
+    $balances = app(ObraCivilInsumoBalanceService::class)->summaries($insumos->pluck('id'));
+
+    return response()->json($insumos->map(function (ObraCivilInsumo $insumo) use ($balances) {
+        $balance = $balances->get($insumo->id, []);
+        $budgetAmount = (float) ($insumo->importe_importado ?? $insumo->importe_calculado ?? 0);
+
+        return [
+            'id' => $insumo->id,
+            'obra_civil_insumo_id' => $insumo->id,
+            'civil_concept_id' => null,
+            'legacy_prod_id' => null,
+            'nombre' => $insumo->concepto,
+            'descripcion' => $insumo->concepto,
+            'unidad' => $insumo->unidad,
+            'sku' => $insumo->codigo,
+            'tipo' => $insumo->tipo,
+            'ultimo_precio' => (float) $insumo->precio_unitario,
+            'moneda_precio' => 'MXN',
+            'cantidad_presupuesto' => (float) $insumo->cantidad_presupuestada,
+            'importe_presupuesto' => $budgetAmount,
+            'cantidad_usada' => (float) ($balance['used_quantity'] ?? 0),
+            'importe_usado' => (float) ($balance['used_amount'] ?? 0),
+            'cantidad_disponible' => (float) ($balance['available_quantity'] ?? $insumo->cantidad_presupuestada),
+            'importe_disponible' => (float) ($balance['available_amount'] ?? $budgetAmount),
+            'ordenes_count' => (int) ($balance['ordenes_count'] ?? 0),
+        ];
+    }));
+}
 public function exportarListaPagos(
     Request $request,
     string $formaPago

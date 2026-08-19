@@ -556,6 +556,10 @@ Route::middleware('auth','verified')->group(function () {
     Route::prefix('obra_civil')->name('obra_civil.')->group(function () {
         Route::get('/', [ObraCivilController::class, 'index'])->name('index');
         Route::post('{obra}/catalogo', [ObraCivilController::class, 'uploadCatalog'])->name('catalog.upload');
+        Route::post('{obra}/insumos', [ObraCivilController::class, 'uploadInsumos'])->name('insumos.upload');
+        Route::get('{obra}/insumos', [ObraCivilController::class, 'insumos'])->name('insumos.index');
+        Route::delete('{obra}/insumos/{import}', [ObraCivilController::class, 'destroyInsumoImport'])->name('insumos.destroy');
+        Route::get('{obra}/insumos/{insumo}/ordenes', [ObraCivilController::class, 'insumoOrders'])->name('insumos.orders');
         Route::get('{obra}/catalogo/preview/{import}', [ObraCivilController::class, 'preview'])->name('catalog.preview');
         Route::delete('{obra}/catalogo/{import}', [ObraCivilController::class, 'destroyCatalog'])->name('catalog.destroy');
         Route::post('{obra}/catalogo/preview/{import}', [ObraCivilController::class, 'confirmCatalog'])->name('catalog.confirm');
@@ -650,6 +654,7 @@ Route::middleware('auth','verified')->group(function () {
 
     Route::get('ordenes-compra/partidas-obra/{obra_id}', [OrdenCompraController::class, 'partidasPorObra'])->name('ordenes_compra.partidas_obra');
     Route::get('ordenes-compra/{orden_compra}/conceptos-civiles/buscar', [OrdenCompraController::class, 'buscarConceptosCivil'])->name('ordenes_compra.conceptos_civiles.buscar');
+    Route::get('ordenes-compra/{orden_compra}/insumos-obra/buscar', [OrdenCompraController::class, 'buscarInsumosObra'])->name('ordenes_compra.insumos_obra.buscar');
     Route::get('ordenes-compra/exportar-pagos/{formaPago}',[OrdenCompraController::class, 'exportarListaPagos'])->name('ordenes_compra.exportar_pagos');
     Route::get('ordenes-compra/exportar-gastos-sin-factura', [OrdenCompraController::class, 'exportarGastosSinFactura'])->name('ordenes_compra.exportar_gastos_sin_factura');
     Route::get('ordenes-compra/caratula-giralda', [OrdenCompraController::class, 'exportarCaratulaGiralda'])->name('ordenes_compra.caratula_giralda');
