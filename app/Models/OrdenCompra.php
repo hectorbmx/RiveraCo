@@ -127,4 +127,21 @@ class OrdenCompra extends Model
         return $this->belongsTo(ObraPlaneacionGasto::class, 'planeacion_gasto_id');
     }
  
+    public function materialRequestLinks()
+    {
+        return $this->hasMany(ObraCivilMaterialRequestOrderLink::class, 'orden_compra_id');
+    }
+
+    public function materialRequests()
+    {
+        return $this->belongsToMany(
+            ObraCivilMaterialRequest::class,
+            'obra_civil_material_request_order_links',
+            'orden_compra_id',
+            'obra_civil_material_request_id'
+        )
+            ->withPivot(['status', 'created_by', 'metadata'])
+            ->withTimestamps();
+    }
 }
+

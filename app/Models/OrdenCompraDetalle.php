@@ -32,6 +32,7 @@ class OrdenCompraDetalle extends Model
     'civil_concept_snapshot',
     'obra_civil_insumo_id',
     'obra_civil_insumo_snapshot',
+    'obra_civil_material_request_item_id',
     'legacy_prod_id',
     'descripcion',
     'unidad',
@@ -62,6 +63,7 @@ class OrdenCompraDetalle extends Model
         'civil_concept_snapshot' => 'array',
         'obra_civil_insumo_id' => 'integer',
         'obra_civil_insumo_snapshot' => 'array',
+        'obra_civil_material_request_item_id' => 'integer',
         'tipo_retencion_id' => 'integer',
         'retencion_porcentaje' => 'decimal:4',
     ];
@@ -88,6 +90,9 @@ class OrdenCompraDetalle extends Model
     {
         return $this->belongsTo(ObraCivilInsumo::class, 'obra_civil_insumo_id');
     }
+    public function obraCivilMaterialRequestItem()
+    {
+        return $this->belongsTo(ObraCivilMaterialRequestItem::class, 'obra_civil_material_request_item_id');
+    }
 }
-
 

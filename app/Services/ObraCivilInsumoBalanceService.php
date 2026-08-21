@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class ObraCivilInsumoBalanceService
 {
-    public const EXCLUDED_STATES = ['CANCELADA'];
+    public const BALANCE_STATES = ['AUTORIZADA', 'VERIFICADA'];
 
     public function summary(ObraCivilInsumo|int $insumo, ?int $excludeOrdenCompraId = null, ?int $excludeDetalleId = null): array
     {
@@ -38,10 +38,7 @@ class ObraCivilInsumoBalanceService
         $usedQuery = DB::table('orden_compra_detalles as d')
             ->join('ordenes_compra as oc', 'oc.id', '=', 'd.orden_compra_id')
             ->whereIn('d.obra_civil_insumo_id', $ids)
-            ->where(function ($query) {
-                $query->whereNull('oc.estado')
-                    ->orWhereNotIn(DB::raw('UPPER(oc.estado)'), self::EXCLUDED_STATES);
-            });
+            ->whereIn(DB::raw('UPPER(oc.estado)'), self::BALANCE_STATES);
 
         if ($excludeOrdenCompraId !== null) {
             $usedQuery->where('d.orden_compra_id', '!=', $excludeOrdenCompraId);

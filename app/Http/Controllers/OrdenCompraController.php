@@ -8,6 +8,7 @@ use App\Models\Area;
 use App\Models\Proveedor;
 use App\Models\Obra;
 use App\Models\ObraCivilInsumo;
+use App\Models\ObraCivilMaterialRequest;
 use App\Models\OrdenCompra;
 use App\Models\CentroCosto;
 use App\Models\TipoIva;
@@ -15,6 +16,7 @@ use App\Models\TipoRetencion;
 use App\Models\DocumentoFirmante;
 use App\Services\CivilConceptBalanceService;
 use App\Services\ObraCivilInsumoBalanceService;
+use App\Services\ObraCivil\ObraCivilMaterialRequestOrderService;
 use App\Services\OrdenCompraNotificationService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
@@ -338,10 +340,10 @@ class OrdenCompraController extends Controller
     /**
      * Guardar OC (estado inicial: programada -> legacy BORRADOR)
      */
-    public function store(StoreOrdenCompraRequest $request, OrdenCompraNotificationService $notifications)
+    public function store(StoreOrdenCompraRequest $request, OrdenCompraNotificationService $notifications, ObraCivilMaterialRequestOrderService $materialRequestOrderService)
     {
         $this->authorizeAny(['ordenes_compra.create.access', 'ordenes de compra.access']);
-        return DB::transaction(function () use ($request, $notifications) {
+        return DB::transaction(function () use ($request, $notifications, $materialRequestOrderService) {
 
             $area = Area::findOrFail($request->area_id);
             $esCajaChica = $request->boolean('es_caja_chica');
@@ -389,6 +391,18 @@ class OrdenCompraController extends Controller
 
 
             $oc->save();
+
+            if ($request->filled('obra_civil_material_request_items')) {
+                $materialRequestOrderService->attachApprovedItemsToOrder(
+                    $request->input('obra_civil_material_request_items', []),
+                    $oc,
+                    $request->user()
+                );
+            } elseif ($request->filled('obra_civil_material_request_id')) {
+                // Compatibilidad temporal con el selector anterior.
+                $materialRequest = ObraCivilMaterialRequest::findOrFail((int) $request->obra_civil_material_request_id);
+                $materialRequestOrderService->attachApprovedRequestToOrder($materialRequest, $oc, $request->user());
+            }
 
             $notifications->creada($oc);
 
@@ -1457,11 +1471,57 @@ foreach ($oc->detalles as $detalle) {
 
     $ivaPctMostrado = (float) ($oc->iva ?? 0);
 
-    // Notas
+    /*
+     * Notas.
+     * Se imprimen en una columna acotada para que nunca invadan el cuadro de
+     * totales. Si el comentario es muy largo, se corta con elipsis; el texto
+     * completo queda persistido en ordenes_compra.comentarios.
+     */
+    $totW = 62;
+    $totX = $X0 + $W - $totW;
+    $notasLabelW = 15;
+    $notasGap = 4;
+    $notasX = $X0 + $notasLabelW + 1;
+    $notasW = $totX - $notasX - $notasGap;
+    $notasLineH = 5.5;
+    $notasMaxLineas = 4;
+
+    $partirTexto = function (string $texto, float $anchoMax) use ($pdf): array {
+        $texto = trim(preg_replace('/\s+/', ' ', $texto));
+
+        if ($texto === '') {
+            return [];
+        }
+
+        $lineas = [];
+        $linea = '';
+
+        foreach (explode(' ', $texto) as $palabra) {
+            $candidata = $linea === '' ? $palabra : $linea . ' ' . $palabra;
+
+            if ($pdf->GetStringWidth($candidata) <= $anchoMax) {
+                $linea = $candidata;
+                continue;
+            }
+
+            if ($linea !== '') {
+                $lineas[] = $linea;
+            }
+
+            $linea = $palabra;
+        }
+
+        if ($linea !== '') {
+            $lineas[] = $linea;
+        }
+
+        return $lineas;
+    };
+
     $pdf->SetFont('Arial', 'B', 9);
     $pdf->SetXY($X0, $Y);
     $pdf->Cell(
-        15,
+        $notasLabelW,
         6,
         $utf8('NOTAS:'),
         0,
@@ -1471,13 +1531,35 @@ foreach ($oc->detalles as $detalle) {
 
     $pdf->SetFont('Arial', '', 9);
 
-    $pdf->MultiCell(
-        115,
-        6,
-        $utf8($oc->comentarios ?? ''),
-        0,
-        'L'
-    );
+    $notasLineas = $partirTexto((string) ($oc->comentarios ?? ''), $notasW);
+    $notasTruncadas = count($notasLineas) > $notasMaxLineas;
+    $notasLineas = array_slice($notasLineas, 0, $notasMaxLineas);
+
+    if ($notasTruncadas && ! empty($notasLineas)) {
+        $ultima = rtrim($notasLineas[count($notasLineas) - 1]);
+
+        while ($ultima !== '' && $pdf->GetStringWidth($ultima . '...') > $notasW) {
+            $ultima = rtrim(substr($ultima, 0, -1));
+        }
+
+        $notasLineas[count($notasLineas) - 1] = $ultima . '...';
+    }
+
+    $notaY = $Y;
+
+    foreach ($notasLineas as $notaLinea) {
+        $pdf->SetXY($notasX, $notaY);
+        $pdf->Cell(
+            $notasW,
+            $notasLineH,
+            $utf8($notaLinea),
+            0,
+            0,
+            'L'
+        );
+
+        $notaY += $notasLineH;
+    }
 
     /*
      * Construcción dinámica de las filas del resumen.
@@ -1532,10 +1614,9 @@ foreach ($oc->detalles as $detalle) {
         'total' => true,
     ];
 
-    // Caja de totales
-    $totX = $X0 + 120;
+    // Caja de totales compacta
     $totY = $Y;
-    $altoFilaTotal = 8;
+    $altoFilaTotal = 6.5;
     $totH = count($filasTotales) * $altoFilaTotal;
 
     $pdf->SetDrawColor(
@@ -1547,7 +1628,7 @@ foreach ($oc->detalles as $detalle) {
     $pdf->Rect(
         $totX,
         $totY,
-        76,
+        $totW,
         $totH
     );
 
@@ -1564,7 +1645,7 @@ foreach ($oc->detalles as $detalle) {
         );
 
         $pdf->Cell(
-            50,
+            36,
             $altoFilaTotal,
             $utf8($fila['label']),
             0,
@@ -1599,6 +1680,7 @@ foreach ($oc->detalles as $detalle) {
     // ====== DATOS DE FACTURACIÓN ======
     $Y = max(
         $pdf->GetY() + 8,
+        $notaY + 8,
         $totY + $totH + 4
     );
 
@@ -2285,6 +2367,15 @@ public function buscarConceptosCivil(Request $request, OrdenCompra $orden_compra
     }));
 }
 
+public function solicitudesMaterialAprobadasPorObra(Obra $obra, ObraCivilMaterialRequestOrderService $materialRequestOrderService)
+{
+    $this->authorizeAny(['ordenes_compra.create.access', 'ordenes de compra.access']);
+
+    return response()->json([
+        'ok' => true,
+        'data' => $materialRequestOrderService->approvedPendingItemOptions($obra),
+    ]);
+}
 public function buscarInsumosObra(Request $request, OrdenCompra $orden_compra)
 {
     $term = trim((string) $request->get('q', ''));
@@ -3201,3 +3292,10 @@ public function exportarListaPagos(
             ->header('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"');
     }
 }
+
+
+
+
+
+
+

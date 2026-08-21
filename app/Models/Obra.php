@@ -256,4 +256,15 @@ public function cfdis()
     {
         return $this->hasMany(CivilEstimation::class, 'obra_id');
     }
+
+    public function civilWorkReports()
+    {
+        return $this->hasMany(CivilWorkReport::class, 'obra_id');
+    }
+
+    public function obraCivilMaterialRequests()
+    {
+        return $this->hasMany(ObraCivilMaterialRequest::class, 'obra_id');
+    }
 }
+

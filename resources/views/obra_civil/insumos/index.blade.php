@@ -11,6 +11,10 @@
             <p class="text-sm text-slate-500">{{ $obra->nombre }}</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+            <a href="{{ route('obra_civil.material-requests.index', [$obra, 'scope' => 'no_atendidas']) }}"
+               class="rounded-lg border border-amber-700 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50">
+                Solicitudes no atendidas
+            </a>
             <a href="{{ route('obra_civil.details', $obra) }}"
                class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                 Volver al detalle
@@ -142,6 +146,7 @@
                         <th class="px-4 py-3 text-right">Precio</th>
                         <th class="px-4 py-3 text-right">Importe</th>
                         <th class="px-4 py-3 text-right">Usado</th>
+                        <th class="px-4 py-3 text-right">Solicitado pendiente</th>
                         <th class="px-4 py-3 text-right">Disponible</th>
                         <th class="px-4 py-3 text-right">Ordenes</th>
                         <th class="px-4 py-3 text-right">Fila</th>
@@ -155,6 +160,7 @@
                         @php($usedAmount = (float) ($balance['used_amount'] ?? 0))
                         @php($availableAmount = (float) ($balance['available_amount'] ?? $insumo->importe_importado))
                         @php($ordenesCount = (int) ($balance['ordenes_count'] ?? 0))
+                        @php($requestedPendingQuantity = (float) ($requestedPendingQuantities->get($insumo->id, 0) ?? 0))
                         <tr class="align-top hover:bg-slate-50">
                             <td class="px-4 py-2 text-xs font-semibold uppercase text-slate-500">{{ str_replace('_', ' ', $insumo->tipo ?: 'sin tipo') }}</td>
                             <td class="px-4 py-2 font-mono text-xs text-slate-600">{{ $insumo->codigo }}</td>
@@ -166,6 +172,10 @@
                             <td class="px-4 py-2 text-right tabular-nums">
                                 <div>{{ number_format($usedQuantity, 4) }}</div>
                                 <div class="text-xs text-slate-400">${{ number_format($usedAmount, 2) }}</div>
+                            </td>
+                            <td class="px-4 py-2 text-right tabular-nums {{ $requestedPendingQuantity > 0 ? 'text-amber-700 font-semibold' : 'text-slate-400' }}">
+                                <div>{{ number_format($requestedPendingQuantity, 4) }}</div>
+                                <div class="text-xs">{{ $requestedPendingQuantity > 0 ? 'Solicitado' : '-' }}</div>
                             </td>
                             <td class="px-4 py-2 text-right tabular-nums {{ $availableQuantity < 0 || $availableAmount < 0 ? 'text-red-700 font-semibold' : 'text-slate-700' }}">
                                 <div>{{ number_format($availableQuantity, 4) }}</div>
@@ -184,7 +194,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="11" class="px-5 py-10 text-center text-sm text-slate-500">Aun no hay explosion de insumos cargada.</td>
+                            <td colspan="12" class="px-5 py-10 text-center text-sm text-slate-500">Aun no hay explosion de insumos cargada.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -244,4 +254,5 @@
     </section>
 </div>
 @endsection
+
 

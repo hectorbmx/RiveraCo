@@ -53,4 +53,10 @@ class ObraCivilInsumo extends Model
     {
         return $this->hasMany(OrdenCompraDetalle::class, 'obra_civil_insumo_id');
     }
+
+    public function materialRequestItems()
+    {
+        return $this->hasMany(ObraCivilMaterialRequestItem::class, 'obra_civil_insumo_id');
+    }
 }
+

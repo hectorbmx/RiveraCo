@@ -173,7 +173,7 @@ class AuthController extends Controller
         }
 
         $obra = Obra::query()
-            ->select('id', 'cliente_id', 'nombre', 'clave_obra', 'ubicacion', 'estatus_nuevo', 'fecha_inicio_programada', 'fecha_inicio_real')
+            ->select('id', 'cliente_id', 'nombre', 'clave_obra', 'tipo_obra', 'ubicacion', 'estatus_nuevo', 'fecha_inicio_programada', 'fecha_inicio_real')
             ->with(['cliente:id,nombre_comercial'])
             ->where('id', $asignacionResidente->obra_id)
             ->first();
@@ -266,6 +266,7 @@ class AuthController extends Controller
                 'cliente_nombre' => $obra->cliente?->nombre_comercial,
                 'nombre' => $obra->nombre,
                 'clave_obra' => $obra->clave_obra,
+                'tipo_obra' => $obra->tipo_obra,
                 'ubicacion' => $obra->ubicacion,
                 'estatus_nuevo' => $obra->estatus_nuevo,
                 'fecha_inicio_programada' => optional($obra->fecha_inicio_programada)->toDateString(),

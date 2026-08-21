@@ -394,7 +394,7 @@
     {{-- Agregar detalle --}}
     @if(!$bloqueado)
     <form method="POST" action="{{ route('ordenes_compra.detalles.store',$oc->id) }}"
-          class="grid grid-cols-1 md:grid-cols-9 gap-2 mb-4" data-loading-form data-loading-message="Agregando producto a la orden...">
+          class="grid grid-cols-1 md:grid-cols-12 gap-2 mb-4" data-loading-form data-loading-message="Agregando producto a la orden...">
         @csrf
         
   <!-- <input id="descProducto" name="descripcion"class="border p-2 col-span-2" placeholder="Descripción / buscar producto..."  autocomplete="off"> -->
@@ -473,6 +473,12 @@
         Retención
     </span>
 </div>
+
+    <div class="md:col-span-2">
+        <input name="notas" type="text" maxlength="255" placeholder="Notas del detalle" class="w-full border p-2 rounded">
+        <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">Notas</span>
+    </div>
+
         <div class="flex flex-col">
         <button class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 transition-colors">
             Agregar
@@ -510,6 +516,12 @@
                     @if($d->producto->descripcion)
                         · {{ $d->producto->descripcion }}
                     @endif
+                </div>
+            @endif
+
+            @if($d->notas)
+                <div class="mt-1 text-[11px] text-slate-500">
+                    Nota: {{ $d->notas }}
                 </div>
             @endif
         </td>

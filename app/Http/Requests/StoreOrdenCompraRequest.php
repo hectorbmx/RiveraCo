@@ -20,8 +20,12 @@ class StoreOrdenCompraRequest extends FormRequest
         'proveedor_id'         => ['nullable', Rule::requiredIf(fn() => !$this->boolean('es_caja_chica') && !$this->boolean('gastos_sin_factura')), 'integer', 'exists:proveedores,id'],
         'obra_id'              => ['nullable', 'integer', 'exists:obras,id'],
         'centro_costo_id'      => ['nullable', 'integer', 'exists:centros_costo,id'],
-        'planeacion_gasto_id'  => ['nullable', 'integer', 'exists:obra_planeacion_gastos,id'],  // NUEVO
+        'planeacion_gasto_id'  => ['nullable', 'integer', 'exists:obra_planeacion_gastos,id'],
         'civil_partida_id'     => ['nullable', 'integer', 'exists:civil_partidas,id'],
+        'obra_civil_material_request_id' => ['nullable', 'integer', 'exists:obra_civil_material_requests,id'],
+        'obra_civil_material_request_items' => ['nullable', 'array'],
+        'obra_civil_material_request_items.*.id' => ['required_with:obra_civil_material_request_items', 'integer', 'exists:obra_civil_material_request_items,id'],
+        'obra_civil_material_request_items.*.quantity' => ['required_with:obra_civil_material_request_items', 'numeric', 'gt:0'],
  
         'area_id'              => ['required', 'integer', 'exists:areas,id'],
  
@@ -67,9 +71,7 @@ class StoreOrdenCompraRequest extends FormRequest
             'proveedor_id.required_unless' => 'Selecciona un proveedor o marca la orden como caja chica / gastos sin factura.',
             'area_id.required'      => 'Selecciona un área.',
             'fecha.required'        => 'La fecha es obligatoria.',
+            'obra_civil_material_request_items.*.quantity.gt' => 'La cantidad a cargar debe ser mayor a cero.',
         ];
     }
-
-    
 }
-

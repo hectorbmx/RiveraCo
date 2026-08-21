@@ -48,4 +48,10 @@ class CivilConcept extends Model
     {
         return $this->hasMany(CivilEstimationItem::class, 'civil_concept_id');
     }
+
+    public function workReportItems()
+    {
+        return $this->hasMany(CivilWorkReportItem::class, 'civil_concept_id');
+    }
 }
+

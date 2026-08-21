@@ -49,6 +49,10 @@
                    class="rounded-lg border border-[#0B265A] px-4 py-2 text-sm font-semibold text-[#0B265A] hover:bg-blue-50">
                     Ver estimaciones
                 </a>
+                <a href="{{ route('obra_civil.work-reports.index', $obra) }}"
+                   class="rounded-lg border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">
+                    Avances reportados
+                </a>
             @endif
             <a href="{{ route('obra_civil.index') }}"
                class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
@@ -194,6 +198,7 @@
                                                     <th class="px-4 py-2 text-right">Cantidad</th>
                                                     <th class="px-4 py-2 text-right">Precio</th>
                                                     <th class="px-4 py-2 text-right">Importe</th>
+                                                    <th class="px-4 py-2 text-right">Reportado</th>
                                                     <th class="px-4 py-2 text-right">Estimado</th>
                                                     <th class="px-4 py-2 text-right">Disponible</th>
                                                 </tr>
@@ -202,6 +207,7 @@
                                                 <?php foreach ($partida->concepts as $concept): ?>
                                                     <?php
                                                         $balance = $balances->get($concept->id, []);
+                                                        $reportedQuantity = (float) ($reportedQuantities->get($concept->id, 0) ?? 0);
                                                         $usedQuantity = (float) ($balance['used_quantity'] ?? 0);
                                                         $usedAmount = (float) ($balance['used_amount'] ?? 0);
                                                         $availableQuantity = (float) ($balance['available_quantity'] ?? $concept->budget_quantity);
@@ -215,6 +221,18 @@
                                                         <td class="px-4 py-2 text-right tabular-nums">{{ number_format((float) $concept->budget_quantity, 4) }}</td>
                                                         <td class="px-4 py-2 text-right tabular-nums">${{ number_format((float) $concept->unit_price, 4) }}</td>
                                                         <td class="px-4 py-2 text-right tabular-nums font-semibold">${{ number_format((float) $concept->budget_amount, 2) }}</td>
+                                                        <td class="px-4 py-2 text-right tabular-nums {{ $reportedQuantity > 0 ? 'text-blue-700' : 'text-slate-400' }}">
+                                                            @if($reportedQuantity > 0)
+                                                                <a href="{{ route('obra_civil.concept.reports', [$obra, $concept]) }}" class="inline-block rounded-md px-2 py-1 font-semibold hover:bg-blue-50 hover:underline">
+                                                                    <div>{{ number_format($reportedQuantity, 4) }}</div>
+                                                                    <div class="text-xs font-semibold">Ver reportes</div>
+                                                                </a>
+                                                            @else
+                                                                <div>{{ number_format($reportedQuantity, 4) }}</div>
+                                                                <div class="text-xs font-semibold">Campo</div>
+                                                            @endif
+                                                        </td>
+
                                                         <td class="px-4 py-2 text-right tabular-nums text-slate-600">
                                                             <div>{{ number_format($usedQuantity, 4) }}</div>
                                                             <div class="text-xs">${{ number_format($usedAmount, 2) }}</div>
@@ -547,3 +565,6 @@ function obraCivilEstimacionModal(concepts) {
 }
 </script>
 @endpush
+
+
+

@@ -9,6 +9,8 @@ use App\Http\Controllers\Api\V1\ComisionController;
 use App\Http\Controllers\Api\V1\MaquinaRegistroController;
 use App\Http\Controllers\Api\V1\ResidenteComisionController;
 use App\Http\Controllers\Api\V1\ResidenteReposicionGastoController;
+use App\Http\Controllers\Api\V1\ResidenteObraCivilAvanceController;
+use App\Http\Controllers\Api\V1\ResidenteObraCivilMaterialController;
 use App\Http\Controllers\Api\V1\Gerencial\ObrasGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\MaquinasGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\PersonalGerencialController;
@@ -83,6 +85,13 @@ Route::prefix('v1')->group(function () {
         Route::patch('residente/comisiones/{comision}/etapas/{etapa}', [ResidenteComisionController::class, 'updateEtapa']);
         Route::post('residente/comisiones/{comision}/etapas/{etapa}/fotos', [ResidenteComisionController::class, 'storeFoto']);
 
+        Route::get('residente/obra-civil/avance/catalogo', [ResidenteObraCivilAvanceController::class, 'catalogo']);
+        Route::get('residente/obra-civil/avance/reportes', [ResidenteObraCivilAvanceController::class, 'reportes']);
+        Route::post('residente/obra-civil/avance/reportes', [ResidenteObraCivilAvanceController::class, 'store']);
+        Route::get('residente/obra-civil/materiales', [ResidenteObraCivilMaterialController::class, 'index']);
+        Route::get('residente/obra-civil/materiales/solicitudes', [ResidenteObraCivilMaterialController::class, 'requests']);
+        Route::post('residente/obra-civil/materiales/solicitudes', [ResidenteObraCivilMaterialController::class, 'store']);
+
         Route::prefix('residente/reposicion-gastos')->group(function () {
             Route::get('/', [ResidenteReposicionGastoController::class, 'index']);
             Route::get('/catalogo', [ResidenteReposicionGastoController::class, 'catalogo']);
@@ -144,3 +153,5 @@ Route::prefix('agent')->group(function () {
         Route::post('logout', [\App\Http\Controllers\Api\Agent\AgentAuthController::class, 'logout']);
     });
 });
+
+

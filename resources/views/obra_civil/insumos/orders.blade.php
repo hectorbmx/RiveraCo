@@ -38,7 +38,7 @@
             <div>
                 <div class="text-xs font-semibold uppercase text-slate-500">Ordenes activas</div>
                 <div class="mt-1 font-semibold text-slate-900">{{ number_format((int) $balance['ordenes_count']) }}</div>
-                <div class="text-xs text-slate-500">Canceladas no afectan saldo</div>
+                <div class="text-xs text-slate-500">Solo autorizadas/verificadas afectan saldo</div>
             </div>
         </div>
     </section>
@@ -53,6 +53,7 @@
                     <tr>
                         <th class="px-5 py-3 text-left">OC</th>
                         <th class="px-5 py-3 text-left">Proveedor</th>
+                        <th class="px-5 py-3 text-left">Solicitud origen</th>
                         <th class="px-5 py-3 text-left">Estado</th>
                         <th class="px-5 py-3 text-left">Fecha</th>
                         <th class="px-5 py-3 text-right">Cantidad</th>
@@ -69,6 +70,16 @@
                                 </a>
                             </td>
                             <td class="px-5 py-3 text-slate-700">{{ $detalle->proveedor_nombre ?? '-' }}</td>
+                            <td class="px-5 py-3 text-slate-700">
+                                @if($detalle->material_request_id)
+                                    <a href="{{ route('obra_civil.material-requests.show', [$obra, $detalle->material_request_id]) }}" class="font-semibold text-blue-700 hover:underline">
+                                        {{ $detalle->material_request_folio }}
+                                    </a>
+                                    <div class="text-xs text-slate-400">{{ str_replace('_', ' ', strtoupper($detalle->material_request_status ?? '')) }}</div>
+                                @else
+                                    <span class="text-xs text-slate-400">Sin solicitud</span>
+                                @endif
+                            </td>
                             <td class="px-5 py-3 text-slate-700">{{ $detalle->estado }}</td>
                             <td class="px-5 py-3 text-slate-700">{{ $detalle->fecha ? \Carbon\Carbon::parse($detalle->fecha)->format('d/m/Y') : '-' }}</td>
                             <td class="px-5 py-3 text-right tabular-nums">{{ number_format((float) $detalle->cantidad, 4) }}</td>
@@ -77,7 +88,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-5 py-8 text-center text-sm text-slate-500">Este insumo aun no tiene ordenes de compra relacionadas.</td>
+                            <td colspan="8" class="px-5 py-8 text-center text-sm text-slate-500">Este insumo aun no tiene ordenes de compra relacionadas.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -86,3 +97,4 @@
     </section>
 </div>
 @endsection
+

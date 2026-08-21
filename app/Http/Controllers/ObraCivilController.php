@@ -12,6 +12,7 @@ use App\Services\CivilCatalogExcelParser;
 use App\Services\CivilConceptBalanceService;
 use App\Services\ObraCivilInsumoExcelParser;
 use App\Services\ObraCivilInsumoBalanceService;
+use App\Services\ObraCivil\ObraCivilMaterialRequestIndexService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -237,6 +238,7 @@ class ObraCivilController extends Controller
             ->limit(20)
             ->get();
         $balances = collect();
+        $reportedQuantities = collect();
 
         if ($activeImport) {
             $conceptIds = $activeImport->buildings
@@ -245,9 +247,20 @@ class ObraCivilController extends Controller
                 ->pluck('id');
 
             $balances = app(CivilConceptBalanceService::class)->summaries($conceptIds);
+
+            if ($conceptIds->isNotEmpty() && Schema::hasTable('civil_work_reports') && Schema::hasTable('civil_work_report_items')) {
+                $reportedQuantities = DB::table('civil_work_report_items as i')
+                    ->join('civil_work_reports as r', 'r.id', '=', 'i.civil_work_report_id')
+                    ->where('r.obra_id', $obra->id)
+                    ->whereIn('r.status', ['pendiente', 'en_revision', 'aprobado'])
+                    ->whereIn('i.civil_concept_id', $conceptIds)
+                    ->selectRaw('i.civil_concept_id, COALESCE(SUM(i.quantity), 0) as reported_quantity')
+                    ->groupBy('i.civil_concept_id')
+                    ->pluck('reported_quantity', 'civil_concept_id');
+            }
         }
 
-        return view('obra_civil.details', compact('obra', 'imports', 'activeImport', 'drafts', 'balances', 'activeInsumoImport', 'insumoStats'));
+        return view('obra_civil.details', compact('obra', 'imports', 'activeImport', 'drafts', 'balances', 'reportedQuantities', 'activeInsumoImport', 'insumoStats'));
     }
 
     public function insumos(Request $request, Obra $obra)
@@ -288,9 +301,10 @@ class ObraCivilController extends Controller
                 });
             })
             ->orderBy('sort_order');
-
         $insumos = $insumosQuery->get();
         $insumoBalances = $allInsumoBalances->only($insumos->pluck('id')->all());
+        $requestedPendingQuantities = app(ObraCivilMaterialRequestIndexService::class)
+            ->pendingQuantitiesByInsumo($obra, $insumos->pluck('id'));
 
         $insumoStats = [
             'total' => $allActiveInsumos->count(),
@@ -302,7 +316,7 @@ class ObraCivilController extends Controller
             'usado_total' => $allInsumoBalances->sum(fn ($balance) => (float) ($balance['used_amount'] ?? 0)),
         ];
 
-        return view('obra_civil.insumos.index', compact('obra', 'insumoImports', 'activeInsumoImport', 'insumos', 'insumoStats', 'insumoBalances', 'search'));
+        return view('obra_civil.insumos.index', compact('obra', 'insumoImports', 'activeInsumoImport', 'insumos', 'insumoStats', 'insumoBalances', 'requestedPendingQuantities', 'search'));
     }
 
     public function destroyInsumoImport(Obra $obra, ObraCivilInsumoImport $import)
@@ -481,10 +495,14 @@ class ObraCivilController extends Controller
         $detalles = DB::table('orden_compra_detalles as d')
             ->join('ordenes_compra as oc', 'oc.id', '=', 'd.orden_compra_id')
             ->leftJoin('proveedores as p', 'p.id', '=', 'oc.proveedor_id')
-            ->where('d.civil_concept_id', $concept->id)
+            ->leftJoin('obra_civil_material_request_items as mri', 'mri.id', '=', 'd.obra_civil_material_request_item_id')
+            ->leftJoin('obra_civil_material_requests as mr', 'mr.id', '=', 'mri.obra_civil_material_request_id')
+            ->where('d.obra_civil_insumo_id', $insumo->id)
             ->select([
                 'd.id as detalle_id',
                 'd.orden_compra_id',
+                'd.descripcion',
+                'd.unidad',
                 'd.cantidad',
                 'd.precio_unitario',
                 'd.importe',
@@ -495,6 +513,9 @@ class ObraCivilController extends Controller
                 'oc.estado',
                 'oc.fecha',
                 'p.nombre as proveedor_nombre',
+                'mr.id as material_request_id',
+                'mr.folio as material_request_folio',
+                'mr.status as material_request_status',
             ])
             ->orderByDesc('oc.id')
             ->orderByDesc('d.id')
@@ -514,6 +535,8 @@ class ObraCivilController extends Controller
         $detalles = DB::table('orden_compra_detalles as d')
             ->join('ordenes_compra as oc', 'oc.id', '=', 'd.orden_compra_id')
             ->leftJoin('proveedores as p', 'p.id', '=', 'oc.proveedor_id')
+            ->leftJoin('obra_civil_material_request_items as mri', 'mri.id', '=', 'd.obra_civil_material_request_item_id')
+            ->leftJoin('obra_civil_material_requests as mr', 'mr.id', '=', 'mri.obra_civil_material_request_id')
             ->where('d.obra_civil_insumo_id', $insumo->id)
             ->select([
                 'd.id as detalle_id',
@@ -530,6 +553,9 @@ class ObraCivilController extends Controller
                 'oc.estado',
                 'oc.fecha',
                 'p.nombre as proveedor_nombre',
+                'mr.id as material_request_id',
+                'mr.folio as material_request_folio',
+                'mr.status as material_request_status',
             ])
             ->orderByDesc('oc.id')
             ->orderByDesc('d.id')
@@ -599,6 +625,7 @@ class ObraCivilController extends Controller
         abort_unless((int) $import->obra_id === (int) $obra->id, 404);
     }
 }
+
 
 
 

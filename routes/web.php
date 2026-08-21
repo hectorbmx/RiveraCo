@@ -8,6 +8,10 @@ use App\Http\Controllers\ClienteDocumentoController;
 use App\Http\Controllers\ClientePortalController;
 use App\Http\Controllers\ObraController;
 use App\Http\Controllers\ObraCivilController;
+use App\Http\Controllers\ObraCivilConceptReportController;
+use App\Http\Controllers\ObraCivilFieldReviewController;
+use App\Http\Controllers\ObraCivilMaterialRequestController;
+use App\Http\Controllers\ObraCivilWorkReportController;
 use App\Http\Controllers\ObraContratoController;
 use App\Http\Controllers\ObraPlanoController;
 use App\Http\Controllers\ObraPresupuestoController;
@@ -559,15 +563,30 @@ Route::middleware('auth','verified')->group(function () {
         Route::delete('catalogos/{import}', [ObraCivilController::class, 'destroyOrphanCatalog'])->name('catalog.destroy-orphan');
         Route::post('{obra}/insumos', [ObraCivilController::class, 'uploadInsumos'])->name('insumos.upload');
         Route::get('{obra}/insumos', [ObraCivilController::class, 'insumos'])->name('insumos.index');
+        Route::get('{obra}/solicitudes-material', [ObraCivilMaterialRequestController::class, 'index'])->name('material-requests.index');
+        Route::get('{obra}/solicitudes-material/{materialRequest}', [ObraCivilMaterialRequestController::class, 'show'])->name('material-requests.show');
+        Route::post('{obra}/solicitudes-material/{materialRequest}/aprobar-completo', [ObraCivilMaterialRequestController::class, 'approveFull'])->name('material-requests.approve-full');
+        Route::post('{obra}/solicitudes-material/{materialRequest}/aprobar-cantidades', [ObraCivilMaterialRequestController::class, 'approveQuantities'])->name('material-requests.approve-quantities');
+        Route::post('{obra}/solicitudes-material/{materialRequest}/rechazar', [ObraCivilMaterialRequestController::class, 'reject'])->name('material-requests.reject');
         Route::delete('{obra}/insumos/{import}', [ObraCivilController::class, 'destroyInsumoImport'])->name('insumos.destroy');
         Route::get('{obra}/insumos/{insumo}/ordenes', [ObraCivilController::class, 'insumoOrders'])->name('insumos.orders');
         Route::get('{obra}/catalogo/preview/{import}', [ObraCivilController::class, 'preview'])->name('catalog.preview');
         Route::delete('{obra}/catalogo/{import}', [ObraCivilController::class, 'destroyCatalog'])->name('catalog.destroy');
         Route::post('{obra}/catalogo/preview/{import}', [ObraCivilController::class, 'confirmCatalog'])->name('catalog.confirm');
         Route::get('{obra}/detalles', [ObraCivilController::class, 'details'])->name('details');
+        Route::get('{obra}/revision-campo', [ObraCivilFieldReviewController::class, 'index'])->name('field-review.index');
+        Route::get('{obra}/reportes-campo', [ObraCivilWorkReportController::class, 'index'])->name('work-reports.index');
+        Route::get('{obra}/reportes-campo/{report}', [ObraCivilWorkReportController::class, 'show'])->name('work-reports.show');
+        Route::patch('{obra}/revision-campo/avances/{report}/aprobar', [ObraCivilFieldReviewController::class, 'approveReport'])->name('field-review.reports.approve');
+        Route::patch('{obra}/revision-campo/avances/{report}/rechazar', [ObraCivilFieldReviewController::class, 'rejectReport'])->name('field-review.reports.reject');
+        Route::post('{obra}/revision-campo/avances/{report}/convertir-estimacion', [ObraCivilFieldReviewController::class, 'convertReportToEstimation'])->name('field-review.reports.convert-estimation');
+        Route::patch('{obra}/revision-campo/materiales/{materialRequest}/aprobar', [ObraCivilFieldReviewController::class, 'approveMaterialRequest'])->name('field-review.material.approve');
+        Route::patch('{obra}/revision-campo/materiales/{materialRequest}/rechazar', [ObraCivilFieldReviewController::class, 'rejectMaterialRequest'])->name('field-review.material.reject');
+        Route::post('{obra}/revision-campo/materiales/{materialRequest}/convertir-oc', [ObraCivilFieldReviewController::class, 'convertMaterialRequestToOrdenCompra'])->name('field-review.material.convert-oc');
         Route::get('{obra}/estimaciones', [ObraCivilController::class, 'estimationsIndex'])->name('estimations.index');
         Route::post('{obra}/estimaciones', [ObraCivilController::class, 'storeEstimation'])->name('estimations.store');
         Route::get('{obra}/estimaciones/{estimation}', [ObraCivilController::class, 'showEstimation'])->name('estimations.show');
+        Route::get('{obra}/conceptos/{concept}/reportes', [ObraCivilConceptReportController::class, 'show'])->name('concept.reports');
         Route::get('{obra}/conceptos/{concept}/ordenes', [ObraCivilController::class, 'conceptOrders'])->name('concept.orders');
     });
     Route::get('obras/{obra}/asistencias/reporte', [ObraController::class, 'reporteAsistencias'])
@@ -654,6 +673,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::get('ordenes_compra/{orden_compra}/print', [OrdenCompraController::class, 'print'])->name('ordenes_compra.print');
 
     Route::get('ordenes-compra/partidas-obra/{obra_id}', [OrdenCompraController::class, 'partidasPorObra'])->name('ordenes_compra.partidas_obra');
+    Route::get('ordenes-compra/solicitudes-material/obra/{obra}', [OrdenCompraController::class, 'solicitudesMaterialAprobadasPorObra'])->name('ordenes_compra.solicitudes_material_obra');
     Route::get('ordenes-compra/{orden_compra}/conceptos-civiles/buscar', [OrdenCompraController::class, 'buscarConceptosCivil'])->name('ordenes_compra.conceptos_civiles.buscar');
     Route::get('ordenes-compra/{orden_compra}/insumos-obra/buscar', [OrdenCompraController::class, 'buscarInsumosObra'])->name('ordenes_compra.insumos_obra.buscar');
     Route::get('ordenes-compra/exportar-pagos/{formaPago}',[OrdenCompraController::class, 'exportarListaPagos'])->name('ordenes_compra.exportar_pagos');
@@ -885,3 +905,14 @@ Route::prefix('pagos-proveedores')
 });
 
 require __DIR__.'/auth.php';
+
+
+
+
+
+
+
+
+
+
+

@@ -80,6 +80,7 @@
         id="obra_id"
         class="w-full border p-2 rounded"
         data-partidas-url="{{ route('ordenes_compra.partidas_obra', ['obra_id' => '__ID__']) }}"
+        data-material-requests-url="{{ route('ordenes_compra.solicitudes_material_obra', ['obra' => '__ID__']) }}"
     >
         <option value="">Compra general</option>
         @foreach($obras as $o)
@@ -88,6 +89,44 @@
             </option>
         @endforeach
     </select>
+</div>
+
+<div id="material_request_wrapper" class="col-span-2 hidden rounded-xl border border-blue-100 bg-blue-50/40 p-4">
+    <div class="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <div>
+            <label class="block text-sm font-semibold text-slate-800">Materiales aprobados pendientes de OC</label>
+            <p class="text-xs text-slate-500">Selecciona solo los renglones que iran con este proveedor. Puedes ajustar la cantidad a cargar.</p>
+        </div>
+        <span id="material_request_selected_count" class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-blue-700 shadow-sm">0 seleccionados</span>
+    </div>
+
+    <p id="material_requests_cargando" class="text-xs text-slate-400 mt-1 hidden">Cargando materiales aprobados…</p>
+    <p id="material_requests_sin_datos" class="text-xs text-slate-400 mt-1 hidden">Esta obra no tiene materiales aprobados pendientes de OC.</p>
+
+    <div id="material_request_table_wrapper" class="hidden overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <table class="min-w-full text-sm">
+            <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+                <tr>
+                    <th class="px-3 py-2 text-left">Usar</th>
+                    <th class="px-3 py-2 text-left">Solicitud</th>
+                    <th class="px-3 py-2 text-left">Codigo</th>
+                    <th class="px-3 py-2 text-left">Material</th>
+                    <th class="px-3 py-2 text-right">Autorizado</th>
+                    <th class="px-3 py-2 text-right">OC borrador</th>
+                    <th class="px-3 py-2 text-right">Pendiente</th>
+                    <th class="px-3 py-2 text-right">A cargar</th>
+                </tr>
+            </thead>
+            <tbody id="material_request_items_body" class="divide-y divide-slate-100"></tbody>
+        </table>
+    </div>
+
+    @error('obra_civil_material_request_items')
+        <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+    @enderror
+    @error('obra_civil_material_request_items.*.quantity')
+        <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+    @enderror
 </div>
  
 {{-- Select de partidas — se muestra solo cuando hay obra seleccionada --}}
@@ -258,6 +297,166 @@
     // Si al cargar la página ya hay una obra seleccionada (old input / edit)
     if (obraSelect.value) {
         cargarPartidas(obraSelect.value);
+    }
+})();
+</script>
+
+<script>
+(function () {
+    const obraSelect = document.getElementById('obra_id');
+    const wrapper = document.getElementById('material_request_wrapper');
+    const body = document.getElementById('material_request_items_body');
+    const tableWrapper = document.getElementById('material_request_table_wrapper');
+    const msgCargando = document.getElementById('material_requests_cargando');
+    const msgSinDatos = document.getElementById('material_requests_sin_datos');
+    const selectedCount = document.getElementById('material_request_selected_count');
+    const centroCostoSelect = document.getElementById('centro_costo_id');
+
+    if (!obraSelect || !wrapper || !body) return;
+
+    const urlBase = obraSelect.dataset.materialRequestsUrl;
+
+    function numberFmt(value) {
+        return Number(value || 0).toLocaleString('es-MX', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 4
+        });
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    function resetSolicitudes() {
+        body.innerHTML = '';
+        msgCargando?.classList.add('hidden');
+        msgSinDatos?.classList.add('hidden');
+        tableWrapper?.classList.add('hidden');
+        selectedCount.textContent = '0 seleccionados';
+    }
+
+    function syncIndexes() {
+        let index = 0;
+        body.querySelectorAll('tr[data-request-item-id]').forEach((row) => {
+            const checkbox = row.querySelector('.js-material-request-check');
+            const hiddenId = row.querySelector('.js-material-request-id');
+            const quantity = row.querySelector('.js-material-request-quantity');
+
+            if (!checkbox?.checked) {
+                hiddenId.disabled = true;
+                quantity.disabled = true;
+                row.classList.remove('bg-blue-50');
+                return;
+            }
+
+            hiddenId.disabled = false;
+            quantity.disabled = false;
+            hiddenId.name = `obra_civil_material_request_items[${index}][id]`;
+            quantity.name = `obra_civil_material_request_items[${index}][quantity]`;
+            row.classList.add('bg-blue-50');
+            index++;
+        });
+
+        selectedCount.textContent = `${index} seleccionado${index === 1 ? '' : 's'}`;
+    }
+
+    function renderItems(items) {
+        body.innerHTML = items.map((item) => {
+            const requestItemId = Number(item.request_item_id || 0);
+            const maxQuantity = Number(item.available_to_load_quantity || 0);
+            const draftQuantity = Number(item.draft_quantity || 0);
+            const unit = item.unidad || '';
+            const draftBadge = draftQuantity > 0
+                ? `<div class="text-[11px] text-amber-600">Hay ${numberFmt(draftQuantity)} ${escapeHtml(unit)} en borrador</div>`
+                : '';
+
+            return `
+                <tr data-request-item-id="${requestItemId}">
+                    <td class="px-3 py-3 align-top">
+                        <input type="checkbox" class="js-material-request-check rounded border-slate-300">
+                        <input type="hidden" class="js-material-request-id" value="${requestItemId}" disabled>
+                    </td>
+                    <td class="px-3 py-3 align-top font-semibold text-blue-700">${escapeHtml(item.request_folio || '-')}</td>
+                    <td class="px-3 py-3 align-top">${escapeHtml(item.codigo || '-')}</td>
+                    <td class="px-3 py-3 align-top">
+                        <div class="font-medium text-slate-800">${escapeHtml(item.concepto || 'Material')}</div>
+                        <div class="text-xs text-slate-500">${escapeHtml(item.solicitante || 'Residente')}</div>
+                        ${item.resident_notes ? `<div class="mt-1 text-xs text-slate-400">${escapeHtml(item.resident_notes)}</div>` : ''}
+                    </td>
+                    <td class="px-3 py-3 text-right align-top">${numberFmt(item.approved_quantity)}<div class="text-xs text-slate-400">${escapeHtml(unit)}</div></td>
+                    <td class="px-3 py-3 text-right align-top">${numberFmt(draftQuantity)}${draftBadge}</td>
+                    <td class="px-3 py-3 text-right align-top font-semibold text-emerald-700">${numberFmt(maxQuantity)}<div class="text-xs text-slate-400">${escapeHtml(unit)}</div></td>
+                    <td class="px-3 py-3 text-right align-top">
+                        <input type="number" min="0.0001" step="0.0001" max="${maxQuantity}" value="${maxQuantity}" class="js-material-request-quantity w-28 rounded border border-slate-300 p-2 text-right" disabled>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        body.querySelectorAll('.js-material-request-check').forEach((checkbox) => {
+            checkbox.addEventListener('change', syncIndexes);
+        });
+        body.querySelectorAll('.js-material-request-quantity').forEach((input) => {
+            input.addEventListener('input', () => {
+                const max = Number(input.max || 0);
+                const value = Number(input.value || 0);
+                if (value > max) input.value = max;
+            });
+        });
+
+        syncIndexes();
+    }
+
+    async function cargarSolicitudes(obraId) {
+        resetSolicitudes();
+
+        if (!obraId || !urlBase) {
+            wrapper.classList.add('hidden');
+            return;
+        }
+
+        wrapper.classList.remove('hidden');
+        msgCargando?.classList.remove('hidden');
+
+        try {
+            const url = urlBase.replace('__ID__', obraId);
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            const payload = await res.json();
+            const items = Array.isArray(payload.data) ? payload.data : [];
+
+            msgCargando?.classList.add('hidden');
+
+            if (!items.length) {
+                msgSinDatos?.classList.remove('hidden');
+                return;
+            }
+
+            tableWrapper?.classList.remove('hidden');
+            renderItems(items);
+        } catch (error) {
+            msgCargando?.classList.add('hidden');
+            msgSinDatos?.classList.remove('hidden');
+            console.error('Error cargando materiales aprobados:', error);
+        }
+    }
+
+    obraSelect.addEventListener('change', () => cargarSolicitudes(obraSelect.value));
+    centroCostoSelect?.addEventListener('change', () => {
+        if (!centroCostoSelect.value) return;
+        resetSolicitudes();
+        wrapper.classList.add('hidden');
+    });
+
+    if (obraSelect.value) {
+        cargarSolicitudes(obraSelect.value);
     }
 })();
 </script>
@@ -550,4 +749,6 @@
 })();
 </script>
 @endpush
+
+
 
