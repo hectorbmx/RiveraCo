@@ -721,7 +721,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
         ];
 
         $product['taxes'] = match (true) {
-            $tipoIva === 'exento' => [['type' => 'IVA', 'factor' => 'Exento']],
+            $tipoIva === 'exento' => [['type' => 'IVA', 'rate' => 0.0, 'factor' => 'Exento']],
             $tipoIva === '0' => [['type' => 'IVA', 'rate' => 0.0, 'factor' => 'Tasa']],
             in_array($tipoIva, ['0.16', '0.08'], true) => [['type' => 'IVA', 'rate' => $ivaTasaNum]],
             default => [],
@@ -1000,7 +1000,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
     ];
 
     $product['taxes'] = match(true) {
-        $tipoIva === 'exento'                    => [['type' => 'IVA', 'factor' => 'Exento']],
+        $tipoIva === 'exento'                    => [['type' => 'IVA', 'rate' => 0.0, 'factor' => 'Exento']],
         $tipoIva === '0'                         => [['type' => 'IVA', 'rate' => 0.0, 'factor' => 'Tasa']],
         in_array($tipoIva, ['0.16', '0.08'])     => [['type' => 'IVA', 'rate' => $ivaTasaNum]],
         default                                  => [], // sin_iva
@@ -1322,11 +1322,12 @@ $invoice = $facturapi->Invoices->create($payload);
                     'retenciones' => $lineRetencion,
                     'total' => $lineTotal,
 
-                    'taxes' => in_array($tipoIva, ['0.16', '0.08', '0'])
+                    'taxes' => in_array($tipoIva, ['0.16', '0.08', '0', 'exento'])
                         ? [
                             [
                                 'type' => 'IVA',
                                 'rate' => $ivaTasaNum,
+                                'factor' => $tipoIva === 'exento' ? 'Exento' : 'Tasa',
                             ],
                         ]
                         : null,
