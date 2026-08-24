@@ -104,6 +104,12 @@ class ObraFacturaBorrador extends Model
     {
         return self::tipoIvaLabels()[$this->tipo_iva_resolved] ?? 'IVA 16%';
     }
+
+    public function getComplementoConstruccionActivoAttribute(): bool
+    {
+        return (bool) $this->usar_complemento_construccion && ! empty($this->complemento_construccion);
+    }
+
     public static function estatusLabels(): array
     {
         return [

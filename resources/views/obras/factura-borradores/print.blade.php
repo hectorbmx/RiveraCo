@@ -205,6 +205,23 @@
             </tbody>
         </table>
 
+
+        @if($borrador->complemento_construccion_activo)
+            @php($cc = $borrador->complemento_construccion ?: [])
+            <section class="box">
+                <h2>Complemento Servicios Parciales de Construccion</h2>
+                <div class="row"><span class="label">Permiso / licencia</span><span>{{ data_get($cc, 'num_per_lico_aut') ?: '-' }}</span></div>
+                <div class="row"><span class="label">Calle</span><span>{{ data_get($cc, 'calle') ?: '-' }}</span></div>
+                <div class="row"><span class="label">No. exterior</span><span>{{ data_get($cc, 'no_exterior') ?: '-' }}</span></div>
+                <div class="row"><span class="label">No. interior</span><span>{{ data_get($cc, 'no_interior') ?: '-' }}</span></div>
+                <div class="row"><span class="label">Colonia</span><span>{{ data_get($cc, 'colonia') ?: '-' }}</span></div>
+                <div class="row"><span class="label">Localidad</span><span>{{ data_get($cc, 'localidad') ?: '-' }}</span></div>
+                <div class="row"><span class="label">Municipio</span><span>{{ data_get($cc, 'municipio') ?: '-' }}</span></div>
+                <div class="row"><span class="label">Estado</span><span>{{ \App\Models\ObraFacturaBorrador::estadosSatMexico()[data_get($cc, 'estado')] ?? data_get($cc, 'estado', '-') }}</span></div>
+                <div class="row"><span class="label">Codigo postal</span><span>{{ data_get($cc, 'codigo_postal') ?: '-' }}</span></div>
+                <div class="row"><span class="label">Referencia</span><span>{{ data_get($cc, 'referencia') ?: '-' }}</span></div>
+            </section>
+        @endif
         <section class="totals">
             <div class="row"><span>Subtotal</span><strong>${{ number_format((float) $borrador->subtotal, 2) }}</strong></div>
             <div class="row"><span>{{ $borrador->tipo_iva_label }}</span><strong>${{ number_format((float) $borrador->iva, 2) }}</strong></div>

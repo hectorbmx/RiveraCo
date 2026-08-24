@@ -1849,6 +1849,18 @@ public function storeFacturaBorrador(Request $request, Obra $obra)
         'retencion_tipo' => ['nullable', 'string', 'in:sin_retencion,iva,isr,iva_isr,otra'],
         'retenciones' => ['nullable', 'numeric', 'min:0'],
         'descuentos' => ['nullable', 'numeric', 'min:0'],
+        'usar_complemento_construccion' => ['nullable'],
+        'complemento_construccion' => ['nullable', 'array'],
+        'complemento_construccion.num_per_lico_aut' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:50'],
+        'complemento_construccion.calle' => ['nullable', 'string', 'max:255'],
+        'complemento_construccion.no_exterior' => ['nullable', 'string', 'max:50'],
+        'complemento_construccion.no_interior' => ['nullable', 'string', 'max:50'],
+        'complemento_construccion.colonia' => ['nullable', 'string', 'max:100'],
+        'complemento_construccion.localidad' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:100'],
+        'complemento_construccion.referencia' => ['nullable', 'string', 'max:255'],
+        'complemento_construccion.municipio' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:100'],
+        'complemento_construccion.estado' => ['required_if:usar_complemento_construccion,1', 'nullable', Rule::in(array_keys(ObraFacturaBorrador::estadosSatMexico()))],
+        'complemento_construccion.codigo_postal' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:5'],
     ]);
 
     $cliente = $obra->cliente;
@@ -1865,6 +1877,10 @@ public function storeFacturaBorrador(Request $request, Obra $obra)
     $retenciones = round((float) ($data['retenciones'] ?? 0), 2);
     $descuentos = round((float) ($data['descuentos'] ?? 0), 2);
     $total = round(max(0, $subtotal + $iva - $retenciones - $descuentos), 2);
+    $usarComplementoConstruccion = $request->boolean('usar_complemento_construccion');
+    $complementoConstruccion = $usarComplementoConstruccion
+        ? $this->normalizarComplementoConstruccion($data['complemento_construccion'] ?? [])
+        : null;
 
     $borrador = ObraFacturaBorrador::create([
         'obra_id' => $obra->id,
@@ -1884,6 +1900,8 @@ public function storeFacturaBorrador(Request $request, Obra $obra)
         'retencion_tipo' => $retencionTipo,
         'retenciones' => $retenciones,
         'descuentos' => $descuentos,
+        'usar_complemento_construccion' => $usarComplementoConstruccion,
+        'complemento_construccion' => $complementoConstruccion,
         'total' => $total,
         'estatus' => ObraFacturaBorrador::ESTATUS_PENDIENTE_REVISION,
         'creado_por' => auth()->id(),
@@ -1951,6 +1969,18 @@ public function updateFacturaBorrador(Request $request, Obra $obra, ObraFacturaB
         'retencion_tipo' => ['nullable', 'string', 'in:sin_retencion,iva,isr,iva_isr,otra'],
         'retenciones' => ['nullable', 'numeric', 'min:0'],
         'descuentos' => ['nullable', 'numeric', 'min:0'],
+        'usar_complemento_construccion' => ['nullable'],
+        'complemento_construccion' => ['nullable', 'array'],
+        'complemento_construccion.num_per_lico_aut' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:50'],
+        'complemento_construccion.calle' => ['nullable', 'string', 'max:255'],
+        'complemento_construccion.no_exterior' => ['nullable', 'string', 'max:50'],
+        'complemento_construccion.no_interior' => ['nullable', 'string', 'max:50'],
+        'complemento_construccion.colonia' => ['nullable', 'string', 'max:100'],
+        'complemento_construccion.localidad' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:100'],
+        'complemento_construccion.referencia' => ['nullable', 'string', 'max:255'],
+        'complemento_construccion.municipio' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:100'],
+        'complemento_construccion.estado' => ['required_if:usar_complemento_construccion,1', 'nullable', Rule::in(array_keys(ObraFacturaBorrador::estadosSatMexico()))],
+        'complemento_construccion.codigo_postal' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:5'],
     ]);
 
     $subtotal = round((float) $data['subtotal'], 2);
@@ -1961,6 +1991,10 @@ public function updateFacturaBorrador(Request $request, Obra $obra, ObraFacturaB
     $retenciones = round((float) ($data['retenciones'] ?? 0), 2);
     $descuentos = round((float) ($data['descuentos'] ?? 0), 2);
     $total = round(max(0, $subtotal + $iva - $retenciones - $descuentos), 2);
+    $usarComplementoConstruccion = $request->boolean('usar_complemento_construccion');
+    $complementoConstruccion = $usarComplementoConstruccion
+        ? $this->normalizarComplementoConstruccion($data['complemento_construccion'] ?? [])
+        : null;
 
     $borrador->update([
         'fecha' => $data['fecha'],
@@ -1977,6 +2011,8 @@ public function updateFacturaBorrador(Request $request, Obra $obra, ObraFacturaB
         'retencion_tipo' => $retencionTipo,
         'retenciones' => $retenciones,
         'descuentos' => $descuentos,
+        'usar_complemento_construccion' => $usarComplementoConstruccion,
+        'complemento_construccion' => $complementoConstruccion,
         'total' => $total,
         'estatus' => ObraFacturaBorrador::ESTATUS_PENDIENTE_REVISION,
         'autorizado_por' => null,
@@ -2100,6 +2136,30 @@ public function rechazarFacturaBorrador(Request $request, Obra $obra, ObraFactur
         ->with('success', 'Borrador rechazado correctamente.');
 }
 
+private function normalizarComplementoConstruccion(array $complemento): array
+{
+    $fields = [
+        'num_per_lico_aut',
+        'calle',
+        'codigo_postal',
+        'no_exterior',
+        'no_interior',
+        'colonia',
+        'localidad',
+        'municipio',
+        'estado',
+        'referencia',
+    ];
+
+    $normalized = [];
+
+    foreach ($fields as $field) {
+        $value = trim((string) ($complemento[$field] ?? ''));
+        $normalized[$field] = $field === 'estado' ? strtoupper($value) : $value;
+    }
+
+    return $normalized;
+}
 private function validarBorradorPerteneceAObra(Obra $obra, ObraFacturaBorrador $borrador): void
 {
     if ((int) $borrador->obra_id !== (int) $obra->id) {

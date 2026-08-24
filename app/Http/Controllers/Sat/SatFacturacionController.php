@@ -219,6 +219,7 @@ class SatFacturacionController extends Controller
     $borrador = null;
     $cfdiBorrador = null;
     $prefill = [];
+    $estadosSat = config('sat_catalogs.estados', []);
 
     if ($request->filled('cfdi_borrador_id')) {
         $cfdiBorrador = SatFacturaBorrador::with(['cliente', 'obra', 'empresa'])
@@ -260,6 +261,8 @@ class SatFacturacionController extends Controller
             'amortizacion' => 0,
             'descuento' => (float) $borrador->descuentos,
             'retenciones' => (float) $borrador->retenciones,
+            'usar_complemento_construccion' => (bool) $borrador->usar_complemento_construccion,
+            'complemento_construccion' => $borrador->complemento_construccion ?: [],
             'conceptos' => [[
                 'id' => $borrador->sat_concepto_id,
                 'codigo' => $borrador->conceptoSat?->codigo,
@@ -295,7 +298,8 @@ class SatFacturacionController extends Controller
         'borrador',
         'cfdiBorrador',
         'cfdiBorradores',
-        'prefill'
+        'prefill',
+        'estadosSat'
     ));
 }
 
@@ -645,7 +649,7 @@ public function preview(Request $request, FacturapiService $facturapiService)
         'complemento_construccion.localidad' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:100'],
         'complemento_construccion.referencia' => ['nullable', 'string', 'max:255'],
         'complemento_construccion.municipio' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:100'],
-        'complemento_construccion.estado' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:2'],
+        'complemento_construccion.estado' => ['required_if:usar_complemento_construccion,1', 'nullable', Rule::in(array_keys(config('sat_catalogs.estados', [])))],
         'complemento_construccion.codigo_postal' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:5'],
     ], $this->clienteActivoMessages());
 
@@ -865,7 +869,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
                 'complemento_construccion.localidad' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:100'],
                 'complemento_construccion.referencia' => ['nullable', 'string', 'max:255'],
                 'complemento_construccion.municipio' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:100'],
-                'complemento_construccion.estado' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:2'],
+                'complemento_construccion.estado' => ['required_if:usar_complemento_construccion,1', 'nullable', Rule::in(array_keys(config('sat_catalogs.estados', [])))],
                 'complemento_construccion.codigo_postal' => ['required_if:usar_complemento_construccion,1', 'nullable', 'string', 'max:5'],
             ], $this->clienteActivoMessages());
 

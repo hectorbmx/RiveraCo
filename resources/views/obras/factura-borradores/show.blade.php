@@ -182,6 +182,65 @@
                                     <p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
+                            @php
+                                $cc = old('complemento_construccion', $borrador->complemento_construccion ?: []);
+                                $usarCc = old('usar_complemento_construccion', $borrador->usar_complemento_construccion);
+                            @endphp
+                            <div class="rounded-xl border border-slate-200 bg-white p-4">
+                                <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                    <input type="checkbox" name="usar_complemento_construccion" value="1" @checked((bool) $usarCc) class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                    Agregar complemento Servicios Parciales de Construcción
+                                </label>
+                                <p class="mt-1 text-xs text-slate-500">Si desmarcas esta opción y guardas, el complemento se quitará del borrador.</p>
+
+                                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="md:col-span-3">
+                                        <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Número de permiso, licencia o autorización</label>
+                                        <input type="text" name="complemento_construccion[num_per_lico_aut]" value="{{ old('complemento_construccion.num_per_lico_aut', data_get($cc, 'num_per_lico_aut')) }}" class="w-full rounded-xl border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Calle</label>
+                                        <input type="text" name="complemento_construccion[calle]" value="{{ old('complemento_construccion.calle', data_get($cc, 'calle')) }}" class="w-full rounded-xl border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Código postal</label>
+                                        <input type="text" name="complemento_construccion[codigo_postal]" maxlength="5" value="{{ old('complemento_construccion.codigo_postal', data_get($cc, 'codigo_postal')) }}" class="w-full rounded-xl border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">No. exterior</label>
+                                        <input type="text" name="complemento_construccion[no_exterior]" value="{{ old('complemento_construccion.no_exterior', data_get($cc, 'no_exterior', '.')) }}" class="w-full rounded-xl border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">No. interior</label>
+                                        <input type="text" name="complemento_construccion[no_interior]" value="{{ old('complemento_construccion.no_interior', data_get($cc, 'no_interior', '.')) }}" class="w-full rounded-xl border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Colonia</label>
+                                        <input type="text" name="complemento_construccion[colonia]" value="{{ old('complemento_construccion.colonia', data_get($cc, 'colonia', '.')) }}" class="w-full rounded-xl border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Localidad</label>
+                                        <input type="text" name="complemento_construccion[localidad]" value="{{ old('complemento_construccion.localidad', data_get($cc, 'localidad')) }}" class="w-full rounded-xl border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Municipio</label>
+                                        <input type="text" name="complemento_construccion[municipio]" value="{{ old('complemento_construccion.municipio', data_get($cc, 'municipio')) }}" class="w-full rounded-xl border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Estado</label>
+                                        <select name="complemento_construccion[estado]" class="w-full rounded-xl border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                            <option value="">Selecciona estado</option>
+                                            @foreach(\App\Models\ObraFacturaBorrador::estadosSatMexico() as $estadoKey => $estadoLabel)
+                                                <option value="{{ $estadoKey }}" @selected(old('complemento_construccion.estado', data_get($cc, 'estado')) === $estadoKey)>{{ $estadoLabel }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="md:col-span-3">
+                                        <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Referencia</label>
+                                        <input type="text" name="complemento_construccion[referencia]" value="{{ old('complemento_construccion.referencia', data_get($cc, 'referencia', '.')) }}" class="w-full rounded-xl border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                </div>
+                            </div>
                             <div class="flex justify-end">
                                 <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
                                     Guardar ajustes
@@ -244,6 +303,19 @@
                 </div>
             </div>
 
+
+            @if($borrador->complemento_construccion_activo)
+                @php($cc = $borrador->complemento_construccion ?: [])
+                <div class="rounded-2xl border border-blue-100 bg-blue-50/70 p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold text-slate-900 mb-4">Complemento construcción</h2>
+                    <dl class="grid grid-cols-1 gap-3 text-sm">
+                        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Permiso / licencia</dt><dd class="font-semibold text-slate-900">{{ data_get($cc, 'num_per_lico_aut') ?: '-' }}</dd></div>
+                        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Inmueble</dt><dd class="font-semibold text-slate-900">{{ data_get($cc, 'calle') ?: '-' }}, CP {{ data_get($cc, 'codigo_postal') ?: '-' }}</dd></div>
+                        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Ubicación</dt><dd class="font-semibold text-slate-900">{{ data_get($cc, 'municipio') ?: '-' }}, {{ \App\Models\ObraFacturaBorrador::estadosSatMexico()[data_get($cc, 'estado')] ?? data_get($cc, 'estado', '-') }}</dd></div>
+                        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Referencia</dt><dd class="font-semibold text-slate-900">{{ data_get($cc, 'referencia') ?: '-' }}</dd></div>
+                    </dl>
+                </div>
+            @endif
             <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h2 class="text-lg font-semibold text-slate-900 mb-5">Flujo del borrador</h2>
 

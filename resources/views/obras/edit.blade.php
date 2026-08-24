@@ -4617,6 +4617,8 @@ function relacionFacturasModal() {
                                             'retencion_tipo' => $borrador->retencion_tipo ?: 'sin_retencion',
                                             'retenciones' => (float) $borrador->retenciones,
                                             'descuentos' => (float) $borrador->descuentos,
+                                            'usar_complemento_construccion' => (bool) $borrador->usar_complemento_construccion,
+                                            'complemento_construccion' => $borrador->complemento_construccion ?: [],
                                         ];
                                     @endphp
                                     @can('obra_factura_borradores.print.access')
@@ -5051,6 +5053,66 @@ function relacionFacturasModal() {
                     <input type="hidden" name="iva" :value="Number(borradorForm.iva || 0).toFixed(2)">
                 </div>
 
+
+                <div class="md:col-span-3 rounded-xl border border-slate-200 bg-white px-4 py-4">
+                    <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+                        <input type="checkbox"
+                               name="usar_complemento_construccion"
+                               value="1"
+                               x-model="borradorForm.usar_complemento_construccion"
+                               class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        Agregar complemento Servicios Parciales de Construcción
+                    </label>
+
+                    <div x-show="borradorForm.usar_complemento_construccion" x-cloak class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="md:col-span-3">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Número de permiso, licencia o autorización</label>
+                            <input type="text" name="complemento_construccion[num_per_lico_aut]" x-model="borradorForm.complemento_construccion.num_per_lico_aut" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="Ej. DEUR-1698/24">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Calle del inmueble</label>
+                            <input type="text" name="complemento_construccion[calle]" x-model="borradorForm.complemento_construccion.calle" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Código postal</label>
+                            <input type="text" name="complemento_construccion[codigo_postal]" maxlength="5" x-model="borradorForm.complemento_construccion.codigo_postal" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">No. exterior</label>
+                            <input type="text" name="complemento_construccion[no_exterior]" x-model="borradorForm.complemento_construccion.no_exterior" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">No. interior</label>
+                            <input type="text" name="complemento_construccion[no_interior]" x-model="borradorForm.complemento_construccion.no_interior" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Colonia</label>
+                            <input type="text" name="complemento_construccion[colonia]" x-model="borradorForm.complemento_construccion.colonia" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Localidad</label>
+                            <input type="text" name="complemento_construccion[localidad]" x-model="borradorForm.complemento_construccion.localidad" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Municipio</label>
+                            <input type="text" name="complemento_construccion[municipio]" x-model="borradorForm.complemento_construccion.municipio" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Estado</label>
+                            <select name="complemento_construccion[estado]" x-model="borradorForm.complemento_construccion.estado" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="">Selecciona estado</option>
+                                @foreach(\App\Models\ObraFacturaBorrador::estadosSatMexico() as $estadoKey => $estadoLabel)
+                                    <option value="{{ $estadoKey }}">{{ $estadoLabel }}</option>
+                                @endforeach
+                            </select>
+                            <p class="mt-1 text-[11px] text-slate-500">Clave SAT c_Estado. Nayarit = NAY.</p>
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Referencia</label>
+                            <input type="text" name="complemento_construccion[referencia]" x-model="borradorForm.complemento_construccion.referencia" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                </div>
                 <div class="md:col-span-3">
                     <label class="block text-xs font-semibold text-slate-600 mb-1">IVA generado</label>
                     <input type="text"
@@ -5545,6 +5607,19 @@ function relacionFacturasModal() {
                     retencion_tipo: 'sin_retencion',
                     retenciones: 0,
                     descuentos: 0,
+                    usar_complemento_construccion: false,
+                    complemento_construccion: {
+                        num_per_lico_aut: '',
+                        calle: '',
+                        codigo_postal: '',
+                        no_exterior: '.',
+                        no_interior: '.',
+                        colonia: '.',
+                        localidad: '',
+                        municipio: '',
+                        estado: '',
+                        referencia: '.',
+                    },
                 },
                 pagoForm: {
                     fecha_pago: '',
@@ -5634,6 +5709,19 @@ function relacionFacturasModal() {
                         retencion_tipo: 'sin_retencion',
                         retenciones: 0,
                         descuentos: 0,
+                        usar_complemento_construccion: false,
+                        complemento_construccion: {
+                            num_per_lico_aut: '',
+                            calle: '',
+                            codigo_postal: '',
+                            no_exterior: '.',
+                            no_interior: '.',
+                            colonia: '.',
+                            localidad: '',
+                            municipio: '',
+                            estado: '',
+                            referencia: '.',
+                        },
                     };
                 },
 
@@ -5667,6 +5755,11 @@ function relacionFacturasModal() {
                         retencion_tipo: borrador.retencion_tipo || 'sin_retencion',
                         retenciones: Number(borrador.retenciones || 0),
                         descuentos: Number(borrador.descuentos || 0),
+                        usar_complemento_construccion: Boolean(borrador.usar_complemento_construccion),
+                        complemento_construccion: {
+                            ...this.borradorDefaults().complemento_construccion,
+                            ...(borrador.complemento_construccion || {}),
+                        },
                     };
                     this.recalcularBorradorIva();
                     this.openBorrador = true;

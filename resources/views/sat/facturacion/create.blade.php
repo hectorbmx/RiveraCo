@@ -59,7 +59,7 @@
 
     <form method="POST"
           action="{{ route('sat.facturacion.store') }}"
-          @submit="if ($event.submitter?.dataset.action === 'timbrar') loadingTimbrar = true">
+          @submit="handleSubmit($event)">
 
         @csrf
 
@@ -449,11 +449,16 @@
 
         <div>
             <label class="block text-sm font-medium text-slate-700">Estado</label>
-            <input type="text" name="complemento_construccion[estado]"
-                   value="{{ old('complemento_construccion.estado', data_get($complementoConstruccion, 'estado')) }}"
-                   maxlength="2"
-                   placeholder="Ej. 18"
-                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            <select name="complemento_construccion[estado]"
+                    class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="">Selecciona estado</option>
+                @foreach($estadosSat as $estadoKey => $estadoLabel)
+                    <option value="{{ $estadoKey }}" @selected(old('complemento_construccion.estado', data_get($complementoConstruccion, 'estado')) === $estadoKey)>
+                        {{ $estadoLabel }}
+                    </option>
+                @endforeach
+            </select>
+            <p class="mt-1 text-xs text-slate-500">Clave SAT c_Estado. Nayarit = NAY.</p>
         </div>
 
         <div class="md:col-span-3">
@@ -734,6 +739,7 @@
                             </button>
 
                             <button type="submit"
+                                    data-action="borrador"
                                     formaction="{{ route('sat.facturacion.borradores.store') }}"
                                     formmethod="POST"
                                     formnovalidate
@@ -748,6 +754,8 @@
                             </button>
 
                             <button type="submit"
+                                    data-action="preview"
+                                    @click="loadingTimbrar = false"
                                     formaction="{{ route('sat.facturacion.preview') }}"
                                     formmethod="POST"
                                     formtarget="_blank"
@@ -1157,6 +1165,10 @@ function facturaForm() {
         descToEditText: '',
 
         init() {
+            window.addEventListener('pageshow', () => {
+                this.loadingTimbrar = false;
+            });
+
             this.conceptosSeleccionados = (this.conceptosSeleccionados || []).map((item) => ({
                 id: item.id ?? item.sat_concepto_id ?? null,
                 codigo: item.codigo ?? '',
@@ -1195,6 +1207,17 @@ function facturaForm() {
 
             if (this.selectedRelacionadas.length > 0) {
                 this.usarRelacion = true;
+            }
+        },
+
+        handleSubmit(event) {
+            const action = event.submitter?.dataset?.action || '';
+            this.loadingTimbrar = action === 'timbrar';
+
+            if (action !== 'timbrar') {
+                setTimeout(() => {
+                    this.loadingTimbrar = false;
+                }, 300);
             }
         },
 
