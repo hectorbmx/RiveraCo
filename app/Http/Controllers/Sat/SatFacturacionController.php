@@ -256,9 +256,7 @@ class SatFacturacionController extends Controller
             'uso_cfdi' => $borrador->uso_cfdi ?: 'G03',
             'metodo_pago' => $borrador->metodo_pago ?: 'PUE',
             'forma_pago' => $borrador->forma_pago ?: '03',
-            'tipo_iva' => in_array((string) $ivaTasa, ['0.16', '0.08', '0'], true)
-                ? (string) $ivaTasa
-                : ((float) $borrador->iva > 0 ? '0.16' : '0'),
+            'tipo_iva' => $borrador->tipo_iva_resolved,
             'amortizacion' => 0,
             'descuento' => (float) $borrador->descuentos,
             'retenciones' => (float) $borrador->retenciones,

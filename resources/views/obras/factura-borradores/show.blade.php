@@ -165,6 +165,7 @@
                             <input type="hidden" name="sat_concepto_id" value="{{ old('sat_concepto_id', $borrador->sat_concepto_id) }}">
                             <input type="hidden" name="cantidad" value="{{ old('cantidad', $borrador->cantidad) }}">
                             <input type="hidden" name="subtotal" value="{{ old('subtotal', $borrador->subtotal) }}">
+                            <input type="hidden" name="tipo_iva" value="{{ old('tipo_iva', $borrador->tipo_iva_resolved) }}">
                             <input type="hidden" name="iva_tasa" value="{{ old('iva_tasa', $borrador->iva_tasa) }}">
                             <input type="hidden" name="retencion_tipo" value="{{ old('retencion_tipo', $borrador->retencion_tipo ?: 'sin_retencion') }}">
                             <input type="hidden" name="retenciones" value="{{ old('retenciones', $borrador->retenciones) }}">
@@ -225,7 +226,7 @@
                         <span class="font-semibold tabular-nums">${{ number_format((float) $borrador->subtotal, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-4">
-                        <span class="text-slate-500">IVA{{ $borrador->iva_tasa !== null ? ' (' . rtrim(rtrim(number_format((float) $borrador->iva_tasa * 100, 4), '0'), '.') . '%)' : '' }}</span>
+                        <span class="text-slate-500">{{ $borrador->tipo_iva_label }}</span>
                         <span class="font-semibold tabular-nums">${{ number_format((float) $borrador->iva, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-4">

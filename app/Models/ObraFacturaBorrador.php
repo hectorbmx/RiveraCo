@@ -26,6 +26,7 @@ class ObraFacturaBorrador extends Model
         'concepto_descripcion',
         'cantidad',
         'subtotal',
+        'tipo_iva',
         'iva_tasa',
         'iva',
         'retencion_tipo',
@@ -59,6 +60,50 @@ class ObraFacturaBorrador extends Model
         'facturado_at' => 'datetime',
     ];
 
+    public static function tipoIvaLabels(): array
+    {
+        return [
+            '0.16' => 'IVA 16%',
+            '0.08' => 'IVA 8% (Zona fronteriza)',
+            '0' => 'IVA 0% (Tasa cero)',
+            'exento' => 'Exento (sin traslado)',
+            'sin_iva' => 'Sin IVA (no objeto)',
+        ];
+    }
+
+    public static function ivaTasaForTipo(?string $tipoIva): float
+    {
+        return match ((string) $tipoIva) {
+            '0.16' => 0.16,
+            '0.08' => 0.08,
+            default => 0.0,
+        };
+    }
+
+    public static function tipoIvaFromTasa(float|string|null $ivaTasa): string
+    {
+        $tasa = round((float) ($ivaTasa ?? 0.16), 6);
+
+        return match (true) {
+            abs($tasa - 0.08) < 0.000001 => '0.08',
+            abs($tasa) < 0.000001 => '0',
+            default => '0.16',
+        };
+    }
+
+    public function getTipoIvaResolvedAttribute(): string
+    {
+        $tipoIva = (string) ($this->tipo_iva ?? '');
+
+        return array_key_exists($tipoIva, self::tipoIvaLabels())
+            ? $tipoIva
+            : self::tipoIvaFromTasa($this->iva_tasa);
+    }
+
+    public function getTipoIvaLabelAttribute(): string
+    {
+        return self::tipoIvaLabels()[$this->tipo_iva_resolved] ?? 'IVA 16%';
+    }
     public static function estatusLabels(): array
     {
         return [

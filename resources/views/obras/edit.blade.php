@@ -4467,6 +4467,7 @@ function relacionFacturasModal() {
             'descripcion' => $concepto->descripcion,
             'precio_unitario' => (float) $concepto->precio_unitario,
             'iva_tasa' => (float) $concepto->iva_tasa,
+            'objeto_impuesto' => $concepto->objeto_impuesto,
         ])->values()))"
          class="bg-white border rounded-xl p-4 shadow-sm space-y-6" id="facturacion-tab">
 
@@ -4610,6 +4611,7 @@ function relacionFacturasModal() {
                                             'concepto_descripcion' => $borrador->concepto_descripcion,
                                             'cantidad' => (float) $borrador->cantidad,
                                             'subtotal' => (float) $borrador->subtotal,
+                                            'tipo_iva' => $borrador->tipo_iva_resolved,
                                             'iva_tasa' => (float) $borrador->iva_tasa,
                                             'iva' => (float) $borrador->iva,
                                             'retencion_tipo' => $borrador->retencion_tipo ?: 'sin_retencion',
@@ -5035,14 +5037,17 @@ function relacionFacturasModal() {
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">IVA</label>
-                    <select name="iva_tasa"
-                            x-model.number="borradorForm.iva_tasa"
+                    <select name="tipo_iva"
+                            x-model="borradorForm.tipo_iva"
                             @change="recalcularBorradorIva()"
                             class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
                         <option value="0.16">IVA 16%</option>
-                        <option value="0.08">IVA 8%</option>
-                        <option value="0">IVA 0%</option>
+                        <option value="0.08">IVA 8% (Zona fronteriza)</option>
+                        <option value="0">IVA 0% (Tasa cero)</option>
+                        <option value="exento">Exento (sin traslado)</option>
+                        <option value="sin_iva">Sin IVA (no objeto)</option>
                     </select>
+                    <input type="hidden" name="iva_tasa" :value="Number(borradorForm.iva_tasa || 0).toFixed(6)">
                     <input type="hidden" name="iva" :value="Number(borradorForm.iva || 0).toFixed(2)">
                 </div>
 
@@ -5534,6 +5539,7 @@ function relacionFacturasModal() {
                     concepto_descripcion: '',
                     cantidad: 1,
                     subtotal: 0,
+                    tipo_iva: '0.16',
                     iva_tasa: 0.16,
                     iva: 0,
                     retencion_tipo: 'sin_retencion',
@@ -5622,6 +5628,7 @@ function relacionFacturasModal() {
                         concepto_descripcion: '',
                         cantidad: 1,
                         subtotal: 0,
+                        tipo_iva: '0.16',
                         iva_tasa: 0.16,
                         iva: 0,
                         retencion_tipo: 'sin_retencion',
@@ -5654,6 +5661,7 @@ function relacionFacturasModal() {
                         concepto_descripcion: borrador.concepto_descripcion || '',
                         cantidad: Number(borrador.cantidad || 1),
                         subtotal: Number(borrador.subtotal || 0),
+                        tipo_iva: borrador.tipo_iva || this.tipoIvaFromTasa(borrador.iva_tasa ?? 0.16),
                         iva_tasa: Number(borrador.iva_tasa ?? 0.16),
                         iva: Number(borrador.iva || 0),
                         retencion_tipo: borrador.retencion_tipo || 'sin_retencion',
@@ -5685,7 +5693,7 @@ function relacionFacturasModal() {
 
                     this.borradorForm.concepto_descripcion = concepto.descripcion || '';
                     this.borradorForm.subtotal = subtotal;
-                    this.borradorForm.iva_tasa = Number(concepto.iva_tasa ?? this.borradorForm.iva_tasa ?? 0.16);
+                    this.borradorForm.tipo_iva = this.tipoIvaFromConcepto(concepto);
                     this.recalcularBorradorIva();
                 },
 
@@ -5703,9 +5711,34 @@ function relacionFacturasModal() {
                     this.recalcularBorradorIva();
                 },
 
+                tipoIvaFromTasa(ivaTasa) {
+                    const tasa = Number(ivaTasa || 0);
+
+                    if (Math.abs(tasa - 0.08) < 0.000001) return '0.08';
+                    if (Math.abs(tasa) < 0.000001) return '0';
+
+                    return '0.16';
+                },
+
+                tipoIvaFromConcepto(concepto) {
+                    if (String(concepto.objeto_impuesto || '') === '01') {
+                        return 'sin_iva';
+                    }
+
+                    return this.tipoIvaFromTasa(concepto.iva_tasa ?? this.borradorForm.iva_tasa ?? 0.16);
+                },
+
+                ivaTasaFromTipo(tipoIva) {
+                    if (tipoIva === '0.16') return 0.16;
+                    if (tipoIva === '0.08') return 0.08;
+
+                    return 0;
+                },
+
                 recalcularBorradorIva() {
                     const subtotal = Number(this.borradorForm.subtotal || 0);
-                    const ivaTasa = Number(this.borradorForm.iva_tasa || 0);
+                    const ivaTasa = this.ivaTasaFromTipo(this.borradorForm.tipo_iva);
+                    this.borradorForm.iva_tasa = ivaTasa;
                     this.borradorForm.iva = Number((subtotal * ivaTasa).toFixed(2));
                 },
 
