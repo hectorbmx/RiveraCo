@@ -453,7 +453,7 @@
                     class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                 <option value="">Selecciona estado</option>
                 @foreach($estadosSat as $estadoKey => $estadoLabel)
-                    <option value="{{ $estadoKey }}" @selected($estadoComplementoSeleccionado === (string) $estadoKey)>
+                    <option value="{{ $estadoKey }}" @selected((string) old('complemento_construccion.estado', data_get($complementoConstruccion, 'estado')) === (string) $estadoKey)>
                         {{ $estadoLabel }}
                     </option>
                 @endforeach
