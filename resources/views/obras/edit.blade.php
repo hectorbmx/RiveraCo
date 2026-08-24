@@ -5759,6 +5759,7 @@ function relacionFacturasModal() {
                         complemento_construccion: {
                             ...this.borradorDefaults().complemento_construccion,
                             ...(borrador.complemento_construccion || {}),
+                            estado: String((borrador.complemento_construccion || {}).estado || ''),
                         },
                     };
                     this.recalcularBorradorIva();

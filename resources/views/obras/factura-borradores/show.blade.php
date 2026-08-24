@@ -231,7 +231,7 @@
                                         <select name="complemento_construccion[estado]" class="w-full rounded-xl border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                                             <option value="">Selecciona estado</option>
                                             @foreach(\App\Models\ObraFacturaBorrador::estadosSatMexico() as $estadoKey => $estadoLabel)
-                                                <option value="{{ $estadoKey }}" @selected(old('complemento_construccion.estado', data_get($cc, 'estado')) === $estadoKey)>{{ $estadoLabel }}</option>
+                                                <option value="{{ $estadoKey }}" @selected($estadoCcSeleccionado === (string) $estadoKey)>{{ $estadoLabel }}</option>
                                             @endforeach
                                         </select>
                                     </div>

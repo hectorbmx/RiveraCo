@@ -453,7 +453,7 @@
                     class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                 <option value="">Selecciona estado</option>
                 @foreach($estadosSat as $estadoKey => $estadoLabel)
-                    <option value="{{ $estadoKey }}" @selected(old('complemento_construccion.estado', data_get($complementoConstruccion, 'estado')) === $estadoKey)>
+                    <option value="{{ $estadoKey }}" @selected($estadoComplementoSeleccionado === (string) $estadoKey)>
                         {{ $estadoLabel }}
                     </option>
                 @endforeach
@@ -1168,6 +1168,9 @@ function facturaForm() {
             window.addEventListener('pageshow', () => {
                 this.loadingTimbrar = false;
             });
+            window.addEventListener('focus', () => {
+                this.loadingTimbrar = false;
+            });
 
             this.conceptosSeleccionados = (this.conceptosSeleccionados || []).map((item) => ({
                 id: item.id ?? item.sat_concepto_id ?? null,
@@ -1211,14 +1214,34 @@ function facturaForm() {
         },
 
         handleSubmit(event) {
-            const action = event.submitter?.dataset?.action || '';
-            this.loadingTimbrar = action === 'timbrar';
+            const submitter = event.submitter || document.activeElement;
+            const action = submitter?.dataset?.action || '';
+            const formAction = submitter?.getAttribute?.('formaction') || '';
 
-            if (action !== 'timbrar') {
-                setTimeout(() => {
-                    this.loadingTimbrar = false;
-                }, 300);
+            if (action === 'preview' || action === 'borrador' || formAction.includes('preview')) {
+                this.resetLoadingTimbrarSoon();
+                return;
             }
+
+            this.loadingTimbrar = action === 'timbrar';
+        },
+
+        resetLoadingTimbrarSoon() {
+            this.loadingTimbrar = false;
+
+            if (window.queueMicrotask) {
+                queueMicrotask(() => {
+                    this.loadingTimbrar = false;
+                });
+            }
+
+            setTimeout(() => {
+                this.loadingTimbrar = false;
+            }, 500);
+
+            setTimeout(() => {
+                this.loadingTimbrar = false;
+            }, 1500);
         },
 
         clientesFiltrados() {
