@@ -449,11 +449,19 @@ private function normalizarPayloadBorradorCfdi(Request $request): array
         'relacion_tipo' => $request->input('relacion_tipo'),
         'relacion_uuids' => $request->input('relacion_uuids'),
         'usar_complemento_construccion' => $request->boolean('usar_complemento_construccion'),
-        'complemento_construccion' => $request->input('complemento_construccion', []),
+        'complemento_construccion' => $this->normalizarComplementoConstruccionPayload($request->input('complemento_construccion', [])),
         'conceptos' => $conceptos,
     ];
 }
 
+private function normalizarComplementoConstruccionPayload(array $complemento): array
+{
+    if (array_key_exists('estado', $complemento)) {
+        $complemento['estado'] = ObraFacturaBorrador::normalizarEstadoConstruccion($complemento['estado']);
+    }
+
+    return $complemento;
+}
 private function prefillFromCfdiBorrador(SatFacturaBorrador $borrador): array
 {
     $payload = $borrador->payload ?: [];
@@ -475,7 +483,7 @@ private function prefillFromCfdiBorrador(SatFacturaBorrador $borrador): array
         'relacion_tipo' => $payload['relacion_tipo'] ?? null,
         'relacion_uuids' => $payload['relacion_uuids'] ?? '',
         'usar_complemento_construccion' => (bool) ($payload['usar_complemento_construccion'] ?? false),
-        'complemento_construccion' => $payload['complemento_construccion'] ?? [],
+        'complemento_construccion' => $this->normalizarComplementoConstruccionPayload($payload['complemento_construccion'] ?? []),
         'conceptos' => $payload['conceptos'] ?? [],
     ];
 }
@@ -769,6 +777,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
 
     if ($request->boolean('usar_complemento_construccion')) {
         $cc = $request->input('complemento_construccion', []);
+        $cc['estado'] = ObraFacturaBorrador::normalizarEstadoConstruccion($cc['estado'] ?? null);
         $escapeXml = fn ($value) => htmlspecialchars($value ?? '.', ENT_XML1 | ENT_QUOTES, 'UTF-8');
 
         $payload['complements'] = [
@@ -1078,6 +1087,7 @@ $complementoConstruccionLocal = null;
 
 if ($usarComplementoConstruccion) {
     $cc = $request->input('complemento_construccion', []);
+    $cc['estado'] = ObraFacturaBorrador::normalizarEstadoConstruccion($cc['estado'] ?? null);
     $complementoConstruccionLocal = $cc;
 
     $escapeXml = fn ($value) => htmlspecialchars($value ?? '.', ENT_XML1 | ENT_QUOTES, 'UTF-8');

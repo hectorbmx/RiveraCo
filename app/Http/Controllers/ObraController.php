@@ -2155,7 +2155,9 @@ private function normalizarComplementoConstruccion(array $complemento): array
 
     foreach ($fields as $field) {
         $value = trim((string) ($complemento[$field] ?? ''));
-        $normalized[$field] = $field === 'estado' ? strtoupper($value) : $value;
+        $normalized[$field] = $field === 'estado'
+            ? ObraFacturaBorrador::normalizarEstadoConstruccion($value)
+            : $value;
     }
 
     return $normalized;

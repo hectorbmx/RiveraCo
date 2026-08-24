@@ -458,7 +458,7 @@
                     </option>
                 @endforeach
             </select>
-            <p class="mt-1 text-xs text-slate-500">Clave SAT c_Estado. Nayarit = NAY.</p>
+            <p class="mt-1 text-xs text-slate-500">Clave del complemento: Nayarit = 18.</p>
         </div>
 
         <div class="md:col-span-3">

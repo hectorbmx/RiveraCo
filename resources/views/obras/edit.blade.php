@@ -5105,7 +5105,7 @@ function relacionFacturasModal() {
                                     <option value="{{ $estadoKey }}">{{ $estadoLabel }}</option>
                                 @endforeach
                             </select>
-                            <p class="mt-1 text-[11px] text-slate-500">Clave SAT c_Estado. Nayarit = NAY.</p>
+                            <p class="mt-1 text-[11px] text-slate-500">Clave del complemento: Nayarit = 18.</p>
                         </div>
                         <div class="md:col-span-3">
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Referencia</label>

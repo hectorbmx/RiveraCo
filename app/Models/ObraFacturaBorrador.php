@@ -32,6 +32,8 @@ class ObraFacturaBorrador extends Model
         'retencion_tipo',
         'retenciones',
         'descuentos',
+        'usar_complemento_construccion',
+        'complemento_construccion',
         'total',
         'estatus',
         'creado_por',
@@ -54,12 +56,68 @@ class ObraFacturaBorrador extends Model
         'iva' => 'decimal:2',
         'retenciones' => 'decimal:2',
         'descuentos' => 'decimal:2',
+        'usar_complemento_construccion' => 'boolean',
+        'complemento_construccion' => 'array',
         'total' => 'decimal:2',
         'autorizado_at' => 'datetime',
         'rechazado_at' => 'datetime',
         'facturado_at' => 'datetime',
     ];
 
+    public static function estadosSatMexico(): array
+    {
+        return config('sat_catalogs.estados', []);
+    }
+
+    public static function normalizarEstadoConstruccion(?string $estado): string
+    {
+        $value = strtoupper(trim((string) $estado));
+
+        $aliases = [
+            'AGU' => '01',
+            'BCN' => '02',
+            'BCS' => '03',
+            'CAM' => '04',
+            'COA' => '05',
+            'COL' => '06',
+            'CHP' => '07',
+            'CHH' => '08',
+            'CMX' => '09',
+            'DUR' => '10',
+            'GUA' => '11',
+            'GRO' => '12',
+            'HID' => '13',
+            'JAL' => '14',
+            'MEX' => '15',
+            'MIC' => '16',
+            'MOR' => '17',
+            'NAY' => '18',
+            'NLE' => '19',
+            'OAX' => '20',
+            'PUE' => '21',
+            'QUE' => '22',
+            'ROO' => '23',
+            'SLP' => '24',
+            'SIN' => '25',
+            'SON' => '26',
+            'TAB' => '27',
+            'TAM' => '28',
+            'TLA' => '29',
+            'VER' => '30',
+            'YUC' => '31',
+            'ZAC' => '32',
+        ];
+
+        if (isset($aliases[$value])) {
+            return $aliases[$value];
+        }
+
+        if (preg_match('/^\d{1,2}$/', $value) === 1) {
+            return str_pad($value, 2, '0', STR_PAD_LEFT);
+        }
+
+        return $value;
+    }
     public static function tipoIvaLabels(): array
     {
         return [
