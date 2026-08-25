@@ -1199,7 +1199,9 @@ if ($tab === 'vehiculos') {
         $totalFacturadoSat = (float) $facturasSatObra
             ->where('estado', '!=', 'cancelada')
             ->sum('total');
-        $totalPagadoSat = (float) $facturasSatObra->sum('pagado');
+        $totalPagadoSat = (float) $facturasSatObra
+            ->where('afecta_saldo_obra', true)
+            ->sum('pagado');
 
         if ($facturasSatObra->isNotEmpty()) {
             $totalFacturado = $totalFacturadoSat;
@@ -1622,6 +1624,10 @@ private function facturasSatObra(Obra $obra): Collection
             'total' => (float) $factura->total,
             'moneda' => $factura->moneda ?? 'MXN',
             'estado' => $factura->estado,
+            'estado_label' => $this->facturaSatEstadoLabel($factura->estado),
+            'estado_badge_class' => $this->facturaSatEstadoBadgeClass($factura->estado),
+            'es_cancelada' => $factura->estado === 'cancelada',
+            'afecta_saldo_obra' => $factura->estado !== 'cancelada',
             'metodo_pago' => $factura->metodo_pago,
             'complementos_pago' => $factura->pagos,
             'pdf_route' => route('sat.facturacion.pdf', $factura),
@@ -1645,6 +1651,10 @@ private function facturasSatObra(Obra $obra): Collection
             'total' => (float) $cfdi->total,
             'moneda' => $cfdi->moneda ?? 'MXN',
             'estado' => null,
+            'estado_label' => 'Relacionada',
+            'estado_badge_class' => 'bg-slate-100 text-slate-700 border border-slate-200',
+            'es_cancelada' => false,
+            'afecta_saldo_obra' => true,
             'metodo_pago' => $cfdi->metodo_pago,
             'complementos_pago' => collect(),
             'pdf_route' => route('sat.cfdis.pdf', $cfdi),
@@ -1658,11 +1668,12 @@ private function facturasSatObra(Obra $obra): Collection
             $pagos = $pagosPorUuid->get(strtoupper($factura['uuid']), collect())->values();
             $requiereComplemento = strtoupper((string) ($factura['metodo_pago'] ?? '')) === 'PPD';
             $complementos = collect($factura['complementos_pago'] ?? [])->values();
-            $pagadoAdministrativo = (float) $pagos->sum('monto');
-            $pagadoFiscal = (float) $complementos->sum('monto');
-            $pagado = $requiereComplemento ? $pagadoFiscal : $pagadoAdministrativo;
+            $esCancelada = (bool) ($factura['es_cancelada'] ?? false);
+            $pagadoAdministrativo = $esCancelada ? 0.0 : (float) $pagos->sum('monto');
+            $pagadoFiscal = $esCancelada ? 0.0 : (float) $complementos->sum('monto');
+            $pagado = $esCancelada ? 0.0 : ($requiereComplemento ? $pagadoFiscal : $pagadoAdministrativo);
             $total = (float) $factura['total'];
-            $saldo = max(0, round($total - $pagado, 2));
+            $saldo = $esCancelada ? 0.0 : max(0, round($total - $pagado, 2));
 
             $factura['pagos'] = $pagos;
             $factura['complementos_pago'] = $complementos;
@@ -1670,9 +1681,11 @@ private function facturasSatObra(Obra $obra): Collection
             $factura['pagado_fiscal'] = $pagadoFiscal;
             $factura['pagado'] = $pagado;
             $factura['saldo'] = $saldo;
-            $factura['estado_pago'] = $saldo <= 0
-                ? 'pagada'
-                : ($pagado > 0 ? 'parcial' : 'pendiente');
+            $factura['estado_pago'] = $esCancelada
+                ? 'cancelada'
+                : ($saldo <= 0
+                    ? 'pagada'
+                    : ($pagado > 0 ? 'parcial' : 'pendiente'));
             $factura['requiere_complemento_pago'] = $requiereComplemento;
 
             return $factura;
@@ -1681,6 +1694,28 @@ private function facturasSatObra(Obra $obra): Collection
         ->values();
 }
 
+private function facturaSatEstadoLabel(?string $estado): string
+{
+    return match ($estado) {
+        'timbrada' => 'Timbrada',
+        'cancelada' => 'Cancelada',
+        'cancelacion_solicitada' => 'Cancelación solicitada',
+        'error' => 'Error',
+        'borrador' => 'Borrador',
+        default => $estado ? ucfirst(str_replace('_', ' ', $estado)) : 'Relacionada',
+    };
+}
+
+private function facturaSatEstadoBadgeClass(?string $estado): string
+{
+    return match ($estado) {
+        'timbrada' => 'bg-emerald-100 text-emerald-800 border border-emerald-200',
+        'cancelada' => 'bg-red-100 text-red-800 border border-red-200',
+        'cancelacion_solicitada' => 'bg-amber-100 text-amber-800 border border-amber-200',
+        'error' => 'bg-rose-100 text-rose-800 border border-rose-200',
+        default => 'bg-slate-100 text-slate-700 border border-slate-200',
+    };
+}
 private function facturasDisponiblesParaObra(string $rfcCliente, ?int $clienteId): Collection
 {
     $facturasApi = SatFactura::whereNull('obra_id')
