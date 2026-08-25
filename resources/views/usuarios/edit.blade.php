@@ -285,12 +285,17 @@
                             @csrf
                             @method('PUT')
                             @php
-                                $firmaVobo = $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_VOBO);
+                                $firmaVobo1   = $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_VOBO_1);
+                                $firmaVobo2   = $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_VOBO_2);
                                 $firmaEnterado = $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_ENTERADO);
                                 $firmasOrdenCompra = [
-                                    \App\Models\DocumentoFirmante::CAMPO_VOBO => [
-                                        'label' => 'VoBo',
-                                        'firma' => $firmaVobo,
+                                    \App\Models\DocumentoFirmante::CAMPO_VOBO_1 => [
+                                        'label' => 'VoBo 1',
+                                        'firma' => $firmaVobo1,
+                                    ],
+                                    \App\Models\DocumentoFirmante::CAMPO_VOBO_2 => [
+                                        'label' => 'VoBo 2',
+                                        'firma' => $firmaVobo2,
                                     ],
                                     \App\Models\DocumentoFirmante::CAMPO_ENTERADO => [
                                         'label' => 'ENTERADO',

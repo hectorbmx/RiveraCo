@@ -182,7 +182,8 @@ public function edit(User $usuario)
         ->with('user:id,name')
         ->where('documento', DocumentoFirmante::DOCUMENTO_ORDEN_COMPRA)
         ->whereIn('campo', [
-            DocumentoFirmante::CAMPO_VOBO,
+            DocumentoFirmante::CAMPO_VOBO_1,
+            DocumentoFirmante::CAMPO_VOBO_2,
             DocumentoFirmante::CAMPO_ENTERADO,
         ])
         ->get()
@@ -393,12 +394,14 @@ public function edit(User $usuario)
 public function syncFirmasImpresas(Request $request, User $usuario)
 {
     $data = $request->validate([
-        'firmas_impresas' => ['array'],
-        'firmas_impresas.vobo' => ['nullable', 'boolean'],
-        'firmas_impresas.enterado' => ['nullable', 'boolean'],
+        'firmas_impresas'            => ['array'],
+        'firmas_impresas.vobo_1'     => ['nullable', 'boolean'],
+        'firmas_impresas.vobo_2'     => ['nullable', 'boolean'],
+        'firmas_impresas.enterado'   => ['nullable', 'boolean'],
     ]);
     $campos = [
-        DocumentoFirmante::CAMPO_VOBO,
+        DocumentoFirmante::CAMPO_VOBO_1,
+        DocumentoFirmante::CAMPO_VOBO_2,
         DocumentoFirmante::CAMPO_ENTERADO,
     ];
     $seleccion = $data['firmas_impresas'] ?? [];

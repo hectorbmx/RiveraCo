@@ -1809,17 +1809,18 @@ foreach ($oc->detalles as $detalle) {
         ->where('documento', DocumentoFirmante::DOCUMENTO_ORDEN_COMPRA)
         ->where('activo', true)
         ->whereIn('campo', [
-            DocumentoFirmante::CAMPO_VOBO,
+            DocumentoFirmante::CAMPO_VOBO_1,
+            DocumentoFirmante::CAMPO_VOBO_2,
             DocumentoFirmante::CAMPO_ENTERADO,
         ])
         ->get()
         ->keyBy('campo');
 
-    $voboNombre = $firmasImpresas
-        ->get(DocumentoFirmante::CAMPO_VOBO)
-        ?->user
-        ?->name
-        ?? '';
+    $vobo1Nombre = $firmasImpresas->get(DocumentoFirmante::CAMPO_VOBO_1)?->user?->name ?? '';
+    $vobo2Nombre = $firmasImpresas->get(DocumentoFirmante::CAMPO_VOBO_2)?->user?->name ?? '';
+
+    // Combinar ambos slots; si solo hay uno, no aparece el separador
+    $voboNombre = trim(implode(' / ', array_filter([$vobo1Nombre, $vobo2Nombre])));
 
     $enteradoNombre = $firmasImpresas
         ->get(DocumentoFirmante::CAMPO_ENTERADO)

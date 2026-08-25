@@ -4,7 +4,12 @@ use Illuminate\Database\Eloquent\Model;
 class DocumentoFirmante extends Model
 {
     public const DOCUMENTO_ORDEN_COMPRA = 'orden_compra';
-    public const CAMPO_VOBO = 'vobo';
+
+    /** @deprecated Usar CAMPO_VOBO_1 */
+    public const CAMPO_VOBO     = 'vobo';
+
+    public const CAMPO_VOBO_1   = 'vobo_1';
+    public const CAMPO_VOBO_2   = 'vobo_2';
     public const CAMPO_ENTERADO = 'enterado';
     protected $table = 'documento_firmantes';
     protected $fillable = [
