@@ -36,6 +36,8 @@ use Illuminate\Validation\ValidationException;
 use App\Models\ObraMaquinaRegistro;
 use App\Models\CatalogoActividadComision;
 use App\Models\ObraAsistencia;
+use App\Models\ObraAsistenciaSemanalDetalle;
+use App\Models\ObraAsistenciaSemanalReporte;
 use App\Models\VehiculoEmpleadoKmLog;
 use Carbon\Carbon;
 use App\Models\OrdenCompra;
@@ -579,11 +581,11 @@ $planeacion = \App\Models\ObraPlaneacionSemanal::query()
 $presupuestosDisponibles = Presupuesto::whereDoesntHave('obras', function($query) use ($obra) {
     $query->where('obras.id', $obra->id);
 })
-// Usamos el nombre del cliente de la relaciÃ³n de la obra
+// Usamos el nombre del cliente de la relacion de la obra
 // ->where('nombre_cliente', $obra->cliente->nombre) 
 ->get();
 
-    // Asignaciones activas e histÃ³rico (de esta obra)
+    // Asignaciones activas e historico (de esta obra)
     $asignaciones           = $obra->empleadosAsignados;
     $asignacionesActivas    = $asignaciones->where('activo', true);
     $asignacionesHistoricas = $asignaciones->where('activo', false);
@@ -607,6 +609,8 @@ $presupuestosDisponibles = Presupuesto::whereDoesntHave('obras', function($query
     $asistencias = collect();
     $weekDays = collect();
     $asistenciasSemana = collect();
+    $asistenciaSemanalReporte = null;
+    $asistenciaSemanalEstatus = ObraAsistenciaSemanalReporte::estatusLabels();
     $gastosOC = collect();
     $gastosPorPartida = collect();
     $daysCount = 0;
@@ -665,7 +669,7 @@ if ($tab === 'asistencias') {
         $rawQuery->whereDate('checked_date', now()->toDateString());
     }
 
-    // ðŸ‘‰ AQUÃ se ejecuta el query
+    // AQUI se ejecuta el query
     $raw = $rawQuery
         ->orderByDesc('checked_date')
         ->orderBy('checked_at')
@@ -673,7 +677,7 @@ if ($tab === 'asistencias') {
 
     /*
     |--------------------------------------------------------------------------
-    | TABLA GENERAL (ya la tenÃ­as)
+    | TABLA GENERAL (ya la tenias)
     |--------------------------------------------------------------------------
     */
     $asistencias = $raw
@@ -689,7 +693,7 @@ if ($tab === 'asistencias') {
                     'entrada_hora'  => $entrada?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
                     'salida_hora'   => $salida?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
 
-                    // âœ… estas 2 lÃ­neas son las que te faltan
+                    // estas 2 lineas son las que te faltan
                     'entrada_foto'  => $entrada?->photo_path,
                     'salida_foto'   => $salida?->photo_path,
 
@@ -722,7 +726,7 @@ if ($tab === 'asistencias') {
     }
 
     $getEmpId = function ($r) {
-    // prioridad: si la relaciÃ³n empleado existe, toma su PK real
+    // prioridad: si la relacion empleado existe, toma su PK real
     return $r->empleado?->id_Empleado ?? $r->empleado_id;
 };
 
@@ -731,36 +735,19 @@ if ($tab === 'asistencias') {
     $index = $raw->groupBy(fn ($r) => $getEmpId($r) . '|' . Carbon::parse($r->checked_date)->toDateString());
 
 
-    $asistenciasSemana = collect();
-
     if ($daysCount === 7) {
-        // $empleados = $raw->pluck('empleado')->filter()->unique('id_Empleado');
-        $empleados = $raw->map(fn($r) => $r->empleado)->filter()
-        ->unique(fn($e) => $e->id_Empleado)
-        ->values();
+        $asistenciaSemanalReporte = ObraAsistenciaSemanalReporte::query()
+            ->with('detalles')
+            ->where('obra_id', $obra->id)
+            ->whereDate('semana_inicio', $start->toDateString())
+            ->first();
 
-
-        $asistenciasSemana = $empleados->map(function ($emp) use ($weekDays, $index) {
-            $dias = [];
-
-            foreach ($weekDays as $wd) {
-                $key = $emp->id_Empleado . '|' . $wd['date'];
-                $items = $index->get($key, collect());
-
-                $entrada = $items->firstWhere('tipo', 'entrada');
-                $salida  = $items->firstWhere('tipo', 'salida');
-
-                $dias[$wd['date']] = [
-                    'entrada' => $entrada?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
-                    'salida'  => $salida?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
-                ];
-            }
-
-            return (object)[
-                'empleado' => $emp,
-                'dias'     => $dias,
-            ];
-        })->values();
+        $asistenciasSemana = $this->buildAsistenciaSemanalRows(
+            $asignacionesActivas,
+            $weekDays,
+            $index,
+            $asistenciaSemanalReporte
+        );
     }
 }
 
@@ -853,7 +840,7 @@ $reposicionesMontos = [
         'pagado'     => $solicitudesGastos->where('estatus', 'pagado')->sum('total'),
     ];
 
-    // Crear mapa de montos solicitados/autorizados por semana para PlaneaciÃ³n
+    // Crear mapa de montos solicitados/autorizados por semana para Planeacion
     $montosSolicitadosMap = [];
     foreach ($solicitudesGastos as $sol) {
         if ($sol->estatus !== 'rechazado') {
@@ -921,7 +908,7 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
         })
         ->values();
 
-    // Inicializamos vacÃ­os por si no estamos en ese tab
+    // Inicializamos vacíos por si no estamos en ese tab
     $maquinasAsignadasActivas    = collect();
     $maquinasAsignadasHistoricas = collect();
     $maquinasDisponibles         = collect();
@@ -949,7 +936,7 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
         $pilasAsignadasActivas    = $pilasObra->where('activo', true);
         $pilasAsignadasHistoricas = $pilasObra->where('activo', false);
 
-        // CatÃ¡logo de pilas (para el <select> de asignaciÃ³n)
+        // Catálogo de pilas (para el <select> de asignacion)
         $pilasCatalogo = CatalogoPila::where('activa', true)
             ->orderBy('diametro_cm')
             ->orderBy('codigo')
@@ -984,11 +971,11 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
         $maquinasAsignadasActivas    = $asignacionesMaquina->where('estado', 'activa');
         $maquinasAsignadasHistoricas = $asignacionesMaquina->where('estado', 'finalizada');
 
-        // IDs de mÃ¡quinas actualmente activas en cualquier obra
+        // IDs de máquinas actualmente activas en cualquier obra
         $maquinasOcupadasIds = ObraMaquina::activas()
             ->pluck('maquina_id');
 
-        // MÃ¡quinas operativas y no ocupadas
+        // Máquinas operativas y no ocupadas
         $maquinasDisponibles = Maquina::query()
             ->where('estado', 'operativa')
             ->whereNotIn('id', $maquinasOcupadasIds)
@@ -999,7 +986,7 @@ if ($tab === 'horas-maquina') {
     $registrosHorasMaquina = ObraMaquinaRegistro::query()
         ->where('obra_id', $obra->id)
         ->with([
-            'asignacion.maquina', // para mostrar la mÃ¡quina en cada registro
+            'asignacion.maquina', // para mostrar la máquina en cada registro
         ])
         ->orderByDesc('inicio')
         ->orderByDesc('id')
@@ -1059,7 +1046,7 @@ if ($tab === 'vehiculos') {
 
     if ($tab === 'comisiones') {
 
-    // 1) Fecha seleccionada en el filtro (puede venir vacÃ­a)
+    // 1) Fecha seleccionada en el filtro (puede venir vacia)
     $selectedFecha = $request->query('fecha');
 
     // 2) Todas las fechas distintas de comisiones de esta obra (para el <select>)
@@ -1073,10 +1060,10 @@ if ($tab === 'vehiculos') {
     $query = Comision::where('obra_id', $obra->id)
         ->with([
             'pila',
-            // para poder mostrar la mÃ¡quina sin N+1
+            // para poder mostrar la máquina sin N+1
             'detalles.asignacionMaquina.maquina',
         ])
-        // suma de cantidad de TODAS las filas de detalle de esta comisiÃ³n
+        // suma de cantidad de TODAS las filas de detalle de esta comision
         ->withSum('detalles as total_pilas', 'cantidad')
         ->orderByDesc('fecha')
         ->orderByDesc('id');
@@ -1086,7 +1073,7 @@ if ($tab === 'vehiculos') {
         $query->whereDate('fecha', $selectedFecha);
     }
 
-    // 5) Obtenemos el histÃ³rico (sin paginar porque estÃ¡s dentro de la misma vista)
+    // 5) Obtenemos el historico (sin paginar porque estás dentro de la misma vista)
     $comisiones = $query->get();
     $comisionesAgrupadas = $comisiones
     ->groupBy(function ($comision) {
@@ -1158,7 +1145,7 @@ if ($tab === 'vehiculos') {
             'detalle'     => $pilasAvance,
         ];
     }
-        // Facturas de la obra (para el tab de facturaciÃ³n)
+        // Facturas de la obra (para el tab de facturacion)
         $facturas = $obra->facturas()
             ->orderByDesc('fecha_factura')
             ->orderByDesc('id')
@@ -1209,7 +1196,7 @@ if ($tab === 'vehiculos') {
             $totalPendiente = max(0, $totalFacturadoSat - $totalPagadoSat);
         }
 
-// Totales de facturaciÃ³n (para resumen y barras)
+// Totales de facturacion (para resumen y barras)
 // $totalFacturado = (float) $obra->facturas()->sum('monto');                         // todas las facturas emitidas
 // $totalPagado    = (float) $obra->facturas()->whereNotNull('fecha_pago')->sum('monto'); // solo las pagadas
 // $totalPendiente = max(0, $totalFacturado - $totalPagado);
@@ -1217,7 +1204,7 @@ $actividades = CatalogoActividadComision::where('activa', 1)
     ->orderBy('orden')
     ->get();
 
-// Avance cobrado que usamos en el tab "InformaciÃ³n general"
+// Avance cobrado que usamos en el tab "Informacion general"
 $avanceCobrado = 0;
 if ($tab === 'general') {
     // reutilizamos el total pagado
@@ -1279,12 +1266,12 @@ return view('obras.edit', [
     'formasPagoCfdi'              => $formasPagoCfdi,
     'regimenesFiscales'           => $regimenesFiscales,
 
-    // NUEVO: totales para el resumen de facturaciÃ³n
+    // NUEVO: totales para el resumen de facturacion
     'totalFacturado'              => $totalFacturado,
     'totalPagado'                 => $totalPagado,
     'totalPendiente'              => $totalPendiente,
 
-    // NUEVO: lo usamos en la barra de avance de cobro en InformaciÃ³n general
+    // NUEVO: lo usamos en la barra de avance de cobro en Informacion general
     'avanceCobrado'                => $avanceCobrado,
     'roles'                        =>$roles,
     'asistencias'                  =>$asistencias,
@@ -1292,6 +1279,8 @@ return view('obras.edit', [
     'asist_hasta'                  => $hasta,
     'weekDays' => $weekDays,
     'asistenciasSemana' => $asistenciasSemana,
+    'asistenciaSemanalReporte' => $asistenciaSemanalReporte,
+    'asistenciaSemanalEstatus' => $asistenciaSemanalEstatus,
     'daysCount' => $daysCount,
     'presupuestosDisponibles'     => $presupuestosDisponibles,
 
@@ -1432,6 +1421,254 @@ public function reporteAsistencias(Request $request, Obra $obra)
 }
 
 
+public function guardarAsistenciaSemanal(Request $request, Obra $obra)
+{
+    $this->abortarSiObraFueraDeArea($obra);
+
+    $data = $request->validate([
+        'semana_inicio' => ['required', 'date'],
+        'semana_fin' => ['required', 'date', 'after_or_equal:semana_inicio'],
+        'asistencia' => ['nullable', 'array'],
+        'accion' => ['nullable', 'string', 'in:guardar,generar'],
+    ]);
+
+    $start = Carbon::parse($data['semana_inicio'], 'America/Mexico_City')->startOfDay();
+    $end = Carbon::parse($data['semana_fin'], 'America/Mexico_City')->startOfDay();
+
+    if (($start->diffInDays($end) + 1) !== 7) {
+        return back()->withErrors(['semana_inicio' => 'La lista semanal debe cubrir exactamente 7 dias.']);
+    }
+
+    $weekDays = collect(range(0, 6))->map(fn ($i) => $start->copy()->addDays($i)->toDateString());
+
+    $asignaciones = $obra->empleadosAsignados()
+        ->with('empleado')
+        ->where('activo', true)
+        ->get();
+
+    $raw = ObraAsistencia::query()
+        ->where('obra_id', $obra->id)
+        ->whereBetween('checked_date', [$start->toDateString(), $end->toDateString()])
+        ->get()
+        ->groupBy(fn ($r) => ($r->empleado_id) . '|' . Carbon::parse($r->checked_date)->toDateString());
+
+    $accion = $data['accion'] ?? 'guardar';
+
+    $reporte = DB::transaction(function () use ($obra, $request, $data, $start, $end, $weekDays, $asignaciones, $raw, $accion) {
+        $reporte = ObraAsistenciaSemanalReporte::query()->updateOrCreate(
+            [
+                'obra_id' => $obra->id,
+                'semana_inicio' => $start->toDateString(),
+            ],
+            [
+                'semana_fin' => $end->toDateString(),
+                'generado_por_user_id' => $request->user()?->id,
+                'estatus' => $accion === 'generar'
+                    ? ObraAsistenciaSemanalReporte::ESTATUS_GENERADO
+                    : ObraAsistenciaSemanalReporte::ESTATUS_BORRADOR,
+                'generado_at' => $accion === 'generar' ? now() : null,
+            ]
+        );
+
+        $input = $data['asistencia'] ?? [];
+
+        foreach ($asignaciones as $asignacion) {
+            $empleadoId = (int) $asignacion->empleado_id;
+
+            foreach ($weekDays as $fecha) {
+                $cellInput = $input[$empleadoId][$fecha] ?? [];
+                $items = $raw->get($empleadoId . '|' . $fecha, collect());
+                $entrada = $items->firstWhere('tipo', 'entrada');
+                $salida = $items->firstWhere('tipo', 'salida');
+                $excepcionTipo = $cellInput['excepcion_tipo'] ?? null;
+                $planeado = !empty($cellInput['planeado']);
+
+                $estadoCampo = $this->resolverEstadoCampoSemanal($planeado, $entrada, $salida, $excepcionTipo);
+
+                ObraAsistenciaSemanalDetalle::query()->updateOrCreate(
+                    [
+                        'reporte_id' => $reporte->id,
+                        'empleado_id' => $empleadoId,
+                        'fecha' => $fecha,
+                    ],
+                    [
+                        'planeado_asistir' => $planeado,
+                        'estado_admin' => $cellInput['estado_admin'] ?? 'planeado',
+                        'estado_campo' => $estadoCampo,
+                        'obra_asistencia_entrada_id' => $entrada?->id,
+                        'obra_asistencia_salida_id' => $salida?->id,
+                        'excepcion_tipo' => $excepcionTipo ?: null,
+                        'excepcion_motivo' => $cellInput['excepcion_motivo'] ?? null,
+                    ]
+                );
+            }
+        }
+
+        return $reporte;
+    });
+
+    if ($accion === 'generar') {
+        return redirect()->route('obras.asistencias.semanal.imprimir', [$obra, $reporte]);
+    }
+
+    return redirect()
+        ->route('obras.edit', [
+            'obra' => $obra->id,
+            'tab' => 'asistencias',
+            'asist_desde' => $start->toDateString(),
+            'asist_hasta' => $end->toDateString(),
+        ])
+        ->with('success', 'Lista semanal de asistencia guardada.');
+}
+
+public function imprimirAsistenciaSemanal(Obra $obra, ObraAsistenciaSemanalReporte $reporte)
+{
+    $this->abortarSiObraFueraDeArea($obra);
+
+    if ((int) $reporte->obra_id !== (int) $obra->id) {
+        abort(404);
+    }
+
+    $obra->load(['cliente', 'responsable']);
+    $reporte->load(['detalles', 'generadoPor']);
+
+    $start = $reporte->semana_inicio->copy()->startOfDay();
+    $end = $reporte->semana_fin->copy()->startOfDay();
+
+    $weekDays = collect(range(0, 6))->map(function ($i) use ($start) {
+        $day = $start->copy()->addDays($i);
+
+        return [
+            'date' => $day->toDateString(),
+            'day' => $day->format('d'),
+            'label' => $day->format('d/m'),
+            'dow' => mb_strtoupper($day->isoFormat('dd')),
+        ];
+    });
+
+    $raw = ObraAsistencia::query()
+        ->where('obra_id', $obra->id)
+        ->whereBetween('checked_date', [$start->toDateString(), $end->toDateString()])
+        ->with('empleado')
+        ->get()
+        ->groupBy(fn ($r) => ($r->empleado?->id_Empleado ?? $r->empleado_id) . '|' . Carbon::parse($r->checked_date)->toDateString());
+
+    $asignaciones = $obra->empleadosAsignados()
+        ->with('empleado')
+        ->where('activo', true)
+        ->get();
+
+    $rows = $this->buildAsistenciaSemanalRows($asignaciones, $weekDays, $raw, $reporte);
+
+    return view('obras.asistencias.semanal-imprimir', [
+        'obra' => $obra,
+        'reporte' => $reporte,
+        'weekDays' => $weekDays,
+        'rows' => $rows,
+        'desde' => $start,
+        'hasta' => $end,
+        'generadoPor' => $reporte->generadoPor?->name ?? auth()->user()?->name ?? '',
+    ]);
+}
+
+private function buildAsistenciaSemanalRows(Collection $asignaciones, Collection $weekDays, Collection $index, ?ObraAsistenciaSemanalReporte $reporte): Collection
+{
+    $detalles = $reporte?->detalles?->keyBy(fn ($d) => $d->empleado_id . '|' . $d->fecha->toDateString()) ?? collect();
+
+    return $asignaciones
+        ->loadMissing(['empleado'])
+        ->filter(fn (ObraEmpleado $asignacion) => $asignacion->empleado)
+        ->sortBy(fn (ObraEmpleado $asignacion) => trim(($asignacion->empleado->Apellidos ?? '') . ' ' . ($asignacion->empleado->Nombre ?? '')))
+        ->map(function (ObraEmpleado $asignacion) use ($weekDays, $index, $detalles) {
+            $empleado = $asignacion->empleado;
+            $dias = [];
+            $totales = [
+                'planeados' => 0,
+                'confirmados' => 0,
+                'sin_evidencia' => 0,
+                'excepciones' => 0,
+            ];
+
+            foreach ($weekDays as $wd) {
+                $fecha = $wd['date'];
+                $items = $index->get($empleado->id_Empleado . '|' . $fecha, collect());
+                $entrada = $items->firstWhere('tipo', 'entrada');
+                $salida = $items->firstWhere('tipo', 'salida');
+                $detalle = $detalles->get($empleado->id_Empleado . '|' . $fecha);
+                $planeado = $detalle ? (bool) $detalle->planeado_asistir : true;
+                $estadoCampo = $detalle?->estado_campo ?: $this->resolverEstadoCampoSemanal($planeado, $entrada, $salida, $detalle?->excepcion_tipo);
+                $minutosTrabajados = ($entrada && $salida)
+                    ? max(0, $entrada->checked_at->diffInMinutes($salida->checked_at, false))
+                    : 0;
+                $horasExtraMinutos = max(0, $minutosTrabajados - 480);
+
+                if ($planeado) {
+                    $totales['planeados']++;
+                }
+                if (in_array($estadoCampo, ['confirmado', 'confirmado_parcial'], true)) {
+                    $totales['confirmados']++;
+                }
+                if ($estadoCampo === 'sin_evidencia') {
+                    $totales['sin_evidencia']++;
+                }
+                if ($estadoCampo === 'excepcion') {
+                    $totales['excepciones']++;
+                }
+
+                $dias[$fecha] = [
+                    'planeado' => $planeado,
+                    'estado_admin' => $detalle?->estado_admin ?? 'planeado',
+                    'estado_campo' => $estadoCampo,
+                    'entrada' => $entrada?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
+                    'salida' => $salida?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
+                    'entrada_foto' => $entrada?->photo_path,
+                    'salida_foto' => $salida?->photo_path,
+                    'excepcion_tipo' => $detalle?->excepcion_tipo,
+                    'excepcion_motivo' => $detalle?->excepcion_motivo,
+                ];
+            }
+
+            return (object) [
+                'asignacion' => $asignacion,
+                'empleado' => $empleado,
+                'dias' => $dias,
+                'totales' => $totales,
+            ];
+        })
+        ->values();
+}
+
+private function formatMinutesAsHours(int $minutes): string
+{
+    if ($minutes <= 0) {
+        return '0 h';
+    }
+
+    $hours = intdiv($minutes, 60);
+    $remainingMinutes = $minutes % 60;
+
+    if ($remainingMinutes === 0) {
+        return $hours . ' h';
+    }
+
+    return $hours . ' h ' . $remainingMinutes . ' min';
+}
+private function resolverEstadoCampoSemanal(bool $planeado, $entrada, $salida, ?string $excepcionTipo): string
+{
+    if ($excepcionTipo) {
+        return 'excepcion';
+    }
+
+    if ($entrada && $salida) {
+        return 'confirmado';
+    }
+
+    if ($entrada || $salida) {
+        return 'confirmado_parcial';
+    }
+
+    return $planeado ? 'sin_evidencia' : 'no_planeado';
+}
    public function update(Request $request, Obra $obra)
 {
     $this->abortarSiObraFueraDeArea($obra);
@@ -1459,10 +1696,10 @@ public function reporteAsistencias(Request $request, Obra $obra)
         'concreto_total'           => ['nullable', 'numeric', 'min:0'],
     ]);
 
-    // 3) Ver quÃ© datos SI estÃ¡n pasando la validaciÃ³n
+    // 3) Ver que datos SI estan pasando la validacion
     // dd($data);
 
-    // 4) (Esto NO se va a ejecutar mientras estÃ© el dd)
+    // 4) (Esto NO se va a ejecutar mientras esté el dd)
     $data['area_id'] = $this->areaIdParaTipoObra($data['tipo_obra']);
 
     $obra->update($data);
@@ -1518,7 +1755,7 @@ public function reporteAsistencias(Request $request, Obra $obra)
     $obra = \App\Models\Obra::findOrFail($id);
     
     if ($request->has('presupuestos')) {
-        // attach aÃ±ade los registros a la tabla pivote obra_presupuesto
+        // attach agrega los registros a la tabla pivote obra_presupuesto
         $obra->presupuestos_vinculados()->attach($request->presupuestos);
     }
 
@@ -1545,7 +1782,7 @@ public function guardarPlaneacion(Request $request, $id)
                 ->first();
 
             if (!$gastoBase) {
-                \Log::warning("No se encontrÃ³ gasto base para ID: {$gasto_id}");
+                \Log::warning("No se encontró gasto base para ID: {$gasto_id}");
                 continue;
             }
 
@@ -1573,24 +1810,24 @@ public function guardarPlaneacion(Request $request, $id)
         return redirect()->route('obras.edit', [
             'obra' => $id,
             'tab'  => 'planeacion',
-        ])->with('success', 'PlaneaciÃ³n guardada correctamente.');
+        ])->with('success', 'Planeacion guardada correctamente.');
 
     } catch (\Exception $e) {
         \DB::rollBack();
 
-        \Log::error('Error guardando planeaciÃ³n', [
+        \Log::error('Error guardando planeacion', [
             'obra_id' => $id,
             'message' => $e->getMessage(),
             'line'    => $e->getLine(),
             'file'    => $e->getFile(),
         ]);
 
-        return redirect()->back()->with('error', 'OcurriÃ³ un error al guardar los datos.');
+        return redirect()->back()->with('error', 'Ocurrió un error al guardar los datos.');
     }
 }
 private function normalizeRfc(?string $rfc): string
 {
-    return preg_replace('/[^A-Z0-9&Ã‘]/u', '', strtoupper(trim((string) $rfc))) ?? '';
+    return preg_replace('/[^A-Z0-9&Ñ]/u', '', strtoupper(trim((string) $rfc))) ?? '';
 }
 
 private function facturasSatObra(Obra $obra): Collection
@@ -2283,3 +2520,6 @@ public function relacionarCfdis(Request $request, Obra $obra)
     ]);
 }
 }
+
+
+

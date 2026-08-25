@@ -120,9 +120,9 @@
     "semantic_hash": "5928eb7aae3ae93b06ace63de746caef"
   },
   "app/Http/Controllers/Api/V1/AuthController.php": {
-    "mtime": 1779988320.0622292,
-    "ast_hash": "168fe7103268ece041f6e7b1f4593f32",
-    "semantic_hash": "168fe7103268ece041f6e7b1f4593f32"
+    "mtime": 1787336799.0579984,
+    "ast_hash": "c79540201dd32daf8c1f1ae41823f5f9",
+    "semantic_hash": ""
   },
   "app/Http/Controllers/Api/V1/ComisionController.php": {
     "mtime": 1769616786.949976,
@@ -390,8 +390,8 @@
     "semantic_hash": "4e27f21d653e72b5a53d1d39b1d59826"
   },
   "app/Http/Controllers/ObraController.php": {
-    "mtime": 1786647841.0715594,
-    "ast_hash": "f725b25f6fe02a39979d0ed1cfca2ed0",
+    "mtime": 1787676117.4814346,
+    "ast_hash": "584888e4cf037c0f531e96efee6b408c",
     "semantic_hash": ""
   },
   "app/Http/Controllers/ObraEmpleadoController.php": {
@@ -440,8 +440,8 @@
     "semantic_hash": "c21468edce01faf20e972131a2718608"
   },
   "app/Http/Controllers/OrdenCompraController.php": {
-    "mtime": 1787154995.0350702,
-    "ast_hash": "ccde2e50df71e20d6f54f2bc72f25574",
+    "mtime": 1787336799.0713348,
+    "ast_hash": "f2cfa39182d55082259e7ae0afd0f2c6",
     "semantic_hash": ""
   },
   "app/Http/Controllers/OrdenCompraDetalleController.php": {
@@ -530,8 +530,8 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/Sat/SatFacturacionController.php": {
-    "mtime": 1785787459.0953941,
-    "ast_hash": "a80dfdd0a8f6037ed5785d71245c0ed3",
+    "mtime": 1787599801.3616018,
+    "ast_hash": "27fcb5f3c9452f78acec20b77f8dcf48",
     "semantic_hash": ""
   },
   "app/Http/Controllers/SnapshotsController.php": {
@@ -625,8 +625,8 @@
     "semantic_hash": ""
   },
   "app/Http/Requests/StoreOrdenCompraRequest.php": {
-    "mtime": 1787070694.0890028,
-    "ast_hash": "382a0e4088cd1ee368e0c22cc6c9c84f",
+    "mtime": 1787336799.0730784,
+    "ast_hash": "c25aa9461edc2a7a5aea3e2ea3634c7f",
     "semantic_hash": ""
   },
   "app/Http/Requests/UpdateOrdenCompraDetalleRequest.php": {
@@ -925,8 +925,8 @@
     "semantic_hash": "24c77623ed6a99e4424b1a598b2b90be"
   },
   "app/Models/Obra.php": {
-    "mtime": 1787083145.0565639,
-    "ast_hash": "e52eb01b5bdaed6a2b9a099a1f497c6f",
+    "mtime": 1787336799.0821307,
+    "ast_hash": "dece0ec7494fc156d77ccbe76beea2a7",
     "semantic_hash": ""
   },
   "app/Models/ObraAsistencia.php": {
@@ -950,9 +950,9 @@
     "semantic_hash": "ab6311d82c1589e19178ca6ac37f3e26"
   },
   "app/Models/ObraFacturaBorrador.php": {
-    "mtime": 1783703794.28423,
-    "ast_hash": "6bc0c0fbc0db593d7e32316602ccd76b",
-    "semantic_hash": "6bc0c0fbc0db593d7e32316602ccd76b"
+    "mtime": 1787599900.9688878,
+    "ast_hash": "19c748eab19acbe8590cc610973d9fba",
+    "semantic_hash": ""
   },
   "app/Models/ObraFacturaPago.php": {
     "mtime": 1784750949.4260652,
@@ -1025,13 +1025,13 @@
     "semantic_hash": "4ffad704a1b59c9aa3085b6de1410433"
   },
   "app/Models/OrdenCompra.php": {
-    "mtime": 1786987568.6152794,
-    "ast_hash": "4b28a75e93e68506019592992808fcdf",
+    "mtime": 1787336799.0890276,
+    "ast_hash": "11a51ea7d903434bfaa7863b6c882bfd",
     "semantic_hash": ""
   },
   "app/Models/OrdenCompraDetalle.php": {
-    "mtime": 1787084964.4725926,
-    "ast_hash": "2c58de6f57d9917d0ccc2cf6b59b4c6c",
+    "mtime": 1787336799.0910153,
+    "ast_hash": "1e8e04712f70fcf81e9a7fd109c1a078",
     "semantic_hash": ""
   },
   "app/Models/PagoProveedor.php": {
@@ -1460,9 +1460,9 @@
     "semantic_hash": "e944eb1da4bc41aa3baaa2c91e28d2b3"
   },
   "config/sat_catalogs.php": {
-    "mtime": 1782407414.668756,
-    "ast_hash": "d9ba47c37a07f2e1c6e49ca67a15958e",
-    "semantic_hash": "d9ba47c37a07f2e1c6e49ca67a15958e"
+    "mtime": 1787599660.2575262,
+    "ast_hash": "903a5861c50f418cd57bda04c0de6c94",
+    "semantic_hash": ""
   },
   "config/services.php": {
     "mtime": 1785260825.639948,
@@ -2850,8 +2850,8 @@
     "semantic_hash": "c600599e6be3e82e7152cf51cb47b385"
   },
   "resources/views/layouts/admin.blade.php": {
-    "mtime": 1787078584.3751304,
-    "ast_hash": "9806287b0768867e215d15f960b42b73",
+    "mtime": 1787337253.898857,
+    "ast_hash": "bf69aa77c103e70201fab4e8269a77a3",
     "semantic_hash": ""
   },
   "resources/views/layouts/app.blade.php": {
@@ -2975,18 +2975,18 @@
     "semantic_hash": ""
   },
   "resources/views/obras/edit.blade.php": {
-    "mtime": 1786558624.7184968,
-    "ast_hash": "08f638236bc8ab7a3003744c216f1958",
+    "mtime": 1787674803.9092014,
+    "ast_hash": "684bab52f4494e78e3d30c71114b997a",
     "semantic_hash": ""
   },
   "resources/views/obras/factura-borradores/print.blade.php": {
-    "mtime": 1783703713.8965056,
-    "ast_hash": "ed1bdf2c4cca6dbaf844096d0420eef9",
-    "semantic_hash": "ed1bdf2c4cca6dbaf844096d0420eef9"
+    "mtime": 1787599141.8770902,
+    "ast_hash": "8097ca1afe094006e0f949b95ea1b819",
+    "semantic_hash": ""
   },
   "resources/views/obras/factura-borradores/show.blade.php": {
-    "mtime": 1784749637.2720008,
-    "ast_hash": "3d817cb7cd3ca01209ef9c6d211e749b",
+    "mtime": 1787600808.4342346,
+    "ast_hash": "aaff3cc7a3574f17dde8da1bd9bc806d",
     "semantic_hash": ""
   },
   "resources/views/obras/index.blade.php": {
@@ -3020,13 +3020,13 @@
     "semantic_hash": "6e41996f4abbeb500d80ef4f0689a02d"
   },
   "resources/views/ordencompra/create.blade.php": {
-    "mtime": 1787070709.0488212,
-    "ast_hash": "4a0062cf9907c8549ae4b2b06cd70bee",
+    "mtime": 1787336799.153021,
+    "ast_hash": "e45b452099a5ffe29dc37a3cb74a299e",
     "semantic_hash": ""
   },
   "resources/views/ordencompra/edit.blade.php": {
-    "mtime": 1787158239.1258836,
-    "ast_hash": "75acad57d2e9dae4b014a64b92672234",
+    "mtime": 1787336799.155021,
+    "ast_hash": "ebff613409350c667f9774c5db90748a",
     "semantic_hash": ""
   },
   "resources/views/ordencompra/index.blade.php": {
@@ -3275,8 +3275,8 @@
     "semantic_hash": "4b470e42f4d1fe7307322c9e36c8b6b0"
   },
   "resources/views/sat/facturacion/create.blade.php": {
-    "mtime": 1785786823.735001,
-    "ast_hash": "32d0f8988323e9cc998a813ee0ff3d2b",
+    "mtime": 1787600808.4072359,
+    "ast_hash": "bf95007d078ef7f6d093b72c4f1af073",
     "semantic_hash": ""
   },
   "resources/views/sat/facturacion/index.blade.php": {
@@ -3360,8 +3360,8 @@
     "semantic_hash": "d7ad2cabfd98256ae5904e1aec1d1996"
   },
   "routes/api.php": {
-    "mtime": 1784826819.1213303,
-    "ast_hash": "7ec2c3888659321a168bdf1173b54467",
+    "mtime": 1787336799.1570258,
+    "ast_hash": "af449a232bb43f6a898715d1fa179678",
     "semantic_hash": ""
   },
   "routes/auth.php": {
@@ -3380,8 +3380,8 @@
     "semantic_hash": "62bfb59371c073b4ec966528fdd9c3f9"
   },
   "routes/web.php": {
-    "mtime": 1787163054.2637796,
-    "ast_hash": "d4306fa7f2521717614f3ab76df18aa6",
+    "mtime": 1787674439.026972,
+    "ast_hash": "df4dc5a7bdb5c4109e3829350c99fc02",
     "semantic_hash": ""
   },
   "tailwind.config.js": {
@@ -4910,8 +4910,8 @@
     "semantic_hash": ""
   },
   "app/Models/CivilConcept.php": {
-    "mtime": 1786984090.4696665,
-    "ast_hash": "91927611b4baa5fe02ae4e5e6299fcd2",
+    "mtime": 1787336799.0762715,
+    "ast_hash": "fbb3c698a34e77e6b3a98f6cc6947b10",
     "semantic_hash": ""
   },
   "app/Models/CivilPartida.php": {
@@ -4955,18 +4955,18 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/ObraCivilController.php": {
-    "mtime": 1787163267.1084971,
-    "ast_hash": "a8921996c11b605203c95de7667028b9",
+    "mtime": 1787336799.0643432,
+    "ast_hash": "853c543fac602ca975c784b4bb7a84c1",
     "semantic_hash": ""
   },
   "resources/views/obra_civil/index.blade.php": {
-    "mtime": 1787163132.5676715,
-    "ast_hash": "c32e367f885a337e9f435790b9c77d9d",
+    "mtime": 1787336799.1363957,
+    "ast_hash": "35bd79c4b10fac90d1cac3b2e65b19b0",
     "semantic_hash": ""
   },
   "resources/views/obra_civil/details.blade.php": {
-    "mtime": 1787084110.0147395,
-    "ast_hash": "8a3c2cca579e49a28d7a7e9f4b1a65b9",
+    "mtime": 1787336799.1342404,
+    "ast_hash": "2af256605383f26d12ff2c2fb9c383d8",
     "semantic_hash": ""
   },
   "resources/views/obra_civil/preview.blade.php": {
@@ -5039,11 +5039,6 @@
     "ast_hash": "3916e4b87ee5ec6c08dd3bfb11348516",
     "semantic_hash": ""
   },
-  "storage/framework/views/f30fae91b7f964826e30b99a32dff0f5.php": {
-    "mtime": 1787156731.0772717,
-    "ast_hash": "6aab315bca4400286ad54a4e9b5f13ba",
-    "semantic_hash": ""
-  },
   "database/migrations/2026_08_17_000000_add_gastos_sin_factura_to_ordenes_compra.php": {
     "mtime": 1786987565.8000991,
     "ast_hash": "014a44f6ba406faa95233d7d7e68d094",
@@ -5055,8 +5050,8 @@
     "semantic_hash": ""
   },
   "app/Models/ObraCivilInsumo.php": {
-    "mtime": 1787084964.4742246,
-    "ast_hash": "d70386796cbfbc82aac81104bbc67553",
+    "mtime": 1787336799.0831902,
+    "ast_hash": "185db8f8b0b60206a5f8b544e389bbcb",
     "semantic_hash": ""
   },
   "app/Models/ObraCivilInsumoImport.php": {
@@ -5075,8 +5070,8 @@
     "semantic_hash": ""
   },
   "resources/views/obra_civil/insumos/index.blade.php": {
-    "mtime": 1787163132.607678,
-    "ast_hash": "ab8defa077c501d140b89cdaef6d7ecf",
+    "mtime": 1787336799.1391754,
+    "ast_hash": "1328893111663cebd7a42daeda559049",
     "semantic_hash": ""
   },
   "database/migrations/2026_08_18_000002_add_obra_civil_insumo_to_orden_compra_detalles.php": {
@@ -5085,83 +5080,1488 @@
     "semantic_hash": ""
   },
   "app/Services/ObraCivilInsumoBalanceService.php": {
-    "mtime": 1787154154.516532,
-    "ast_hash": "8026ab70d461e72dfa904173cbd78420",
+    "mtime": 1787336799.113017,
+    "ast_hash": "f11be10f2353fdbae47f1a691ca1e55b",
     "semantic_hash": ""
   },
   "resources/views/obra_civil/insumos/orders.blade.php": {
-    "mtime": 1787156640.3566184,
-    "ast_hash": "c83242e604a36c6dd119bffc11685920",
+    "mtime": 1787336799.1408377,
+    "ast_hash": "e3cecec00e61085643e469d6537b0594",
     "semantic_hash": ""
   },
-  "storage/framework/views/5b932d3842232d59789e1ef9f0e625e3.php": {
-    "mtime": 1787156738.7731018,
-    "ast_hash": "f0416fa357631dc79e7a41a4a8474689",
+  "app/Http/Controllers/Api/V1/ResidenteObraCivilAvanceController.php": {
+    "mtime": 1787336799.059577,
+    "ast_hash": "344eac91e3d7a424dfb2a23e37c0365d",
     "semantic_hash": ""
   },
-  "storage/framework/views/bbb23e7f8adf8bfbf8dfb9fa27e962e1.php": {
-    "mtime": 1787159191.173141,
-    "ast_hash": "555d85d6f0f4dbe62eea27f6f817f942",
+  "app/Http/Controllers/Api/V1/ResidenteObraCivilMaterialController.php": {
+    "mtime": 1787336799.061645,
+    "ast_hash": "627f67a1ab548af68083f6dc88d2bcf1",
     "semantic_hash": ""
   },
-  "storage/framework/views/0fa42f7ca363c84d8c13d2f1d42fff20.php": {
-    "mtime": 1787157211.6555412,
-    "ast_hash": "de49719d827b213d54c3c8cc227ccf20",
+  "app/Http/Controllers/ObraCivilConceptReportController.php": {
+    "mtime": 1787336799.0627205,
+    "ast_hash": "bd328096168ded9a325beaa1940b626b",
     "semantic_hash": ""
   },
-  "storage/framework/views/1dc60e87902c0d6c5b80c6cff721740d.php": {
-    "mtime": 1787156939.0789537,
-    "ast_hash": "6423a666bce37c8144da6950b0b4197f",
+  "app/Http/Controllers/ObraCivilFieldReviewController.php": {
+    "mtime": 1787336799.0659473,
+    "ast_hash": "d2dd4ef04d177c10d7db4b50c3763166",
     "semantic_hash": ""
   },
-  "storage/framework/views/25e3db28462b57d2c943d7a559563ea9.php": {
-    "mtime": 1787157022.7826126,
-    "ast_hash": "b962ae90abfea0fa99a2ba90816c744b",
+  "app/Http/Controllers/ObraCivilMaterialRequestController.php": {
+    "mtime": 1787336799.0675404,
+    "ast_hash": "b3b3068c50352e0cc04cddce04a28350",
     "semantic_hash": ""
   },
-  "storage/framework/views/30afb0c14c82256909f376a4a55ae3df.php": {
-    "mtime": 1787156939.175618,
-    "ast_hash": "2ee584228fe9d091208818214a19b4cb",
+  "app/Http/Controllers/ObraCivilWorkReportController.php": {
+    "mtime": 1787336799.0685997,
+    "ast_hash": "4fb7c18e8a9939357a702af06cdd80df",
     "semantic_hash": ""
   },
-  "storage/framework/views/479c888724d65bc77d84622a856f34aa.php": {
-    "mtime": 1787158240.224887,
-    "ast_hash": "eef5b30414cb94038b7d32878560878a",
+  "app/Models/CivilWorkReport.php": {
+    "mtime": 1787336799.0778866,
+    "ast_hash": "c463951c462d578af128fa60d3028b08",
     "semantic_hash": ""
   },
-  "storage/framework/views/61795d6c4418649df76bd9f6b34e169b.php": {
-    "mtime": 1787156938.036183,
-    "ast_hash": "0fb90adc818a27748bb095e1a1a3ce31",
+  "app/Models/CivilWorkReportItem.php": {
+    "mtime": 1787336799.0789442,
+    "ast_hash": "15c12231b78a113bcd483acd17992691",
     "semantic_hash": ""
   },
-  "storage/framework/views/76c05cc9e101e4fd0f9e94febf7b1fa4.php": {
-    "mtime": 1787157155.634596,
-    "ast_hash": "31ffb6bfa68d824a6e13469bc45f6659",
+  "app/Models/CivilWorkReportPhoto.php": {
+    "mtime": 1787336799.080011,
+    "ast_hash": "0309de2458500be05989b4312a3e66cf",
     "semantic_hash": ""
   },
-  "storage/framework/views/7d360909e107ba1bdef324239f3ed04d.php": {
-    "mtime": 1787156939.2056181,
-    "ast_hash": "91c8b8935537d0c2a89c18e0fa462b16",
+  "app/Models/ObraAsistenciaSemanalDetalle.php": {
+    "mtime": 1787674179.4868493,
+    "ast_hash": "cb8f600d6d306aa83416b2ce8c6e8e70",
     "semantic_hash": ""
   },
-  "storage/framework/views/92699fb55b9efb166cdcf4169351f6ec.php": {
-    "mtime": 1787157212.1033227,
-    "ast_hash": "80ab552d32370683c6a337e56e6bd7e7",
+  "app/Models/ObraAsistenciaSemanalReporte.php": {
+    "mtime": 1787674179.4848554,
+    "ast_hash": "a3840943ca94ab9e7f6af9fb2048f62a",
     "semantic_hash": ""
   },
-  "storage/framework/views/a4ccb025656224a0e5b20136730d56bc.php": {
-    "mtime": 1787157216.7807472,
-    "ast_hash": "fd868e08ae0d1b3c5b254ab5c5cb277b",
+  "app/Models/ObraCivilMaterialRequest.php": {
+    "mtime": 1787336799.084254,
+    "ast_hash": "0c13ed1db83938b53758ecea5029dfc6",
     "semantic_hash": ""
   },
-  "storage/framework/views/a7fa9ebdb2ae80273a44d989626d8237.php": {
-    "mtime": 1787156938.8743067,
-    "ast_hash": "9f5e2bd79ada0570149348e660b0b169",
+  "app/Models/ObraCivilMaterialRequestItem.php": {
+    "mtime": 1787336799.0858335,
+    "ast_hash": "9728770826dfab5a512ce0d620b87bcd",
     "semantic_hash": ""
   },
-  "storage/framework/views/f302735659e8bffc5e731eb6eea4382a.php": {
-    "mtime": 1787156938.9834218,
-    "ast_hash": "49ff12e29076bde24078225268d2b935",
+  "app/Models/ObraCivilMaterialRequestOrderLink.php": {
+    "mtime": 1787336799.0868948,
+    "ast_hash": "f393be2b0eb455114a13e5fe2a90ad38",
+    "semantic_hash": ""
+  },
+  "app/Services/ObraCivil/ObraCivilConceptReportService.php": {
+    "mtime": 1787336799.093016,
+    "ast_hash": "0e862a3160371dfe4e06640fec26348e",
+    "semantic_hash": ""
+  },
+  "app/Services/ObraCivil/ObraCivilFeatureSchemaGuard.php": {
+    "mtime": 1787336799.095017,
+    "ast_hash": "e8b0a0142551a738cf4a84bd91666f85",
+    "semantic_hash": ""
+  },
+  "app/Services/ObraCivil/ObraCivilFieldReviewService.php": {
+    "mtime": 1787336799.097017,
+    "ast_hash": "cdaedb8926796a87fd4b0729294e5138",
+    "semantic_hash": ""
+  },
+  "app/Services/ObraCivil/ObraCivilMaterialRequestApprovalService.php": {
+    "mtime": 1787336799.099015,
+    "ast_hash": "c1cb17aa59aacf36c8f7e7a7bd7157e0",
+    "semantic_hash": ""
+  },
+  "app/Services/ObraCivil/ObraCivilMaterialRequestIndexService.php": {
+    "mtime": 1787336799.1000164,
+    "ast_hash": "9e6ff606244da4c1a6ee5847e795455b",
+    "semantic_hash": ""
+  },
+  "app/Services/ObraCivil/ObraCivilMaterialRequestItemBalanceService.php": {
+    "mtime": 1787336799.1010168,
+    "ast_hash": "64bbab0317777946e75a4a81887a6eac",
+    "semantic_hash": ""
+  },
+  "app/Services/ObraCivil/ObraCivilMaterialRequestOrderService.php": {
+    "mtime": 1787336799.1030157,
+    "ast_hash": "b8e9a03d7e4ee383b86c8d88b869dccf",
+    "semantic_hash": ""
+  },
+  "app/Services/ObraCivil/ObraCivilWorkReportIndexService.php": {
+    "mtime": 1787336799.104016,
+    "ast_hash": "b3d53f0aa0dba3cb0546b0607837c062",
+    "semantic_hash": ""
+  },
+  "app/Services/ObraCivil/ResidenteObraCivilAvanceCatalogService.php": {
+    "mtime": 1787336799.105014,
+    "ast_hash": "b1021be790af98e50e00056d752613eb",
+    "semantic_hash": ""
+  },
+  "app/Services/ObraCivil/ResidenteObraCivilAvanceReportService.php": {
+    "mtime": 1787336799.1070156,
+    "ast_hash": "8e59b4889d992fb4b1520086ec9321d1",
+    "semantic_hash": ""
+  },
+  "app/Services/ObraCivil/ResidenteObraCivilContext.php": {
+    "mtime": 1787336799.1080155,
+    "ast_hash": "d362abf753cf5be34802f49df66c35ea",
+    "semantic_hash": ""
+  },
+  "app/Services/ObraCivil/ResidenteObraCivilContextService.php": {
+    "mtime": 1787336799.1090147,
+    "ast_hash": "a2d5cc50b43a9ac7188e339fc3c264c8",
+    "semantic_hash": ""
+  },
+  "app/Services/ObraCivil/ResidenteObraCivilMaterialCatalogService.php": {
+    "mtime": 1787336799.1110146,
+    "ast_hash": "e9cc476f8b79ed0da5e54bf1dc29db2f",
+    "semantic_hash": ""
+  },
+  "app/Services/ObraCivil/ResidenteObraCivilMaterialRequestService.php": {
+    "mtime": 1787336799.1120152,
+    "ast_hash": "2ee13057576cd71c297a0e3c11fe837d",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_19_000001_create_civil_work_reports_table.php": {
+    "mtime": 1787336799.116016,
+    "ast_hash": "998208471d82d8474455d72d492e7019",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_19_000002_create_civil_work_report_items_table.php": {
+    "mtime": 1787336799.1170154,
+    "ast_hash": "3137b201d906408f5dbda994cb93a92f",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_19_000003_create_civil_work_report_photos_table.php": {
+    "mtime": 1787336799.118015,
+    "ast_hash": "d5d54c5baae2e2403caa79a5379a2bf3",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_19_000004_create_obra_civil_material_requests_table.php": {
+    "mtime": 1787336799.1200156,
+    "ast_hash": "4f444f120dddae35c34e3638dc2441bd",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_19_000005_create_obra_civil_material_request_items_table.php": {
+    "mtime": 1787336799.1212637,
+    "ast_hash": "9b25cac63b7753ac857080a40895b515",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_20_000006_add_approval_fields_to_obra_civil_material_request_items.php": {
+    "mtime": 1787336799.1228504,
+    "ast_hash": "6d0bca94356312dfa055726fe97ddeaa",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_20_000007_add_material_request_item_to_orden_compra_detalles.php": {
+    "mtime": 1787336799.1240098,
+    "ast_hash": "fef8ef6f568eb1db090969b9a04f5ae3",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_20_000008_create_obra_civil_material_request_order_links_table.php": {
+    "mtime": 1787336799.1256366,
+    "ast_hash": "d11971377ad584911ec04131c4940e90",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_24_090000_add_tipo_iva_to_obra_factura_borradores_table.php": {
+    "mtime": 1787596566.7167203,
+    "ast_hash": "4f7d0845e6afe192996f3ff55849ee16",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_24_100000_add_construction_complement_to_obra_factura_borradores_table.php": {
+    "mtime": 1787598625.0574336,
+    "ast_hash": "28a76feff0bc2d07c5bebd38321f4a6b",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_25_090000_create_obra_asistencia_semanal_reportes_table.php": {
+    "mtime": 1787674179.4788518,
+    "ast_hash": "85e7026a5e7ef74dba13fe53cac50c0f",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_08_25_090001_create_obra_asistencia_semanal_detalles_table.php": {
+    "mtime": 1787675124.109183,
+    "ast_hash": "936d5ba8719cde89b45e178e5602f815",
+    "semantic_hash": ""
+  },
+  "resources/views/obra_civil/concept_reports/show.blade.php": {
+    "mtime": 1787336799.132082,
+    "ast_hash": "995eb7ea44321ab4014863b807c27ae8",
+    "semantic_hash": ""
+  },
+  "resources/views/obra_civil/material_requests/index.blade.php": {
+    "mtime": 1787336799.143555,
+    "ast_hash": "2e025d8706fab4e87ca08c2794e3d2ac",
+    "semantic_hash": ""
+  },
+  "resources/views/obra_civil/material_requests/show.blade.php": {
+    "mtime": 1787336799.1451669,
+    "ast_hash": "65d51e37536a70e2d16232e9e2abfaec",
+    "semantic_hash": ""
+  },
+  "resources/views/obra_civil/review/index.blade.php": {
+    "mtime": 1787336799.1473439,
+    "ast_hash": "e3dc18bd229b8452d0e920cab5a4f428",
+    "semantic_hash": ""
+  },
+  "resources/views/obra_civil/work_reports/index.blade.php": {
+    "mtime": 1787336799.1495001,
+    "ast_hash": "9296e3218c58619cca2e649cffde499b",
+    "semantic_hash": ""
+  },
+  "resources/views/obra_civil/work_reports/show.blade.php": {
+    "mtime": 1787336799.1510239,
+    "ast_hash": "a036f6d6c5a39efd6117c5fcbb7ec4c3",
+    "semantic_hash": ""
+  },
+  "resources/views/obras/asistencias/semanal-imprimir.blade.php": {
+    "mtime": 1787677211.6374521,
+    "ast_hash": "b7b16957c183393cce93b1546de1a0b9",
+    "semantic_hash": ""
+  },
+  "resources/views/obras/partials/asistencias/_filters.blade.php": {
+    "mtime": 1787674508.70547,
+    "ast_hash": "fd57425aa639614a1fb8238a629df88a",
+    "semantic_hash": ""
+  },
+  "resources/views/obras/partials/asistencias/_photo-modal.blade.php": {
+    "mtime": 1787674569.487495,
+    "ast_hash": "30f555e9d53135d62a8e78bbd83ee649",
+    "semantic_hash": ""
+  },
+  "resources/views/obras/partials/asistencias/_registered.blade.php": {
+    "mtime": 1787674569.4864953,
+    "ast_hash": "c807c82045dc3675cefca11886791d15",
+    "semantic_hash": ""
+  },
+  "resources/views/obras/partials/asistencias/_weekly-list.blade.php": {
+    "mtime": 1787675870.4060717,
+    "ast_hash": "c0a281897041e4966f506121afb5a49b",
+    "semantic_hash": ""
+  },
+  "resources/views/obras/partials/asistencias/_workflow.blade.php": {
+    "mtime": 1787674508.7074673,
+    "ast_hash": "5cad139e60e462abfd8f0b8157b8138a",
+    "semantic_hash": ""
+  },
+  "resources/views/obras/partials/asistencias/tab.blade.php": {
+    "mtime": 1787674508.704469,
+    "ast_hash": "f3922a246adfdf0ec9b1ae4035bad130",
+    "semantic_hash": ""
+  },
+  "docs/PLAN_SOLICITUDES_MATERIAL_OC_OBRA_CIVIL.md": {
+    "mtime": 1787336799.1277704,
+    "ast_hash": "aaa33e60cd18b2b88b0a588d25d9c4ad",
+    "semantic_hash": ""
+  },
+  "docs/ROADMAP_RENDIMIENTO_SISTEMA.md": {
+    "mtime": 1787336799.129772,
+    "ast_hash": "256c1931cdc8ad870daa92f82c6150af",
+    "semantic_hash": ""
+  },
+  "storage/app/public/obra-civil/avance/1/1/7439f297-276f-4edd-88be-2f6d81a7ff6f.webp": {
+    "mtime": 1787241984.155697,
+    "ast_hash": "3b4fe3a3d204e5b6377b3d2ce5c4ec2f",
+    "semantic_hash": ""
+  },
+  "storage/app/public/obra-civil/avance/1/1/76ffccfb-dd19-459c-956a-dcb90dffc511.webp": {
+    "mtime": 1787241983.9855645,
+    "ast_hash": "529b78d50aab5bb18b00a7624383301b",
+    "semantic_hash": ""
+  },
+  "storage/app/public/obra-civil/avance/1/1/853c7465-5d32-4210-b589-83f64133951c.webp": {
+    "mtime": 1787241984.3743896,
+    "ast_hash": "8f763f1918c969d89d1ff2ce596f0435",
+    "semantic_hash": ""
+  },
+  "storage/app/public/obra-civil/avance/2/2/0e363624-2b69-4eed-9614-16159507dce6.webp": {
+    "mtime": 1787243867.1427348,
+    "ast_hash": "fd82bf4494e90a755fa72ed4a99dc29f",
+    "semantic_hash": ""
+  },
+  "storage/app/public/obra-civil/avance/2/2/c7fbee3f-f1a0-4503-baba-32eee65229c2.webp": {
+    "mtime": 1787243867.0245779,
+    "ast_hash": "ada658cc838ef3f394730b447e0d31bd",
+    "semantic_hash": ""
+  },
+  "storage/app/public/obra-civil/avance/2/2/f6bcc58d-0766-4975-8cd5-4c23b7172637.webp": {
+    "mtime": 1787243867.0930278,
+    "ast_hash": "6e352b69973e41af115ef3e026ae34ce",
+    "semantic_hash": ""
+  },
+  "storage/app/public/obra-civil/avance/3/3/23ca06e4-041a-4915-a262-e536706d29a4.webp": {
+    "mtime": 1787252035.352988,
+    "ast_hash": "a2bd28cc795f52b8e4874ccf7cdefcdc",
+    "semantic_hash": ""
+  },
+  "storage/app/public/obra-civil/avance/3/3/4856be6b-75c7-478f-99c8-3f42aeaf5544.webp": {
+    "mtime": 1787252034.895096,
+    "ast_hash": "e3b306bbbc9f7fc756bd2229d6a975f9",
+    "semantic_hash": ""
+  },
+  "storage/app/public/obra-civil/avance/3/3/5acd6525-a4d0-4cf9-88bd-c24b38c76742.webp": {
+    "mtime": 1787252035.1158142,
+    "ast_hash": "9d1faedca9d17c94db85d21be2e8fd43",
+    "semantic_hash": ""
+  },
+  "storage/app/public/obra-civil/avance/3/3/d2cb954e-4958-4286-9719-d8d950fa192c.webp": {
+    "mtime": 1787252034.6418192,
+    "ast_hash": "f6487256c497c785f216c981cda74d20",
+    "semantic_hash": ""
+  },
+  "storage/app/public/obra-civil/avance/4/4/109d6371-4582-46f7-ab4e-be35d04c01b6.webp": {
+    "mtime": 1787335167.2988594,
+    "ast_hash": "23da80a866591086eb2aec2365323d01",
+    "semantic_hash": ""
+  },
+  "storage/app/public/obra-civil/avance/4/4/903a6b74-e6a3-4dc7-81d6-0651f51865af.webp": {
+    "mtime": 1787335167.153202,
+    "ast_hash": "ada658cc838ef3f394730b447e0d31bd",
+    "semantic_hash": ""
+  },
+  "storage/app/public/obra-civil/avance/4/4/908d0f05-902f-40ae-b28f-302f29f74d8d.webp": {
+    "mtime": 1787335167.2823577,
+    "ast_hash": "50ee92722384a88fb8538ee5442a9ea8",
+    "semantic_hash": ""
+  },
+  "storage/app/public/obra-civil/avance/4/4/bc595d6b-7b0e-4ffd-9a79-e8e258f882cd.webp": {
+    "mtime": 1787335167.2382135,
+    "ast_hash": "6e352b69973e41af115ef3e026ae34ce",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/011c7d39696c13f24371e745a35cf3d4.php": {
+    "mtime": 1787677237.3906417,
+    "ast_hash": "95a5abfd98bc28faf4c2c7506db56210",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/01e2aa40c39ff2c60dea03120415e75c.php": {
+    "mtime": 1787677234.360567,
+    "ast_hash": "199ff090c62602157a38990ac6ca167a",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/028dc767988a7a48c90a089103f3f403.php": {
+    "mtime": 1787677232.9698584,
+    "ast_hash": "88030d620ee95813fa85aaff835f3658",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/03c0b12df2a03c3bf0c00f04244f7a71.php": {
+    "mtime": 1787677234.5705636,
+    "ast_hash": "7fe80993f9ddd5ba0b71370f1ff05399",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/041b97729d343863d6c6e7c9bd34e48f.php": {
+    "mtime": 1787677233.1367793,
+    "ast_hash": "104dca7739ce953b9566790c19ad20aa",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/053027c23ad5e15957ef8c5a758e5e96.php": {
+    "mtime": 1787677233.8818724,
+    "ast_hash": "b526562c4574dac93332742e0afac13d",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/066dabb35ba4a846d55cb1ca03794fc6.php": {
+    "mtime": 1787677234.3495643,
+    "ast_hash": "aaa85669021bd929ddd69c64b8acd8bb",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/067f74674c0d5422d84870af9e92f1d2.php": {
+    "mtime": 1787677235.716381,
+    "ast_hash": "46cc1ef2b97684c3244ba2bc8f3eadcf",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/0730a29172fa8eb705dfce66665e1c41.php": {
+    "mtime": 1787677232.4102757,
+    "ast_hash": "5d4a803a4087d625e14be6e16534d2c3",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/07479eb5e3b05d804b3bd6338762f776.php": {
+    "mtime": 1787677237.357851,
+    "ast_hash": "22c3fc7e080993799eccf324dbf4ef77",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/089b1ab5ea98edbc9a09c2023f8696d4.php": {
+    "mtime": 1787677233.5828066,
+    "ast_hash": "aedc19658b443014a7d51cc59cb5f03c",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/0bb3983cf4ed69f1bae58461bdb3e723.php": {
+    "mtime": 1787677238.1855285,
+    "ast_hash": "cbca547a908cf8dd5d5023fa15d5fd5d",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/110b2a75b93acecbb63e2581bca4a0b7.php": {
+    "mtime": 1787677232.9948614,
+    "ast_hash": "b7a93d31bf6368c02c4f222ff06d62eb",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/124d2f64ee7bcb41142dfeef41b50361.php": {
+    "mtime": 1787677232.9918568,
+    "ast_hash": "6df2a1b659d99f11d3f63814c925b60f",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/131b3b3c4d93999665edeff27fa86f7b.php": {
+    "mtime": 1787677235.591628,
+    "ast_hash": "da87a918546eec2609bc564361786854",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/158fb44eddc53caf5406295fd79144b2.php": {
+    "mtime": 1787677236.7076418,
+    "ast_hash": "fc326cd35f6e236916af48659dc593be",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/1835e80e14c6b76abee3d5d8d5228a8d.php": {
+    "mtime": 1787677232.3498933,
+    "ast_hash": "ca8751b9dc5adbe16d1b2504d5249ff4",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/185011fe98670727d1a59ec7236550c7.php": {
+    "mtime": 1787677235.3501873,
+    "ast_hash": "744a6d898a927e28d6d73bbd3ae89b8b",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/196a710cb13d429540f7b02c130aff0c.php": {
+    "mtime": 1787677234.3945653,
+    "ast_hash": "b63a753f0bbeca2b8565555fad1d7ab5",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/1a82d57f907547f813540df32e5e83de.php": {
+    "mtime": 1787677235.750686,
+    "ast_hash": "9f823757c5a88df1d1aec22091a4e549",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/2053c64407d0cd51b1a6e415de776be5.php": {
+    "mtime": 1787677235.2511733,
+    "ast_hash": "2fa1ab0a27900ef2ae877ac18a9bf16c",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/20e025c0f8ca396ec9b548ce06c6e36a.php": {
+    "mtime": 1787677237.6828938,
+    "ast_hash": "1b9edcca4ba23785aedc6a328087b142",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/21891df1c2307a2a0e578068b1538399.php": {
+    "mtime": 1787677237.6878958,
+    "ast_hash": "e71466079f3a7b927e2e84373c7d7103",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/2245dd3aa97fc47a270890bcaf72c56d.php": {
+    "mtime": 1787677235.2431686,
+    "ast_hash": "12fee73062155791226f34899befed11",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/2255aef76127c58a763132644a050950.php": {
+    "mtime": 1787677232.9828572,
+    "ast_hash": "734d4d94695f86d1d3f1c99e2e4889c3",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/22609440b931a894afdda79aa88414c2.php": {
+    "mtime": 1787677232.3989587,
+    "ast_hash": "32a2bb3869a9e27c391c4c74ed9721e1",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/231d6c3cc20e4b5fe038534307b95229.php": {
+    "mtime": 1787677232.3468919,
+    "ast_hash": "3383c8205aa742ecad58ca6dc16583a3",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/23a925f08e6ea278b8028d0ea2b87720.php": {
+    "mtime": 1787677237.7008927,
+    "ast_hash": "2e42554a129ce3782cf097f4dc8590f7",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/2410fd0010f65b5ed0007e74524b82d8.php": {
+    "mtime": 1787677235.8323374,
+    "ast_hash": "2c93ddde490eb82052b5e814751bf732",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/2417c1f7b5d8f8d3139e2da423b615d8.php": {
+    "mtime": 1787677232.6980183,
+    "ast_hash": "6853d1e80eabab5b143eb64c24da84f2",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/24218242645ebf3bfa327e464c0c2343.php": {
+    "mtime": 1787677232.4710732,
+    "ast_hash": "5d7b90bab45358a5d8511a47514d62f3",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/24945f7316db35673d2d3919be1f3619.php": {
+    "mtime": 1787677235.448496,
+    "ast_hash": "83ace79642fef1856bfcbaf4ec7b10e6",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/26b5bda497625e9d0c1e34f7fad5d9c7.php": {
+    "mtime": 1787677237.7438936,
+    "ast_hash": "b40883a8f65cf247e799905dad60296b",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/26e2110a6d67b774fc1bfccf9c6142b3.php": {
+    "mtime": 1787677236.5865283,
+    "ast_hash": "ea6691a4d6d182b234b3845d6bd4f68b",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/2835931cf67106a60001da8f9a702caf.php": {
+    "mtime": 1787677233.9199688,
+    "ast_hash": "130c42acad55e612c547a875b8c777d6",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/29c161bd06ce6273f943b8e1fef8e872.php": {
+    "mtime": 1787677232.4636025,
+    "ast_hash": "0b9cc6d2255d4ae7219bc2081371d414",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/29cee1947e027f5730e87599e7e37eed.php": {
+    "mtime": 1787677235.4274976,
+    "ast_hash": "6ba963d25f346763e5a0f7c60a240612",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/2cf1089c17bd7ebb7deee6a64183b24b.php": {
+    "mtime": 1787677235.531499,
+    "ast_hash": "11c376ef59ac2b8260fa0448a1e004b0",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/2d1fe3c7f3eb90ce7702850fba1d0b04.php": {
+    "mtime": 1787677236.637657,
+    "ast_hash": "ee734de7f78583b812a8fc1b4cfd7280",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/2d323a8ad75556fd3a9d74487fddb95e.php": {
+    "mtime": 1787677235.4444997,
+    "ast_hash": "7a11828f89e9eb281746cb7fcd79392a",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/2e14b26e7fdb0c3a518205c63e8fdbe7.php": {
+    "mtime": 1787677235.3802283,
+    "ast_hash": "6e63aa7847d8837f4002687d5dc3660e",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/2ef0a0af204f94ec4f2b1fd70f9dc6f6.php": {
+    "mtime": 1787677232.978864,
+    "ast_hash": "553fbe88d755aaf22679da520d5688ae",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/2fec91dc77630cd3d82aaf4b5e995c77.php": {
+    "mtime": 1787677238.1247115,
+    "ast_hash": "d9c637d7313e4d1a3b1f6b9c7f146d52",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/3103ca16cdeaf4bbceeb4680baea21e7.php": {
+    "mtime": 1787677235.3591833,
+    "ast_hash": "17c75a6d195309c5a83ceb69d6c1b84b",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/326211a1c675a2058223a446ae282834.php": {
+    "mtime": 1787677236.7787106,
+    "ast_hash": "163e833d4b37c38cb54fb6cc2cd72af3",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/34651c33e68ff2bc96dc6343be374d7b.php": {
+    "mtime": 1787677235.8363402,
+    "ast_hash": "2f192d7188a08cf7dbf4f618d019a74e",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/354b6ff0212ef8a8621f5e5cc657e245.php": {
+    "mtime": 1787677232.382895,
+    "ast_hash": "845966a5d5e0641a6a2e247d2ee0e1ab",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/3701a69afb439c105e4ef6f6aebedadf.php": {
+    "mtime": 1787677236.4542806,
+    "ast_hash": "3c449f7aa6b1eed0ba36867f4d8f1cf0",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/370da7db17bf64b58548d6e865a0f739.php": {
+    "mtime": 1787677236.7677076,
+    "ast_hash": "5a2b3e55466fe64bf11eefc9eeeb2b37",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/387a2226053abe0024ccffbf666b34d8.php": {
+    "mtime": 1787677238.1705317,
+    "ast_hash": "b5f28d3eb73df5d699376a9077307afc",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/38dc26e53cc98c2355b62427a4276876.php": {
+    "mtime": 1787677233.635808,
+    "ast_hash": "035d85a6b49c154c51241e92f6c2b8b1",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/38e41ab7844f382e46ff91b196ca30bb.php": {
+    "mtime": 1787677236.660727,
+    "ast_hash": "7ebded8f05268cdff7049df6f979b3d5",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/3a3d0f7041b708aa9382af0f3fae87a6.php": {
+    "mtime": 1787677233.6318042,
+    "ast_hash": "92afffb6d48278ee6c12b76c309f54ac",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/3ad0c588eeda6cbbc28339642d4fbd7a.php": {
+    "mtime": 1787677235.4524965,
+    "ast_hash": "c51610abe251a406d92ed513f64e0007",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/3ae4cc0de636927932278c653dcdab07.php": {
+    "mtime": 1787677234.3445637,
+    "ast_hash": "f231a10454ee203e854a957fb1e4a6b4",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/3bea8c46f42dc3af9044af565587dba9.php": {
+    "mtime": 1787677236.5616043,
+    "ast_hash": "2ba3a6ee2af8ab684b74ccd0b200f990",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/3f11dc73431c5a198122813f83f99976.php": {
+    "mtime": 1787677234.3150394,
+    "ast_hash": "1bb4e07ce0063df9f338e694337e8a4d",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/40a655087dc129ae8df59d57d5f93b20.php": {
+    "mtime": 1787677236.4242158,
+    "ast_hash": "e196ee82df104c2b235f11af1c5aa6c0",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/41831b5ae8df95de185f56c4f430760a.php": {
+    "mtime": 1787677235.3661866,
+    "ast_hash": "add66b56f0e5ef5cb77e4666d4e47be0",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/4354e0bf0b1dbe9582bad861245eb1de.php": {
+    "mtime": 1787677235.25817,
+    "ast_hash": "0099e49c149975b52084d7a4ec0091ab",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/4394fef98069d6ec33f01cd54e2aa709.php": {
+    "mtime": 1787677232.7180223,
+    "ast_hash": "aee0029224da3666f31cd4267efa94a2",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/448b32d435ea559599ecf8fe94999607.php": {
+    "mtime": 1787677232.363894,
+    "ast_hash": "0d20a576f456272808ddb05da03b75d3",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/44f68e60e5c1514740a0fd2815a74fda.php": {
+    "mtime": 1787677236.4047344,
+    "ast_hash": "b68c4e8fe151a4f38bba7feaa3ac184a",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/460382a6362a53cddf2b9a54979aa4b7.php": {
+    "mtime": 1787677236.4282162,
+    "ast_hash": "511a158fd653a9323137b9e842fe360e",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/466b08675130ea2a6325b1109f6fe553.php": {
+    "mtime": 1787677234.249335,
+    "ast_hash": "ab2f2bed5533192e053bb7a56b8cc3e6",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/47867bc1f8bdb6ab80fc96196bd327a5.php": {
+    "mtime": 1787677233.8908792,
+    "ast_hash": "a694d2133e1b680c2418a8e3f5fc8876",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/49ebf0a6162d022c8e40c3a192cff13f.php": {
+    "mtime": 1787677236.79871,
+    "ast_hash": "af4322b5f3ee5c9b91d3295c90674493",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/4c3b8192e91176ea8c193522317909de.php": {
+    "mtime": 1787677237.4808223,
+    "ast_hash": "cdedee75f8218f28b4a86916cf9d6c8c",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/4c7af66ac662e87f94ef983106ee2315.php": {
+    "mtime": 1787677235.5104983,
+    "ast_hash": "3e9d9fd76840ae358aafaa88bb0c7b3e",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/4d4d5045940b94ff7b87d6b50664b71f.php": {
+    "mtime": 1787677232.7290182,
+    "ast_hash": "cdf5ba5b45fafb17981c1bf787ca54fc",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/4e2f996d4375d5d164ad983f951d830c.php": {
+    "mtime": 1787677237.6443665,
+    "ast_hash": "bcdfec9cdec2ec7b1b9ba84bbbeaf799",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/4e31e4b251920ee3587c965432cb31a2.php": {
+    "mtime": 1787677238.1147,
+    "ast_hash": "f8a591f0258fe6a32eb842b941ba9bbb",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/4fed1db4b2b14796cdb313f02d6af2e6.php": {
+    "mtime": 1787677232.7490244,
+    "ast_hash": "01471578899aed8335d7556bcc839b6e",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/531e99c394bcfbcd8274ed07eb151ddf.php": {
+    "mtime": 1787677235.570392,
+    "ast_hash": "ae8831d7921bb9786b1c37ed04f70eb4",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/55eedfaa99fa59c12cf46fc4d1635750.php": {
+    "mtime": 1787677238.1168866,
+    "ast_hash": "d779602d9b383c6d4ba095322a0df156",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/565f12b3e9e27a06a1d0bca6514d4b28.php": {
+    "mtime": 1787677233.077246,
+    "ast_hash": "226d35f9b2ce59cd4228744e822a8604",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/570f1579373e9afda90bf78a76bb6b31.php": {
+    "mtime": 1787677233.3798318,
+    "ast_hash": "c3c75a59bb0460d10c0e8cce3dbbaedb",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/5b12d82573d03f0ad33b3e3c29397197.php": {
+    "mtime": 1787677233.9319623,
+    "ast_hash": "2a5ecbe8df1496b2c13af3c0d75993b4",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/5bd83986c99aeac166b047330586df90.php": {
+    "mtime": 1787677238.1337087,
+    "ast_hash": "8136df1fe7077282bbca2b31b91027c9",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/5c66cbcff20d6499750a3084b2463891.php": {
+    "mtime": 1787677234.2856958,
+    "ast_hash": "d89ec842a9f2f4d37ab5bd1f276b5e55",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/5c7f4074e2c3adae73b79077e6826d69.php": {
+    "mtime": 1787677234.3008375,
+    "ast_hash": "b80302ed92193a64221ff1a3349eaa36",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/5df7afb262835ce2e4cb671dc9cc1188.php": {
+    "mtime": 1787677232.7440214,
+    "ast_hash": "812c70cd136032362031e72a457ca464",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/5fd8c27e8215f5d0f571e34b86161abe.php": {
+    "mtime": 1787677235.3621829,
+    "ast_hash": "18b3f900b618749aed79a77df672f70b",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/60045fb7a583e4a522f3fce85bbaf891.php": {
+    "mtime": 1787677236.630658,
+    "ast_hash": "9efe01711ac489df4b99b52d7452c08b",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/60d9307cda4f682ac5502ce6581e294d.php": {
+    "mtime": 1787677236.7427075,
+    "ast_hash": "d58db47beae72836c6e7b0ec21d99aa7",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/60fac3066ec13c3a2a57338b9086797e.php": {
+    "mtime": 1787677237.5331926,
+    "ast_hash": "ce60c0c94082477b845b7211078ebe07",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/61fb6a002be41ea48351a2a445368ab8.php": {
+    "mtime": 1787677236.6801102,
+    "ast_hash": "a6a579df4fa4bb4fa67ee6b4982511dd",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/629263c83234e3ef98af205efc180425.php": {
+    "mtime": 1787677237.7158942,
+    "ast_hash": "6d729e1933b8e8cbc063e35c01cdedcd",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/62ac9c8a6c06307fd0085119c26d4223.php": {
+    "mtime": 1787677233.1427789,
+    "ast_hash": "8d4e3d71eabb333c5ce2e898ae172262",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/633d82b4797a80322718644d68987b6d.php": {
+    "mtime": 1787677235.388194,
+    "ast_hash": "5a0ca62f60f46fcebbc7c1f044d05a4f",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/656587f19a8d6a9d140226a7f6877fc0.php": {
+    "mtime": 1787677232.4373183,
+    "ast_hash": "991671e3e1914ced89508864c512b7f9",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/675961b7f7288651a0cd2e2cb830dde4.php": {
+    "mtime": 1787677233.5185528,
+    "ast_hash": "02552a32e7d5657d81baa33992f2eb4b",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/69e7bfd6153cf320384e0ac61ee301fa.php": {
+    "mtime": 1787677236.734154,
+    "ast_hash": "c2d67111b916dd8c64d7601e126a81a4",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/6ce2e5ec7fe70f480d45906ae80b667a.php": {
+    "mtime": 1787677235.8433392,
+    "ast_hash": "89fc7393ee58733aa2b2e65e0203b035",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/6dc35812b5eba211ea39552f61dcc225.php": {
+    "mtime": 1787677237.636366,
+    "ast_hash": "51b2eb035fbbc899e136fcd2eee2dde2",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/6dd0830337cb1e61165ff4282c7846cc.php": {
+    "mtime": 1787677237.2147682,
+    "ast_hash": "87d214ee493baa977444c91ede165a03",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/6de81306233ffb1fe400e4f36f1dbee9.php": {
+    "mtime": 1787677233.6538115,
+    "ast_hash": "5fa871f919e718bf2b21e7dacd198b68",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/6edcfe18ad199a37331c7c8311053aee.php": {
+    "mtime": 1787677238.1575322,
+    "ast_hash": "7aef765c2b98898c65f7755da8b2be4b",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/6fba3d350b8105e28500083c89cd29db.php": {
+    "mtime": 1787677232.4189043,
+    "ast_hash": "f32c51d92aff9549751f362a83cf7215",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/705920268c499af76f31ad012a274f95.php": {
+    "mtime": 1787677237.4538631,
+    "ast_hash": "1bc548d9533f8a3d9d48445b26b02718",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/72a401fda6bab8257b5547f3768d80a6.php": {
+    "mtime": 1787677234.626418,
+    "ast_hash": "77b0a2afc422daf6ef4256545e7ee367",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/73dc962ee0f88f34ed9446bfedfcfbb1.php": {
+    "mtime": 1787677235.4184978,
+    "ast_hash": "888185966ee02dd5148597a7b0c1b10f",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/751996661fd006f5094ae921eb292e81.php": {
+    "mtime": 1787677233.9529586,
+    "ast_hash": "4fbd09ef69327501804d1fa6a2b72eb5",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/753b633251ec7dd7cd3019567e5fece3.php": {
+    "mtime": 1787677234.2968397,
+    "ast_hash": "89569c41331fdcb5fb10acc3697497f1",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/75ec95dd323ba392a8f77d6dba39d5e5.php": {
+    "mtime": 1787677233.0358348,
+    "ast_hash": "515840fdf57a559f6acfb506caa727fe",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/7993d50eda3ac71fc3377b21fe104ffa.php": {
+    "mtime": 1787677234.3575692,
+    "ast_hash": "a8e8e73bf55405cc87dad7f4535273e1",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/79ee5449d6f97d338b92210509556c55.php": {
+    "mtime": 1787677235.7606823,
+    "ast_hash": "ba0170c815f498a8e8acf98ffeb1be14",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/7ada1cf3e64e284f5bec1f70d77acc32.php": {
+    "mtime": 1787677232.7260187,
+    "ast_hash": "4f0b87674227c49cbfa719456c8350e0",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/7b3bb46718b555bc4b559ce2231654a3.php": {
+    "mtime": 1787677237.2407794,
+    "ast_hash": "f097fea0c53fd10ebc111ab8cad46229",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/7c5233ba2ca90acb47a83f7c70406ddc.php": {
+    "mtime": 1787677236.684109,
+    "ast_hash": "d9001fd6f121e731b492a6ccef47ccab",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/7ce34cc61e8d92e130a23827d62c20c1.php": {
+    "mtime": 1787677234.2533498,
+    "ast_hash": "c56b46eb679aeb85377ce1ccd06c60f1",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/7d758ff3c7b23a02b27c2cd9e8639174.php": {
+    "mtime": 1787677233.4127817,
+    "ast_hash": "14e7f8d7617cb5bc0afc429bb15e9980",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/7e8d5a1ba8c7f7b8391df1c8a043e169.php": {
+    "mtime": 1787677235.262173,
+    "ast_hash": "e7b1db4e5d396e8eaaa0029af1031012",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/81b055cee568f82ea6d776b9b346cc4a.php": {
+    "mtime": 1787677233.4038339,
+    "ast_hash": "4b0615f97540808c7fb0498c2d2a6f41",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/8327398cafa3297271ac44227e0594f0.php": {
+    "mtime": 1787677235.3531866,
+    "ast_hash": "33d5ea3685c240370c548cd5b08bfe7d",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/838b4e611c85af485a35f0335dc63eef.php": {
+    "mtime": 1787677232.713019,
+    "ast_hash": "34b5da36a7eb492580dbb70c5685b030",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/8506903b0ada05271e9cade3c159cced.php": {
+    "mtime": 1787677234.2681606,
+    "ast_hash": "319448615d178b4249c6c568f1dbe22b",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/857ac3eb888b49738cd8929d767efde0.php": {
+    "mtime": 1787677237.6173644,
+    "ast_hash": "399046b5e3d72e2f147aa26fa87c32b5",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/8611a54b0c83444681c804f5d64e33db.php": {
+    "mtime": 1787677233.4514716,
+    "ast_hash": "861afb2375c90b74adfa4a0079cbb62f",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/865ebcc1111237e23bcd85504b878020.php": {
+    "mtime": 1787677236.5756078,
+    "ast_hash": "31f1529285fdd1d85bf2885e59447e14",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/88479662a4b37ed09dc77f0b4a2da7ec.php": {
+    "mtime": 1787677234.6005676,
+    "ast_hash": "f53db46709e490e2f0ec1daed91ba1c3",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/88e51df7a7be701973959a7349a29d3e.php": {
+    "mtime": 1787677233.0578434,
+    "ast_hash": "8606f783bf1239a9c67b780718e9643f",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/8eebb20e41f844ec28c53c8646b5ca4f.php": {
+    "mtime": 1787677236.4502804,
+    "ast_hash": "c3f971917cd3f76128a12a84aaf41c40",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/8f604c6fc1bfb0c53db5647bc3128f59.php": {
+    "mtime": 1787677237.1982412,
+    "ast_hash": "5e512c89edde311a6c9d4c35f9d98a74",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/8ff9a4fa69b1a954e54d00866e0d458f.php": {
+    "mtime": 1787677236.753709,
+    "ast_hash": "d0ae66306d0faa768b3010ae278d0dc5",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/91016373ef4d13d13fc1a8b3254304f0.php": {
+    "mtime": 1787677234.336565,
+    "ast_hash": "cb14851febae745d2aa5a87f9d687651",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/93bbc293f6a94593acef53a9ee3a5d8b.php": {
+    "mtime": 1787677234.2927914,
+    "ast_hash": "015c9a6907e468c245816b0af328b474",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/9424d4a23947940ef3e847b69872160f.php": {
+    "mtime": 1787677233.9859586,
+    "ast_hash": "2b0bff40b6332a4c0f421ccff6a09c15",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/94669aa9b0797f7163b7cb0490aac862.php": {
+    "mtime": 1787677237.3157551,
+    "ast_hash": "627275d7afd293fddaa46814ccde8cb6",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/9673e98098c3fb58d66ac3d8cecd20bd.php": {
+    "mtime": 1787677236.7867079,
+    "ast_hash": "8dbf6cdb5185f967b0b0bc5d183adfb7",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/9733e1481abb3b462631e0605119cce1.php": {
+    "mtime": 1787677233.5608065,
+    "ast_hash": "317312062e1b5f8d00f94d2f7760356e",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/9acac99cb95915a60e816b262414a8e4.php": {
+    "mtime": 1787677233.9018762,
+    "ast_hash": "13954d4ce2290de80a12ce3d7b9c75ac",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/9ba150a6cb5b5a04550d5c3b1ff57b47.php": {
+    "mtime": 1787677237.1997726,
+    "ast_hash": "35a6d47d94022bc79a46794293c20da5",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/9c21ee232aab08b04260f39cfaf1ef48.php": {
+    "mtime": 1787677233.0792491,
+    "ast_hash": "dc810cabc6d55b5575075ba726f5040f",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/9c980c2e13aecd9e33c29c50018e57f2.php": {
+    "mtime": 1787677233.064842,
+    "ast_hash": "e647c96d60c04b9349a3a014554d9349",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/9ecb6ce854e12f53954e803ad8780313.php": {
+    "mtime": 1787677233.051836,
+    "ast_hash": "b062388130b9663e3c42f97245acebde",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/a00276f7aab11d784f966c4ff5fa25e8.php": {
+    "mtime": 1787677235.396948,
+    "ast_hash": "47699458c646246007d9197459cb80b5",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/a2e79ffac0e1710c263a720ec1b15bba.php": {
+    "mtime": 1787677233.8748899,
+    "ast_hash": "c6c4c66efaabc673229a5f1fefed726e",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/a3a3f5b5412b555f215757bb748a0d63.php": {
+    "mtime": 1787677232.3709,
+    "ast_hash": "e5fe48659964a8cc821d3884933ec5b2",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/a4e4e2be50f85a66828966f9111f15cd.php": {
+    "mtime": 1787677235.7947214,
+    "ast_hash": "be275fffe15dc65c14f109ef087b324e",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/a57759603a0b151ca603e40a1dfab7ad.php": {
+    "mtime": 1787677232.4690764,
+    "ast_hash": "163f2a2ad24ccaf98dc331c5b7232cac",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/a5bb9d7f0a59354452f0c49a407acac5.php": {
+    "mtime": 1787677237.2750103,
+    "ast_hash": "063dc96a907875f123a9c2a73dce04a8",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/a5f78b22f5294ca0f026accef4985ae8.php": {
+    "mtime": 1787677235.669852,
+    "ast_hash": "e95d6ef6ebaffa448d20df7d9b6c519d",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/a6e1b60d8d0b40ddc4a0ebba1a505a79.php": {
+    "mtime": 1787677235.3845723,
+    "ast_hash": "97a8f138be4d5ac5aa2964645eefa1a9",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/a88d1a58905faf6973be98862f691d79.php": {
+    "mtime": 1787677235.7023773,
+    "ast_hash": "c2605094a8e1a2449500a994a23193c5",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/a8a09dc69f0db3f1c8f052609fcb3704.php": {
+    "mtime": 1787677235.393951,
+    "ast_hash": "11e7c2636f1aa77ecbd7e647a79ffc1b",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/a8f3687e8f1956dbffb2cc49a16e4bce.php": {
+    "mtime": 1787677233.9099705,
+    "ast_hash": "8608c040a9a456dd7ee8a39648058b83",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/a938b8309da7fd03aba279636080b74d.php": {
+    "mtime": 1787677233.5045464,
+    "ast_hash": "2e1e0cb111bd5f367098c68a3d9f4363",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ab19398995bea37b541f9808a767284b.php": {
+    "mtime": 1787677236.4332128,
+    "ast_hash": "b8416bc0a0d122352f004b0fe7039311",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ab4d4633961945cf0fda4eb33cc79d45.php": {
+    "mtime": 1787677235.4244995,
+    "ast_hash": "23896eedcd9ddf344dcb73df54698df8",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ac592921f667ea760702dc8b9151845f.php": {
+    "mtime": 1787677237.6708941,
+    "ast_hash": "af9c17508e0b2595dfb3f6331b57c577",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ae95365666085d391e44ff6f0e98f4ca.php": {
+    "mtime": 1787677235.4704971,
+    "ast_hash": "285639b8c611bdf8f8f6b4f093d676fa",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/af7b85ae224497ddc025cca8096a7a0e.php": {
+    "mtime": 1787677233.3868318,
+    "ast_hash": "3472a311be2ac6a6592d09084689f52f",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/b0832d0a6c91bff5d1dfa474b524e08c.php": {
+    "mtime": 1787677235.7771997,
+    "ast_hash": "a10af0f9ef417e88d11db382f2170be1",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/b0cf913682ef8d545b340a4e95175cfb.php": {
+    "mtime": 1787677234.4345646,
+    "ast_hash": "e8eba86ad1f6feb455a00ea79aabb8fe",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/b1a22fa1fee72f447a201dc55372cef8.php": {
+    "mtime": 1787677232.4499724,
+    "ast_hash": "12538282a9e067abb4e0d74360d11d77",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/b377f4987820690cfde281efbb0507ac.php": {
+    "mtime": 1787677236.7026358,
+    "ast_hash": "419b316ad8c2ed6ee378b211beac1271",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/b51ee67de476d7609793d7c0d5ccea3b.php": {
+    "mtime": 1787677235.73368,
+    "ast_hash": "ff1ec4edf34fb19dbb8981effa8ad3ba",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/b63c2776b5d8d8646eb4fb3cf5931408.php": {
+    "mtime": 1787677234.3805666,
+    "ast_hash": "e7a673f8a0b72822a496b786739a0451",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/b66605e7296773f46259bce6aec58f19.php": {
+    "mtime": 1787677236.6151295,
+    "ast_hash": "14c3ee5e2429ab2c131a61f251963581",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/b6aa77115c367eac564875149a8cabbf.php": {
+    "mtime": 1787677235.2541718,
+    "ast_hash": "f59f5c57c9d1182794e32ac3568d2e51",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ba01a147810830b25769d8fd9c60370c.php": {
+    "mtime": 1787677238.1287072,
+    "ast_hash": "e8932924807a660eee50a1e9392febd9",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ba0efb96f6b0a125c69024078bc564c2.php": {
+    "mtime": 1787677233.8948734,
+    "ast_hash": "59cf822c0482d5740bd79793b2cfe383",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/c0bd673f60b88bc4264785d98bcbf6b7.php": {
+    "mtime": 1787677237.2586408,
+    "ast_hash": "463f4560200370bc960ce375a0a6b01a",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/c2164681c55b146918a6998fecfb786d.php": {
+    "mtime": 1787677235.6311114,
+    "ast_hash": "6b47e89bfaff9a5ab7f6cb70140bd0a6",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/c2d64271f21a21d98e8cd0583953047d.php": {
+    "mtime": 1787677233.9489594,
+    "ast_hash": "3defd11bb166d88127e290a4bebeca35",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/c38503a2baee41f1d1c4bcc7e1d53aff.php": {
+    "mtime": 1787677235.4009497,
+    "ast_hash": "833b3b894e56ef2a413cd9a943b4e712",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/c559c05534377c7dbd1a6e298969f499.php": {
+    "mtime": 1787677232.4323137,
+    "ast_hash": "22198252afe3268423538f3cbaae3181",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/c597a80eb4dcf94f815985bb07fef733.php": {
+    "mtime": 1787677238.1095712,
+    "ast_hash": "cb865f0b558b5080773e57cb70437b02",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/c7c01395c67f86c784b01e219499430e.php": {
+    "mtime": 1787677235.8173392,
+    "ast_hash": "a4c6e11f50dcaa394975edf3181a02b2",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/c9c54716f515e7c7a8c735766c15ab94.php": {
+    "mtime": 1787677234.5295644,
+    "ast_hash": "651d0dc07dee5ad4b50845125c74bf43",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ca157b1c8dbeec771507d5275ff3fa0a.php": {
+    "mtime": 1787677232.9848578,
+    "ast_hash": "9827351ba0a7d36b2a16fba166ce12bb",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ca58e13f115dc155d2891c43dd27afc9.php": {
+    "mtime": 1787677232.3538914,
+    "ast_hash": "bd51fb816169b5ac9e380cc494ca7ff0",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/cb3a318e69ab198b339196896e2b2d17.php": {
+    "mtime": 1787677232.6870213,
+    "ast_hash": "fb9d5927793fc0e66a693bb5248abdec",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/cb71da6c953f072c92d60b7b3c15b326.php": {
+    "mtime": 1787677237.371845,
+    "ast_hash": "64732c236bd64e61130c5402ca55e1fc",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/cb844ac56409cd66e7dd1fcbece6bbc9.php": {
+    "mtime": 1787677233.5438066,
+    "ast_hash": "9088c994c18c72414b9b7358b68cd7a6",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/cc07063ee9c4561355c48bb05fe18cf1.php": {
+    "mtime": 1787677233.5658095,
+    "ast_hash": "d17e0668e1075b6a83d41840a4c8a5f3",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/cc42f366ec099b52d8a6557e9bc249ac.php": {
+    "mtime": 1787677235.4345,
+    "ast_hash": "4fad73d2f27615f08f733315245471c2",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ccaadd6ecb0c6dcd70b56d2fb40431e9.php": {
+    "mtime": 1787677236.4372153,
+    "ast_hash": "c9783d707becf0f06cd9c6bad86ab31e",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/d0ca89ccea67ee982009dbf67c0aaece.php": {
+    "mtime": 1787677235.4105587,
+    "ast_hash": "ec89e8434a39bc72c2b4993643543495",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/d2551933959c3aa8b6a75829914b0e34.php": {
+    "mtime": 1787677236.5985274,
+    "ast_hash": "e3f6395137a0f02f9f7b683f28be4145",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/d2ddc0fbb2979dc108723898761bf3c1.php": {
+    "mtime": 1787677234.3048403,
+    "ast_hash": "02f02328fcacaf615457a7786a568d8f",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/d389261d70df257d9087b609f964a678.php": {
+    "mtime": 1787677233.9429646,
+    "ast_hash": "6c8f6bc60c638ab6a291e4d3bc2cfdd1",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/d40250715162510f13f39bb8dc30cec2.php": {
+    "mtime": 1787677236.7158892,
+    "ast_hash": "0100bda19bd11ea562131b13db6d8e83",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/daef75e3ddb68de90136301734b06e67.php": {
+    "mtime": 1787677233.9659598,
+    "ast_hash": "27a553bcb50faaa8b945ff49cbc8d6ad",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/dc231f37f05b899fe01e0117d0b737d1.php": {
+    "mtime": 1787677235.2311702,
+    "ast_hash": "3a628856d384695f5ef38d28c57995ef",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/dc3d8fb84b9a70a15c6a1b8ef76c9b64.php": {
+    "mtime": 1787677237.5211916,
+    "ast_hash": "0bb2bd652d66bf7cc63413f342db839d",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/dc66c01f505d5bdcd8f68d81a0dac1c5.php": {
+    "mtime": 1787677233.1287842,
+    "ast_hash": "48a7255f942fb7139ab74af658602a57",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/dd0cf097989a4927327b4005843adac3.php": {
+    "mtime": 1787677233.459468,
+    "ast_hash": "d09043a5f9d5582bf3a1076399aca063",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/dd790a9a4e7024874932f9b536bc9523.php": {
+    "mtime": 1787677233.0628357,
+    "ast_hash": "d0643827d5baf6566f3f492e423c1b6c",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/df1bfb0b6a0910a0c90983bee7c5b2c1.php": {
+    "mtime": 1787677234.4885633,
+    "ast_hash": "90e6a955258a9f8534b8500aeb7002b4",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/df68d3332255eab4a551ec2d2047e960.php": {
+    "mtime": 1787677237.7318957,
+    "ast_hash": "721611f3b7876c9d2162a2870e5a4ee1",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/e0871686449e4840ea7e8088c6e8df7c.php": {
+    "mtime": 1787677237.4710765,
+    "ast_hash": "eca26014db8d13b55eaf8adfb2c2313a",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/e151eaac439128703d8a50df79e36e9b.php": {
+    "mtime": 1787677233.5788097,
+    "ast_hash": "13504a02ff62af61f00133483079f9ac",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/e3dd21e73b21c2e39830be6bcbf9443e.php": {
+    "mtime": 1787677234.2751698,
+    "ast_hash": "3d0033c4d2e1732bcf09bc1719ff8b2a",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/e6c2b6d47ff8248532db8afed31dc909.php": {
+    "mtime": 1787677232.9758565,
+    "ast_hash": "d6d117288dc83761265fd28ac5604cc3",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/e6feb4dc719edef6af58242b16728e77.php": {
+    "mtime": 1787677234.3695643,
+    "ast_hash": "8267e064269bbd7f3c99ad31b53a37a7",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ea160694ae28c5aa9390122e898bae08.php": {
+    "mtime": 1787677235.24917,
+    "ast_hash": "7fc85618c6417b913fba10c860af132e",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/eb9e43c12cf7262aeaa8d2928a8b5de8.php": {
+    "mtime": 1787677237.5842888,
+    "ast_hash": "930d15e43210049d8e0828427013bcde",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ed6fb20ac52b140ba74b85c187597724.php": {
+    "mtime": 1787677237.633366,
+    "ast_hash": "55e5c1a48b0c2dde47664aceee0c1384",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ed748f933e222bba9a43c114e067312f.php": {
+    "mtime": 1787677236.4462929,
+    "ast_hash": "d28a23ba70cd8b65dd664de48b150f28",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f0d969f65fbc552b2efe558194df7de2.php": {
+    "mtime": 1787677234.3265722,
+    "ast_hash": "7e83f79eb08ca370326e3413db8da295",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f2396640d0a3436afa636b0a1f7a905f.php": {
+    "mtime": 1787677236.7477114,
+    "ast_hash": "466c298c163ad0ccbf26ba6bb691ee61",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f2df45dd60c08160805363df4c79f749.php": {
+    "mtime": 1787677232.702019,
+    "ast_hash": "182fd24d98e6f72d87be4a883e01ddf1",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f3319f1e17a85455d34d6f2fa4c2698d.php": {
+    "mtime": 1787677237.231769,
+    "ast_hash": "752fab60f46735f71861e309f8002d75",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f4e9abf729efec2681e367be212647a4.php": {
+    "mtime": 1787677232.9648569,
+    "ast_hash": "3dd0725264afa1018c1462e46df3b15a",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f58de869de492e690a4312bda9e1f14a.php": {
+    "mtime": 1787677233.4474688,
+    "ast_hash": "4dcabd02d646a430e5808ef85452df6b",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f711b003ae10e03e99736845f789bd46.php": {
+    "mtime": 1787677236.6946375,
+    "ast_hash": "fec6b67077c9c235a144fe13f4b45b3f",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f7348e075e3d9624c6f57fb252eda5d8.php": {
+    "mtime": 1787677237.1861823,
+    "ast_hash": "15bc03a069c66086195be8e2aaedfa20",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f7d6ba10ca15b2c97928e2714ecdb9a6.php": {
+    "mtime": 1787677236.7301543,
+    "ast_hash": "344434f8b37d67d8456aadb6e6952f5d",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f849e730b1364b7f3dcc84515894f9d1.php": {
+    "mtime": 1787677237.2981098,
+    "ast_hash": "406c74d6e5ad436089eb318e9ca511bb",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f857a85f9747fc3cd854e855edcb28d4.php": {
+    "mtime": 1787677235.2191775,
+    "ast_hash": "f6e2410075f3c970129dfe5b533c8d6c",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f96be5e6a69feca327fabd42b607776a.php": {
+    "mtime": 1787677234.310848,
+    "ast_hash": "a6472f89081db689a842f39ce09dd36d",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f9f29eccbfd6f376a2e68e564f18853e.php": {
+    "mtime": 1787677237.287388,
+    "ast_hash": "fbe53dd2639fc88875c3124048a1e69d",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ff312738df1900a815882ba1cea204aa.php": {
+    "mtime": 1787677232.721031,
+    "ast_hash": "d448a4cd05750d0dfe261aee829ee703",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/010ab237a1a886bee8d6c96a9e59f657.php": {
+    "mtime": 1787677245.7583714,
+    "ast_hash": "b10c6b6b5260f39fa8009010ea073571",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/1d86388fb7d667328f3166f43cddd3aa.php": {
+    "mtime": 1787677246.0147283,
+    "ast_hash": "494707c4d982cf24a3015de53aac894e",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/3fa7112c6fd601e5d50e5fa521135ab4.php": {
+    "mtime": 1787677245.7623699,
+    "ast_hash": "0274795dc8199873ef0df0df257ade68",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/6a2cd42352527a6acb1a6fd285ce1209.php": {
+    "mtime": 1787677240.3630393,
+    "ast_hash": "62cf501e241c2da805064e5bd909d898",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/6db90fdc1e733fc07fe9be2dcb485f48.php": {
+    "mtime": 1787677245.7503736,
+    "ast_hash": "89c420e3196e04288decebd50aff1383",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/a3bbf1212b21385c7306efe7fd35211f.php": {
+    "mtime": 1787677245.7543757,
+    "ast_hash": "3200b43cf6345407a1fea458b69d66d7",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/cc2cd286e9e808a4ecd592a9d122a199.php": {
+    "mtime": 1787677246.0117266,
+    "ast_hash": "785db6ece26f7f25efa713cbc0e7cb8c",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f30fae91b7f964826e30b99a32dff0f5.php": {
+    "mtime": 1787677246.0247345,
+    "ast_hash": "34a1ea7bc7b8f907b76dc3464b25157a",
+    "semantic_hash": ""
+  },
+  "storage/app/public/asistencias/lOxONr8v2GwlYjoceBjCmtTdOttqQ60N37QJ9DFX.jpg": {
+    "mtime": 1787676312.193203,
+    "ast_hash": "58861886716dbaccf7c4caf3ded29e14",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/9aefc9b22ee5807d9d30f83f17cd6135.php": {
+    "mtime": 1787677297.7896123,
+    "ast_hash": "4b0db0b31bca2349b77b238bef89d5e4",
+    "semantic_hash": ""
+  },
+  "docs/ROADMAP_AJUSTES_RETROACTIVOS_ASISTENCIA.md": {
+    "mtime": 1787678049.4651632,
+    "ast_hash": "77c15c7cb895daa3b209d9498bf8098f",
     "semantic_hash": ""
   }
 }

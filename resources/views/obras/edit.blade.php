@@ -2883,6 +2883,11 @@
 @endif
 {{-- TAB ASISTENCIAS --}}
 @if($tab === 'asistencias')
+    @include('obras.partials.asistencias.tab')
+@endif
+
+{{-- TAB ASISTENCIAS LEGACY: pendiente de retirar cuando terminemos el ajuste semanal. --}}
+@if(false && $tab === 'asistencias')
   <h2 class="text-lg font-semibold mb-4">Asistencias de empleados asignados a la obra</h2>
 
   @if(session('success'))
@@ -6297,3 +6302,4 @@ function calcularFila(idCampo) {
 //     });
 // });
 </script>
+

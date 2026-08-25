@@ -1,4 +1,4 @@
-﻿@extends('layouts.admin')
+@extends('layouts.admin')
 
 @section('content')
 <div class="p-6">
@@ -27,11 +27,24 @@
                     </div>
                 </div>
 
+                {{-- Filtro por área --}}
+                <div class="min-w-[200px]">
+                    <select name="area_id"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0B265A] focus:border-transparent transition text-sm text-slate-700 bg-white">
+                        <option value="">Todas las áreas</option>
+                        @foreach($areas as $area)
+                            <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>
+                                {{ $area->nombre }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
                 <div class="flex gap-2">
                     <button type="submit" class="bg-[#0B265A] text-white px-6 py-2 rounded-xl text-sm font-semibold hover:bg-[#163a7a] transition">
                         Buscar
                     </button>
-                    @if(request('search') || request('estado'))
+                    @if(request('search') || request('estado') || request('area_id'))
                         <a href="{{ route('ordenes_compra.index') }}" class="bg-slate-200 text-slate-600 px-6 py-2 rounded-xl text-sm font-semibold hover:bg-slate-300 transition text-center">
                             Limpiar
                         </a>
