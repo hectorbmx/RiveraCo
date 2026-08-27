@@ -106,6 +106,13 @@
                     <span class="text-lg">🏛️</span>
                     <span class="sidebar-text">Obra Civil</span>
                 </a>
+
+                <a href="{{ route('costos.materiales.index') }}"
+                   class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('costos.*') ? 'bg-white/10' : '' }}"
+                   title="Costos">
+                    <span class="text-lg">$</span>
+                    <span class="sidebar-text">Costos</span>
+                </a>
                 @endif
                 @if($canMenu('vehiculos.access'))
                 <a href="{{ route('mantenimiento.vehiculos.index') }}"
@@ -564,4 +571,5 @@
 
 </body>
 </html>
+
 

@@ -33,6 +33,7 @@ use App\Models\ObraPila;
 use App\Models\CatalogoPila;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 use App\Models\ObraMaquinaRegistro;
 use App\Models\CatalogoActividadComision;
 use App\Models\ObraAsistencia;
@@ -2520,6 +2521,7 @@ public function relacionarCfdis(Request $request, Obra $obra)
     ]);
 }
 }
+
 
 
 

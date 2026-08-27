@@ -38,6 +38,7 @@ use App\Http\Controllers\GiraldaController;
 use App\Http\Controllers\EmpleadoEppEntregaController;
 
 use App\Http\Controllers\Admin\UsuarioController;
+use App\Http\Controllers\Admin\Costos\CatalogoMaterialController;
 use App\Http\Controllers\Admin\EmpresaSecurityController;
 use App\Http\Controllers\Admin\EmpresaConfigAreaController;
 use App\Http\Controllers\Admin\EmpresaConfigListaRayaController;
@@ -316,6 +317,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/{usuario}/firmas-impresas', [UsuarioController::class, 'syncFirmasImpresas'])->name('firmas-impresas.sync');
 
     });
+    Route::prefix('costos')
+        ->name('costos.')
+        ->group(function () {
+            Route::get('/materiales', [CatalogoMaterialController::class, 'index'])->name('materiales.index');
+            Route::get('/materiales/{materiale}', [CatalogoMaterialController::class, 'show'])->name('materiales.show');
+        });
     //rutas nomina
 Route::middleware(['auth','verified'])
     ->prefix('nomina')
@@ -910,6 +917,8 @@ Route::prefix('pagos-proveedores')
 });
 
 require __DIR__.'/auth.php';
+
+
 
 
 
