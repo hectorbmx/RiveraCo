@@ -88,6 +88,11 @@ class ResidenteObraCivilMaterialController extends Controller
             'items' => ['required', 'array', 'min:1', 'max:100'],
             'items.*.obra_civil_insumo_id' => ['required', 'integer', 'exists:obra_civil_insumos,id'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0'],
+            'items.*.commercial_material_id' => ['nullable', 'integer', 'exists:obra_civil_commercial_materials,id'],
+            'items.*.commercial_quantity' => ['nullable', 'numeric', 'gt:0'],
+            'items.*.commercial_items' => ['nullable', 'array', 'min:1', 'max:50'],
+            'items.*.commercial_items.*.commercial_material_id' => ['required_with:items.*.commercial_items', 'integer', 'exists:obra_civil_commercial_materials,id'],
+            'items.*.commercial_items.*.commercial_quantity' => ['required_with:items.*.commercial_items', 'numeric', 'gt:0'],
             'items.*.notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -178,3 +183,5 @@ class ResidenteObraCivilMaterialController extends Controller
         ];
     }
 }
+
+

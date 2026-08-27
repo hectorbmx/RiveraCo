@@ -22,6 +22,7 @@ use App\Models\MaquinaMovimiento;
 use App\Models\EmpleadoNota;
 use App\Models\Comision;
 use App\Models\ComisionEtapa;
+use App\Models\ObraEmpleado;
 
 class UsuarioController extends Controller
 {
@@ -350,6 +351,29 @@ public function edit(User $usuario)
     // 5. Pilas (Comisiones) - Búsqueda más inclusiva
     $empleado_id = $usuario->usuarioApp?->empleado_id;
 
+    $asignacionesObra = collect();
+    if ($empleado_id) {
+        $asignacionesObra = \App\Models\ObraEmpleado::query()
+            ->with(['obra:id,nombre,clave_obra,estatus_nuevo', 'rol:id,nombre'])
+            ->where('empleado_id', $empleado_id)
+            ->orderByRaw('COALESCE(fecha_alta, created_at) DESC')
+            ->orderByDesc('id')
+            ->limit(50)
+            ->get()
+            ->map(fn ($asignacion) => [
+                'obra' => $asignacion->obra?->nombre ?? 'N/A',
+                'clave_obra' => $asignacion->obra?->clave_obra,
+                'rol' => $asignacion->rol?->nombre,
+                'puesto' => $asignacion->puesto_en_obra,
+                'fecha_alta' => $asignacion->fecha_alta,
+                'fecha_baja' => $asignacion->fecha_baja,
+                'activo' => (bool) $asignacion->activo,
+                'estatus_obra' => $asignacion->obra?->estatus_nuevo,
+                'dias' => $asignacion->dias_trabajados,
+                'notas' => $asignacion->notas,
+            ]);
+    }
+
     $pilas = Comision::query()
         ->where(function($q) use ($usuario, $empleado_id) {
             $q->where('created_by', $usuario->id)
@@ -383,6 +407,7 @@ public function edit(User $usuario)
         'operaciones',
         'bitacora',
         'pilas',
+        'asignacionesObra',
         'permissions',
         'rolePermissionIds',
         'directPermissionIds',
@@ -536,3 +561,8 @@ public function syncFirmasImpresas(Request $request, User $usuario)
         ->with('success', 'Usuario actualizado.');
 }
 }
+
+
+
+
+

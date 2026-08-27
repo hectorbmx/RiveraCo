@@ -1820,7 +1820,7 @@ foreach ($oc->detalles as $detalle) {
     $vobo2Nombre = $firmasImpresas->get(DocumentoFirmante::CAMPO_VOBO_2)?->user?->name ?? '';
 
     // Combinar ambos slots; si solo hay uno, no aparece el separador
-    $voboNombre = trim(implode(' / ', array_filter([$vobo1Nombre, $vobo2Nombre])));
+    $voboNombre = trim(implode(' <br> ', array_filter([$vobo1Nombre, $vobo2Nombre])));
 
     $enteradoNombre = $firmasImpresas
         ->get(DocumentoFirmante::CAMPO_ENTERADO)

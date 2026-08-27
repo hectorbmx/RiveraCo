@@ -1,112 +1,123 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="p-6">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="p-6" x-data="{ saving: false, tab: @js(in_array(request('tab'), ['autorizaciones', 'compras', 'operaciones', 'bitacora', 'asignaciones', 'permisos', 'pilas', 'firmas']) ? request('tab') : 'autorizaciones') }">
+    <div x-show="saving" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+        <div class="rounded-lg bg-white px-6 py-5 shadow-xl border flex items-center gap-3">
+            <div class="h-5 w-5 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin"></div>
+            <span class="text-sm font-semibold text-gray-700">Guardando cambios...</span>
+        </div>
+    </div>
 
-        {{-- COLUMNA IZQUIERDA: DATOS DEL USUARIO --}}
-        <div class="lg:col-span-1 space-y-6">
-            <h1 class="text-xl font-semibold mb-4">Editar usuario App</h1>
+    <div class="max-w-[1600px] mx-auto space-y-6">
+        {{-- BLOQUE SUPERIOR: DATOS DEL USUARIO --}}
+        <div class="space-y-6">
+            <h1 class="text-xl font-semibold">Editar usuario App</h1>
 
             @php
                 $empleado = $usuario->usuarioApp?->empleado;
             @endphp
 
-            <div class="border rounded-lg p-4 bg-white shadow-sm">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-sm font-semibold">Empleado asignado</h2>
+            <div class="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
+                <div class="border rounded-lg p-4 bg-white shadow-sm xl:col-span-1">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-sm font-semibold">Empleado asignado</h2>
+
+                        @if($empleado)
+                            <span class="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
+                                Vinculado
+                            </span>
+                        @else
+                            <span class="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">
+                                Sin vínculo
+                            </span>
+                        @endif
+                    </div>
 
                     @if($empleado)
-                        <span class="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
-                            Vinculado
-                        </span>
+                        <div class="mt-3 grid grid-cols-1 gap-2 text-sm">
+                            <div><span class="text-gray-500">ID:</span> <span class="font-medium">{{ $empleado->id_Empleado }}</span></div>
+                            <div>
+                                <span class="text-gray-500">Nombre:</span>
+                                <span class="font-medium">{{ $empleado->Nombre }} {{ $empleado->Apellidos }}</span>
+                            </div>
+                            <div><span class="text-gray-500">Email:</span> <span class="font-medium">{{ $empleado->Email }}</span></div>
+                            <div><span class="text-gray-500">Área:</span> <span class="font-medium">{{ $empleado->Area }}</span></div>
+                            <div><span class="text-gray-500">Puesto:</span> <span class="font-medium">{{ $empleado->Puesto }}</span></div>
+                        </div>
                     @else
-                        <span class="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">
-                            Sin vínculo
-                        </span>
+                        <p class="mt-3 text-sm text-gray-600">
+                            Este usuario no tiene un empleado ligado en <code>usuarios_app</code>.
+                        </p>
                     @endif
                 </div>
 
-                @if($empleado)
-                    <div class="mt-3 grid grid-cols-1 gap-2 text-sm">
-                        <div><span class="text-gray-500">ID:</span> <span class="font-medium">{{ $empleado->id_Empleado }}</span></div>
-                        <div>
-                            <span class="text-gray-500">Nombre:</span>
-                            <span class="font-medium">{{ $empleado->Nombre }} {{ $empleado->Apellidos }}</span>
+                <div class="bg-white p-5 rounded-lg shadow-sm border xl:col-span-3">
+                    <form method="POST" action="{{ route('usuarios.update', $usuario->id) }}" class="space-y-4" @submit="saving = true">
+                        @csrf
+                        @method('PUT')
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Nombre</label>
+                                <input type="text" name="name"
+                                       class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                       value="{{ old('name', $usuario->name) }}" required>
+                                @error('name')
+                                    <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Email</label>
+                                <input type="email" name="email"
+                                       class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                       value="{{ old('email', $usuario->email) }}" required>
+                                @error('email')
+                                    <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
-                        <div><span class="text-gray-500">Email:</span> <span class="font-medium">{{ $empleado->Email }}</span></div>
-                        <div><span class="text-gray-500">Área:</span> <span class="font-medium">{{ $empleado->Area }}</span></div>
-                        <div><span class="text-gray-500">Puesto:</span> <span class="font-medium">{{ $empleado->Puesto }}</span></div>
-                    </div>
-                @else
-                    <p class="mt-3 text-sm text-gray-600">
-                        Este usuario no tiene un empleado ligado en <code>usuarios_app</code>.
-                    </p>
-                @endif
-            </div>
 
-            <div class="bg-white p-6 rounded-lg shadow-sm border">
-                <form method="POST" action="{{ route('usuarios.update', $usuario->id) }}" class="space-y-4">
-                    @csrf
-                    @method('PUT')
+                        <hr class="my-3">
 
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Nombre</label>
-                        <input type="text" name="name"
-                               class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                               value="{{ old('name', $usuario->name) }}" required>
-                        @error('name')
-                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Nueva contraseña (opcional)</label>
+                                <input type="password" name="password"
+                                       class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                       autocomplete="new-password">
+                                @error('password')
+                                    <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                                <p class="text-xs text-gray-500 mt-1">Déjalo vacío para mantener la contraseña actual.</p>
+                            </div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Email</label>
-                        <input type="email" name="email"
-                               class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                               value="{{ old('email', $usuario->email) }}" required>
-                        @error('email')
-                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Confirmar nueva contraseña</label>
+                                <input type="password" name="password_confirmation"
+                                       class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                       autocomplete="new-password">
+                            </div>
+                        </div>
 
-                    <hr class="my-4">
+                        <div class="flex gap-3 pt-2">
+                            <button type="submit"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition shadow-sm">
+                                Guardar cambios
+                            </button>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Nueva contraseña (opcional)</label>
-                        <input type="password" name="password"
-                               class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                               autocomplete="new-password">
-                        @error('password')
-                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                        <p class="text-xs text-gray-500 mt-1">Déjalo vacío para mantener la contraseña actual.</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Confirmar nueva contraseña</label>
-                        <input type="password" name="password_confirmation"
-                               class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                               autocomplete="new-password">
-                    </div>
-
-                    <div class="flex gap-3 pt-4">
-                        <button type="submit"
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition shadow-sm">
-                            Guardar cambios
-                        </button>
-
-                        <a href="{{ route('usuarios.index') }}"
-                           class="px-4 py-2 rounded border hover:bg-gray-50 transition">
-                            Cancelar
-                        </a>
-                    </div>
-                </form>
+                            <a href="{{ route('usuarios.index') }}"
+                               class="px-4 py-2 rounded border hover:bg-gray-50 transition">
+                                Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-
-        {{-- COLUMNA DERECHA: HISTORIAL DE MOVIMIENTOS --}}
-        <div class="lg:col-span-2" x-data="{ tab: @js(in_array(request('tab'), ['autorizaciones', 'compras', 'operaciones', 'bitacora', 'permisos', 'pilas', 'firmas']) ? request('tab') : 'autorizaciones') }">
+        {{-- BLOQUE INFERIOR: HISTORIAL Y CONFIGURACIONES --}}
+        <div>
             <div class="bg-white rounded-lg shadow-sm border min-h-[600px] flex flex-col">
 
                 {{-- TABS NAVIGATION --}}
@@ -130,6 +141,11 @@
                             :class="tab === 'bitacora' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
                             class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
                         Bitácora
+                    </button>
+                    <button @click="tab = 'asignaciones'"
+                            :class="tab === 'asignaciones' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                            class="px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
+                        Asignaciones
                     </button>
                     <button @click="tab = 'permisos'"
                             :class="tab === 'permisos' ? 'border-blue-600 text-blue-600 bg-blue-50/30' : 'border-transparent text-gray-500 hover:text-gray-700'"
@@ -273,7 +289,54 @@
                             @endforelse
                         </div>
                     </div>
-                    {{-- TAB: FIRMAS IMPRESAS --}}
+                    {{-- TAB: ASIGNACIONES A OBRA --}}
+                    <div x-show="tab === 'asignaciones'" x-transition>
+                        <h3 class="font-semibold text-gray-800 mb-4">Historial de asignaciones a obra</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left border">
+                                <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                                    <tr>
+                                        <th class="px-4 py-2 border-b">Obra</th>
+                                        <th class="px-4 py-2 border-b">Clave</th>
+                                        <th class="px-4 py-2 border-b">Rol / Puesto</th>
+                                        <th class="px-4 py-2 border-b text-center">Alta</th>
+                                        <th class="px-4 py-2 border-b text-center">Baja</th>
+                                        <th class="px-4 py-2 border-b text-center">Días</th>
+                                        <th class="px-4 py-2 border-b text-center">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($asignacionesObra as $asignacion)
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-2 border-b font-medium text-gray-700">{{ $asignacion['obra'] }}</td>
+                                            <td class="px-4 py-2 border-b text-gray-600 font-mono text-xs">{{ $asignacion['clave_obra'] ?? '-' }}</td>
+                                            <td class="px-4 py-2 border-b text-gray-700">
+                                                <div class="font-medium">{{ $asignacion['rol'] ?? 'Sin rol' }}</div>
+                                                <div class="text-xs text-gray-500">{{ $asignacion['puesto'] ?? 'Sin puesto en obra' }}</div>
+                                            </td>
+                                            <td class="px-4 py-2 border-b text-center text-gray-500">
+                                                {{ $asignacion['fecha_alta'] ? \Carbon\Carbon::parse($asignacion['fecha_alta'])->format('d/m/Y') : '-' }}
+                                            </td>
+                                            <td class="px-4 py-2 border-b text-center text-gray-500">
+                                                {{ $asignacion['fecha_baja'] ? \Carbon\Carbon::parse($asignacion['fecha_baja'])->format('d/m/Y') : '-' }}
+                                            </td>
+                                            <td class="px-4 py-2 border-b text-center font-mono text-gray-600">{{ $asignacion['dias'] ?? 0 }}</td>
+                                            <td class="px-4 py-2 border-b text-center">
+                                                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase {{ $asignacion['activo'] ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">
+                                                    {{ $asignacion['activo'] ? 'Activa' : 'Histórica' }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="7" class="px-4 py-8 text-center text-gray-400 italic">No hay asignaciones a obra registradas para este usuario.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+{{-- TAB: FIRMAS IMPRESAS --}}
                     <div x-show="tab === 'firmas'" x-transition>
                         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
                             <div>
@@ -281,7 +344,7 @@
                                 <p class="text-sm text-gray-500 mt-1">Configura los nombres fijos que se imprimen en VoBo y ENTERADO de ordenes de compra.</p>
                             </div>
                         </div>
-                        <form method="POST" action="{{ route('usuarios.firmas-impresas.sync', $usuario->id) }}" class="space-y-4">
+                        <form method="POST" action="{{ route('usuarios.firmas-impresas.sync', $usuario->id) }}" class="space-y-4" @submit="saving = true">
                             @csrf
                             @method('PUT')
                             @php
@@ -365,7 +428,7 @@
                             </div>
                         </div>
 
-                        <form method="POST" action="{{ route('usuarios.permissions.sync', $usuario->id) }}">
+                        <form method="POST" action="{{ route('usuarios.permissions.sync', $usuario->id) }}" @submit="saving = true">
                             @csrf
                             @method('PUT')
 
@@ -503,3 +566,9 @@
     </div>
 </div>
 @endsection
+
+
+
+
+
+

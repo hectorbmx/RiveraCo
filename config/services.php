@@ -34,8 +34,9 @@ return [
       'api_key' => env('CONTPAQI_API_KEY'),
     ],
     'facturapi' => [
-        'secret_key' => env('FACTURAPI_SECRET_KEY'),
-        'sandbox' => env('FACTURAPI_SANDBOX', true),
+        'secret_key'      => env('FACTURAPI_SECRET_KEY'),
+        'catalog_api_key' => env('FACTURAPI_CATALOG_API_KEY'),
+        'sandbox'         => env('FACTURAPI_SANDBOX', true),
     ],
     'facturacion_mail' => [
         'provider' => env('FACTURACION_MAIL_PROVIDER', 'laravel'),

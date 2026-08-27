@@ -72,15 +72,38 @@ public function buscarProductosSat(Request $request)
         'q' => ['required', 'string', 'min:2', 'max:80'],
     ]);
 
+    return $this->buscarCatalogoFacturapi('/v2/catalogs/products', $data['q']);
+}
+
+public function buscarUnidadesSat(Request $request)
+{
+    $data = $request->validate([
+        'q' => ['required', 'string', 'min:1', 'max:80'],
+    ]);
+
+    return $this->buscarCatalogoFacturapi('/v2/catalogs/units', $data['q']);
+}
+
+private function buscarCatalogoFacturapi(string $uri, string $query): \Illuminate\Http\JsonResponse
+{
+    $catalogKey = config('services.facturapi.catalog_api_key');
+
+    if (blank($catalogKey)) {
+        return response()->json([
+            'message' => 'Facturapi Catalog API Key no configurada. Define FACTURAPI_CATALOG_API_KEY en .env.',
+            'data'    => [],
+        ], 503);
+    }
+
     try {
-        $response = Http::withBasicAuth(config('services.facturapi.secret_key'), '')
+        $response = Http::withToken($catalogKey)
             ->acceptJson()
-            ->get('https://www.facturapi.io/v2/catalogs/products', [
-                'q' => $data['q'],
+            ->get('https://www.facturapi.io' . $uri, [
+                'q'     => trim($query),
                 'limit' => 10,
             ]);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             return response()->json([
                 'message' => $response->json('message')
                     ?? $response->json('error')
@@ -91,20 +114,20 @@ public function buscarProductosSat(Request $request)
 
         $items = collect($response->json('data', []))
             ->map(fn ($item) => [
-                'key' => (string) ($item['key'] ?? ''),
+                'key'         => (string) ($item['key'] ?? ''),
                 'description' => (string) ($item['description'] ?? ''),
             ])
             ->filter(fn ($item) => $item['key'] !== '')
             ->values();
 
-        return response()->json([
-            'data' => $items,
-        ]);
+        return response()->json(['data' => $items]);
+
     } catch (\Throwable $e) {
         return response()->json([
             'message' => 'No se pudo consultar el catalogo SAT: ' . $e->getMessage(),
-            'data' => [],
+            'data'    => [],
         ], 500);
     }
 }
 }
+

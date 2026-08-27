@@ -249,6 +249,7 @@ Route::middleware(['auth', 'verified'])
             Route::post('/conceptos', [SatCatalogoController::class, 'storeConcepto'])->name('conceptos.store');
             Route::put('/conceptos/{concepto}', [SatCatalogoController::class, 'updateConcepto'])->name('conceptos.update');
             Route::get('/productos-sat/buscar', [SatCatalogoController::class, 'buscarProductosSat'])->name('productos-sat.buscar');
+            Route::get('/unidades-sat/buscar', [SatCatalogoController::class, 'buscarUnidadesSat'])->name('unidades-sat.buscar');
 
         });
         /*

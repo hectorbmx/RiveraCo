@@ -228,40 +228,41 @@
 
                 <div class="relative">
                     <label class="block text-sm font-medium text-slate-700 mb-1">
-                        Clave producto/servicio SAT
+                        Clave producto/servicio SAT <span class="text-red-500">*</span>
                     </label>
                     <input type="hidden"
                            name="clave_producto_servicio"
                            :value="claveProductoServicio">
                     <input type="text"
                            x-model="claveProductoSearch"
-                           @input.debounce.350ms="buscarProductosSat()"
-                           @focus="claveProductoOpen = productosSat.length > 0"
+                           @input.debounce.300ms="buscarProductosSat()"
+                           @focus="if(productosSat.length > 0) claveProductoOpen = true"
                            @keydown.escape="claveProductoOpen = false"
                            required
                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
-                           placeholder="Buscar por nombre o clave">
+                           placeholder="Buscar por clave o descripción (ej. 72141100)">
 
                     <div x-show="claveProductoOpen"
                          x-cloak
                          @click.away="claveProductoOpen = false"
-                         class="absolute z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
-                        <div x-show="buscandoProductosSat" class="px-4 py-3 text-sm text-slate-500">
-                            Buscando...
+                         class="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
+                        <div x-show="buscandoProductosSat" class="px-4 py-3 text-sm text-slate-500 flex items-center gap-2">
+                            <span class="animate-spin inline-block w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full"></span>
+                            Buscando en catálogo SAT...
                         </div>
 
                         <template x-if="!buscandoProductosSat && productosSat.length === 0 && claveProductoSearch.length >= 2">
                             <div class="px-4 py-3 text-sm text-slate-500">
-                                Sin resultados
+                                Sin resultados en FacturaAPI
                             </div>
                         </template>
 
                         <template x-for="producto in productosSat" :key="producto.key">
                             <button type="button"
                                     @click="seleccionarProductoSat(producto)"
-                                    class="block w-full px-4 py-3 text-left hover:bg-slate-50">
-                                <span class="block text-sm font-semibold text-slate-900" x-text="producto.key"></span>
-                                <span class="block text-xs text-slate-500" x-text="producto.description"></span>
+                                    class="block w-full px-4 py-2.5 text-left hover:bg-indigo-50/50 border-b border-slate-100 last:border-0 transition-colors">
+                                <span class="block text-xs font-bold text-indigo-700 font-mono" x-text="producto.key"></span>
+                                <span class="block text-xs text-slate-600 truncate" x-text="producto.description"></span>
                             </button>
                         </template>
                     </div>
@@ -271,15 +272,50 @@
                        class="mt-1 text-xs text-red-600"></p>
                 </div>
 
-                <div>
+                <div class="relative">
                     <label class="block text-sm font-medium text-slate-700 mb-1">
-                        Clave unidad SAT
+                        Clave unidad SAT <span class="text-red-500">*</span>
                     </label>
-                    <input type="text"
+                    <input type="hidden"
                            name="clave_unidad"
+                           :value="claveUnidad">
+                    <input type="text"
+                           x-model="claveUnidadSearch"
+                           @input.debounce.300ms="buscarUnidadesSat()"
+                           @focus="if(unidadesSat.length > 0) claveUnidadOpen = true"
+                           @keydown.escape="claveUnidadOpen = false"
                            required
                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
-                           placeholder="Ej. E48">
+                           placeholder="Buscar por clave o nombre (ej. E48, H87)">
+
+                    <div x-show="claveUnidadOpen"
+                         x-cloak
+                         @click.away="claveUnidadOpen = false"
+                         class="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
+                        <div x-show="buscandoUnidadesSat" class="px-4 py-3 text-sm text-slate-500 flex items-center gap-2">
+                            <span class="animate-spin inline-block w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full"></span>
+                            Buscando unidades SAT...
+                        </div>
+
+                        <template x-if="!buscandoUnidadesSat && unidadesSat.length === 0 && claveUnidadSearch.length >= 1">
+                            <div class="px-4 py-3 text-sm text-slate-500">
+                                Sin resultados en FacturaAPI
+                            </div>
+                        </template>
+
+                        <template x-for="u in unidadesSat" :key="u.key">
+                            <button type="button"
+                                    @click="seleccionarUnidadSat(u)"
+                                    class="block w-full px-4 py-2.5 text-left hover:bg-indigo-50/50 border-b border-slate-100 last:border-0 transition-colors">
+                                <span class="block text-xs font-bold text-indigo-700 font-mono" x-text="u.key"></span>
+                                <span class="block text-xs text-slate-600 truncate" x-text="u.description"></span>
+                            </button>
+                        </template>
+                    </div>
+
+                    <p x-show="errorUnidadesSat"
+                       x-text="errorUnidadesSat"
+                       class="mt-1 text-xs text-red-600"></p>
                 </div>
 
                 <div>
@@ -288,8 +324,9 @@
                     </label>
                     <input type="text"
                            name="unidad"
+                           x-model="unidadVisible"
                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
-                           placeholder="Ej. Servicio">
+                           placeholder="Ej. Servicio, Pieza, Metro">
                 </div>
 
                 <div>
@@ -377,7 +414,7 @@
             <button type="button"
                     @click="openEdit = false"
                     class="text-slate-400 hover:text-slate-600">
-                x
+                ✕
             </button>
         </div>
 
@@ -389,7 +426,7 @@
 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">
-                        Codigo interno
+                        Código interno
                     </label>
                     <input type="text"
                            name="codigo"
@@ -411,37 +448,102 @@
 
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-slate-700 mb-1">
-                        Descripcion
+                        Descripción
                     </label>
                     <input type="text"
                            name="descripcion"
                            x-model="editConcepto.descripcion"
                            required
                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
-                           placeholder="Ej. Servicio de construccion">
+                           placeholder="Ej. Servicio de construcción">
                 </div>
 
-                <div>
+                <div class="relative">
                     <label class="block text-sm font-medium text-slate-700 mb-1">
-                        Clave producto/servicio SAT
+                        Clave producto/servicio SAT <span class="text-red-500">*</span>
                     </label>
                     <input type="text"
                            name="clave_producto_servicio"
                            x-model="editConcepto.clave_producto_servicio"
+                           @input.debounce.300ms="buscarProductosSatEdit()"
+                           @focus="if(productosSatEdit.length > 0) claveProductoOpenEdit = true"
+                           @keydown.escape="claveProductoOpenEdit = false"
                            required
-                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+                           placeholder="Buscar por clave o descripción">
+
+                    <div x-show="claveProductoOpenEdit"
+                         x-cloak
+                         @click.away="claveProductoOpenEdit = false"
+                         class="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
+                        <div x-show="buscandoProductosSatEdit" class="px-4 py-3 text-sm text-slate-500 flex items-center gap-2">
+                            <span class="animate-spin inline-block w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full"></span>
+                            Buscando en catálogo SAT...
+                        </div>
+
+                        <template x-if="!buscandoProductosSatEdit && productosSatEdit.length === 0 && editConcepto.clave_producto_servicio.length >= 2">
+                            <div class="px-4 py-3 text-sm text-slate-500">
+                                Sin resultados en FacturaAPI
+                            </div>
+                        </template>
+
+                        <template x-for="producto in productosSatEdit" :key="producto.key">
+                            <button type="button"
+                                    @click="seleccionarProductoSatEdit(producto)"
+                                    class="block w-full px-4 py-2.5 text-left hover:bg-indigo-50/50 border-b border-slate-100 last:border-0 transition-colors">
+                                <span class="block text-xs font-bold text-indigo-700 font-mono" x-text="producto.key"></span>
+                                <span class="block text-xs text-slate-600 truncate" x-text="producto.description"></span>
+                            </button>
+                        </template>
+                    </div>
+
+                    <p x-show="errorProductosSatEdit"
+                       x-text="errorProductosSatEdit"
+                       class="mt-1 text-xs text-red-600"></p>
                 </div>
 
-                <div>
+                <div class="relative">
                     <label class="block text-sm font-medium text-slate-700 mb-1">
-                        Clave unidad SAT
+                        Clave unidad SAT <span class="text-red-500">*</span>
                     </label>
                     <input type="text"
                            name="clave_unidad"
                            x-model="editConcepto.clave_unidad"
+                           @input.debounce.300ms="buscarUnidadesSatEdit()"
+                           @focus="if(unidadesSatEdit.length > 0) claveUnidadOpenEdit = true"
+                           @keydown.escape="claveUnidadOpenEdit = false"
                            required
                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
-                           placeholder="Ej. E48">
+                           placeholder="Buscar por clave o nombre (ej. E48, H87)">
+
+                    <div x-show="claveUnidadOpenEdit"
+                         x-cloak
+                         @click.away="claveUnidadOpenEdit = false"
+                         class="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
+                        <div x-show="buscandoUnidadesSatEdit" class="px-4 py-3 text-sm text-slate-500 flex items-center gap-2">
+                            <span class="animate-spin inline-block w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full"></span>
+                            Buscando unidades SAT...
+                        </div>
+
+                        <template x-if="!buscandoUnidadesSatEdit && unidadesSatEdit.length === 0 && editConcepto.clave_unidad.length >= 1">
+                            <div class="px-4 py-3 text-sm text-slate-500">
+                                Sin resultados en FacturaAPI
+                            </div>
+                        </template>
+
+                        <template x-for="u in unidadesSatEdit" :key="u.key">
+                            <button type="button"
+                                    @click="seleccionarUnidadSatEdit(u)"
+                                    class="block w-full px-4 py-2.5 text-left hover:bg-indigo-50/50 border-b border-slate-100 last:border-0 transition-colors">
+                                <span class="block text-xs font-bold text-indigo-700 font-mono" x-text="u.key"></span>
+                                <span class="block text-xs text-slate-600 truncate" x-text="u.description"></span>
+                            </button>
+                        </template>
+                    </div>
+
+                    <p x-show="errorUnidadesSatEdit"
+                       x-text="errorUnidadesSatEdit"
+                       class="mt-1 text-xs text-red-600"></p>
                 </div>
 
                 <div>
@@ -555,12 +657,35 @@ function catalogoConceptosSat() {
             activo: true,
             observaciones: '',
         },
+
+        // Crear - Producto / Servicio
         claveProductoSearch: '',
         claveProductoServicio: '',
         claveProductoOpen: false,
         buscandoProductosSat: false,
         productosSat: [],
         errorProductosSat: '',
+
+        // Crear - Unidad
+        claveUnidadSearch: '',
+        claveUnidad: '',
+        claveUnidadOpen: false,
+        buscandoUnidadesSat: false,
+        unidadesSat: [],
+        errorUnidadesSat: '',
+        unidadVisible: '',
+
+        // Editar - Producto / Servicio
+        claveProductoOpenEdit: false,
+        buscandoProductosSatEdit: false,
+        productosSatEdit: [],
+        errorProductosSatEdit: '',
+
+        // Editar - Unidad
+        claveUnidadOpenEdit: false,
+        buscandoUnidadesSatEdit: false,
+        unidadesSatEdit: [],
+        errorUnidadesSatEdit: '',
 
         openEditConcepto(concepto) {
             this.editConcepto = {
@@ -577,15 +702,18 @@ function catalogoConceptosSat() {
                 activo: !!concepto.activo,
                 observaciones: concepto.observaciones || '',
             };
+            this.claveProductoOpenEdit = false;
+            this.claveUnidadOpenEdit = false;
+            this.productosSatEdit = [];
+            this.unidadesSatEdit = [];
             this.editAction = `${this.editBaseUrl}/${concepto.id}`;
             this.openEdit = true;
         },
 
         async buscarProductosSat() {
             const query = this.claveProductoSearch.trim();
-
             this.errorProductosSat = '';
-            this.claveProductoServicio = /^\d+$/.test(query) ? query : '';
+            this.claveProductoServicio = query;
 
             if (query.length < 2) {
                 this.productosSat = [];
@@ -601,21 +729,17 @@ function catalogoConceptosSat() {
                 url.searchParams.set('q', query);
 
                 const response = await fetch(url.toString(), {
-                    headers: {
-                        'Accept': 'application/json',
-                    },
+                    headers: { 'Accept': 'application/json' },
                 });
 
                 const body = await response.json();
-
                 if (!response.ok) {
-                    throw new Error(body.message || 'No se pudo consultar el catalogo SAT.');
+                    throw new Error(body.message || 'No se pudo consultar el catálogo SAT.');
                 }
-
                 this.productosSat = body.data || [];
             } catch (error) {
                 this.productosSat = [];
-                this.errorProductosSat = error.message || 'No se pudo consultar el catalogo SAT.';
+                this.errorProductosSat = error.message || 'Error al buscar productos SAT.';
             } finally {
                 this.buscandoProductosSat = false;
             }
@@ -623,10 +747,141 @@ function catalogoConceptosSat() {
 
         seleccionarProductoSat(producto) {
             this.claveProductoServicio = producto.key;
-            this.claveProductoSearch = producto.key;
+            this.claveProductoSearch = `${producto.key} - ${producto.description}`;
             this.productosSat = [];
             this.claveProductoOpen = false;
             this.errorProductosSat = '';
+        },
+
+        async buscarUnidadesSat() {
+            const query = this.claveUnidadSearch.trim();
+            this.errorUnidadesSat = '';
+            this.claveUnidad = query;
+
+            if (query.length < 1) {
+                this.unidadesSat = [];
+                this.claveUnidadOpen = false;
+                return;
+            }
+
+            this.buscandoUnidadesSat = true;
+            this.claveUnidadOpen = true;
+
+            try {
+                const url = new URL(@json(route('sat.catalogos.unidades-sat.buscar')));
+                url.searchParams.set('q', query);
+
+                const response = await fetch(url.toString(), {
+                    headers: { 'Accept': 'application/json' },
+                });
+
+                const body = await response.json();
+                if (!response.ok) {
+                    throw new Error(body.message || 'No se pudo consultar las unidades SAT.');
+                }
+                this.unidadesSat = body.data || [];
+            } catch (error) {
+                this.unidadesSat = [];
+                this.errorUnidadesSat = error.message || 'Error al buscar unidades SAT.';
+            } finally {
+                this.buscandoUnidadesSat = false;
+            }
+        },
+
+        seleccionarUnidadSat(u) {
+            this.claveUnidad = u.key;
+            this.claveUnidadSearch = `${u.key} - ${u.description}`;
+            if (!this.unidadVisible) {
+                this.unidadVisible = u.description;
+            }
+            this.unidadesSat = [];
+            this.claveUnidadOpen = false;
+            this.errorUnidadesSat = '';
+        },
+
+        async buscarProductosSatEdit() {
+            const query = (this.editConcepto.clave_producto_servicio || '').trim();
+            this.errorProductosSatEdit = '';
+
+            if (query.length < 2) {
+                this.productosSatEdit = [];
+                this.claveProductoOpenEdit = false;
+                return;
+            }
+
+            this.buscandoProductosSatEdit = true;
+            this.claveProductoOpenEdit = true;
+
+            try {
+                const url = new URL(@json(route('sat.catalogos.productos-sat.buscar')));
+                url.searchParams.set('q', query);
+
+                const response = await fetch(url.toString(), {
+                    headers: { 'Accept': 'application/json' },
+                });
+
+                const body = await response.json();
+                if (!response.ok) {
+                    throw new Error(body.message || 'No se pudo consultar el catálogo SAT.');
+                }
+                this.productosSatEdit = body.data || [];
+            } catch (error) {
+                this.productosSatEdit = [];
+                this.errorProductosSatEdit = error.message || 'Error al buscar productos SAT.';
+            } finally {
+                this.buscandoProductosSatEdit = false;
+            }
+        },
+
+        seleccionarProductoSatEdit(producto) {
+            this.editConcepto.clave_producto_servicio = producto.key;
+            this.productosSatEdit = [];
+            this.claveProductoOpenEdit = false;
+            this.errorProductosSatEdit = '';
+        },
+
+        async buscarUnidadesSatEdit() {
+            const query = (this.editConcepto.clave_unidad || '').trim();
+            this.errorUnidadesSatEdit = '';
+
+            if (query.length < 1) {
+                this.unidadesSatEdit = [];
+                this.claveUnidadOpenEdit = false;
+                return;
+            }
+
+            this.buscandoUnidadesSatEdit = true;
+            this.claveUnidadOpenEdit = true;
+
+            try {
+                const url = new URL(@json(route('sat.catalogos.unidades-sat.buscar')));
+                url.searchParams.set('q', query);
+
+                const response = await fetch(url.toString(), {
+                    headers: { 'Accept': 'application/json' },
+                });
+
+                const body = await response.json();
+                if (!response.ok) {
+                    throw new Error(body.message || 'No se pudo consultar las unidades SAT.');
+                }
+                this.unidadesSatEdit = body.data || [];
+            } catch (error) {
+                this.unidadesSatEdit = [];
+                this.errorUnidadesSatEdit = error.message || 'Error al buscar unidades SAT.';
+            } finally {
+                this.buscandoUnidadesSatEdit = false;
+            }
+        },
+
+        seleccionarUnidadSatEdit(u) {
+            this.editConcepto.clave_unidad = u.key;
+            if (!this.editConcepto.unidad) {
+                this.editConcepto.unidad = u.description;
+            }
+            this.unidadesSatEdit = [];
+            this.claveUnidadOpenEdit = false;
+            this.errorUnidadesSatEdit = '';
         },
     };
 }
