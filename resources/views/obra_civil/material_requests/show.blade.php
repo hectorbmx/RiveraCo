@@ -186,14 +186,16 @@
         <form method="POST" action="{{ route('obra_civil.material-requests.approve-quantities', [$obra, $materialRequest]) }}" data-loading-form>
             @csrf
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[1200px] text-sm">
+                <table class="w-full min-w-[1400px] text-sm">
                     <thead class="bg-slate-50 text-xs uppercase text-slate-500">
                         <tr>
                             <th class="px-4 py-3 text-left">Codigo</th>
                             <th class="px-4 py-3 text-left">Concepto</th>
                             <th class="px-4 py-3 text-left">Unidad</th>
-                            <th class="px-4 py-3 text-right">Solicitado</th>
-                            <th class="px-4 py-3 text-right">Autorizado</th>
+                            <th class="px-4 py-3 text-left">Piezas</th>
+                            {{-- <th class="px-4 py-3 text-right">Solicitado</th> --}}
+                            {{-- <th class="px-4 py-3 text-right">Autorizado</th> --}}
+                            <th class="px-4 py-3 text-right">Autorizar piezas</th>
                             <th class="px-4 py-3 text-right">No autorizado</th>
                             <th class="px-4 py-3 text-left">Orden compra</th>
                             <th class="px-4 py-3 text-left">Notas residente</th>
@@ -207,7 +209,6 @@
                                 $snapshot = $item->insumo_snapshot ?? [];
                                 $requested = (float) $item->quantity;
                                 $approvedValue = old("items.$index.approved_quantity", $item->approved_quantity !== null ? (float) $item->approved_quantity : $requested);
-                                $notApproved = max(0, $requested - (float) $approvedValue);
                                 $detallesOc = $item->ordenCompraDetalles;
                                 $cantidadOcFinal = $detallesOc
                                     ->filter(fn ($detalle) => in_array(strtoupper((string) ($detalle->orden->estado ?? '')), ['AUTORIZADA', 'VERIFICADA'], true))
@@ -215,8 +216,29 @@
                                 $cantidadOcBorrador = $detallesOc
                                     ->filter(fn ($detalle) => in_array(strtoupper((string) ($detalle->orden->estado ?? '')), ['BORRADOR', 'PROGRAMADA'], true))
                                     ->sum(fn ($detalle) => (float) $detalle->cantidad);
+                                $commercialRequest = is_array($snapshot['commercial_request'] ?? null) ? $snapshot['commercial_request'] : null;
+                                $commercialLines = collect($commercialRequest['items'] ?? [])->filter(fn ($line) => is_array($line));
+                                $commercialTotal = (float) ($commercialRequest['total_commercial_quantity'] ?? $commercialLines->sum(fn ($line) => (float) ($line['commercial_quantity'] ?? 0)));
+                                $convertedTotal = (float) ($commercialRequest['converted_quantity'] ?? $requested);
+                                $impactUnit = $commercialRequest['converted_unit'] ?? ($item->unit ?: ($insumo->unidad ?? $snapshot['unidad'] ?? ''));
+                                $commercialUnit = $commercialLines->pluck('unidad_compra')->filter()->unique()->count() === 1
+                                    ? (string) $commercialLines->pluck('unidad_compra')->filter()->first()
+                                    : 'PZA';
+                                $usesCommercialAuthorization = $commercialLines->isNotEmpty() && $commercialTotal > 0 && $convertedTotal > 0;
+                                $approvedPiecesDefault = $usesCommercialAuthorization
+                                    ? round(((float) $approvedValue / $convertedTotal) * $commercialTotal, 4)
+                                    : 0;
+                                $approvedPiecesValue = old("items.$index.approved_commercial_quantity", $approvedPiecesDefault);
+                                $notApprovedDisplay = $usesCommercialAuthorization
+                                    ? max(0, $commercialTotal - (float) $approvedPiecesValue)
+                                    : max(0, $requested - (float) $approvedValue);
+                                $notApprovedUnit = $usesCommercialAuthorization ? $commercialUnit : ($item->unit ?: ($insumo->unidad ?? $snapshot['unidad'] ?? ''));
+                                $approvedInputId = 'approved_quantity_' . $item->id;
                             @endphp
-                            <tr class="align-top hover:bg-slate-50" data-request-item data-requested="{{ $requested }}">
+                            <tr class="align-top hover:bg-slate-50"
+                                data-request-item
+                                data-requested="{{ $requested }}"
+                                data-commercial-requested="{{ $usesCommercialAuthorization ? $commercialTotal : '' }}">
                                 <td class="px-4 py-3 font-mono text-xs font-semibold text-slate-700">
                                     {{ $insumo->codigo ?? $snapshot['codigo'] ?? '-' }}
                                     <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
@@ -225,22 +247,69 @@
                                     <div class="max-w-xl font-semibold">{{ $insumo->concepto ?? $snapshot['concepto'] ?? '-' }}</div>
                                 </td>
                                 <td class="px-4 py-3 text-slate-600">{{ $item->unit ?: ($insumo->unidad ?? $snapshot['unidad'] ?? '-') }}</td>
-                                <td class="px-4 py-3 text-right font-semibold text-slate-900">{{ number_format($requested, 4) }}</td>
+                                <td class="px-4 py-3 text-slate-700">
+                                    @if($commercialLines->isNotEmpty())
+                                        <div class="min-w-56 space-y-1 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs leading-snug text-emerald-900">
+                                            @foreach($commercialLines as $commercialLine)
+                                                <div>
+                                                    <span class="font-semibold">{{ number_format((float) ($commercialLine['commercial_quantity'] ?? 0), 4) }} {{ $commercialLine['unidad_compra'] ?? 'PZA' }}</span>
+                                                    <span>{{ $commercialLine['descripcion'] ?? $commercialLine['sku'] ?? 'Material comercial' }}</span>
+                                                    {{-- @if((float) ($commercialLine['kg'] ?? 0) > 0)
+                                                        <div class="text-[11px] text-emerald-700">{{ number_format((float) $commercialLine['kg'], 4) }} KG equivalentes</div>
+                                                    @endif --}}
+                                                </div>
+                                            @endforeach
+                                            {{-- <div class="border-t border-emerald-200 pt-1 font-semibold text-emerald-800">Impacto: {{ number_format($convertedTotal, 4) }} {{ $impactUnit }}</div> --}}
+                                        </div>
+                                    @else
+                                        <span class="text-xs text-slate-400">-</span>
+                                    @endif
+                                </td>
+                                {{-- <td class="px-4 py-3 text-right font-semibold text-slate-900">{{ number_format($requested, 4) }}</td> --}}
                                 <td class="px-4 py-3 text-right">
-                                    <input
-                                        type="number"
-                                        step="0.0001"
-                                        min="0"
-                                        max="{{ $requested }}"
-                                        name="items[{{ $index }}][approved_quantity]"
-                                        value="{{ $approvedValue }}"
-                                        data-approved-input
-                                        @disabled(! $isEditable)
-                                        class="w-32 rounded-lg border border-slate-300 bg-white px-3 py-2 text-right font-semibold text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-500"
-                                    >
+                                    @if($usesCommercialAuthorization)
+                                        <input
+                                            type="number"
+                                            step="0.0001"
+                                            min="0"
+                                            max="{{ $commercialTotal }}"
+                                            name="items[{{ $index }}][approved_commercial_quantity]"
+                                            value="{{ $approvedPiecesValue }}"
+                                            data-commercial-approved-input
+                                            data-commercial-total="{{ $commercialTotal }}"
+                                            data-converted-total="{{ $convertedTotal }}"
+                                            data-commercial-unit="{{ $commercialUnit }}"
+                                            data-approved-target="#{{ $approvedInputId }}"
+                                            @disabled(! $isEditable)
+                                            class="w-32 rounded-lg border border-slate-300 bg-white px-3 py-2 text-right font-semibold text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-500"
+                                        >
+                                        <input
+                                            id="{{ $approvedInputId }}"
+                                            type="hidden"
+                                            name="items[{{ $index }}][approved_quantity]"
+                                            value="{{ $approvedValue }}"
+                                            data-approved-input
+                                        >
+                                        <div class="mt-1 text-xs text-slate-400">{{ $commercialUnit }}</div>
+                                        {{-- <div class="mt-1 text-xs text-slate-400">Equivale a <span data-commercial-impact>{{ number_format((float) $approvedValue, 4) }}</span> {{ $impactUnit }}</div> --}}
+                                    @else
+                                        <input
+                                            type="number"
+                                            step="0.0001"
+                                            min="0"
+                                            max="{{ $requested }}"
+                                            name="items[{{ $index }}][approved_quantity]"
+                                            value="{{ $approvedValue }}"
+                                            data-approved-input
+                                            @disabled(! $isEditable)
+                                            class="w-32 rounded-lg border border-slate-300 bg-white px-3 py-2 text-right font-semibold text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-500"
+                                        >
+                                        <div class="mt-1 text-xs text-slate-400">{{ $item->unit ?: ($insumo->unidad ?? $snapshot['unidad'] ?? '') }}</div>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-3 text-right">
-                                    <span data-not-approved class="font-semibold text-amber-700">{{ number_format($notApproved, 4) }}</span>
+                                    <span data-not-approved class="font-semibold text-amber-700">{{ number_format($notApprovedDisplay, 4) }}</span>
+                                    <div data-not-approved-unit class="text-xs text-slate-400">{{ $notApprovedUnit }}</div>
                                 </td>
                                 <td class="px-4 py-3 text-slate-600">
                                     @if($detallesOc->isNotEmpty())
@@ -335,21 +404,53 @@
             maximumFractionDigits: 4,
         });
 
+        const numericValue = (value) => Number.parseFloat(String(value || '0').replace(/,/g, '')) || 0;
+        const hiddenNumber = (value) => Number.isFinite(value) ? value.toFixed(4) : '0.0000';
+
+        const syncCommercialAuthorization = (row) => {
+            const commercialInput = row.querySelector('[data-commercial-approved-input]');
+            if (!commercialInput) return null;
+
+            const approvedInput = row.querySelector(commercialInput.dataset.approvedTarget || '');
+            if (!approvedInput) return null;
+
+            const commercialTotal = numericValue(commercialInput.dataset.commercialTotal);
+            const convertedTotal = numericValue(commercialInput.dataset.convertedTotal);
+            const rawPieces = numericValue(commercialInput.value);
+            const approvedPieces = Math.min(Math.max(rawPieces, 0), commercialTotal);
+            const approvedConverted = commercialTotal > 0
+                ? (approvedPieces / commercialTotal) * convertedTotal
+                : 0;
+
+            approvedInput.value = hiddenNumber(approvedConverted);
+
+            return {
+                approvedPieces,
+                commercialTotal,
+                notApprovedPieces: Math.max(0, commercialTotal - approvedPieces),
+            };
+        };
+
         const recalculate = () => {
             let approvedTotal = 0;
             let notApprovedTotal = 0;
 
             root.querySelectorAll('[data-request-item]').forEach((row) => {
-                const requested = Number.parseFloat(row.dataset.requested || '0') || 0;
+                const requested = numericValue(row.dataset.requested);
+                const commercialAuthorization = syncCommercialAuthorization(row);
                 const input = row.querySelector('[data-approved-input]');
-                const approved = Math.max(0, Number.parseFloat(input?.value || '0') || 0);
+                const approved = Math.max(0, numericValue(input?.value));
                 const notApproved = Math.max(0, requested - approved);
 
                 approvedTotal += approved;
                 notApprovedTotal += notApproved;
 
                 const badge = row.querySelector('[data-not-approved]');
-                if (badge) badge.textContent = formatter.format(notApproved);
+                if (badge) {
+                    badge.textContent = formatter.format(
+                        commercialAuthorization ? commercialAuthorization.notApprovedPieces : notApproved
+                    );
+                }
             });
 
             const approvedTotalNode = root.querySelector('[data-approved-total]');
@@ -359,12 +460,13 @@
             if (notApprovedTotalNode) notApprovedTotalNode.textContent = `No autorizado: ${formatter.format(notApprovedTotal)}`;
         };
 
-        root.querySelectorAll('[data-approved-input]').forEach((input) => {
+        root.querySelectorAll('[data-approved-input], [data-commercial-approved-input]').forEach((input) => {
             input.addEventListener('input', recalculate);
         });
 
         root.querySelectorAll('[data-loading-form]').forEach((form) => {
             form.addEventListener('submit', () => {
+                recalculate();
                 overlay?.classList.remove('hidden');
                 overlay?.classList.add('flex');
                 form.querySelectorAll('button[type="submit"]').forEach((button) => {

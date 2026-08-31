@@ -711,3 +711,266 @@ Siguiente checkpoint recomendado:
   - mantener solicitud como aprobada mientras tenga items pendientes,
   - marcar convertida a OC solo cuando todos los items autorizados esten cubiertos por OC autorizada/verificada,
   - asegurar que las vistas de solicitudes e insumos reflejen el nuevo calculo por item.
+
+## Plan de implementacion - piezas comerciales hacia OC con impacto en unidad base
+
+Fecha: 2026-08-30  
+Estado: plan de ajuste para conservar piezas en compras y descontar insumos en su unidad original
+
+### Objetivo especifico
+
+Cuando el residente solicite materiales por piezas comerciales desde Ionic, Laravel debe:
+
+1. Conservar la orden operativa en piezas para que compras arme la OC con lo que realmente se va a pedir al proveedor.
+2. Convertir esas piezas a la unidad base del insumo de explosion, por ejemplo KG o TON.
+3. Guardar en `orden_compra_detalles.cantidad` la cantidad ya convertida a la unidad base, porque esa es la cantidad que impacta presupuesto, usado y disponible.
+4. Mantener en snapshot la trazabilidad de las piezas originales: SKU comercial, descripcion, unidad de compra, piezas, factor/peso y kg convertidos.
+
+La regla importante es:
+
+```text
+Cantidad de compra visible = piezas comerciales
+Cantidad de impacto = unidad original del insumo
+Fuente de saldo = orden_compra_detalles.cantidad
+```
+
+### Estado actual detectado
+
+Ya existe una base util:
+
+- El API residente acepta `commercial_material_id`, `commercial_quantity` y `commercial_items`.
+- `ResidenteObraCivilMaterialRequestService` convierte piezas comerciales a kg con `commercialQuantityToKg()`.
+- `ResidenteObraCivilMaterialRequestService` convierte kg a la unidad del insumo con `kgToBudgetUnit()`.
+- El resultado convertido se guarda en `obra_civil_material_request_items.quantity`.
+- La trazabilidad comercial se guarda dentro de `obra_civil_material_request_items.insumo_snapshot.commercial_request`.
+- `ObraCivilInsumoBalanceService` descuenta presupuesto usando `orden_compra_detalles.cantidad` de OCs `AUTORIZADA` o `VERIFICADA`.
+
+Brechas actuales:
+
+- `ObraCivilMaterialRequestOrderService` crea el detalle de OC con la cantidad convertida, pero reconstruye `obra_civil_insumo_snapshot` desde el insumo y pierde `commercial_request`.
+- `ObraCivilFieldReviewService::convertMaterialRequestToOrdenCompra()` tambien reconstruye el snapshot y no conserva `commercial_request`.
+- La conversion directa desde revision de campo no llena `obra_civil_material_request_item_id` en el detalle de OC, por lo que el balance por item aprobado no queda completamente trazable.
+- Las vistas administrativas muestran la cantidad convertida, pero no muestran la orden de piezas que origino esa cantidad.
+- La aprobacion parcial opera sobre `approved_quantity` en unidad base. Si se requiere aprobar menos piezas, falta una regla explicita para recalcular piezas contra unidad base.
+
+### Modelo de datos recomendado
+
+Primer corte recomendado: no crear columnas nuevas todavia.
+
+Usar los campos existentes asi:
+
+```text
+obra_civil_material_request_items.quantity
+  = cantidad solicitada ya convertida a unidad base del insumo
+
+obra_civil_material_request_items.approved_quantity
+  = cantidad aprobada ya convertida a unidad base del insumo
+
+obra_civil_material_request_items.insumo_snapshot.commercial_request
+  = detalle operativo en piezas
+
+orden_compra_detalles.cantidad
+  = cantidad de impacto en unidad base del insumo
+
+orden_compra_detalles.unidad
+  = unidad base del insumo
+
+orden_compra_detalles.obra_civil_insumo_snapshot.commercial_request
+  = copia historica de la orden comercial en piezas
+
+orden_compra_detalles.obra_civil_material_request_item_id
+  = trazabilidad del renglon aprobado
+```
+
+Ejemplo de snapshot esperado:
+
+```json
+{
+  "codigo": "AC-001",
+  "concepto": "Acero de refuerzo",
+  "unidad": "TON",
+  "commercial_request": {
+    "items": [
+      {
+        "commercial_material_id": 15,
+        "sku": "VAR-3-8-12M",
+        "descripcion": "Varilla 3/8 x 12 m",
+        "unidad_compra": "PZA",
+        "commercial_quantity": 25,
+        "peso_por_pieza": 6.68,
+        "factor_conversion": 6.68,
+        "kg": 167.0
+      }
+    ],
+    "total_commercial_quantity": 25,
+    "total_kg": 167.0,
+    "converted_quantity": 0.167,
+    "converted_unit": "TON"
+  }
+}
+```
+
+Segundo corte opcional, solo si las consultas/reportes lo necesitan:
+
+- Agregar columnas JSON o tabla hija para lineas comerciales de solicitud/OC.
+- Posibles campos: `obra_civil_material_request_item_commercial_lines` y `orden_compra_detalle_commercial_lines`.
+- No es indispensable para el primer ajuste porque `insumo_snapshot` ya tiene casts JSON y conserva historico.
+
+### Flujo objetivo
+
+```text
+Ionic
+ -> residente selecciona insumo de explosion
+ -> residente selecciona uno o varios hijos comerciales
+ -> residente captura piezas
+
+Laravel API
+ -> valida que el hijo comercial pertenezca al grupo resuelto del insumo
+ -> convierte piezas a kg
+ -> convierte kg a unidad base del insumo
+ -> guarda item de solicitud con quantity en unidad base
+ -> guarda commercial_request en snapshot
+
+Admin aprobacion
+ -> muestra piezas solicitadas y cantidad equivalente en unidad base
+ -> aprueba en unidad base por ahora
+ -> conserva commercial_request
+
+Compras / OC
+ -> lista items aprobados pendientes
+ -> muestra piezas originales junto a la cantidad base
+ -> crea detalle de OC con cantidad base
+ -> copia commercial_request al snapshot del detalle
+
+Autorizacion OC
+ -> usado/disponible se calcula desde orden_compra_detalles.cantidad
+ -> la trazabilidad por piezas permanece para compras, PDF y auditoria
+```
+
+### Checkpoint 1: propagar `commercial_request` hacia OC
+
+Archivos a tocar:
+
+- `app/Services/ObraCivil/ObraCivilMaterialRequestOrderService.php`
+- `app/Services/ObraCivil/ObraCivilFieldReviewService.php`
+
+Acciones:
+
+- En `ObraCivilMaterialRequestOrderService::insumoSnapshot()`, recibir tambien el item de solicitud o su snapshot.
+- Copiar `commercial_request` desde `$item->insumo_snapshot['commercial_request']` hacia `orden_compra_detalles.obra_civil_insumo_snapshot`.
+- En `attachApprovedItemsToOrder()`, cuando actualice un detalle existente, conservar o refrescar el snapshot comercial.
+- En `ObraCivilFieldReviewService::convertMaterialRequestToOrdenCompra()`, usar el snapshot del item como base y no reconstruirlo perdiendo datos.
+- En esa conversion directa, llenar `obra_civil_material_request_item_id`.
+
+Criterio de listo:
+
+- Una solicitud hecha con piezas conserva `commercial_request` en el detalle de OC.
+- Una OC generada desde create y una OC generada desde revision de campo quedan con la misma trazabilidad.
+
+### Checkpoint 2: exponer piezas en el selector de OC
+
+Archivos a tocar:
+
+- `app/Services/ObraCivil/ObraCivilMaterialRequestOrderService.php`
+- `resources/views/ordencompra/create.blade.php`
+
+Acciones:
+
+- En `itemOptionPayload()`, agregar el bloque `commercial_request` desde el snapshot del item.
+- En la tabla de materiales aprobados pendientes, mostrar piezas/comercial solicitado, total kg, equivalente en unidad base y pendiente en unidad base.
+- Mantener el input `quantity` como cantidad en unidad base mientras no exista captura parcial por piezas.
+
+Criterio de listo:
+
+- Compras entiende que esta cargando, por ejemplo, `25 PZA Varilla 3/8`, y ve que impacta `0.167 TON`.
+
+### Checkpoint 3: mostrar piezas en aprobacion y revision
+
+Archivos a tocar:
+
+- `resources/views/obra_civil/material_requests/show.blade.php`
+- `resources/views/obra_civil/review/index.blade.php`
+- Opcional: `app/Http/Controllers/Api/V1/ResidenteObraCivilMaterialController.php`
+
+Acciones:
+
+- Mostrar debajo del concepto el detalle de `commercial_request.items`.
+- Mostrar resumen: `Solicitado: 25 PZA / 167.0000 KG / 0.1670 TON`.
+- Si no existe `commercial_request`, dejar el comportamiento actual.
+
+Criterio de listo:
+
+- Administracion puede revisar lo que el residente pidio en piezas sin perder la cantidad de impacto.
+
+### Checkpoint 4: resolver aprobacion parcial con piezas
+
+Decision requerida:
+
+- Opcion A, primer corte: aprobacion parcial sigue siendo por unidad base convertida.
+- Opcion B, mas amigable: aprobacion parcial permite editar piezas y Laravel recalcula unidad base.
+
+Recomendacion:
+
+- Implementar primero Opcion A para no romper el flujo ya existente.
+- Agregar texto visual claro: `La cantidad autorizada impacta en TON/KG; las piezas solicitadas quedan como referencia operativa`.
+- En un segundo corte, agregar inputs por linea comercial si el negocio necesita autorizar piezas exactas.
+
+Criterio de listo primer corte:
+
+- Nadie pierde el dato original de piezas.
+- El saldo se sigue calculando con la unidad base.
+- La autorizacion parcial no inventa una nueva lista proporcional de piezas.
+
+### Checkpoint 5: impresion y detalle de OC
+
+Archivos a tocar:
+
+- `resources/views/ordencompra/edit.blade.php`
+- `app/Http/Controllers/OrdenCompraController.php` en metodo `print()`
+
+Acciones:
+
+- En la tabla de detalles, mostrar la cantidad base como hoy.
+- Agregar debajo de la descripcion una linea de compra comercial cuando exista: `Compra solicitada: 25 PZA Varilla 3/8 x 12 m = 167.0000 KG = 0.1670 TON`.
+- En PDF, incluir la misma referencia en descripcion/notas, sin cambiar columnas principales.
+
+Criterio de listo:
+
+- La OC se puede entregar a compras/proveedor entendiendo piezas, pero contabilidad/presupuesto sigue viendo unidad base.
+
+### Checkpoint 6: pruebas y validacion
+
+Validaciones tecnicas:
+
+- `php -l` en servicios/controladores tocados.
+- `php artisan route:list --name=ordenes_compra`.
+- `php tools/check_mojibake.php <archivos tocados>`.
+
+Casos manuales:
+
+1. Solicitar desde Ionic 25 piezas de un hijo comercial ligado a un insumo en TON.
+2. Confirmar que Laravel guarda `quantity` en TON y `commercial_request.total_commercial_quantity` en piezas.
+3. Aprobar completo.
+4. Crear OC desde `/ordenes_compra/create` seleccionando ese item.
+5. Confirmar que el detalle de OC tiene `cantidad` en TON, `unidad` en TON, `obra_civil_material_request_item_id` y `obra_civil_insumo_snapshot.commercial_request`.
+6. Autorizar OC.
+7. Confirmar que `ObraCivilInsumoBalanceService` incrementa `used_quantity` con TON, no con piezas.
+8. Confirmar que la vista/PDF muestran las piezas como trazabilidad operativa.
+
+### Riesgos a cuidar
+
+- No guardar piezas en `orden_compra_detalles.cantidad`, porque romperia el saldo del insumo.
+- No recalcular pesos desde datos actuales del catalogo al generar OC historica; se debe conservar el snapshot que genero la solicitud.
+- No perder `commercial_request` al actualizar un detalle existente.
+- No duplicar el mismo item de solicitud dentro de una misma OC.
+- No marcar una solicitud como `convertida_a_oc` solo por crear una OC borrador.
+
+### Orden recomendado de ejecucion
+
+1. Propagar `commercial_request` al detalle de OC en ambos caminos de generacion.
+2. Asegurar `obra_civil_material_request_item_id` en la conversion directa desde revision.
+3. Exponer `commercial_request` en el payload de items aprobados pendientes.
+4. Mostrar piezas en create/edit de OC.
+5. Mostrar piezas en aprobacion/revision.
+6. Ajustar PDF.
+7. Validar saldos con una solicitud real de Ionic.

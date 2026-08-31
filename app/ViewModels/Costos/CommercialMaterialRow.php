@@ -9,6 +9,7 @@ class CommercialMaterialRow
     public function __construct(
         public readonly int $id,
         public readonly string $sku,
+        public readonly ?int $parentId,
         public readonly ?string $parentCode,
         public readonly ?string $parentName,
         public readonly string $descripcion,
@@ -21,8 +22,12 @@ class CommercialMaterialRow
         public readonly ?string $longitud,
         public readonly string $unidadCompra,
         public readonly string $conversionType,
+        public readonly ?string $pesoPorMetro,
         public readonly ?string $pesoPorPieza,
+        public readonly ?string $pesoPorM2,
+        public readonly ?string $pesoPorRollo,
         public readonly ?string $factorConversion,
+        public readonly ?string $tolerance,
         public readonly ?string $validationStatus,
         public readonly ?string $technicalSource,
         public readonly bool $isActive,
@@ -37,6 +42,7 @@ class CommercialMaterialRow
         return new self(
             id: (int) $material->id,
             sku: (string) $material->sku,
+            parentId: $material->obra_civil_material_group_id ? (int) $material->obra_civil_material_group_id : null,
             parentCode: $material->group?->code,
             parentName: $material->group?->name,
             descripcion: (string) $material->descripcion,
@@ -46,11 +52,15 @@ class CommercialMaterialRow
             medida: $material->medida,
             diametro: $material->diametro,
             calibreEspesor: $material->calibre_espesor,
-            longitud: $material->longitud !== null ? number_format((float) $material->longitud, 4) : null,
+            longitud: $material->longitud !== null ? number_format((float) $material->longitud, 4, '.', '') : null,
             unidadCompra: (string) $material->unidad_compra,
             conversionType: (string) $material->conversion_type,
-            pesoPorPieza: $material->peso_por_pieza !== null ? number_format((float) $material->peso_por_pieza, 3) : null,
-            factorConversion: $material->factor_conversion !== null ? number_format((float) $material->factor_conversion, 3) : null,
+            pesoPorMetro: $material->peso_por_metro !== null ? number_format((float) $material->peso_por_metro, 6, '.', '') : null,
+            pesoPorPieza: $material->peso_por_pieza !== null ? number_format((float) $material->peso_por_pieza, 6, '.', '') : null,
+            pesoPorM2: $material->peso_por_m2 !== null ? number_format((float) $material->peso_por_m2, 6, '.', '') : null,
+            pesoPorRollo: $material->peso_por_rollo !== null ? number_format((float) $material->peso_por_rollo, 6, '.', '') : null,
+            factorConversion: $material->factor_conversion !== null ? number_format((float) $material->factor_conversion, 6, '.', '') : null,
+            tolerance: $material->tolerance,
             validationStatus: $material->validation_status,
             technicalSource: $material->technical_source,
             isActive: (bool) $material->is_active,
@@ -80,11 +90,11 @@ class CommercialMaterialRow
     public function weightText(): string
     {
         if ($this->pesoPorPieza !== null) {
-            return $this->pesoPorPieza . ' kg/pza';
+            return number_format((float) $this->pesoPorPieza, 3) . ' kg/pza';
         }
 
         if ($this->factorConversion !== null) {
-            return $this->factorConversion . ' kg/' . strtolower($this->unidadCompra);
+            return number_format((float) $this->factorConversion, 3) . ' kg/' . strtolower($this->unidadCompra);
         }
 
         return '-';
@@ -105,4 +115,3 @@ class CommercialMaterialRow
         return 'bg-blue-100 text-blue-800';
     }
 }
-

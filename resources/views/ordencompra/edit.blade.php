@@ -505,6 +505,24 @@
         </thead>
       <tbody>
 @foreach($oc->detalles as $d)
+    @php
+        $detailCommercialRequest = is_array($d->obra_civil_insumo_snapshot['commercial_request'] ?? null)
+            ? $d->obra_civil_insumo_snapshot['commercial_request']
+            : null;
+        $detailCommercialLines = collect($detailCommercialRequest['items'] ?? [])->filter(fn ($line) => is_array($line));
+        $detailCommercialTotal = (float) ($detailCommercialRequest['total_commercial_quantity'] ?? $detailCommercialLines->sum(fn ($line) => (float) ($line['commercial_quantity'] ?? 0)));
+        $detailConvertedTotal = (float) ($detailCommercialRequest['converted_quantity'] ?? 0);
+        $detailShowsCommercial = $detailCommercialLines->isNotEmpty() && $detailCommercialTotal > 0 && $detailConvertedTotal > 0;
+        $detailDisplayQuantity = $detailShowsCommercial
+            ? round(((float) $d->cantidad / $detailConvertedTotal) * $detailCommercialTotal, 4)
+            : (float) $d->cantidad;
+        $detailDisplayUnit = $detailShowsCommercial && $detailCommercialLines->pluck('unidad_compra')->filter()->unique()->count() === 1
+            ? (string) $detailCommercialLines->pluck('unidad_compra')->filter()->first()
+            : ($detailShowsCommercial ? 'PZA' : (string) $d->unidad);
+        $detailDisplayPrice = $detailShowsCommercial && $detailDisplayQuantity > 0
+            ? (float) $d->subtotal_bruto / $detailDisplayQuantity
+            : (float) $d->precio_unitario;
+    @endphp
     <tr>
         <td class="p-2 text-center">
             <div>{{ $d->descripcion }}</div>
@@ -527,11 +545,12 @@
         </td>
 
         <td class="p-2 text-center">
-            {{ $d->cantidad }}
+            <div>{{ number_format($detailDisplayQuantity, 4) }}</div>
+            <div class="text-xs text-slate-400">{{ $detailDisplayUnit }}</div>
         </td>
 
         <td class="p-2 text-center">
-            ${{ number_format((float) $d->precio_unitario, 2) }}
+            ${{ number_format($detailDisplayPrice, 2) }}
         </td>
 
         <td class="p-2 text-center">
@@ -897,8 +916,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
-
-
-
-
 

@@ -83,6 +83,7 @@ use App\Http\Controllers\ProgramacionPagosController;
 use App\Http\Controllers\PagoProveedorController;
 use App\Http\Controllers\ObraReposicionGastoController;
 use App\Http\Controllers\CajaChicaController;
+use App\Http\Controllers\ReposicionCajaChicaController;
 use App\Http\Controllers\EquipoComputoController;
 use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\CalendarioOperacionalController;
@@ -321,7 +322,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('costos.')
         ->group(function () {
             Route::get('/materiales', [CatalogoMaterialController::class, 'index'])->name('materiales.index');
+            Route::post('/materiales/familias', [CatalogoMaterialController::class, 'storeFamily'])->name('materiales.familias.store');
             Route::get('/materiales/{materiale}', [CatalogoMaterialController::class, 'show'])->name('materiales.show');
+            Route::put('/materiales/{materiale}', [CatalogoMaterialController::class, 'updateFamily'])->name('materiales.familias.update');
+            Route::patch('/materiales/{materiale}/estado', [CatalogoMaterialController::class, 'updateFamilyStatus'])->name('materiales.familias.estado');
+            Route::post('/materiales/{materiale}/hijos', [CatalogoMaterialController::class, 'storeChild'])->name('materiales.hijos.store');
+            Route::put('/materiales/{materiale}/hijos/{hijo}', [CatalogoMaterialController::class, 'updateChild'])->name('materiales.hijos.update');
+            Route::patch('/materiales/{materiale}/hijos/{hijo}/estado', [CatalogoMaterialController::class, 'updateChildStatus'])->name('materiales.hijos.estado');
         });
     //rutas nomina
 Route::middleware(['auth','verified'])
@@ -905,6 +912,25 @@ Route::prefix('pagos-proveedores')
 
         });
 
+        Route::prefix('reposicion-caja-chica')
+            ->name('reposicion-caja-chica.')
+            ->middleware(['auth'])
+            ->group(function () {
+                Route::get('/', [ReposicionCajaChicaController::class, 'index'])->name('index');
+                Route::get('/create', [ReposicionCajaChicaController::class, 'create'])->name('create');
+                Route::post('/parse-xml', [ReposicionCajaChicaController::class, 'parseXml'])->name('parse-xml');
+                Route::post('/', [ReposicionCajaChicaController::class, 'store'])->name('store');
+                Route::get('/revision', [ReposicionCajaChicaController::class, 'revision'])->name('revision');
+                Route::get('/imprimir', [ReposicionCajaChicaController::class, 'imprimirReporte'])->name('imprimir');
+                Route::get('/exportar-excel', [ReposicionCajaChicaController::class, 'exportarExcel'])->name('exportar-excel');
+                Route::get('/relaciones', [ReposicionCajaChicaController::class, 'relaciones'])->name('relaciones.index');
+                Route::get('/relaciones/{relacion}/imprimir', [ReposicionCajaChicaController::class, 'imprimirRelacion'])->name('relaciones.imprimir');
+                Route::post('/{gasto}/autorizar', [ReposicionCajaChicaController::class, 'autorizar'])->name('autorizar');
+                Route::post('/{gasto}/autorizar-parcial', [ReposicionCajaChicaController::class, 'autorizarParcial'])->name('autorizar-parcial');
+                Route::post('/{gasto}/rechazar', [ReposicionCajaChicaController::class, 'rechazar'])->name('rechazar');
+                Route::get('/{gasto}', [ReposicionCajaChicaController::class, 'show'])->name('show');
+            });
+
         Route::prefix('cajas-chicas')
             ->name('cajas-chicas.')
             ->middleware(['auth'])
@@ -917,6 +943,13 @@ Route::prefix('pagos-proveedores')
 });
 
 require __DIR__.'/auth.php';
+
+
+
+
+
+
+
 
 
 

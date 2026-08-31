@@ -294,6 +294,18 @@
                 </span>
             </a>
             @endif
+                <a href="{{ route('reposicion-caja-chica.index') }}"
+                class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 transition-colors {{ request()->routeIs('reposicion-caja-chica.*') ? 'bg-white/10' : '' }}"
+                title="Reposicion de caja chica">
+
+                    <span class="flex items-center justify-center w-6 text-lg">
+                        $
+                    </span>
+
+                    <span class="sidebar-text">
+                        Reposicion caja chica
+                    </span>
+                </a>
               @if($canMenu('cajas_chicas.access'))
                 <a href="{{ route('cajas-chicas.index') }}"
                 class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 transition-colors"
@@ -571,5 +583,8 @@
 
 </body>
 </html>
+
+
+
 
 

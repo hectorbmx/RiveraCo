@@ -166,6 +166,7 @@ class ObraCivilMaterialRequestOrderService
                 if ($detail) {
                     $detail->cantidad = $requestedQuantity;
                     $detail->importe = round($requestedQuantity * (float) $detail->precio_unitario, 2);
+                    $detail->obra_civil_insumo_snapshot = $this->insumoSnapshot($insumo, $item->insumo_snapshot ?? []);
                     $detail->save();
                     $createdDetails->push($detail);
                     continue;
@@ -181,7 +182,7 @@ class ObraCivilMaterialRequestOrderService
                     'civil_concept_id' => null,
                     'civil_concept_snapshot' => null,
                     'obra_civil_insumo_id' => $insumo->id,
-                    'obra_civil_insumo_snapshot' => $this->insumoSnapshot($insumo),
+                    'obra_civil_insumo_snapshot' => $this->insumoSnapshot($insumo, $item->insumo_snapshot ?? []),
                     'obra_civil_material_request_item_id' => $item->id,
                     'legacy_prod_id' => null,
                     'descripcion' => $insumo->concepto,
@@ -336,6 +337,7 @@ class ObraCivilMaterialRequestOrderService
             'draft_quantity' => round($draftQuantity, 4),
             'pending_order_quantity' => $pendingQuantity,
             'available_to_load_quantity' => $availableToLoad,
+            'commercial_request' => $item->insumo_snapshot['commercial_request'] ?? null,
             'suggested_price' => round((float) ($insumo?->precio_unitario ?? 0), 4),
             'resident_notes' => $item->notes,
             'approval_notes' => $item->approval_notes,
@@ -356,11 +358,11 @@ class ObraCivilMaterialRequestOrderService
             && $insumo->tipo === 'material';
     }
 
-    private function insumoSnapshot(ObraCivilInsumo $insumo): array
+    private function insumoSnapshot(ObraCivilInsumo $insumo, ?array $sourceSnapshot = null): array
     {
         $import = $insumo->import;
 
-        return [
+        $snapshot = [
             'obra_civil_insumo_import_id' => $import?->id,
             'filename' => $import?->filename,
             'sheet_name' => $import?->sheet_name,
@@ -374,6 +376,12 @@ class ObraCivilMaterialRequestOrderService
             'importe_importado' => (float) $insumo->importe_importado,
             'importe_calculado' => (float) $insumo->importe_calculado,
         ];
+
+        if (is_array($sourceSnapshot) && isset($sourceSnapshot['commercial_request'])) {
+            $snapshot['commercial_request'] = $sourceSnapshot['commercial_request'];
+        }
+
+        return $snapshot;
     }
 
     private function detailNotes(ObraCivilMaterialRequest $request, ObraCivilMaterialRequestItem $item): ?string

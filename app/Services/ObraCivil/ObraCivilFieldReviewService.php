@@ -6,7 +6,9 @@ use App\Models\Area;
 use App\Models\CivilEstimation;
 use App\Models\CivilWorkReport;
 use App\Models\Obra;
+use App\Models\ObraCivilInsumo;
 use App\Models\ObraCivilMaterialRequest;
+use App\Models\ObraCivilMaterialRequestItem;
 use App\Models\OrdenCompra;
 use App\Services\CivilConceptBalanceService;
 use App\Services\ObraCivilInsumoBalanceService;
@@ -275,6 +277,7 @@ class ObraCivilFieldReviewService
             $unitPrice = round((float) $insumo->precio_unitario, 4);
             $amount = round($quantity * $unitPrice, 2);
             $iva = round($amount * 0.16, 2);
+            $insumoSnapshot = $this->materialRequestItemInsumoSnapshot($insumo, $item, $unitPrice);
 
             $subtotal += $amount;
             $ivaTotal += $iva;
@@ -283,15 +286,8 @@ class ObraCivilFieldReviewService
                 'producto_id' => null,
                 'civil_concept_id' => null,
                 'obra_civil_insumo_id' => $insumo->id,
-                'obra_civil_insumo_snapshot' => [
-                    'codigo' => $insumo->codigo,
-                    'concepto' => $insumo->concepto,
-                    'unidad' => $insumo->unidad,
-                    'tipo' => $insumo->tipo,
-                    'cantidad_presupuestada' => (float) $insumo->cantidad_presupuestada,
-                    'precio_unitario' => $unitPrice,
-                    'source_material_request_item_id' => $item->id,
-                ],
+                'obra_civil_insumo_snapshot' => $insumoSnapshot,
+                'obra_civil_material_request_item_id' => $item->id,
                 'legacy_prod_id' => null,
                 'descripcion' => $insumo->concepto,
                 'unidad' => $item->unit ?: $insumo->unidad,
@@ -403,6 +399,25 @@ class ObraCivilFieldReviewService
         abort_unless((int) $report->obra_id === (int) $obra->id, 404);
     }
 
+    private function materialRequestItemInsumoSnapshot(ObraCivilInsumo $insumo, ObraCivilMaterialRequestItem $item, float $unitPrice): array
+    {
+        $sourceSnapshot = is_array($item->insumo_snapshot) ? $item->insumo_snapshot : [];
+        $snapshot = [
+            'codigo' => $insumo->codigo,
+            'concepto' => $insumo->concepto,
+            'unidad' => $insumo->unidad,
+            'tipo' => $insumo->tipo,
+            'cantidad_presupuestada' => (float) $insumo->cantidad_presupuestada,
+            'precio_unitario' => $unitPrice,
+            'source_material_request_item_id' => $item->id,
+        ];
+
+        if (isset($sourceSnapshot['commercial_request'])) {
+            $snapshot['commercial_request'] = $sourceSnapshot['commercial_request'];
+        }
+
+        return $snapshot;
+    }
     private function assertMaterialRequestBelongsToObra(Obra $obra, ObraCivilMaterialRequest $request): void
     {
         abort_unless((int) $request->obra_id === (int) $obra->id, 404);

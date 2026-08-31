@@ -1208,6 +1208,24 @@ foreach ($oc->detalles as $detalle) {
     $brutoLinea = round($cant * $pu, 2);
     $descuentoPctLinea = (float) ($detalle->descuento_porcentaje ?? 0);
     $descuentoLinea = round((float) ($detalle->descuento_importe ?? 0), 2);
+    $displayCant = $cant;
+    $displayUni = $uni;
+    $displayPu = $pu;
+
+    $commercialRequest = is_array($detalle->obra_civil_insumo_snapshot['commercial_request'] ?? null)
+        ? $detalle->obra_civil_insumo_snapshot['commercial_request']
+        : null;
+    $commercialLines = collect($commercialRequest['items'] ?? [])->filter(fn ($line) => is_array($line));
+    $commercialTotal = (float) ($commercialRequest['total_commercial_quantity'] ?? $commercialLines->sum(fn ($line) => (float) ($line['commercial_quantity'] ?? 0)));
+    $convertedTotal = (float) ($commercialRequest['converted_quantity'] ?? 0);
+
+    if ($commercialLines->isNotEmpty() && $commercialTotal > 0 && $convertedTotal > 0) {
+        $displayCant = round(($cant / $convertedTotal) * $commercialTotal, 4);
+        $displayUni = $commercialLines->pluck('unidad_compra')->filter()->unique()->count() === 1
+            ? (string) $commercialLines->pluck('unidad_compra')->filter()->first()
+            : 'PZA';
+        $displayPu = $displayCant > 0 ? $brutoLinea / $displayCant : $pu;
+    }
 
     if ($descuentoLinea <= 0 && $descuentoPctLinea > 0) {
         $descuentoLinea = round($brutoLinea * ($descuentoPctLinea / 100), 2);
@@ -1308,7 +1326,7 @@ foreach ($oc->detalles as $detalle) {
     $pdf->Cell(
         $wCant,
         $rowH,
-        number_format($cant, 1),
+        number_format($displayCant, 1),
         0,
         0,
         'C'
@@ -1321,7 +1339,7 @@ foreach ($oc->detalles as $detalle) {
     $pdf->Cell(
         $wUni,
         $rowH,
-        $utf8($uni ?: '-'),
+        $utf8($displayUni ?: '-'),
         0,
         0,
         'C'
@@ -1356,7 +1374,7 @@ foreach ($oc->detalles as $detalle) {
     $pdf->Cell(
         $wPU,
         $rowH,
-        $money($pu),
+        $money($displayPu),
         0,
         0,
         'R'
@@ -3293,10 +3311,4 @@ public function exportarListaPagos(
             ->header('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"');
     }
 }
-
-
-
-
-
-
 

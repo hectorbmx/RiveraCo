@@ -331,13 +331,48 @@
             .replaceAll('"', '&quot;')
             .replaceAll("'", '&#039;');
     }
+    function commercialMetrics(item) {
+        const request = item.commercial_request;
+        const lines = Array.isArray(request?.items) ? request.items : [];
+        const commercialTotal = Number(request?.total_commercial_quantity || lines.reduce((sum, line) => sum + Number(line.commercial_quantity || 0), 0));
+        const convertedTotal = Number(request?.converted_quantity || item.approved_quantity || 0);
+        const units = [...new Set(lines.map((line) => line.unidad_compra || 'PZA').filter(Boolean))];
+        const commercialUnit = units.length === 1 ? units[0] : 'PZA';
+        const hasCommercial = lines.length > 0 && commercialTotal > 0 && convertedTotal > 0;
+        const toCommercial = (quantity) => hasCommercial ? (Number(quantity || 0) / convertedTotal) * commercialTotal : Number(quantity || 0);
+        const toBase = (quantity) => hasCommercial ? (Number(quantity || 0) / commercialTotal) * convertedTotal : Number(quantity || 0);
 
-    function resetSolicitudes() {
-        body.innerHTML = '';
-        msgCargando?.classList.add('hidden');
-        msgSinDatos?.classList.add('hidden');
-        tableWrapper?.classList.add('hidden');
-        selectedCount.textContent = '0 seleccionados';
+        return { request, lines, commercialTotal, convertedTotal, commercialUnit, hasCommercial, toCommercial, toBase };
+    }
+
+    function commercialRequestSummary(item) {
+        const metrics = commercialMetrics(item);
+
+        if (!metrics.hasCommercial) return '';
+
+        const lineText = metrics.lines.map((line) => {
+            const qty = numberFmt(line.commercial_quantity);
+            const buyUnit = escapeHtml(line.unidad_compra || 'PZA');
+            const description = escapeHtml(line.descripcion || line.sku || 'Material comercial');
+
+            return `${qty} ${buyUnit} ${description}`;
+        }).join('<br>');
+
+        return `<div class="mt-2 rounded-md border border-emerald-100 bg-emerald-50 px-2 py-1 text-[11px] leading-snug text-emerald-800">${lineText}</div>`;
+    }
+
+    function syncCommercialQuantity(row) {
+        const commercialInput = row.querySelector('.js-material-request-commercial-quantity');
+        const quantity = row.querySelector('.js-material-request-quantity');
+        if (!commercialInput || !quantity) return;
+
+        const commercialTotal = Number(commercialInput.dataset.commercialTotal || 0);
+        const convertedTotal = Number(commercialInput.dataset.convertedTotal || 0);
+        const value = Number(commercialInput.value || 0);
+        const clamped = Math.min(Math.max(value, 0), commercialTotal);
+        const converted = commercialTotal > 0 ? (clamped / commercialTotal) * convertedTotal : 0;
+
+        quantity.value = converted.toFixed(4);
     }
 
     function syncIndexes() {
@@ -346,16 +381,21 @@
             const checkbox = row.querySelector('.js-material-request-check');
             const hiddenId = row.querySelector('.js-material-request-id');
             const quantity = row.querySelector('.js-material-request-quantity');
+            const commercialQuantity = row.querySelector('.js-material-request-commercial-quantity');
 
             if (!checkbox?.checked) {
                 hiddenId.disabled = true;
                 quantity.disabled = true;
+                quantity.removeAttribute('name');
+                commercialQuantity?.setAttribute('disabled', 'disabled');
                 row.classList.remove('bg-blue-50');
                 return;
             }
 
+            syncCommercialQuantity(row);
             hiddenId.disabled = false;
             quantity.disabled = false;
+            commercialQuantity?.removeAttribute('disabled');
             hiddenId.name = `obra_civil_material_request_items[${index}][id]`;
             quantity.name = `obra_civil_material_request_items[${index}][quantity]`;
             row.classList.add('bg-blue-50');
@@ -365,15 +405,31 @@
         selectedCount.textContent = `${index} seleccionado${index === 1 ? '' : 's'}`;
     }
 
+    function renderQuantityCell(value, unit, isCommercial = false) {
+        const tone = isCommercial ? 'text-emerald-700' : 'text-slate-900';
+        return `${numberFmt(value)}<div class="text-xs text-slate-400">${escapeHtml(unit)}</div>`;
+    }
+
     function renderItems(items) {
         body.innerHTML = items.map((item) => {
             const requestItemId = Number(item.request_item_id || 0);
             const maxQuantity = Number(item.available_to_load_quantity || 0);
             const draftQuantity = Number(item.draft_quantity || 0);
             const unit = item.unidad || '';
-            const draftBadge = draftQuantity > 0
-                ? `<div class="text-[11px] text-amber-600">Hay ${numberFmt(draftQuantity)} ${escapeHtml(unit)} en borrador</div>`
+            const metrics = commercialMetrics(item);
+            const visibleUnit = metrics.hasCommercial ? metrics.commercialUnit : unit;
+            const approvedVisible = metrics.hasCommercial ? metrics.toCommercial(item.approved_quantity) : Number(item.approved_quantity || 0);
+            const draftVisible = metrics.hasCommercial ? metrics.toCommercial(draftQuantity) : draftQuantity;
+            const maxVisible = metrics.hasCommercial ? metrics.toCommercial(maxQuantity) : maxQuantity;
+            const draftBadge = draftVisible > 0
+                ? `<div class="text-[11px] text-amber-600">Hay ${numberFmt(draftVisible)} ${escapeHtml(visibleUnit)} en borrador</div>`
                 : '';
+            const commercialSummary = commercialRequestSummary(item);
+            const quantityInput = metrics.hasCommercial
+                ? `<input type="number" min="0.0001" step="0.0001" max="${maxVisible}" value="${maxVisible}" class="js-material-request-commercial-quantity w-28 rounded border border-slate-300 p-2 text-right" data-commercial-total="${metrics.commercialTotal}" data-converted-total="${metrics.convertedTotal}" disabled>
+                   <input type="hidden" class="js-material-request-quantity" max="${maxQuantity}" value="${maxQuantity}" disabled>
+                   <div class="mt-1 text-xs text-slate-400">${escapeHtml(visibleUnit)}</div>`
+                : `<input type="number" min="0.0001" step="0.0001" max="${maxQuantity}" value="${maxQuantity}" class="js-material-request-quantity w-28 rounded border border-slate-300 p-2 text-right" disabled>`;
 
             return `
                 <tr data-request-item-id="${requestItemId}">
@@ -386,13 +442,14 @@
                     <td class="px-3 py-3 align-top">
                         <div class="font-medium text-slate-800">${escapeHtml(item.concepto || 'Material')}</div>
                         <div class="text-xs text-slate-500">${escapeHtml(item.solicitante || 'Residente')}</div>
+                        ${commercialSummary}
                         ${item.resident_notes ? `<div class="mt-1 text-xs text-slate-400">${escapeHtml(item.resident_notes)}</div>` : ''}
                     </td>
-                    <td class="px-3 py-3 text-right align-top">${numberFmt(item.approved_quantity)}<div class="text-xs text-slate-400">${escapeHtml(unit)}</div></td>
-                    <td class="px-3 py-3 text-right align-top">${numberFmt(draftQuantity)}${draftBadge}</td>
-                    <td class="px-3 py-3 text-right align-top font-semibold text-emerald-700">${numberFmt(maxQuantity)}<div class="text-xs text-slate-400">${escapeHtml(unit)}</div></td>
+                    <td class="px-3 py-3 text-right align-top">${renderQuantityCell(approvedVisible, visibleUnit, metrics.hasCommercial)}</td>
+                    <td class="px-3 py-3 text-right align-top">${renderQuantityCell(draftVisible, visibleUnit, metrics.hasCommercial)}${draftBadge}</td>
+                    <td class="px-3 py-3 text-right align-top font-semibold text-emerald-700">${renderQuantityCell(maxVisible, visibleUnit, metrics.hasCommercial)}</td>
                     <td class="px-3 py-3 text-right align-top">
-                        <input type="number" min="0.0001" step="0.0001" max="${maxQuantity}" value="${maxQuantity}" class="js-material-request-quantity w-28 rounded border border-slate-300 p-2 text-right" disabled>
+                        ${quantityInput}
                     </td>
                 </tr>
             `;
@@ -401,17 +458,17 @@
         body.querySelectorAll('.js-material-request-check').forEach((checkbox) => {
             checkbox.addEventListener('change', syncIndexes);
         });
-        body.querySelectorAll('.js-material-request-quantity').forEach((input) => {
+        body.querySelectorAll('.js-material-request-quantity, .js-material-request-commercial-quantity').forEach((input) => {
             input.addEventListener('input', () => {
                 const max = Number(input.max || 0);
                 const value = Number(input.value || 0);
                 if (value > max) input.value = max;
+                syncIndexes();
             });
         });
 
         syncIndexes();
     }
-
     async function cargarSolicitudes(obraId) {
         resetSolicitudes();
 
@@ -749,6 +806,4 @@
 })();
 </script>
 @endpush
-
-
 

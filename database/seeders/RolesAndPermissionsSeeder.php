@@ -58,6 +58,22 @@ class RolesAndPermissionsSeeder extends Seeder
             'nomina.corridas.pay.access',
             'nomina.corridas.reopen.access',
             'nomina.corridas.delete.access',
+
+            // Reposicion de caja chica
+            'caja_chica.view',
+            'caja_chica.create',
+            'caja_chica.edit_own_draft',
+            'caja_chica.submit',
+            'caja_chica.review',
+            'caja_chica.authorize',
+            'caja_chica.reject',
+            'caja_chica.return',
+            'caja_chica.relations.view',
+            'caja_chica.relations.generate',
+            'caja_chica.relations.pdf',
+            'caja_chica.program',
+            'caja_chica.pay',
+            'caja_chica.catalogs.manage',
         ];
 
         foreach ($permisos as $p) {
@@ -108,6 +124,21 @@ class RolesAndPermissionsSeeder extends Seeder
             'nomina.corridas.pay.access',
             'nomina.corridas.reopen.access',
             'nomina.corridas.delete.access',
+
+            'caja_chica.view',
+            'caja_chica.create',
+            'caja_chica.edit_own_draft',
+            'caja_chica.submit',
+            'caja_chica.review',
+            'caja_chica.authorize',
+            'caja_chica.reject',
+            'caja_chica.return',
+            'caja_chica.relations.view',
+            'caja_chica.relations.generate',
+            'caja_chica.relations.pdf',
+            'caja_chica.program',
+            'caja_chica.pay',
+            'caja_chica.catalogs.manage',
         ]);
 
         // Jefe de obra
@@ -144,3 +175,4 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
     }
 }
+

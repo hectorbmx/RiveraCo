@@ -17,3 +17,11 @@ Rules:
 
 - All source, Blade, config, route, docs, and test files must stay UTF-8. Do not save files as Windows-1252/ANSI.
 - Before finishing changes that touch user-facing Spanish text, run `php tools/check_mojibake.php <touched files>` and fix any `Ã`, `Â`, `â€`, or replacement-character output. Run `php tools/check_mojibake.php` for a full cleanup/release gate.
+
+## Sandbox local de Codex
+
+- En este equipo es frecuente que el sandbox local de Codex bloquee lecturas, escrituras o validaciones con errores tipo `deny-read ACLs`, aun cuando los archivos pertenezcan al proyecto.
+- Cuando un comando necesario falle por ese motivo, vuelve a ejecutarlo inmediatamente con `sandbox_permissions: "require_escalated"`, una justificacion breve y un `prefix_rule` acotado cuando aplique.
+- No te detengas a buscar rodeos ni alternativas fragiles si la accion es segura y necesaria para leer, escribir o validar archivos del proyecto.
+- Esto aplica a inspeccion, creacion/edicion de archivos, `php -l`, `php artisan route:list`, `php artisan view:cache`, `git status` y validaciones equivalentes.
+
