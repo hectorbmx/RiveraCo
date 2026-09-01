@@ -244,7 +244,7 @@ class OrdenCompraController extends Controller
 
             foreach ($ordenResumen->detalles as $detalle) {
                 $lineaSubtotal = (float) ($detalle->importe ?? ((float) $detalle->precio_unitario * (float) $detalle->cantidad));
-                $lineaIva = ($lineaSubtotal * (float) ($detalle->iva ?? 0)) / 100;
+                $lineaIva = $this->ivaEfectivoDetalle($detalle, $lineaSubtotal);
                 $totalOrden += $lineaSubtotal + $lineaIva + (float) ($detalle->otros_impuestos ?? 0) - (float) ($detalle->retenciones ?? 0);
             }
 
@@ -284,7 +284,7 @@ class OrdenCompraController extends Controller
 
         foreach ($oc->detalles as $detalle) {
             $lineaSubtotal = (float) ($detalle->importe ?? ((float) $detalle->precio_unitario * (float) $detalle->cantidad));
-            $lineaIva = ($lineaSubtotal * (float) ($detalle->iva ?? 0)) / 100;
+            $lineaIva = $this->ivaEfectivoDetalle($detalle, $lineaSubtotal);
 
             $subtotal += $lineaSubtotal;
             $iva += $lineaIva;
@@ -1277,10 +1277,7 @@ foreach ($oc->detalles as $detalle) {
         ? (float) $detalle->iva
         : (float) ($oc->iva ?? 0);
 
-    $ivaLinea = round(
-        $subtotalLinea * ($ivaPctLinea / 100),
-        2
-    );
+    $ivaLinea = $this->ivaEfectivoDetalle($detalle, $subtotalLinea);
 
     $retencionLinea = round(
         (float) ($detalle->retenciones ?? 0),
@@ -1620,6 +1617,8 @@ foreach ($oc->detalles as $detalle) {
      * Construcción dinámica de las filas del resumen.
      * Retenciones y otros impuestos solamente aparecen cuando existen.
      */
+    $tieneIvaManual = $oc->detalles->contains(fn ($detalle) => ! is_null($detalle->iva_importe_manual));
+
     $filasTotales = [
         [
             'label' => 'Subtotal:',
@@ -1627,9 +1626,9 @@ foreach ($oc->detalles as $detalle) {
             'total' => false,
         ],
         [
-            'label' => 'IVA ('
-                . number_format($ivaPctMostrado, 0)
-                . '%):',
+            'label' => $tieneIvaManual
+                ? 'IVA:'
+                : 'IVA (' . number_format($ivaPctMostrado, 0) . '%):',
             'monto' => $ivaMonto,
             'total' => false,
         ],
@@ -2355,6 +2354,15 @@ private function partidasCivilPorObra(Obra $obra)
             'disponible' => max(0, $tope - $gastado),
         ];
     })->values();
+}
+
+private function ivaEfectivoDetalle($detalle, float $subtotal): float
+{
+    if (! is_null($detalle->iva_importe_manual)) {
+        return round((float) $detalle->iva_importe_manual, 2);
+    }
+
+    return round($subtotal * ((float) ($detalle->iva ?? 0) / 100), 2);
 }
 
 private function esObraCivil(Obra $obra): bool

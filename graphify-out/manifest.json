@@ -440,8 +440,8 @@
     "semantic_hash": "c21468edce01faf20e972131a2718608"
   },
   "app/Http/Controllers/OrdenCompraController.php": {
-    "mtime": 1788280150.284939,
-    "ast_hash": "639b26fd01ef7fe6fee361975a2adb18",
+    "mtime": 1788281120.323267,
+    "ast_hash": "ca1a515141e35f3bcf2d7be9e3ee0545",
     "semantic_hash": ""
   },
   "app/Http/Controllers/OrdenCompraDetalleController.php": {
