@@ -82,6 +82,12 @@ class StoreOrdenCompraDetalleRequest extends FormRequest
                 'max:100',
             ],
 
+            'iva_importe_manual' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
             'tipo_retencion_id' => [
                 'nullable',
                 'integer',

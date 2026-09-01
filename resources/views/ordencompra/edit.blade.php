@@ -384,11 +384,15 @@
     </script>
 
     {{-- Totales --}}
-    <div class="grid grid-cols-4 gap-4 mb-4">
-        <div>Subtotal: ${{ number_format($oc->subtotal_calc,2) }}</div>
-        <div>IVA: ${{ number_format($oc->iva_monto_calc,2) }}</div>
-        <div>Otros: ${{ number_format($oc->otros_monto_calc,2) }}</div>
-        <div class="font-semibold">Total: ${{ number_format($oc->total_calc,2) }}</div>
+    <div id="ocTotalesResumen"
+         class="grid grid-cols-4 gap-4 mb-4"
+         data-subtotal="{{ number_format((float) $oc->subtotal_calc, 2, '.', '') }}"
+         data-otros="{{ number_format((float) $oc->otros_monto_calc, 2, '.', '') }}"
+         data-retenciones="{{ number_format((float) $oc->retenciones_monto_calc, 2, '.', '') }}">
+        <div>Subtotal: <span id="ocSubtotalTotal">${{ number_format($oc->subtotal_calc,2) }}</span></div>
+        <div>IVA: <span id="ocIvaTotal">${{ number_format($oc->iva_monto_calc,2) }}</span></div>
+        <div>Otros: <span id="ocOtrosTotal">${{ number_format($oc->otros_monto_calc,2) }}</span></div>
+        <div class="font-semibold">Total: <span id="ocTotalGeneral">${{ number_format($oc->total_calc,2) }}</span></div>
     </div>
 
     {{-- Agregar detalle --}}
@@ -522,6 +526,10 @@
         $detailDisplayPrice = $detailShowsCommercial && $detailDisplayQuantity > 0
             ? (float) $d->subtotal_bruto / $detailDisplayQuantity
             : (float) $d->precio_unitario;
+        $detailIvaEffective = (float) ($d->iva_efectivo ?? $d->iva_calculado);
+        $detailIvaInputValue = ! is_null($d->iva_importe_manual)
+            ? (float) $d->iva_importe_manual
+            : $detailIvaEffective;
     @endphp
     <tr>
         <td class="p-2 text-center">
@@ -569,9 +577,49 @@
             @endif
         </td>
 
-        {{-- Ya no mostramos el porcentaje de IVA, solo el importe --}}
+        {{-- IVA real/manual: si se deja vacio, vuelve al calculo por porcentaje. --}}
         <td class="p-2 text-center">
-            ${{ number_format((float) $d->iva_calculado, 2) }}
+            @if(!$bloqueado)
+                <input form="formEncabezadoOc"
+                       name="detalles[{{ $d->id }}][iva_importe_manual]"
+                       type="number"
+                       step="0.01"
+                       min="0"
+                       class="js-iva-real-input w-28 rounded border p-1.5 text-right"
+                       value="{{ number_format($detailIvaInputValue, 2, '.', '') }}"
+                       data-original-value="{{ number_format($detailIvaInputValue, 2, '.', '') }}"
+                       data-update-url="{{ route('ordenes_compra.detalles.update', [$oc->id, $d->id]) }}"
+                       data-producto-id="{{ $d->producto_id }}"
+                       data-civil-concept-id="{{ $d->civil_concept_id }}"
+                       data-obra-civil-insumo-id="{{ $d->obra_civil_insumo_id }}"
+                       data-legacy-prod-id="{{ $d->legacy_prod_id }}"
+                       data-descripcion="{{ $d->descripcion }}"
+                       data-unidad="{{ $d->unidad }}"
+                       data-cantidad="{{ $d->cantidad }}"
+                       data-precio-unitario="{{ $d->precio_unitario }}"
+                       data-descuento-porcentaje="{{ $d->descuento_porcentaje }}"
+                       data-importe="{{ $d->importe }}"
+                       data-iva="{{ $d->iva }}"
+                       data-tipo-retencion-id="{{ $d->tipo_retencion_id }}"
+                       data-otros-impuestos="{{ $d->otros_impuestos }}"
+                       data-notas="{{ $d->notas }}"
+                       data-auto-iva="{{ number_format((float) $d->iva_calculado, 2, '.', '') }}"
+                       data-subtotal="{{ number_format((float) $d->subtotal, 2, '.', '') }}"
+                       data-otros="{{ number_format((float) $d->otros_impuestos, 2, '.', '') }}"
+                       data-retenciones="{{ number_format((float) $d->retenciones, 2, '.', '') }}"
+                       data-importe-target="detalleImporte-{{ $d->id }}">
+                <input form="formEncabezadoOc"
+                       type="hidden"
+                       name="detalles[{{ $d->id }}][iva_importe_manual_original]"
+                       value="{{ is_null($d->iva_importe_manual) ? '' : number_format((float) $d->iva_importe_manual, 2, '.', '') }}">
+                <input form="formEncabezadoOc"
+                       type="hidden"
+                       name="detalles[{{ $d->id }}][iva_calculado]"
+                       value="{{ number_format((float) $d->iva_calculado, 2, '.', '') }}">
+                <div class="js-iva-real-status mt-1 text-[11px] text-slate-400"></div>
+            @else
+                ${{ number_format($detailIvaEffective, 2) }}
+            @endif
         </td>
 
         {{-- Retención --}}
@@ -594,7 +642,7 @@
         </td>
 
         <td class="p-2 text-center font-semibold">
-            ${{ number_format((float) $d->total, 2) }}
+            <span id="detalleImporte-{{ $d->id }}">${{ number_format((float) $d->total, 2) }}</span>
         </td>
 
         <td class="p-2 text-center">
@@ -615,6 +663,134 @@
 </tbody>
     </table>
 </div>
+
+<script>
+(function () {
+    const resumen = document.getElementById('ocTotalesResumen');
+    const ivaTotal = document.getElementById('ocIvaTotal');
+    const totalGeneral = document.getElementById('ocTotalGeneral');
+    const inputs = document.querySelectorAll('.js-iva-real-input');
+    const csrf = document.querySelector('input[name="_token"]')?.value;
+
+    if (!resumen || !inputs.length) return;
+
+    const money = new Intl.NumberFormat('es-MX', {
+        style: 'currency',
+        currency: 'MXN',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+
+    function numberFrom(value, fallback = 0) {
+        const parsed = Number.parseFloat(String(value ?? '').replace(',', ''));
+        return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    function normalizedValue(input) {
+        return input.value.trim() === '' ? '' : numberFrom(input.value).toFixed(2);
+    }
+
+    function setStatus(input, text, className = 'text-slate-400') {
+        const status = input.closest('td')?.querySelector('.js-iva-real-status');
+        if (!status) return;
+        status.className = `js-iva-real-status mt-1 text-[11px] ${className}`;
+        status.textContent = text;
+    }
+
+    function buildDetailPayload(input) {
+        const payload = new FormData();
+        payload.append('_token', csrf || '');
+        payload.append('_method', 'PUT');
+        payload.append('producto_id', input.dataset.productoId || '');
+        payload.append('civil_concept_id', input.dataset.civilConceptId || '');
+        payload.append('obra_civil_insumo_id', input.dataset.obraCivilInsumoId || '');
+        payload.append('legacy_prod_id', input.dataset.legacyProdId || '');
+        payload.append('descripcion', input.dataset.descripcion || '');
+        payload.append('unidad', input.dataset.unidad || '');
+        payload.append('cantidad', input.dataset.cantidad || '0');
+        payload.append('precio_unitario', input.dataset.precioUnitario || '0');
+        payload.append('descuento_porcentaje', input.dataset.descuentoPorcentaje || '0');
+        payload.append('importe', input.dataset.importe || '0');
+        payload.append('iva', input.dataset.iva || '0');
+        payload.append('tipo_retencion_id', input.dataset.tipoRetencionId || '');
+        payload.append('otros_impuestos', input.dataset.otrosImpuestos || '0');
+        payload.append('notas', input.dataset.notas || '');
+        payload.append('iva_importe_manual', input.value.trim());
+        return payload;
+    }
+
+    function recalcTotals() {
+        let iva = 0;
+
+        inputs.forEach((input) => {
+            const autoIva = numberFrom(input.dataset.autoIva);
+            const subtotal = numberFrom(input.dataset.subtotal);
+            const otros = numberFrom(input.dataset.otros);
+            const retenciones = numberFrom(input.dataset.retenciones);
+            const ivaPartida = input.value.trim() === '' ? autoIva : numberFrom(input.value, autoIva);
+            const importe = subtotal + ivaPartida + otros - retenciones;
+            const target = document.getElementById(input.dataset.importeTarget);
+
+            iva += ivaPartida;
+
+            if (target) {
+                target.textContent = money.format(importe);
+            }
+        });
+
+        const subtotalGeneral = numberFrom(resumen.dataset.subtotal);
+        const otrosGeneral = numberFrom(resumen.dataset.otros);
+        const retencionesGeneral = numberFrom(resumen.dataset.retenciones);
+        const total = subtotalGeneral + iva + otrosGeneral - retencionesGeneral;
+
+        if (ivaTotal) ivaTotal.textContent = money.format(iva);
+        if (totalGeneral) totalGeneral.textContent = money.format(total);
+    }
+
+    async function saveInput(input) {
+        if (!csrf || !input.dataset.updateUrl) return;
+
+        const value = normalizedValue(input);
+        if (value === (input.dataset.originalValue || '')) return;
+
+        input.disabled = true;
+        setStatus(input, 'Guardando...');
+
+        try {
+            const res = await fetch(input.dataset.updateUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: buildDetailPayload(input),
+            });
+
+            if (!res.ok) throw new Error('No se pudo guardar el IVA.');
+
+            input.dataset.originalValue = value;
+            input.value = value;
+            setStatus(input, 'Guardado', 'text-emerald-600');
+            window.setTimeout(() => setStatus(input, ''), 1800);
+        } catch (error) {
+            setStatus(input, error.message || 'Error al guardar', 'text-red-600');
+        } finally {
+            input.disabled = false;
+        }
+    }
+
+    inputs.forEach((input) => {
+        input.addEventListener('input', () => {
+            recalcTotals();
+            setStatus(input, normalizedValue(input) === (input.dataset.originalValue || '') ? '' : 'Sin guardar');
+        });
+        input.addEventListener('blur', () => saveInput(input));
+        input.addEventListener('change', () => saveInput(input));
+    });
+
+    recalcTotals();
+})();
+</script>
 
 <div id="ocLoadingOverlay" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-slate-950/45 backdrop-blur-sm">
     <div class="w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-2xl">
@@ -916,4 +1092,3 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
-

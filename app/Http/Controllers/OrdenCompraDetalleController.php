@@ -85,6 +85,9 @@ class OrdenCompraDetalleController extends Controller
         $detalle->iva = $request->filled('iva')
             ? (float) $request->iva
             : 0;
+        $detalle->iva_importe_manual = $request->filled('iva_importe_manual')
+            ? (float) $request->iva_importe_manual
+            : null;
 
         $detalle->tipo_retencion_id = $tipoRetencion?->id;
         $detalle->retencion_porcentaje = $retencionPorcentaje;
@@ -341,6 +344,7 @@ private function syncProductoProveedorDesdeDetalle(OrdenCompra $oc, OrdenCompraD
 
             $detalle->importe         = $importe;
             $detalle->iva             = $request->filled('iva') ? (float)$request->iva : 0;
+            $detalle->iva_importe_manual = $request->filled('iva_importe_manual') ? (float) $request->iva_importe_manual : null;
 
             $tipoRetencion = null;
             $retencionPorcentaje = 0;
@@ -368,6 +372,10 @@ private function syncProductoProveedorDesdeDetalle(OrdenCompra $oc, OrdenCompraD
             $detalle->save();
 
             OrdenCompraTotalesService::recalcular($oc);
+
+            if ($request->expectsJson()) {
+                return response()->json(['ok' => true]);
+            }
 
             return back()->with('success', 'Detalle actualizado y totales recalculados.');
         });

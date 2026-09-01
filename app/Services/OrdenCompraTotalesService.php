@@ -39,7 +39,7 @@ class OrdenCompraTotalesService
         ->where('orden_compra_id', $oc->id)
         ->selectRaw('
             COALESCE(SUM(importe),0) as subtotal,
-            COALESCE(SUM(importe * (iva/100)),0) as iva_monto,
+            COALESCE(SUM(COALESCE(iva_importe_manual, importe * (iva/100))),0) as iva_monto,
             COALESCE(SUM(otros_impuestos),0) as otros_impuestos,
             COALESCE(SUM(retenciones),0) as retenciones
         ')

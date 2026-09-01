@@ -18,6 +18,7 @@ use App\Services\CivilConceptBalanceService;
 use App\Services\ObraCivilInsumoBalanceService;
 use App\Services\ObraCivil\ObraCivilMaterialRequestOrderService;
 use App\Services\OrdenCompraNotificationService;
+use App\Services\OrdenCompraTotalesService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -476,16 +477,20 @@ public function edit($id)
             2
         );
 
+        $detalle->iva_efectivo = ! is_null($detalle->iva_importe_manual)
+            ? round((float) $detalle->iva_importe_manual, 2)
+            : $detalle->iva_calculado;
+
         $detalle->total = round(
             $detalle->subtotal
-            + $detalle->iva_calculado
+            + $detalle->iva_efectivo
             + (float) $detalle->otros_impuestos
             - (float) $detalle->retenciones,
             2
         );
 
         $subtotalGeneral += $detalle->subtotal;
-        $ivaMontoGeneral += $detalle->iva_calculado;
+        $ivaMontoGeneral += $detalle->iva_efectivo;
         $otrosGeneral += (float) $detalle->otros_impuestos;
         $retencionesGeneral += (float) $detalle->retenciones;
     }
@@ -557,6 +562,38 @@ public function edit($id)
             $oc->fecha        = $request->fecha;
 
             $oc->save();
+
+            $actualizoIvaManual = false;
+
+            foreach ($request->input('detalles', []) as $detalleId => $detalleData) {
+                $detalle = $oc->detalles()->whereKey($detalleId)->first();
+
+                if (! $detalle) {
+                    continue;
+                }
+
+                $valorIvaManual = $detalleData['iva_importe_manual'] ?? null;
+                $valorIvaOriginal = $detalleData['iva_importe_manual_original'] ?? null;
+                $ivaCalculado = $detalleData['iva_calculado'] ?? null;
+
+                if ($valorIvaManual === '' || is_null($valorIvaManual)) {
+                    $nuevoIvaManual = null;
+                } elseif (($valorIvaOriginal === '' || is_null($valorIvaOriginal)) && is_numeric($ivaCalculado) && round((float) $valorIvaManual, 2) === round((float) $ivaCalculado, 2)) {
+                    $nuevoIvaManual = null;
+                } else {
+                    $nuevoIvaManual = (float) $valorIvaManual;
+                }
+
+                if ((string) ($detalle->iva_importe_manual ?? '') !== (string) ($nuevoIvaManual ?? '')) {
+                    $detalle->iva_importe_manual = $nuevoIvaManual;
+                    $detalle->save();
+                    $actualizoIvaManual = true;
+                }
+            }
+
+            if ($actualizoIvaManual) {
+                OrdenCompraTotalesService::recalcular($oc);
+            }
 
             return back()->with('success', 'Encabezado actualizado.');
         });
@@ -3311,4 +3348,3 @@ public function exportarListaPagos(
             ->header('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"');
     }
 }
-

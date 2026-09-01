@@ -35,6 +35,11 @@ class UpdateOrdenCompraRequest extends FormRequest
             'tipo_pago'    => ['nullable', Rule::in(['PUE', 'PPD'])],
             'forma_pago'   => ['nullable', Rule::in(['01', '02', '03', '04', '28', '99'])],
             'comentarios'  => ['nullable','string'],
+
+            'detalles' => ['nullable', 'array'],
+            'detalles.*.iva_importe_manual' => ['nullable', 'numeric', 'min:0'],
+            'detalles.*.iva_importe_manual_original' => ['nullable', 'numeric', 'min:0'],
+            'detalles.*.iva_calculado' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 
@@ -58,4 +63,3 @@ class UpdateOrdenCompraRequest extends FormRequest
         });
     }
 }
-

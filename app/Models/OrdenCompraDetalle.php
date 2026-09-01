@@ -42,6 +42,7 @@ class OrdenCompraDetalle extends Model
     'descuento_importe',
     'importe',
     'iva',
+    'iva_importe_manual',
     'tipo_retencion_id',
     'retencion_porcentaje',
     'retenciones',
@@ -57,6 +58,7 @@ class OrdenCompraDetalle extends Model
         'descuento_importe' => 'decimal:2',
         'importe' => 'decimal:2',
         'iva' => 'decimal:2',
+        'iva_importe_manual' => 'decimal:2',
         'retenciones' => 'decimal:2',
         'otros_impuestos' => 'decimal:2',
         'tipo_cambio' => 'decimal:4',
@@ -95,4 +97,3 @@ class OrdenCompraDetalle extends Model
         return $this->belongsTo(ObraCivilMaterialRequestItem::class, 'obra_civil_material_request_item_id');
     }
 }
-
