@@ -328,6 +328,9 @@ private function syncProductoProveedorDesdeDetalle(OrdenCompra $oc, OrdenCompraD
             $detalle->obra_civil_insumo_id = $obraCivilInsumo?->id;
             $detalle->legacy_prod_id  = $obraCivilInsumo ? null : $request->legacy_prod_id;
             if ($obraCivilInsumo) {
+                $snapshotPrecioTope = $detalle->obra_civil_insumo_snapshot['precio_unitario'] ?? null;
+                $detalle->precio_tope = $detalle->precio_tope
+                    ?? (is_numeric($snapshotPrecioTope) ? (float) $snapshotPrecioTope : (float) $obraCivilInsumo->precio_unitario);
                 $detalle->civil_concept_snapshot = null;
                 $detalle->obra_civil_insumo_snapshot = $this->buildObraCivilInsumoSnapshot($obraCivilInsumo);
             } else {

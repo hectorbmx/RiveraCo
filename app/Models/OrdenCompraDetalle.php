@@ -38,6 +38,10 @@ class OrdenCompraDetalle extends Model
     'unidad',
     'cantidad',
     'precio_unitario',
+    'precio_tope',
+    'sobreprecio_autorizado_por',
+    'sobreprecio_autorizado_at',
+    'sobreprecio_autorizacion_motivo',
     'descuento_porcentaje',
     'descuento_importe',
     'importe',
@@ -54,6 +58,9 @@ class OrdenCompraDetalle extends Model
     protected $casts = [
         'cantidad' => 'decimal:3',
         'precio_unitario' => 'decimal:4',
+        'precio_tope' => 'decimal:4',
+        'sobreprecio_autorizado_por' => 'integer',
+        'sobreprecio_autorizado_at' => 'datetime',
         'descuento_porcentaje' => 'decimal:2',
         'descuento_importe' => 'decimal:2',
         'importe' => 'decimal:2',
@@ -82,6 +89,10 @@ class OrdenCompraDetalle extends Model
     public function tipoRetencion()
     {
         return $this->belongsTo(TipoRetencion::class, 'tipo_retencion_id');
+    }
+    public function sobreprecioAutorizadoPor()
+    {
+        return $this->belongsTo(User::class, 'sobreprecio_autorizado_por');
     }
     public function civilConcept()
     {

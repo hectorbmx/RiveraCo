@@ -413,6 +413,29 @@ class OrdenCompraController extends Controller
         });
     }
 
+    public function destroy(Request $request, $id)
+    {
+        $this->authorizeAny(['delete_ordenes_compra'], 'No tienes permiso para eliminar ordenes de compra.');
+
+        $oc = OrdenCompra::findOrFail($id);
+
+        if (in_array($oc->estado_normalizado, ['autorizada', 'verificada', 'cancelada'], true)) {
+            return back()->with('error', 'No puedes eliminar una orden autorizada, verificada o cancelada.');
+        }
+
+        if ($oc->pagosProveedor()->exists()) {
+            return back()->with('error', 'No puedes eliminar una orden con pagos de proveedor ligados.');
+        }
+
+        DB::transaction(function () use ($oc) {
+            $oc->delete();
+        });
+
+        return redirect()
+            ->route('ordenes_compra.index', $request->query())
+            ->with('success', 'Orden de compra eliminada correctamente.');
+    }
+
 public function edit($id)
 {
     $this->authorizeAny([
@@ -842,6 +865,16 @@ public function print(OrdenCompra $orden_compra)
     $pdf->SetAutoPageBreak(true, 12);
 
     $utf8 = fn ($texto) => utf8_decode((string) $texto);
+    $esBorrador = in_array($oc->estado_normalizado, ['programada'], true)
+        || in_array(strtoupper((string) $oc->estado), ['BORRADOR', 'PROGRAMADA'], true);
+
+    if ($esBorrador) {
+        $pdf->SetFont('Arial', 'B', 46);
+        $pdf->SetTextColor(225, 225, 225);
+        $pdf->SetXY(10, 118);
+        $pdf->Cell(196, 24, $utf8('BORRADOR'), 0, 0, 'C');
+        $pdf->SetTextColor(0, 0, 0);
+    }
 
     // ====== Configuración del layout ======
     $M = 10;
@@ -959,6 +992,13 @@ public function print(OrdenCompra $orden_compra)
             0,
             'L'
         );
+    }
+
+    if ($esBorrador) {
+        $pdf->SetXY($X0 + 40, $Y + 17);
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->SetTextColor(220, 38, 38);
+        $pdf->Cell(90, 5, $utf8('BORRADOR - NO AUTORIZADA'), 0, 0, 'L');
     }
 
     // Datos de empresa

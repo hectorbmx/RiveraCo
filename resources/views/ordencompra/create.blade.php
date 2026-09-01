@@ -1,10 +1,10 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="p-6 max-w-4xl">
-    <h1 class="text-xl font-semibold mb-4">Nueva orden de compra</h1>
+<div class="p-6 max-w-6xl">
+    <h1 class="mb-5 text-2xl font-semibold text-slate-900">Nueva orden de compra</h1>
 
-    <form method="POST" action="{{ route('ordenes_compra.store') }}" class="space-y-4" data-loading-form data-loading-message="Creando orden de compra...">
+    <form method="POST" action="{{ route('ordenes_compra.store') }}" class="space-y-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm" data-loading-form data-loading-message="Creando orden de compra...">
         @csrf
 
         <div class="flex flex-wrap items-center gap-3">
@@ -19,145 +19,137 @@
             </label>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div class="relative">
-    <label class="block text-sm font-medium mb-1">Proveedor</label>
-
-    {{-- ID real que se envía en el form --}}
-    <input type="hidden" name="proveedor_id" id="proveedor_id" value="{{ old('proveedor_id') }}">
-    <input type="hidden" name="proveedor_texto" id="proveedor_texto" value="{{ old('proveedor_texto') }}">
-
-    {{-- Input visible --}}
-    <input
-        type="text"
-        id="proveedor_busqueda"
-        class="w-full border p-2 rounded"
-        placeholder="Proveedor opcional si es caja chica / sin factura..."
-        autocomplete="off"
-        value="{{ old('proveedor_texto') }}"
-    >
-
-    {{-- Lista de resultados --}}
-    <div
-        id="proveedor_resultados"
-        class="absolute left-0 top-full z-50 mt-1 w-full bg-white border rounded shadow hidden max-h-64 overflow-auto"
-    ></div>
-
-    @error('proveedor_id')
-        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-    @enderror
-</div>
-
-
-
-
+        <div class="grid gap-4 md:grid-cols-2">
             <div>
-                <label>Área</label>
-                <select name="area_id" class="w-full border p-2">
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Área</label>
+                <select name="area_id" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
                     @foreach($areas as $a)
                         <option value="{{ $a->id }}" {{ (old('area_id', $selectedAreaId ?? null) == $a->id) ? 'selected' : '' }}>{{ $a->nombre }}</option>
                     @endforeach
                 </select>
             </div>
 
-            <!-- <div>
-                <label>Obra</label>
-                <select name="obra_id" class="w-full border p-2">
+            {{-- Hidden para planeacion_gasto_id --}}
+            <input type="hidden" name="planeacion_gasto_id" id="planeacion_gasto_id" value="{{ old('planeacion_gasto_id') }}">
+            <input type="hidden" name="civil_partida_id" id="civil_partida_id" value="{{ old('civil_partida_id') }}">
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Obra</label>
+                <select
+                    name="obra_id"
+                    id="obra_id"
+                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400"
+                    data-partidas-url="{{ route('ordenes_compra.partidas_obra', ['obra_id' => '__ID__']) }}"
+                    data-material-requests-url="{{ route('ordenes_compra.solicitudes_material_obra', ['obra' => '__ID__']) }}"
+                >
                     <option value="">Compra general</option>
                     @foreach($obras as $o)
-                        <option value="{{ $o->id }}">{{ $o->nombre }}</option>
+                        <option value="{{ $o->id }}" {{ old('obra_id') == $o->id ? 'selected' : '' }}>
+                            {{ $o->nombre }}
+                        </option>
                     @endforeach
                 </select>
-            </div> -->
-            {{-- Hidden para planeacion_gasto_id --}}
-<input type="hidden" name="planeacion_gasto_id" id="planeacion_gasto_id" value="{{ old('planeacion_gasto_id') }}">
-<input type="hidden" name="civil_partida_id" id="civil_partida_id" value="{{ old('civil_partida_id') }}">
- 
-<div>
-    <label class="block text-sm font-medium mb-1">Obra</label>
-    <select
-        name="obra_id"
-        id="obra_id"
-        class="w-full border p-2 rounded"
-        data-partidas-url="{{ route('ordenes_compra.partidas_obra', ['obra_id' => '__ID__']) }}"
-        data-material-requests-url="{{ route('ordenes_compra.solicitudes_material_obra', ['obra' => '__ID__']) }}"
-    >
-        <option value="">Compra general</option>
-        @foreach($obras as $o)
-            <option value="{{ $o->id }}" {{ old('obra_id') == $o->id ? 'selected' : '' }}>
-                {{ $o->nombre }}
-            </option>
-        @endforeach
-    </select>
-</div>
+            </div>
 
-<div id="material_request_wrapper" class="col-span-2 hidden rounded-xl border border-blue-100 bg-blue-50/40 p-4">
-    <div class="mb-3 flex flex-wrap items-start justify-between gap-2">
-        <div>
-            <label class="block text-sm font-semibold text-slate-800">Materiales aprobados pendientes de OC</label>
-            <p class="text-xs text-slate-500">Selecciona solo los renglones que iran con este proveedor. Puedes ajustar la cantidad a cargar.</p>
-        </div>
-        <span id="material_request_selected_count" class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-blue-700 shadow-sm">0 seleccionados</span>
-    </div>
+            <div class="relative">
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Proveedor</label>
 
-    <p id="material_requests_cargando" class="text-xs text-slate-400 mt-1 hidden">Cargando materiales aprobados…</p>
-    <p id="material_requests_sin_datos" class="text-xs text-slate-400 mt-1 hidden">Esta obra no tiene materiales aprobados pendientes de OC.</p>
+                {{-- ID real que se envia en el form --}}
+                <input type="hidden" name="proveedor_id" id="proveedor_id" value="{{ old('proveedor_id') }}">
+                <input type="hidden" name="proveedor_texto" id="proveedor_texto" value="{{ old('proveedor_texto') }}">
 
-    <div id="material_request_table_wrapper" class="hidden overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table class="min-w-full text-sm">
-            <thead class="bg-slate-50 text-xs uppercase text-slate-500">
-                <tr>
-                    <th class="px-3 py-2 text-left">Usar</th>
-                    <th class="px-3 py-2 text-left">Solicitud</th>
-                    <th class="px-3 py-2 text-left">Codigo</th>
-                    <th class="px-3 py-2 text-left">Material</th>
-                    <th class="px-3 py-2 text-right">Autorizado</th>
-                    <th class="px-3 py-2 text-right">OC borrador</th>
-                    <th class="px-3 py-2 text-right">Pendiente</th>
-                    <th class="px-3 py-2 text-right">A cargar</th>
-                </tr>
-            </thead>
-            <tbody id="material_request_items_body" class="divide-y divide-slate-100"></tbody>
-        </table>
-    </div>
+                {{-- Input visible --}}
+                <input
+                    type="text"
+                    id="proveedor_busqueda"
+                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    placeholder="Proveedor opcional si es caja chica / sin factura..."
+                    autocomplete="off"
+                    value="{{ old('proveedor_texto') }}"
+                >
 
-    @error('obra_civil_material_request_items')
-        <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
-    @enderror
-    @error('obra_civil_material_request_items.*.quantity')
-        <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
-    @enderror
-</div>
- 
-{{-- Select de partidas — se muestra solo cuando hay obra seleccionada --}}
-<div>
-    <label class="block text-sm font-medium mb-1">Centro de costo</label>
-    <select name="centro_costo_id" id="centro_costo_id" class="w-full border p-2 rounded">
-        <option value="">Sin centro de costo</option>
-        @foreach($centrosCosto as $centro)
-            <option value="{{ $centro->id }}" {{ old('centro_costo_id') == $centro->id ? 'selected' : '' }}>
-                {{ $centro->codigo ? $centro->codigo . ' - ' : '' }}{{ $centro->nombre }}
-            </option>
-        @endforeach
-    </select>
-    @error('centro_costo_id')
-        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-    @enderror
-</div>
+                {{-- Lista de resultados --}}
+                <div
+                    id="proveedor_resultados"
+                    class="absolute left-0 top-full z-50 mt-1 w-full bg-white border rounded shadow hidden max-h-64 overflow-auto"
+                ></div>
 
-<div id="partidas_wrapper" class="{{ old('obra_id') ? '' : 'hidden' }}">
-    <label class="block text-sm font-medium mb-1">Partida presupuestal</label>
-    <select
-        name="_partida_display"
-        id="partida_select"
-        class="w-full border p-2 rounded"
-    >
-        <option value="">— Selecciona una partida —</option>
-    </select>
-    <p id="partidas_cargando" class="text-xs text-slate-400 mt-1 hidden">Cargando partidas…</p>
-    <p id="partidas_sin_datos" class="text-xs text-slate-400 mt-1 hidden">Esta obra no tiene partidas disponibles.</p>
-</div>
- 
+                @error('proveedor_id')
+                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Centro de costo</label>
+                <select name="centro_costo_id" id="centro_costo_id" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400">
+                    <option value="">Sin centro de costo</option>
+                    @foreach($centrosCosto as $centro)
+                        <option value="{{ $centro->id }}" {{ old('centro_costo_id') == $centro->id ? 'selected' : '' }}>
+                            {{ $centro->codigo ? $centro->codigo . ' - ' : '' }}{{ $centro->nombre }}
+                        </option>
+                    @endforeach
+                </select>
+                <p id="centro_costo_hint" class="mt-1 hidden text-xs text-slate-500">Deshabilitado porque la compra esta ligada a una obra.</p>
+                @error('centro_costo_id')
+                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div id="material_request_wrapper" class="col-span-full hidden rounded-lg border border-blue-100 bg-blue-50/40 p-4 shadow-sm">
+                <div class="mb-3 flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-800">Materiales aprobados pendientes de OC</label>
+                        <p class="text-xs text-slate-500">Selecciona solo los renglones que iran con este proveedor. Puedes ajustar la cantidad a cargar.</p>
+                    </div>
+                    <span id="material_request_selected_count" class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-blue-700 shadow-sm">0 seleccionados</span>
+                </div>
+
+                <p id="material_requests_cargando" class="text-xs text-slate-400 mt-1 hidden">Cargando materiales aprobados...</p>
+                <p id="material_requests_sin_datos" class="text-xs text-slate-400 mt-1 hidden">Esta obra no tiene materiales aprobados pendientes de OC.</p>
+
+                <div id="material_request_table_wrapper" class="hidden overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+                            <tr>
+                                <th class="px-3 py-2 text-left">Usar</th>
+                                <th class="px-3 py-2 text-left">Solicitud</th>
+                                <th class="px-3 py-2 text-left">Codigo</th>
+                                <th class="px-3 py-2 text-left">Material</th>
+                                <th class="px-3 py-2 text-right">Autorizado</th>
+                                <th class="px-3 py-2 text-right">OC borrador</th>
+                                <th class="px-3 py-2 text-right">Pendiente</th>
+                                <th class="px-3 py-2 text-right">Precio tope</th>
+                                <th class="px-3 py-2 text-right">Precio OC</th>
+                                <th class="px-3 py-2 text-right">A cargar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="material_request_items_body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+
+                @error('obra_civil_material_request_items')
+                    <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                @enderror
+                @error('obra_civil_material_request_items.*.quantity')
+                    <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                @enderror
+                @error('obra_civil_material_request_items.*.price')
+                    <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div id="partidas_wrapper" class="{{ old('obra_id') ? '' : 'hidden' }}">
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Partida presupuestal</label>
+                <select
+                    name="_partida_display"
+                    id="partida_select"
+                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                >
+                    <option value="">-- Selecciona una partida --</option>
+                </select>
+                <p id="partidas_cargando" class="text-xs text-slate-400 mt-1 hidden">Cargando partidas...</p>
+                <p id="partidas_sin_datos" class="text-xs text-slate-400 mt-1 hidden">Esta obra no tiene partidas disponibles.</p>
+            </div>
 {{-- ─────────────────────────────────────────────────────────────────────────
      Script — agregar dentro del @push('scripts') existente,
      DESPUÉS del script del buscador de proveedores.
@@ -260,11 +252,20 @@
         }
     }
  
+    // Partidas deshabilitadas temporalmente: el flujo de OC desde obra civil carga SCM aprobadas.
+    const cargarPartidasHabilitado = false;
+
     // Al cambiar la obra
     obraSelect.addEventListener('change', function () {
         const obraId = this.value;
         if (obraId && centroCostoSelect) {
             centroCostoSelect.value = '';
+        }
+
+        if (!cargarPartidasHabilitado) {
+            partidasWrapper.classList.add('hidden');
+            limpiarPartidas();
+            return;
         }
  
         if (!obraId) {
@@ -295,7 +296,7 @@
     });
  
     // Si al cargar la página ya hay una obra seleccionada (old input / edit)
-    if (obraSelect.value) {
+    if (cargarPartidasHabilitado && obraSelect.value) {
         cargarPartidas(obraSelect.value);
     }
 })();
@@ -381,12 +382,17 @@
             const checkbox = row.querySelector('.js-material-request-check');
             const hiddenId = row.querySelector('.js-material-request-id');
             const quantity = row.querySelector('.js-material-request-quantity');
+            const price = row.querySelector('.js-material-request-price');
             const commercialQuantity = row.querySelector('.js-material-request-commercial-quantity');
 
             if (!checkbox?.checked) {
                 hiddenId.disabled = true;
                 quantity.disabled = true;
                 quantity.removeAttribute('name');
+                if (price) {
+                    price.disabled = true;
+                    price.removeAttribute('name');
+                }
                 commercialQuantity?.setAttribute('disabled', 'disabled');
                 row.classList.remove('bg-blue-50');
                 return;
@@ -395,9 +401,11 @@
             syncCommercialQuantity(row);
             hiddenId.disabled = false;
             quantity.disabled = false;
+            if (price) price.disabled = false;
             commercialQuantity?.removeAttribute('disabled');
             hiddenId.name = `obra_civil_material_request_items[${index}][id]`;
             quantity.name = `obra_civil_material_request_items[${index}][quantity]`;
+            if (price) price.name = `obra_civil_material_request_items[${index}][price]`;
             row.classList.add('bg-blue-50');
             index++;
         });
@@ -408,6 +416,38 @@
     function renderQuantityCell(value, unit, isCommercial = false) {
         const tone = isCommercial ? 'text-emerald-700' : 'text-slate-900';
         return `${numberFmt(value)}<div class="text-xs text-slate-400">${escapeHtml(unit)}</div>`;
+    }
+
+    function moneyFmt(value) {
+        return Number(value || 0).toLocaleString('es-MX', {
+            style: 'currency',
+            currency: 'MXN',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 4
+        });
+    }
+
+    function resetSolicitudes() {
+        body.innerHTML = '';
+        tableWrapper?.classList.add('hidden');
+        msgCargando?.classList.add('hidden');
+        msgSinDatos?.classList.add('hidden');
+        selectedCount.textContent = '0 seleccionados';
+    }
+
+    function syncPriceStatus(row) {
+        if (!row) return;
+
+        const input = row.querySelector('.js-material-request-price');
+        const status = row.querySelector('.js-material-request-price-status');
+        if (!input || !status) return;
+
+        const price = Number(input.value || 0);
+        const limit = Number(input.dataset.precioTope || 0);
+
+        input.classList.toggle('border-amber-500', price > limit);
+        input.classList.toggle('bg-amber-50', price > limit);
+        status.textContent = price > limit ? 'Requiere autorizacion por sobreprecio' : '';
     }
 
     function renderItems(items) {
@@ -425,6 +465,9 @@
                 ? `<div class="text-[11px] text-amber-600">Hay ${numberFmt(draftVisible)} ${escapeHtml(visibleUnit)} en borrador</div>`
                 : '';
             const commercialSummary = commercialRequestSummary(item);
+            const precioTope = Number(item.precio_tope ?? item.suggested_price ?? 0);
+            const priceInput = `<input type="number" min="0" step="0.0001" value="${precioTope.toFixed(4)}" class="js-material-request-price w-28 rounded border border-slate-300 p-2 text-right" data-precio-tope="${precioTope}" disabled>` +
+                `<div class="js-material-request-price-status mt-1 text-[11px] font-semibold text-amber-600"></div>`;
             const quantityInput = metrics.hasCommercial
                 ? `<input type="number" min="0.0001" step="0.0001" max="${maxVisible}" value="${maxVisible}" class="js-material-request-commercial-quantity w-28 rounded border border-slate-300 p-2 text-right" data-commercial-total="${metrics.commercialTotal}" data-converted-total="${metrics.convertedTotal}" disabled>
                    <input type="hidden" class="js-material-request-quantity" max="${maxQuantity}" value="${maxQuantity}" disabled>
@@ -448,6 +491,10 @@
                     <td class="px-3 py-3 text-right align-top">${renderQuantityCell(approvedVisible, visibleUnit, metrics.hasCommercial)}</td>
                     <td class="px-3 py-3 text-right align-top">${renderQuantityCell(draftVisible, visibleUnit, metrics.hasCommercial)}${draftBadge}</td>
                     <td class="px-3 py-3 text-right align-top font-semibold text-emerald-700">${renderQuantityCell(maxVisible, visibleUnit, metrics.hasCommercial)}</td>
+                    <td class="px-3 py-3 text-right align-top font-semibold text-slate-700">${moneyFmt(precioTope)}</td>
+                    <td class="px-3 py-3 text-right align-top">
+                        ${priceInput}
+                    </td>
                     <td class="px-3 py-3 text-right align-top">
                         ${quantityInput}
                     </td>
@@ -457,6 +504,10 @@
 
         body.querySelectorAll('.js-material-request-check').forEach((checkbox) => {
             checkbox.addEventListener('change', syncIndexes);
+        });
+        body.querySelectorAll('.js-material-request-price').forEach((input) => {
+            input.addEventListener('input', () => syncPriceStatus(input.closest('tr')));
+            syncPriceStatus(input.closest('tr'));
         });
         body.querySelectorAll('.js-material-request-quantity, .js-material-request-commercial-quantity').forEach((input) => {
             input.addEventListener('input', () => {
@@ -549,7 +600,7 @@
                 <label class="block text-sm font-medium mb-1">
                     Tipo de cambio <span id="tc_required_label" class="text-xs text-red-600 font-bold {{ old('moneda', 'MXN') === 'MXN' ? 'hidden' : '' }}">* (Obligatorio para USD/EUR)</span>
                 </label>
-                <input type="number" step="0.0001" min="0.0001" name="tipo_cambio" id="tipo_cambio_input" class="w-full border p-2 rounded" value="{{ old('tipo_cambio', old('moneda', 'MXN') === 'MXN' ? '1' : '') }}" placeholder="Ej. 18.50">
+                <input type="number" step="0.0001" min="0.0001" name="tipo_cambio" id="tipo_cambio_input" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" value="{{ old('tipo_cambio', old('moneda', 'MXN') === 'MXN' ? '1' : '') }}" placeholder="Ej. 18.50">
                 @error('tipo_cambio')
                     <p class="text-sm text-red-600 mt-1 font-medium">{{ $message }}</p>
                 @enderror
@@ -578,7 +629,7 @@
             </div>
         </div>
 
-        <button class="bg-blue-600 text-white px-4 py-2 rounded">
+        <button class="rounded-lg bg-blue-600 px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200">
             Crear orden
         </button>
     </form>

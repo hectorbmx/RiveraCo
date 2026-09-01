@@ -679,7 +679,7 @@ Route::middleware('auth','verified')->group(function () {
         Route::get('/horas-extras/exportar', [GiraldaController::class, 'exportHorasExtras'])->name('horas-extras.export');
         Route::get('/horas-extras/{horaExtra}', [GiraldaController::class, 'redirectHoraExtra'])->name('horas-extras.redirect');
     });
-    Route::resource('ordenes_compra', OrdenCompraController::class)->except(['show','destroy']);
+    Route::resource('ordenes_compra', OrdenCompraController::class)->except(['show']);
     Route::post('ordenes_compra/{id}/autorizar', [OrdenCompraController::class, 'autorizar'])->name('ordenes_compra.autorizar');
     Route::post('ordenes_compra/{id}/verificar', [OrdenCompraController::class, 'verificar'])->name('ordenes_compra.verificar');
     Route::post('ordenes_compra/{id}/cancelar', [OrdenCompraController::class, 'cancelar'])->name('ordenes_compra.cancelar');

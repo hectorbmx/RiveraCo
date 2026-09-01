@@ -498,7 +498,8 @@
         <tr>
             <th class="p-2 border">Descripción</th>
             <th class="p-2 border">Cant</th>
-            <th class="p-2 border">Precio</th>
+            <th class="p-2 border">Precio OC</th>
+            <th class="p-2 border">Precio tope</th>
             <th class="p-2 border">SubTotal</th>
             <th class="p-2 border">Desc.</th>
             <th class="p-2 border">IVA</th>
@@ -530,6 +531,12 @@
         $detailIvaInputValue = ! is_null($d->iva_importe_manual)
             ? (float) $d->iva_importe_manual
             : $detailIvaEffective;
+        $detailPrecioTope = ! is_null($d->precio_tope)
+            ? (float) $d->precio_tope
+            : (float) ($d->obra_civil_insumo_snapshot['precio_unitario'] ?? 0);
+        $detailHasPrecioTope = ! is_null($d->precio_tope) || ! is_null($d->obra_civil_material_request_item_id);
+        $detailTieneSobreprecio = $detailHasPrecioTope && $detailPrecioTope > 0 && (float) $d->precio_unitario > $detailPrecioTope;
+        // margen_informativo = (precio_tope - precio_unitario) * cantidad
     @endphp
     <tr>
         <td class="p-2 text-center">
@@ -558,11 +565,61 @@
         </td>
 
         <td class="p-2 text-center">
-            ${{ number_format($detailDisplayPrice, 2) }}
+            @if(!$bloqueado)
+                <input form="formEncabezadoOc"
+                       name="detalles[{{ $d->id }}][precio_unitario]"
+                       type="number"
+                       step="0.0001"
+                       min="0"
+                       class="js-detalle-auto-save js-precio-oc-input w-28 rounded border p-1.5 text-right {{ $detailTieneSobreprecio ? 'border-amber-500 bg-amber-50' : '' }}"
+                       value="{{ number_format((float) $d->precio_unitario, 4, '.', '') }}"
+                       data-original-value="{{ number_format((float) $d->precio_unitario, 4, '.', '') }}"
+                       data-update-url="{{ route('ordenes_compra.detalles.update', [$oc->id, $d->id]) }}"
+                       data-producto-id="{{ $d->producto_id }}"
+                       data-civil-concept-id="{{ $d->civil_concept_id }}"
+                       data-obra-civil-insumo-id="{{ $d->obra_civil_insumo_id }}"
+                       data-legacy-prod-id="{{ $d->legacy_prod_id }}"
+                       data-descripcion="{{ $d->descripcion }}"
+                       data-unidad="{{ $d->unidad }}"
+                       data-cantidad="{{ $d->cantidad }}"
+                       data-precio-unitario="{{ $d->precio_unitario }}"
+                       data-precio-tope="{{ $detailHasPrecioTope ? number_format($detailPrecioTope, 4, '.', '') : '' }}"
+                       data-descuento-porcentaje="{{ $d->descuento_porcentaje }}"
+                       data-importe="{{ $d->importe }}"
+                       data-iva="{{ $d->iva }}"
+                       data-tipo-retencion-id="{{ $d->tipo_retencion_id }}"
+                       data-otros-impuestos="{{ $d->otros_impuestos }}"
+                       data-notas="{{ $d->notas }}"
+                       data-auto-iva="{{ number_format((float) $d->iva_calculado, 2, '.', '') }}"
+                       data-subtotal="{{ number_format((float) $d->subtotal, 2, '.', '') }}"
+                       data-otros="{{ number_format((float) $d->otros_impuestos, 2, '.', '') }}"
+                       data-retenciones="{{ number_format((float) $d->retenciones, 2, '.', '') }}"
+                       data-importe-target="detalleImporte-{{ $d->id }}"
+                       data-subtotal-target="detalleSubtotal-{{ $d->id }}">
+                <div class="js-precio-oc-alert mt-1 text-[11px] font-semibold text-amber-600">{{ $detailTieneSobreprecio ? 'Requiere autorizacion por sobreprecio' : '' }}</div>
+                <div class="js-detalle-auto-save-status mt-1 text-[11px] text-slate-400"></div>
+            @else
+                ${{ number_format((float) $d->precio_unitario, 2) }}
+            @endif
         </td>
 
         <td class="p-2 text-center">
-            <div>${{ number_format((float) $d->subtotal_bruto, 2) }}</div>
+            @if($detailHasPrecioTope)
+                <div class="font-semibold text-slate-700">${{ number_format($detailPrecioTope, 2) }}</div>
+                @if($detailTieneSobreprecio)
+                    @if($d->sobreprecio_autorizado_at)
+                        <div class="text-[11px] font-semibold text-emerald-600">Sobreprecio autorizado</div>
+                    @else
+                        <div class="text-[11px] font-semibold text-amber-600">Sobreprecio pendiente</div>
+                    @endif
+                @endif
+            @else
+                <span class="text-slate-400">-</span>
+            @endif
+        </td>
+
+        <td class="p-2 text-center">
+            <div id="detalleSubtotal-{{ $d->id }}">${{ number_format((float) $d->subtotal_bruto, 2) }}</div>
             @if((float) $d->descuento_calculado > 0)
                 <div class="text-[11px] text-slate-500">Neto: ${{ number_format((float) $d->subtotal, 2) }}</div>
             @endif
@@ -585,7 +642,7 @@
                        type="number"
                        step="0.01"
                        min="0"
-                       class="js-iva-real-input w-28 rounded border p-1.5 text-right"
+                       class="js-detalle-auto-save js-iva-real-input w-28 rounded border p-1.5 text-right"
                        value="{{ number_format($detailIvaInputValue, 2, '.', '') }}"
                        data-original-value="{{ number_format($detailIvaInputValue, 2, '.', '') }}"
                        data-update-url="{{ route('ordenes_compra.detalles.update', [$oc->id, $d->id]) }}"
@@ -607,7 +664,8 @@
                        data-subtotal="{{ number_format((float) $d->subtotal, 2, '.', '') }}"
                        data-otros="{{ number_format((float) $d->otros_impuestos, 2, '.', '') }}"
                        data-retenciones="{{ number_format((float) $d->retenciones, 2, '.', '') }}"
-                       data-importe-target="detalleImporte-{{ $d->id }}">
+                       data-importe-target="detalleImporte-{{ $d->id }}"
+                       data-subtotal-target="detalleSubtotal-{{ $d->id }}">
                 <input form="formEncabezadoOc"
                        type="hidden"
                        name="detalles[{{ $d->id }}][iva_importe_manual_original]"
@@ -616,7 +674,7 @@
                        type="hidden"
                        name="detalles[{{ $d->id }}][iva_calculado]"
                        value="{{ number_format((float) $d->iva_calculado, 2, '.', '') }}">
-                <div class="js-iva-real-status mt-1 text-[11px] text-slate-400"></div>
+                <div class="js-detalle-auto-save-status js-iva-real-status mt-1 text-[11px] text-slate-400"></div>
             @else
                 ${{ number_format($detailIvaEffective, 2) }}
             @endif
@@ -667,9 +725,11 @@
 <script>
 (function () {
     const resumen = document.getElementById('ocTotalesResumen');
+    const subtotalTotal = document.getElementById('ocSubtotalTotal');
     const ivaTotal = document.getElementById('ocIvaTotal');
     const totalGeneral = document.getElementById('ocTotalGeneral');
-    const inputs = document.querySelectorAll('.js-iva-real-input');
+    const inputs = document.querySelectorAll('.js-detalle-auto-save');
+    const ivaInputs = document.querySelectorAll('.js-iva-real-input');
     const csrf = document.querySelector('input[name="_token"]')?.value;
 
     if (!resumen || !inputs.length) return;
@@ -687,14 +747,50 @@
     }
 
     function normalizedValue(input) {
+        if (input.classList.contains('js-precio-oc-input')) {
+            return input.value.trim() === '' ? '' : numberFrom(input.value).toFixed(4);
+        }
+
         return input.value.trim() === '' ? '' : numberFrom(input.value).toFixed(2);
     }
 
     function setStatus(input, text, className = 'text-slate-400') {
-        const status = input.closest('td')?.querySelector('.js-iva-real-status');
+        const status = input.closest('td')?.querySelector('.js-detalle-auto-save-status');
         if (!status) return;
-        status.className = `js-iva-real-status mt-1 text-[11px] ${className}`;
+        const isIvaStatus = status.classList.contains('js-iva-real-status');
+        status.className = `js-detalle-auto-save-status mt-1 text-[11px] ${className}`;
+        if (isIvaStatus) {
+            status.classList.add('js-iva-real-status');
+        }
         status.textContent = text;
+    }
+
+    function lineSubtotal(input) {
+        const row = input.closest('tr');
+        const priceInput = row?.querySelector('.js-precio-oc-input');
+        const price = numberFrom(priceInput?.value ?? input.dataset.precioUnitario);
+        const cantidad = numberFrom(input.dataset.cantidad);
+        const descuentoPorcentaje = numberFrom(input.dataset.descuentoPorcentaje);
+        const bruto = cantidad * price;
+        const descuento = bruto * (Math.min(Math.max(descuentoPorcentaje, 0), 100) / 100);
+
+        return Math.max(0, bruto - descuento);
+    }
+
+    function syncPriceStatus(input) {
+        if (!input.classList.contains('js-precio-oc-input')) return;
+
+        const limit = numberFrom(input.dataset.precioTope, 0);
+        const hasLimit = input.dataset.precioTope !== '';
+        const isOver = hasLimit && limit > 0 && numberFrom(input.value) > limit;
+
+        const alert = input.closest('td')?.querySelector('.js-precio-oc-alert');
+
+        input.classList.toggle('border-amber-500', isOver);
+        input.classList.toggle('bg-amber-50', isOver);
+        if (alert) {
+            alert.textContent = isOver ? 'Requiere autorizacion por sobreprecio' : '';
+        }
     }
 
     function buildDetailPayload(input) {
@@ -707,46 +803,65 @@
         payload.append('legacy_prod_id', input.dataset.legacyProdId || '');
         payload.append('descripcion', input.dataset.descripcion || '');
         payload.append('unidad', input.dataset.unidad || '');
+        const row = input.closest('tr');
+        const priceInput = row?.querySelector('.js-precio-oc-input');
+        const ivaInput = row?.querySelector('.js-iva-real-input');
+        const precioUnitario = priceInput ? normalizedValue(priceInput) : (input.dataset.precioUnitario || '0');
+        const subtotal = lineSubtotal(input).toFixed(2);
+
         payload.append('cantidad', input.dataset.cantidad || '0');
-        payload.append('precio_unitario', input.dataset.precioUnitario || '0');
+        payload.append('precio_unitario', precioUnitario || '0');
         payload.append('descuento_porcentaje', input.dataset.descuentoPorcentaje || '0');
-        payload.append('importe', input.dataset.importe || '0');
+        payload.append('importe', subtotal);
         payload.append('iva', input.dataset.iva || '0');
         payload.append('tipo_retencion_id', input.dataset.tipoRetencionId || '');
         payload.append('otros_impuestos', input.dataset.otrosImpuestos || '0');
         payload.append('notas', input.dataset.notas || '');
-        payload.append('iva_importe_manual', input.value.trim());
+        payload.append('iva_importe_manual', ivaInput ? ivaInput.value.trim() : '');
         return payload;
     }
 
     function recalcTotals() {
+        let subtotalGeneral = 0;
         let iva = 0;
 
-        inputs.forEach((input) => {
-            const autoIva = numberFrom(input.dataset.autoIva);
-            const subtotal = numberFrom(input.dataset.subtotal);
+        ivaInputs.forEach((input) => {
+            const subtotal = lineSubtotal(input);
+            const ivaPct = numberFrom(input.dataset.iva);
+            const autoIva = subtotal * (ivaPct / 100);
             const otros = numberFrom(input.dataset.otros);
             const retenciones = numberFrom(input.dataset.retenciones);
             const ivaPartida = input.value.trim() === '' ? autoIva : numberFrom(input.value, autoIva);
             const importe = subtotal + ivaPartida + otros - retenciones;
             const target = document.getElementById(input.dataset.importeTarget);
+            const subtotalTarget = document.getElementById(input.dataset.subtotalTarget);
 
+            input.dataset.subtotal = subtotal.toFixed(2);
+            input.dataset.autoIva = autoIva.toFixed(2);
+            subtotalGeneral += subtotal;
             iva += ivaPartida;
+
+            if (subtotalTarget) {
+                subtotalTarget.textContent = money.format(subtotal);
+            }
 
             if (target) {
                 target.textContent = money.format(importe);
             }
         });
 
-        const subtotalGeneral = numberFrom(resumen.dataset.subtotal);
         const otrosGeneral = numberFrom(resumen.dataset.otros);
         const retencionesGeneral = numberFrom(resumen.dataset.retenciones);
         const total = subtotalGeneral + iva + otrosGeneral - retencionesGeneral;
 
+        if (subtotalTotal) subtotalTotal.textContent = money.format(subtotalGeneral);
         if (ivaTotal) ivaTotal.textContent = money.format(iva);
         if (totalGeneral) totalGeneral.textContent = money.format(total);
     }
 
+    function rowInputs(input) {
+        return Array.from(input.closest('tr')?.querySelectorAll('.js-detalle-auto-save') || []);
+    }
     async function saveInput(input) {
         if (!csrf || !input.dataset.updateUrl) return;
 
@@ -766,10 +881,17 @@
                 body: buildDetailPayload(input),
             });
 
-            if (!res.ok) throw new Error('No se pudo guardar el IVA.');
+            if (!res.ok) throw new Error('No se pudo guardar el detalle.');
 
             input.dataset.originalValue = value;
             input.value = value;
+            if (input.classList.contains('js-precio-oc-input')) {
+                input.dataset.precioUnitario = value;
+                rowInputs(input).forEach((rowInput) => {
+                    rowInput.dataset.precioUnitario = value;
+                    rowInput.dataset.importe = lineSubtotal(rowInput).toFixed(2);
+                });
+            }
             setStatus(input, 'Guardado', 'text-emerald-600');
             window.setTimeout(() => setStatus(input, ''), 1800);
         } catch (error) {
@@ -781,6 +903,8 @@
 
     inputs.forEach((input) => {
         input.addEventListener('input', () => {
+            syncPriceStatus(input);
+            inputs.forEach(syncPriceStatus);
             recalcTotals();
             setStatus(input, normalizedValue(input) === (input.dataset.originalValue || '') ? '' : 'Sin guardar');
         });
@@ -788,6 +912,7 @@
         input.addEventListener('change', () => saveInput(input));
     });
 
+    inputs.forEach(syncPriceStatus);
     recalcTotals();
 })();
 </script>

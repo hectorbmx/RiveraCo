@@ -99,7 +99,7 @@ class ObraCivilMaterialRequestOrderService
     }
 
     /**
-     * @param  array<int, array{id:int|string, quantity:int|float|string|null}>  $selectedItems
+     * @param  array<int, array{id:int|string, quantity:int|float|string|null, price?:int|float|string|null}>  $selectedItems
      * @return Collection<int, OrdenCompraDetalle>
      */
     public function attachApprovedItemsToOrder(array $selectedItems, OrdenCompra $orden, ?User $user = null): Collection
@@ -131,15 +131,19 @@ class ObraCivilMaterialRequestOrderService
             $balances = $this->itemBalanceService->summaries($items->values());
             $createdDetails = collect();
 
-            foreach ($normalizedItems as $itemId => $requestedQuantity) {
+            foreach ($normalizedItems as $itemId => $selection) {
                 /** @var ObraCivilMaterialRequestItem $item */
                 $item = $items->get($itemId);
                 $request = $item->request;
                 $insumo = $item->insumo;
+                $requestedQuantity = (float) $selection['quantity'];
 
                 $this->ensureCanAttachItem($item, $orden);
 
                 $approvedQuantity = (float) ($item->approved_quantity ?? 0);
+                $catalogPrice = (float) ($insumo->precio_unitario ?? 0);
+                $requestedPrice = $selection['price'] ?? null;
+                $price = $requestedPrice !== null ? (float) $requestedPrice : $catalogPrice;
                 $balance = $balances->get($item->id, []);
                 $orderedQuantity = (float) ($balance['ordered_quantity'] ?? 0);
                 $draftQuantity = (float) ($balance['draft_quantity'] ?? 0);
@@ -165,14 +169,15 @@ class ObraCivilMaterialRequestOrderService
 
                 if ($detail) {
                     $detail->cantidad = $requestedQuantity;
-                    $detail->importe = round($requestedQuantity * (float) $detail->precio_unitario, 2);
+                    $detail->precio_unitario = $price;
+                    $detail->precio_tope = $catalogPrice;
+                    $detail->importe = round($requestedQuantity * $price, 2);
                     $detail->obra_civil_insumo_snapshot = $this->insumoSnapshot($insumo, $item->insumo_snapshot ?? []);
                     $detail->save();
                     $createdDetails->push($detail);
                     continue;
                 }
 
-                $price = (float) ($insumo->precio_unitario ?? 0);
                 $importe = round($requestedQuantity * $price, 2);
                 $ivaPercent = (float) ($orden->iva ?? 0);
 
@@ -189,6 +194,7 @@ class ObraCivilMaterialRequestOrderService
                     'unidad' => $item->unit ?: $insumo->unidad,
                     'cantidad' => $requestedQuantity,
                     'precio_unitario' => $price,
+                    'precio_tope' => $catalogPrice,
                     'descuento_porcentaje' => 0,
                     'descuento_importe' => 0,
                     'importe' => $importe,
@@ -263,8 +269,8 @@ class ObraCivilMaterialRequestOrderService
     }
 
     /**
-     * @param  array<int, array{id:int|string, quantity:int|float|string|null}>  $selectedItems
-     * @return Collection<int, float>
+     * @param  array<int, array{id:int|string, quantity:int|float|string|null, price?:int|float|string|null}>  $selectedItems
+     * @return Collection<int, array{quantity: float, price: float|null}>
      */
     private function normalizeSelectedItems(array $selectedItems): Collection
     {
@@ -272,9 +278,16 @@ class ObraCivilMaterialRequestOrderService
             ->mapWithKeys(function (array $item) {
                 $id = (int) ($item['id'] ?? 0);
                 $quantity = (float) ($item['quantity'] ?? 0);
+                $priceInput = $item['price'] ?? null;
+                $price = $priceInput === null || $priceInput === ''
+                    ? null
+                    : round((float) $priceInput, 4);
 
                 return $id > 0 && $quantity > 0
-                    ? [$id => round($quantity, 4)]
+                    ? [$id => [
+                        'quantity' => round($quantity, 4),
+                        'price' => $price,
+                    ]]
                     : [];
             });
     }
@@ -339,6 +352,7 @@ class ObraCivilMaterialRequestOrderService
             'available_to_load_quantity' => $availableToLoad,
             'commercial_request' => $item->insumo_snapshot['commercial_request'] ?? null,
             'suggested_price' => round((float) ($insumo?->precio_unitario ?? 0), 4),
+            'precio_tope' => round((float) ($insumo?->precio_unitario ?? 0), 4),
             'resident_notes' => $item->notes,
             'approval_notes' => $item->approval_notes,
             'label' => trim(sprintf(

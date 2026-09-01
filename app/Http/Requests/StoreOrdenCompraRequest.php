@@ -26,6 +26,7 @@ class StoreOrdenCompraRequest extends FormRequest
         'obra_civil_material_request_items' => ['nullable', 'array'],
         'obra_civil_material_request_items.*.id' => ['required_with:obra_civil_material_request_items', 'integer', 'exists:obra_civil_material_request_items,id'],
         'obra_civil_material_request_items.*.quantity' => ['required_with:obra_civil_material_request_items', 'numeric', 'gt:0'],
+        'obra_civil_material_request_items.*.price' => ['nullable', 'numeric', 'min:0'],
  
         'area_id'              => ['required', 'integer', 'exists:areas,id'],
  
@@ -72,6 +73,7 @@ class StoreOrdenCompraRequest extends FormRequest
             'area_id.required'      => 'Selecciona un área.',
             'fecha.required'        => 'La fecha es obligatoria.',
             'obra_civil_material_request_items.*.quantity.gt' => 'La cantidad a cargar debe ser mayor a cero.',
+            'obra_civil_material_request_items.*.price.min' => 'El precio negociado no puede ser negativo.',
         ];
     }
 }
