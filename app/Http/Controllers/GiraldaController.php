@@ -126,6 +126,7 @@ class GiraldaController extends Controller
         $empleadoId = $request->query('empleado_id');
         $estatus = $request->query('estatus', 'activo');
         $estatus = in_array($estatus, ['activo', 'baja', 'todos'], true) ? $estatus : 'activo';
+        $busqueda = trim((string) $request->query('q', ''));
 
         $empleados = Empleado::with(['areaRef', 'eppEntregas.entregadoPor', 'eppEntregas.obra', 'eppEntregas.area'])
             ->withCount([
@@ -146,6 +147,14 @@ class GiraldaController extends Controller
             ->where('Area', $areaGiralda?->id)
             ->when($estatus === 'activo', fn ($q) => $q->where('Estatus', 1))
             ->when($estatus === 'baja', fn ($q) => $q->where('Estatus', 2))
+            ->when($busqueda !== '', function ($query) use ($busqueda) {
+                $query->where(function ($empleado) use ($busqueda) {
+                    $empleado->where('Nombre', 'like', "%{$busqueda}%")
+                        ->orWhere('Apellidos', 'like', "%{$busqueda}%")
+                        ->orWhere('Puesto', 'like', "%{$busqueda}%")
+                        ->orWhere('id_Empleado', 'like', "%{$busqueda}%");
+                });
+            })
             ->orderBy('Nombre')
             ->orderBy('Apellidos')
             ->get();
@@ -198,6 +207,7 @@ class GiraldaController extends Controller
             'hasta',
             'empleadoId',
             'estatus',
+            'busqueda',
             'semana',
             'semanaAnterior',
             'semanaSiguiente',
@@ -307,12 +317,21 @@ class GiraldaController extends Controller
         $semanaFin = $semanaData['fin'];
         $estatus = $request->query('estatus', 'activo');
         $estatus = in_array($estatus, ['activo', 'baja', 'todos'], true) ? $estatus : 'activo';
+        $busqueda = trim((string) $request->query('q', ''));
         $weekDays = collect(range(0, 6))->map(fn (int $offset) => $semanaInicio->copy()->addDays($offset));
 
         $empleados = Empleado::with('areaRef')
             ->where('Area', $areaGiralda?->id)
             ->when($estatus === 'activo', fn ($q) => $q->where('Estatus', 1))
             ->when($estatus === 'baja', fn ($q) => $q->where('Estatus', 2))
+            ->when($busqueda !== '', function ($query) use ($busqueda) {
+                $query->where(function ($empleado) use ($busqueda) {
+                    $empleado->where('Nombre', 'like', "%{$busqueda}%")
+                        ->orWhere('Apellidos', 'like', "%{$busqueda}%")
+                        ->orWhere('Puesto', 'like', "%{$busqueda}%")
+                        ->orWhere('id_Empleado', 'like', "%{$busqueda}%");
+                });
+            })
             ->orderBy('Nombre')
             ->orderBy('Apellidos')
             ->get();

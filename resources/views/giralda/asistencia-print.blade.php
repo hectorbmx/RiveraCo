@@ -16,6 +16,7 @@
         .day { min-width: 54px; }
         .check { font-size: 16px; font-weight: bold; color: #166534; line-height: 1; }
         .absent { color: #991b1b; font-weight: bold; }
+        .unregistered { color: #92400e; font-weight: bold; }
         .he { display: block; margin-top: 3px; color: #0B265A; font-size: 10px; font-weight: bold; }
         .summary { margin-top: 6px; color: #475569; }
         .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; margin-top: 48px; }
@@ -64,9 +65,9 @@
                             @if($asistencia?->estado === 'presente')
                                 <span class="check">&#10003;</span>
                             @elseif($asistencia?->estado === 'ausente')
-                                <span class="absent">-</span>
+                                <span class="absent">F</span>
                             @else
-                                <span class="muted">-</span>
+                                <span class="unregistered">S/R</span>
                             @endif
 
                             @if($horasExtra > 0)

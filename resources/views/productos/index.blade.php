@@ -32,19 +32,19 @@
     @endif
 
     {{-- Filtros --}}
-    <form method="GET" class="bg-white rounded-2xl shadow p-4 mb-4">
+    <form method="GET" class="bg-[#0B265A] rounded-2xl shadow-lg p-4 mb-4">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
             <div class="md:col-span-5">
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Buscar</label>
+                <label class="block text-xs font-semibold text-white/85 mb-1">Buscar</label>
                 <input type="text"
                        name="q"
                        value="{{ request('q') }}"
                        placeholder="Nombre, SKU o legacy_prod_id..."
-                       class="w-full border border-amber-300 bg-amber-50 rounded-xl px-3 py-2 text-sm transition focus:outline-none focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-yellow-200" style="box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.08), 0 0 18px rgba(255, 193, 7, 0.18);">
+                       class="w-full border border-amber-300 bg-white rounded-xl px-3 py-2 text-sm transition focus:outline-none focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-yellow-200" style="box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.18), 0 0 20px rgba(255, 193, 7, 0.32);">
             </div>
 
             <div class="md:col-span-2 md:max-w-44">
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Estado</label>
+                <label class="block text-xs font-semibold text-white/85 mb-1">Estado</label>
                 <select name="estado"
                         class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300/70">
                     <option value="">Todos</option>
@@ -54,7 +54,7 @@
             </div>
 
             <div class="md:col-span-2 md:max-w-44">
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Existencias</label>
+                <label class="block text-xs font-semibold text-white/85 mb-1">Existencias</label>
                 <select name="existencias"
                         class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300/70">
                     <option value="">Todas</option>
@@ -69,7 +69,7 @@
                 </button>
 
                 <a href="{{ route('productos.index') }}"
-                   class="px-4 py-2 rounded-xl text-sm border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm">
+                   class="px-4 py-2 rounded-xl text-sm border border-white/25 bg-white/10 text-white hover:bg-white/20 shadow-sm">
                     Limpiar
                 </a>
             </div>

@@ -28,33 +28,52 @@
             ];
         @endphp
         @foreach($tabs as $key => $label)
-            <a href="{{ route('giralda.empleados', ['tab' => $key, 'estatus' => $estatus]) }}"
+            <a href="{{ route('giralda.empleados', ['tab' => $key, 'estatus' => $estatus, 'q' => $busqueda]) }}"
                class="pb-2 border-b-2 transition-all {{ $tab === $key ? 'border-[#FFC107] text-[#0B265A] font-semibold' : 'border-transparent text-slate-500 hover:text-slate-800' }}">
                 {{ $label }}
             </a>
         @endforeach
     </div>
 
-    <div class="bg-white rounded-lg shadow p-4">
-        <form method="GET" action="{{ route('giralda.empleados') }}" class="grid md:grid-cols-4 gap-3 items-end">
+    <div class="bg-[#0B265A] rounded-2xl shadow-lg p-4">
+        <form method="GET" action="{{ route('giralda.empleados') }}" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
             <input type="hidden" name="tab" value="{{ $tab }}">
-            <div>
-                <label class="block text-sm font-medium mb-1">Estatus</label>
-                <select name="estatus" class="w-full border rounded p-2">
+
+            <div class="md:col-span-5">
+                <label class="block text-xs font-semibold text-white/85 mb-1">Buscar empleado</label>
+                <input type="text"
+                       name="q"
+                       value="{{ $busqueda }}"
+                       placeholder="Nombre, apellido, puesto o ID..."
+                       class="w-full border border-amber-300 bg-white rounded-xl px-3 py-2 text-sm transition focus:outline-none focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-yellow-200" style="box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.18), 0 0 20px rgba(255, 193, 7, 0.32);">
+            </div>
+
+            <div class="md:col-span-2 md:max-w-44">
+                <label class="block text-xs font-semibold text-white/85 mb-1">Estatus</label>
+                <select name="estatus"
+                        class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300/70">
                     <option value="activo" @selected($estatus === 'activo')>Activos</option>
                     <option value="baja" @selected($estatus === 'baja')>Baja</option>
                     <option value="todos" @selected($estatus === 'todos')>Todos</option>
                 </select>
             </div>
+
             @if(in_array($tab, ['horas_extras', 'asistencia'], true))
-                <div>
-                    <label class="block text-sm font-medium mb-1">Semana</label>
-                    <input type="date" name="semana" value="{{ $semana }}" class="w-full border rounded p-2">
+                <div class="md:col-span-2 md:max-w-44">
+                    <label class="block text-xs font-semibold text-white/85 mb-1">Semana</label>
+                    <input type="date" name="semana" value="{{ $semana }}"
+                           class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300/70">
                 </div>
             @endif
-            <div class="{{ in_array($tab, ['horas_extras', 'asistencia'], true) ? 'md:col-span-2' : 'md:col-span-3' }} flex gap-2">
-                <button class="px-4 py-2 rounded bg-[#0B265A] text-white">Filtrar</button>
-                <a href="{{ route('giralda.empleados', ['tab' => $tab]) }}" class="px-4 py-2 rounded bg-slate-200">Limpiar</a>
+
+            <div class="{{ in_array($tab, ['horas_extras', 'asistencia'], true) ? 'md:col-span-3' : 'md:col-span-5' }} flex justify-start md:justify-end gap-2">
+                <button class="bg-[#FFC107] text-[#0B265A] font-semibold px-4 py-2 rounded-xl text-sm hover:opacity-90 shadow-sm">
+                    Filtrar
+                </button>
+                <a href="{{ route('giralda.empleados', ['tab' => $tab]) }}"
+                   class="px-4 py-2 rounded-xl text-sm border border-white/25 bg-white/10 text-white hover:bg-white/20 shadow-sm">
+                    Limpiar
+                </a>
             </div>
         </form>
     </div>
@@ -77,18 +96,18 @@
                         <div class="text-xs uppercase tracking-wide text-slate-400">Semana seleccionada</div>
                         <div class="text-sm font-semibold text-[#0B265A]">{{ $semanaTitulo }}</div>
                     </div>
-                    <a href="{{ route('giralda.empleados', ['tab' => $tab, 'estatus' => $estatus, 'semana' => $semanaAnterior]) }}" class="px-3 py-2 rounded border text-sm">Anterior</a>
-                    <a href="{{ route('giralda.empleados', ['tab' => $tab, 'estatus' => $estatus, 'semana' => $semanaActual]) }}" class="px-3 py-2 rounded border text-sm">Semana actual</a>
+                    <a href="{{ route('giralda.empleados', ['tab' => $tab, 'estatus' => $estatus, 'semana' => $semanaAnterior, 'q' => $busqueda]) }}" class="px-3 py-2 rounded border text-sm">Anterior</a>
+                    <a href="{{ route('giralda.empleados', ['tab' => $tab, 'estatus' => $estatus, 'semana' => $semanaActual, 'q' => $busqueda]) }}" class="px-3 py-2 rounded border text-sm">Semana actual</a>
                     @if($tab === 'asistencia' && $semanaSiguiente > $semanaActual)
                         <span class="px-3 py-2 rounded border text-sm text-slate-300 bg-slate-50 cursor-not-allowed">Siguiente</span>
                     @else
-                        <a href="{{ route('giralda.empleados', ['tab' => $tab, 'estatus' => $estatus, 'semana' => $semanaSiguiente]) }}" class="px-3 py-2 rounded border text-sm">Siguiente</a>
+                        <a href="{{ route('giralda.empleados', ['tab' => $tab, 'estatus' => $estatus, 'semana' => $semanaSiguiente, 'q' => $busqueda]) }}" class="px-3 py-2 rounded border text-sm">Siguiente</a>
                     @endif
                     @if($tab === 'horas_extras')
                         <a href="{{ route('giralda.horas-extras.print', ['desde' => $desde, 'hasta' => $hasta, 'empleado_id' => $empleadoId]) }}" target="_blank" class="px-3 py-2 rounded border text-sm">Imprimir semana</a>
                         <a href="{{ route('giralda.horas-extras.export', ['desde' => $desde, 'hasta' => $hasta, 'empleado_id' => $empleadoId]) }}" class="px-3 py-2 rounded border text-sm">Exportar CSV</a>
                     @elseif($tab === 'asistencia')
-                        <a href="{{ route('giralda.asistencia.print', ['semana' => $semana, 'estatus' => $estatus]) }}" target="_blank" class="px-3 py-2 rounded border text-sm">Imprimir semana</a>
+                        <a href="{{ route('giralda.asistencia.print', ['semana' => $semana, 'estatus' => $estatus, 'q' => $busqueda]) }}" target="_blank" class="px-3 py-2 rounded border text-sm">Imprimir semana</a>
                     @endif
                 </div>
             @endif
@@ -121,6 +140,7 @@
                 @endforeach
                 <input type="hidden" name="estatus" value="{{ $estatus }}">
                 <input type="hidden" name="semana" value="{{ $semana }}">
+                <input type="hidden" name="q" value="{{ $busqueda }}">
         @endif
 
         <div class="overflow-x-auto">
@@ -174,15 +194,28 @@
                                         $registro = $asistencias->get($empleado->id_Empleado . '|' . $date);
                                         $isFuture = $day->isAfter(now()->startOfDay());
                                         $isEditable = $asistenciaEditableFechas->contains($date);
-                                        $checked = $isEditable ? (($registro?->estado ?? 'presente') !== 'ausente') : ($registro?->estado === 'presente');
+                                        $estadoAsistencia = $registro?->estado;
+                                        $tieneRegistro = filled($estadoAsistencia);
+                                        $checked = $estadoAsistencia === 'presente';
+                                        $estadoTitulo = match ($estadoAsistencia) {
+                                            'presente' => 'Presente guardado',
+                                            'ausente' => 'Falta guardada',
+                                            default => 'Sin registro guardado',
+                                        };
                                     @endphp
                                     <td class="p-3 text-center">
                                         @if($isFuture)
-                                            <span class="inline-flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-slate-50 text-slate-300">-</span>
+                                            <span class="inline-flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-slate-50 text-slate-300" title="Fecha futura">-</span>
                                         @elseif($isEditable)
-                                            <input type="checkbox" name="presentes[{{ $date }}][]" value="{{ $empleado->id_Empleado }}" @checked($checked) class="h-5 w-5 rounded border-slate-300 text-[#0B265A] focus:ring-[#FFC107]">
+                                            <label class="inline-flex h-8 w-8 items-center justify-center rounded-lg border {{ $estadoAsistencia === 'presente' ? 'border-[#0B265A] bg-blue-50' : ($estadoAsistencia === 'ausente' ? 'border-red-300 bg-red-50' : 'border-amber-300 bg-amber-50') }}" title="{{ $estadoTitulo }}">
+                                                <input type="checkbox" name="presentes[{{ $date }}][]" value="{{ $empleado->id_Empleado }}" @checked($checked) class="h-5 w-5 rounded {{ $estadoAsistencia === 'ausente' ? 'border-red-300' : ($tieneRegistro ? 'border-slate-300' : 'border-amber-300') }} text-[#0B265A] focus:ring-[#FFC107]">
+                                            </label>
+                                        @elseif($estadoAsistencia === 'presente')
+                                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#0B265A] bg-[#0B265A] text-white font-bold" title="Presente guardado">&#10003;</span>
+                                        @elseif($estadoAsistencia === 'ausente')
+                                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-300 bg-red-50 text-red-700 font-bold" title="Falta guardada">-</span>
                                         @else
-                                            <input type="checkbox" @checked($checked) disabled class="h-5 w-5 rounded border-slate-300 text-[#0B265A] disabled:opacity-70">
+                                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-amber-300 bg-amber-50 text-amber-700 font-bold" title="Sin registro guardado">?</span>
                                         @endif
                                     </td>
                                 @endforeach
