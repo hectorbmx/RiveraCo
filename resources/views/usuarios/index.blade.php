@@ -33,9 +33,15 @@
                             {{ $user->getRoleNames()->first() ?? '-' }}
                         </td>
                         <td class="p-3">
-                            <span class="inline-flex px-2 py-1 text-xs rounded bg-green-100 text-green-700">
-                                Activo
-                            </span>
+                            @if($user->usuarioApp)
+                                <span class="inline-flex px-2 py-1 text-xs rounded {{ $user->usuarioApp->is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">
+                                    {{ $user->usuarioApp->is_active ? 'Activo' : 'Inactivo' }}
+                                </span>
+                            @else
+                                <span class="inline-flex px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-700">
+                                    Sin vínculo App
+                                </span>
+                            @endif
                         </td>
                         <td class="p-3 text-right">
                             <a href="{{ route('usuarios.edit', $user->id) }}"

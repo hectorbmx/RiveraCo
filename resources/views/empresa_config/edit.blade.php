@@ -54,6 +54,7 @@
                                 'maquinaria'=> ['label' => 'Maquinaria', 'desc' => 'Servicios por horas y tiempos'],
                                 'rrhh'      => ['label' => 'Puestos', 'desc' => 'Horas y horas extra'],
                                 'documentos' => ['label' => 'Documentos','desc'  => 'Documentos para empleados y clientes'],
+                                'firmas_imprimibles' => ['label' => 'Firmas imprimibles', 'desc' => 'Documentos, ambitos y campos de firma'],
                                 'equipos_computo' => ['label' => 'Equipo de computo', 'desc' => 'Inventario y responsables'],
                                 'centros_costo' => ['label' => 'Centros de costo', 'desc' => 'Gastos fuera de obra'],
                                 'iva' => ['label' => 'IVA', 'desc' => 'Tipos de IVA utilizables'],
@@ -1004,6 +1005,123 @@
     </div>
 </div>
 
+{{-- ====================== FIRMAS IMPRIMIBLES ======================= --}}
+<div x-show="tab === 'firmas_imprimibles'" x-cloak class="space-y-6">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-slate-200">
+            <h2 class="text-lg font-semibold text-slate-900">Firmas imprimibles</h2>
+            <p class="text-sm text-slate-500 mt-1">Administra que documentos, ambitos y campos pueden recibir firmantes impresos.</p>
+        </div>
+
+        <div class="p-6 border-b border-slate-200 bg-slate-50">
+            <form method="POST" action="{{ route('empresa_config.firmas-imprimibles.store') }}" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                @csrf
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Documento</label>
+                    <input type="text" name="documento" value="{{ old('documento') }}" required class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500" placeholder="reposicion_caja_chica">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Etiqueta documento</label>
+                    <input type="text" name="documento_label" value="{{ old('documento_label') }}" required class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500" placeholder="Reposicion caja chica">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Ambito</label>
+                    <input type="text" name="ambito" value="{{ old('ambito') }}" required class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500" placeholder="giralda">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Etiqueta ambito</label>
+                    <input type="text" name="ambito_label" value="{{ old('ambito_label') }}" required class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500" placeholder="Giralda">
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Campo</label>
+                    <input type="text" name="campo" value="{{ old('campo') }}" required class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500" placeholder="vobo">
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Etiqueta</label>
+                    <input type="text" name="campo_label" value="{{ old('campo_label') }}" required class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500" placeholder="VoBo">
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Orden</label>
+                    <input type="number" name="orden" value="{{ old('orden', 100) }}" min="0" max="65535" required class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500">
+                </div>
+                <div class="md:col-span-1 flex items-end">
+                    <label class="inline-flex items-center gap-2 pb-2">
+                        <input type="checkbox" name="activo" value="1" class="rounded border-slate-300 text-slate-900 focus:ring-slate-500" @checked(old('activo', 1))>
+                        <span class="text-sm text-slate-700">Activo</span>
+                    </label>
+                </div>
+                <div class="md:col-span-12 flex justify-end">
+                    <button type="submit" class="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 transition">Agregar definicion</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Documento</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Ambito</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Campo</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Orden</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Estado</th>
+                        <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    @forelse($documentoFirmaDefiniciones as $definicion)
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="px-6 py-4 align-top">
+                                <form id="firma-def-{{ $definicion->id }}" method="POST" action="{{ route('empresa_config.firmas-imprimibles.update', $definicion) }}">
+                                    @csrf
+                                    @method('PUT')
+                                </form>
+                                <input form="firma-def-{{ $definicion->id }}" type="text" name="documento_label" value="{{ old('documento_label', $definicion->documento_label) }}" class="w-full rounded-lg border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
+                                <p class="mt-1 text-xs text-slate-500 font-mono">{{ $definicion->documento }}</p>
+                            </td>
+                            <td class="px-6 py-4 align-top">
+                                <input form="firma-def-{{ $definicion->id }}" type="text" name="ambito_label" value="{{ old('ambito_label', $definicion->ambito_label) }}" class="w-full rounded-lg border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
+                                <p class="mt-1 text-xs text-slate-500 font-mono">{{ $definicion->ambito }}</p>
+                            </td>
+                            <td class="px-6 py-4 align-top">
+                                <input form="firma-def-{{ $definicion->id }}" type="text" name="campo_label" value="{{ old('campo_label', $definicion->campo_label) }}" class="w-full rounded-lg border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
+                                <p class="mt-1 text-xs text-slate-500 font-mono">{{ $definicion->campo }}</p>
+                            </td>
+                            <td class="px-6 py-4 align-top">
+                                <input form="firma-def-{{ $definicion->id }}" type="number" name="orden" value="{{ old('orden', $definicion->orden) }}" min="0" max="65535" class="w-24 rounded-lg border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
+                            </td>
+                            <td class="px-6 py-4 align-top">
+                                <input form="firma-def-{{ $definicion->id }}" type="hidden" name="activo" value="0">
+                                <label class="inline-flex items-center gap-2">
+                                    <input form="firma-def-{{ $definicion->id }}" type="checkbox" name="activo" value="1" class="rounded border-slate-300 text-slate-900 focus:ring-slate-500" @checked($definicion->activo)>
+                                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium {{ $definicion->activo ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">
+                                        {{ $definicion->activo ? 'Activo' : 'Inactivo' }}
+                                    </span>
+                                </label>
+                            </td>
+                            <td class="px-6 py-4 align-top">
+                                <div class="flex items-center justify-end gap-2">
+                                    <button form="firma-def-{{ $definicion->id }}" type="submit" class="inline-flex items-center rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100">Guardar</button>
+                                    <form method="POST" action="{{ route('empresa_config.firmas-imprimibles.toggle-activo', $definicion) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="inline-flex items-center rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100">
+                                            {{ $definicion->activo ? 'Desactivar' : 'Activar' }}
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="px-6 py-10 text-center text-sm text-slate-500">No hay definiciones de firma configuradas.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 @include('empresa_config.partials._equipos_computo')
 @include('empresa_config.partials._centros_costo')
 @include('empresa_config.partials._tipos_iva')
@@ -1750,6 +1868,7 @@ function listasRayaTab() {
                         <th class="text-left font-semibold px-4 py-3">Nombre</th>
                         <th class="text-left font-semibold px-4 py-3">DescripciÃ³n</th>
                         <th class="text-left font-semibold px-4 py-3">Horario base</th>
+                        <th class="text-left font-semibold px-4 py-3">Almacen relacionado</th>
                         <th class="text-left font-semibold px-4 py-3">Estatus</th>
                         <th class="text-right font-semibold px-4 py-3">Acciones</th>
                     </tr>
@@ -1771,6 +1890,13 @@ function listasRayaTab() {
                                 <div class="text-xs text-slate-500">Comida {{ $a->horarioActivo->minutos_comida }} min - Tol. {{ $a->horarioActivo->minutos_tolerancia }} min</div>
                             @else
                                 <span class="text-xs text-slate-400">Sin horario</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 text-slate-700">
+                            @if($a->almacen)
+                                <div class="font-medium text-slate-900">{{ $a->almacen->nombre }}</div>
+                            @else
+                                <span class="text-xs text-slate-400">Sin almacen</span>
                             @endif
                         </td>
                         <td class="px-4 py-3">
@@ -1814,7 +1940,7 @@ function listasRayaTab() {
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-10 text-center text-slate-500">
+                        <td colspan="7" class="px-4 py-10 text-center text-slate-500">
                             No hay Ã¡reas registradas.
                         </td>
                     </tr>
@@ -1870,6 +1996,16 @@ function listasRayaTab() {
                               placeholder="Opcional"></textarea>
                 </div>
 
+                <div>
+                    <label class="block text-xs text-slate-600 mb-1">Almacen relacionado</label>
+                    <select name="almacen_id" x-model="form.almacen_id"
+                            class="w-full rounded-xl border-slate-300 focus:ring-0 focus:border-slate-500">
+                        <option value="">Sin almacen</option>
+                        @foreach($almacenes as $almacen)
+                            <option value="{{ $almacen->id }}">{{ $almacen->nombre }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-4">
                     <div>
                         <div class="text-sm font-semibold text-slate-800">Horario base</div>
@@ -2011,6 +2147,7 @@ function areasTab() {
                 nombre: area?.nombre ?? '',
                 descripcion: area?.descripcion ?? '',
                 activo: area ? !!area.activo : true,
+                almacen_id: area?.almacen?.id ? String(area.almacen.id) : '',
                 ...this.horarioForm(area?.horario_activo ?? null),
             };
         },
@@ -2269,6 +2406,7 @@ function areasTab() {
     
     
 @endsection
+
 
 
 

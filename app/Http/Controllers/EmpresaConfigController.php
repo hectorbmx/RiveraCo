@@ -17,6 +17,7 @@ use App\Models\ComisionTarifarioDetalle;
 use App\Models\CuentaBancoEmpresa;
 use Illuminate\Support\Facades\DB;
 use App\Models\EmpresaDocumentoTipo;
+use App\Models\DocumentoFirmaDefinicion;
 use Illuminate\Support\Str;
 use App\Models\Empleado;
 use App\Models\EquipoComputo;
@@ -41,7 +42,7 @@ private const TIPOS_OBRA_FOLIO = [
 ];
 
 public function index(){
-      $areas = Area::with('horarioActivo')->orderBy('codigo')->orderBy('nombre')->get();
+      $areas = Area::with(['horarioActivo', 'almacen'])->orderBy('codigo')->orderBy('nombre')->get();
     return view('empresa_config.index',compact('areas'));
 }
 
@@ -64,7 +65,7 @@ public function index(){
             'iva_por_defecto' => 16.00,
             'activa'          => true,
         ]);
-        $areas = Area::with('horarioActivo')->orderBy('codigo')->orderBy('nombre')->get();
+        $areas = Area::with(['horarioActivo', 'almacen'])->orderBy('codigo')->orderBy('nombre')->get();
         app(ListaRayaResolver::class)->syncObrasVivas();
         $listasRaya = NominaListaRaya::query()
             ->with(['area', 'obra', 'almacen'])
@@ -72,7 +73,7 @@ public function index(){
             ->orderBy('tipo')
             ->orderBy('nombre')
             ->get();
-        $almacenes = Almacen::query()->where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
+        $almacenes = Almacen::query()->where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'area_id']);
         $vehiculoAlertaDestinatarios = EmpresaAlertaDestinatario::query()
             ->with('user')
             ->where('empresa_config_id', $config->id)
@@ -96,6 +97,10 @@ public function index(){
             ->where('empresa_config_id', $config->id)
             ->orderBy('orden')
             ->orderBy('nombre')
+            ->get();
+
+        $documentoFirmaDefiniciones = DocumentoFirmaDefinicion::query()
+            ->ordenadas()
             ->get();
 
         $equiposComputo = EquipoComputo::query()
@@ -246,6 +251,7 @@ public function index(){
         'tarifarioDetalles',
         'cuentasBancoEmpresa',
         'documentosEmpleadoTipos',
+        'documentoFirmaDefiniciones',
         'equiposComputo',
         'empleadosResponsables',
         'centrosCosto',
@@ -692,6 +698,80 @@ public function destroyDocumentoEmpleado(
     );
 }
 
+public function storeDocumentoFirmaDefinicion(Request $request)
+{
+    $data = $request->validate([
+        'documento' => ['required', 'string', 'max:80', 'regex:/^[a-z0-9_]+$/i'],
+        'documento_label' => ['required', 'string', 'max:150'],
+        'ambito' => ['required', 'string', 'max:80', 'regex:/^[a-z0-9_]+$/i'],
+        'ambito_label' => ['required', 'string', 'max:150'],
+        'campo' => [
+            'required',
+            'string',
+            'max:80',
+            'regex:/^[a-z0-9_]+$/i',
+            Rule::unique('documento_firma_definiciones', 'campo')
+                ->where('documento', Str::lower(trim((string) $request->input('documento'))))
+                ->where('ambito', Str::lower(trim((string) $request->input('ambito')))),
+        ],
+        'campo_label' => ['required', 'string', 'max:150'],
+        'orden' => ['required', 'integer', 'min:0', 'max:65535'],
+        'activo' => ['nullable', 'boolean'],
+    ], [
+        'documento.regex' => 'El documento solo puede usar letras, numeros y guion bajo.',
+        'ambito.regex' => 'El ambito solo puede usar letras, numeros y guion bajo.',
+        'campo.regex' => 'El campo solo puede usar letras, numeros y guion bajo.',
+    ]);
+
+    DocumentoFirmaDefinicion::create([
+        'documento' => Str::lower(trim($data['documento'])),
+        'documento_label' => trim($data['documento_label']),
+        'ambito' => Str::lower(trim($data['ambito'])),
+        'ambito_label' => trim($data['ambito_label']),
+        'campo' => Str::lower(trim($data['campo'])),
+        'campo_label' => trim($data['campo_label']),
+        'orden' => (int) $data['orden'],
+        'activo' => $request->boolean('activo', true),
+    ]);
+
+    return redirect()
+        ->route('empresa_config.edit', ['tab' => 'firmas_imprimibles'])
+        ->with('success', 'Definicion de firma agregada correctamente.');
+}
+
+public function updateDocumentoFirmaDefinicion(Request $request, DocumentoFirmaDefinicion $firmaDefinicion)
+{
+    $data = $request->validate([
+        'documento_label' => ['required', 'string', 'max:150'],
+        'ambito_label' => ['required', 'string', 'max:150'],
+        'campo_label' => ['required', 'string', 'max:150'],
+        'orden' => ['required', 'integer', 'min:0', 'max:65535'],
+        'activo' => ['nullable', 'boolean'],
+    ]);
+
+    $firmaDefinicion->update([
+        'documento_label' => trim($data['documento_label']),
+        'ambito_label' => trim($data['ambito_label']),
+        'campo_label' => trim($data['campo_label']),
+        'orden' => (int) $data['orden'],
+        'activo' => $request->boolean('activo'),
+    ]);
+
+    return redirect()
+        ->route('empresa_config.edit', ['tab' => 'firmas_imprimibles'])
+        ->with('success', 'Definicion de firma actualizada correctamente.');
+}
+
+public function toggleDocumentoFirmaDefinicion(DocumentoFirmaDefinicion $firmaDefinicion)
+{
+    $firmaDefinicion->update([
+        'activo' => ! $firmaDefinicion->activo,
+    ]);
+
+    return redirect()
+        ->route('empresa_config.edit', ['tab' => 'firmas_imprimibles'])
+        ->with('success', 'Estado de la definicion de firma actualizado.');
+}
 public function storeCentroCosto(Request $request)
 {
     $data = $request->validate([

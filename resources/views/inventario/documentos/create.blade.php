@@ -209,6 +209,11 @@
                                 class="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors">
                             <div class="font-medium text-slate-800 text-sm" x-text="p.nombre"></div>
                             <div class="text-[10px] text-slate-400 uppercase tracking-wider" x-text="p.descripcion ? p.descripcion.substring(0, 60) + '...' : ''"></div>
+                            <div x-show="isCostoReferencia" class="mt-1 text-xs text-slate-500">
+                                <span>Stock: </span><span x-text="formatNumber(p.stock_actual)"></span>
+                                <span class="mx-1">·</span>
+                                <span>Costo prom.: $</span><span x-text="formatMoney(p.costo_promedio)"></span>
+                            </div>
                         </button>
                     </template>
                 </div>
@@ -230,7 +235,7 @@
         <tr class="border-b">
           <th class="text-left py-3 pr-3">Producto</th>
           <th class="text-left py-3 pr-3 w-32">Cantidad</th>
-          <th class="text-left py-3 pr-3 w-40">Costo unitario</th>
+          <!-- <th class="text-left py-3 pr-3 w-40">Costo unitario</th> -->
           <th class="text-left py-3 pr-3">Notas</th>
           <th class="text-right py-3 w-16"></th>
         </tr>
@@ -248,13 +253,17 @@
                        x-model="item.cantidad"
                        class="w-full rounded-lg border-slate-200 text-sm">
               </td>
-              <td class="py-3 pr-3">
+              <!-- <td class="py-3 pr-3">
                 <input type="number" step="0.0001"
                        :name="`detalles[${index}][costo_unitario]`"
                        x-model="item.costo_unitario"
-                       :required="'{{ $tipo }}' === 'entrada'"
+                       :required="isCostRequired"
+                       :readonly="isCostoReferencia"
+                       :title="isCostoReferencia ? 'Costo promedio de inventario; se usa como referencia en salidas.' : ''"
+                       :class="isCostoReferencia ? 'bg-slate-100 text-slate-600 cursor-not-allowed' : ''"
                        class="w-full rounded-lg border-slate-200 text-sm">
-              </td>
+                <p x-show="isCostoReferencia" class="mt-1 text-[11px] text-slate-500">Referencia costo promedio</p>
+              </td> -->
               <td class="py-3 pr-3">
                 <input type="text" :name="`detalles[${index}][notas]`"
                        x-model="item.notas"
@@ -357,7 +366,14 @@ function documentoPartidas() {
                 return;
             }
             try {
-                const response = await fetch(`{{ route('inventario.documentos.buscar-producto') }}?q=${this.search}`);
+                const params = new URLSearchParams({ q: this.search });
+                const almacenId = this.getAlmacenId();
+
+                if (almacenId) {
+                    params.set('almacen_id', almacenId);
+                }
+
+                const response = await fetch(`{{ route('inventario.documentos.buscar-producto') }}?${params.toString()}`);
                 this.results = await response.json();
             } catch (e) {
                 console.error("Error al buscar productos");
@@ -381,7 +397,7 @@ function documentoPartidas() {
                 producto_id: this.selectedProduct.id,
                 nombre: this.selectedProduct.nombre,
                 cantidad: 1,
-                costo_unitario: 0,
+                costo_unitario: this.defaultCostoUnitario(),
                 notas: '',
                 refId: tempId
             });
@@ -405,11 +421,35 @@ function documentoPartidas() {
             this.partidas.splice(index, 1);
         },
 
+        defaultCostoUnitario() {
+            if (this.isCostoReferencia) {
+                return Number(this.selectedProduct?.costo_promedio ?? 0).toFixed(4);
+            }
+
+            return 0;
+        },
+
+        getAlmacenId() {
+            return document.querySelector('[name="almacen_id"]')?.value || '';
+        },
+
+        formatMoney(value) {
+            return Number(value ?? 0).toFixed(4);
+        },
+
+        formatNumber(value) {
+            return Number(value ?? 0).toFixed(3);
+        },
+
         // Determina si el costo es obligatorio (reemplaza applyCostRules)
         get isCostRequired() {
             if (this.tipoDoc === 'entrada') return true;
             if (this.tipoDoc === 'ajuste' && this.ajusteTipo === 'incremento') return true;
             return false;
+        },
+
+        get isCostoReferencia() {
+            return ['salida', 'resguardo'].includes(this.tipoDoc);
         }
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Almacen extends Model
@@ -13,6 +14,7 @@ class Almacen extends Model
         'nombre',
         'tipo',      // general | obra
         'obra_id',   // nullable (futuro)
+        'area_id',
         'activo',
     ];
 
@@ -38,6 +40,12 @@ class Almacen extends Model
         return $this->hasMany(InventarioMovimiento::class, 'almacen_id');
     }
 
+    public function area(): BelongsTo
+    {
+        return $this->belongsTo(Area::class, 'area_id');
+    }
+
     // Futuro:
     // public function obra(): BelongsTo { ... }  // si después amarras obra_id con FK
 }
+

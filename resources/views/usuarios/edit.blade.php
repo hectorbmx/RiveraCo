@@ -101,6 +101,43 @@
                             </div>
                         </div>
 
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Rol</label>
+                                <select name="role"
+                                        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                        required>
+                                    <option value="">Selecciona un rol</option>
+                                    @foreach($roles as $role)
+                                        <option value="{{ $role->name }}" @selected(old('role', $currentRole) === $role->name)>
+                                            {{ $role->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('role')
+                                    <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Estatus</label>
+                                @if($usuario->usuarioApp)
+                                    <select name="is_active"
+                                            class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                                        <option value="1" @selected((string) old('is_active', (int) $usuario->usuarioApp->is_active) === '1')>Activo</option>
+                                        <option value="0" @selected((string) old('is_active', (int) $usuario->usuarioApp->is_active) === '0')>Inactivo</option>
+                                    </select>
+                                    @error('is_active')
+                                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                @else
+                                    <select class="w-full border rounded px-3 py-2 bg-gray-100 text-gray-500" disabled>
+                                        <option>Sin vínculo App</option>
+                                    </select>
+                                @endif
+                            </div>
+                        </div>
+
                         <div class="flex gap-3 pt-2">
                             <button type="submit"
                                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition shadow-sm">
@@ -341,58 +378,51 @@
                         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
                             <div>
                                 <h3 class="font-semibold text-gray-800">Firmas impresas</h3>
-                                <p class="text-sm text-gray-500 mt-1">Configura los nombres fijos que se imprimen en VoBo y ENTERADO de ordenes de compra.</p>
+                                <p class="text-sm text-gray-500 mt-1">Asigna este usuario como firmante para los documentos y ambitos configurados por empresa.</p>
                             </div>
                         </div>
                         <form method="POST" action="{{ route('usuarios.firmas-impresas.sync', $usuario->id) }}" class="space-y-4" @submit="saving = true">
                             @csrf
                             @method('PUT')
-                            @php
-                                $firmaVobo1   = $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_VOBO_1);
-                                $firmaVobo2   = $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_VOBO_2);
-                                $firmaEnterado = $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_ENTERADO);
-                                $firmasOrdenCompra = [
-                                    \App\Models\DocumentoFirmante::CAMPO_VOBO_1 => [
-                                        'label' => 'VoBo 1',
-                                        'firma' => $firmaVobo1,
-                                    ],
-                                    \App\Models\DocumentoFirmante::CAMPO_VOBO_2 => [
-                                        'label' => 'VoBo 2',
-                                        'firma' => $firmaVobo2,
-                                    ],
-                                    \App\Models\DocumentoFirmante::CAMPO_ENTERADO => [
-                                        'label' => 'ENTERADO',
-                                        'firma' => $firmaEnterado,
-                                    ],
-                                ];
-                            @endphp
                             <div class="border rounded overflow-hidden">
                                 <table class="w-full text-sm text-left">
                                     <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
                                         <tr>
+                                            <th class="px-4 py-3 border-b">Documento</th>
+                                            <th class="px-4 py-3 border-b">Ambito</th>
                                             <th class="px-4 py-3 border-b">Campo</th>
                                             <th class="px-4 py-3 border-b">Asignado actual</th>
                                             <th class="px-4 py-3 border-b text-center">Usar este usuario</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($firmasOrdenCompra as $campo => $config)
+                                        @forelse($firmaDefiniciones as $definicion)
                                             @php
-                                                $firma = $config['firma'];
+                                                $firmaKey = $definicion->documento.'|'.$definicion->ambito.'|'.$definicion->campo;
+                                                $firma = $firmasImpresas->get($firmaKey);
                                                 $asignadoAUsuario = (int) ($firma?->user_id ?? 0) === (int) $usuario->id;
                                             @endphp
                                             <tr class="hover:bg-gray-50">
-                                                <td class="px-4 py-3 border-b font-semibold text-gray-800">
-                                                    {{ $config['label'] }}
+                                                <td class="px-4 py-3 border-b">
+                                                    <div class="font-semibold text-gray-800">{{ $definicion->documento_label }}</div>
+                                                    <div class="text-xs text-gray-400 font-mono">{{ $definicion->documento }}</div>
+                                                </td>
+                                                <td class="px-4 py-3 border-b">
+                                                    <div class="font-medium text-gray-700">{{ $definicion->ambito_label }}</div>
+                                                    <div class="text-xs text-gray-400 font-mono">{{ $definicion->ambito }}</div>
+                                                </td>
+                                                <td class="px-4 py-3 border-b">
+                                                    <div class="font-medium text-gray-700">{{ $definicion->campo_label }}</div>
+                                                    <div class="text-xs text-gray-400 font-mono">{{ $definicion->campo }}</div>
                                                 </td>
                                                 <td class="px-4 py-3 border-b text-gray-600">
                                                     {{ $firma?->user?->name ?? 'Sin asignar' }}
                                                 </td>
                                                 <td class="px-4 py-3 border-b text-center">
-                                                    <input type="hidden" name="firmas_impresas[{{ $campo }}]" value="0">
+                                                    <input type="hidden" name="firmas_impresas[{{ $definicion->id }}]" value="0">
                                                     <label class="inline-flex items-center justify-center gap-2 cursor-pointer">
                                                         <input type="checkbox"
-                                                               name="firmas_impresas[{{ $campo }}]"
+                                                               name="firmas_impresas[{{ $definicion->id }}]"
                                                                value="1"
                                                                class="text-blue-600 focus:ring-blue-500 rounded"
                                                                {{ $asignadoAUsuario ? 'checked' : '' }}>
@@ -402,7 +432,11 @@
                                                     </label>
                                                 </td>
                                             </tr>
-                                        @endforeach
+                                        @empty
+                                            <tr>
+                                                <td colspan="5" class="px-4 py-8 text-center text-gray-400 italic">No hay firmas imprimibles activas configuradas.</td>
+                                            </tr>
+                                        @endforelse
                                     </tbody>
                                 </table>
                             </div>

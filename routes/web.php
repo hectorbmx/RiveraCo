@@ -437,6 +437,9 @@ Route::middleware('auth','verified')->group(function () {
         Route::put('/configuracion-empresa/documentos-empleado/{documentoTipo}', [EmpresaConfigController::class, 'updateDocumentoEmpleado'])->name('empresa_config.documentos.update');
         Route::patch('/configuracion-empresa/documentos-empleado/{documentoTipo}/toggle-activo', [EmpresaConfigController::class, 'toggleDocumentoEmpleadoActivo'])->name('empresa_config.documentos.toggle-activo');
         Route::delete('/configuracion-empresa/documentos-empleado/{documentoTipo}', [EmpresaConfigController::class, 'destroyDocumentoEmpleado'])->name('empresa_config.documentos.destroy');
+        Route::post('/configuracion-empresa/firmas-imprimibles', [EmpresaConfigController::class, 'storeDocumentoFirmaDefinicion'])->name('empresa_config.firmas-imprimibles.store');
+        Route::put('/configuracion-empresa/firmas-imprimibles/{firmaDefinicion}', [EmpresaConfigController::class, 'updateDocumentoFirmaDefinicion'])->name('empresa_config.firmas-imprimibles.update');
+        Route::patch('/configuracion-empresa/firmas-imprimibles/{firmaDefinicion}/toggle-activo', [EmpresaConfigController::class, 'toggleDocumentoFirmaDefinicion'])->name('empresa_config.firmas-imprimibles.toggle-activo');
     Route::post('/configuracion-empresa/centros-costo', [EmpresaConfigController::class, 'storeCentroCosto'])->name('empresa_config.centros-costo.store');
     Route::patch('/configuracion-empresa/centros-costo/{centroCosto}/toggle-activo', [EmpresaConfigController::class, 'toggleCentroCosto'])->name('empresa_config.centros-costo.toggle-activo');
     Route::post('/configuracion-empresa/tipos-iva', [EmpresaConfigController::class, 'storeTipoIva'])->name('empresa_config.tipos-iva.store');

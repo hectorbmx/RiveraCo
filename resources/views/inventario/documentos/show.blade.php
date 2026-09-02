@@ -9,10 +9,22 @@
             <p class="text-sm text-slate-500">Tipo: {{ $doc->tipo }} · Estado: {{ $doc->estado }}</p>
         </div>
 
-        <a href="{{ route('inventario.documentos.index') }}"
-           class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-sm">
-            Volver
-        </a>
+        <div class="flex items-center gap-2">
+            @if($doc->estado === 'borrador')
+                <form method="POST" action="{{ route('inventario.documentos.aplicar', $doc) }}"
+                      onsubmit="return confirm('¿Aplicar documento #{{ $doc->id }}? Esto afectará stock y kardex.');">
+                    @csrf
+                    <button class="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">
+                        Aplicar
+                    </button>
+                </form>
+            @endif
+
+            <a href="{{ route('inventario.documentos.index') }}"
+               class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-sm">
+                Volver
+            </a>
+        </div>
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">

@@ -3,6 +3,10 @@
 @section('title', 'Reposicion de caja chica')
 
 @section('content')
+@php
+    $ambitoFirmaSeleccionado = request('ambito', $ambitoFirma ?? \App\Models\DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN);
+    $printQuery = array_merge(request()->query(), ['ambito' => $ambitoFirmaSeleccionado]);
+@endphp
 <div class="max-w-7xl mx-auto space-y-6">
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
@@ -10,7 +14,7 @@
             <p class="text-sm text-slate-500">Gastos capturados por ingenieria con autorizacion individual.</p>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="{{ route('reposicion-caja-chica.imprimir', request()->query()) }}" target="_blank" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Imprimir</a>
+            <a id="reposicion-print-link" href="{{ route('reposicion-caja-chica.imprimir', $printQuery) }}" data-print-base="{{ route('reposicion-caja-chica.imprimir') }}" target="_blank" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Imprimir</a>
             <a href="{{ route('reposicion-caja-chica.exportar-excel', request()->query()) }}" class="rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100">Exportar Excel</a>
             <a href="{{ route('reposicion-caja-chica.revision') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Revision oficina</a>
             <a href="{{ route('reposicion-caja-chica.relaciones.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Relaciones</a>
@@ -37,7 +41,7 @@
         </div>
     </div>
 
-    <form method="GET" class="rounded-lg bg-white p-4 shadow-sm border border-slate-200 space-y-4">
+    <form id="reposicion-filtros" method="GET" class="rounded-lg bg-white p-4 shadow-sm border border-slate-200 space-y-4">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
                 <p class="text-xs font-semibold uppercase text-slate-500">Semana mostrada</p>
@@ -81,6 +85,13 @@
                         <option value="almacen" @selected(request('destino') === 'almacen')>Almacen</option>
                     </select>
                 </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Firma</label>
+                    <select name="ambito" class="rounded-lg border-slate-300 text-sm">
+                        <option value="{{ \App\Models\DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN }}" @selected($ambitoFirmaSeleccionado === \App\Models\DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN)>Reposicion gastos almacen</option>
+                        <option value="{{ \App\Models\DocumentoFirmante::AMBITO_GIRALDA }}" @selected($ambitoFirmaSeleccionado === \App\Models\DocumentoFirmante::AMBITO_GIRALDA)>Giralda</option>
+                    </select>
+                </div>
                 <button class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Filtrar</button>
                 <a href="{{ route('reposicion-caja-chica.index') }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Limpiar</a>
             </div>
@@ -93,6 +104,7 @@
                 'estado' => request('estado'),
                 'categoria_id' => request('categoria_id'),
                 'destino' => request('destino'),
+                'ambito' => $ambitoFirmaSeleccionado,
             ]) }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                 ← Semana anterior
             </a>
@@ -100,6 +112,7 @@
                 'estado' => request('estado'),
                 'categoria_id' => request('categoria_id'),
                 'destino' => request('destino'),
+                'ambito' => $ambitoFirmaSeleccionado,
             ]) }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                 Semana actual
             </a>
@@ -109,6 +122,7 @@
                 'estado' => request('estado'),
                 'categoria_id' => request('categoria_id'),
                 'destino' => request('destino'),
+                'ambito' => $ambitoFirmaSeleccionado,
             ]) }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                 Semana siguiente →
             </a>
@@ -180,6 +194,37 @@
     <div>{{ $gastos->links() }}</div>
 </div>
 @endsection
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('reposicion-filtros');
+    const printLink = document.getElementById('reposicion-print-link');
+
+    if (!form || !printLink) {
+        return;
+    }
+
+    const updatePrintLink = () => {
+        const params = new URLSearchParams(new FormData(form));
+
+        for (const [key, value] of Array.from(params.entries())) {
+            if (value === '') {
+                params.delete(key);
+            }
+        }
+
+        const queryString = params.toString();
+        printLink.href = queryString
+            ? `${printLink.dataset.printBase}?${queryString}`
+            : printLink.dataset.printBase;
+    };
+
+    form.addEventListener('change', updatePrintLink);
+    form.addEventListener('input', updatePrintLink);
+    updatePrintLink();
+});
+</script>
+@endpush
 
 
 

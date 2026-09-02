@@ -128,6 +128,7 @@ public function buscarProveedor(Request $request)
 public function buscarProducto(Request $request)
 {
     $q = trim($request->get('q', ''));
+    $almacenId = $request->integer('almacen_id');
 
     // Solo buscamos si hay 3 o más caracteres
     if (strlen($q) < 3) {
@@ -141,9 +142,30 @@ public function buscarProducto(Request $request)
                   ->orWhere('descripcion', 'like', "%{$q}%");
         })
         ->limit(10)
-        ->get(['id', 'nombre', 'descripcion']);
+        ->get(['id', 'nombre', 'descripcion', 'sku']);
 
-    return response()->json($productos);
+    $stockPorProducto = collect();
+
+    if ($almacenId > 0 && $productos->isNotEmpty()) {
+        $stockPorProducto = \App\Models\InventarioStock::query()
+            ->where('almacen_id', $almacenId)
+            ->whereIn('producto_id', $productos->pluck('id'))
+            ->get(['producto_id', 'stock_actual', 'costo_promedio'])
+            ->keyBy('producto_id');
+    }
+
+    return response()->json($productos->map(function ($producto) use ($stockPorProducto) {
+        $stock = $stockPorProducto->get($producto->id);
+
+        return [
+            'id' => $producto->id,
+            'nombre' => $producto->nombre,
+            'descripcion' => $producto->descripcion,
+            'sku' => $producto->sku,
+            'stock_actual' => $stock ? (float) $stock->stock_actual : null,
+            'costo_promedio' => $stock ? (float) $stock->costo_promedio : null,
+        ];
+    })->values());
 }
 
 public function edit(InventarioDocumento $doc)

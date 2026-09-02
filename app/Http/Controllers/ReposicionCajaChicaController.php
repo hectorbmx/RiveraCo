@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Almacen;
+use App\Models\DocumentoFirmante;
 use App\Models\Obra;
 use App\Models\ReposicionCajaChicaCategoria;
 use App\Models\ReposicionCajaChicaGasto;
@@ -14,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ReposicionCajaChicaController extends Controller
@@ -29,6 +31,7 @@ class ReposicionCajaChicaController extends Controller
 
         $categorias = $this->categoriasActivas();
         $stats = $this->stats($request, $fechaInicio, $fechaFin);
+        $ambitoFirma = $this->resolverAmbitoFirmaReposicionDisponible($request, $gastos->getCollection());
 
         $semanaAnteriorInicio = $fechaInicio->copy()->subWeek()->toDateString();
         $semanaAnteriorFin = $fechaFin->copy()->subWeek()->toDateString();
@@ -44,7 +47,8 @@ class ReposicionCajaChicaController extends Controller
             'semanaAnteriorInicio',
             'semanaAnteriorFin',
             'semanaSiguienteInicio',
-            'semanaSiguienteFin'
+            'semanaSiguienteFin',
+            'ambitoFirma'
         ));
     }
 
@@ -327,8 +331,10 @@ class ReposicionCajaChicaController extends Controller
 
         $grupos = $this->agruparGastosPorCategoria($gastos);
         $stats = $this->stats($request, $fechaInicio, $fechaFin);
+        $ambitoFirma = $this->resolverAmbitoFirmaReposicion($request, $gastos);
+        $firmasImpresas = $this->firmasImpresasReposicion($ambitoFirma);
 
-        return view('reposicion-caja-chica.reporte-imprimir', compact('gastos', 'grupos', 'stats', 'fechaInicio', 'fechaFin'));
+        return view('reposicion-caja-chica.reporte-imprimir', compact('gastos', 'grupos', 'stats', 'fechaInicio', 'fechaFin', 'ambitoFirma', 'firmasImpresas'));
     }
 
     public function exportarExcel(Request $request)
@@ -494,9 +500,81 @@ class ReposicionCajaChicaController extends Controller
             'gastos.resueltoPor',
         ]);
 
-        return view('reposicion-caja-chica.relaciones-imprimir', compact('relacion'));
+        $ambitoFirma = $this->resolverAmbitoFirmaReposicion(null, $relacion->gastos, $relacion->almacen?->nombre);
+        $firmasImpresas = $this->firmasImpresasReposicion($ambitoFirma);
+
+        return view('reposicion-caja-chica.relaciones-imprimir', compact('relacion', 'ambitoFirma', 'firmasImpresas'));
     }
 
+    private function resolverAmbitoFirmaReposicion(?Request $request = null, $gastos = null, ?string $almacenNombre = null): string
+    {
+        $ambitosValidos = [
+            DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN,
+            DocumentoFirmante::AMBITO_GIRALDA,
+        ];
+
+        $ambitoSolicitado = $request?->input('ambito');
+        if (in_array($ambitoSolicitado, $ambitosValidos, true)) {
+            return $ambitoSolicitado;
+        }
+
+        if ($almacenNombre && Str::contains(Str::lower($almacenNombre), 'giralda')) {
+            return DocumentoFirmante::AMBITO_GIRALDA;
+        }
+
+        $gastos = collect($gastos ?? []);
+        $gastosGiralda = $gastos->filter(function ($gasto) {
+            return $gasto->almacen && Str::contains(Str::lower((string) $gasto->almacen->nombre), 'giralda');
+        });
+
+        if ($gastos->isNotEmpty() && $gastosGiralda->count() === $gastos->count()) {
+            return DocumentoFirmante::AMBITO_GIRALDA;
+        }
+
+        return DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN;
+    }
+
+    private function resolverAmbitoFirmaReposicionDisponible(Request $request, $gastos = null): string
+    {
+        $ambito = $this->resolverAmbitoFirmaReposicion($request, $gastos);
+
+        if ($request->filled('ambito') || $this->existenFirmasImpresasReposicion($ambito)) {
+            return $ambito;
+        }
+
+        foreach ([DocumentoFirmante::AMBITO_GIRALDA, DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN] as $fallbackAmbito) {
+            if ($fallbackAmbito !== $ambito && $this->existenFirmasImpresasReposicion($fallbackAmbito)) {
+                return $fallbackAmbito;
+            }
+        }
+
+        return $ambito;
+    }
+
+    private function existenFirmasImpresasReposicion(string $ambito): bool
+    {
+        return DocumentoFirmante::query()
+            ->where('documento', DocumentoFirmante::DOCUMENTO_REPOSICION_CAJA_CHICA)
+            ->where('ambito', $ambito)
+            ->where('activo', true)
+            ->exists();
+    }
+
+    private function firmasImpresasReposicion(string $ambito)
+    {
+        return DocumentoFirmante::query()
+            ->with('user:id,name')
+            ->where('documento', DocumentoFirmante::DOCUMENTO_REPOSICION_CAJA_CHICA)
+            ->where('ambito', $ambito)
+            ->where('activo', true)
+            ->whereIn('campo', [
+                DocumentoFirmante::CAMPO_ELABORO,
+                DocumentoFirmante::CAMPO_VOBO,
+                DocumentoFirmante::CAMPO_AUTORIZO,
+            ])
+            ->get()
+            ->keyBy('campo');
+    }
     private function validarGastoPendiente(ReposicionCajaChicaGasto $gasto): void
     {
         if ($gasto->estado_autorizacion !== 'pendiente') {

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
@@ -13,6 +14,7 @@ use App\Models\User;
 use App\Models\Empleado;
 use App\Models\UsuarioApp;
 use App\Models\DocumentoFirmante;
+use App\Models\DocumentoFirmaDefinicion;
 use App\Models\OrdenCompra;
 use App\Models\ObraSolicitudGasto;
 use App\Models\ObraReposicionGasto;
@@ -29,7 +31,7 @@ class UsuarioController extends Controller
     public function index()
     {
         //
-            $usuarios = User::orderBy('name')->paginate(15);
+            $usuarios = User::with('usuarioApp')->orderBy('name')->paginate(15);
 
             return view('usuarios.index', compact('usuarios'));
     }
@@ -150,6 +152,15 @@ public function edit(User $usuario)
 {
     $usuario->load(['usuarioApp.empleado']);
 
+    $roles = Role::query()
+        ->where('guard_name', 'web')
+        ->orderBy('name')
+        ->get(['id','name']);
+
+    $currentRole = $usuario->roles()
+        ->where('guard_name', 'web')
+        ->value('name');
+
     $permissions = Permission::query()
         ->where('guard_name', 'web')
         ->orderBy('name')
@@ -179,16 +190,15 @@ public function edit(User $usuario)
     $effectivePermissionIds = $usuario->getAllPermissions()
         ->pluck('id')
         ->toArray();
+    $firmaDefiniciones = DocumentoFirmaDefinicion::query()
+        ->activas()
+        ->ordenadas()
+        ->get();
+
     $firmasImpresas = DocumentoFirmante::query()
         ->with('user:id,name')
-        ->where('documento', DocumentoFirmante::DOCUMENTO_ORDEN_COMPRA)
-        ->whereIn('campo', [
-            DocumentoFirmante::CAMPO_VOBO_1,
-            DocumentoFirmante::CAMPO_VOBO_2,
-            DocumentoFirmante::CAMPO_ENTERADO,
-        ])
         ->get()
-        ->keyBy('campo');
+        ->keyBy(fn ($firma) => $firma->documento.'|'.$firma->ambito.'|'.$firma->campo);
 
     // 1. Autorizaciones
     $autorizaciones = collect();
@@ -408,51 +418,59 @@ public function edit(User $usuario)
         'bitacora',
         'pilas',
         'asignacionesObra',
+        'roles',
+        'currentRole',
         'permissions',
         'rolePermissionIds',
         'directPermissionIds',
         'deniedPermissionIds',
         'effectivePermissionIds',
+        'firmaDefiniciones',
         'firmasImpresas'
     ));
 }
 public function syncFirmasImpresas(Request $request, User $usuario)
 {
     $data = $request->validate([
-        'firmas_impresas'            => ['array'],
-        'firmas_impresas.vobo_1'     => ['nullable', 'boolean'],
-        'firmas_impresas.vobo_2'     => ['nullable', 'boolean'],
-        'firmas_impresas.enterado'   => ['nullable', 'boolean'],
+        'firmas_impresas' => ['array'],
+        'firmas_impresas.*' => ['nullable', 'boolean'],
     ]);
-    $campos = [
-        DocumentoFirmante::CAMPO_VOBO_1,
-        DocumentoFirmante::CAMPO_VOBO_2,
-        DocumentoFirmante::CAMPO_ENTERADO,
-    ];
+
     $seleccion = $data['firmas_impresas'] ?? [];
-    DB::transaction(function () use ($campos, $seleccion, $usuario) {
-        foreach ($campos as $campo) {
-            $asignar = (bool) ($seleccion[$campo] ?? false);
+    $definiciones = DocumentoFirmaDefinicion::query()
+        ->activas()
+        ->whereIn('id', array_keys($seleccion))
+        ->get();
+
+    DB::transaction(function () use ($definiciones, $seleccion, $usuario) {
+        foreach ($definiciones as $definicion) {
+            $asignar = (bool) ($seleccion[$definicion->id] ?? false);
+
             if ($asignar) {
                 DocumentoFirmante::updateOrCreate(
                     [
-                        'documento' => DocumentoFirmante::DOCUMENTO_ORDEN_COMPRA,
-                        'campo' => $campo,
+                        'documento' => $definicion->documento,
+                        'ambito' => $definicion->ambito,
+                        'campo' => $definicion->campo,
                     ],
                     [
                         'user_id' => $usuario->id,
                         'activo' => true,
                     ]
                 );
+
                 continue;
             }
+
             DocumentoFirmante::query()
-                ->where('documento', DocumentoFirmante::DOCUMENTO_ORDEN_COMPRA)
-                ->where('campo', $campo)
+                ->where('documento', $definicion->documento)
+                ->where('ambito', $definicion->ambito)
+                ->where('campo', $definicion->campo)
                 ->where('user_id', $usuario->id)
                 ->delete();
         }
     });
+
     return redirect()
         ->route('usuarios.edit', ['usuario' => $usuario->id, 'tab' => 'firmas'])
         ->with('success', 'Firmas impresas actualizadas.');
@@ -535,6 +553,11 @@ public function syncFirmasImpresas(Request $request, User $usuario)
 
         // Password opcional (si viene, se actualiza en users)
         'password' => ['nullable','string','min:8','confirmed'],
+        'role' => [
+            'required',
+            'string',
+            Rule::exists('roles', 'name')->where('guard_name', 'web'),
+        ],
 
         // Estado app (si lo estás mostrando)
         'is_active' => ['nullable','boolean'],
@@ -548,6 +571,8 @@ public function syncFirmasImpresas(Request $request, User $usuario)
     }
 
     $usuario->save();
+    $usuario->syncRoles([$data['role']]);
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
 
     // Actualiza usuarios_app por user_id (si existe y si mandaste is_active)
     if (array_key_exists('is_active', $data)) {

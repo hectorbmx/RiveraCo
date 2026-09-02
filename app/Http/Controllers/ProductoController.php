@@ -22,6 +22,11 @@ class ProductoController extends Controller
         if ($request->estado === 'inactivos') $q->where('activo', 0);
     }
 
+    if ($request->filled('existencias')) {
+        if ($request->existencias === 'con_existencia') $q->havingRaw('COALESCE(existencias, 0) > 0');
+        if ($request->existencias === 'sin_existencia') $q->havingRaw('COALESCE(existencias, 0) = 0');
+    }
+
     if ($request->filled('q')) {
         $term = trim($request->q);
         $q->where(function ($x) use ($term) {

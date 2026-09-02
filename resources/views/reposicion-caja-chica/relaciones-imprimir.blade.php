@@ -25,6 +25,7 @@
         .totals td { padding: 8px; }
         .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 56px; }
         .signature { border-top: 1px solid #111827; padding-top: 8px; text-align: center; font-size: 11px; }
+        .signature-name { min-height: 18px; font-weight: 700; margin-bottom: 4px; }
         @media print {
             body { margin: 12mm; }
             .no-print { display: none; }
@@ -135,9 +136,18 @@
     </table>
 
     <div class="signatures">
-        <div class="signature">Elaboro</div>
-        <div class="signature">Reviso</div>
-        <div class="signature">Autorizo</div>
+        <div class="signature">
+            <div class="signature-name">{{ $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_ELABORO)?->user?->name }}</div>
+            Elaboro
+        </div>
+        <div class="signature">
+            <div class="signature-name">{{ $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_VOBO)?->user?->name }}</div>
+            VoBo
+        </div>
+        <div class="signature">
+            <div class="signature-name">{{ $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_AUTORIZO)?->user?->name }}</div>
+            Autorizo
+        </div>
     </div>
 </body>
 </html>

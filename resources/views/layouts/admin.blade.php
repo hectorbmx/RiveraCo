@@ -12,7 +12,7 @@
     </style>
 </head>
 
-<body class="bg-slate-100 text-slate-900 antialiased">
+<body class="bg-slate-100 text-slate-900 antialiased h-screen overflow-hidden">
     @php
         $menuPermissions = auth()->user()
             ? auth()->user()->getAllPermissions()->pluck('name')->flip()
@@ -21,10 +21,10 @@
         $canMenu = fn (string $permission): bool => $menuPermissions->has($permission);
     @endphp
 
-    <div class="flex min-h-screen">
+    <div class="flex h-screen overflow-hidden">
 
         {{-- SIDEBAR --}}
-        <aside id="sidebar" class="w-64 bg-[#0B265A] text-white flex flex-col transition-all duration-300">
+        <aside id="sidebar" class="w-64 h-screen flex-shrink-0 bg-[#0B265A] text-white flex flex-col transition-all duration-300">
 
             {{-- Logo --}}
             
@@ -44,7 +44,7 @@
 
 
             {{-- MENU: production icons are intentional; preserve UTF-8 and do not normalize them. --}}
-            <nav class="flex-1 py-6 space-y-1">
+            <nav class="flex-1 overflow-y-auto py-6 space-y-1">
                  <!-- @if($canMenu('dashboard.access'))
                 <a href="{{ route('dashboard') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('dashboard') ? 'bg-white/10' : '' }}"
@@ -238,6 +238,9 @@
         <a href="{{ route('giralda.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10">Panel</a>
         <a href="{{ route('giralda.empleados') }}" class="block px-4 py-2 text-sm hover:bg-white/10">Empleados</a>
         <a href="{{ route('ordenes_compra.index', ['area_codigo' => 'GL']) }}" class="block px-4 py-2 text-sm hover:bg-white/10">Ordenes de compra</a>
+        @if($canMenu('productos.access'))
+        <a href="{{ route('productos.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10">Productos</a>
+        @endif
         <a href="{{ route('inventario.stock.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10">Almacen</a>
     </div>
 </div>
@@ -332,16 +335,7 @@
                     <span class="text-lg">💳</span>
                     <span class="sidebar-text">Pagos a proveedores</span>
                 </a>
-                @if($canMenu('productos.access'))
-               <a href="{{ route('productos.index') }}"
-                class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
-                title="Productos">
-                
-                    <span class="text-lg">📦</span>
-                    <span class="sidebar-text">Productos</span>
-                </a>
 
-                @endif
                 @if($canMenu('proveedores.access'))    
                  <a href="{{ route('proveedores.index') }}"
                     class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('proveedores.*') ? 'bg-white/10' : '' }}"
@@ -409,10 +403,10 @@
         </aside>
 
         {{-- CONTENIDO PRINCIPAL --}}
-        <main class="flex-1 flex flex-col">
+        <main class="flex-1 min-w-0 h-screen overflow-y-auto flex flex-col">
 
             {{-- TOPBAR --}}
-            <header class="h-16 bg-white shadow flex items-center justify-between px-6">
+            <header class="sticky top-0 z-40 h-16 flex-shrink-0 bg-white shadow flex items-center justify-between px-6">
                 <div class="flex items-center gap-3">
                     {{-- Botón para colapsar/expandir sidebar --}}
                     <button id="sidebar-toggle"
@@ -509,7 +503,7 @@
             </header>
 
             {{-- CONTENIDO DE LA PAGINA --}}
-            <div class="p-6">
+            <div class="flex-1 p-6">
                 @yield('content')
             </div>
 

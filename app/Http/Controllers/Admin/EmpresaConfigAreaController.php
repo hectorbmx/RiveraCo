@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Almacen;
 use App\Models\Area;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -18,6 +19,7 @@ class EmpresaConfigAreaController extends Controller
 
         $area = Area::create($areaData);
         $this->syncHorarioBase($area, $data, $request);
+        $this->syncAlmacenRelacionado($area, $data['almacen_id'] ?? null);
 
         return back()->with('success', 'Área creada correctamente.');
     }
@@ -30,6 +32,7 @@ class EmpresaConfigAreaController extends Controller
 
         $area->update($areaData);
         $this->syncHorarioBase($area, $data, $request);
+        $this->syncAlmacenRelacionado($area, $data['almacen_id'] ?? null);
 
         return back()->with('success', 'Área actualizada correctamente.');
     }
@@ -68,6 +71,7 @@ class EmpresaConfigAreaController extends Controller
             'nombre' => ['required', 'string', 'max:150'],
             'descripcion' => ['nullable', 'string', 'max:500'],
             'activo' => ['nullable', 'boolean'],
+            'almacen_id' => ['nullable', 'integer', 'exists:almacenes,id'],
             'horario_nombre' => ['nullable', 'string', 'max:150'],
             'horario_hora_entrada' => ['nullable', 'date_format:H:i'],
             'horario_hora_salida' => ['nullable', 'date_format:H:i'],
@@ -97,6 +101,22 @@ class EmpresaConfigAreaController extends Controller
             ->all();
 
         $request->merge(['horario_dias_laborables' => $dias]);
+    }
+
+    private function syncAlmacenRelacionado(Area $area, $almacenId): void
+    {
+        Almacen::query()
+            ->where('area_id', $area->id)
+            ->when($almacenId, fn ($query) => $query->where('id', '!=', $almacenId))
+            ->update(['area_id' => null]);
+
+        if (! $almacenId) {
+            return;
+        }
+
+        Almacen::query()
+            ->where('id', $almacenId)
+            ->update(['area_id' => $area->id]);
     }
 
     private function syncHorarioBase(Area $area, array $data, Request $request): void

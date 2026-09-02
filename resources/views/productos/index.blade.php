@@ -12,10 +12,16 @@
             <p class="text-sm text-slate-500">Catálogo general de productos</p>
         </div>
 
-        <a href="{{ route('productos.create') }}"
-           class="bg-[#0B265A] text-white px-4 py-2 rounded-xl text-sm hover:opacity-90">
-            + Nuevo producto
-        </a>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('inventario.documentos.create', ['tipo' => 'entrada']) }}"
+               class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-emerald-700">
+                + Entrada
+            </a>
+            <a href="{{ route('productos.create') }}"
+               class="bg-[#0B265A] text-white px-4 py-2 rounded-xl text-sm hover:opacity-90">
+                + Nuevo producto
+            </a>
+        </div>
     </div>
 
     {{-- Flash --}}
@@ -27,33 +33,43 @@
 
     {{-- Filtros --}}
     <form method="GET" class="bg-white rounded-2xl shadow p-4 mb-4">
-        <div class="grid md:grid-cols-4 gap-3 items-end">
-            <div class="md:col-span-2">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+            <div class="md:col-span-5">
                 <label class="block text-xs font-semibold text-slate-600 mb-1">Buscar</label>
                 <input type="text"
                        name="q"
                        value="{{ request('q') }}"
                        placeholder="Nombre, SKU o legacy_prod_id..."
-                       class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFC107]/40">
+                       class="w-full border border-amber-300 bg-amber-50 rounded-xl px-3 py-2 text-sm transition focus:outline-none focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-yellow-200" style="box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.08), 0 0 18px rgba(255, 193, 7, 0.18);">
             </div>
 
-            <div>
+            <div class="md:col-span-2 md:max-w-44">
                 <label class="block text-xs font-semibold text-slate-600 mb-1">Estado</label>
                 <select name="estado"
-                        class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                        class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300/70">
                     <option value="">Todos</option>
                     <option value="activos" {{ request('estado')==='activos' ? 'selected' : '' }}>Activos</option>
                     <option value="inactivos" {{ request('estado')==='inactivos' ? 'selected' : '' }}>Inactivos</option>
                 </select>
             </div>
 
-            <div class="flex gap-2">
-                <button class="bg-[#FFC107] text-[#0B265A] font-semibold px-4 py-2 rounded-xl text-sm hover:opacity-90">
+            <div class="md:col-span-2 md:max-w-44">
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Existencias</label>
+                <select name="existencias"
+                        class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300/70">
+                    <option value="">Todas</option>
+                    <option value="con_existencia" {{ request('existencias')==='con_existencia' ? 'selected' : '' }}>Mayor a 0</option>
+                    <option value="sin_existencia" {{ request('existencias')==='sin_existencia' ? 'selected' : '' }}>En 0</option>
+                </select>
+            </div>
+
+            <div class="md:col-span-3 flex justify-start md:justify-end gap-2">
+                <button class="bg-[#FFC107] text-[#0B265A] font-semibold px-4 py-2 rounded-xl text-sm hover:opacity-90 shadow-sm">
                     Filtrar
                 </button>
 
                 <a href="{{ route('productos.index') }}"
-                   class="px-4 py-2 rounded-xl text-sm border border-slate-200 text-slate-600 hover:bg-slate-50">
+                   class="px-4 py-2 rounded-xl text-sm border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm">
                     Limpiar
                 </a>
             </div>
@@ -80,7 +96,10 @@
                         <td class="px-4 py-3 text-slate-500">{{ $p->id }}</td>
 
                         <td class="px-4 py-3">
-                            <div class="font-semibold text-slate-800">{{ $p->nombre }}</div>
+                            <a href="{{ route('productos.edit', $p->id) }}"
+                               class="font-semibold text-[#0B265A] hover:text-blue-700 hover:underline underline-offset-4 decoration-[#FFC107] decoration-2 transition">
+                                {{ $p->nombre }}
+                            </a>
                             <!-- <div class="text-xs text-slate-500">
                                 Legacy: {{ $p->legacy_prod_id ?? '-' }}
                             </div> -->
@@ -106,14 +125,14 @@
 
                         <td class="px-4 py-3 text-right">
                             <a href="{{ route('productos.edit', $p->id) }}"
-                               class="text-blue-600 hover:underline">
-                                Abrir
+                               class="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-100">
+                                Ver
                             </a>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-6 text-center text-slate-500">
+                        <td colspan="7" class="px-4 py-6 text-center text-slate-500">
                             No hay productos con los filtros actuales.
                         </td>
                     </tr>
