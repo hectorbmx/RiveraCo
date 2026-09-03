@@ -3,27 +3,37 @@
 @section('title', 'Facturación SAT')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
 
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+    <div class="flex flex-col gap-3 mb-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">
                 Facturación SAT
             </h1>
 
-            <p class="text-sm text-slate-500 mt-1">
+            <p class="text-sm text-slate-500">
                 Emisión, consulta y control de facturas CFDI.
             </p>
         </div>
 
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-2 lg:justify-end">
+            <a href="{{ route('clientes.index') }}"
+               class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">
+                Clientes
+            </a>
+
+            <a href="{{ route('sat.catalogos.conceptos') }}"
+               class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">
+                Catalogos
+            </a>
+
             <a href="{{ route('sat.complementos-pago.index') }}"
-               class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+               class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                 Complementos de pago
             </a>
 
             <a href="{{ route('sat.facturacion.create') }}"
-               class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800">
+               class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
                 <span>+</span>
                 Nueva Factura
             </a>
@@ -31,29 +41,16 @@
     </div>
 
     @if(session('success'))
-        <div class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+        <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
             {{ session('success') }}
         </div>
     @endif
 
     @if(session('error'))
-        <div class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
             {{ session('error') }}
         </div>
     @endif
-
-    {{-- ACCESOS --}}
-    <div class="flex flex-wrap gap-3 mb-6">
-        <a href="{{ route('clientes.index') }}"
-           class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-            Clientes
-        </a>
-
-        <a href="{{ route('sat.catalogos.conceptos') }}"
-           class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-            Catálogos
-        </a>
-    </div>
 
     {{-- KPIS --}}
     @php
@@ -63,45 +60,41 @@
                 'estado' => null,
                 'label' => 'Todas',
                 'count' => $totalFacturas,
-                'color' => 'text-slate-900',
-                'activeCard' => 'border-slate-900 bg-slate-900 ring-2 ring-slate-900 ring-offset-2',
-                'activeLabel' => 'text-slate-200',
-                'activeCount' => 'text-white',
+                'countClass' => 'text-slate-900',
+                'activeClass' => 'border-[#0B265A] bg-[#0B265A] text-white shadow-md',
+                'inactiveClass' => 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
             ],
             [
                 'estado' => 'timbradas',
                 'label' => 'Timbradas',
                 'count' => $timbradas,
-                'color' => 'text-emerald-600',
-                'activeCard' => 'border-emerald-300 bg-emerald-50 ring-2 ring-emerald-200 ring-offset-2',
-                'activeLabel' => 'text-emerald-700',
-                'activeCount' => 'text-emerald-700',
+                'countClass' => 'text-emerald-600',
+                'activeClass' => 'border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm ring-2 ring-emerald-100',
+                'inactiveClass' => 'border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50',
             ],
             [
                 'estado' => 'pendientes',
                 'label' => 'Pendientes',
                 'count' => $pendientes,
-                'color' => 'text-amber-600',
-                'activeCard' => 'border-amber-300 bg-amber-50 ring-2 ring-amber-200 ring-offset-2',
-                'activeLabel' => 'text-amber-700',
-                'activeCount' => 'text-amber-700',
+                'countClass' => 'text-amber-600',
+                'activeClass' => 'border-amber-500 bg-amber-50 text-amber-800 shadow-sm ring-2 ring-amber-100',
+                'inactiveClass' => 'border-amber-200 bg-white text-amber-700 hover:bg-amber-50',
             ],
             [
                 'estado' => 'canceladas',
                 'label' => 'Canceladas',
                 'count' => $canceladas,
-                'color' => 'text-red-600',
-                'activeCard' => 'border-red-300 bg-red-50 ring-2 ring-red-200 ring-offset-2',
-                'activeLabel' => 'text-red-700',
-                'activeCount' => 'text-red-700',
+                'countClass' => 'text-red-600',
+                'activeClass' => 'border-red-500 bg-red-50 text-red-800 shadow-sm ring-2 ring-red-100',
+                'inactiveClass' => 'border-red-200 bg-white text-red-700 hover:bg-red-50',
             ],
         ];
     @endphp
 
-    <div class="grid grid-cols-1 gap-4 mb-6 md:grid-cols-5">
-        <div class="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm">
-            <p class="text-sm text-slate-500">Total facturado</p>
-            <p class="text-2xl font-bold text-slate-900 mt-1">${{ number_format($totalFacturado, 2) }}</p>
+    <div class="mb-3 flex flex-wrap items-center gap-2">
+        <div class="inline-flex min-h-10 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm shadow-sm">
+            <span class="font-medium text-slate-500">Total facturado</span>
+            <span class="font-bold text-slate-900">${{ number_format($totalFacturado, 2) }}</span>
         </div>
 
         @foreach($estadoCards as $card)
@@ -111,19 +104,16 @@
             @endphp
 
             <a href="{{ route('sat.facturacion.index', $queryCard) }}"
-               @class([
-                   'block rounded-2xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2',
-                   'bg-white border-slate-200' => ! $activo,
-                   $card['activeCard'] => $activo,
-               ])>
-                <p class="text-sm {{ $activo ? $card['activeLabel'] : 'text-slate-500' }}">{{ $card['label'] }}</p>
-                <p class="text-2xl font-bold mt-1 {{ $activo ? $card['activeCount'] : $card['color'] }}">{{ $card['count'] }}</p>
+               class="inline-flex min-h-10 items-center gap-3 rounded-xl border px-4 py-2 text-sm font-semibold transition {{ $activo ? $card['activeClass'] : $card['inactiveClass'] }}">
+                <span>{{ $card['label'] }}</span>
+                <span class="text-base font-bold {{ $activo ? '' : $card['countClass'] }}">{{ $card['count'] }}</span>
             </a>
         @endforeach
     </div>
 
+
     {{-- FILTROS --}}
-    <x-filters.card action="{{ route('sat.facturacion.index') }}" class="mb-6">
+    <x-filters.card action="{{ route('sat.facturacion.index') }}" class="mb-4 p-3">
         @if($estadoFiltro)
             <input type="hidden" name="estado" value="{{ $estadoFiltro }}">
         @endif
