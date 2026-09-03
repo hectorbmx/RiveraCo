@@ -370,22 +370,29 @@
                 </a>
                 @endif
 
+                <form method="POST" action="{{ route('logout') }}" class="mt-2 border-t border-white/10 pt-2">
+                    @csrf
+                    <button
+                        type="submit"
+                        class="flex w-full items-center gap-3 px-6 py-3 text-sm font-medium text-white/80 transition hover:bg-red-500/15 hover:text-red-200"
+                        title="Cerrar sesión"
+                    >
+                        <span class="inline-flex h-6 w-6 items-center justify-center text-white/80">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9l3 3m0 0l-3 3m3-3H3" />
+                            </svg>
+                        </span>
+                        <span class="sidebar-text">Cerrar sesión</span>
+                    </button>
+                </form>
+
             </nav>
 
            {{-- FOOTER OPCIONAL --}}
-                <div class="px-6 py-4 text-xs text-white/60 flex items-center justify-between border-t border-white/10">
-                    <span>v2.0</span>
-
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button
-                            type="submit"
-                            class="text-white/70 hover:text-red-400 transition text-xs"
-                            title="Cerrar sesión"
-                        >
-                            Cerrar sesión
-                        </button>
-                    </form>
+                <div class="px-6 py-4 text-xs text-white/60 border-t border-white/10">
+                    <span class="sidebar-text">v2.0</span>
+                    <span class="hidden text-center text-[11px] font-semibold sidebar-version-collapsed">v2.0</span>
                 </div>
 
 
@@ -509,6 +516,7 @@
             if (!sidebar || !toggle) return;
 
             const labels = sidebar.querySelectorAll('.sidebar-text');
+            const collapsedVersions = sidebar.querySelectorAll('.sidebar-version-collapsed');
 
             toggle.addEventListener('click', function () {
                 // Cambiar ancho
@@ -517,6 +525,10 @@
 
                 // Mostrar / ocultar textos
                 labels.forEach(function (el) {
+                    el.classList.toggle('hidden');
+                });
+
+                collapsedVersions.forEach(function (el) {
                     el.classList.toggle('hidden');
                 });
             });
@@ -566,4 +578,7 @@
 
 </body>
 </html>
+
+
+
 
