@@ -6,70 +6,57 @@
 <div class="max-w-8xl mx-auto">
 
     {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
         <div>
             <h1 class="text-2xl font-bold text-[#0B265A]">Empleados</h1>
             <p class="text-sm text-slate-500">
-                Catálogo de personal de Rivera Construcciones.
+                Catalogo de personal de Rivera Construcciones.
             </p>
         </div>
 
-        <div class="flex items-center gap-3">
-            <form action="{{ route('empleados.index') }}" method="GET" class="flex items-center gap-2">
-                <input type="hidden" name="estatus" value="{{ $estatus }}">
-                @if($area)
-                    <input type="hidden" name="area" value="{{ $area }}">
-                @endif
-                <input type="text" name="q" placeholder="Buscar por nombre, área o puesto"
-                       value="{{ $search }}"
-                       class="rounded-xl border-slate-200 text-sm shadow-sm px-3 py-2 focus:border-[#FFC107] focus:ring-[#FFC107]">
-                <button class="px-3 py-2 bg-slate-100 rounded-xl text-xs text-slate-600 hover:bg-slate-200">
-                    Buscar
-                </button>
-            </form>
-   {{-- FILTROS DE ESTATUS --}}
-    <div class="flex gap-2">
-
-        <a href="{{ route('empleados.index', ['estatus' => 'activo']) }}"
-            class="px-3 py-2 text-xs rounded-xl
-            {{ $estatus === 'activo' ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
-            Activos
+        <a href="{{ route('empleados.create') }}"
+           class="bg-[#FFC107] text-[#0B265A] font-semibold px-4 py-2 rounded-xl shadow hover:bg-[#e0ac05] transition">
+            + Nuevo empleado
         </a>
-
-        <a href="{{ route('empleados.index', ['estatus' => 'baja']) }}"
-            class="px-3 py-2 text-xs rounded-xl
-            {{ $estatus === 'baja' ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
-            Baja
-        </a>
-
-        <a href="{{ route('empleados.index', ['estatus' => 'todos']) }}"
-            class="px-3 py-2 text-xs rounded-xl
-            {{ $estatus === 'todos' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
-            Todos
-        </a>
-
     </div>
-            <a href="{{ route('empleados.create') }}"
-               class="px-4 py-2 bg-[#FFC107] text-[#0B265A] text-sm font-semibold rounded-xl shadow hover:bg-[#e0ac05]">
-                + Nuevo empleado
-            </a>
-        </div>
-    </div>
-<div class="flex flex-wrap items-center gap-2 mb-4">
-    <a href="{{ route('empleados.index', array_merge(request()->except('page', 'area'), ['area' => null])) }}"
-       class="px-3 py-1.5 rounded-full text-sm font-medium border transition
-              {{ empty($area) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}">
-        Todas
-    </a>
 
-    @foreach($areas as $item)
-        <a href="{{ route('empleados.index', array_merge(request()->except('page'), ['area' => $item->id])) }}"
-           class="px-3 py-1.5 rounded-full text-sm font-medium border transition
-                  {{ (string)$area === (string)$item->id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}">
-            {{ $item->nombre }}
-        </a>
-    @endforeach
-</div>
+    @php
+        $areaFiltroOpciones = ['' => 'Todas'];
+
+        foreach ($areas as $item) {
+            $areaFiltroOpciones[$item->id] = trim(($item->codigo ? $item->codigo . ' - ' : '') . $item->nombre);
+        }
+    @endphp
+
+    <x-filters.card action="{{ route('empleados.index') }}" class="mb-6">
+        <x-filters.input
+            name="q"
+            label="Buscar"
+            :value="$search ?? ''"
+            placeholder="Nombre, area o puesto..."
+            span="md:col-span-5"
+            type="search"
+            glow />
+
+        <x-filters.select
+            name="estatus"
+            label="Estatus"
+            :value="$estatus ?? 'activo'"
+            :options="['activo' => 'Activos', 'baja' => 'Baja', 'todos' => 'Todos']"
+            span="md:col-span-2 md:max-w-44" />
+
+        <x-filters.select
+            name="area"
+            label="Area"
+            :value="$area ?? ''"
+            :options="$areaFiltroOpciones"
+            span="md:col-span-2 md:max-w-56" />
+
+        <x-filters.actions
+            submit-label="Filtrar"
+            clear-url="{{ route('empleados.index') }}"
+            span="md:col-span-3" />
+    </x-filters.card>
     {{-- Mensaje flash --}}
     @if(session('success'))
         <div class="mb-4 p-3 rounded-lg bg-green-100 text-green-700 text-sm">
@@ -215,3 +202,4 @@
     </div>
 </div>
 @endsection
+

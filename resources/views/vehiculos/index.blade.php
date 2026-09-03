@@ -2,17 +2,33 @@
 
 @section('content')
     <div class="max-w-6xl mx-auto py-8">
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
             <div>
-                <h1 class="text-2xl font-semibold text-slate-800">Vehiculos</h1>
+                <h1 class="text-2xl font-bold text-[#0B265A]">Vehiculos</h1>
                 <p class="text-sm text-slate-500">Catalogo de vehiculos de la empresa.</p>
             </div>
 
             <a href="{{ route('mantenimiento.vehiculos.create') }}"
-               class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+               class="bg-[#FFC107] text-[#0B265A] font-semibold px-4 py-2 rounded-xl shadow hover:bg-[#e0ac05] transition">
                 + Registrar vehiculo
             </a>
         </div>
+
+        <x-filters.card action="{{ route('mantenimiento.vehiculos.index') }}" class="mb-6">
+            <x-filters.input
+                name="search"
+                label="Buscar"
+                :value="$search ?? ''"
+                placeholder="Placas, vehiculo, ano o asignado a..."
+                span="md:col-span-9"
+                type="search"
+                glow />
+
+            <x-filters.actions
+                submit-label="Filtrar"
+                clear-url="{{ route('mantenimiento.vehiculos.index') }}"
+                span="md:col-span-3" />
+        </x-filters.card>
 
         @if(session('success'))
             <div class="mb-4 p-3 bg-green-100 text-green-700 rounded-lg text-sm">

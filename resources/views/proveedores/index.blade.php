@@ -62,50 +62,44 @@
     @endif
 
     {{-- Filtros --}}
-    <div class="bg-white rounded-2xl shadow p-4 mb-4">
-        <form method="GET" action="{{ route('proveedores.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Buscar</label>
-                <input type="text" name="q" value="{{ request('q') }}"
-                       placeholder="Nombre, descripción o RFC"
-                       class="w-full rounded-lg border-slate-300 focus:border-[#0B265A] focus:ring-[#0B265A]" />
-            </div>
+    @php
+        $perPageFiltroOpciones = [];
 
-            <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Estatus</label>
-                <select name="activo"
-                        class="w-full rounded-lg border-slate-300 focus:border-[#0B265A] focus:ring-[#0B265A]">
-                    <option value="">Todos</option>
-                    <option value="1" {{ request('activo') === '1' ? 'selected' : '' }}>Activos</option>
-                    <option value="0" {{ request('activo') === '0' ? 'selected' : '' }}>Inactivos</option>
-                </select>
-            </div>
+        foreach ($perPageOpciones as $opcion) {
+            $perPageFiltroOpciones[$opcion] = $opcion . ' elementos';
+        }
+    @endphp
 
-            <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Mostrar</label>
-                <select name="per_page"
-                        onchange="this.form.submit()"
-                        class="w-full rounded-lg border-slate-300 focus:border-[#0B265A] focus:ring-[#0B265A]">
-                    @foreach($perPageOpciones as $opcion)
-                        <option value="{{ $opcion }}" @selected((int) ($perPage ?? 20) === $opcion)>
-                            {{ $opcion }} elementos
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+    <x-filters.card action="{{ route('proveedores.index') }}" class="mb-4">
+        <x-filters.input
+            name="q"
+            label="Buscar"
+            :value="request('q')"
+            placeholder="Nombre, descripcion o RFC..."
+            span="md:col-span-5"
+            type="search"
+            glow />
 
-            <div class="flex items-end gap-2">
-                <button class="bg-[#FFC107] text-[#0B265A] px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90">
-                    Filtrar
-                </button>
+        <x-filters.select
+            name="activo"
+            label="Estatus"
+            :value="request('activo', '')"
+            :options="['' => 'Todos', '1' => 'Activos', '0' => 'Inactivos']"
+            span="md:col-span-2 md:max-w-44" />
 
-                <a href="{{ route('proveedores.index') }}"
-                   class="px-4 py-2 rounded-lg text-sm font-semibold border border-slate-200 text-slate-600 hover:text-slate-900">
-                    Limpiar
-                </a>
-            </div>
-        </form>
-    </div>
+        <x-filters.select
+            name="per_page"
+            label="Filas"
+            :value="$perPage ?? 20"
+            :options="$perPageFiltroOpciones"
+            span="md:col-span-2 md:max-w-44"
+            onchange="this.form.submit()" />
+
+        <x-filters.actions
+            submit-label="Filtrar"
+            clear-url="{{ route('proveedores.index') }}"
+            span="md:col-span-3" />
+    </x-filters.card>
 
     {{-- Tabla --}}
     <div class="bg-white rounded-2xl shadow overflow-hidden">
@@ -127,7 +121,10 @@
                         <td class="px-4 py-3">{{ $p->id }}</td>
 
                         <td class="px-4 py-3">
-                            <div class="font-semibold text-slate-900">{{ $p->nombre }}</div>
+                            <a href="{{ route('proveedores.show', $p) }}"
+                               class="font-semibold text-[#0B265A] hover:text-blue-700 hover:underline">
+                                {{ $p->nombre }}
+                            </a>
                             @if($p->domicilio)
                                 <div class="text-xs text-slate-500 line-clamp-1">{{ $p->domicilio }}</div>
                             @endif
@@ -151,12 +148,12 @@
                         <td class="px-4 py-3">
                             <div class="flex justify-end gap-3">
                                 <a href="{{ route('proveedores.show', $p) }}"
-                                   class="text-blue-600 hover:underline">
-                                    Abrir
+                                   class="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 hover:text-blue-800 transition">
+                                    Ver
                                 </a>
 
                                 <a href="{{ route('proveedores.edit', $p) }}"
-                                   class="text-slate-600 hover:underline">
+                                   class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition">
                                     Editar
                                 </a>
 
@@ -191,3 +188,5 @@
 
 </div>
 @endsection
+
+

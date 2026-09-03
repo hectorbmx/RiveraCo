@@ -220,9 +220,9 @@
 </div>
 @endif
                 @if($canMenu('giralda.access'))
-<div x-data="{ openGiralda: false }" class="w-full">
+<div x-data="{ openGiralda: {{ request()->routeIs('giralda.*') || request()->routeIs('reposicion-caja-chica.*') || (request()->routeIs('ordenes_compra.*') && request('area_codigo') === 'GL') ? 'true' : 'false' }} }" class="w-full">
     <button @click="openGiralda = !openGiralda"
-        class="w-full flex items-center justify-between gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('giralda.*') ? 'bg-white/10' : '' }}">
+        class="w-full flex items-center justify-between gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('giralda.*') || request()->routeIs('reposicion-caja-chica.*') || (request()->routeIs('ordenes_compra.*') && request('area_codigo') === 'GL') ? 'bg-white/10' : '' }}">
         <div class="flex items-center gap-3">
             <span class="text-lg">GL</span>
             <span class="sidebar-text">GIRALDA</span>
@@ -238,6 +238,7 @@
         <a href="{{ route('giralda.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10">Panel</a>
         <a href="{{ route('giralda.empleados') }}" class="block px-4 py-2 text-sm hover:bg-white/10">Empleados</a>
         <a href="{{ route('ordenes_compra.index', ['area_codigo' => 'GL']) }}" class="block px-4 py-2 text-sm hover:bg-white/10">Ordenes de compra</a>
+        <a href="{{ route('reposicion-caja-chica.index', ['ambito' => 'reposicion_gastos_almacen']) }}" class="block px-4 py-2 text-sm hover:bg-white/10 {{ request()->routeIs('reposicion-caja-chica.*') ? 'bg-white/10' : '' }}">Reposicion caja chica</a>
         @if($canMenu('productos.access'))
         <a href="{{ route('productos.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10">Productos</a>
         @endif
@@ -296,19 +297,7 @@
                     Programación de pagos
                 </span>
             </a>
-            @endif
-                <a href="{{ route('reposicion-caja-chica.index') }}"
-                class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 transition-colors {{ request()->routeIs('reposicion-caja-chica.*') ? 'bg-white/10' : '' }}"
-                title="Reposicion de caja chica">
-
-                    <span class="flex items-center justify-center w-6 text-lg">
-                        $
-                    </span>
-
-                    <span class="sidebar-text">
-                        Reposicion caja chica
-                    </span>
-                </a>
+            <!-- @endif
               @if($canMenu('cajas_chicas.access'))
                 <a href="{{ route('cajas-chicas.index') }}"
                 class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 transition-colors"
@@ -322,7 +311,7 @@
                         Cajas chicas
                     </span>
                 </a>
-            @endif
+            @endif -->
                 <a href="{{ route('ordenes_compra.index') }}"
                 class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10"
                 title="Órdenes de compra">
@@ -577,8 +566,4 @@
 
 </body>
 </html>
-
-
-
-
 

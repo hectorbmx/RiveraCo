@@ -12,8 +12,10 @@ use App\Services\Maquinas\PreventivoMaquinaService;
 class MaquinaController extends Controller
 {
     //
-public function index(PreventivoMaquinaService $preventivoService)
+public function index(Request $request, PreventivoMaquinaService $preventivoService)
 {
+    $search = trim((string) $request->query('search', ''));
+
     // KPIs
     $total = Maquina::count();
 
@@ -30,7 +32,23 @@ public function index(PreventivoMaquinaService $preventivoService)
 
     // Lista
     $maquinas = Maquina::query()
-        ->with(['asignacionActiva.obra:id,nombre']) // ajusta campos si obra usa "Nombre"
+        ->with(['asignacionActiva.obra:id,nombre'])
+        ->when($search !== '', function ($query) use ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('codigo', 'like', "%{$search}%")
+                  ->orWhere('nombre', 'like', "%{$search}%")
+                  ->orWhere('tipo', 'like', "%{$search}%")
+                  ->orWhere('marca', 'like', "%{$search}%")
+                  ->orWhere('modelo', 'like', "%{$search}%")
+                  ->orWhere('numero_serie', 'like', "%{$search}%")
+                  ->orWhere('placas', 'like', "%{$search}%")
+                  ->orWhere('estado', 'like', "%{$search}%")
+                  ->orWhere('ubicacion', 'like', "%{$search}%")
+                  ->orWhereHas('asignacionActiva.obra', function ($obraQuery) use ($search) {
+                      $obraQuery->where('nombre', 'like', "%{$search}%");
+                  });
+            });
+        })
         ->orderBy('nombre')
         ->get();
 
@@ -42,7 +60,8 @@ public function index(PreventivoMaquinaService $preventivoService)
         'total',
         'porUbicacion',
         'asignadas',
-        'preventivos'
+        'preventivos',
+        'search'
     ));
 }
 public function show(Request $request, Maquina $maquina)
@@ -148,3 +167,4 @@ public function toggleServicio(Request $request, Maquina $maquina, MaquinaServic
     }
 }
 }
+

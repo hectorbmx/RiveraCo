@@ -4,32 +4,10 @@
 
 @section('content')
 
-<div class="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
-    <h1 class="text-2xl font-bold text-[#0B265A]">Obras</h1>
-
-    <div class="flex flex-1 w-full md:max-w-md">
-        <form action="{{ route('obras.index') }}" method="GET" class="w-full flex gap-2">
-            <div class="relative flex-1">
-                <input type="text" 
-                       name="search" 
-                       value="{{ $search ?? '' }}"
-                       placeholder="Buscar por nombre, clave o cliente..." 
-                       class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0B265A] focus:border-transparent transition text-sm">
-                <div class="absolute left-3 top-2.5 text-slate-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
-            </div>
-            <button type="submit" class="bg-[#0B265A] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#163a7a] transition">
-                Buscar
-            </button>
-            @if(request('search') || request('status'))
-                <a href="{{ route('obras.index') }}" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-300 transition text-center">
-                    Limpiar
-                </a>
-            @endif
-        </form>
+<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
+    <div>
+        <h1 class="text-2xl font-bold text-[#0B265A]">Obras</h1>
+        <p class="text-sm text-slate-500">Listado general de obras</p>
     </div>
 
     <a href="{{ route('obras.create') }}"
@@ -37,6 +15,41 @@
         + Nueva Obra
     </a>
 </div>
+
+@php
+    $statusFiltroOpciones = ['' => 'Todos'];
+    $availableStatuses = \App\Models\Obra::estatusSlugs();
+    $statusLabels = \App\Models\Obra::estatusLabels();
+
+    foreach ($availableStatuses as $key => $value) {
+        $statusFiltroOpciones[$key] = $statusLabels[$value] ?? $key;
+    }
+@endphp
+
+<x-filters.card action="{{ route('obras.index') }}" class="mb-6">
+    <x-filters.input
+        name="search"
+        label="Buscar"
+        :value="$search ?? ''"
+        placeholder="Nombre, clave o cliente..."
+        span="md:col-span-7"
+        type="search"
+        glow />
+
+    <x-filters.select
+        name="status"
+        label="Estatus"
+        :value="$status ?? ''"
+        :options="$statusFiltroOpciones"
+        span="md:col-span-2 md:max-w-48" />
+
+    <x-filters.actions
+        submit-label="Filtrar"
+        clear-url="{{ route('obras.index') }}"
+        span="md:col-span-3" />
+</x-filters.card>
+{{--
+KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtros.
 
 @if($kpisObras)
     @php
@@ -74,52 +87,7 @@
         </div>
     </div>
 @endif
-
-{{-- FILTROS POR STATUS --}}
-<div class="flex flex-wrap gap-2 mb-6">
-    @php
-        $availableStatuses = [
-            'planeacion' => 'Planeación',
-            'ejecucion'  => 'Ejecución',
-            'suspendida' => 'Suspendida',
-            'terminada'  => 'Terminada',
-            'cancelada'  => 'Cancelada',
-        ];
-        
-        $statusClasses = [
-            'planeacion' => 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100',
-            'ejecucion'  => 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
-            'suspendida' => 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100',
-            'terminada'  => 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100',
-            'cancelada'  => 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100',
-        ];
-
-        $statusActiveClasses = [
-            'planeacion' => 'bg-slate-600 text-white border-slate-600',
-            'ejecucion'  => 'bg-blue-600 text-white border-blue-600',
-            'suspendida' => 'bg-yellow-600 text-white border-yellow-600',
-            'terminada'  => 'bg-green-600 text-white border-green-600',
-            'cancelada'  => 'bg-red-600 text-white border-red-600',
-        ];
-    @endphp
-
-    @php
-        $availableStatuses = \App\Models\Obra::estatusSlugs();
-        $statusLabels = \App\Models\Obra::estatusLabels();
-        $statusClasses = \App\Models\Obra::estatusFilterClasses();
-        $statusActiveClasses = \App\Models\Obra::estatusFilterActiveClasses();
-    @endphp
-
-    <span class="text-sm font-medium text-slate-500 self-center mr-2">Estatus:</span>
-
-    @foreach($availableStatuses as $key => $value)
-        @php $label = $statusLabels[$value] ?? $key; @endphp
-        <a href="{{ route('obras.index', array_merge(request()->query(), ['status' => $key])) }}" 
-           class="px-4 py-1.5 rounded-full text-xs font-semibold border transition {{ (request('status') == $key) ? ($statusActiveClasses[$value] ?? 'bg-blue-600 text-white') : ($statusClasses[$value] ?? 'bg-slate-50 text-slate-700 border-slate-200') }}">
-            {{ $label }}
-        </a>
-    @endforeach
-</div>
+--}}
 
 <div class="bg-white rounded-2xl shadow p-6">
 

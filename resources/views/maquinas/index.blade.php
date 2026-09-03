@@ -47,6 +47,22 @@
         </div>
     </div>
 
+    <x-filters.card action="{{ route('maquinas.index') }}" class="mb-6">
+        <x-filters.input
+            name="search"
+            label="Buscar"
+            :value="$search ?? ''"
+            placeholder="Codigo, nombre, tipo, placas, serie, ubicacion u obra..."
+            span="md:col-span-9"
+            type="search"
+            glow />
+
+        <x-filters.actions
+            submit-label="Filtrar"
+            clear-url="{{ route('maquinas.index') }}"
+            span="md:col-span-3" />
+    </x-filters.card>
+
     {{-- Tabla --}}
     <div class="rounded-xl border bg-white overflow-hidden">
         <div class="px-4 py-3 border-b">
@@ -163,3 +179,4 @@
 
 </div>
 @endsection
+

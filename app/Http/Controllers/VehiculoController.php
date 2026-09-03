@@ -34,13 +34,27 @@ class VehiculoController extends Controller
     //     // return view('vehiculos.index', compact('vehiculos'));
     //     return view ('vehiculos.index', compact('vehiculos'));
     // }
-public function index()
+public function index(Request $request)
 {
+    $search = trim((string) $request->query('search', ''));
+
     $vehiculos = Vehiculo::with([
         'asignacionActual.empleado',
         'seguros',
         'documentoTarjetaCirculacionVigente',
-    ])->orderBy('id', 'desc')->paginate(20);
+    ])->when($search !== '', function ($query) use ($search) {
+        $query->where(function ($q) use ($search) {
+            $q->where('placas', 'like', "%{$search}%")
+              ->orWhere('marca', 'like', "%{$search}%")
+              ->orWhere('modelo', 'like', "%{$search}%")
+              ->orWhere('anio', 'like', "%{$search}%")
+              ->orWhereHas('asignacionActual.empleado', function ($empleadoQuery) use ($search) {
+                  $empleadoQuery->where('Nombre', 'like', "%{$search}%")
+                      ->orWhere('Apellidos', 'like', "%{$search}%")
+                      ->orWhereRaw("CONCAT(Nombre, ' ', Apellidos) LIKE ?", ["%{$search}%"]);
+              });
+        });
+    })->orderBy('id', 'desc')->paginate(20)->withQueryString();
 
     $hoy = Carbon::today();
     $limiteVencimiento = $hoy->copy()->addDays(30);
@@ -117,7 +131,7 @@ public function index()
         return $vehiculo;
     });
 
-    return view('vehiculos.index', compact('vehiculos'));
+    return view('vehiculos.index', compact('vehiculos', 'search'));
 }
 
     /**
@@ -493,3 +507,4 @@ protected function resolverKmInicialAsignacion(Vehiculo $vehiculo, ?VehiculoEmpl
 }
 
 }
+

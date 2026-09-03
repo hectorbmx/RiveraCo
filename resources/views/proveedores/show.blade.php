@@ -13,8 +13,8 @@
             </h1>
             <p class="text-sm text-slate-500">
                 ID: {{ $proveedor->id }}
-                @if($proveedor->rfc) Ã‚Â· RFC: {{ $proveedor->rfc }} @endif
-                Ã‚Â· Estatus:
+                @if($proveedor->rfc) &middot; RFC: {{ $proveedor->rfc }} @endif
+                &middot; Estatus:
                 @if($proveedor->activo)
                     <span class="text-green-600 font-semibold">Activo</span>
                 @else
@@ -25,7 +25,7 @@
 
         <a href="{{ route('proveedores.index') }}"
            class="text-sm text-slate-500 hover:text-slate-800">
-            Ã¢â€ Â Volver al listado
+            &larr; Volver al listado
         </a>
     </div>
 
@@ -35,7 +35,7 @@
             $tabs = [
                 'general'  => 'General',
                 'productos'=> 'Productos',
-                'ordenes'  => 'Ãƒâ€œrdenes',
+                'ordenes'  => 'Ordenes',
                 'facturas' => 'Facturas',
                 'pagado'   => 'Pagado',
                 'seguimiento' => 'Seguimiento',
@@ -212,3 +212,4 @@
 
 </div>
 @endsection
+

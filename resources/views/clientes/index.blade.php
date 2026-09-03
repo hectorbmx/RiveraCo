@@ -5,48 +5,10 @@
 @section('content')
 
 {{-- ENCABEZADO --}}
-<div class="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
-    <h1 class="text-2xl font-bold text-[#0B265A]">Clientes</h1>
-
-    <div class="flex flex-1 w-full md:max-w-4xl">
-        <form action="{{ route('clientes.index') }}" method="GET" class="w-full grid grid-cols-1 md:grid-cols-[1fr_150px_130px_auto_auto] gap-2">
-            <div class="relative flex-1">
-                <input type="text" 
-                       name="search" 
-                       value="{{ $search ?? '' }}"
-                       placeholder="Buscar por nombre, razon social o RFC..." 
-                       class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0B265A] focus:border-transparent transition text-sm">
-                <div class="absolute left-3 top-2.5 text-slate-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
-            </div>
-            <select name="activo"
-                    onchange="this.form.submit()"
-                    class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B265A] focus:border-transparent transition">
-                <option value="todos" @selected(($activo ?? 'todos') === 'todos')>Todos</option>
-                <option value="1" @selected(($activo ?? 'todos') === '1')>Activos</option>
-                <option value="0" @selected(($activo ?? 'todos') === '0')>Inactivos</option>
-            </select>
-            <select name="per_page"
-                    onchange="this.form.submit()"
-                    class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B265A] focus:border-transparent transition">
-                @foreach($perPageOpciones as $opcion)
-                    <option value="{{ $opcion }}" @selected((int) ($perPage ?? 10) === $opcion)>
-                        {{ $opcion }} filas
-                    </option>
-                @endforeach
-            </select>
-            <button type="submit" class="bg-[#0B265A] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#163a7a] transition">
-                Buscar
-            </button>
-            @if(request('search') || request('activo', 'todos') !== 'todos' || (int) request('per_page', 10) !== 10)
-                <a href="{{ route('clientes.index') }}" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-300 transition">
-                    Limpiar
-                </a>
-            @endif
-        </form>
+<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
+    <div>
+        <h1 class="text-2xl font-bold text-[#0B265A]">Clientes</h1>
+        <p class="text-sm text-slate-500">Catalogo general de clientes</p>
     </div>
 
     <a href="{{ route('clientes.create') }}"
@@ -55,7 +17,46 @@
     </a>
 </div>
 
+{{-- FILTROS --}}
+@php
+    $perPageFiltroOpciones = [];
 
+    foreach ($perPageOpciones as $opcion) {
+        $perPageFiltroOpciones[$opcion] = $opcion . ' filas';
+    }
+@endphp
+
+<x-filters.card action="{{ route('clientes.index') }}" class="mb-6">
+    <x-filters.input
+        name="search"
+        label="Buscar"
+        :value="$search ?? ''"
+        placeholder="Nombre comercial, razon social o RFC..."
+        span="md:col-span-5"
+        type="search"
+        glow />
+
+    <x-filters.select
+        name="activo"
+        label="Estatus"
+        :value="$activo ?? 'todos'"
+        :options="['todos' => 'Todos', '1' => 'Activos', '0' => 'Inactivos']"
+        span="md:col-span-2 md:max-w-44"
+        onchange="this.form.submit()" />
+
+    <x-filters.select
+        name="per_page"
+        label="Filas"
+        :value="$perPage ?? 10"
+        :options="$perPageFiltroOpciones"
+        span="md:col-span-2 md:max-w-44"
+        onchange="this.form.submit()" />
+
+    <x-filters.actions
+        submit-label="Filtrar"
+        clear-url="{{ route('clientes.index') }}"
+        span="md:col-span-3" />
+</x-filters.card>
 {{-- TABLA --}}
 <div class="bg-white rounded-2xl shadow p-6">
 
@@ -166,3 +167,4 @@
 </div>
 
 @endsection
+

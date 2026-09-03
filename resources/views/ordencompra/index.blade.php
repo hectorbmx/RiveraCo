@@ -9,69 +9,65 @@
             + Nueva orden
         </a>
     </div>
-
     {{-- BUSCADOR Y FILTROS --}}
-    <div class="bg-white rounded-2xl shadow p-6 mb-6">
-        <form action="{{ route('ordenes_compra.index') }}" method="GET" class="space-y-4">
-            <div class="flex flex-col md:flex-row gap-4">
-                <div class="relative flex-1">
-                    <input type="text" 
-                           name="search" 
-                           value="{{ $search ?? '' }}"
-                           placeholder="Buscar por proveedor, razón social o RFC..." 
-                           class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0B265A] focus:border-transparent transition text-sm">
-                    <div class="absolute left-3 top-2.5 text-slate-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                    </div>
-                </div>
+    @php
+        $areaCodigoActual = strtoupper(trim((string) request('area_codigo')));
+        $estadoFiltroOpciones = [
+            '' => 'Todos',
+            'autorizada' => 'Autorizada',
+            'programada' => 'Programada',
+            'por autorizar' => 'Por autorizar',
+        ];
+        $areaFiltroOpciones = ['' => 'Todas las areas'];
 
-                {{-- Filtro por área --}}
-                <div class="min-w-[200px]">
-                    <select name="area_id"
-                            class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0B265A] focus:border-transparent transition text-sm text-slate-700 bg-white">
-                        <option value="">Todas las áreas</option>
-                        @foreach($areas as $area)
-                            <option value="{{ $area->id }}" {{ request('area_id') == $area->id ? 'selected' : '' }}>
-                                {{ $area->nombre }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+        foreach ($areas as $areaItem) {
+            $areaFiltroOpciones[$areaItem->id] = trim(($areaItem->codigo ? $areaItem->codigo . ' - ' : '') . $areaItem->nombre);
+        }
 
-                <div class="flex gap-2">
-                    <button type="submit" class="bg-[#0B265A] text-white px-6 py-2 rounded-xl text-sm font-semibold hover:bg-[#163a7a] transition">
-                        Buscar
-                    </button>
-                    @if(request('search') || request('estado') || request('area_id'))
-                        <a href="{{ route('ordenes_compra.index') }}" class="bg-slate-200 text-slate-600 px-6 py-2 rounded-xl text-sm font-semibold hover:bg-slate-300 transition text-center">
-                            Limpiar
-                        </a>
-                    @endif
-                </div>
-            </div>
+        $limpiarFiltrosUrl = $areaCodigoActual === 'GL'
+            ? route('ordenes_compra.index', ['area_codigo' => 'GL'])
+            : route('ordenes_compra.index');
+    @endphp
 
-            <div class="flex flex-wrap gap-2">
-                <span class="text-sm font-medium text-slate-500 self-center mr-2">Estados:</span>
-                
-                <a href="{{ route('ordenes_compra.index', array_merge(request()->query(), ['estado' => 'autorizada'])) }}" 
-                   class="px-4 py-1.5 rounded-full text-xs font-semibold border transition {{ (request('estado') == 'autorizada') ? 'bg-green-600 text-white border-green-600' : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' }}">
-                    Autorizada
-                </a>
+    <x-filters.card action="{{ route('ordenes_compra.index') }}" class="mb-6">
+        @if($areaCodigoActual !== '')
+            <input type="hidden" name="area_codigo" value="{{ $areaCodigoActual }}">
+        @endif
 
-                <a href="{{ route('ordenes_compra.index', array_merge(request()->query(), ['estado' => 'programada'])) }}" 
-                   class="px-4 py-1.5 rounded-full text-xs font-semibold border transition {{ (request('estado') == 'programada') ? 'bg-blue-600 text-white border-blue-600' : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' }}">
-                    Programada
-                </a>
+        @if(request('semana'))
+            <input type="hidden" name="semana" value="{{ request('semana') }}">
+        @endif
 
-                <a href="{{ route('ordenes_compra.index', array_merge(request()->query(), ['estado' => 'por autorizar'])) }}" 
-                   class="px-4 py-1.5 rounded-full text-xs font-semibold border transition {{ (request('estado') == 'por autorizar') ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' }}">
-                    Por autorizar
-                </a>
-            </div>
-        </form>
-    </div>
+        <x-filters.input
+            name="search"
+            label="Buscar"
+            :value="$search ?? ''"
+            placeholder="Proveedor, razon social o RFC..."
+            span="{{ $areaCodigoActual === 'GL' ? 'md:col-span-7' : 'md:col-span-5' }}"
+            type="search"
+            glow />
+
+        @if($areaCodigoActual !== 'GL')
+            <x-filters.select
+                name="area_id"
+                label="Area"
+                :value="request('area_id', '')"
+                :options="$areaFiltroOpciones"
+                span="md:col-span-2 md:max-w-56" />
+        @endif
+
+        <x-filters.select
+            name="estado"
+            label="Estado"
+            :value="$estado ?? ''"
+            :options="$estadoFiltroOpciones"
+            span="md:col-span-2 md:max-w-48" />
+
+        <x-filters.actions
+            submit-label="Filtrar"
+            :clear-url="$limpiarFiltrosUrl"
+            span="md:col-span-3" />
+    </x-filters.card>
 @if (request('area_codigo') === 'GL')
     @php
         $filtrosSemana = request()->except([
@@ -517,3 +513,4 @@
     </div>
 </div>
 @endsection
+

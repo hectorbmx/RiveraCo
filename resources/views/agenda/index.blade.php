@@ -52,44 +52,44 @@
         <div class="rounded-lg bg-red-100 p-3 text-sm text-red-700">{{ session('error') }}</div>
     @endif
 
-    <div class="rounded-lg border border-slate-200 bg-white p-4">
-        <form method="GET" action="{{ route('agenda.index') }}" class="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_180px_160px_auto_auto]">
-            <div>
-                <label class="mb-1 block text-xs font-semibold text-slate-600">Buscar</label>
-                <input type="search"
-                       name="q"
-                       value="{{ $search }}"
-                       placeholder="Nombre, puesto, area o telefono"
-                       class="w-full rounded-lg border-slate-300 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
-            </div>
+    @php
+        $perPageFiltroOpciones = [];
 
-            <div>
-                <label class="mb-1 block text-xs font-semibold text-slate-600">Tipo</label>
-                <select name="tipo" class="w-full rounded-lg border-slate-300 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
-                    @foreach($tipoLabels as $value => $label)
-                        <option value="{{ $value }}" @selected($tipo === $value)>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
+        foreach ($perPageOpciones as $opcion) {
+            $perPageFiltroOpciones[$opcion] = $opcion . ' filas';
+        }
+    @endphp
 
-            <div>
-                <label class="mb-1 block text-xs font-semibold text-slate-600">Mostrar</label>
-                <select name="per_page" onchange="this.form.submit()" class="w-full rounded-lg border-slate-300 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
-                    @foreach($perPageOpciones as $opcion)
-                        <option value="{{ $opcion }}" @selected((int) $perPage === $opcion)>{{ $opcion }} filas</option>
-                    @endforeach
-                </select>
-            </div>
+    <x-filters.card action="{{ route('agenda.index') }}">
+        <x-filters.input
+            name="q"
+            label="Buscar"
+            :value="$search"
+            placeholder="Nombre, puesto, area o telefono"
+            span="md:col-span-5"
+            type="search"
+            glow />
 
-            <div class="flex items-end">
-                <button class="w-full rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#12387f]">Buscar</button>
-            </div>
+        <x-filters.select
+            name="tipo"
+            label="Tipo"
+            :value="$tipo"
+            :options="$tipoLabels"
+            span="md:col-span-2 md:max-w-44" />
 
-            <div class="flex items-end">
-                <a href="{{ route('agenda.index') }}" class="w-full rounded-lg border border-slate-300 px-4 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50">Limpiar</a>
-            </div>
-        </form>
-    </div>
+        <x-filters.select
+            name="per_page"
+            label="Filas"
+            :value="$perPage"
+            :options="$perPageFiltroOpciones"
+            span="md:col-span-2 md:max-w-44"
+            onchange="this.form.submit()" />
+
+        <x-filters.actions
+            submit-label="Filtrar"
+            clear-url="{{ route('agenda.index') }}"
+            span="md:col-span-3" />
+    </x-filters.card>
 
     <div class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <div class="overflow-x-auto">
@@ -168,3 +168,4 @@
     </div>
 </div>
 @endsection
+

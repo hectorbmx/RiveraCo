@@ -123,42 +123,25 @@
     </div>
 
     {{-- FILTROS --}}
-    <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <form method="GET" action="{{ route('sat.facturacion.index') }}" class="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
-            <div>
-                <label for="facturacion-search" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Buscar por RFC, cliente u obra
-                </label>
-                <div class="mt-2 flex gap-2">
-                    <input
-                        id="facturacion-search"
-                        name="q"
-                        type="search"
-                        value="{{ $busqueda }}"
-                        placeholder="RFC, cliente u obra"
-                        class="w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    >
-                    @if($estadoFiltro)
-                        <input type="hidden" name="estado" value="{{ $estadoFiltro }}">
-                    @endif
-                </div>
-            </div>
+    <x-filters.card action="{{ route('sat.facturacion.index') }}" class="mb-6">
+        @if($estadoFiltro)
+            <input type="hidden" name="estado" value="{{ $estadoFiltro }}">
+        @endif
 
-            <div class="flex flex-wrap gap-2">
-                <button type="submit"
-                        class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
-                    Buscar
-                </button>
+        <x-filters.input
+            name="q"
+            label="Buscar por RFC, cliente u obra"
+            :value="$busqueda"
+            placeholder="RFC, cliente u obra"
+            span="md:col-span-9"
+            type="search"
+            glow />
 
-                @if($busqueda !== '' || $estadoFiltro)
-                    <a href="{{ route('sat.facturacion.index') }}"
-                       class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                        Limpiar
-                    </a>
-                @endif
-            </div>
-        </form>
-    </div>
+        <x-filters.actions
+            submit-label="Filtrar"
+            clear-url="{{ route('sat.facturacion.index') }}"
+            span="md:col-span-3" />
+    </x-filters.card>
 
     {{-- TABLA --}}
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -354,3 +337,4 @@
 
 </div>
 @endsection
+
