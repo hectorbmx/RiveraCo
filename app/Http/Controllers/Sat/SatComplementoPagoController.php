@@ -20,6 +20,7 @@ class SatComplementoPagoController extends Controller
         $clienteSearch = trim((string) $request->input('cliente'));
         $estado = $request->input('estado');
         $search = trim((string) $request->input('search'));
+        $tab = $request->input('tab') === 'pendientes' ? 'pendientes' : 'registrados';
 
         $pagosQuery = SatFacturaPago::with(['factura.cliente', 'factura.obra', 'pagosInternosObra'])
             ->when($clienteSearch !== '', function ($query) use ($clienteSearch) {
@@ -156,7 +157,8 @@ class SatComplementoPagoController extends Controller
             'fechaHasta',
             'clienteSearch',
             'estado',
-            'search'
+            'search',
+            'tab'
         ));
     }
 
@@ -413,3 +415,5 @@ class SatComplementoPagoController extends Controller
             ->values();
     }
 }
+
+
