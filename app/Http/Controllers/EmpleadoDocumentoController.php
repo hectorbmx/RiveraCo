@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class EmpleadoDocumentoController extends Controller
 {
@@ -16,7 +17,15 @@ class EmpleadoDocumentoController extends Controller
     {
         $data = $request->validate([
             // 'tipo_documento'     => ['required', 'in:' . implode(',', EmpleadoDocumento::TIPOS)],
-            'documento_tipo_id' => ['required', 'exists:empresa_documento_tipos,id'],
+            'documento_tipo_id' => [
+                'required',
+                Rule::exists('empresa_documento_tipos', 'id')
+                    ->where('activo', true)
+                    ->whereIn('aplica_a', [
+                        EmpresaDocumentoTipo::APLICA_EMPLEADO,
+                        EmpresaDocumentoTipo::APLICA_AMBOS,
+                    ]),
+            ],
             'nombre_documento'   => ['nullable', 'string', 'max:255'],
             'fecha_documento'    => ['nullable', 'date'],
             'fecha_vencimiento'  => ['nullable', 'date', 'after_or_equal:fecha_documento'],
@@ -31,7 +40,10 @@ class EmpleadoDocumentoController extends Controller
             'archivo.mimes'              => 'El archivo debe ser PDF, JPG, JPEG, PNG o WEBP.',
             'archivo.max'                => 'El archivo no debe pesar más de 10 MB.',
         ]);
-      $documentoTipo = EmpresaDocumentoTipo::findOrFail($data['documento_tipo_id']);
+      $documentoTipo = EmpresaDocumentoTipo::query()
+          ->activos()
+          ->aplicaAEmpleado()
+          ->findOrFail($data['documento_tipo_id']);
 
 DB::transaction(function () use ($request, $empleado, $data, $documentoTipo) {
 

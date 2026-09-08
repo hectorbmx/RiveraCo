@@ -30,6 +30,7 @@ class OrdenCompra extends Model
         'moneda',
         'fecha',
         'estado',
+        'estado_recepcion',
         'usuario_registro',
         'registrado_por',
         'usuario_autoriza',
@@ -142,6 +143,11 @@ class OrdenCompra extends Model
         )
             ->withPivot(['status', 'created_by', 'metadata'])
             ->withTimestamps();
+    }
+
+    public function huentitanEntradas()
+    {
+        return $this->hasMany(HuentitanEntrada::class, 'orden_compra_id');
     }
 }
 

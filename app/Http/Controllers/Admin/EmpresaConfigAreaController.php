@@ -11,6 +11,29 @@ use Illuminate\Validation\Rule;
 
 class EmpresaConfigAreaController extends Controller
 {
+    public function storeAlmacen(Request $request)
+    {
+        $data = $request->validate([
+            'nombre' => ['required', 'string', 'max:150', 'unique:almacenes,nombre'],
+            'area_id' => ['nullable', 'integer', 'exists:areas,id'],
+        ]);
+
+        $almacen = Almacen::create([
+            'nombre' => trim($data['nombre']),
+            'tipo' => 'general',
+            'area_id' => null,
+            'activo' => true,
+        ]);
+
+        if (! empty($data['area_id'])) {
+            $area = Area::find($data['area_id']);
+            $this->syncAlmacenRelacionado($area, $almacen->id);
+        }
+
+        return redirect()
+            ->route('empresa_config.edit', ['tab' => 'areas'])
+            ->with('success', 'Almacen creado correctamente.');
+    }
     public function store(Request $request)
     {
         $data = $this->validatedData($request, null);

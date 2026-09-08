@@ -7,7 +7,7 @@
     $ambitoFirmaSeleccionado = request('ambito', $ambitoFirma ?? \App\Models\DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN);
     $printQuery = array_merge(request()->query(), ['ambito' => $ambitoFirmaSeleccionado]);
 @endphp
-<div class="max-w-7xl mx-auto space-y-6">
+<div class="max-w-8xl mx-auto space-y-6">
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
             <h1 class="text-2xl font-bold text-[#0B265A]">Reposicion de caja chica</h1>
@@ -22,6 +22,7 @@
         </div>
     </div>
 
+    {{-- KPIs pausados temporalmente
     <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
         <div class="rounded-lg bg-white p-4 shadow-sm border border-slate-200">
             <p class="text-xs font-semibold uppercase text-slate-500">Registrado</p>
@@ -40,64 +41,61 @@
             <p class="mt-1 text-xl font-bold text-amber-700">{{ number_format($stats['pendiente']) }}</p>
         </div>
     </div>
+    --}}
 
-    <form id="reposicion-filtros" method="GET" class="rounded-lg bg-white p-4 shadow-sm border border-slate-200 space-y-4">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-                <p class="text-xs font-semibold uppercase text-slate-500">Semana mostrada</p>
-                <p class="text-sm font-bold text-slate-800">
-                    {{ $fechaInicio->format('d/m/Y') }} al {{ $fechaFin->format('d/m/Y') }}
-                </p>
-            </div>
+    <x-filters.card id="reposicion-filtros" action="{{ route('reposicion-caja-chica.index') }}" class="mb-4 p-3">
+        <x-filters.date
+            name="fecha_inicio"
+            label="Fecha inicio"
+            :value="$fechaInicio->format('Y-m-d')"
+            span="md:col-span-2" />
 
-            <div class="flex flex-wrap items-end gap-3">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha inicio</label>
-                    <input type="date" name="fecha_inicio" value="{{ $fechaInicio->format('Y-m-d') }}" class="rounded-lg border-slate-300 text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha fin</label>
-                    <input type="date" name="fecha_fin" value="{{ $fechaFin->format('Y-m-d') }}" class="rounded-lg border-slate-300 text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Estado</label>
-                    <select name="estado" class="rounded-lg border-slate-300 text-sm">
-                        <option value="">Todos</option>
-                        @foreach(['borrador' => 'Borrador', 'pendiente' => 'Pendiente', 'autorizado' => 'Autorizado', 'autorizado_parcial' => 'Autorizado parcial', 'rechazado' => 'Rechazado'] as $value => $label)
-                            <option value="{{ $value }}" @selected(request('estado') === $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de comprobacion</label>
-                    <select name="categoria_id" class="rounded-lg border-slate-300 text-sm">
-                        <option value="">Todas</option>
-                        @foreach($categorias as $categoria)
-                            <option value="{{ $categoria->id }}" @selected(request('categoria_id') == $categoria->id)>{{ $categoria->nombre }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Destino</label>
-                    <select name="destino" class="rounded-lg border-slate-300 text-sm">
-                        <option value="">Todos</option>
-                        <option value="obra" @selected(request('destino') === 'obra')>Obra</option>
-                        <option value="almacen" @selected(request('destino') === 'almacen')>Almacen</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Firma</label>
-                    <select name="ambito" class="rounded-lg border-slate-300 text-sm">
-                        <option value="{{ \App\Models\DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN }}" @selected($ambitoFirmaSeleccionado === \App\Models\DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN)>Reposicion gastos almacen</option>
-                        <option value="{{ \App\Models\DocumentoFirmante::AMBITO_GIRALDA }}" @selected($ambitoFirmaSeleccionado === \App\Models\DocumentoFirmante::AMBITO_GIRALDA)>Giralda</option>
-                    </select>
-                </div>
-                <button class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Filtrar</button>
-                <a href="{{ route('reposicion-caja-chica.index') }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Limpiar</a>
-            </div>
-        </div>
+        <x-filters.date
+            name="fecha_fin"
+            label="Fecha fin"
+            :value="$fechaFin->format('Y-m-d')"
+            span="md:col-span-2" />
 
-        <div class="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
+        <x-filters.select
+            name="estado"
+            label="Estado"
+            :value="request('estado')"
+            :options="['borrador' => 'Borrador', 'pendiente' => 'Pendiente', 'autorizado' => 'Autorizado', 'autorizado_parcial' => 'Autorizado parcial', 'rechazado' => 'Rechazado']"
+            placeholder="Todos"
+            span="md:col-span-2" />
+
+        <x-filters.select
+            name="categoria_id"
+            label="Tipo de comprobacion"
+            :value="request('categoria_id')"
+            :options="$categorias->pluck('nombre', 'id')->all()"
+            placeholder="Todas"
+            span="md:col-span-2" />
+
+        <x-filters.select
+            name="destino"
+            label="Destino"
+            :value="request('destino')"
+            :options="['obra' => 'Obra', 'almacen' => 'Almacen']"
+            placeholder="Todos"
+            span="md:col-span-1" />
+
+        <x-filters.select
+            name="ambito"
+            label="Firma impresa"
+            :value="$ambitoFirmaSeleccionado"
+            :options="[
+                \App\Models\DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN => 'Reposicion gastos almacen',
+                \App\Models\DocumentoFirmante::AMBITO_GIRALDA => 'Giralda',
+            ]"
+            span="md:col-span-2" />
+
+        <x-filters.actions
+            submit-label="Filtrar"
+            clear-url="{{ route('reposicion-caja-chica.index', ['ambito' => $ambitoFirmaSeleccionado]) }}"
+            span="md:col-span-1" />
+
+        <div class="md:col-span-12 flex flex-wrap justify-end gap-2 border-t border-white/10 pt-3">
             <a href="{{ route('reposicion-caja-chica.index', [
                 'fecha_inicio' => $semanaAnteriorInicio,
                 'fecha_fin' => $semanaAnteriorFin,
@@ -105,15 +103,17 @@
                 'categoria_id' => request('categoria_id'),
                 'destino' => request('destino'),
                 'ambito' => $ambitoFirmaSeleccionado,
-            ]) }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                ← Semana anterior
+                'q' => request('q'),
+            ]) }}" class="rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20">
+                Semana anterior
             </a>
             <a href="{{ route('reposicion-caja-chica.index', [
                 'estado' => request('estado'),
                 'categoria_id' => request('categoria_id'),
                 'destino' => request('destino'),
                 'ambito' => $ambitoFirmaSeleccionado,
-            ]) }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                'q' => request('q'),
+            ]) }}" class="rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20">
                 Semana actual
             </a>
             <a href="{{ route('reposicion-caja-chica.index', [
@@ -123,13 +123,33 @@
                 'categoria_id' => request('categoria_id'),
                 'destino' => request('destino'),
                 'ambito' => $ambitoFirmaSeleccionado,
-            ]) }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                Semana siguiente →
+                'q' => request('q'),
+            ]) }}" class="rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20">
+                Semana siguiente
             </a>
         </div>
-    </form>
+    </x-filters.card>
 
     <div class="overflow-hidden rounded-lg bg-white shadow-sm border border-slate-200">
+        <div class="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <p class="text-xs font-semibold uppercase text-slate-500">Semana mostrada</p>
+                <p class="text-sm font-bold text-slate-800">
+                    {{ $fechaInicio->format('d/m/Y') }} al {{ $fechaFin->format('d/m/Y') }}
+                </p>
+            </div>
+            <div class="w-full lg:max-w-md">
+                <label for="reposicion-q" class="block text-xs font-semibold text-slate-600 mb-1">Buscar</label>
+                <input id="reposicion-q"
+                       form="reposicion-filtros"
+                       type="search"
+                       name="q"
+                       value="{{ request('q') }}"
+                       placeholder="Proveedor, RFC, concepto, UUID, obra o almacen"
+                       class="w-full rounded-xl border border-amber-300 bg-white px-3 py-2 text-sm transition focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-yellow-200"
+                       style="box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.18), 0 0 20px rgba(255, 193, 7, 0.32);">
+            </div>
+        </div>
         <table class="min-w-full text-sm">
             <thead class="bg-slate-50 text-xs uppercase text-slate-500">
                 <tr>
@@ -225,6 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 @endpush
+
+
 
 
 

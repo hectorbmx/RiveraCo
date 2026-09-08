@@ -27,6 +27,10 @@ class StoreOrdenCompraRequest extends FormRequest
         'obra_civil_material_request_items.*.id' => ['required_with:obra_civil_material_request_items', 'integer', 'exists:obra_civil_material_request_items,id'],
         'obra_civil_material_request_items.*.quantity' => ['required_with:obra_civil_material_request_items', 'numeric', 'gt:0'],
         'obra_civil_material_request_items.*.price' => ['nullable', 'numeric', 'min:0'],
+        'huentitan_orden_fabricacion_materiales' => ['nullable', 'array'],
+        'huentitan_orden_fabricacion_materiales.*.id' => ['required_with:huentitan_orden_fabricacion_materiales', 'integer', 'exists:huentitan_orden_fabricacion_materiales,id'],
+        'huentitan_orden_fabricacion_materiales.*.quantity' => ['nullable', 'numeric', 'gt:0'],
+        'huentitan_orden_fabricacion_materiales.*.price' => ['nullable', 'numeric', 'min:0'],
  
         'area_id'              => ['required', 'integer', 'exists:areas,id'],
  

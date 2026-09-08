@@ -62,6 +62,9 @@ use App\Http\Controllers\Nomina\NominaPromedioController;
 use App\Http\Controllers\Inventario\InventarioStockController;
 use App\Http\Controllers\Inventario\InventarioKardexController;
 use App\Http\Controllers\Inventario\InventarioDocumentoController;
+use App\Http\Controllers\Inventario\HuentitanInventarioController;
+use App\Http\Controllers\Inventario\HuentitanEntradaController;
+use App\Http\Controllers\Inventario\HuentitanSalidaController;
 use App\Http\Controllers\Attendance\AttendanceController;
 use App\Http\Controllers\Attendance\AttendanceWebController;
 use App\Http\Controllers\Telephony\TelephonyExtensionController;
@@ -196,42 +199,28 @@ Route::middleware(['auth', 'verified'])
         |--------------------------------------------------------------------------
         */
         Route::prefix('facturacion')->name('facturacion.')->group(function () {
-
             Route::get('/', [SatFacturacionController::class, 'index'])->name('index');
-
             Route::get('/create', [SatFacturacionController::class, 'create'])->name('create');
-
             Route::get('/relacionables', [SatFacturacionController::class, 'relacionables'])->name('relacionables');
-
             Route::post('/preview', [SatFacturacionController::class, 'preview'])->name('preview');
-
             Route::post('/borradores', [SatFacturacionController::class, 'storeBorrador'])->name('borradores.store');
-
             Route::delete('/borradores/{borrador}', [SatFacturacionController::class, 'destroyBorrador'])->name('borradores.destroy');
-
             Route::post('/', [SatFacturacionController::class, 'store'])->name('store');
-
             Route::get('/clientes/{cliente}', [SatFacturacionController::class, 'clienteResumen'])->name('clientes.show');
-
             Route::get('/{factura}', [SatFacturacionController::class, 'show'])->name('show');
             Route::get('/{factura}/xml', [SatFacturacionController::class, 'downloadXml'])->name('xml');
-
             Route::get('/{factura}/pdf', [SatFacturacionController::class, 'downloadPdf'])->name('pdf');
             Route::get('/{factura}/zip', [SatFacturacionController::class, 'downloadZip'])->name('zip')->middleware('signed');
             Route::post('/{factura}/enviar', [SatFacturacionController::class, 'enviar'])->name('enviar');
-
             Route::post('/{factura}/cancelar', [SatFacturacionController::class, 'cancelar'])->name('cancelar');
             Route::post('/{factura}/sincronizar-cancelacion', [SatFacturacionController::class, 'sincronizarCancelacion'])->name('sincronizar-cancelacion');
             Route::get('/{factura}/acuse-cancelacion/{format}', [SatFacturacionController::class, 'acuseCancelacion'])->name('acuse');
-
             Route::post('/{factura}/pagos', [SatFacturaPagoController::class, 'store'])->name('pagos.store');
             Route::get('/pagos/{pago}', [SatFacturaPagoController::class, 'show'])->name('pagos.show');
             Route::get('/pagos/{pago}/xml', [SatFacturaPagoController::class, 'xml'])->name('pagos.xml');
             Route::get('/pagos/{pago}/pdf', [SatFacturaPagoController::class, 'pdf'])->name('pagos.pdf');
             Route::post('/pagos/{pago}/enviar', [SatFacturaPagoController::class, 'enviar'])->name('pagos.enviar');
             Route::post('/pagos/{pago}/cancelar', [SatFacturaPagoController::class, 'cancelar'])->name('pagos.cancelar');
-
-
         });
 
         Route::prefix('complementos-pago')->name('complementos-pago.')->group(function () {
@@ -310,7 +299,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/create', [UsuarioController::class, 'create'])->name('create');
         // buscador empleados legacy (JSON)
         Route::get('/empleados/search', [UsuarioController::class, 'searchEmpleados'])->name('empleados.search');
-
+        Route::get('/exportar', [EmpleadoController::class, 'export'])->name('export');
         Route::post('/', [UsuarioController::class, 'store'])->name('store');
         Route::get('/{usuario}/edit', [UsuarioController::class, 'edit'])->name('edit');
         Route::put('/{usuario}', [UsuarioController::class, 'update'])->name('update');
@@ -392,9 +381,56 @@ Route::middleware('auth','verified')->group(function () {
         Route::get('/attendance/logs/export', [AttendanceWebController::class, 'export'])->name('attendance.logs.export');
         });
 
+    Route::middleware('permission:huentitan.access')
+        ->prefix('huentitan')
+        ->name('huentitan.')
+        ->group(function () {
+            Route::get('/', [HuentitanInventarioController::class, 'dashboard'])->name('index');
+            Route::get('/empleados', [HuentitanInventarioController::class, 'empleados'])->middleware('permission:huentitan.empleados.view')->name('empleados.index');
+            Route::get('/productos', [HuentitanInventarioController::class, 'productos'])->middleware('permission:huentitan.productos.view')->name('productos.index');
+            Route::get('/productos-detalles/{producto}', [HuentitanInventarioController::class, 'productoDetalle'])->middleware('permission:huentitan.productos.view')->name('productos.show');
+            Route::patch('/productos-detalles/{producto}', [HuentitanInventarioController::class, 'actualizarProductoGeneral'])->middleware('permission:huentitan.productos.view')->name('productos.update');
+            Route::patch('/productos-detalles/{producto}/especificaciones', [HuentitanInventarioController::class, 'actualizarProductoEspecificaciones'])->middleware('permission:huentitan.productos.view')->name('productos.especificaciones.update');
+            Route::patch('/productos-detalles/{producto}/formula', [HuentitanInventarioController::class, 'actualizarProductoFormula'])->middleware('permission:huentitan.productos.view')->name('productos.formula.update');
+            Route::get('/productos-detalles/{producto}/formula/materiales-buscar', [HuentitanInventarioController::class, 'buscarMaterialesFormula'])->middleware('permission:huentitan.productos.view')->name('productos.formula-materiales.buscar');
+            Route::post('/productos-detalles/{producto}/formula/materiales', [HuentitanInventarioController::class, 'agregarProductoFormulaMaterial'])->middleware('permission:huentitan.productos.view')->name('productos.formula-materiales.store');
+            Route::delete('/productos-detalles/{producto}/formula/materiales/{material}', [HuentitanInventarioController::class, 'eliminarProductoFormulaMaterial'])->middleware('permission:huentitan.productos.view')->name('productos.formula-materiales.destroy');
+            Route::get('/inventario', [HuentitanInventarioController::class, 'index'])->middleware('permission:huentitan.inventario.view')->name('inventario.index');
+            Route::get('/ordenes-compra', [HuentitanInventarioController::class, 'ordenesCompra'])->middleware('permission:huentitan.ordenes_compra.view')->name('ordenes-compra.index');
+            Route::get('/ordenes-fabricacion/create', [HuentitanInventarioController::class, 'crearOrdenFabricacion'])->middleware('permission:huentitan.ordenes_fabricacion.create')->name('ordenes-fabricacion.create');
+            Route::post('/ordenes-fabricacion', [HuentitanInventarioController::class, 'guardarOrdenFabricacion'])->middleware('permission:huentitan.ordenes_fabricacion.create')->name('ordenes-fabricacion.store');
+            Route::post('/ordenes-fabricacion/{orden}/calcular', [HuentitanInventarioController::class, 'calcularOrdenFabricacion'])->middleware('permission:huentitan.ordenes_fabricacion.create')->name('ordenes-fabricacion.calcular');
+            Route::patch('/ordenes-fabricacion/{orden}/materiales/{material}/compra', [HuentitanInventarioController::class, 'actualizarCompraMaterialOrden'])->middleware('permission:huentitan.ordenes_fabricacion.create')->name('ordenes-fabricacion.materiales.compra');
+            Route::get('/ordenes-fabricacion', [HuentitanInventarioController::class, 'ordenesFabricacion'])->middleware('permission:huentitan.ordenes_fabricacion.view')->name('ordenes-fabricacion.index');
+            Route::get('/ordenes-fabricacion/{orden}', [HuentitanInventarioController::class, 'verOrdenFabricacion'])->middleware('permission:huentitan.ordenes_fabricacion.view')->name('ordenes-fabricacion.show');
+
+            // Entradas HUENTITAN
+            Route::get('/entradas', [HuentitanEntradaController::class, 'index'])->middleware('permission:huentitan.entradas.view')->name('entradas.index');
+            Route::get('/entradas/create', [HuentitanEntradaController::class, 'create'])->middleware('permission:huentitan.entradas.create')->name('entradas.create');
+            Route::post('/entradas', [HuentitanEntradaController::class, 'store'])->middleware('permission:huentitan.entradas.create')->name('entradas.store');
+            Route::get('/entradas/{entrada}', [HuentitanEntradaController::class, 'show'])->middleware('permission:huentitan.entradas.view')->name('entradas.show');
+            Route::post('/entradas/{entrada}/aplicar', [HuentitanEntradaController::class, 'aplicar'])->middleware('permission:huentitan.entradas.apply')->name('entradas.aplicar');
+            Route::post('/entradas/{entrada}/cancelar', [HuentitanEntradaController::class, 'cancelar'])->middleware('permission:huentitan.entradas.apply')->name('entradas.cancelar');
+            Route::get('/entradas-oc-detalles/{ordenCompra}', [HuentitanEntradaController::class, 'ordenCompraDetalles'])->middleware('permission:huentitan.entradas.create')->name('entradas.oc-detalles');
+
+            // Salidas HUENTITAN
+            Route::get('/salidas', [HuentitanSalidaController::class, 'index'])->middleware('permission:huentitan.salidas.view')->name('salidas.index');
+            Route::get('/salidas/create', [HuentitanSalidaController::class, 'create'])->middleware('permission:huentitan.salidas.create')->name('salidas.create');
+            Route::post('/salidas', [HuentitanSalidaController::class, 'store'])->middleware('permission:huentitan.salidas.create')->name('salidas.store');
+            Route::get('/salidas/{salida}', [HuentitanSalidaController::class, 'show'])->middleware('permission:huentitan.salidas.view')->name('salidas.show');
+            Route::post('/salidas/{salida}/aplicar', [HuentitanSalidaController::class, 'aplicar'])->middleware('permission:huentitan.salidas.apply')->name('salidas.aplicar');
+            Route::post('/salidas/{salida}/cancelar', [HuentitanSalidaController::class, 'cancelar'])->middleware('permission:huentitan.salidas.cancel')->name('salidas.cancelar');
+        });
     Route::prefix('inventario')->group(function () {
     // STOCK
     // STOCK
+        Route::middleware('permission:huentitan.access')->group(function () {
+            Route::get('huentitan', fn () => redirect()->route('huentitan.inventario.index'))->name('inventario.huentitan.index');
+            Route::post('huentitan/importar', [HuentitanInventarioController::class, 'importar'])->name('inventario.huentitan.importar');
+            Route::get('huentitan/cortes/{corte}', [HuentitanInventarioController::class, 'show'])->name('inventario.huentitan.cortes.show');
+            Route::patch('huentitan/cortes-detalles/{detalle}', [HuentitanInventarioController::class, 'actualizarDetalle'])->name('inventario.huentitan.detalles.update');
+            Route::post('huentitan/cortes/{corte}/aplicar', [HuentitanInventarioController::class, 'aplicar'])->name('inventario.huentitan.cortes.aplicar');
+        });
         Route::get('stock', [InventarioStockController::class, 'view'])->name('inventario.stock.index');
 
         Route::get('documentos/buscar-proveedor', [InventarioDocumentoController::class, 'buscarProveedor'])->name('inventario.documentos.buscar-proveedor');
@@ -500,6 +536,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::post('/empresa-config/maquinas', [EmpresaConfigMaquinaController::class, 'store'])->name('empresa_config.maquinas.store');
     Route::put('/empresa-config/maquinas/{maquina}', [EmpresaConfigMaquinaController::class, 'update'])->name('empresa_config.maquinas.update');
 
+    Route::post('/empresa-config/almacenes', [EmpresaConfigAreaController::class, 'storeAlmacen'])->name('empresa-config.almacenes.store');
     Route::post('/empresa-config/areas', [EmpresaConfigAreaController::class, 'store'])->name('empresa-config.areas.store');
     Route::patch('/empresa-config/areas/{area}', [EmpresaConfigAreaController::class, 'update'])->name('empresa-config.areas.update');
     Route::patch('/empresa-config/areas/{area}/toggle', [EmpresaConfigAreaController::class, 'toggle'])->name('empresa-config.areas.toggle');
@@ -696,6 +733,7 @@ Route::middleware('auth','verified')->group(function () {
 
     Route::get('ordenes-compra/partidas-obra/{obra_id}', [OrdenCompraController::class, 'partidasPorObra'])->name('ordenes_compra.partidas_obra');
     Route::get('ordenes-compra/solicitudes-material/obra/{obra}', [OrdenCompraController::class, 'solicitudesMaterialAprobadasPorObra'])->name('ordenes_compra.solicitudes_material_obra');
+    Route::get('ordenes-compra/huentitan/materiales-pendientes', [OrdenCompraController::class, 'materialesHuentitanPendientesCompra'])->name('ordenes_compra.huentitan_materiales_pendientes');
     Route::get('ordenes-compra/{orden_compra}/conceptos-civiles/buscar', [OrdenCompraController::class, 'buscarConceptosCivil'])->name('ordenes_compra.conceptos_civiles.buscar');
     Route::get('ordenes-compra/{orden_compra}/insumos-obra/buscar', [OrdenCompraController::class, 'buscarInsumosObra'])->name('ordenes_compra.insumos_obra.buscar');
     Route::get('ordenes-compra/exportar-pagos/{formaPago}',[OrdenCompraController::class, 'exportarListaPagos'])->name('ordenes_compra.exportar_pagos');
@@ -946,10 +984,6 @@ Route::prefix('pagos-proveedores')
 });
 
 require __DIR__.'/auth.php';
-
-
-
-
 
 
 

@@ -52,11 +52,23 @@
             :options="$areaFiltroOpciones"
             span="md:col-span-2 md:max-w-56" />
 
-        <x-filters.actions
-            submit-label="Filtrar"
-            clear-url="{{ route('empleados.index') }}"
-            span="md:col-span-3" />
+        <div class="md:col-span-3 flex items-end gap-2">
+            <x-filters.actions
+                submit-label="Filtrar"
+                clear-url="{{ route('empleados.index') }}"
+                class="flex-1" />
+
+            <a href="{{ route('usuarios.export', request()->query()) }}"
+               title="Exportar a Excel"
+               class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-3 py-2 rounded-xl shadow transition flex items-center gap-1.5 text-xs h-[38px] whitespace-nowrap mb-[2px]">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Excel
+            </a>
+        </div>
     </x-filters.card>
+
     {{-- Mensaje flash --}}
     @if(session('success'))
         <div class="mb-4 p-3 rounded-lg bg-green-100 text-green-700 text-sm">
@@ -90,7 +102,6 @@
                                 {{ $emp->Fecha_ingreso ? $emp->Fecha_ingreso->format('d/m/Y') : '-' }}
                             </span>
                         </td>
-                        <!-- <td class="py-2 px-3">{{ $emp->Area ?? '-' }}</td> -->
                         <td class="py-2 px-3">{{ $emp->areaRef->nombre ?? '-' }}</td>
                         <td class="py-2 px-3">{{ $emp->Puesto ?? '-' }}</td>
                         <td class="py-2 px-3">
@@ -100,45 +111,45 @@
                                 -
                             @endif
                         </td>
-@php
-    $obligatoriosIds = $documentosObligatorios
-        ->pluck('id')
-        ->toArray();
+                        @php
+                            $obligatoriosIds = $documentosObligatorios
+                                ->pluck('id')
+                                ->toArray();
 
-    $documentosUltimosPorTipo = $emp->documentos
-        ->filter(fn($doc) => $doc->documento_tipo_id)
-        ->sortByDesc('created_at')
-        ->unique('documento_tipo_id');
+                            $documentosUltimosPorTipo = $emp->documentos
+                                ->filter(fn($doc) => $doc->documento_tipo_id)
+                                ->sortByDesc('created_at')
+                                ->unique('documento_tipo_id');
 
-    $documentosCargadosIds = $documentosUltimosPorTipo
-        ->pluck('documento_tipo_id')
-        ->unique()
-        ->toArray();
+                            $documentosCargadosIds = $documentosUltimosPorTipo
+                                ->pluck('documento_tipo_id')
+                                ->unique()
+                                ->toArray();
 
-    $totalObligatorios = count($obligatoriosIds);
+                            $totalObligatorios = count($obligatoriosIds);
 
-    $totalCargados = collect($obligatoriosIds)
-        ->filter(fn($id) => in_array($id, $documentosCargadosIds))
-        ->count();
+                            $totalCargados = collect($obligatoriosIds)
+                                ->filter(fn($id) => in_array($id, $documentosCargadosIds))
+                                ->count();
 
-    $porcentajeDocumentos = $totalObligatorios > 0
-        ? round(($totalCargados / $totalObligatorios) * 100)
-        : 0;
+                            $porcentajeDocumentos = $totalObligatorios > 0
+                                ? round(($totalCargados / $totalObligatorios) * 100)
+                                : 0;
 
-    $colorBarra = match (true) {
-        $porcentajeDocumentos >= 100 => 'bg-green-500',
-        $porcentajeDocumentos >= 70 => 'bg-yellow-500',
-        $porcentajeDocumentos >= 40 => 'bg-orange-500',
-        default => 'bg-red-500',
-    };
+                            $colorBarra = match (true) {
+                                $porcentajeDocumentos >= 100 => 'bg-green-500',
+                                $porcentajeDocumentos >= 70 => 'bg-yellow-500',
+                                $porcentajeDocumentos >= 40 => 'bg-orange-500',
+                                default => 'bg-red-500',
+                            };
 
-    $colorTexto = match (true) {
-        $porcentajeDocumentos >= 100 => 'text-green-700',
-        $porcentajeDocumentos >= 70 => 'text-yellow-700',
-        $porcentajeDocumentos >= 40 => 'text-orange-700',
-        default => 'text-red-700',
-    };
-@endphp
+                            $colorTexto = match (true) {
+                                $porcentajeDocumentos >= 100 => 'text-green-700',
+                                $porcentajeDocumentos >= 70 => 'text-yellow-700',
+                                $porcentajeDocumentos >= 40 => 'text-orange-700',
+                                default => 'text-red-700',
+                            };
+                        @endphp
 
                         <td class="py-2 px-3">
                             <div class="w-36">
@@ -153,42 +164,40 @@
 
                                 <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                                     <div class="h-2 {{ $colorBarra }} rounded-full"
-                                        style="width: {{ $porcentajeDocumentos }}%">
+                                         style="width: {{ $porcentajeDocumentos }}%">
                                     </div>
                                 </div>
                             </div>
                         </td>
-                       <td class="py-2 px-3">
+                        <td class="py-2 px-3">
                             @if((int)$emp->Estatus === 2)
                                 <span class="inline-flex px-2 py-1 rounded-full text-xs bg-red-100 text-red-700">Baja</span>
                             @else
                                 <span class="inline-flex px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">Activo</span>
                             @endif
-                            </td>
+                        </td>
                         <td class="py-2 px-3 text-right space-x-2">
                             <a href="{{ route('empleados.edit', ['empleado' => $emp->id_Empleado, 'tab' => 'datos']) }}"
-                            class="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                               class="text-xs text-blue-600 hover:text-blue-800 font-medium">
                                 Expediente
                             </a>
 
+                            <form action="{{ route('empleados.toggle-status', $emp->id_Empleado) }}"
+                                  method="POST"
+                                  class="inline-block"
+                                  onsubmit="return confirm('¿Cambiar estatus de este empleado?')">
+                                @csrf
+                                @method('PATCH')
 
-
-                          <form action="{{ route('empleados.toggle-status', $emp->id_Empleado) }}"
-                                method="POST"
-                                class="inline-block"
-                                onsubmit="return confirm('¿Cambiar estatus de este empleado?')">
-                            @csrf
-                            @method('PATCH')
-
-                            <button class="text-xs text-slate-600 hover:text-slate-900 font-medium">
-                                {{ (int)$emp->Estatus === 2 ? 'Reactivar' : 'Dar de baja' }}
-                            </button>
+                                <button class="text-xs text-slate-600 hover:text-slate-900 font-medium">
+                                    {{ (int)$emp->Estatus === 2 ? 'Reactivar' : 'Dar de baja' }}
+                                </button>
                             </form>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="py-6 text-center text-slate-500">
+                        <td colspan="7" class="py-6 text-center text-slate-500">
                             No hay empleados registrados todavía.
                         </td>
                     </tr>
@@ -202,4 +211,3 @@
     </div>
 </div>
 @endsection
-

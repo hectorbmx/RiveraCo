@@ -1,28 +1,28 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="p-6 max-w-6xl">
-    <h1 class="mb-5 text-2xl font-semibold text-slate-900">Nueva orden de compra</h1>
+<div class="w-full px-5 py-5">
+    <h1 class="mb-4 text-xl font-semibold text-slate-900">Nueva orden de compra</h1>
 
-    <form method="POST" action="{{ route('ordenes_compra.store') }}" class="space-y-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm" data-loading-form data-loading-message="Creando orden de compra...">
+    <form method="POST" action="{{ route('ordenes_compra.store') }}" class="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm" data-loading-form data-loading-message="Creando orden de compra...">
         @csrf
 
-        <div class="flex flex-wrap items-center gap-3">
-            <label class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+        <div class="flex flex-wrap items-center gap-2">
+            <label class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800">
                 <input type="checkbox" name="es_caja_chica" value="1" class="rounded border-amber-300" @checked(old('es_caja_chica'))>
                 Orden de caja chica
             </label>
 
-            <label class="inline-flex items-center gap-2 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-sm font-medium text-purple-800">
+            <label class="inline-flex items-center gap-2 rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-sm font-medium text-purple-800">
                 <input type="checkbox" name="gastos_sin_factura" value="1" class="rounded border-purple-300" @checked(old('gastos_sin_factura'))>
                 Gastos sin factura
             </label>
         </div>
 
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">Área</label>
-                <select name="area_id" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                <select name="area_id" id="area_id" data-huentitan-area-id="{{ $huentitanAreaId ?? '' }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
                     @foreach($areas as $a)
                         <option value="{{ $a->id }}" {{ (old('area_id', $selectedAreaId ?? null) == $a->id) ? 'selected' : '' }}>{{ $a->nombre }}</option>
                     @endforeach
@@ -33,12 +33,21 @@
             <input type="hidden" name="planeacion_gasto_id" id="planeacion_gasto_id" value="{{ old('planeacion_gasto_id') }}">
             <input type="hidden" name="civil_partida_id" id="civil_partida_id" value="{{ old('civil_partida_id') }}">
 
-            <div>
+            <div id="huentitan_origen_field" class="hidden">
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Origen de compra HUENTITAN</label>
+                <select name="huentitan_origen_compra" id="huentitan_origen_compra" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    <option value="stock" @selected(old('huentitan_origen_compra', 'stock') === 'stock')>Stock / almacen</option>
+                    <option value="orden_fabricacion" @selected(old('huentitan_origen_compra') === 'orden_fabricacion')>Orden de fabricacion</option>
+                    <option value="obra" @selected(old('huentitan_origen_compra') === 'obra')>Obra</option>
+                    <option value="salida_obra" @selected(old('huentitan_origen_compra') === 'salida_obra')>Salida a obra</option>
+                </select>
+            </div>
+            <div id="obra_field_wrapper">
                 <label class="block text-sm font-semibold text-slate-700 mb-1">Obra</label>
                 <select
                     name="obra_id"
                     id="obra_id"
-                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400"
+                    class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400"
                     data-partidas-url="{{ route('ordenes_compra.partidas_obra', ['obra_id' => '__ID__']) }}"
                     data-material-requests-url="{{ route('ordenes_compra.solicitudes_material_obra', ['obra' => '__ID__']) }}"
                 >
@@ -62,7 +71,7 @@
                 <input
                     type="text"
                     id="proveedor_busqueda"
-                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                     placeholder="Proveedor opcional si es caja chica / sin factura..."
                     autocomplete="off"
                     value="{{ old('proveedor_texto') }}"
@@ -81,7 +90,7 @@
 
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">Centro de costo</label>
-                <select name="centro_costo_id" id="centro_costo_id" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400">
+                <select name="centro_costo_id" id="centro_costo_id" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400">
                     <option value="">Sin centro de costo</option>
                     @foreach($centrosCosto as $centro)
                         <option value="{{ $centro->id }}" {{ old('centro_costo_id') == $centro->id ? 'selected' : '' }}>
@@ -93,6 +102,56 @@
                 @error('centro_costo_id')
                     <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
                 @enderror
+            </div>
+
+            <div id="huentitan_purchase_wrapper" class="col-span-full hidden rounded-lg border border-blue-100 bg-blue-50/40 p-3 shadow-sm" data-pending-url="{{ route('ordenes_compra.huentitan_materiales_pendientes') }}">
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <div id="huentitan_obra_slot" class="hidden"></div>
+
+                    <div id="huentitan_orden_wrapper" class="hidden">
+                        <label class="block text-sm font-semibold text-slate-800 mb-1">Orden de fabricacion</label>
+                        <select name="huentitan_orden_fabricacion_id" id="huentitan_orden_fabricacion_id" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            <option value="">Selecciona una orden</option>
+                        </select>
+                    </div>
+
+                    <div id="huentitan_salida_wrapper" class="hidden">
+                        <label class="block text-sm font-semibold text-slate-800 mb-1">Salida a obra</label>
+                        <select name="huentitan_salida_id" id="huentitan_salida_id" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            <option value="">Selecciona una salida</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="huentitan_materiales_wrapper" class="mt-4 hidden">
+                    <div class="mb-3 flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-800">Materiales HUENTITAN pendientes de compra</label>
+                            <p class="text-xs text-slate-500">Selecciona solo los renglones que iran con este proveedor. Los renglones seleccionados se cargaran a esta OC y quedaran ligados a su origen.</p>
+                        </div>
+                        <span id="huentitan_materiales_selected_count" class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-blue-700 shadow-sm">0 seleccionados</span>
+                    </div>
+
+                    <p id="huentitan_materiales_cargando" class="hidden text-xs text-slate-400">Cargando materiales marcados...</p>
+                    <p id="huentitan_materiales_sin_datos" class="hidden text-xs text-slate-400">No hay materiales marcados para compra en este origen HUENTITAN.</p>
+
+                    <div id="huentitan_materiales_table_wrapper" class="hidden overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+                                <tr>
+                                    <th class="px-3 py-2 text-left">Usar</th>
+                                    <th class="px-3 py-2 text-left">Codigo</th>
+                                    <th class="px-3 py-2 text-left">Material</th>
+                                    <th class="px-3 py-2 text-right">Requerido</th>
+                                    <th class="px-3 py-2 text-right">Faltante</th>
+                                    <th class="px-3 py-2 text-right">Sugerido</th>
+                                    <th class="px-3 py-2 text-right">Costo est.</th>
+                                </tr>
+                            </thead>
+                            <tbody id="huentitan_materiales_body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <div id="material_request_wrapper" class="col-span-full hidden rounded-lg border border-blue-100 bg-blue-50/40 p-4 shadow-sm">
@@ -143,7 +202,7 @@
                 <select
                     name="_partida_display"
                     id="partida_select"
-                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                 >
                     <option value="">-- Selecciona una partida --</option>
                 </select>
@@ -302,6 +361,304 @@
 })();
 </script>
 
+<script>
+(function () {
+    const areaSelect = document.getElementById('area_id');
+    const obraSelect = document.getElementById('obra_id');
+    const obraFieldWrapper = document.getElementById('obra_field_wrapper');
+    const origenField = document.getElementById('huentitan_origen_field');
+    const huentitanObraSlot = document.getElementById('huentitan_obra_slot');
+    const mainGrid = obraFieldWrapper?.parentElement;
+    const materialRequestWrapper = document.getElementById('material_request_wrapper');
+    const wrapper = document.getElementById('huentitan_purchase_wrapper');
+    const origenSelect = document.getElementById('huentitan_origen_compra');
+    const ordenWrapper = document.getElementById('huentitan_orden_wrapper');
+    const ordenSelect = document.getElementById('huentitan_orden_fabricacion_id');
+    const salidaWrapper = document.getElementById('huentitan_salida_wrapper');
+    const salidaSelect = document.getElementById('huentitan_salida_id');
+    const materialesWrapper = document.getElementById('huentitan_materiales_wrapper');
+    const tableWrapper = document.getElementById('huentitan_materiales_table_wrapper');
+    const body = document.getElementById('huentitan_materiales_body');
+    const msgCargando = document.getElementById('huentitan_materiales_cargando');
+    const msgSinDatos = document.getElementById('huentitan_materiales_sin_datos');
+    const selectedCount = document.getElementById('huentitan_materiales_selected_count');
+
+    if (!areaSelect || !wrapper || !origenSelect || !ordenSelect || !salidaSelect || !body) return;
+
+    const huentitanAreaId = String(areaSelect.dataset.huentitanAreaId || '');
+    const pendingUrl = wrapper.dataset.pendingUrl;
+    let ordenes = [];
+    let salidas = [];
+    let loaded = false;
+
+    function isHuentitanArea() {
+        return huentitanAreaId && String(areaSelect.value) === huentitanAreaId;
+    }
+
+    function numberFmt(value) {
+        return Number(value || 0).toLocaleString('es-MX', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 4
+        });
+    }
+
+    function moneyFmt(value) {
+        return Number(value || 0).toLocaleString('es-MX', {
+            style: 'currency',
+            currency: 'MXN',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 4
+        });
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    function resetMaterials() {
+        body.innerHTML = '';
+        tableWrapper?.classList.add('hidden');
+        msgCargando?.classList.add('hidden');
+        msgSinDatos?.classList.add('hidden');
+        selectedCount.textContent = '0 seleccionados';
+    }
+
+    function currentOriginConfig() {
+        const origin = origenSelect.value;
+
+        if (origin === 'salida_obra') {
+            return {
+                collection: salidas,
+                select: salidaSelect,
+                rowAttr: 'data-huentitan-salida-material-id',
+                namePrefix: 'huentitan_salida_materiales',
+                sourceLabel: (source) => `Salida ${source.folio || '-'}`,
+                emptyText: 'No hay materiales faltantes marcados en esta salida a obra.',
+            };
+        }
+
+        return {
+            collection: ordenes,
+            select: ordenSelect,
+            rowAttr: 'data-huentitan-material-id',
+            namePrefix: 'huentitan_orden_fabricacion_materiales',
+            sourceLabel: (source) => `Orden ${source.folio || '-'}`,
+            emptyText: 'No hay materiales marcados para compra en esta orden de fabricacion.',
+        };
+    }
+
+    function syncSelectedCount() {
+        const config = currentOriginConfig();
+        let index = 0;
+
+        body.querySelectorAll(`tr[${config.rowAttr}]`).forEach((row) => {
+            const checkbox = row.querySelector('.js-huentitan-material-check');
+            const hiddenId = row.querySelector('.js-huentitan-material-id');
+            const quantity = row.querySelector('.js-huentitan-material-quantity');
+            const price = row.querySelector('.js-huentitan-material-price');
+
+            if (!checkbox?.checked) {
+                hiddenId.disabled = true;
+                quantity.disabled = true;
+                price.disabled = true;
+                hiddenId.removeAttribute('name');
+                quantity.removeAttribute('name');
+                price.removeAttribute('name');
+                row.classList.remove('bg-blue-50');
+                return;
+            }
+
+            hiddenId.disabled = false;
+            quantity.disabled = false;
+            price.disabled = false;
+            hiddenId.name = `${config.namePrefix}[${index}][id]`;
+            quantity.name = `${config.namePrefix}[${index}][quantity]`;
+            price.name = `${config.namePrefix}[${index}][price]`;
+            row.classList.add('bg-blue-50');
+            index++;
+        });
+
+        selectedCount.textContent = `${index} seleccionado${index === 1 ? '' : 's'}`;
+    }
+
+    function renderOrdenOptions() {
+        const current = ordenSelect.value;
+        ordenSelect.innerHTML = '<option value="">Selecciona una orden</option>' + ordenes.map((orden) => {
+            const label = `${orden.folio} - ${orden.producto || 'Producto'} (${numberFmt(orden.cantidad_solicitada)} ${orden.unidad || ''})`;
+            return `<option value="${escapeHtml(orden.id)}">${escapeHtml(label)}</option>`;
+        }).join('');
+
+        if (current && ordenes.some((orden) => String(orden.id) === String(current))) {
+            ordenSelect.value = current;
+        }
+    }
+
+    function renderSalidaOptions() {
+        const current = salidaSelect.value;
+        salidaSelect.innerHTML = '<option value="">Selecciona una salida</option>' + salidas.map((salida) => {
+            const label = `${salida.folio} - ${salida.obra || 'Obra'} (${salida.fecha || '-'})`;
+            return `<option value="${escapeHtml(salida.id)}">${escapeHtml(label)}</option>`;
+        }).join('');
+
+        if (current && salidas.some((salida) => String(salida.id) === String(current))) {
+            salidaSelect.value = current;
+        }
+    }
+
+    function currentSource() {
+        const config = currentOriginConfig();
+        return config.collection.find((item) => String(item.id) === String(config.select.value));
+    }
+
+    function renderMaterials() {
+        resetMaterials();
+        const config = currentOriginConfig();
+        const source = currentSource();
+
+        if (!source) return;
+
+        materialesWrapper?.classList.remove('hidden');
+        const materiales = Array.isArray(source.materiales) ? source.materiales : [];
+
+        if (!materiales.length) {
+            if (msgSinDatos) {
+                msgSinDatos.textContent = config.emptyText;
+                msgSinDatos.classList.remove('hidden');
+            }
+            return;
+        }
+
+        tableWrapper?.classList.remove('hidden');
+        body.innerHTML = materiales.map((material) => `
+            <tr ${config.rowAttr}="${escapeHtml(material.id || '')}">
+                <td class="px-3 py-3 align-top">
+                    <input type="checkbox" class="js-huentitan-material-check rounded border-slate-300">
+                    <input type="hidden" class="js-huentitan-material-id" value="${escapeHtml(material.id || '')}" disabled>
+                    <input type="hidden" class="js-huentitan-material-quantity" value="${Number(material.cantidad_sugerida || material.faltante || material.cantidad_requerida || 0).toFixed(4)}" disabled>
+                    <input type="hidden" class="js-huentitan-material-price" value="${Number(material.costo_unitario_estimado || 0).toFixed(4)}" disabled>
+                </td>
+                <td class="px-3 py-3 align-top font-semibold text-blue-700">${escapeHtml(material.codigo || '-')}</td>
+                <td class="px-3 py-3 align-top">
+                    <div class="font-medium text-slate-800">${escapeHtml(material.material || 'Material')}</div>
+                    <div class="text-xs text-slate-400">${escapeHtml(config.sourceLabel(source))}</div>
+                </td>
+                <td class="px-3 py-3 text-right align-top">${numberFmt(material.cantidad_requerida)}<div class="text-xs text-slate-400">${escapeHtml(material.unidad || '')}</div></td>
+                <td class="px-3 py-3 text-right align-top font-semibold text-amber-700">${numberFmt(material.faltante)}<div class="text-xs text-slate-400">${escapeHtml(material.unidad || '')}</div></td>
+                <td class="px-3 py-3 text-right align-top font-semibold text-emerald-700">${numberFmt(material.cantidad_sugerida)}<div class="text-xs text-slate-400">${escapeHtml(material.unidad || '')}</div></td>
+                <td class="px-3 py-3 text-right align-top">${moneyFmt(material.costo_unitario_estimado)}</td>
+            </tr>
+        `).join('');
+
+        body.querySelectorAll('.js-huentitan-material-check').forEach((checkbox) => {
+            checkbox.addEventListener('change', syncSelectedCount);
+        });
+        syncSelectedCount();
+    }
+
+    async function loadPendientes() {
+        if (loaded || !pendingUrl) return;
+
+        resetMaterials();
+        materialesWrapper?.classList.remove('hidden');
+        msgCargando?.classList.remove('hidden');
+
+        try {
+            const res = await fetch(pendingUrl, { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const payload = await res.json();
+            ordenes = Array.isArray(payload.data) ? payload.data : [];
+            salidas = Array.isArray(payload.salidas_obra) ? payload.salidas_obra : [];
+            loaded = true;
+            msgCargando?.classList.add('hidden');
+            renderOrdenOptions();
+            renderSalidaOptions();
+            renderMaterials();
+        } catch (error) {
+            msgCargando?.classList.add('hidden');
+            msgSinDatos?.classList.remove('hidden');
+            console.error('Error cargando materiales HUENTITAN:', error);
+        }
+    }
+
+    function moveObraToMainGrid() {
+        if (!obraFieldWrapper || !mainGrid || !origenField) return;
+        if (obraFieldWrapper.parentElement !== mainGrid) {
+            mainGrid.insertBefore(obraFieldWrapper, origenField.nextSibling);
+        }
+    }
+
+    function moveObraToHuentitanSlot() {
+        if (!obraFieldWrapper || !huentitanObraSlot) return;
+        if (obraFieldWrapper.parentElement !== huentitanObraSlot) {
+            huentitanObraSlot.appendChild(obraFieldWrapper);
+        }
+    }
+
+    function syncHuentitanUi() {
+        const active = isHuentitanArea();
+        wrapper.classList.toggle('hidden', !active);
+        origenField?.classList.toggle('hidden', !active);
+
+        if (!active) {
+            moveObraToMainGrid();
+            obraFieldWrapper?.classList.remove('hidden');
+            huentitanObraSlot?.classList.add('hidden');
+            ordenWrapper?.classList.add('hidden');
+            salidaWrapper?.classList.add('hidden');
+            materialesWrapper?.classList.add('hidden');
+            resetMaterials();
+            return;
+        }
+
+        const origin = origenSelect.value;
+        const fromProduction = origin === 'orden_fabricacion';
+        const fromSalida = origin === 'salida_obra';
+        const toWork = origin === 'obra';
+
+        if (toWork) {
+            moveObraToHuentitanSlot();
+        } else {
+            moveObraToMainGrid();
+        }
+
+        obraFieldWrapper?.classList.toggle('hidden', !toWork);
+        huentitanObraSlot?.classList.toggle('hidden', !toWork);
+        ordenWrapper?.classList.toggle('hidden', !fromProduction);
+        salidaWrapper?.classList.toggle('hidden', !fromSalida);
+        materialesWrapper?.classList.toggle('hidden', !(fromProduction || fromSalida));
+
+        if (!toWork && obraSelect) {
+            obraSelect.value = '';
+            materialRequestWrapper?.classList.add('hidden');
+        }
+
+        if (fromProduction || fromSalida) {
+            loadPendientes();
+        } else {
+            ordenSelect.value = '';
+            salidaSelect.value = '';
+            resetMaterials();
+        }
+    }
+
+    areaSelect.addEventListener('change', syncHuentitanUi);
+    origenSelect.addEventListener('change', () => {
+        ordenSelect.value = '';
+        salidaSelect.value = '';
+        resetMaterials();
+        syncHuentitanUi();
+    });
+    ordenSelect.addEventListener('change', renderMaterials);
+    salidaSelect.addEventListener('change', renderMaterials);
+
+    syncHuentitanUi();
+})();
+</script>
 <script>
 (function () {
     const obraSelect = document.getElementById('obra_id');
@@ -571,12 +928,12 @@
 
             <div>
                 <label>Fecha</label>
-                <input type="date" name="fecha" class="w-full border p-2" value="{{ date('Y-m-d') }}">
+                <input type="date" name="fecha" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value="{{ date('Y-m-d') }}">
             </div>
 
             <div>
                 <label class="block text-sm font-medium mb-1">Moneda</label>
-                <select name="moneda" id="moneda_select" class="w-full border p-2 rounded">
+                <select name="moneda" id="moneda_select" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                     <option value="MXN" @selected(old('moneda', 'MXN') === 'MXN')>MXN (Pesos)</option>
                     <option value="USD" @selected(old('moneda') === 'USD')>USD (Dólares)</option>
                     <option value="EUR" @selected(old('moneda') === 'EUR')>EUR (Euros)</option>
@@ -587,7 +944,7 @@
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">IVA base (%)</label>
-                <select name="iva" class="w-full border p-2 rounded">
+                <select name="iva" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                     @foreach($tiposIva as $tipo)
                         <option value="{{ (float) $tipo->porcentaje }}" @selected(old('iva', $tipo->default ? $tipo->porcentaje : null) == $tipo->porcentaje)>
                             {{ $tipo->nombre }} ({{ number_format((float) $tipo->porcentaje, 2) }}%)
@@ -600,7 +957,7 @@
                 <label class="block text-sm font-medium mb-1">
                     Tipo de cambio <span id="tc_required_label" class="text-xs text-red-600 font-bold {{ old('moneda', 'MXN') === 'MXN' ? 'hidden' : '' }}">* (Obligatorio para USD/EUR)</span>
                 </label>
-                <input type="number" step="0.0001" min="0.0001" name="tipo_cambio" id="tipo_cambio_input" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" value="{{ old('tipo_cambio', old('moneda', 'MXN') === 'MXN' ? '1' : '') }}" placeholder="Ej. 18.50">
+                <input type="number" step="0.0001" min="0.0001" name="tipo_cambio" id="tipo_cambio_input" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" value="{{ old('tipo_cambio', old('moneda', 'MXN') === 'MXN' ? '1' : '') }}" placeholder="Ej. 18.50">
                 @error('tipo_cambio')
                     <p class="text-sm text-red-600 mt-1 font-medium">{{ $message }}</p>
                 @enderror
@@ -608,7 +965,7 @@
 
             <div>
                 <label>Tipo de pago</label>
-                <select name="tipo_pago" class="w-full border p-2">
+                <select name="tipo_pago" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                     <option value="">Selecciona metodo</option>
                     <option value="PUE">PUE - Pago en una sola exhibicion</option>
                     <option value="PPD">PPD - Pago en parcialidades o diferido</option>
@@ -617,7 +974,7 @@
 
             <div>
                 <label>Forma de pago</label>
-                <select name="forma_pago" class="w-full border p-2">
+                <select name="forma_pago" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                     <option value="">Selecciona forma</option>
                     <option value="01">01 - Efectivo</option>
                     <option value="02">02 - Cheque nominativo</option>
@@ -629,7 +986,7 @@
             </div>
         </div>
 
-        <button class="rounded-lg bg-blue-600 px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200">
+        <button class="rounded-md bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200">
             Crear orden
         </button>
     </form>
@@ -857,4 +1214,7 @@
 })();
 </script>
 @endpush
+
+
+
 

@@ -622,6 +622,20 @@ class ReposicionCajaChicaController extends Controller
         return ReposicionCajaChicaGasto::query()
             ->with(['categoria', 'subcategoria', 'obra', 'almacen', 'solicitadoPor'])
             ->whereBetween('created_at', [$fechaInicio, $fechaFin])
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $q = trim((string) $request->q);
+
+                $query->where(function ($searchQuery) use ($q) {
+                    $searchQuery
+                        ->where('proveedor_nombre', 'like', "%{$q}%")
+                        ->orWhere('proveedor_rfc', 'like', "%{$q}%")
+                        ->orWhere('concepto', 'like', "%{$q}%")
+                        ->orWhere('uuid', 'like', "%{$q}%")
+                        ->orWhere('id', $q)
+                        ->orWhereHas('obra', fn ($obraQuery) => $obraQuery->where('nombre', 'like', "%{$q}%"))
+                        ->orWhereHas('almacen', fn ($almacenQuery) => $almacenQuery->where('nombre', 'like', "%{$q}%"));
+                });
+            })
             ->when($request->filled('estado'), fn ($query) => $query->where('estado_autorizacion', $request->estado))
             ->when($request->filled('categoria_id'), fn ($query) => $query->where('categoria_id', $request->categoria_id))
             ->when($request->filled('destino'), fn ($query) => $query->where('destino', $request->destino));
@@ -663,6 +677,7 @@ class ReposicionCajaChicaController extends Controller
         ];
     }
 }
+
 
 
 

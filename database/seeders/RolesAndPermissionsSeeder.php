@@ -59,6 +59,19 @@ class RolesAndPermissionsSeeder extends Seeder
             'nomina.corridas.reopen.access',
             'nomina.corridas.delete.access',
 
+            // Huentitan
+            'huentitan.access',
+            'huentitan.ordenes_fabricacion.create',
+            'huentitan.entradas.view',
+            'huentitan.entradas.create',
+            'huentitan.entradas.apply',
+            'huentitan.entradas.cancel',
+            'huentitan.salidas.view',
+            'huentitan.salidas.create',
+            'huentitan.salidas.apply',
+            'huentitan.salidas.cancel',
+
+
             // Reposicion de caja chica
             'caja_chica.view',
             'caja_chica.create',
@@ -86,6 +99,13 @@ class RolesAndPermissionsSeeder extends Seeder
         $jefe  = Role::firstOrCreate(['name' => 'jefe-obra', 'guard_name' => 'web']);
         $sup   = Role::firstOrCreate(['name' => 'supervisor-obra', 'guard_name' => 'web']);
         $cons  = Role::firstOrCreate(['name' => 'consulta', 'guard_name' => 'web']);
+
+        $huentitanGerenteAlmacen = Role::firstOrCreate(['name' => 'huentitan-gerente-almacen', 'guard_name' => 'web']);
+        $huentitanGerenteAdministrativo = Role::firstOrCreate(['name' => 'huentitan-gerente-administrativo', 'guard_name' => 'web']);
+        $huentitanEncargadoAlmacen = Role::firstOrCreate(['name' => 'huentitan-encargado-almacen', 'guard_name' => 'web']);
+        $huentitanAuxiliarAlmacen = Role::firstOrCreate(['name' => 'huentitan-auxiliar-almacen', 'guard_name' => 'web']);
+        $huentitanProduccionAlmacen = Role::firstOrCreate(['name' => 'huentitan-produccion-almacen', 'guard_name' => 'web']);
+        $huentitanConsultaAlmacen = Role::firstOrCreate(['name' => 'huentitan-consulta-almacen', 'guard_name' => 'web']);
 
         // Super admin: todos los permisos
         $super->syncPermissions(Permission::all());
@@ -173,6 +193,67 @@ class RolesAndPermissionsSeeder extends Seeder
             'clientes.view',
             'obras.view',
         ]);
+
+        $huentitanViewPermissions = [
+            'huentitan.access',
+            'huentitan.empleados.view',
+            'huentitan.productos.view',
+            'huentitan.inventario.view',
+            'huentitan.ordenes_compra.view',
+            'huentitan.ordenes_fabricacion.view',
+            'huentitan.entradas.view',
+            'huentitan.entradas.create',
+            'huentitan.entradas.apply',
+            'huentitan.entradas.cancel',
+            'huentitan.salidas.view',
+            'huentitan.salidas.create',
+            'huentitan.salidas.apply',
+            'huentitan.salidas.cancel',
+        ];
+
+        $huentitanGerenteAlmacen->syncPermissions($huentitanViewPermissions);
+        $huentitanGerenteAdministrativo->syncPermissions($huentitanViewPermissions);
+        $huentitanEncargadoAlmacen->syncPermissions([
+            'huentitan.access',
+            'huentitan.empleados.view',
+            'huentitan.productos.view',
+            'huentitan.inventario.view',
+            'huentitan.ordenes_fabricacion.view',
+            'huentitan.entradas.view',
+            'huentitan.entradas.create',
+            'huentitan.entradas.apply',
+            'huentitan.entradas.cancel',
+            'huentitan.salidas.view',
+            'huentitan.salidas.create',
+            'huentitan.salidas.apply',
+            'huentitan.salidas.cancel',
+        ]);
+        $huentitanAuxiliarAlmacen->syncPermissions([
+            'huentitan.access',
+            'huentitan.productos.view',
+            'huentitan.inventario.view',
+            'huentitan.entradas.view',
+            'huentitan.entradas.create',
+            'huentitan.salidas.view',
+            'huentitan.salidas.create',
+        ]);
+
+        $huentitanProduccionAlmacen->syncPermissions([
+            'huentitan.access',
+            'huentitan.productos.view',
+            'huentitan.ordenes_fabricacion.view',
+        ]);
+        $huentitanConsultaAlmacen->syncPermissions([
+            'huentitan.access',
+            'huentitan.empleados.view',
+            'huentitan.productos.view',
+            'huentitan.inventario.view',
+            'huentitan.salidas.view',
+        ]);
     }
 }
+
+
+
+
 

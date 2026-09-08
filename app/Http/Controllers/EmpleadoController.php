@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Exports\EmpleadosExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class EmpleadoController extends Controller
 {
@@ -230,9 +232,9 @@ if ($tab === 'documentos') {
 
     $documentosTipos = EmpresaDocumentoTipo::query()
         ->where('empresa_config_id', $empresa->id)
-        ->where('activo', true)
-        ->orderBy('orden')
-        ->orderBy('nombre')
+        ->activos()
+        ->aplicaAEmpleado()
+        ->ordenados()
         ->get();
 }
 
@@ -400,4 +402,21 @@ if ($tab === 'epp') {
             'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
     }
+    public function export(Request $request)
+{
+    $search  = $request->get('q');
+    $estatus = $request->get('estatus', 'activo');
+    $estatus = in_array($estatus, ['activo', 'baja', 'todos'], true) ? $estatus : 'activo';
+    $area    = $request->get('area');
+    $areaCodigo = $request->get('area_codigo');
+
+    if ($areaCodigo && !$area) {
+        $area = Area::where('codigo', $areaCodigo)->value('id');
+    }
+
+    $fileName = 'empleados_' . now()->format('Y_m_d_His') . '.xlsx';
+
+    return Excel::download(new EmpleadosExport($search, $estatus, $area), $fileName);
 }
+}
+

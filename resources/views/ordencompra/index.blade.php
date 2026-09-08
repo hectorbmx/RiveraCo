@@ -4,7 +4,7 @@
 <div class="p-6">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h1 class="text-2xl font-bold text-[#0B265A]">Órdenes de compra</h1>
-        <a href="{{ route('ordenes_compra.create') }}"
+        <a href="{{ route('ordenes_compra.create', request('area_codigo') ? ['area_codigo' => request('area_codigo')] : []) }}"
            class="bg-[#FFC107] text-[#0B265A] font-semibold px-4 py-2 rounded-xl shadow hover:bg-[#e0ac05] transition">
             + Nueva orden
         </a>
@@ -24,8 +24,8 @@
             $areaFiltroOpciones[$areaItem->id] = trim(($areaItem->codigo ? $areaItem->codigo . ' - ' : '') . $areaItem->nombre);
         }
 
-        $limpiarFiltrosUrl = $areaCodigoActual === 'GL'
-            ? route('ordenes_compra.index', ['area_codigo' => 'GL'])
+        $limpiarFiltrosUrl = in_array($areaCodigoActual, ['GL', 'HT'], true)
+            ? route('ordenes_compra.index', ['area_codigo' => $areaCodigoActual])
             : route('ordenes_compra.index');
     @endphp
 
@@ -513,4 +513,5 @@
     </div>
 </div>
 @endsection
+
 

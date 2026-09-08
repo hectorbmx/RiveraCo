@@ -209,6 +209,20 @@ class EmpresaSecurityController extends Controller
         'proveedores.access',
         'reportes.access',
         'empresa.access',
+        'huentitan.access',
+        'huentitan.empleados.view',
+        'huentitan.productos.view',
+        'huentitan.inventario.view',
+        'huentitan.ordenes_compra.view',
+        'huentitan.ordenes_fabricacion.view',
+        'huentitan.entradas.view',
+        'huentitan.entradas.create',
+        'huentitan.entradas.apply',
+        'huentitan.entradas.cancel',
+        'huentitan.salidas.view',
+        'huentitan.salidas.create',
+        'huentitan.salidas.apply',
+        'huentitan.salidas.cancel',
         'usuarios_app.access',
     ];
 
@@ -224,3 +238,5 @@ class EmpresaSecurityController extends Controller
     return $this->backToTab('permisos')->with('ok', 'Permisos base generados.');
 }
 }
+
+

@@ -1858,6 +1858,33 @@ function listasRayaTab() {
         </button>
     </div>
 
+    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+        <h3 class="text-sm font-semibold text-slate-900 mb-4">Nuevo almacen</h3>
+        <form method="POST" action="{{ route('empresa-config.almacenes.store') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            @csrf
+
+            <div>
+                <label class="block text-xs text-slate-600 mb-1">Nombre del almacen</label>
+                <input type="text" name="nombre" class="w-full rounded-xl border-slate-300 focus:ring-0 focus:border-slate-500" placeholder="Ej: AL-GIRALDA" required>
+            </div>
+
+            <div>
+                <label class="block text-xs text-slate-600 mb-1">Area relacionada</label>
+                <select name="area_id" class="w-full rounded-xl border-slate-300 focus:ring-0 focus:border-slate-500">
+                    <option value="">Sin area por ahora</option>
+                    @foreach($areas as $area)
+                        <option value="{{ $area->id }}">{{ $area->codigo }} - {{ $area->nombre }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="flex md:justify-end">
+                <button type="submit" class="px-4 py-2 rounded-xl text-sm bg-gray-900 text-white hover:bg-gray-800">
+                    Guardar almacen
+                </button>
+            </div>
+        </form>
+    </div>
     {{-- Tabla --}}
     <div class="bg-white border rounded-2xl overflow-hidden">
         <div class="overflow-x-auto">

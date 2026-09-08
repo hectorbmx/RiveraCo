@@ -11,6 +11,7 @@ class Almacen extends Model
     protected $table = 'almacenes';
 
     protected $fillable = [
+        'codigo',
         'nombre',
         'tipo',      // general | obra
         'obra_id',   // nullable (futuro)
@@ -45,7 +46,11 @@ class Almacen extends Model
         return $this->belongsTo(Area::class, 'area_id');
     }
 
-    // Futuro:
-    // public function obra(): BelongsTo { ... }  // si después amarras obra_id con FK
+    public function huentitanEntradas(): HasMany
+    {
+        return $this->hasMany(HuentitanEntrada::class, 'almacen_id');
+    }
 }
+
+
 

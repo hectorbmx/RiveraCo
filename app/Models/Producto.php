@@ -19,8 +19,11 @@ class Producto extends Model
 
     // inventario (si existen en tabla)
     'tipo_inventario',
+    'requiere_formula',
+    'origen_abastecimiento',
     'stock_minimo',
     'punto_reorden',
+    'especificaciones_tecnicas',
     'iva_default',
     'activo',
 
@@ -33,7 +36,9 @@ class Producto extends Model
 
     protected $casts = [
         'activo' => 'boolean',
+        'requiere_formula' => 'boolean',
         'iva_default' => 'decimal:2',
+        'especificaciones_tecnicas' => 'array',
     ];
 
     // “Aliases” para adaptarse al diseño nuevo
@@ -95,6 +100,20 @@ class Producto extends Model
 public function inventarioStocks()
 {
     return $this->hasMany(\App\Models\InventarioStock::class, 'producto_id');
+}
+public function huentitanFormula()
+{
+    return $this->hasOne(\App\Models\HuentitanFormula::class, 'producto_id');
+}
+
+public function usadoEnFormulasHuentitan()
+{
+    return $this->hasMany(\App\Models\HuentitanFormulaMaterial::class, 'material_producto_id');
+}
+
+public function huentitanEntradaDetalles()
+{
+    return $this->hasMany(\App\Models\HuentitanEntradaDetalle::class, 'producto_id');
 }
 
 }

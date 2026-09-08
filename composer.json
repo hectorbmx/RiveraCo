@@ -13,6 +13,7 @@
         "laravel/framework": "^10.10",
         "laravel/sanctum": "*",
         "laravel/tinker": "^2.8",
+        "maatwebsite/excel": "^3.1",
         "phpcfdi/csf-sat-scraper": "^0.1.0",
         "phpcfdi/opinion-cumplimiento-sat-scraper": "0.1.1",
         "phpcfdi/sat-ws-descarga-masiva": "^1.1",

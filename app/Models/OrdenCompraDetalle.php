@@ -33,10 +33,13 @@ class OrdenCompraDetalle extends Model
     'obra_civil_insumo_id',
     'obra_civil_insumo_snapshot',
     'obra_civil_material_request_item_id',
+    'huentitan_orden_fabricacion_material_id',
+    'huentitan_salida_detalle_id',
     'legacy_prod_id',
     'descripcion',
     'unidad',
     'cantidad',
+    'cantidad_recibida',
     'precio_unitario',
     'precio_tope',
     'sobreprecio_autorizado_por',
@@ -57,6 +60,7 @@ class OrdenCompraDetalle extends Model
 
     protected $casts = [
         'cantidad' => 'decimal:3',
+        'cantidad_recibida' => 'decimal:3',
         'precio_unitario' => 'decimal:4',
         'precio_tope' => 'decimal:4',
         'sobreprecio_autorizado_por' => 'integer',
@@ -73,6 +77,8 @@ class OrdenCompraDetalle extends Model
         'obra_civil_insumo_id' => 'integer',
         'obra_civil_insumo_snapshot' => 'array',
         'obra_civil_material_request_item_id' => 'integer',
+        'huentitan_orden_fabricacion_material_id' => 'integer',
+        'huentitan_salida_detalle_id' => 'integer',
         'tipo_retencion_id' => 'integer',
         'retencion_porcentaje' => 'decimal:4',
     ];
@@ -107,4 +113,28 @@ class OrdenCompraDetalle extends Model
     {
         return $this->belongsTo(ObraCivilMaterialRequestItem::class, 'obra_civil_material_request_item_id');
     }
+
+    public function huentitanSalidaDetalle()
+    {
+        return $this->belongsTo(HuentitanSalidaDetalle::class, 'huentitan_salida_detalle_id');
+    }
+
+    public function huentitanOrdenFabricacionMaterial()
+    {
+        return $this->belongsTo(HuentitanOrdenFabricacionMaterial::class, 'huentitan_orden_fabricacion_material_id');
+    }
+
+    public function huentitanEntradaDetalles()
+    {
+        return $this->hasMany(HuentitanEntradaDetalle::class, 'orden_compra_detalle_id');
+    }
+
+    public function getCantidadPendienteAttribute(): float
+    {
+        return max(0, (float) $this->cantidad - (float) $this->cantidad_recibida);
+    }
 }
+
+
+
+

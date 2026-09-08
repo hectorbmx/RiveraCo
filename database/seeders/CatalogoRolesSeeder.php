@@ -27,6 +27,12 @@ class CatalogoRolesSeeder extends Seeder
             ['rol_key' => 'AUX_ADMIN',              'nombre' => 'Auxiliar administrativo','comisionable' => false],
             ['rol_key' => 'INGENIERO',              'nombre' => 'Ingeniero',              'comisionable' => false],
             ['rol_key' => 'OFICIAL',                'nombre' => 'Oficial',                'comisionable' => false],
+            ['rol_key' => 'GERENTE_ALMACEN',        'nombre' => 'Gerente de almacen',     'comisionable' => false],
+            ['rol_key' => 'GERENTE_ADMINISTRATIVO', 'nombre' => 'Gerente administrativo',  'comisionable' => false],
+            ['rol_key' => 'ENCARGADO_ALMACEN',      'nombre' => 'Encargado de almacen',   'comisionable' => false],
+            ['rol_key' => 'AUXILIAR_ALMACEN',       'nombre' => 'Auxiliar de almacen',    'comisionable' => false],
+            ['rol_key' => 'PRODUCCION_ALMACEN',     'nombre' => 'Produccion almacen',     'comisionable' => false],
+            ['rol_key' => 'CONSULTA_ALMACEN',       'nombre' => 'Consulta almacen',       'comisionable' => false],
             ['rol_key' => 'OTRO',                   'nombre' => 'Otro',                   'comisionable' => false],
         ];
 
@@ -38,3 +44,4 @@ class CatalogoRolesSeeder extends Seeder
         }
     }
 }
+

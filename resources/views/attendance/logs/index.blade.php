@@ -5,14 +5,9 @@
 @section('content')
 
 {{-- ENCABEZADO --}}
-<div class="flex items-center justify-between mb-6">
+<div class="flex flex-col gap-1 mb-4">
     <h1 class="text-2xl font-bold text-[#0B265A]">Checadas</h1>
-
-    {{-- botón opcional: refrescar --}}
-    <a href="{{ route('attendance.logs.index') }}"
-       class="bg-slate-100 text-slate-800 font-semibold px-4 py-2 rounded-xl shadow hover:bg-slate-200 transition">
-        Limpiar filtros
-    </a>
+    <p class="text-sm text-slate-500">Consulta y exportacion de registros del reloj checador.</p>
 </div>
 
 {{-- ALERTAS --}}
@@ -29,79 +24,66 @@
 @endif
 
 {{-- FILTROS --}}
-<div class="bg-white rounded-2xl shadow p-6 mb-6">
-    <form method="GET" action="{{ route('attendance.logs.index') }}" class="grid grid-cols-1 md:grid-cols-12 gap-4">
-
-        {{-- Dispositivo --}}
-        <div class="md:col-span-3">
-            <label class="block text-sm font-semibold text-slate-700 mb-1">Dispositivo</label>
-            <select name="device_id" class="w-full rounded-xl border-slate-300 focus:border-slate-400 focus:ring-slate-200">
-                <option value="">Todos</option>
-                @foreach($devices as $d)
-                    <option value="{{ $d->id }}" @selected((string)$deviceId === (string)$d->id)>
-                        {{ $d->name }} ({{ $d->ip }}:{{ $d->port }})
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-
-       {{-- Empleado --}}
-<div class="md:col-span-3 relative" id="employee-container">
-    <label class="block text-sm font-semibold text-slate-700 mb-1">Empleado</label>
-    <input
-        type="text"
-        id="employeeSearch"
-        class="w-full rounded-xl border-slate-300 focus:border-slate-400 focus:ring-slate-200"
-        placeholder="Buscar empleado..."
-        autocomplete="off"
-        value="{{ $selectedEmployee?->name ?? '' }}"
-    />
-    <input type="hidden" name="employee_id" id="employeeId" value="{{ $employeeId ?? '' }}"/>
-
-    {{-- Lista de resultados --}}
-    <div id="employeeResults" 
-         class="absolute z-[100] w-full bg-white border border-slate-200 rounded-xl shadow-lg mt-1 hidden max-h-60 overflow-y-auto">
+<x-filters.card action="{{ route('attendance.logs.index') }}" class="mb-6 p-3">
+    {{-- Dispositivo --}}
+    <div class="md:col-span-3">
+        <label class="block text-xs font-semibold text-white/85 mb-1">Dispositivo</label>
+        <select name="device_id" class="w-full border border-slate-200 rounded-xl bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300/70">
+            <option value="">Todos</option>
+            @foreach($devices as $d)
+                <option value="{{ $d->id }}" @selected((string)$deviceId === (string)$d->id)>
+                    {{ $d->name }} ({{ $d->ip }}:{{ $d->port }})
+                </option>
+            @endforeach
+        </select>
     </div>
-</div>
 
-        {{-- Desde --}}
-        <div class="md:col-span-2">
-            <label class="block text-sm font-semibold text-slate-700 mb-1">Desde</label>
-            <input type="date" name="from" value="{{ $from }}"
-                   class="w-full rounded-xl border-slate-300 focus:border-slate-400 focus:ring-slate-200" />
+    {{-- Empleado --}}
+    <div class="md:col-span-3 relative" id="employee-container">
+        <label class="block text-xs font-semibold text-white/85 mb-1">Empleado</label>
+        <input
+            type="text"
+            id="employeeSearch"
+            class="w-full rounded-xl border border-amber-300 bg-white px-3 py-2 text-sm transition focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-yellow-200"
+            style="box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.18), 0 0 20px rgba(255, 193, 7, 0.32);"
+            placeholder="Buscar empleado..."
+            autocomplete="off"
+            value="{{ $selectedEmployee?->name ?? '' }}"
+        />
+        <input type="hidden" name="employee_id" id="employeeId" value="{{ $employeeId ?? '' }}"/>
+
+        {{-- Lista de resultados --}}
+        <div id="employeeResults"
+             class="absolute z-[100] w-full bg-white border border-slate-200 rounded-xl shadow-lg mt-1 hidden max-h-60 overflow-y-auto">
         </div>
+    </div>
 
-        {{-- Hasta --}}
-        <div class="md:col-span-2">
-            <label class="block text-sm font-semibold text-slate-700 mb-1">Hasta</label>
-            <input type="date" name="to" value="{{ $to }}"
-                   class="w-full rounded-xl border-slate-300 focus:border-slate-400 focus:ring-slate-200" />
-        </div>
+    <x-filters.date
+        name="from"
+        label="Desde"
+        :value="$from"
+        span="md:col-span-2" />
 
-        {{-- Botón --}}
-        <div class="md:col-span-1 flex items-end">
-          {{-- Botones --}}
-<div class="md:col-span-2 flex items-end gap-2">
-    {{-- Botón Filtrar --}}
-    <button type="submit"
-            class="flex-1 bg-[#FFC107] text-[#0B265A] font-semibold px-4 py-2 rounded-xl shadow hover:bg-[#e0ac05] transition">
-        Filtrar
-    </button>
+    <x-filters.date
+        name="to"
+        label="Hasta"
+        :value="$to"
+        span="md:col-span-2" />
 
-    {{-- Botón Exportar --}}
-    <button type="button" 
-            onclick="exportData()"
-            class="flex-1 bg-green-600 text-white font-semibold px-4 py-2 rounded-xl shadow hover:bg-green-700 transition flex items-center justify-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-        </svg>
-        Excel
-    </button>
-</div>
-        </div>
-    </form>
-</div>
+    <x-filters.actions
+        submit-label="Filtrar"
+        clear-url="{{ route('attendance.logs.index') }}"
+        span="md:col-span-2">
+        <button type="button"
+                onclick="exportData()"
+                class="inline-flex items-center justify-center gap-1 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Excel
+        </button>
+    </x-filters.actions>
+</x-filters.card>
 
 {{-- TABLA --}}
 <div class="bg-white rounded-2xl shadow p-6">

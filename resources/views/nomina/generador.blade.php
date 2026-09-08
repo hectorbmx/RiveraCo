@@ -4,77 +4,83 @@
 
 @section('content')
 
-<h1 class="text-2xl font-semibold mb-6">Generador de Nómina</h1>
+<div class="flex flex-col gap-1 mb-4">
+    <h1 class="text-2xl font-bold text-[#0B265A]">Generador de Nómina</h1>
+    <p class="text-sm text-slate-500">Consulta corridas y genera nuevos periodos de pago.</p>
+</div>
 
 {{-- FILTROS --}}
-<form method="GET" action="{{ route('nomina.generador.index') }}" class="mb-4">
-    <div class="bg-white rounded-2xl shadow p-4 grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+<x-filters.card action="{{ route('nomina.generador.index') }}" class="mb-4 p-3">
+    <x-filters.input
+        name="q"
+        label="Buscar"
+        :value="$q"
+        placeholder="Periodo o ID de corrida"
+        span="md:col-span-3"
+        type="search"
+        glow />
 
-        {{-- Desde --}}
-        <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Desde</label>
-            <input type="date" name="desde" value="{{ $desde }}"
-                   class="w-full rounded-xl border-slate-200 text-sm">
-        </div>
+    <x-filters.date
+        name="desde"
+        label="Desde"
+        :value="$desde"
+        span="md:col-span-2" />
 
-        {{-- Hasta --}}
-        <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Hasta</label>
-            <input type="date" name="hasta" value="{{ $hasta }}"
-                   class="w-full rounded-xl border-slate-200 text-sm">
-        </div>
+    <x-filters.date
+        name="hasta"
+        label="Hasta"
+        :value="$hasta"
+        span="md:col-span-2" />
 
-        {{-- Tipo de pago --}}
-        <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de pago</label>
-            <select name="tipo"id="tipoSelect" class="w-full rounded-xl border-slate-200 text-sm">
-                <option value="semanal"   @selected($tipo === 'semanal')>Semanal</option>
-                <option value="quincenal" @selected($tipo === 'quincenal')>Quincenal</option>
-                <option value="mensual"   @selected($tipo === 'mensual')>Mensual</option>
-            </select>
-        </div>
+    <x-filters.select
+        name="tipo"
+        label="Tipo de pago"
+        :value="$tipo"
+        :options="['semanal' => 'Semanal', 'quincenal' => 'Quincenal', 'mensual' => 'Mensual']"
+        placeholder="Todos"
+        span="md:col-span-2" />
 
-       
+    <x-filters.select
+        name="status"
+        label="Status"
+        :value="$status"
+        :options="['abierta' => 'Abierta', 'cerrada' => 'Cerrada', 'pagada' => 'Pagada', 'cancelada' => 'Cancelada']"
+        placeholder="Todos"
+        span="md:col-span-1" />
 
-        {{-- Botones --}}
-        <div class="flex gap-2 justify-end">
-            <button type="submit"
-                    class="px-4 py-2 bg-slate-800 text-white text-sm rounded-xl shadow hover:bg-slate-900">
-                Aplicar filtros
-            </button>
-
-            <!-- <button type="button"
-                    onclick="confirmarGeneracion()"
-                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow">
-                Generar corrida
-            </button> -->
-            <button type="submit"
-                    form="formGenerarCorrida"
-                    onclick="
-                        const sel = document.getElementById('tipoSelect');
-                        const hidden = document.getElementById('tipoHidden');
-                        if (!sel) { alert('No se encontró el selector de tipo'); return false; }
-                        hidden.value = sel.value;
-                        if (!hidden.value) { alert('Selecciona un tipo de pago'); return false; }
-                        return confirm('¿Estás seguro de generar la corrida con los filtros actuales?');
-                    "
-                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow">
-                Generar corrida
-            </button>
-
-
-
-        </div>
-    </div>
-</form>
+    <x-filters.actions
+        submit-label="Filtrar"
+        clear-url="{{ route('nomina.generador.index') }}"
+        span="md:col-span-2">
+        <button type="submit"
+                form="formGenerarCorrida"
+                onclick="
+                    const sel = document.querySelector('[name=&quot;tipo&quot;]');
+                    const hidden = document.getElementById('tipoHidden');
+                    const desdeVisible = document.querySelector('[name=&quot;desde&quot;]');
+                    const hastaVisible = document.querySelector('[name=&quot;hasta&quot;]');
+                    const desdeHidden = document.getElementById('desdeHidden');
+                    const hastaHidden = document.getElementById('hastaHidden');
+                    if (!sel) { alert('No se encontró el selector de tipo'); return false; }
+                    hidden.value = sel.value;
+                    if (desdeVisible && desdeHidden) desdeHidden.value = desdeVisible.value;
+                    if (hastaVisible && hastaHidden) hastaHidden.value = hastaVisible.value;
+                    if (!hidden.value) { alert('Selecciona un tipo de pago'); return false; }
+                    return confirm('¿Estás seguro de generar la corrida con los filtros actuales?');
+                "
+                class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">
+            Generar corrida
+        </button>
+    </x-filters.actions>
+</x-filters.card>
                 
 <form id="formGenerarCorrida"
       method="POST"
       action="{{ route('nomina.corridas.store') }}">
     @csrf
 
-    <input type="hidden" name="desde" value="{{ $desde }}">
-    <input type="hidden" name="hasta" value="{{ $hasta }}">
+    <input type="hidden" name="desde" id="desdeHidden" value="{{ $desde }}">
+    <input type="hidden" name="hasta" id="hastaHidden" value="{{ $hasta }}">
     <!-- <input type="hidden" name="tipo" value="{{ $tipo }}"> -->
       <input type="hidden" name="tipo" id="tipoHidden">
     
@@ -263,3 +269,5 @@
 
 </div>
 @endsection
+
+

@@ -246,6 +246,43 @@
     </div>
 </div>
 @endif
+                @if($canMenu('huentitan.access'))
+<div x-data="{ openHuentitan: {{ request()->routeIs('huentitan.*') || request()->routeIs('inventario.huentitan.*') ? 'true' : 'false' }} }">
+    <button @click="openHuentitan = !openHuentitan"
+        class="w-full flex items-center justify-between gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('huentitan.*') || request()->routeIs('inventario.huentitan.*') ? 'bg-white/10' : '' }}"
+        title="HUENTITAN">
+        <div class="flex items-center gap-3">
+            <span class="text-lg">HT</span>
+            <span class="sidebar-text">HUENTITAN</span>
+        </div>
+        <span class="text-xs sidebar-text" x-text="openHuentitan ? '▲' : '▼'"></span>
+    </button>
+    <div x-show="openHuentitan" x-transition class="ml-6">
+        <a href="{{ route('huentitan.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10 {{ request()->routeIs('huentitan.index') ? 'bg-white/10' : '' }}">Panel</a>
+        @if($canMenu('huentitan.empleados.view'))
+        <a href="{{ route('huentitan.empleados.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10 {{ request()->routeIs('huentitan.empleados.*') ? 'bg-white/10' : '' }}">Empleados</a>
+        @endif
+        @if($canMenu('huentitan.productos.view'))
+        <a href="{{ route('huentitan.productos.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10 {{ request()->routeIs('huentitan.productos.*') ? 'bg-white/10' : '' }}">Productos</a>
+        @endif
+        @if($canMenu('huentitan.inventario.view'))
+        <a href="{{ route('huentitan.inventario.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10 {{ request()->routeIs('huentitan.inventario.*') || request()->routeIs('inventario.huentitan.*') ? 'bg-white/10' : '' }}">Inventario</a>
+        @endif
+        @if($canMenu('huentitan.ordenes_compra.view'))
+        <a href="{{ route('huentitan.ordenes-compra.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10 {{ request()->routeIs('huentitan.ordenes-compra.*') ? 'bg-white/10' : '' }}">Orden compras</a>
+        @endif
+        @if($canMenu('huentitan.ordenes_fabricacion.view'))
+        <a href="{{ route('huentitan.ordenes-fabricacion.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10 {{ request()->routeIs('huentitan.ordenes-fabricacion.*') ? 'bg-white/10' : '' }}">Orden fabricacion</a>
+        @endif
+        @if($canMenu('huentitan.entradas.view'))
+        <a href="{{ route('huentitan.entradas.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10 {{ request()->routeIs('huentitan.entradas.*') ? 'bg-white/10' : '' }}">Entradas</a>
+        @endif
+        @if($canMenu('huentitan.salidas.view'))
+        <a href="{{ route('huentitan.salidas.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10 {{ request()->routeIs('huentitan.salidas.*') ? 'bg-white/10' : '' }}">Salidas</a>
+        @endif
+    </div>
+</div>
+@endif
                 <!-- @can('sat.access') -->
                 
 <!-- <div x-data="{ open: false }">

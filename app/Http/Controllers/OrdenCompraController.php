@@ -10,7 +10,12 @@ use App\Models\Obra;
 use App\Models\ObraCivilInsumo;
 use App\Models\ObraCivilMaterialRequest;
 use App\Models\OrdenCompra;
+use App\Models\OrdenCompraDetalle;
 use App\Models\CentroCosto;
+use App\Models\HuentitanOrdenFabricacion;
+use App\Models\HuentitanOrdenFabricacionMaterial;
+use App\Models\HuentitanSalida;
+use App\Models\HuentitanSalidaDetalle;
 use App\Models\TipoIva;
 use App\Models\TipoRetencion;
 use App\Models\DocumentoFirmante;
@@ -330,12 +335,13 @@ class OrdenCompraController extends Controller
     $centrosCosto = CentroCosto::where('activo', true)->orderBy('nombre')->get();
     $tiposIva = TipoIva::where('activo', true)->orderBy('porcentaje')->get();
     $selectedAreaId = null;
+    $huentitanAreaId = Area::where('codigo', 'HT')->value('id');
 
     if (request()->filled('area_codigo')) {
         $selectedAreaId = Area::where('codigo', request('area_codigo'))->value('id');
     }
 
-    return view('ordencompra.create', compact('proveedores','areas','obras','centrosCosto','tiposIva','selectedAreaId'));
+    return view('ordencompra.create', compact('proveedores','areas','obras','centrosCosto','tiposIva','selectedAreaId','huentitanAreaId'));
 }
 
     /**
@@ -403,6 +409,20 @@ class OrdenCompraController extends Controller
                 // Compatibilidad temporal con el selector anterior.
                 $materialRequest = ObraCivilMaterialRequest::findOrFail((int) $request->obra_civil_material_request_id);
                 $materialRequestOrderService->attachApprovedRequestToOrder($materialRequest, $oc, $request->user());
+            }
+
+            if ($request->filled('huentitan_orden_fabricacion_materiales')) {
+                $this->attachHuentitanMaterialesToOrder(
+                    $request->input('huentitan_orden_fabricacion_materiales', []),
+                    $oc
+                );
+            }
+
+            if ($request->filled('huentitan_salida_materiales')) {
+                $this->attachHuentitanSalidaMaterialesToOrder(
+                    $request->input('huentitan_salida_materiales', []),
+                    $oc
+                );
             }
 
             $notifications->creada($oc);
@@ -2471,6 +2491,93 @@ public function buscarConceptosCivil(Request $request, OrdenCompra $orden_compra
     }));
 }
 
+private function attachHuentitanMaterialesToOrder(array $selectedItems, OrdenCompra $orden): void
+{
+    $normalized = collect($selectedItems)
+        ->map(function ($item) {
+            $id = (int) ($item['id'] ?? 0);
+            $quantity = isset($item['quantity']) && $item['quantity'] !== ''
+                ? (float) $item['quantity']
+                : null;
+            $price = isset($item['price']) && $item['price'] !== ''
+                ? (float) $item['price']
+                : null;
+
+            return compact('id', 'quantity', 'price');
+        })
+        ->filter(fn ($item) => $item['id'] > 0)
+        ->keyBy('id');
+
+    if ($normalized->isEmpty()) {
+        return;
+    }
+
+    $materials = HuentitanOrdenFabricacionMaterial::query()
+        ->with(['orden.producto', 'material'])
+        ->whereIn('id', $normalized->keys()->all())
+        ->where('requiere_compra', true)
+        ->lockForUpdate()
+        ->get()
+        ->keyBy('id');
+
+    foreach ($normalized as $materialId => $selection) {
+        $material = $materials->get($materialId);
+
+        if (! $material) {
+            continue;
+        }
+
+        $producto = $material->material;
+        $quantity = $selection['quantity']
+            ?? (float) ($material->cantidad_sugerida_compra ?: $material->faltante_calculado ?: $material->cantidad_requerida);
+        $price = $selection['price'] ?? (float) ($material->costo_unitario_estimado ?? 0);
+        $importe = round(max($quantity, 0) * max($price, 0), 2);
+
+        $detail = OrdenCompraDetalle::query()
+            ->where('orden_compra_id', $orden->id)
+            ->where('huentitan_orden_fabricacion_material_id', $material->id)
+            ->first();
+
+        $payload = [
+            'orden_compra_id' => $orden->id,
+            'producto_id' => $material->material_producto_id,
+            'civil_concept_id' => null,
+            'civil_concept_snapshot' => null,
+            'obra_civil_insumo_id' => null,
+            'obra_civil_insumo_snapshot' => null,
+            'obra_civil_material_request_item_id' => null,
+            'huentitan_orden_fabricacion_material_id' => $material->id,
+            'legacy_prod_id' => $producto?->legacy_prod_id,
+            'descripcion' => $material->material_nombre,
+            'unidad' => $material->unidad,
+            'cantidad' => $quantity,
+            'precio_unitario' => $price,
+            'precio_tope' => $price,
+            'descuento_porcentaje' => 0,
+            'descuento_importe' => 0,
+            'importe' => $importe,
+            'iva' => (float) ($orden->iva ?? 0),
+            'tipo_retencion_id' => null,
+            'retencion_porcentaje' => 0,
+            'retenciones' => 0,
+            'otros_impuestos' => 0,
+            'tipo_cambio' => (float) ($orden->tipo_cambio ?? 1),
+            'notas' => trim(sprintf(
+                'Origen HUENTITAN: %s. Producto a fabricar: %s.',
+                $material->orden?->folio ?? '-',
+                $material->orden?->producto?->nombre ?? '-'
+            )),
+        ];
+
+        if ($detail) {
+            $detail->fill($payload)->save();
+        } else {
+            OrdenCompraDetalle::create($payload);
+        }
+    }
+
+    OrdenCompraTotalesService::recalcular($orden);
+}
 public function solicitudesMaterialAprobadasPorObra(Obra $obra, ObraCivilMaterialRequestOrderService $materialRequestOrderService)
 {
     $this->authorizeAny(['ordenes_compra.create.access', 'ordenes de compra.access']);
@@ -2478,6 +2585,87 @@ public function solicitudesMaterialAprobadasPorObra(Obra $obra, ObraCivilMateria
     return response()->json([
         'ok' => true,
         'data' => $materialRequestOrderService->approvedPendingItemOptions($obra),
+    ]);
+}
+
+public function materialesHuentitanPendientesCompra()
+{
+    $this->authorizeAny(['ordenes_compra.create.access', 'ordenes de compra.access']);
+
+    $ordenes = HuentitanOrdenFabricacion::query()
+        ->with(['producto:id,sku,nombre,unidad', 'materiales' => function ($query) {
+            $query->where('requiere_compra', true)
+                ->orderBy('material_nombre');
+        }])
+        ->whereHas('materiales', function ($query) {
+            $query->where('requiere_compra', true);
+        })
+        ->whereIn('estado', ['calculada', 'en_produccion'])
+        ->orderByDesc('fecha')
+        ->orderByDesc('id')
+        ->limit(50)
+        ->get();
+
+    $salidas = HuentitanSalida::query()
+        ->with(['obra:id,nombre,clave_obra', 'detalles' => function ($query) {
+            $query->with('producto:id,sku,nombre,unidad')
+                ->where('requiere_compra', true)
+                ->orderBy('descripcion');
+        }])
+        ->where('estado', 'borrador')
+        ->whereHas('detalles', function ($query) {
+            $query->where('requiere_compra', true);
+        })
+        ->orderByDesc('fecha')
+        ->orderByDesc('id')
+        ->limit(50)
+        ->get();
+
+    return response()->json([
+        'ok' => true,
+        'data' => $ordenes->map(function ($orden) {
+            return [
+                'id' => $orden->id,
+                'folio' => $orden->folio,
+                'producto' => $orden->producto?->nombre,
+                'producto_sku' => $orden->producto?->sku,
+                'cantidad_solicitada' => (float) $orden->cantidad_solicitada,
+                'unidad' => $orden->formula_unidad_base ?: $orden->producto?->unidad,
+                'fecha' => optional($orden->fecha)->format('Y-m-d'),
+                'materiales' => $orden->materiales->map(function ($material) {
+                    return [
+                        'id' => $material->id,
+                        'codigo' => $material->material_sku,
+                        'material' => $material->material_nombre,
+                        'cantidad_requerida' => (float) $material->cantidad_requerida,
+                        'faltante' => (float) $material->faltante_calculado,
+                        'cantidad_sugerida' => (float) $material->cantidad_sugerida_compra,
+                        'unidad' => $material->unidad,
+                        'costo_unitario_estimado' => (float) $material->costo_unitario_estimado,
+                    ];
+                })->values(),
+            ];
+        })->values(),
+        'salidas_obra' => $salidas->map(function ($salida) {
+            return [
+                'id' => $salida->id,
+                'folio' => $salida->folio,
+                'obra' => $salida->obra ? trim(($salida->obra->clave_obra ? $salida->obra->clave_obra . ' - ' : '') . $salida->obra->nombre) : 'Sin obra',
+                'fecha' => optional($salida->fecha)->format('Y-m-d'),
+                'materiales' => $salida->detalles->map(function ($detalle) {
+                    return [
+                        'id' => $detalle->id,
+                        'codigo' => $detalle->producto?->sku,
+                        'material' => $detalle->producto?->nombre ?? $detalle->descripcion,
+                        'cantidad_requerida' => (float) $detalle->cantidad_salida,
+                        'faltante' => (float) $detalle->cantidad_faltante,
+                        'cantidad_sugerida' => (float) ($detalle->cantidad_sugerida_compra ?: $detalle->cantidad_faltante),
+                        'unidad' => $detalle->unidad ?: $detalle->producto?->unidad,
+                        'costo_unitario_estimado' => (float) $detalle->costo_unitario,
+                    ];
+                })->values(),
+            ];
+        })->values(),
     ]);
 }
 public function buscarInsumosObra(Request $request, OrdenCompra $orden_compra)
@@ -3396,3 +3584,6 @@ public function exportarListaPagos(
             ->header('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"');
     }
 }
+
+
+

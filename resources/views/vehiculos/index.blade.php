@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="max-w-6xl mx-auto py-8">
+    <div class="max-w-8xl mx-auto py-8">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
             <div>
                 <h1 class="text-2xl font-bold text-[#0B265A]">Vehiculos</h1>
