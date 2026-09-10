@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Maquinas;
 use App\Http\Controllers\Controller;
 use App\Models\Maquina;
 use App\Models\Seguro;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -53,78 +54,89 @@ class MaquinaSeguroController extends Controller
 
     public function store(Request $request, Maquina $maquina)
     {
-        $data = $this->validateData($request);
+        $data = $this->validateData($request, null, $maquina);
 
-        DB::transaction(function () use ($request, $maquina, $data, &$seguro) {
-            $seguro = new Seguro();
-            $seguro->fill($data);
+        try {
+            DB::transaction(function () use ($request, $maquina, $data, &$seguro) {
+                $seguro = new Seguro();
+                $seguro->fill($data);
 
-            $seguro->estatus = $this->resolverEstatus(
-                $data['estatus'] ?? null,
-                $data['vigencia_desde'],
-                $data['vigencia_hasta']
-            );
+                $seguro->estatus = $this->resolverEstatus(
+                    $data['estatus'] ?? null,
+                    $data['vigencia_desde'],
+                    $data['vigencia_hasta']
+                );
 
-            if ($request->hasFile('documento')) {
-                $seguro->documento_path = $request->file('documento')->store('seguros/documentos', 'public');
-            }
+                if ($request->hasFile('documento')) {
+                    $seguro->documento_path = $request->file('documento')->store('seguros/documentos', 'public');
+                }
 
-            if ($request->hasFile('comprobante')) {
-                $seguro->comprobante_path = $request->file('comprobante')->store('seguros/comprobantes', 'public');
-            }
+                if ($request->hasFile('comprobante')) {
+                    $seguro->comprobante_path = $request->file('comprobante')->store('seguros/comprobantes', 'public');
+                }
 
-            if (auth()->check()) {
-                $seguro->created_by = auth()->id();
-                $seguro->updated_by = auth()->id();
-            }
+                if (auth()->check()) {
+                    $seguro->created_by = auth()->id();
+                    $seguro->updated_by = auth()->id();
+                }
 
-            $maquina->seguros()->save($seguro);
-        });
+                $maquina->seguros()->save($seguro);
+            });
+        } catch (UniqueConstraintViolationException $e) {
+            return back()->withInput()->withErrors([
+                'poliza_numero' => 'Ya existe esta póliza para la máquina y vigencia indicada.',
+            ]);
+        }
 
-      return redirect()
+        return redirect()
             ->route('maquinas.show', $maquina)
             ->with('success', 'Póliza registrada correctamente.')
             ->with('tab', 'seguros');
-            }
+    }
 
     public function update(Request $request, Maquina $maquina, Seguro $seguro)
     {
-      
         $this->abortIfSeguroNoPertenece($maquina, $seguro);
 
-        $data = $this->validateData($request, $seguro->id);
+        $data = $this->validateData($request, $seguro->id, $maquina);
 
-        DB::transaction(function () use ($request, $data, $seguro) {
-            $seguro->fill($data);
+        try {
+            DB::transaction(function () use ($request, $data, $seguro) {
+                $seguro->fill($data);
 
-            $seguro->estatus = $this->resolverEstatus(
-                $data['estatus'] ?? $seguro->estatus,
-                $data['vigencia_desde'],
-                $data['vigencia_hasta']
-            );
+                $seguro->estatus = $this->resolverEstatus(
+                    $data['estatus'] ?? $seguro->estatus,
+                    $data['vigencia_desde'],
+                    $data['vigencia_hasta']
+                );
 
-            if ($request->hasFile('documento')) {
-                if ($seguro->documento_path && Storage::disk('public')->exists($seguro->documento_path)) {
-                    Storage::disk('public')->delete($seguro->documento_path);
+                if ($request->hasFile('documento')) {
+                    if ($seguro->documento_path && Storage::disk('public')->exists($seguro->documento_path)) {
+                        Storage::disk('public')->delete($seguro->documento_path);
+                    }
+
+                    $seguro->documento_path = $request->file('documento')->store('seguros/documentos', 'public');
                 }
 
-                $seguro->documento_path = $request->file('documento')->store('seguros/documentos', 'public');
-            }
+                if ($request->hasFile('comprobante')) {
+                    if ($seguro->comprobante_path && Storage::disk('public')->exists($seguro->comprobante_path)) {
+                        Storage::disk('public')->delete($seguro->comprobante_path);
+                    }
 
-            if ($request->hasFile('comprobante')) {
-                if ($seguro->comprobante_path && Storage::disk('public')->exists($seguro->comprobante_path)) {
-                    Storage::disk('public')->delete($seguro->comprobante_path);
+                    $seguro->comprobante_path = $request->file('comprobante')->store('seguros/comprobantes', 'public');
                 }
 
-                $seguro->comprobante_path = $request->file('comprobante')->store('seguros/comprobantes', 'public');
-            }
+                if (auth()->check()) {
+                    $seguro->updated_by = auth()->id();
+                }
 
-            if (auth()->check()) {
-                $seguro->updated_by = auth()->id();
-            }
-
-            $seguro->save();
-        });
+                $seguro->save();
+            });
+        } catch (UniqueConstraintViolationException $e) {
+            return back()->withInput()->withErrors([
+                'poliza_numero' => 'Ya existe esta póliza para la máquina y vigencia indicada.',
+            ]);
+        }
 
         return redirect()
             ->route('maquinas.show', $maquina)
@@ -154,7 +166,7 @@ class MaquinaSeguroController extends Controller
         ]);
     }
 
-    protected function validateData(Request $request, ?int $seguroId = null): array
+    protected function validateData(Request $request, ?int $seguroId = null, ?Maquina $maquina = null): array
     {
         return $request->validate([
             'aseguradora' => ['required', 'string', 'max:255'],
@@ -162,6 +174,25 @@ class MaquinaSeguroController extends Controller
                 'required',
                 'string',
                 'max:255',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request, $seguroId, $maquina) {
+                    if (!$maquina || !$request->filled('vigencia_desde')) {
+                        return;
+                    }
+
+                    $query = Seguro::query()
+                        ->where('asegurable_type', $maquina->getMorphClass())
+                        ->where('asegurable_id', $maquina->getKey())
+                        ->where('poliza_numero', $value)
+                        ->whereDate('vigencia_desde', $request->input('vigencia_desde'));
+
+                    if ($seguroId) {
+                        $query->whereKeyNot($seguroId);
+                    }
+
+                    if ($query->exists()) {
+                        $fail('Ya existe esta póliza para la máquina y vigencia indicada.');
+                    }
+                },
             ],
             'tipo_seguro' => ['nullable', 'string', 'max:100'],
             'metodo_pago' => ['nullable', 'string', 'max:100'],

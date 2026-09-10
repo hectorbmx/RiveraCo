@@ -54,6 +54,7 @@ class SatFactura extends Model
 
         // Estado
         'estado',
+        'timbrado_por',
         'fecha_emision',
         'fecha_timbrado',
         'fecha_cancelacion',
@@ -119,5 +120,10 @@ class SatFactura extends Model
     public function pagos()
     {
         return $this->hasMany(SatFacturaPago::class, 'sat_factura_id');
+    }
+
+    public function timbradoPor()
+    {
+        return $this->belongsTo(User::class, 'timbrado_por');
     }
 }

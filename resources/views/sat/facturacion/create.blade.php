@@ -3,7 +3,7 @@
 @section('title', 'Nueva Factura')
 
 @section('content')
-<div x-data="facturaForm()" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div x-data="facturaForm()" class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
     
     {{-- ALERTAS --}}
 @if(session('success'))
@@ -95,383 +95,384 @@
                         Datos CFDI
                     </h2>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="space-y-5">
+                        <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
-                        {{-- EMPRESA --}}
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">
-                                Empresa emisora
-                            </label>
+                            {{-- EMPRESA --}}
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">
+                                    Empresa emisora
+                                </label>
 
-                            <select name="sat_empresa_id"
-                                    x-model="satEmpresaId"
-                                    class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                <select name="sat_empresa_id"
+                                        x-model="satEmpresaId"
+                                        class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
 
-                                <option value="">
-                                    Seleccionar empresa
-                                </option>
-
-                                @foreach($empresas as $empresa)
-                                    <option value="{{ $empresa->id }}">
-                                        {{ $empresa->nombre }} — {{ $empresa->rfc }}
+                                    <option value="">
+                                        Seleccionar empresa
                                     </option>
-                                @endforeach
 
-                            </select>
-                        </div>
-                        {{-- CLIENTE --}}
-                        <div class="relative" @click.outside="clienteOpen = false">
-                            <label class="block text-sm font-medium text-slate-700 mb-1">
-                                Cliente
-                            </label>
+                                    @foreach($empresas as $empresa)
+                                        <option value="{{ $empresa->id }}">
+                                            {{ $empresa->nombre }} — {{ $empresa->rfc }}
+                                        </option>
+                                    @endforeach
 
-                            <input type="hidden" name="cliente_id" x-model="clienteId">
-                            <input type="text"
-                                   x-model="clienteSearch"
-                                   @focus="clienteOpen = true"
-                                   @input="clienteId = ''; clienteOpen = true"
-                                   placeholder="Buscar por razon social, nombre o RFC"
-                                   autocomplete="off"
-                                   class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                </select>
+                            </div>
 
-                            <div x-show="clienteOpen"
-                                 x-cloak
-                                 class="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
-                                <template x-for="cliente in clientesFiltrados()" :key="cliente.id">
+                            {{-- CLIENTE --}}
+                            <div class="relative" @click.outside="clienteOpen = false">
+                                <label class="block text-sm font-medium text-slate-700 mb-1">
+                                    Cliente
+                                </label>
+
+                                <input type="hidden" name="cliente_id" x-model="clienteId">
+                                <input type="text"
+                                       x-model="clienteSearch"
+                                       @focus="clienteOpen = true"
+                                       @input="clienteId = ''; clienteOpen = true"
+                                       placeholder="Buscar por razon social, nombre o RFC"
+                                       autocomplete="off"
+                                       class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+
+                                <div x-show="clienteOpen"
+                                     x-cloak
+                                     class="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                                    <template x-for="cliente in clientesFiltrados()" :key="cliente.id">
+                                        <button type="button"
+                                                @click="selectCliente(cliente)"
+                                                class="block w-full px-4 py-3 text-left text-sm hover:bg-slate-50">
+                                            <div class="font-medium text-slate-900" x-text="cliente.nombre"></div>
+                                            <div class="text-xs text-slate-500" x-text="cliente.rfc"></div>
+                                        </button>
+                                    </template>
+                                    <div x-show="clientesFiltrados().length === 0" class="px-4 py-3 text-sm text-slate-500">
+                                        Sin coincidencias
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- OBRA --}}
+                            <div class="relative" @click.outside="obraOpen = false">
+                                <label class="block text-sm font-medium text-slate-700 mb-1">
+                                    Obra (opcional)
+                                </label>
+
+                                <input type="hidden" name="obra_id" x-model="obraId">
+                                <input type="text"
+                                       x-model="obraSearch"
+                                       @focus="obraOpen = true"
+                                       @input="obraId = ''; obraOpen = true"
+                                       placeholder="Buscar obra"
+                                       autocomplete="off"
+                                       class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+
+                                <div class="mt-1 flex justify-end">
                                     <button type="button"
-                                            @click="selectCliente(cliente)"
-                                            class="block w-full px-4 py-3 text-left text-sm hover:bg-slate-50">
-                                        <div class="font-medium text-slate-900" x-text="cliente.nombre"></div>
-                                        <div class="text-xs text-slate-500" x-text="cliente.rfc"></div>
+                                            @click="clearObra()"
+                                            class="text-xs font-medium text-slate-500 hover:text-slate-700">
+                                        Sin obra
                                     </button>
-                                </template>
-                                <div x-show="clientesFiltrados().length === 0" class="px-4 py-3 text-sm text-slate-500">
-                                    Sin coincidencias
+                                </div>
+
+                                <div x-show="obraOpen"
+                                     x-cloak
+                                     class="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                                    <template x-for="obra in obrasFiltradas()" :key="obra.id">
+                                        <button type="button"
+                                                @click="selectObra(obra)"
+                                                class="block w-full px-4 py-3 text-left text-sm hover:bg-slate-50">
+                                            <div class="font-medium text-slate-900" x-text="obra.nombre"></div>
+                                        </button>
+                                    </template>
+                                    <div x-show="obrasFiltradas().length === 0" class="px-4 py-3 text-sm text-slate-500">
+                                        Sin coincidencias
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        {{-- OBRA --}}
-                        <div class="relative" @click.outside="obraOpen = false">
-                            <label class="block text-sm font-medium text-slate-700 mb-1">
-                                Obra (opcional)
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                            {{-- USO CFDI --}}
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">
+                                    Uso CFDI
+                                </label>
+
+                                <select name="uso_cfdi"
+                                        class="w-full rounded-xl border-slate-300">
+
+                                    <option value="G01" @selected($selectedUsoCfdi === 'G01')>G01 - Adquisición de mercancías</option>
+                                    <option value="G02" @selected($selectedUsoCfdi === 'G02')>G02 - Devoluciones, descuentos o bonificaciones</option>
+                                    <option value="G03" @selected($selectedUsoCfdi === 'G03')>G03 - Gastos en general</option>
+
+                                    <option value="I01" @selected($selectedUsoCfdi === 'I01')>I01 - Construcciones</option>
+                                    <option value="I02" @selected($selectedUsoCfdi === 'I02')>I02 - Mobiliario y equipo de oficina por inversiones</option>
+                                    <option value="I03" @selected($selectedUsoCfdi === 'I03')>I03 - Equipo de transporte</option>
+                                    <option value="I04" @selected($selectedUsoCfdi === 'I04')>I04 - Equipo de cómputo y accesorios</option>
+                                    <option value="I05" @selected($selectedUsoCfdi === 'I05')>I05 - Dados, troqueles, moldes, matrices y herramental</option>
+                                    <option value="I06" @selected($selectedUsoCfdi === 'I06')>I06 - Comunicaciones telefónicas</option>
+                                    <option value="I07" @selected($selectedUsoCfdi === 'I07')>I07 - Comunicaciones satelitales</option>
+                                    <option value="I08" @selected($selectedUsoCfdi === 'I08')>I08 - Otra maquinaria y equipo</option>
+
+                                    <option value="D01" @selected($selectedUsoCfdi === 'D01')>D01 - Honorarios médicos, dentales y gastos hospitalarios</option>
+                                    <option value="D02" @selected($selectedUsoCfdi === 'D02')>D02 - Gastos médicos por incapacidad o discapacidad</option>
+                                    <option value="D03" @selected($selectedUsoCfdi === 'D03')>D03 - Gastos funerales</option>
+                                    <option value="D04" @selected($selectedUsoCfdi === 'D04')>D04 - Donativos</option>
+                                    <option value="D05" @selected($selectedUsoCfdi === 'D05')>D05 - Intereses reales efectivamente pagados por créditos hipotecarios</option>
+                                    <option value="D06" @selected($selectedUsoCfdi === 'D06')>D06 - Aportaciones voluntarias al SAR</option>
+                                    <option value="D07" @selected($selectedUsoCfdi === 'D07')>D07 - Primas por seguros de gastos médicos</option>
+                                    <option value="D08" @selected($selectedUsoCfdi === 'D08')>D08 - Gastos de transportación escolar obligatoria</option>
+                                    <option value="D09" @selected($selectedUsoCfdi === 'D09')>D09 - Depósitos en cuentas para el ahorro / pensiones</option>
+                                    <option value="D10" @selected($selectedUsoCfdi === 'D10')>D10 - Pagos por servicios educativos</option>
+
+                                    <option value="S01" @selected($selectedUsoCfdi === 'S01')>S01 - Sin efectos fiscales</option>
+                                    <option value="CP01" @selected($selectedUsoCfdi === 'CP01')>CP01 - Pagos</option>
+                                    <option value="CN01" @selected($selectedUsoCfdi === 'CN01')>CN01 - Nómina</option>
+                                </select>
+                            </div>
+
+                            {{-- MÉTODO DE PAGO --}}
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">
+                                    Método de pago
+                                </label>
+
+                                <select name="metodo_pago"
+                                        class="w-full rounded-xl border-slate-300">
+
+                                    <option value="PUE" @selected($selectedMetodoPago === 'PUE')>PUE - Pago en una sola exhibicion</option>
+                                    <option value="PPD" @selected($selectedMetodoPago === 'PPD')>PPD - Pago en parcialidades</option>
+
+                                </select>
+                            </div>
+
+                            {{-- FORMA DE PAGO --}}
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">
+                                    Forma de pago
+                                </label>
+
+                                <select name="forma_pago"
+                                        class="w-full rounded-xl border-slate-300">
+
+                                    <option value="03" @selected($selectedFormaPago === '03')>03 - Transferencia electronica</option>
+                                    <option value="01" @selected($selectedFormaPago === '01')>01 - Efectivo</option>
+                                    <option value="02" @selected($selectedFormaPago === '02')>02 - Cheque nominativo</option>
+                                    <option value="04" @selected($selectedFormaPago === '04')>04 - Tarjeta de credito</option>
+                                    <option value="28" @selected($selectedFormaPago === '28')>28 - Tarjeta de debito</option>
+                                    <option value="99" @selected($selectedFormaPago === '99')>99 - Por definir</option>
+
+                                </select>
+                            </div>
+
+                            {{-- IVA GLOBAL --}}
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">
+                                    IVA
+                                </label>
+                                <select name="tipo_iva" x-model="tipoIva" class="w-full rounded-xl border-slate-300">
+                                    <option value="0.16">IVA 16%</option>
+                                    <option value="0.08">IVA 8% (Zona fronteriza)</option>
+                                    <option value="0">IVA 0% (Tasa cero)</option>
+                                    <option value="exento">Exento (sin traslado)</option>
+                                    <option value="sin_iva">Sin IVA (no objeto)</option>
+                                </select>
+                                <p class="text-xs text-slate-400 mt-1">Se aplica a todos los conceptos</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6">
+                    {{-- FACTURAS RELACIONADAS --}}
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 class="text-base font-bold text-slate-900">
+                                    Facturas Relacionadas
+                                </h3>
+                                <p class="text-sm text-slate-500">
+                                    Relaciona este CFDI con facturas emitidas anteriormente.
+                                </p>
+                            </div>
+
+                            <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                                <input type="checkbox"
+                                       name="usar_relacion"
+                                       value="1"
+                                       x-model="usarRelacion"
+                                       @change="if (usarRelacion) openRelacionModal(); else clearRelacionadas()"
+                                       class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                Relacionar CFDI
                             </label>
+                        </div>
 
-                            <input type="hidden" name="obra_id" x-model="obraId">
-                            <input type="text"
-                                   x-model="obraSearch"
-                                   @focus="obraOpen = true"
-                                   @input="obraId = ''; obraOpen = true"
-                                   placeholder="Buscar obra"
-                                   autocomplete="off"
-                                   class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <div x-show="usarRelacion"
+                             x-cloak
+                             class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                            <div class="mt-1 flex justify-end">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">
+                                    Tipo de Relación
+                                </label>
+                                <select name="relacion_tipo" class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="04">04 - Sustitución de los CFDI previos</option>
+                                    <option value="01">01 - Nota de crédito de los documentos relacionados</option>
+                                    <option value="02">02 - Nota de débito de los documentos relacionados</option>
+                                    <option value="03">03 - Devolución de mercancía sobre facturas o traslados previos</option>
+                                    <option value="05">05 - Traslados de mercancias facturados previamente</option>
+                                    <option value="06">06 - Factura generada por los traslados previos</option>
+                                    <option value="07">07 - CFDI por aplicación de anticipo</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Facturas seleccionadas</label>
+                                <input type="hidden" name="relacion_uuids" :value="selectedRelacionUuids().join(',')">
+
+                                <div class="mt-1 rounded-xl border border-slate-200 bg-slate-50 p-3 min-h-[46px]">
+                                    <div x-show="selectedRelacionadas.length === 0" class="text-sm text-slate-500">
+                                        Sin facturas relacionadas.
+                                    </div>
+
+                                    <div x-show="selectedRelacionadas.length > 0" class="flex flex-wrap gap-2">
+                                        <template x-for="factura in selectedRelacionadas" :key="factura.uuid">
+                                            <span class="inline-flex items-center gap-2 rounded-full bg-white border border-slate-200 px-3 py-1 text-xs text-slate-700">
+                                                <span class="font-mono" x-text="shortUuid(factura.uuid)"></span>
+                                                <button type="button" @click="removeRelacionada(factura.uuid)" class="font-semibold text-slate-400 hover:text-red-600">x</button>
+                                            </span>
+                                        </template>
+                                    </div>
+                                </div>
+
                                 <button type="button"
-                                        @click="clearObra()"
-                                        class="text-xs font-medium text-slate-500 hover:text-slate-700">
-                                    Sin obra
+                                        @click="openRelacionModal()"
+                                        class="mt-3 inline-flex items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100">
+                                    Buscar facturas
                                 </button>
                             </div>
-
-                            <div x-show="obraOpen"
-                                 x-cloak
-                                 class="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
-                                <template x-for="obra in obrasFiltradas()" :key="obra.id">
-                                    <button type="button"
-                                            @click="selectObra(obra)"
-                                            class="block w-full px-4 py-3 text-left text-sm hover:bg-slate-50">
-                                        <div class="font-medium text-slate-900" x-text="obra.nombre"></div>
-                                    </button>
-                                </template>
-                                <div x-show="obrasFiltradas().length === 0" class="px-4 py-3 text-sm text-slate-500">
-                                    Sin coincidencias
-                                </div>
-                            </div>
                         </div>
-    <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
-
-            {{-- USO CFDI --}}
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">
-                    Uso CFDI
-                </label>
-
-                <select name="uso_cfdi"
-                        class="w-full rounded-xl border-slate-300">
-
-                    <option value="G01" @selected($selectedUsoCfdi === 'G01')>G01 - Adquisición de mercancías</option>
-                    <option value="G02" @selected($selectedUsoCfdi === 'G02')>G02 - Devoluciones, descuentos o bonificaciones</option>
-                    <option value="G03" @selected($selectedUsoCfdi === 'G03')>G03 - Gastos en general</option>
-
-                    <option value="I01" @selected($selectedUsoCfdi === 'I01')>I01 - Construcciones</option>
-                    <option value="I02" @selected($selectedUsoCfdi === 'I02')>I02 - Mobiliario y equipo de oficina por inversiones</option>
-                    <option value="I03" @selected($selectedUsoCfdi === 'I03')>I03 - Equipo de transporte</option>
-                    <option value="I04" @selected($selectedUsoCfdi === 'I04')>I04 - Equipo de cómputo y accesorios</option>
-                    <option value="I05" @selected($selectedUsoCfdi === 'I05')>I05 - Dados, troqueles, moldes, matrices y herramental</option>
-                    <option value="I06" @selected($selectedUsoCfdi === 'I06')>I06 - Comunicaciones telefónicas</option>
-                    <option value="I07" @selected($selectedUsoCfdi === 'I07')>I07 - Comunicaciones satelitales</option>
-                    <option value="I08" @selected($selectedUsoCfdi === 'I08')>I08 - Otra maquinaria y equipo</option>
-
-                    <option value="D01" @selected($selectedUsoCfdi === 'D01')>D01 - Honorarios médicos, dentales y gastos hospitalarios</option>
-                    <option value="D02" @selected($selectedUsoCfdi === 'D02')>D02 - Gastos médicos por incapacidad o discapacidad</option>
-                    <option value="D03" @selected($selectedUsoCfdi === 'D03')>D03 - Gastos funerales</option>
-                    <option value="D04" @selected($selectedUsoCfdi === 'D04')>D04 - Donativos</option>
-                    <option value="D05" @selected($selectedUsoCfdi === 'D05')>D05 - Intereses reales efectivamente pagados por créditos hipotecarios</option>
-                    <option value="D06" @selected($selectedUsoCfdi === 'D06')>D06 - Aportaciones voluntarias al SAR</option>
-                    <option value="D07" @selected($selectedUsoCfdi === 'D07')>D07 - Primas por seguros de gastos médicos</option>
-                    <option value="D08" @selected($selectedUsoCfdi === 'D08')>D08 - Gastos de transportación escolar obligatoria</option>
-                    <option value="D09" @selected($selectedUsoCfdi === 'D09')>D09 - Depósitos en cuentas para el ahorro / pensiones</option>
-                    <option value="D10" @selected($selectedUsoCfdi === 'D10')>D10 - Pagos por servicios educativos</option>
-
-                    <option value="S01" @selected($selectedUsoCfdi === 'S01')>S01 - Sin efectos fiscales</option>
-                    <option value="CP01" @selected($selectedUsoCfdi === 'CP01')>CP01 - Pagos</option>
-                    <option value="CN01" @selected($selectedUsoCfdi === 'CN01')>CN01 - Nómina</option>
-                </select>
-            </div>
-
-            {{-- MÉTODO DE PAGO --}}
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">
-                    Método de pago
-                </label>
-
-                <select name="metodo_pago"
-                        class="w-full rounded-xl border-slate-300">
-
-                    <option value="PUE" @selected($selectedMetodoPago === 'PUE')>PUE - Pago en una sola exhibicion</option>
-                    <option value="PPD" @selected($selectedMetodoPago === 'PPD')>PPD - Pago en parcialidades</option>
-
-                </select>
-            </div>
-
-            {{-- FORMA DE PAGO --}}
-            <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">
-                        Forma de pago
-                    </label>
-
-                    <select name="forma_pago"
-                            class="w-full rounded-xl border-slate-300">
-
-                        <option value="03" @selected($selectedFormaPago === '03')>03 - Transferencia electronica</option>
-                        <option value="01" @selected($selectedFormaPago === '01')>01 - Efectivo</option>
-                        <option value="02" @selected($selectedFormaPago === '02')>02 - Cheque nominativo</option>
-                        <option value="04" @selected($selectedFormaPago === '04')>04 - Tarjeta de credito</option>
-                        <option value="28" @selected($selectedFormaPago === '28')>28 - Tarjeta de debito</option>
-                        <option value="99" @selected($selectedFormaPago === '99')>99 - Por definir</option>
-
-                    </select>
-                </div>
-                
-            </div>
-              {{-- IVA GLOBAL --}}
-    <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">
-            IVA
-        </label>
-        <select name="tipo_iva" x-model="tipoIva" class="w-full rounded-xl border-slate-300">
-            <option value="0.16">IVA 16%</option>
-            <option value="0.08">IVA 8% (Zona fronteriza)</option>
-            <option value="0">IVA 0% (Tasa cero)</option>
-            <option value="exento">Exento (sin traslado)</option>
-            <option value="sin_iva">Sin IVA (no objeto)</option>
-        </select>
-        <p class="text-xs text-slate-400 mt-1">Se aplica a todos los conceptos</p>
-    </div>
-    
-
-     </div>
-      {{-- FACTURAS RELACIONADAS --}}
-<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mt-6"
-     >
-
-    <div class="flex items-start justify-between gap-4">
-        <div>
-            <h3 class="text-base font-bold text-slate-900">
-                Facturas Relacionadas
-            </h3>
-            <p class="text-sm text-slate-500">
-                Relaciona este CFDI con facturas emitidas anteriormente.
-            </p>
-        </div>
-
-        <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-            <input type="checkbox"
-                   name="usar_relacion"
-                   value="1"
-                   x-model="usarRelacion"
-                   @change="if (usarRelacion) openRelacionModal(); else clearRelacionadas()"
-                   class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-            Relacionar CFDI
-        </label>
-    </div>
-
-    <div x-show="usarRelacion"
-         x-cloak
-         class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-
-        <div>
-            <label class="block text-sm font-medium text-slate-700">
-                Tipo de Relación
-            </label>
-            <select name="relacion_tipo" class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                <option value="04">04 - Sustitución de los CFDI previos</option>
-                <option value="01">01 - Nota de crédito de los documentos relacionados</option>
-                <option value="02">02 - Nota de débito de los documentos relacionados</option>
-                <option value="03">03 - Devolución de mercancía sobre facturas o traslados previos</option>
-                <option value="05">05 - Traslados de mercancias facturados previamente</option>
-                <option value="06">06 - Factura generada por los traslados previos</option>
-                <option value="07">07 - CFDI por aplicación de anticipo</option>
-            </select>
-        </div>
-
-        <div>
-            <label class="block text-sm font-medium text-slate-700">Facturas seleccionadas</label>
-            <input type="hidden" name="relacion_uuids" :value="selectedRelacionUuids().join(',')">
-
-            <div class="mt-1 rounded-xl border border-slate-200 bg-slate-50 p-3 min-h-[46px]">
-                <div x-show="selectedRelacionadas.length === 0" class="text-sm text-slate-500">
-                    Sin facturas relacionadas.
-                </div>
-
-                <div x-show="selectedRelacionadas.length > 0" class="flex flex-wrap gap-2">
-                    <template x-for="factura in selectedRelacionadas" :key="factura.uuid">
-                        <span class="inline-flex items-center gap-2 rounded-full bg-white border border-slate-200 px-3 py-1 text-xs text-slate-700">
-                            <span class="font-mono" x-text="shortUuid(factura.uuid)"></span>
-                            <button type="button" @click="removeRelacionada(factura.uuid)" class="font-semibold text-slate-400 hover:text-red-600">x</button>
-                        </span>
-                    </template>
-                </div>
-            </div>
-
-            <button type="button"
-                    @click="openRelacionModal()"
-                    class="mt-3 inline-flex items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100">
-                Buscar facturas
-            </button>
-        </div>
-    </div>
-</div>
+                    </div>
 
                     {{-- Complemento Servicios Parciales de Construcción --}}
-@php
-    $complementoConstruccion = old('complemento_construccion', $prefill['complemento_construccion'] ?? []);
-    $usarComplementoConstruccion = old('usar_complemento_construccion', $prefill['usar_complemento_construccion'] ?? false);
-@endphp
-<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mt-6"
-     x-data="{ usarComplementoConstruccion: @js((bool) $usarComplementoConstruccion) }">
+                    @php
+                        $complementoConstruccion = old('complemento_construccion', $prefill['complemento_construccion'] ?? []);
+                        $usarComplementoConstruccion = old('usar_complemento_construccion', $prefill['usar_complemento_construccion'] ?? false);
+                    @endphp
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
+                         x-data="{ usarComplementoConstruccion: @js((bool) $usarComplementoConstruccion) }">
 
-    <div class="flex items-start justify-between gap-4">
-        <div>
-            <h3 class="text-base font-bold text-slate-900">
-                Complemento Servicios Parciales de Construcción
-            </h3>
-            <p class="text-sm text-slate-500">
-                Úsalo solo cuando el cliente requiera este complemento en el XML.
-            </p>
-        </div>
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 class="text-base font-bold text-slate-900">
+                                    Complemento Servicios Parciales de Construcción
+                                </h3>
+                                <p class="text-sm text-slate-500">
+                                    Úsalo solo cuando el cliente requiera este complemento en el XML.
+                                </p>
+                            </div>
 
-        <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-            <input type="checkbox"
-                   name="usar_complemento_construccion"
-                   value="1"
-                   x-model="usarComplementoConstruccion"
-                   class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-            Agregar complemento
-        </label>
-    </div>
+                            <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                                <input type="checkbox"
+                                       name="usar_complemento_construccion"
+                                       value="1"
+                                       x-model="usarComplementoConstruccion"
+                                       class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                Agregar complemento
+                            </label>
+                        </div>
 
-    <div x-show="usarComplementoConstruccion"
-         x-cloak
-         class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div x-show="usarComplementoConstruccion"
+                             x-cloak
+                             class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
 
-        <div class="md:col-span-3">
-            <label class="block text-sm font-medium text-slate-700">
-                Número de permiso, licencia o autorización
-            </label>
-            <input type="text"
-                   name="complemento_construccion[num_per_lico_aut]"
-                   value="{{ old('complemento_construccion.num_per_lico_aut', data_get($complementoConstruccion, 'num_per_lico_aut')) }}"
-                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                   placeholder="Ej. DEUR-1698/24">
-        </div>
+                            <div class="md:col-span-3">
+                                <label class="block text-sm font-medium text-slate-700">
+                                    Número de permiso, licencia o autorización
+                                </label>
+                                <input type="text"
+                                       name="complemento_construccion[num_per_lico_aut]"
+                                       value="{{ old('complemento_construccion.num_per_lico_aut', data_get($complementoConstruccion, 'num_per_lico_aut')) }}"
+                                       class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                       placeholder="Ej. DEUR-1698/24">
+                            </div>
 
-        <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-slate-700">Calle del inmueble</label>
-            <input type="text" name="complemento_construccion[calle]"
-                   value="{{ old('complemento_construccion.calle', data_get($complementoConstruccion, 'calle')) }}"
-                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-        </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-slate-700">Calle del inmueble</label>
+                                <input type="text" name="complemento_construccion[calle]"
+                                       value="{{ old('complemento_construccion.calle', data_get($complementoConstruccion, 'calle')) }}"
+                                       class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
 
-        <div>
-            <label class="block text-sm font-medium text-slate-700">Código postal</label>
-            <input type="text" name="complemento_construccion[codigo_postal]"
-                   value="{{ old('complemento_construccion.codigo_postal', data_get($complementoConstruccion, 'codigo_postal')) }}"
-                   maxlength="5"
-                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-        </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Código postal</label>
+                                <input type="text" name="complemento_construccion[codigo_postal]"
+                                       value="{{ old('complemento_construccion.codigo_postal', data_get($complementoConstruccion, 'codigo_postal')) }}"
+                                       maxlength="5"
+                                       class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
 
-        <div>
-            <label class="block text-sm font-medium text-slate-700">No. exterior</label>
-            <input type="text" name="complemento_construccion[no_exterior]"
-                   value="{{ old('complemento_construccion.no_exterior', data_get($complementoConstruccion, 'no_exterior', '.')) }}"
-                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-        </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">No. exterior</label>
+                                <input type="text" name="complemento_construccion[no_exterior]"
+                                       value="{{ old('complemento_construccion.no_exterior', data_get($complementoConstruccion, 'no_exterior', '.')) }}"
+                                       class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
 
-        <div>
-            <label class="block text-sm font-medium text-slate-700">No. interior</label>
-            <input type="text" name="complemento_construccion[no_interior]"
-                   value="{{ old('complemento_construccion.no_interior', data_get($complementoConstruccion, 'no_interior', '.')) }}"
-                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-        </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">No. interior</label>
+                                <input type="text" name="complemento_construccion[no_interior]"
+                                       value="{{ old('complemento_construccion.no_interior', data_get($complementoConstruccion, 'no_interior', '.')) }}"
+                                       class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
 
-        <div>
-            <label class="block text-sm font-medium text-slate-700">Colonia</label>
-            <input type="text" name="complemento_construccion[colonia]"
-                   value="{{ old('complemento_construccion.colonia', data_get($complementoConstruccion, 'colonia', '.')) }}"
-                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-        </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Colonia</label>
+                                <input type="text" name="complemento_construccion[colonia]"
+                                       value="{{ old('complemento_construccion.colonia', data_get($complementoConstruccion, 'colonia', '.')) }}"
+                                       class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
 
-        <div>
-            <label class="block text-sm font-medium text-slate-700">Localidad</label>
-            <input type="text" name="complemento_construccion[localidad]"
-                   value="{{ old('complemento_construccion.localidad', data_get($complementoConstruccion, 'localidad')) }}"
-                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-        </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Localidad</label>
+                                <input type="text" name="complemento_construccion[localidad]"
+                                       value="{{ old('complemento_construccion.localidad', data_get($complementoConstruccion, 'localidad')) }}"
+                                       class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
 
-        <div>
-            <label class="block text-sm font-medium text-slate-700">Municipio</label>
-            <input type="text" name="complemento_construccion[municipio]"
-                   value="{{ old('complemento_construccion.municipio', data_get($complementoConstruccion, 'municipio')) }}"
-                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-        </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Municipio</label>
+                                <input type="text" name="complemento_construccion[municipio]"
+                                       value="{{ old('complemento_construccion.municipio', data_get($complementoConstruccion, 'municipio')) }}"
+                                       class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
 
-        <div>
-            <label class="block text-sm font-medium text-slate-700">Estado</label>
-            <select name="complemento_construccion[estado]"
-                    class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                <option value="">Selecciona estado</option>
-                @foreach($estadosSat as $estadoKey => $estadoLabel)
-                    <option value="{{ $estadoKey }}" @selected((string) old('complemento_construccion.estado', data_get($complementoConstruccion, 'estado')) === (string) $estadoKey)>
-                        {{ $estadoLabel }}
-                    </option>
-                @endforeach
-            </select>
-            <p class="mt-1 text-xs text-slate-500">Clave del complemento: Nayarit = 18.</p>
-        </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Estado</label>
+                                <select name="complemento_construccion[estado]"
+                                        class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option value="">Selecciona estado</option>
+                                    @foreach($estadosSat as $estadoKey => $estadoLabel)
+                                        <option value="{{ $estadoKey }}" @selected((string) old('complemento_construccion.estado', data_get($complementoConstruccion, 'estado')) === (string) $estadoKey)>
+                                            {{ $estadoLabel }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <p class="mt-1 text-xs text-slate-500">Clave del complemento: Nayarit = 18.</p>
+                            </div>
 
-        <div class="md:col-span-3">
-            <label class="block text-sm font-medium text-slate-700">Referencia</label>
-            <input type="text" name="complemento_construccion[referencia]"
-                   value="{{ old('complemento_construccion.referencia', data_get($complementoConstruccion, 'referencia', '.')) }}"
-                   class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-        </div>
-    </div>
-</div>
-
+                            <div class="md:col-span-3">
+                                <label class="block text-sm font-medium text-slate-700">Referencia</label>
+                                <input type="text" name="complemento_construccion[referencia]"
+                                       value="{{ old('complemento_construccion.referencia', data_get($complementoConstruccion, 'referencia', '.')) }}"
+                                       class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
 
                 {{-- CONCEPTOS --}}
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">

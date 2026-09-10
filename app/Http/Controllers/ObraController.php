@@ -70,11 +70,13 @@ class ObraController extends Controller
     {
         $search = $request->query('search');
         $status = $request->query('status');
+        $areaId = $request->query('area_id');
         $kpisObras = auth()->user()?->hasRole('super-admin')
             ? $this->kpisObrasEjecutivos()
             : null;
 
         $statusMap = Obra::estatusSlugs();
+        $areas = Area::orderBy('nombre')->get();
 
         $obras = Obra::with(['cliente', 'responsable', 'area'])
             ->tap(fn ($query) => $this->aplicarVisibilidadObras($query))
@@ -93,11 +95,14 @@ class ObraController extends Controller
                     $query->where('estatus_nuevo', $statusMap[$status]);
                 }
             })
+            ->when($areaId, function ($query, $areaId) {
+                $query->where('area_id', $areaId);
+            })
             ->orderBy('created_at', 'desc')
             ->paginate(10)
             ->withQueryString();
 
-        return view('obras.index', compact('obras', 'search', 'status', 'kpisObras'));
+        return view('obras.index', compact('obras', 'search', 'status', 'areaId', 'kpisObras', 'areas'));
     }
 
     public function create()
@@ -1176,7 +1181,7 @@ if ($tab === 'vehiculos') {
             ->with(['conceptoSat', 'creador', 'autorizador'])
             ->latest()
             ->get();
-        $ordenesCompraObra = $tab === 'facturacion'
+        $ordenesCompraObra = in_array($tab, ['facturacion', 'ordenes-compra'], true)
             ? OrdenCompra::with(['proveedor', 'areaCatalogo', 'centroCosto', 'pagoProveedorActivo'])
                 ->withCount('detalles')
                 ->where('obra_id', $obra->id)

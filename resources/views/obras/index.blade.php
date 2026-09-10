@@ -27,26 +27,44 @@
 @endphp
 
 <x-filters.card action="{{ route('obras.index') }}" class="mb-6">
-    <x-filters.input
-        name="search"
-        label="Buscar"
-        :value="$search ?? ''"
-        placeholder="Nombre, clave o cliente..."
-        span="md:col-span-7"
-        type="search"
-        glow />
+    <div class="md:col-span-7">
+        <x-filters.input
+            name="search"
+            label="Buscar"
+            :value="$search ?? ''"
+            placeholder="Nombre, clave o cliente..."
+            type="search"
+            glow />
+    </div>
 
-    <x-filters.select
-        name="status"
-        label="Estatus"
-        :value="$status ?? ''"
-        :options="$statusFiltroOpciones"
-        span="md:col-span-2 md:max-w-48" />
+    <div class="md:col-start-9 md:col-span-2 flex justify-end">
+        <div class="w-full md:max-w-48">
+            <x-filters.select
+                name="status"
+                label="Estatus"
+                :value="$status ?? ''"
+                :options="$statusFiltroOpciones"
+                span="w-full" />
+        </div>
+    </div>
 
-    <x-filters.actions
-        submit-label="Filtrar"
-        clear-url="{{ route('obras.index') }}"
-        span="md:col-span-3" />
+    <div class="md:col-start-11 md:col-span-2 flex justify-end">
+        <div class="w-full md:max-w-52">
+            <x-filters.select
+                name="area_id"
+                label="Área"
+                :value="$areaId ?? ''"
+                :options="collect($areas ?? [])->mapWithKeys(fn($area) => [$area->id => $area->nombre ?: $area->codigo])->prepend('Todos', '')->all()"
+                span="w-full" />
+        </div>
+    </div>
+
+    <div class="md:col-start-13 md:col-span-2 flex justify-end">
+        <x-filters.actions
+            submit-label="Filtrar"
+            clear-url="{{ route('obras.index') }}"
+            span="w-full" />
+    </div>
 </x-filters.card>
 {{--
 KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtros.
@@ -98,22 +116,37 @@ KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtro
     @endif
 
     <div class="overflow-x-auto">
-        <table class="w-full min-w-[850px] text-sm">
+        <table class="w-full min-w-[1100px] text-sm">
             <thead>
                 <tr class="border-b text-slate-500 font-medium">
+                    <th class="py-3 px-2 text-left">Clave</th>
                     <th class="py-3 px-2 text-left">Nombre</th>
                     <th class="py-3 px-2 text-left">Cliente</th>
-                    <th class="py-3 px-2 text-left">Clave</th>
                     <th class="py-3 px-2 text-left">Status</th>
-                    <th class="py-3 px-2 text-left">Inicio Prog.</th>
-                    <th class="py-3 px-2 text-left">Responsable</th>
+                    <th class="py-3 px-2 text-right">Valor obra</th>
+                    <th class="py-3 px-2 text-right">Facturado</th>
+                    <th class="py-3 px-2 text-right">Cobrado</th>
+                    <th class="py-3 px-2 text-right">Falta</th>
+                    <th class="py-3 px-2 text-center">Avance</th>
                     <th class="py-3 px-2 text-right">Acciones</th>
                 </tr>
             </thead>
 
             <tbody>
                 @forelse($obras as $obra)
-                    <tr class="border-b hover:bg-slate-50">
+                    @php
+                        $valorObra = (float) ($obra->monto_contratado ?? 0);
+                        $facturado = (float) \App\Models\ObraFactura::where('obra_id', $obra->id)
+                            ->where('estado', '!=', 'cancelada')
+                            ->sum('monto');
+                        $cobrado = (float) \App\Models\ObraFacturaPago::where('obra_id', $obra->id)->sum('monto');
+                        $pendiente = max(0, $facturado - $cobrado);
+                        $avancePct = $valorObra > 0 ? min(100, round(($facturado / $valorObra) * 100)) : 0;
+                        $money = fn ($value) => '$' . number_format((float) $value, 2);
+                    @endphp
+                    <tr class="border-b hover:bg-slate-50 align-top">
+                        <td class="py-3 px-2 font-medium text-slate-700">{{ $obra->clave_obra }}</td>
+
                         <td class="py-3 px-2">
                             <a href="{{ route('obras.edit', $obra) }}"
                                class="font-semibold text-slate-800 hover:text-blue-700 hover:underline">
@@ -130,24 +163,9 @@ KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtro
                                 -
                             @endif
                         </td>
-                        <td class="py-3 px-2">{{ $obra->clave_obra }}</td>
 
                         <td class="py-3 px-2">
                             @php
-                                $statusColors = [
-                                    1 => 'bg-slate-100 text-slate-700', // Planeacion
-                                    2 => 'bg-blue-100 text-blue-700',   // Ejecucion
-                                    3 => 'bg-yellow-100 text-yellow-700', // Suspendida
-                                    4 => 'bg-green-100 text-green-700',  // Terminada
-                                    5 => 'bg-red-100 text-red-700',      // Cancelada
-                                ];
-                                $statusLabels = [
-                                    1 => 'Planeación',
-                                    2 => 'En ejecución',
-                                    3 => 'Suspendida',
-                                    4 => 'Terminada',
-                                    5 => 'Cancelada',
-                                ];
                                 $val = (int)($obra->estatus_nuevo ?? 1);
                                 $cls = \App\Models\Obra::estatusBadgeClasses()[$val] ?? 'bg-slate-100 text-slate-700';
                                 $lbl = $obra->estatus_label;
@@ -157,12 +175,31 @@ KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtro
                             </span>
                         </td>
 
-                        <td class="py-3 px-2">
-                            {{ $obra->fecha_inicio_programada ? $obra->fecha_inicio_programada->format('d/m/Y') : '-' }}
+                        <td class="py-3 px-2 text-right font-medium text-slate-800">
+                            {{ $money($valorObra) }}
+                        </td>
+
+                        <td class="py-3 px-2 text-right font-medium text-blue-700">
+                            {{ $money($facturado) }}
+                        </td>
+
+                        <td class="py-3 px-2 text-right font-medium text-emerald-700">
+                            {{ $money($cobrado) }}
+                        </td>
+
+                        <td class="py-3 px-2 text-right font-medium text-amber-700">
+                            {{ $money($pendiente) }}
                         </td>
 
                         <td class="py-3 px-2">
-                            {{ $obra->responsable->nombre_completo ?? '-' }}
+                            <div class="min-w-[110px]">
+                                <div class="flex items-center justify-between text-[10px] text-slate-500 mb-1">
+                                    <span>{{ $avancePct }}%</span>
+                                </div>
+                                <div class="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
+                                    <div class="h-full rounded-full bg-gradient-to-r from-[#0B265A] to-[#3B82F6]" style="width: {{ $avancePct }}%"></div>
+                                </div>
+                            </div>
                         </td>
 
                         <td class="py-3 px-2 text-right space-x-2">
@@ -186,7 +223,7 @@ KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtro
 
                 @empty
                     <tr>
-                        <td colspan="7" class="py-6 text-center text-slate-500">
+                        <td colspan="10" class="py-6 text-center text-slate-500">
                             No hay obras registradas aún.
                         </td>
                     </tr>

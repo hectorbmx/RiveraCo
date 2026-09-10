@@ -1263,6 +1263,7 @@ $invoice = $facturapi->Invoices->create($payload);
                 'total' => $totalFactura,
 
                 'estado' => 'timbrada',
+                'timbrado_por' => auth()->id(),
                 'fecha_emision' => isset($invoice->date) ? Carbon::parse($invoice->date) : now(),
                 'fecha_timbrado' => isset($invoice->stamp->date) ? Carbon::parse($invoice->stamp->date) : now(),
 
@@ -1396,6 +1397,7 @@ $invoice = $facturapi->Invoices->create($payload);
         'obra',
         'ordenCompra',
         'conceptos',
+        'timbradoPor',
     ]);
 
     $borradorFacturado = ObraFacturaBorrador::with('facturador')

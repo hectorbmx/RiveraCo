@@ -44,8 +44,10 @@
             'horas-maquina'=> 'Horas maquina',
             'comisiones'   => 'Comisiones',
             'facturacion'  => 'Facturacion',
-            'relacionar'  => 'Relacionar Facturas',
+            // 'relacionar'  => 'Relacionar Facturas',
             'asistencias'  => 'Asistencias',
+            'ordenes-compra' => 'Ordenes de compra',
+            'reportes'     => 'Reportes',
         ];
     @endphp
 
@@ -2886,6 +2888,11 @@
     @include('obras.partials.asistencias.tab')
 @endif
 
+{{-- TAB ORDENES DE COMPRA --}}
+@if($tab === 'ordenes-compra')
+    @include('obras.partials.ordenes_compra.tab')
+@endif
+
 {{-- TAB ASISTENCIAS LEGACY: pendiente de retirar cuando terminemos el ajuste semanal. --}}
 @if(false && $tab === 'asistencias')
   <h2 class="text-lg font-semibold mb-4">Asistencias de empleados asignados a la obra</h2>
@@ -5134,7 +5141,8 @@ function relacionFacturasModal() {
                             <input type="text" name="complemento_construccion[referencia]" x-model="borradorForm.complemento_construccion.referencia" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
                         </div>
                     </div>
-                </div>                <div>
+                </div>
+                <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de retencion</label>
                     <select name="retencion_tipo"
                             x-model="borradorForm.retencion_tipo"

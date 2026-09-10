@@ -795,7 +795,7 @@ Route::middleware('auth','verified')->group(function () {
         Route::post('maquinas/{maquina}/estado', [MaquinaController::class, 'cambiarEstado'])->name('maquinas.cambiarEstado');
 
     });
-    Route::prefix('maquinas/{maquina}/seguros')->name('maquinas.seguros.')->group(function () {
+    Route::middleware(['auth'])->prefix('maquinas/{maquina}/seguros')->name('maquinas.seguros.')->group(function () {
             Route::get('/', [MaquinaSeguroController::class, 'index'])->name('index');
             Route::get('/create', [MaquinaSeguroController::class, 'create'])->name('create');
             Route::get('/edit/{seguro}', [MaquinaSeguroController::class, 'edit'])->name('edit');

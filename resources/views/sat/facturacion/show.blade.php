@@ -49,52 +49,57 @@
         <div class="lg:col-span-2 space-y-6">
             {{-- DATOS GENERALES --}}
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-sm">
-                <h2 class="text-lg font-semibold text-slate-900 mb-4 uppercase tracking-wider">Datos generales</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><span class="text-slate-500 block">Emisor</span><p class="font-medium">{{ $factura->empresa->nombre ?? '—' }}</p></div>
-                    <div><span class="text-slate-500 block">Receptor</span><p class="font-medium">{{ $factura->receptor_nombre }}</p></div>
-                    <div><span class="text-slate-500 block">RFC receptor</span><p class="font-medium text-indigo-600">{{ $factura->receptor_rfc }}</p></div>
-<div>
-    <span class="text-slate-500 block">Uso CFDI</span>
-    <p class="font-medium">
-        {{ $factura->uso_cfdi }}
-    </p>
-</div>
+                <div class="flex items-center justify-between gap-3 mb-5">
+                    <h2 class="text-lg font-semibold text-slate-900 uppercase tracking-wider">Datos generales</h2>
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium {{ $factura->estado == 'timbrada' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
+                        {{ ucfirst($factura->estado) }}
+                    </span>
+                </div>
 
-<div>
-    <span class="text-slate-500 block">Método de pago</span>
-    <p class="font-medium">
-        {{ $factura->metodo_pago }}
-        <span class="text-slate-500 text-sm">
-            @if($factura->metodo_pago === 'PUE')
-                (Pago en una sola exhibición)
-            @elseif($factura->metodo_pago === 'PPD')
-                (Pago en parcialidades o diferido)
-            @endif
-        </span>
-    </p>
-</div>
-
-<div>
-    <span class="text-slate-500 block">Forma de pago</span>
-    <p class="font-medium">
-        {{ $factura->forma_pago }}
-    </p>
-</div>                    <div><span class="text-slate-500 block">Estado</span>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $factura->estado == 'timbrada' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
-                            {{ ucfirst($factura->estado) }}
-                        </span>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <span class="text-slate-500 block text-xs uppercase tracking-[0.18em] mb-1">Emisor</span>
+                        <p class="font-medium text-slate-800">{{ $factura->empresa->nombre ?? '—' }}</p>
                     </div>
-                    <div>
-                        <span class="text-slate-500 block">Fecha de timbrado</span>
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <span class="text-slate-500 block text-xs uppercase tracking-[0.18em] mb-1">Receptor</span>
+                        <p class="font-medium text-slate-800">{{ $factura->receptor_nombre }}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <span class="text-slate-500 block text-xs uppercase tracking-[0.18em] mb-1">RFC receptor</span>
+                        <p class="font-medium text-indigo-600">{{ $factura->receptor_rfc }}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <span class="text-slate-500 block text-xs uppercase tracking-[0.18em] mb-1">Uso CFDI</span>
+                        <p class="font-medium text-slate-800">{{ $factura->uso_cfdi }}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <span class="text-slate-500 block text-xs uppercase tracking-[0.18em] mb-1">Método de pago</span>
                         <p class="font-medium text-slate-800">
-                            {{ $factura->fecha_timbrado?->format('d/m/Y H:i') ?? 'No registrada' }}
+                            {{ $factura->metodo_pago }}
+                            @if($factura->metodo_pago === 'PUE')
+                                <span class="text-slate-500 text-xs">(Pago en una sola exhibición)</span>
+                            @elseif($factura->metodo_pago === 'PPD')
+                                <span class="text-slate-500 text-xs">(Pago en parcialidades o diferido)</span>
+                            @endif
                         </p>
                     </div>
-                    <div>
-                        <span class="text-slate-500 block">Timbrado por</span>
-                        <p class="font-medium {{ $borradorFacturado?->facturador ? 'text-slate-800' : 'text-slate-400' }}">
-                            {{ $borradorFacturado?->facturador?->name ?? 'No registrado' }}
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <span class="text-slate-500 block text-xs uppercase tracking-[0.18em] mb-1">Forma de pago</span>
+                        <p class="font-medium text-slate-800">{{ $factura->forma_pago }}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <span class="text-slate-500 block text-xs uppercase tracking-[0.18em] mb-1">IVA</span>
+                        <p class="font-medium text-slate-800">${{ number_format((float) ($factura->iva ?? 0), 2) }}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <span class="text-slate-500 block text-xs uppercase tracking-[0.18em] mb-1">Fecha de timbrado</span>
+                        <p class="font-medium text-slate-800">{{ $factura->fecha_timbrado?->format('d/m/Y H:i') ?? 'No registrada' }}</p>
+                    </div>
+                    <div class="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <span class="text-slate-500 block text-xs uppercase tracking-[0.18em] mb-1">Timbrado por</span>
+                        <p class="font-medium {{ ($factura->timbradoPor || $borradorFacturado?->facturador) ? 'text-slate-800' : 'text-slate-400' }}">
+                            {{ $factura->timbradoPor?->name ?? $borradorFacturado?->facturador?->name ?? 'No registrado' }}
                         </p>
                     </div>
                 </div>
@@ -186,11 +191,26 @@
 
     $saldoPendiente = max($factura->total - $totalPagado, 0);
 @endphp
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-sm">
-                <h2 class="text-lg font-semibold text-slate-900 mb-4 font-bold">Resumen</h2>
-                <div class="space-y-3">
-                    <div class="flex justify-between font-bold text-lg text-slate-900 border-t pt-3">
-                        <span>Total</span><span>${{ number_format($factura->total, 2) }}</span>
+            <div class="bg-slate-950 rounded-2xl border border-slate-800 shadow-sm p-6 text-sm text-white">
+                <div class="flex items-center justify-between gap-3 mb-5">
+                    <h2 class="text-lg font-semibold text-white">Resumen</h2>
+                    <span class="text-xs uppercase tracking-[0.24em] text-slate-400">MXN</span>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center rounded-xl bg-white/5 px-3 py-2">
+                        <span class="text-slate-300">Subtotal</span>
+                        <span class="font-semibold text-white">${{ number_format((float) ($factura->subtotal ?? 0), 2) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center rounded-xl bg-white/5 px-3 py-2">
+                        <span class="text-slate-300">IVA</span>
+                        <span class="font-semibold text-white">${{ number_format((float) ($factura->iva ?? 0), 2) }}</span>
+                    </div>
+                    <div class="border-t border-white/10 pt-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm uppercase tracking-[0.18em] text-slate-400 font-medium">Total</span>
+                            <span class="text-2xl font-black text-amber-300">${{ number_format((float) ($factura->total ?? 0), 2) }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
