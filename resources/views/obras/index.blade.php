@@ -126,7 +126,8 @@ KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtro
                     <th class="py-3 px-2 text-right">Valor obra</th>
                     <th class="py-3 px-2 text-right">Facturado</th>
                     <th class="py-3 px-2 text-right">Cobrado</th>
-                    <th class="py-3 px-2 text-right">Falta</th>
+                    <th class="py-3 px-2 text-right">Gastado</th>
+                    <th class="py-3 px-2 text-right">Por facturar</th>
                     <th class="py-3 px-2 text-center">Avance</th>
                     <th class="py-3 px-2 text-right">Acciones</th>
                 </tr>
@@ -140,7 +141,11 @@ KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtro
                             ->where('estado', '!=', 'cancelada')
                             ->sum('monto');
                         $cobrado = (float) \App\Models\ObraFacturaPago::where('obra_id', $obra->id)->sum('monto');
-                        $pendiente = max(0, $facturado - $cobrado);
+                        $gastado = (float) \App\Models\OrdenCompra::where('obra_id', $obra->id)
+                            ->whereNotIn('estado', ['cancelada'])
+                            ->sum('total');
+                        $porFacturar = max(0, $valorObra - $facturado);
+                        $porCobrar = max(0, $facturado - $cobrado);
                         $avancePct = $valorObra > 0 ? min(100, round(($facturado / $valorObra) * 100)) : 0;
                         $money = fn ($value) => '$' . number_format((float) $value, 2);
                     @endphp
@@ -187,8 +192,12 @@ KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtro
                             {{ $money($cobrado) }}
                         </td>
 
+                        <td class="py-3 px-2 text-right font-medium text-orange-600">
+                            {{ $money($gastado) }}
+                        </td>
+
                         <td class="py-3 px-2 text-right font-medium text-amber-700">
-                            {{ $money($pendiente) }}
+                            {{ $money($porFacturar) }}
                         </td>
 
                         <td class="py-3 px-2">
