@@ -137,9 +137,38 @@ KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtro
                 @forelse($obras as $obra)
                     @php
                         $valorObra = (float) ($obra->monto_contratado ?? 0);
+
+                        $facturasSat = \App\Models\SatFactura::query()
+                            ->where('obra_id', $obra->id)
+                            ->whereNotNull('uuid')
+                            ->where(function ($query) {
+                                $query->whereNull('estado')
+                                    ->orWhere('estado', '!=', 'cancelada');
+                            })
+                            ->get(['uuid', 'total'])
+                            ->map(fn ($factura) => [
+                                'uuid' => strtoupper((string) ($factura->uuid ?? '')),
+                                'total' => (float) ($factura->total ?? 0),
+                            ])
+                            ->filter(fn ($factura) => $factura['uuid'] !== '')
+                            ->unique('uuid')
+                            ->sum('total');
+
+                        $cfdisSat = \App\Models\SatCfdi::query()
+                            ->where('obra_id', $obra->id)
+                            ->whereNotNull('uuid')
+                            ->get(['uuid', 'total'])
+                            ->map(fn ($cfdi) => [
+                                'uuid' => strtoupper((string) ($cfdi->uuid ?? '')),
+                                'total' => (float) ($cfdi->total ?? 0),
+                            ])
+                            ->filter(fn ($cfdi) => $cfdi['uuid'] !== '')
+                            ->unique('uuid')
+                            ->sum('total');
+
                         $facturado = (float) \App\Models\ObraFactura::where('obra_id', $obra->id)
                             ->where('estado', '!=', 'cancelada')
-                            ->sum('monto');
+                            ->sum('monto') + $facturasSat + $cfdisSat;
                         $cobrado = (float) \App\Models\ObraFacturaPago::where('obra_id', $obra->id)->sum('monto');
                         $gastado = (float) \App\Models\OrdenCompra::where('obra_id', $obra->id)
                             ->whereNotIn('estado', ['cancelada'])
