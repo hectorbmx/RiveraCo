@@ -154,11 +154,19 @@
                         <th class="px-4 py-3 text-right font-semibold text-blue-900 bg-blue-50/50">Cant. Recibida</th>
                         <th class="px-4 py-3 text-right font-semibold">Costo Unitario</th>
                         <th class="px-4 py-3 text-right font-semibold">Importe</th>
+                        <th class="px-4 py-3 text-left font-semibold">Origen</th>
                         <th class="px-4 py-3 text-left font-semibold">Observaciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 text-gray-800">
                     @forelse($entrada->detalles as $idx => $d)
+                        @php
+                            $ocDetalle = $d->ordenCompraDetalle;
+                            $salidaDetalle = $d->huentitanSalidaDetalle ?: $ocDetalle?->huentitanSalidaDetalle;
+                            $salida = $salidaDetalle?->salida;
+                            $fabricacionMaterial = $ocDetalle?->huentitanOrdenFabricacionMaterial;
+                            $ordenFabricacion = $fabricacionMaterial?->orden;
+                        @endphp
                         <tr class="hover:bg-gray-50">
                             <td class="px-4 py-3 text-center text-xs text-gray-400 font-mono">
                                 {{ $idx + 1 }}
@@ -189,13 +197,26 @@
                             <td class="px-4 py-3 text-right whitespace-nowrap font-medium text-gray-900">
                                 ${{ number_format($d->importe, 2) }}
                             </td>
+                            <td class="px-4 py-3 text-xs text-gray-600">
+                                @if($salida)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-800">Salida a obra</span>
+                                    <div class="mt-1 font-medium text-gray-800">{{ $salida->folio }}</div>
+                                    <div class="text-gray-500">{{ $salida->obra ? trim(($salida->obra->clave_obra ? $salida->obra->clave_obra . ' - ' : '') . $salida->obra->nombre) : 'Sin obra' }}</div>
+                                @elseif($ordenFabricacion)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full font-semibold bg-indigo-100 text-indigo-800">Orden fabricacion</span>
+                                    <div class="mt-1 font-medium text-gray-800">{{ $ordenFabricacion->folio }}</div>
+                                    <div class="text-gray-500">{{ $ordenFabricacion->producto?->nombre ?? 'Producto terminado' }}</div>
+                                @else
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full font-semibold bg-gray-100 text-gray-700">Stock / almacen</span>
+                                @endif
+                            </td>
                             <td class="px-4 py-3 text-xs text-gray-500">
                                 {{ $d->observaciones ?: '-' }}
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-4 py-6 text-center text-gray-500">
+                            <td colspan="9" class="px-4 py-6 text-center text-gray-500">
                                 No hay partidas registradas en esta entrada.
                             </td>
                         </tr>
@@ -215,7 +236,7 @@
                         <td class="px-4 py-3 text-right text-sm text-gray-900">
                             ${{ number_format($entrada->total_importe, 2) }}
                         </td>
-                        <td></td>
+                        <td colspan="2"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -259,3 +280,5 @@
 </div>
 @endif
 @endsection
+
+

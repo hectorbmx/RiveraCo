@@ -2578,6 +2578,96 @@ private function attachHuentitanMaterialesToOrder(array $selectedItems, OrdenCom
 
     OrdenCompraTotalesService::recalcular($orden);
 }
+private function attachHuentitanSalidaMaterialesToOrder(array $selectedItems, OrdenCompra $orden): void
+{
+    $normalized = collect($selectedItems)
+        ->map(function ($item) {
+            $id = (int) ($item['id'] ?? 0);
+            $quantity = isset($item['quantity']) && $item['quantity'] !== ''
+                ? (float) $item['quantity']
+                : null;
+            $price = isset($item['price']) && $item['price'] !== ''
+                ? (float) $item['price']
+                : null;
+
+            return compact('id', 'quantity', 'price');
+        })
+        ->filter(fn ($item) => $item['id'] > 0)
+        ->keyBy('id');
+
+    if ($normalized->isEmpty()) {
+        return;
+    }
+
+    $detalles = HuentitanSalidaDetalle::query()
+        ->with(['salida.obra', 'producto'])
+        ->whereIn('id', $normalized->keys()->all())
+        ->where('requiere_compra', true)
+        ->lockForUpdate()
+        ->get()
+        ->keyBy('id');
+
+    foreach ($normalized as $detalleId => $selection) {
+        $detalleSalida = $detalles->get($detalleId);
+
+        if (! $detalleSalida || ! $detalleSalida->salida || $detalleSalida->salida->estado !== 'borrador') {
+            continue;
+        }
+
+        $producto = $detalleSalida->producto;
+        $quantity = $selection['quantity']
+            ?? (float) ($detalleSalida->cantidad_sugerida_compra ?: $detalleSalida->cantidad_faltante ?: $detalleSalida->cantidad_salida);
+        $price = $selection['price'] ?? (float) ($detalleSalida->costo_unitario ?? 0);
+        $importe = round(max($quantity, 0) * max($price, 0), 2);
+        $salida = $detalleSalida->salida;
+        $obra = $salida->obra;
+
+        $detail = OrdenCompraDetalle::query()
+            ->where('orden_compra_id', $orden->id)
+            ->where('huentitan_salida_detalle_id', $detalleSalida->id)
+            ->first();
+
+        $payload = [
+            'orden_compra_id' => $orden->id,
+            'producto_id' => $detalleSalida->producto_id,
+            'civil_concept_id' => null,
+            'civil_concept_snapshot' => null,
+            'obra_civil_insumo_id' => null,
+            'obra_civil_insumo_snapshot' => null,
+            'obra_civil_material_request_item_id' => null,
+            'huentitan_orden_fabricacion_material_id' => null,
+            'huentitan_salida_detalle_id' => $detalleSalida->id,
+            'legacy_prod_id' => $producto?->legacy_prod_id,
+            'descripcion' => $producto?->nombre ?? $detalleSalida->descripcion,
+            'unidad' => $detalleSalida->unidad ?: $producto?->unidad,
+            'cantidad' => $quantity,
+            'precio_unitario' => $price,
+            'precio_tope' => $price,
+            'descuento_porcentaje' => 0,
+            'descuento_importe' => 0,
+            'importe' => $importe,
+            'iva' => (float) ($orden->iva ?? 0),
+            'tipo_retencion_id' => null,
+            'retencion_porcentaje' => 0,
+            'retenciones' => 0,
+            'otros_impuestos' => 0,
+            'tipo_cambio' => (float) ($orden->tipo_cambio ?? 1),
+            'notas' => trim(sprintf(
+                'Origen HUENTITAN: salida a obra %s. Obra: %s.',
+                $salida->folio ?? '-',
+                $obra ? trim(($obra->clave_obra ? $obra->clave_obra . ' - ' : '') . $obra->nombre) : '-'
+            )),
+        ];
+
+        if ($detail) {
+            $detail->fill($payload)->save();
+        } else {
+            OrdenCompraDetalle::create($payload);
+        }
+    }
+
+    OrdenCompraTotalesService::recalcular($orden);
+}
 public function solicitudesMaterialAprobadasPorObra(Obra $obra, ObraCivilMaterialRequestOrderService $materialRequestOrderService)
 {
     $this->authorizeAny(['ordenes_compra.create.access', 'ordenes de compra.access']);
@@ -2600,7 +2690,7 @@ public function materialesHuentitanPendientesCompra()
         ->whereHas('materiales', function ($query) {
             $query->where('requiere_compra', true);
         })
-        ->whereIn('estado', ['calculada', 'en_produccion'])
+        ->whereIn('estado', ['calculada', 'pendiente_material', 'lista_para_apartar', 'en_produccion'])
         ->orderByDesc('fecha')
         ->orderByDesc('id')
         ->limit(50)
@@ -3584,6 +3674,8 @@ public function exportarListaPagos(
             ->header('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"');
     }
 }
+
+
 
 
 

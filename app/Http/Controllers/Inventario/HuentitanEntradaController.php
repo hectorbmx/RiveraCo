@@ -174,6 +174,7 @@ class HuentitanEntradaController extends Controller
 
                 $entrada->detalles()->create([
                     'orden_compra_detalle_id' => $ocDetalle->id,
+                    'huentitan_salida_detalle_id' => $ocDetalle->huentitan_salida_detalle_id,
                     'producto_id' => $ocDetalle->producto_id,
                     'descripcion' => $ocDetalle->descripcion ?: $ocDetalle->producto?->nombre,
                     'unidad' => $ocDetalle->unidad ?: ($ocDetalle->producto?->unidad ?: 'PZA'),
@@ -273,7 +274,17 @@ class HuentitanEntradaController extends Controller
     public function show(HuentitanEntrada $entrada)
     {
         $almacen = $this->almacenHuentitan();
-        $entrada->load(['almacen', 'ordenCompra.proveedor', 'usuario', 'aplicadaPor', 'canceladaPor', 'detalles.producto', 'detalles.ordenCompraDetalle']);
+        $entrada->load([
+            'almacen',
+            'ordenCompra.proveedor',
+            'usuario',
+            'aplicadaPor',
+            'canceladaPor',
+            'detalles.producto',
+            'detalles.huentitanSalidaDetalle.salida.obra',
+            'detalles.ordenCompraDetalle.huentitanSalidaDetalle.salida.obra',
+            'detalles.ordenCompraDetalle.huentitanOrdenFabricacionMaterial.orden.producto',
+        ]);
 
         return view('huentitan.entradas.show', compact('almacen', 'entrada'));
     }
@@ -384,6 +395,12 @@ class HuentitanEntradaController extends Controller
 
                     $ocDetalle->cantidad_recibida = (float) $ocDetalle->cantidad_recibida + $cantidad;
                     $ocDetalle->save();
+
+                    if ($ocDetalle->huentitan_salida_detalle_id && ! $detalle->huentitan_salida_detalle_id) {
+                        $detalle->forceFill([
+                            'huentitan_salida_detalle_id' => $ocDetalle->huentitan_salida_detalle_id,
+                        ])->save();
+                    }
 
                     $this->registrarProveedorProductoDesdeEntrada($entrada, $detalle, $ocDetalle);
                 }
@@ -591,6 +608,10 @@ class HuentitanEntradaController extends Controller
             ->first();
     }
 }
+
+
+
+
 
 
 

@@ -5026,47 +5026,56 @@ function relacionFacturasModal() {
                     <p class="mt-1 text-[11px] text-slate-500">El concepto SAT se conserva como base; puedes modificar libremente esta descripcion.</p>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Cantidad</label>
-                    <input type="number"
-                           name="cantidad"
-                           step="0.000001"
-                           min="0.000001"
-                           x-model.number="borradorForm.cantidad"
-                           @input="recalcularBorradorSubtotalDesdeConcepto()"
-                           required
-                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                <div class="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[112px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 items-end">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Cantidad</label>
+                        <input type="number"
+                               name="cantidad"
+                               step="0.000001"
+                               min="0.000001"
+                               x-model.number="borradorForm.cantidad"
+                               @input="recalcularBorradorSubtotalDesdeConcepto()"
+                               required
+                               class="w-full rounded-xl border border-sky-300 bg-sky-50/40 px-3 py-2 text-sm font-semibold text-slate-800 focus:border-sky-500 focus:ring-sky-200">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Subtotal</label>
+                        <input type="number"
+                               name="subtotal"
+                               step="0.01"
+                               min="0"
+                               x-model.number="borradorForm.subtotal"
+                               @input="recalcularBorradorIva()"
+                               required
+                               class="w-full rounded-xl border border-emerald-300 bg-emerald-50/40 px-3 py-2 text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:ring-emerald-200">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">IVA</label>
+                        <select name="tipo_iva"
+                                x-model="borradorForm.tipo_iva"
+                                @change="recalcularBorradorIva()"
+                                class="w-full rounded-xl border border-indigo-300 bg-indigo-50/40 px-3 py-2 text-sm font-semibold text-slate-800 focus:border-indigo-500 focus:ring-indigo-200">
+                            <option value="0.16">IVA 16%</option>
+                            <option value="0.08">IVA 8% (Zona fronteriza)</option>
+                            <option value="0">IVA 0% (Tasa cero)</option>
+                            <option value="exento">Exento (sin traslado)</option>
+                            <option value="sin_iva">Sin IVA (no objeto)</option>
+                        </select>
+                        <input type="hidden" name="iva_tasa" :value="Number(borradorForm.iva_tasa || 0).toFixed(6)">
+                        <input type="hidden" name="iva" :value="Number(borradorForm.iva || 0).toFixed(2)">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">IVA generado</label>
+                        <input type="text"
+                               readonly
+                               tabindex="-1"
+                               :value="money(borradorForm.iva)"
+                               class="w-full rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-bold text-[#0B265A] shadow-sm focus:border-amber-400 focus:ring-amber-200">
+                    </div>
                 </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Subtotal</label>
-                    <input type="number"
-                           name="subtotal"
-                           step="0.01"
-                           min="0"
-                           x-model.number="borradorForm.subtotal"
-                           @input="recalcularBorradorIva()"
-                           required
-                           class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">IVA</label>
-                    <select name="tipo_iva"
-                            x-model="borradorForm.tipo_iva"
-                            @change="recalcularBorradorIva()"
-                            class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
-                        <option value="0.16">IVA 16%</option>
-                        <option value="0.08">IVA 8% (Zona fronteriza)</option>
-                        <option value="0">IVA 0% (Tasa cero)</option>
-                        <option value="exento">Exento (sin traslado)</option>
-                        <option value="sin_iva">Sin IVA (no objeto)</option>
-                    </select>
-                    <input type="hidden" name="iva_tasa" :value="Number(borradorForm.iva_tasa || 0).toFixed(6)">
-                    <input type="hidden" name="iva" :value="Number(borradorForm.iva || 0).toFixed(2)">
-                </div>
-
-
                 <div class="md:col-span-3 rounded-xl border border-slate-200 bg-white px-4 py-4">
                     <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
                         <input type="checkbox"
@@ -5125,17 +5134,7 @@ function relacionFacturasModal() {
                             <input type="text" name="complemento_construccion[referencia]" x-model="borradorForm.complemento_construccion.referencia" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
                         </div>
                     </div>
-                </div>
-                <div class="md:col-span-3">
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">IVA generado</label>
-                    <input type="text"
-                           readonly
-                           tabindex="-1"
-                           :value="money(borradorForm.iva)"
-                           class="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-2xl font-bold text-[#0B265A] shadow-sm focus:border-amber-300 focus:ring-amber-300">
-                </div>
-
-                <div>
+                </div>                <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de retencion</label>
                     <select name="retencion_tipo"
                             x-model="borradorForm.retencion_tipo"

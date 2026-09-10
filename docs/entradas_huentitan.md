@@ -222,6 +222,24 @@ Debe mostrar:
   - **Validación de stock mínimo:** No se permitirá cancelar una entrada si el stock actual disponible en Huentitán para alguno de sus productos es menor a la cantidad recibida en dicha entrada (`stock_actual < cantidad_recibida_en_entrada`), ya que implicaría que el material ya fue consumido en fabricación o enviado a obra.
 
 
+## Alcance congelado: entrada por una sola OC
+
+**Fecha de ajuste:** 09 de septiembre de 2026  
+**Decision:** la entrada multidocumento queda fuera del alcance actual.
+
+Aunque operativamente puede pasar que llegue material de varias ordenes de compra al mismo tiempo, por ahora HUENTITAN mantendra la regla de una entrada ligada a una sola OC.
+
+Motivos:
+
+- El modelo actual ya resuelve recepcion parcial por OC con `orden_compra_detalles.cantidad_recibida`.
+- Permite cerrar primero el flujo de fabricacion sin introducir una cabecera de recepcion agrupada.
+- Evita crear una red dificil de auditar entre multiples OC, multiples entradas y multiples origenes de compra.
+
+Queda como mejora futura:
+
+- Analizar una recepcion fisica agrupada que pueda contener varias OC.
+- Definir si se requiere una tabla/cabecera nueva de recepcion multidocumento o si basta con una pantalla que genere N entradas en lote.
+- Mantener compatibilidad con trazabilidad hacia orden de fabricacion, salida a obra y stock.
 ## Plan complementario: salidas HUENTITAN
 
 El flujo de HUENTITAN necesita manejar dos tipos principales de salidas: salida por consumo interno de fabricacion y salida directa hacia obra. Ambas deben afectar negativamente el inventario, alimentar kardex y conservar trazabilidad del destino.
@@ -374,11 +392,11 @@ Estado tecnico opcional:
 
 - [ ] Convertir el calculo de materiales en proceso automatico al crear la orden.
 - [ ] Revisar si `borrador` debe ocultarse del flujo visible.
-- [ ] Agregar accion `Enviar a produccion`.
-- [ ] Validar stock disponible al enviar a produccion.
-- [ ] Crear salida automatica interna de insumos.
-- [ ] Registrar movimientos `out` ligados a la orden de fabricacion.
-- [ ] Cambiar estado a `en_produccion`.
+- [x] Agregar accion `Enviar a produccion`.
+- [x] Validar stock disponible al enviar a produccion.
+- [x] Crear salida automatica interna de insumos.
+- [x] Registrar movimientos `out` ligados a la orden de fabricacion.
+- [x] Cambiar estado a `en_produccion`.
 - [ ] Preparar registro de producto terminado como entrada de origen `produccion`.
 - [ ] Evitar doble consumo si una orden ya esta `en_produccion` o `cerrada`.
 
@@ -594,6 +612,7 @@ Producto HUENTITAN
 3. Entrada de producto terminado desde orden de fabricacion.
 4. Parcialidades y trazabilidad fina entre OC, entrada, fabricacion y movimientos.
 5. Limpieza de rutas temporales para carga inicial antes de subir a produccion.
+6. [x] Ajuste aplicado: la OC de materiales de fabricacion ya permite modificar cantidad en `/ordenes_compra/{id}/edit` para pedir excedente y dejar stock.
 
 ## Desglose propuesto: salidas HUENTITAN hacia obra
 
@@ -666,6 +685,15 @@ La salida a obra no debe mezclarse con salida a fabricacion. Son destinos distin
 - [x] Guardar detalles con cantidad solicitada/salida, unidad, costo promedio e importe estimado.
 - [x] No afectar inventario todavia al guardar borrador.
 
+### Regla de implementacion para HUENTITAN
+
+Antes de crear campos, tablas puente o controladores nuevos, se debe revisar el flujo existente completo: modelos, migraciones, controladores, servicios, rutas y vistas. La prioridad es reutilizar conexiones ya creadas y mantener un camino de trazabilidad legible.
+
+Para faltantes de salida a obra, el nodo central sera `orden_compra_detalles`:
+
+`huentitan_salida_detalles -> orden_compra_detalles -> huentitan_entrada_detalles -> huentitan_entradas -> inventario_stock / inventario_movimientos`
+
+No se debe crear una tabla puente adicional mientras este camino resuelva la consulta de forma clara.
 ### Fase SO-5.5: Faltantes antes de aplicar salida
 
 Objetivo: cuando una salida a obra pide mas material del disponible, el sistema no debe aplicar inventario ni dejar al usuario sin camino. Debe convertir el faltante en una necesidad visible para compra.
@@ -690,32 +718,47 @@ Tareas pequenas:
 - [x] Bloquear boton `Aplicar al inventario` si existen faltantes.
 - [x] Calcular en el detalle el estado operativo con_faltantes / listo_para_aplicar con stock actual.
 - [x] Exponer faltantes de salidas a obra en el flujo de orden de compra HUENTITAN.
-- [ ] Al crear OC desde HUENTITAN, permitir seleccionar faltantes por origen: stock, orden de fabricacion o salida a obra.
-- [ ] Ligar el detalle de OC con el detalle de salida cuando la compra venga de una salida faltante.
-- [ ] Al aplicar entrada de esa OC, dejar trazabilidad para saber que el material entro para surtir una salida a obra.
+- [x] Al crear OC desde HUENTITAN, permitir seleccionar faltantes por origen: stock, orden de fabricacion o salida a obra.
+- [x] Ligar el detalle de OC con el detalle de salida cuando la compra venga de una salida faltante.
+- [x] Mostrar en el detalle de salida el avance del faltante usando el camino existente: salida -> detalle OC -> entrada.
+- [x] Mostrar en el detalle de entrada si cada partida viene de stock, orden de fabricacion o salida a obra.
+- [x] Distinguir en el detalle de salida si la compra/recepcion ligada esta parcial o completa.
+- [x] Al aplicar entrada de esa OC, dejar trazabilidad para saber que el material entro para surtir una salida a obra.
+
+Implementacion:
+- Se agrego huentitan_entrada_detalles.huentitan_salida_detalle_id.
+- Al guardar/aplicar una entrada desde una OC originada por faltante de salida a obra, el detalle de entrada conserva liga directa con el detalle de salida.
+- La vista de entrada usa esa relacion directa para mostrar el origen Salida a obra.
+- El detalle de salida puede sumar entradas aplicadas desde la relacion directa, conservando tambien compatibilidad con el camino por OC.
 
 ### Fase SO-6: Aplicar salida a obra
 
-- [ ] Validar que la salida este en `borrador`.
-- [ ] Validar que tenga detalles.
-- [ ] Bloquear stock por producto con `lockForUpdate`.
-- [ ] Validar stock disponible nuevamente.
-- [ ] Restar `stock_actual` del almacen HUENTITAN.
-- [ ] Recalcular `valor_total`.
-- [ ] Mantener o recalcular `costo_promedio` segun valor restante.
-- [ ] Crear movimiento `out` en `inventario_movimientos` por cada detalle.
-- [ ] Guardar `obra_id` en el movimiento para trazabilidad.
-- [ ] Marcar salida como `aplicada`.
-- [ ] Guardar usuario y fecha de aplicacion.
+- [x] Validar que la salida este en `borrador`.
+- [x] Validar que tenga detalles.
+- [x] Bloquear stock por producto con `lockForUpdate`.
+- [x] Validar stock disponible nuevamente.
+- [x] Restar `stock_actual` del almacen HUENTITAN.
+- [x] Recalcular `valor_total`.
+- [x] Mantener o recalcular `costo_promedio` segun valor restante.
+- [x] Crear movimiento `out` en `inventario_movimientos` por cada detalle.
+- [x] Guardar `obra_id` en el movimiento para trazabilidad.
+- [x] Marcar salida como `aplicada`.
+- [x] Guardar usuario y fecha de aplicacion.
 
 ### Fase SO-7: Detalle y kardex
 
-- [ ] Crear vista detalle de salida.
-- [ ] Mostrar cabecera, obra destino, usuario, estado y partidas.
-- [ ] Linkear salida desde kardex del producto.
-- [ ] Mostrar salida a obra en el tab kardex del producto.
-- [ ] Agregar referencia a obra en el movimiento.
-- [ ] Preparar folio imprimible o comprobante de entrega.
+- [x] Crear vista detalle de salida.
+- [x] Mostrar cabecera, obra destino, usuario, estado y partidas.
+- [x] Linkear salida desde kardex del producto.
+- [x] Mostrar salida a obra en el tab kardex del producto.
+- [x] Agregar referencia a obra en el movimiento.
+- [x] Preparar folio imprimible o comprobante de entrega.
+
+Implementacion SO-7:
+- El kardex del producto HUENTITAN resuelve movimientos in contra entradas HUENTITAN y movimientos out contra salidas HUENTITAN.
+- Las salidas a obra aparecen con folio enlazado al detalle de salida y referencia visual a la obra destino.
+- El ultimo movimiento del producto tambien enlaza a entrada o salida HUENTITAN segun corresponda.
+- Se agrego ruta/vista imprimible `huentitan.salidas.print` para comprobante de entrega.
 
 ### Fase SO-8: Cancelacion futura
 
@@ -728,6 +771,18 @@ Tareas pequenas:
 ## Cierre esperado
 
 Este proceso queda cerrado cuando una orden de compra autorizada de HUENTITAN pueda convertirse en una o varias entradas, y cada entrada aplicada actualice correctamente el inventario y el kardex.
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

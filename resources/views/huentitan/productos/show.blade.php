@@ -188,7 +188,18 @@
                                 </div>
                                 <div class="border rounded-md p-3 sm:col-span-2">
                                     <dt class="text-xs text-gray-500">Documento origen</dt>
-                                    <dd class="mt-1 text-gray-900">{{ $ultimoMovimiento->documento_tipo ?? 'Sin documento' }} {{ $ultimoMovimiento->documento_id ? '#' . $ultimoMovimiento->documento_id : '' }}</dd>
+                                    <dd class="mt-1 text-gray-900">
+                                        @if($ultimoMovimiento->documento_huentitan_route)
+                                            <a href="{{ $ultimoMovimiento->documento_huentitan_route }}" class="font-semibold text-[#0B265A] hover:underline">
+                                                {{ $ultimoMovimiento->documento_huentitan_tipo }} {{ $ultimoMovimiento->documento_huentitan_folio }}
+                                            </a>
+                                            @if($ultimoMovimiento->documento_huentitan_obra)
+                                                <div class="mt-1 text-xs text-gray-500">{{ $ultimoMovimiento->documento_huentitan_obra }}</div>
+                                            @endif
+                                        @else
+                                            {{ $ultimoMovimiento->documento_tipo ?? 'Sin documento' }} {{ $ultimoMovimiento->documento_id ? '#' . $ultimoMovimiento->documento_id : '' }}
+                                        @endif
+                                    </dd>
                                 </div>
                             </dl>
                         @else
@@ -263,7 +274,18 @@
                                     <td class="px-3 py-2 text-right">{{ number_format((float) $movimiento->cantidad, 3) }}</td>
                                     <td class="px-3 py-2 text-right">${{ number_format((float) $movimiento->costo_unitario, 4) }}</td>
                                     <td class="px-3 py-2 text-right">{{ number_format((float) $movimiento->saldo_cantidad, 3) }}</td>
-                                    <td class="px-3 py-2">{{ $movimiento->documento_tipo ?? 'Sin documento' }} {{ $movimiento->documento_id ? '#' . $movimiento->documento_id : '' }}</td>
+                                    <td class="px-3 py-2">
+                                        @if($movimiento->documento_huentitan_route)
+                                            <a href="{{ $movimiento->documento_huentitan_route }}" class="font-semibold text-[#0B265A] hover:underline">
+                                                {{ $movimiento->documento_huentitan_tipo }} {{ $movimiento->documento_huentitan_folio }}
+                                            </a>
+                                            @if($movimiento->documento_huentitan_obra)
+                                                <div class="text-xs text-gray-500">{{ $movimiento->documento_huentitan_obra }}</div>
+                                            @endif
+                                        @else
+                                            {{ $movimiento->documento_tipo ?? 'Sin documento' }} {{ $movimiento->documento_id ? '#' . $movimiento->documento_id : '' }}
+                                        @endif
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
@@ -595,4 +617,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 @endpush
+
 

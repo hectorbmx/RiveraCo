@@ -28,8 +28,8 @@
                     @endif
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">Estado inicial</label>
-                    <input type="text" value="{{ $estados['borrador'] }}" class="w-full rounded-md border-slate-200 bg-gray-50 text-sm text-gray-700" disabled>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Estado</label>
+                    <input type="text" value="Automatico" class="w-full rounded-md border-slate-200 bg-gray-50 text-sm text-gray-700" disabled>
                 </div>
                 <a href="{{ route('huentitan.ordenes-fabricacion.index') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-md border text-sm font-medium hover:bg-gray-50">Regresar</a>
             </div>
@@ -64,7 +64,7 @@
                 </div>
 
                 <div class="rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
-                    Al guardar se congela la formula vigente del producto. El inventario no se aparta ni se descuenta en este paso.
+                    Al crear se congela la formula vigente y se revisa disponibilidad. El inventario no se aparta ni se descuenta en este paso.
                 </div>
             </div>
         </div>
@@ -111,7 +111,7 @@
         </div>
 
         <div class="flex justify-end">
-            <button type="submit" class="px-4 py-2 rounded-md bg-gray-900 text-white text-sm font-medium hover:bg-gray-800">Guardar borrador</button>
+            <button type="submit" class="px-4 py-2 rounded-md bg-gray-900 text-white text-sm font-medium hover:bg-gray-800">Crear orden</button>
         </div>
     </form>
 </div>
@@ -208,3 +208,4 @@
     renderPreview();
 </script>
 @endsection
+

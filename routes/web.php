@@ -400,6 +400,8 @@ Route::middleware('auth','verified')->group(function () {
             Route::get('/ordenes-fabricacion/create', [HuentitanInventarioController::class, 'crearOrdenFabricacion'])->middleware('permission:huentitan.ordenes_fabricacion.create')->name('ordenes-fabricacion.create');
             Route::post('/ordenes-fabricacion', [HuentitanInventarioController::class, 'guardarOrdenFabricacion'])->middleware('permission:huentitan.ordenes_fabricacion.create')->name('ordenes-fabricacion.store');
             Route::post('/ordenes-fabricacion/{orden}/calcular', [HuentitanInventarioController::class, 'calcularOrdenFabricacion'])->middleware('permission:huentitan.ordenes_fabricacion.create')->name('ordenes-fabricacion.calcular');
+            Route::post('/ordenes-fabricacion/{orden}/apartar', [HuentitanInventarioController::class, 'apartarOrdenFabricacion'])->middleware('permission:huentitan.ordenes_fabricacion.create')->name('ordenes-fabricacion.apartar');
+            Route::post('/ordenes-fabricacion/{orden}/enviar-produccion', [HuentitanInventarioController::class, 'enviarProduccionOrdenFabricacion'])->middleware('permission:huentitan.ordenes_fabricacion.create')->name('ordenes-fabricacion.enviar-produccion');
             Route::patch('/ordenes-fabricacion/{orden}/materiales/{material}/compra', [HuentitanInventarioController::class, 'actualizarCompraMaterialOrden'])->middleware('permission:huentitan.ordenes_fabricacion.create')->name('ordenes-fabricacion.materiales.compra');
             Route::get('/ordenes-fabricacion', [HuentitanInventarioController::class, 'ordenesFabricacion'])->middleware('permission:huentitan.ordenes_fabricacion.view')->name('ordenes-fabricacion.index');
             Route::get('/ordenes-fabricacion/{orden}', [HuentitanInventarioController::class, 'verOrdenFabricacion'])->middleware('permission:huentitan.ordenes_fabricacion.view')->name('ordenes-fabricacion.show');
@@ -417,6 +419,7 @@ Route::middleware('auth','verified')->group(function () {
             Route::get('/salidas', [HuentitanSalidaController::class, 'index'])->middleware('permission:huentitan.salidas.view')->name('salidas.index');
             Route::get('/salidas/create', [HuentitanSalidaController::class, 'create'])->middleware('permission:huentitan.salidas.create')->name('salidas.create');
             Route::post('/salidas', [HuentitanSalidaController::class, 'store'])->middleware('permission:huentitan.salidas.create')->name('salidas.store');
+            Route::get('/salidas/{salida}/imprimir', [HuentitanSalidaController::class, 'imprimir'])->middleware('permission:huentitan.salidas.view')->name('salidas.print');
             Route::get('/salidas/{salida}', [HuentitanSalidaController::class, 'show'])->middleware('permission:huentitan.salidas.view')->name('salidas.show');
             Route::post('/salidas/{salida}/aplicar', [HuentitanSalidaController::class, 'aplicar'])->middleware('permission:huentitan.salidas.apply')->name('salidas.aplicar');
             Route::post('/salidas/{salida}/cancelar', [HuentitanSalidaController::class, 'cancelar'])->middleware('permission:huentitan.salidas.cancel')->name('salidas.cancelar');
@@ -984,6 +987,9 @@ Route::prefix('pagos-proveedores')
 });
 
 require __DIR__.'/auth.php';
+
+
+
 
 
 

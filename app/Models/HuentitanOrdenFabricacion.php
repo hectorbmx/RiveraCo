@@ -13,6 +13,9 @@ class HuentitanOrdenFabricacion extends Model
     public const ESTADOS = [
         'borrador' => 'Borrador',
         'calculada' => 'Calculada',
+        'pendiente_material' => 'Pendiente material',
+        'lista_para_apartar' => 'Lista para apartar',
+        'apartada' => 'Apartada',
         'autorizada' => 'Autorizada',
         'en_produccion' => 'En produccion',
         'cerrada' => 'Cerrada',
@@ -35,6 +38,10 @@ class HuentitanOrdenFabricacion extends Model
         'creado_por',
         'calculada_at',
         'calculada_por',
+        'apartada_at',
+        'apartada_por',
+        'produccion_iniciada_at',
+        'produccion_iniciada_por',
     ];
 
     protected $casts = [
@@ -45,6 +52,8 @@ class HuentitanOrdenFabricacion extends Model
         'costo_material_estimado' => 'decimal:4',
         'fecha' => 'date',
         'calculada_at' => 'datetime',
+        'apartada_at' => 'datetime',
+        'produccion_iniciada_at' => 'datetime',
     ];
 
     public function producto(): BelongsTo
@@ -67,8 +76,22 @@ class HuentitanOrdenFabricacion extends Model
         return $this->belongsTo(User::class, 'calculada_por');
     }
 
+    public function apartador(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'apartada_por');
+    }
+
+    public function iniciadorProduccion(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'produccion_iniciada_por');
+    }
+
     public function materiales(): HasMany
     {
         return $this->hasMany(HuentitanOrdenFabricacionMaterial::class, 'orden_fabricacion_id');
     }
 }
+
+
+
+

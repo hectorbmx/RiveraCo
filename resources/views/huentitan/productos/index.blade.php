@@ -100,7 +100,7 @@
                             $stockActual = (float) ($stockProducto->stock_actual ?? 0);
                             $valorStock = (float) ($stockProducto->valor_total ?? 0);
                             $ultimoMovimiento = $ultimosMovimientos->get($producto->id);
-                            $entradaMovimiento = $ultimoMovimiento ? $entradasMovimiento->get($ultimoMovimiento->documento_id) : null;
+                            $documentoMovimiento = $ultimoMovimiento ? $documentosUltimosMovimientos->get((int) $ultimoMovimiento->id) : null;
                             $tipoMovimiento = $ultimoMovimiento?->tipo_movimiento === 'in' ? 'Entrada' : ($ultimoMovimiento?->tipo_movimiento === 'out' ? 'Salida' : '-');
                         @endphp
                         <tr>
@@ -130,10 +130,13 @@
                                     <div class="text-xs text-gray-500">
                                         {{ \Illuminate\Support\Carbon::parse($ultimoMovimiento->fecha)->format('Y-m-d H:i') }}
                                     </div>
-                                    @if($entradaMovimiento)
-                                        <a href="{{ route('huentitan.entradas.show', $entradaMovimiento->id) }}" class="text-xs font-semibold text-[#0B265A] hover:underline">
-                                            {{ $entradaMovimiento->folio }}
+                                    @if($documentoMovimiento && ($documentoMovimiento['route'] ?? null))
+                                        <a href="{{ $documentoMovimiento['route'] }}" class="text-xs font-semibold text-[#0B265A] hover:underline">
+                                            {{ $documentoMovimiento['folio'] ?? ('Movimiento #' . $ultimoMovimiento->id) }}
                                         </a>
+                                        @if(!empty($documentoMovimiento['obra']))
+                                            <div class="text-xs text-gray-500">{{ $documentoMovimiento['obra'] }}</div>
+                                        @endif
                                     @else
                                         <a href="{{ route('huentitan.productos.show', ['producto' => $producto->id, 'tab' => 'kardex']) }}" class="text-xs font-semibold text-[#0B265A] hover:underline">
                                             Movimiento #{{ $ultimoMovimiento->id }}
@@ -159,3 +162,4 @@
     </div>
 </div>
 @endsection
+

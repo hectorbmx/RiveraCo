@@ -1176,6 +1176,14 @@ if ($tab === 'vehiculos') {
             ->with(['conceptoSat', 'creador', 'autorizador'])
             ->latest()
             ->get();
+        $ordenesCompraObra = $tab === 'facturacion'
+            ? OrdenCompra::with(['proveedor', 'areaCatalogo', 'centroCosto', 'pagoProveedorActivo'])
+                ->withCount('detalles')
+                ->where('obra_id', $obra->id)
+                ->orderByDesc('fecha')
+                ->orderByDesc('id')
+                ->get()
+            : collect();
         $satConceptos = SatConcepto::where('activo', true)
             ->orderBy('descripcion')
             ->get();
@@ -1261,6 +1269,7 @@ return view('obras.edit', [
     'cuentasBanco'                => $cuentasBanco,
     'metodosPago'                 => $metodosPago,
     'facturaBorradores'           => $facturaBorradores,
+    'ordenesCompraObra'           => $ordenesCompraObra,
     'satConceptos'                => $satConceptos,
     'usosCfdi'                    => $usosCfdi,
     'metodosPagoCfdi'             => $metodosPagoCfdi,

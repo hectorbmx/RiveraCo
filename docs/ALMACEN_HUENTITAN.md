@@ -1193,3 +1193,387 @@ Decision:
 ### Nota operativa pendiente: centro de costo default por area
 
 En produccion existen centros de costo por area, por lo que la OC podra automatizar el centro de costo al seleccionar un area. La regla debe implementarse con una relacion configurable `area -> centro de costo default`, no por nombre quemado. Mientras una OC tenga destino `obra`, debe mantenerse la regla actual de no combinar obra y centro de costo.
+## 32. Ajuste de alcance para cerrar flujo de fabricacion
+
+**Fecha de ajuste:** 09 de septiembre de 2026  
+**Estado:** Definicion operativa antes de ejecutar cambios de codigo.
+
+### Alcance actual
+
+El objetivo inmediato es cerrar el flujo de fabricacion de HUENTITAN sin abrir todavia recepcion multidocumento.
+
+Queda fuera por el momento:
+
+- Entrada multidocumento, es decir, una sola entrada que reciba productos de varias OC al mismo tiempo.
+- Agrupar multiples OC en una sola recepcion fisica.
+- Cambios estructurales al kardex para diferenciar `documento_tipo` en `inventario_movimientos`.
+- Alertas avanzadas persistentes o notificaciones automaticas; primero se definiran las alertas necesarias y despues se implementaran.
+
+Regla vigente:
+
+- Una entrada HUENTITAN sigue relacionada a una sola orden de compra.
+- Una orden de compra puede recibir una o varias entradas parciales.
+- Una orden de fabricacion puede originar una o varias OC por proveedor, pero cada recepcion se maneja por OC.
+
+### Ruta operativa objetivo para fabricacion
+
+1. Crear orden de fabricacion seleccionando producto fabricable y cantidad.
+2. Al guardar, congelar formula y calcular materiales automaticamente.
+3. La orden debe mostrar materiales requeridos, stock actual, reservado, disponible y faltantes sin requerir un boton obligatorio de calculo.
+4. Si hay faltantes, los materiales quedan marcados para compra y se muestran en el flujo de OC HUENTITAN.
+5. El usuario puede crear OC por proveedor y ajustar cantidad a comprar dentro de la OC para pedir mas que el faltante si quiere dejar stock.
+6. Al autorizar OC, crear entrada HUENTITAN desde esa OC y aplicar stock.
+7. Al volver a la orden de fabricacion, la pantalla debe revalidar disponibilidad actual sin recalcular la formula congelada.
+8. Si ya hay disponibilidad suficiente, habilitar `Apartar material` o `Enviar a produccion` segun la regla que se implemente.
+9. Al apartar material, incrementar `stock_reservado` y cambiar la orden a estado operativo de material apartado.
+10. Al enviar a produccion, descontar insumos del inventario, liberar reservado y crear movimientos `out` ligados a la orden de fabricacion.
+11. Al terminar produccion, capturar cantidades terminadas, rechazos, merma y sobrantes si aplica.
+12. Al cerrar, generar entrada de producto terminado y cambiar la orden a `cerrada` con fechas y responsables.
+
+### Decision sobre calcular materiales
+
+El boton `Calcular materiales` fue util para validar la fase inicial, pero no debe ser obligatorio en operacion diaria.
+
+Nuevo criterio:
+
+- Crear orden debe calcular materiales automaticamente cuando exista formula valida.
+- El boton visible debe cambiar a `Revisar disponibilidad` o `Actualizar disponibilidad`.
+- Revisar disponibilidad no debe reconstruir la formula ni cambiar el snapshot; solo debe consultar stock actual/reservado y recalcular faltantes operativos.
+- Recalcular formula solo debe ocurrir si se edita producto o cantidad antes de iniciar produccion.
+
+### Estados recomendados para cerrar fabricacion
+
+Estados visibles:
+
+- `calculada`: orden creada con formula congelada y materiales calculados; no afecta inventario.
+- `pendiente_material`: materiales calculados, pero falta stock para poder apartar/enviar a produccion.
+- `lista_para_apartar`: ya existe disponibilidad suficiente.
+- `apartada`: material reservado para esta orden.
+- `en_produccion`: material ya descontado y fabricacion iniciada.
+- `cerrada`: producto terminado registrado como entrada.
+- `cancelada`: orden anulada.
+
+Nota: `borrador` puede conservarse como estado tecnico para orden incompleta, pero no debe ser un paso obligatorio si la orden ya tiene producto, cantidad y formula valida.
+
+### Alertas por definir
+
+Alertas pertinentes para HUENTITAN:
+
+- Orden de fabricacion creada.
+- Orden de fabricacion con faltantes.
+- Material de orden de fabricacion listo para apartar.
+- Stock bajo de producto HUENTITAN segun `stock_minimo` o punto de reorden definido en producto.
+- OC HUENTITAN autorizada pendiente de entrada.
+- Entrada aplicada que completa materiales pendientes de una orden de fabricacion.
+- Orden en produccion sin cerrar despues de N dias.
+
+Estas alertas se deben implementar despues de cerrar el flujo base, preferentemente reutilizando el mecanismo existente de notificaciones/alertas del sistema si ya existe.
+
+### Hallazgos para cerrar brechas despues
+
+- En OC creada desde orden de fabricacion, el usuario debe poder ajustar la cantidad a comprar para pedir mas que el faltante y dejar inventario en stock.
+- Al crear orden de fabricacion hoy puede quedar en `borrador`; hay que revisar el codigo para que calcule automaticamente al guardar.
+- Al volver desde una entrada aplicada, la orden de fabricacion debe revalidar disponibilidad actual sin pedir recalculo manual.
+- La aplicacion de fabricacion debe medir fechas: fecha de solicitud, fecha de material apartado, fecha de inicio de produccion y fecha de cierre/entrega.
+- El kardex actual usa `inventario_movimientos.documento_id` de forma ambigua entre documentos genericos y documentos HUENTITAN. No bloquea la operacion, pero debe ordenarse mas adelante con `documento_tipo` o una estrategia equivalente.
+
+### Checkpoints inmediatos antes de codigo
+
+- [x] Revisar controlador, modelo, migraciones, rutas y vistas actuales de ordenes de fabricacion.
+- [x] Identificar si ya existe metodo reutilizable para calcular materiales.
+- [x] Separar `calcular formula/materiales` de `revisar disponibilidad`.
+- [x] Definir si `apartada` requiere nuevo estado en migracion/modelo o si se maneja con estado existente temporal.
+- [x] Documentar exactamente que campos faltan para fechas/responsables de inicio y cierre.
+
+### Hallazgos de revision de codigo
+
+**Fecha de revision:** 09 de septiembre de 2026
+
+- Las ordenes de fabricacion estan implementadas dentro de `HuentitanInventarioController`; no existe un controlador separado para este flujo.
+- `guardarOrdenFabricacion` ya congela la formula y crea los materiales snapshot, pero deja la orden en `borrador` y no ejecuta la revision de stock/faltantes.
+- `calcularOrdenFabricacion` ya contiene la logica reutilizable para revisar stock actual, stock reservado, disponible, faltante y bandera de compra. Esta logica debe extraerse a un metodo interno para poder usarla al guardar y al revisar disponibilidad.
+- La vista de detalle usa el boton `Calcular materiales` como accion obligatoria, pero operativamente debe cambiar a `Revisar disponibilidad` o `Actualizar disponibilidad`.
+- El boton `Apartar material` existe solo como UI deshabilitada; no hay ruta, metodo ni campos para registrar apartado real.
+- El modelo actual solo tiene fechas de creacion y calculo. Faltan campos para apartado, inicio de produccion, cierre, cantidades reales, rechazos, sobrantes y responsables.
+- Compras ya tiene relacion desde `orden_compra_detalles` hacia `huentitan_orden_fabricacion_material_id`, por lo que el puente fabricacion -> OC existe y debe aprovecharse.
+- La pantalla de OC creada desde fabricacion ya permite editar la cantidad en el detalle de la OC para que el usuario pueda pedir mas que el faltante.
+- Entradas y salidas HUENTITAN ya tienen patron probado para afectar inventario: transaccion, bloqueo de stock, actualizacion de `inventario_stock`, movimiento en `inventario_movimientos`, responsable y fecha. Fabricacion debe reutilizar ese mismo patron.
+## 33. Avance de implementacion: disponibilidad y apartado de fabricacion
+
+**Fecha de avance:** 09 de septiembre de 2026  
+**Estado:** Implementado en base local.
+
+### Alcance ejecutado
+
+- Se extrajo la revision de disponibilidad a un metodo reutilizable dentro de `HuentitanInventarioController`.
+- Al crear una orden de fabricacion, el sistema congela formula, crea materiales snapshot y revisa disponibilidad automaticamente.
+- Si hay faltantes, la orden queda en `pendiente_material` y los materiales faltantes quedan marcados para compra.
+- Si no hay faltantes, la orden queda en `lista_para_apartar`.
+- El boton visible cambio de `Calcular materiales` a `Revisar disponibilidad`.
+- Se agrego estado `apartada` para separar material reservado de material ya consumido.
+- Se agregaron campos minimos para apartado: `apartada_at`, `apartada_por` en encabezado y `cantidad_apartada`, `apartada_at`, `apartada_por` en materiales.
+- Se agrego ruta `huentitan.ordenes-fabricacion.apartar`.
+- `Apartar material` incrementa `inventario_stock.stock_reservado` y no descuenta `stock_actual`.
+- El apartado valida disponibilidad dentro de transaccion y con bloqueo de stock antes de reservar.
+
+### Regla operativa confirmada
+
+Apartar material no es ejecutar fabricacion. Solo protege la disponibilidad para que otra salida u orden no use el mismo material. El descuento real de insumos debe ocurrir en el siguiente paso: enviar o ejecutar produccion.
+
+### Pendiente inmediato
+
+- Crear el paso `Enviar a produccion` o `Ejecutar fabricacion` para descontar insumos, liberar reservado y registrar movimientos `out` ligados a la orden de fabricacion.
+- Definir y agregar campos de inicio de produccion, responsable de inicio, cierre, cantidad buena, cantidad rechazada, merma real y observaciones de cierre.
+- Cerrar fabricacion generando una entrada de producto terminado ligada a la orden de fabricacion.
+## 34. Plan de accion general: movimientos separados y trazabilidad
+
+**Fecha de definicion:** 09 de septiembre de 2026  
+**Estado:** Regla guia para cerrar brechas sin crear codigo suelto.
+
+### Objetivo
+
+Cerrar el flujo de HUENTITAN con movimientos separados, visibles y auditables. Cada boton o accion debe tener una sola responsabilidad: calcular, comprar, recibir, apartar, consumir o cerrar. No se deben crear rutas, tablas o metodos paralelos si el patron existente de entradas, salidas, compras o kardex puede reutilizarse.
+
+### Regla principal de implementacion
+
+Antes de construir una pieza nueva se debe revisar si ya existe algo equivalente en:
+
+- Ordenes de compra generales.
+- Entradas HUENTITAN.
+- Salidas HUENTITAN.
+- `inventario_stock`.
+- `inventario_movimientos`.
+- Kardex de producto.
+
+Si se necesita una pieza nueva, debe quedar ligada a un documento origen y a un movimiento claro. No debe quedar codigo solo para mostrar datos si despues no participa en el flujo operativo.
+
+### Movimiento 1: Crear orden de fabricacion
+
+Responsabilidad:
+
+- Congelar la formula vigente del producto fabricable.
+- Crear snapshot de materiales requeridos.
+- Revisar disponibilidad actual.
+- Marcar faltantes para compra si aplica.
+
+Afectacion de inventario:
+
+- No modifica `stock_actual`.
+- No modifica `stock_reservado`.
+- No crea movimientos de kardex.
+
+Estados posibles:
+
+- `pendiente_material` si hay faltantes.
+- `lista_para_apartar` si todo el material esta disponible.
+
+### Movimiento 2: Compra por faltantes de fabricacion
+
+Responsabilidad:
+
+- Mostrar materiales marcados desde orden de fabricacion en el flujo formal de OC.
+- Permitir seleccionar materiales por proveedor.
+- Permitir ajustar cantidad en la OC para comprar mas que el faltante si se quiere dejar stock.
+- Mantener relacion `orden_fabricacion_material -> orden_compra_detalle`.
+
+Afectacion de inventario:
+
+- No modifica inventario al crear OC.
+- La afectacion ocurre hasta entrada aplicada.
+
+Regla:
+
+- Una orden de fabricacion puede originar varias OC.
+- Una OC puede traer materiales para una orden de fabricacion o para stock HUENTITAN, pero cada partida debe conservar su origen cuando exista.
+
+### Movimiento 3: Entrada por orden de compra
+
+Responsabilidad:
+
+- Recibir producto comprado desde una OC autorizada.
+- Permitir entradas parciales.
+- Actualizar cantidad recibida en detalle de OC.
+- Registrar proveedor/producto y costo.
+
+Afectacion de inventario:
+
+- Incrementa `inventario_stock.stock_actual`.
+- Recalcula `valor_total` y `costo_promedio`.
+- Crea movimiento `in` en `inventario_movimientos`.
+
+Relacion esperada:
+
+- Si la OC viene de fabricacion, la entrada debe poder rastrearse hasta `huentitan_orden_fabricacion_material_id` por medio del detalle de OC.
+
+### Movimiento 4: Revisar disponibilidad
+
+Responsabilidad:
+
+- Consultar stock actual y reservado contra materiales snapshot de la orden.
+- Actualizar faltantes operativos.
+- No reconstruir formula ni cambiar cantidades base de materiales.
+
+Afectacion de inventario:
+
+- No modifica `stock_actual`.
+- No modifica `stock_reservado`.
+- No crea kardex.
+
+Regla:
+
+- Sirve para que una orden que estaba `pendiente_material` pase a `lista_para_apartar` cuando una entrada ya cubrio los faltantes.
+
+### Movimiento 5: Apartar material
+
+Responsabilidad:
+
+- Proteger material disponible para una orden de fabricacion especifica.
+- Evitar que salidas a obra u otras ordenes usen el mismo stock.
+- Guardar cantidad apartada por material, fecha y responsable.
+
+Afectacion de inventario:
+
+- Incrementa `inventario_stock.stock_reservado`.
+- No descuenta `stock_actual`.
+- No crea movimiento de kardex porque el material sigue dentro del almacen.
+
+Estado resultante:
+
+- `apartada`.
+
+Regla:
+
+- Solo se puede apartar si la orden esta `lista_para_apartar` y no tiene faltantes.
+- No se debe permitir doble apartado de la misma orden.
+
+### Movimiento 6: Iniciar produccion
+
+Responsabilidad:
+
+- Convertir material apartado en material entregado/consumido por produccion.
+- Iniciar medicion real del tiempo de fabricacion.
+- Guardar fecha y usuario que inicia produccion.
+
+Afectacion de inventario esperada:
+
+- Descuenta `inventario_stock.stock_actual` usando `cantidad_apartada`.
+- Libera o disminuye `inventario_stock.stock_reservado` por la misma cantidad.
+- Recalcula `valor_total` con costo promedio.
+- Crea movimientos `out` en `inventario_movimientos` ligados a la orden de fabricacion.
+
+Estado resultante:
+
+- `en_produccion`.
+
+Regla:
+
+- No debe recalcular formula.
+- No debe tomar cantidades desde pantalla si ya existe `cantidad_apartada`.
+- Si hay diferencia entre apartado y consumo real, esa diferencia se resolvera en cierre o ajuste controlado, no en el inicio.
+
+Campos pendientes para este movimiento:
+
+- `produccion_iniciada_at`.
+- `produccion_iniciada_por`.
+
+### Movimiento 7: Cerrar fabricacion
+
+Responsabilidad:
+
+- Registrar resultado real de la fabricacion.
+- Capturar producto terminado bueno.
+- Capturar rechazo, merma, sobrantes u observaciones si aplica.
+- Generar entrada de producto terminado ligada a la orden de fabricacion.
+
+Afectacion de inventario esperada:
+
+- Incrementa `inventario_stock.stock_actual` del producto terminado.
+- Recalcula costo promedio del producto terminado con base en costo de materiales consumidos y, mas adelante, mano de obra u otros costos si se agregan.
+- Crea movimiento `in` en `inventario_movimientos` ligado a la orden de fabricacion o a la entrada de producto terminado que se genere.
+
+Estado resultante:
+
+- `cerrada`.
+
+Campos pendientes para este movimiento:
+
+- `cerrada_at`.
+- `cerrada_por`.
+- `cantidad_fabricada_buena`.
+- `cantidad_rechazada`.
+- `cantidad_sobrante` si aplica.
+- `merma_real` o desglose por material si se requiere mas detalle.
+- `observaciones_cierre`.
+
+### Movimiento 8: Salida a obra
+
+Responsabilidad:
+
+- Enviar materia prima o producto terminado a una obra.
+- Conservar folio de salida, obra, responsable y partidas.
+- Permitir compra por faltantes antes de aplicar si no hay stock suficiente.
+
+Afectacion de inventario:
+
+- Al aplicar salida, descuenta `inventario_stock.stock_actual`.
+- Crea movimiento `out` en `inventario_movimientos`.
+- No debe mezclarse con salida a produccion.
+
+### Cabos sueltos que deben cerrarse con cuidado
+
+- Agregar columna visual `Disponible despues` en tablas de materiales antes de apartar o aplicar movimientos, para que el usuario vea el impacto esperado.
+- Resolver la ambiguedad futura de `inventario_movimientos.documento_id` con `documento_tipo` o una estrategia equivalente.
+- Permitir editar cantidad sugerida en OC creada desde fabricacion antes de guardar cabecera/detalles.
+- Definir si el cierre de fabricacion crea una entrada HUENTITAN formal o si usa un documento interno especifico de fabricacion terminada. La regla funcional es que debe existir una entrada rastreable del producto terminado.
+- Evaluar alertas despues de cerrar el flujo base: orden creada, faltantes, listo para apartar, OC autorizada pendiente de entrada, entrada que completa una orden y produccion sin cerrar.
+
+### Criterio de aceptacion del flujo base
+
+El flujo se considera cerrado cuando se pueda seguir esta trazabilidad sin pasos manuales externos:
+
+`orden fabricacion -> materiales snapshot -> OC por faltantes si aplica -> entrada de compra -> revisar disponibilidad -> apartar material -> iniciar produccion -> movimientos out de insumos -> cerrar fabricacion -> entrada in de producto terminado -> kardex del producto`
+## 35. Avance: Enviar orden de fabricacion a produccion
+
+**Fecha de avance:** 10 de septiembre de 2026  
+**Estado:** Implementado en base local.
+
+Alcance ejecutado:
+
+- Se agrego ruta `huentitan.ordenes-fabricacion.enviar-produccion`.
+- Se agregaron campos de auditoria `produccion_iniciada_at` y `produccion_iniciada_por` en la orden.
+- Se agregaron campos por material `cantidad_consumida`, `consumida_at` y `consumida_por`.
+- La accion solo opera sobre ordenes en estado `apartada`.
+- Al enviar a produccion, el sistema consume `cantidad_apartada` por material.
+- Se descuenta `inventario_stock.stock_actual`.
+- Se libera `inventario_stock.stock_reservado`.
+- Se recalcula `valor_total` y `costo_promedio`.
+- Se crea movimiento `out` en `inventario_movimientos` por cada insumo consumido.
+- La orden cambia a estado `en_produccion`.
+
+Pendiente siguiente:
+
+- Cerrar fabricacion capturando cantidad buena, rechazo/merma/sobrantes y generando entrada de producto terminado.
+## 36. Ajuste aplicado: cantidad editable en OC de fabricacion
+
+**Fecha de registro:** 10 de septiembre de 2026  
+**Estado:** Pendiente para siguiente ajuste.
+
+Problema:
+
+- Cuando una OC nace desde materiales marcados en una orden de fabricacion HUENTITAN, el sistema crea el detalle con la cantidad sugerida del faltante.
+- En la pantalla de edicion de OC, por ejemplo `/ordenes_compra/{id}/edit`, esa cantidad se muestra como texto y queda operativamente bloqueada.
+- Compras puede aumentar esa cantidad para pedir mas material que el faltante y dejar excedente en stock HUENTITAN.
+
+Hallazgo tecnico:
+
+- `OrdenCompraController::attachHuentitanMaterialesToOrder()` ya acepta `quantity` si viene desde la seleccion inicial.
+- `OrdenCompraDetalleController::update()` ya recalcula usando `$request->cantidad`, por lo que el backend puede actualizar cantidad.
+- El bloqueo esta en `resources/views/ordencompra/edit.blade.php`: la columna de cantidad de detalles existentes renderiza solo texto y los autosaves de precio/IVA mandan `data-cantidad` fijo.
+
+Ajuste propuesto:
+
+- Convertir la cantidad de partidas editables en un input autosave igual que precio/IVA cuando la OC no este bloqueada.
+- Al cambiar cantidad, actualizar `data-cantidad`, subtotal, IVA e importe del renglon.
+- Mantener bloqueada la cantidad solo cuando la OC ya este autorizada, verificada o cancelada.
+- Para detalles ligados a `huentitan_orden_fabricacion_material_id`, se permite comprar mas que el faltante; la relacion sigue apuntando al material origen y el excedente quedara como stock al aplicar la entrada.
+- Validar que no se rompan las reglas especiales de obra civil, donde algunas cantidades tienen limites contra presupuesto/solicitud.

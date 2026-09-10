@@ -27,6 +27,12 @@ class HuentitanOrdenFabricacionMaterial extends Model
         'faltante_calculado',
         'requiere_compra',
         'cantidad_sugerida_compra',
+        'cantidad_apartada',
+        'apartada_at',
+        'apartada_por',
+        'cantidad_consumida',
+        'consumida_at',
+        'consumida_por',
         'compra_marcada_at',
         'compra_marcada_por',
         'notas',
@@ -44,6 +50,10 @@ class HuentitanOrdenFabricacionMaterial extends Model
         'faltante_calculado' => 'decimal:3',
         'requiere_compra' => 'boolean',
         'cantidad_sugerida_compra' => 'decimal:3',
+        'cantidad_apartada' => 'decimal:3',
+        'apartada_at' => 'datetime',
+        'cantidad_consumida' => 'decimal:3',
+        'consumida_at' => 'datetime',
         'compra_marcada_at' => 'datetime',
     ];
 
@@ -61,4 +71,11 @@ class HuentitanOrdenFabricacionMaterial extends Model
     {
         return $this->belongsTo(User::class, 'compra_marcada_por');
     }
+
+    public function apartador(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'apartada_por');
+    }
 }
+
+

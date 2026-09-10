@@ -224,7 +224,16 @@ class HuentitanSalidaController extends Controller
         $almacen = $this->almacenHuentitan();
         abort_unless((int) $salida->almacen_id === (int) $almacen->id, 404);
 
-        $salida->load(['obra', 'usuario', 'aplicadaPor', 'canceladaPor', 'detalles.producto']);
+        $salida->load([
+            'obra',
+            'usuario',
+            'aplicadaPor',
+            'canceladaPor',
+            'detalles.producto',
+            'detalles.huentitanEntradaDetalles.entrada',
+            'detalles.ordenCompraDetalles.orden',
+            'detalles.ordenCompraDetalles.huentitanEntradaDetalles.entrada',
+        ]);
         $estadoPartidas = $this->estadoPartidasActuales($salida, $almacen);
         $faltantesActuales = $estadoPartidas->filter(fn ($item) => $item['faltante'] > 0)->values();
         $estadoOperativo = $salida->isBorrador()
@@ -234,23 +243,124 @@ class HuentitanSalidaController extends Controller
         return response()->view('huentitan.salidas.show', compact('almacen', 'salida', 'faltantesActuales', 'estadoPartidas', 'estadoOperativo'));
     }
 
+    public function imprimir(HuentitanSalida $salida)
+    {
+        $almacen = $this->almacenHuentitan();
+        abort_unless((int) $salida->almacen_id === (int) $almacen->id, 404);
+
+        $salida->load([
+            'obra',
+            'usuario',
+            'aplicadaPor',
+            'detalles.producto',
+        ]);
+
+        return response()->view('huentitan.salidas.print', compact('almacen', 'salida'));
+    }
     public function aplicar(HuentitanSalida $salida)
     {
         $almacen = $this->almacenHuentitan();
         abort_unless((int) $salida->almacen_id === (int) $almacen->id, 404);
 
-        $salida->load('detalles.producto');
-        $faltantes = $this->estadoPartidasActuales($salida, $almacen)->filter(fn ($item) => $item['faltante'] > 0);
+        try {
+            DB::transaction(function () use ($salida, $almacen) {
+                $salida = HuentitanSalida::query()
+                    ->with('detalles.producto')
+                    ->whereKey($salida->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-        if ($faltantes->isNotEmpty()) {
+                if ((int) $salida->almacen_id !== (int) $almacen->id) {
+                    throw new \RuntimeException('La salida no pertenece al almacen HUENTITAN.');
+                }
+
+                if (! $salida->isBorrador()) {
+                    throw new \RuntimeException('Solo se pueden aplicar salidas en estado borrador.');
+                }
+
+                if ($salida->detalles->isEmpty()) {
+                    throw new \RuntimeException('La salida no tiene productos para aplicar.');
+                }
+
+                foreach ($salida->detalles as $detalle) {
+                    $cantidad = round((float) $detalle->cantidad_salida, 3);
+
+                    if ($cantidad <= 0) {
+                        throw new \RuntimeException("La partida {$detalle->id} tiene una cantidad invalida.");
+                    }
+
+                    if (! $detalle->producto_id) {
+                        throw new \RuntimeException("La partida {$detalle->id} no tiene producto ligado al catalogo.");
+                    }
+
+                    $stockRow = DB::table('inventario_stock')
+                        ->where('almacen_id', $salida->almacen_id)
+                        ->where('producto_id', $detalle->producto_id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    $stockActual = (float) ($stockRow->stock_actual ?? 0);
+                    $stockReservado = (float) ($stockRow->stock_reservado ?? 0);
+                    $stockDisponible = max(0, $stockActual - $stockReservado);
+
+                    if (! $stockRow || $cantidad > $stockDisponible) {
+                        $nombre = $detalle->producto?->nombre ?? $detalle->descripcion ?? "partida {$detalle->id}";
+                        throw new \RuntimeException("Stock insuficiente para '{$nombre}'. Disponible: {$stockDisponible}, requiere: {$cantidad}.");
+                    }
+
+                    $valorTotal = (float) ($stockRow->valor_total ?? 0);
+                    $costoPromedio = (float) ($stockRow->costo_promedio ?? 0);
+                    $nuevoStock = $stockActual - $cantidad;
+                    $nuevoValor = max(0, $valorTotal - ($cantidad * $costoPromedio));
+                    $nuevoCostoPromedio = $nuevoStock > 0 ? ($nuevoValor / $nuevoStock) : 0;
+
+                    DB::table('inventario_stock')
+                        ->where('almacen_id', $salida->almacen_id)
+                        ->where('producto_id', $detalle->producto_id)
+                        ->update([
+                            'stock_actual' => $nuevoStock,
+                            'valor_total' => $nuevoValor,
+                            'costo_promedio' => $nuevoCostoPromedio,
+                            'updated_at' => now(),
+                        ]);
+
+                    DB::table('inventario_movimientos')->insert([
+                        'almacen_id' => $salida->almacen_id,
+                        'producto_id' => $detalle->producto_id,
+                        'documento_id' => $salida->id,
+                        'fecha' => $salida->fecha ?? now(),
+                        'tipo_movimiento' => 'out',
+                        'cantidad' => $cantidad,
+                        'costo_unitario' => $costoPromedio,
+                        'saldo_cantidad' => $nuevoStock,
+                        'obra_id' => $salida->obra_id,
+                        'residente_id' => null,
+                        'creado_por' => auth()->id(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    $detalle->forceFill([
+                        'costo_unitario' => $costoPromedio,
+                        'importe' => round($cantidad * $costoPromedio, 2),
+                    ])->save();
+                }
+
+                $salida->forceFill([
+                    'estado' => 'aplicada',
+                    'aplicada_por' => auth()->id(),
+                    'fecha_aplicacion' => now(),
+                ])->save();
+            });
+        } catch (\Throwable $e) {
             return redirect()
                 ->route('huentitan.salidas.show', $salida)
-                ->with('error', 'No se puede aplicar la salida porque aun hay material faltante. Genera la orden de compra, aplica la entrada y vuelve a intentar.');
+                ->with('error', $e->getMessage());
         }
 
         return redirect()
             ->route('huentitan.salidas.show', $salida)
-            ->with('status', 'La aplicacion al inventario se construira en SO-6.');
+            ->with('status', 'Salida aplicada al inventario correctamente.');
     }
 
     public function cancelar(HuentitanSalida $salida)
@@ -271,12 +381,75 @@ class HuentitanSalidaController extends Controller
 
                 $disponible = max(0, (float) ($stock->stock_actual ?? 0) - (float) ($stock->stock_reservado ?? 0));
                 $faltante = max(0, (float) $detalle->cantidad_salida - $disponible);
+                $ordenCompraDetalles = $detalle->relationLoaded('ordenCompraDetalles')
+                    ? $detalle->ordenCompraDetalles
+                    : collect();
+                $entradaDetallesDirectos = $detalle->relationLoaded('huentitanEntradaDetalles')
+                    ? $detalle->huentitanEntradaDetalles
+                    : collect();
+                $entradaDetallesPorOc = $ordenCompraDetalles->flatMap(function ($ordenDetalle) {
+                    return $ordenDetalle->relationLoaded('huentitanEntradaDetalles')
+                        ? $ordenDetalle->huentitanEntradaDetalles
+                        : collect();
+                });
+                $entradaDetalles = $entradaDetallesDirectos
+                    ->concat($entradaDetallesPorOc)
+                    ->unique('id')
+                    ->values();
+                $entradaDetallesAplicados = $entradaDetalles->filter(fn ($entradaDetalle) => $entradaDetalle->entrada?->estado === 'aplicada');
+                $entradasAplicadas = $entradaDetallesAplicados
+                    ->pluck('entrada')
+                    ->filter()
+                    ->unique('id')
+                    ->values();
+                $entradasBorrador = $entradaDetalles
+                    ->filter(fn ($entradaDetalle) => $entradaDetalle->entrada?->estado === 'borrador')
+                    ->pluck('entrada')
+                    ->filter()
+                    ->unique('id')
+                    ->values();
+                $ordenesCompra = $ordenCompraDetalles
+                    ->pluck('orden')
+                    ->filter()
+                    ->unique('id')
+                    ->values();
+                $cantidadNecesariaCompra = (float) ($detalle->cantidad_sugerida_compra ?: $detalle->cantidad_faltante ?: 0);
+                $cantidadComprada = (float) $ordenCompraDetalles->sum(fn ($ordenDetalle) => (float) $ordenDetalle->cantidad);
+                $cantidadRecibidaAplicada = (float) $entradaDetallesAplicados->sum(fn ($entradaDetalle) => (float) $entradaDetalle->cantidad_recibida);
+                $cantidadPendienteCompra = max(0, $cantidadNecesariaCompra - $cantidadComprada);
+                $cantidadPendienteRecibir = max(0, $cantidadComprada - $cantidadRecibidaAplicada);
+
+                $estadoCompra = 'sin_compra';
+                if ($cantidadRecibidaAplicada > 0 && $cantidadRecibidaAplicada + 0.0005 >= $cantidadNecesariaCompra) {
+                    $estadoCompra = 'entrada_completa';
+                } elseif ($cantidadRecibidaAplicada > 0) {
+                    $estadoCompra = 'entrada_parcial';
+                } elseif ($entradasBorrador->isNotEmpty()) {
+                    $estadoCompra = 'entrada_borrador';
+                } elseif ($cantidadComprada > 0 && $cantidadComprada + 0.0005 >= $cantidadNecesariaCompra) {
+                    $estadoCompra = 'oc_completa';
+                } elseif ($cantidadComprada > 0) {
+                    $estadoCompra = 'oc_parcial';
+                } elseif ($ordenesCompra->isNotEmpty()) {
+                    $estadoCompra = 'oc_generada';
+                }
 
                 return [
                     'detalle' => $detalle,
                     'disponible' => $disponible,
                     'faltante' => $faltante,
                     'completo' => $faltante <= 0,
+                    'compra' => [
+                        'estado' => $estadoCompra,
+                        'ordenes' => $ordenesCompra,
+                        'entradas_borrador' => $entradasBorrador,
+                        'entradas_aplicadas' => $entradasAplicadas,
+                        'cantidad_necesaria_compra' => $cantidadNecesariaCompra,
+                        'cantidad_comprada' => $cantidadComprada,
+                        'cantidad_recibida_aplicada' => $cantidadRecibidaAplicada,
+                        'cantidad_pendiente_compra' => $cantidadPendienteCompra,
+                        'cantidad_pendiente_recibir' => $cantidadPendienteRecibir,
+                    ],
                 ];
             })
             ->keyBy(fn ($item) => $item['detalle']->id);
@@ -324,6 +497,13 @@ class HuentitanSalidaController extends Controller
         ]);
     }
 }
+
+
+
+
+
+
+
 
 
 

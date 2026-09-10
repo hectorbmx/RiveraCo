@@ -12,6 +12,7 @@ class HuentitanEntradaDetalle extends Model
     protected $fillable = [
         'huentitan_entrada_id',
         'orden_compra_detalle_id',
+        'huentitan_salida_detalle_id',
         'producto_id',
         'descripcion',
         'unidad',
@@ -27,6 +28,7 @@ class HuentitanEntradaDetalle extends Model
         'cantidad_recibida' => 'decimal:3',
         'costo_unitario' => 'decimal:4',
         'importe' => 'decimal:2',
+        'huentitan_salida_detalle_id' => 'integer',
     ];
 
     public function entrada(): BelongsTo
@@ -39,8 +41,16 @@ class HuentitanEntradaDetalle extends Model
         return $this->belongsTo(OrdenCompraDetalle::class, 'orden_compra_detalle_id');
     }
 
+    public function huentitanSalidaDetalle(): BelongsTo
+    {
+        return $this->belongsTo(HuentitanSalidaDetalle::class, 'huentitan_salida_detalle_id');
+    }
+
     public function producto(): BelongsTo
     {
         return $this->belongsTo(Producto::class, 'producto_id');
     }
 }
+
+
+

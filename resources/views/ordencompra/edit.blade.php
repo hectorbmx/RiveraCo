@@ -560,8 +560,42 @@
         </td>
 
         <td class="p-2 text-center">
-            <div>{{ number_format($detailDisplayQuantity, 4) }}</div>
-            <div class="text-xs text-slate-400">{{ $detailDisplayUnit }}</div>
+            @if(!$bloqueado && !$detailShowsCommercial)
+                <input form="formEncabezadoOc"
+                       name="detalles[{{ $d->id }}][cantidad]"
+                       type="number"
+                       step="0.0001"
+                       min="0.0001"
+                       class="js-detalle-auto-save js-cantidad-oc-input w-28 rounded border p-1.5 text-right"
+                       value="{{ number_format((float) $d->cantidad, 4, '.', '') }}"
+                       data-original-value="{{ number_format((float) $d->cantidad, 4, '.', '') }}"
+                       data-update-url="{{ route('ordenes_compra.detalles.update', [$oc->id, $d->id]) }}"
+                       data-producto-id="{{ $d->producto_id }}"
+                       data-civil-concept-id="{{ $d->civil_concept_id }}"
+                       data-obra-civil-insumo-id="{{ $d->obra_civil_insumo_id }}"
+                       data-legacy-prod-id="{{ $d->legacy_prod_id }}"
+                       data-descripcion="{{ $d->descripcion }}"
+                       data-unidad="{{ $d->unidad }}"
+                       data-cantidad="{{ $d->cantidad }}"
+                       data-precio-unitario="{{ $d->precio_unitario }}"
+                       data-descuento-porcentaje="{{ $d->descuento_porcentaje }}"
+                       data-importe="{{ $d->importe }}"
+                       data-iva="{{ $d->iva }}"
+                       data-tipo-retencion-id="{{ $d->tipo_retencion_id }}"
+                       data-otros-impuestos="{{ $d->otros_impuestos }}"
+                       data-notas="{{ $d->notas }}"
+                       data-auto-iva="{{ number_format((float) $d->iva_calculado, 2, '.', '') }}"
+                       data-subtotal="{{ number_format((float) $d->subtotal, 2, '.', '') }}"
+                       data-otros="{{ number_format((float) $d->otros_impuestos, 2, '.', '') }}"
+                       data-retenciones="{{ number_format((float) $d->retenciones, 2, '.', '') }}"
+                       data-importe-target="detalleImporte-{{ $d->id }}"
+                       data-subtotal-target="detalleSubtotal-{{ $d->id }}">
+                <div class="text-xs text-slate-400">{{ $detailDisplayUnit }}</div>
+                <div class="js-detalle-auto-save-status mt-1 text-[11px] text-slate-400"></div>
+            @else
+                <div>{{ number_format($detailDisplayQuantity, 4) }}</div>
+                <div class="text-xs text-slate-400">{{ $detailDisplayUnit }}</div>
+            @endif
         </td>
 
         <td class="p-2 text-center">
@@ -747,7 +781,7 @@
     }
 
     function normalizedValue(input) {
-        if (input.classList.contains('js-precio-oc-input')) {
+        if (input.classList.contains('js-cantidad-oc-input') || input.classList.contains('js-precio-oc-input')) {
             return input.value.trim() === '' ? '' : numberFrom(input.value).toFixed(4);
         }
 
@@ -768,8 +802,9 @@
     function lineSubtotal(input) {
         const row = input.closest('tr');
         const priceInput = row?.querySelector('.js-precio-oc-input');
+        const cantidadInput = row?.querySelector('.js-cantidad-oc-input');
         const price = numberFrom(priceInput?.value ?? input.dataset.precioUnitario);
-        const cantidad = numberFrom(input.dataset.cantidad);
+        const cantidad = numberFrom(cantidadInput?.value ?? input.dataset.cantidad);
         const descuentoPorcentaje = numberFrom(input.dataset.descuentoPorcentaje);
         const bruto = cantidad * price;
         const descuento = bruto * (Math.min(Math.max(descuentoPorcentaje, 0), 100) / 100);
@@ -804,12 +839,14 @@
         payload.append('descripcion', input.dataset.descripcion || '');
         payload.append('unidad', input.dataset.unidad || '');
         const row = input.closest('tr');
+        const cantidadInput = row?.querySelector('.js-cantidad-oc-input');
         const priceInput = row?.querySelector('.js-precio-oc-input');
         const ivaInput = row?.querySelector('.js-iva-real-input');
+        const cantidad = cantidadInput ? normalizedValue(cantidadInput) : (input.dataset.cantidad || '0');
         const precioUnitario = priceInput ? normalizedValue(priceInput) : (input.dataset.precioUnitario || '0');
         const subtotal = lineSubtotal(input).toFixed(2);
 
-        payload.append('cantidad', input.dataset.cantidad || '0');
+        payload.append('cantidad', cantidad || '0');
         payload.append('precio_unitario', precioUnitario || '0');
         payload.append('descuento_porcentaje', input.dataset.descuentoPorcentaje || '0');
         payload.append('importe', subtotal);
@@ -885,6 +922,12 @@
 
             input.dataset.originalValue = value;
             input.value = value;
+            if (input.classList.contains('js-cantidad-oc-input')) {
+                rowInputs(input).forEach((rowInput) => {
+                    rowInput.dataset.cantidad = value;
+                    rowInput.dataset.importe = lineSubtotal(rowInput).toFixed(2);
+                });
+            }
             if (input.classList.contains('js-precio-oc-input')) {
                 input.dataset.precioUnitario = value;
                 rowInputs(input).forEach((rowInput) => {

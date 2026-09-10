@@ -9,7 +9,9 @@ use App\Models\Empleado;
 use App\Models\HuentitanFormula;
 use App\Models\HuentitanFormulaMaterial;
 use App\Models\HuentitanOrdenFabricacion;
+use App\Models\HuentitanEntrada;
 use App\Models\HuentitanOrdenFabricacionMaterial;
+use App\Models\HuentitanSalida;
 use App\Models\InventarioCorte;
 use App\Models\InventarioCorteDetalle;
 use App\Models\InventarioStock;
@@ -150,12 +152,7 @@ class HuentitanInventarioController extends Controller
                 ->unique('producto_id')
                 ->keyBy('producto_id');
 
-        $entradasMovimiento = $ultimosMovimientos->isEmpty()
-            ? collect()
-            : DB::table('huentitan_entradas')
-                ->whereIn('id', $ultimosMovimientos->pluck('documento_id')->filter()->unique())
-                ->get(['id', 'folio', 'estado'])
-                ->keyBy('id');
+        $documentosUltimosMovimientos = $this->resolverDocumentosMovimientosHuentitan($ultimosMovimientos);
 
         $resumenProductos = [
             'total' => Producto::query()->where('sku', 'like', 'HUE-%')->count(),
@@ -169,13 +166,74 @@ class HuentitanInventarioController extends Controller
             'almacen',
             'productos',
             'ultimosMovimientos',
-            'entradasMovimiento',
+            'documentosUltimosMovimientos',
             'resumenProductos',
             'busqueda',
             'tipo',
             'formula',
             'stock'
         ));
+    }
+    private function resolverDocumentosMovimientosHuentitan($movimientos)
+    {
+        $movimientos = collect($movimientos)->filter(fn ($movimiento) => $movimiento && $movimiento->documento_id);
+
+        if ($movimientos->isEmpty()) {
+            return collect();
+        }
+
+        $entradas = HuentitanEntrada::query()
+            ->whereIn('id', $movimientos->where('tipo_movimiento', 'in')->pluck('documento_id')->filter()->unique()->values())
+            ->get(['id', 'folio', 'estado'])
+            ->keyBy('id');
+
+        $salidas = HuentitanSalida::query()
+            ->with('obra')
+            ->whereIn('id', $movimientos->where('tipo_movimiento', 'out')->pluck('documento_id')->filter()->unique()->values())
+            ->get(['id', 'folio', 'estado', 'obra_id'])
+            ->keyBy('id');
+
+        return $movimientos->mapWithKeys(function ($movimiento) use ($entradas, $salidas) {
+            if ($movimiento->tipo_movimiento === 'in') {
+                $entrada = $entradas->get((int) $movimiento->documento_id);
+
+                if ($entrada) {
+                    return [(int) $movimiento->id => [
+                        'tipo' => 'Entrada HUENTITAN',
+                        'folio' => $entrada->folio,
+                        'estado' => $entrada->estado,
+                        'route' => route('huentitan.entradas.show', $entrada->id),
+                        'obra' => null,
+                    ]];
+                }
+            }
+
+            if ($movimiento->tipo_movimiento === 'out') {
+                $salida = $salidas->get((int) $movimiento->documento_id);
+
+                if ($salida) {
+                    $obra = $salida->obra
+                        ? trim(($salida->obra->clave_obra ? $salida->obra->clave_obra . ' - ' : '') . $salida->obra->nombre)
+                        : null;
+
+                    return [(int) $movimiento->id => [
+                        'tipo' => 'Salida a obra',
+                        'folio' => $salida->folio,
+                        'estado' => $salida->estado,
+                        'route' => route('huentitan.salidas.show', $salida->id),
+                        'obra' => $obra,
+                    ]];
+                }
+            }
+
+            return [(int) $movimiento->id => [
+                'tipo' => $movimiento->documento_tipo ?? 'Documento inventario',
+                'folio' => $movimiento->documento_id ? '#' . $movimiento->documento_id : null,
+                'estado' => $movimiento->documento_estado ?? null,
+                'route' => $movimiento->documento_id ? route('inventario.documentos.show', $movimiento->documento_id) : null,
+                'obra' => null,
+            ]];
+        });
     }
     public function actualizarProductoGeneral(Request $request, Producto $producto)
     {
@@ -541,6 +599,9 @@ class HuentitanInventarioController extends Controller
             'total' => HuentitanOrdenFabricacion::query()->count(),
             'borrador' => HuentitanOrdenFabricacion::query()->where('estado', 'borrador')->count(),
             'calculada' => HuentitanOrdenFabricacion::query()->where('estado', 'calculada')->count(),
+            'pendiente_material' => HuentitanOrdenFabricacion::query()->where('estado', 'pendiente_material')->count(),
+            'lista_para_apartar' => HuentitanOrdenFabricacion::query()->where('estado', 'lista_para_apartar')->count(),
+            'apartada' => HuentitanOrdenFabricacion::query()->where('estado', 'apartada')->count(),
             'autorizada' => HuentitanOrdenFabricacion::query()->where('estado', 'autorizada')->count(),
             'en_produccion' => HuentitanOrdenFabricacion::query()->where('estado', 'en_produccion')->count(),
             'cerrada' => HuentitanOrdenFabricacion::query()->where('estado', 'cerrada')->count(),
@@ -625,7 +686,7 @@ class HuentitanInventarioController extends Controller
     {
         $almacen = $this->almacenHuentitan();
 
-        $orden->load(['producto', 'creador', 'calculador', 'materiales.material', 'materiales.compraMarcadaPor']);
+        $orden->load(['producto', 'creador', 'calculador', 'apartador', 'iniciadorProduccion', 'materiales.material', 'materiales.compraMarcadaPor']);
 
         $stockMap = InventarioStock::query()
             ->where('almacen_id', $almacen->id)
@@ -652,7 +713,7 @@ class HuentitanInventarioController extends Controller
 
         $resumenMateriales = [
             'materiales' => $materiales->count(),
-            'con_faltante' => $orden->estado === 'calculada'
+            'con_faltante' => in_array($orden->estado, ['calculada', 'pendiente_material', 'lista_para_apartar', 'apartada'], true)
                 ? $orden->materiales->filter(fn ($material) => (float) $material->faltante_calculado > 0)->count()
                 : $materiales->where('faltante', '>', 0)->count(),
             'requieren_compra' => $orden->materiales->where('requiere_compra', true)->count(),
@@ -670,49 +731,262 @@ class HuentitanInventarioController extends Controller
         $almacen = $this->almacenHuentitan();
 
         DB::transaction(function () use ($almacen, $orden) {
-            $orden->load('materiales');
-
-            $stockMap = InventarioStock::query()
-                ->where('almacen_id', $almacen->id)
-                ->whereIn('producto_id', $orden->materiales->pluck('material_producto_id')->filter())
-                ->lockForUpdate()
-                ->get()
-                ->keyBy('producto_id');
-
-            foreach ($orden->materiales as $material) {
-                $stock = $stockMap->get($material->material_producto_id);
-                $stockActual = (float) ($stock->stock_actual ?? 0);
-                $stockReservado = (float) ($stock->stock_reservado ?? 0);
-                $stockDisponible = max(0, $stockActual - $stockReservado);
-                $faltante = max(0, (float) $material->cantidad_requerida - $stockDisponible);
-
-                $requiereCompra = $faltante > 0 || (bool) $material->requiere_compra;
-                $cantidadSugeridaCompra = $faltante > 0
-                    ? $faltante
-                    : ($requiereCompra ? (float) $material->cantidad_sugerida_compra : 0);
-
-                $material->update([
-                    'stock_actual_calculado' => $stockActual,
-                    'stock_reservado_calculado' => $stockReservado,
-                    'stock_disponible_calculado' => $stockDisponible,
-                    'faltante_calculado' => $faltante,
-                    'requiere_compra' => $requiereCompra,
-                    'cantidad_sugerida_compra' => $cantidadSugeridaCompra,
-                    'compra_marcada_at' => $requiereCompra ? now() : null,
-                    'compra_marcada_por' => $requiereCompra ? auth()->id() : null,
-                ]);
-            }
-
-            $orden->update([
-                'estado' => 'calculada',
-                'calculada_at' => now(),
-                'calculada_por' => auth()->id(),
-            ]);
+            $this->revisarDisponibilidadOrdenFabricacion($orden, $almacen);
         });
 
         return redirect()
             ->route('huentitan.ordenes-fabricacion.show', $orden)
-            ->with('status', 'Materiales calculados para la orden ' . $orden->folio . '.');
+            ->with('status', 'Disponibilidad revisada para la orden ' . $orden->folio . '.');
+    }
+
+    private function revisarDisponibilidadOrdenFabricacion(HuentitanOrdenFabricacion $orden, Almacen $almacen): array
+    {
+        $orden->load('materiales');
+
+        $stockMap = InventarioStock::query()
+            ->where('almacen_id', $almacen->id)
+            ->whereIn('producto_id', $orden->materiales->pluck('material_producto_id')->filter())
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('producto_id');
+
+        $faltantes = 0;
+
+        foreach ($orden->materiales as $material) {
+            $stock = $stockMap->get($material->material_producto_id);
+            $stockActual = (float) ($stock->stock_actual ?? 0);
+            $stockReservado = (float) ($stock->stock_reservado ?? 0);
+            $stockDisponible = max(0, $stockActual - $stockReservado);
+            $faltante = max(0, (float) $material->cantidad_requerida - $stockDisponible);
+            $faltantes += $faltante > 0 ? 1 : 0;
+
+            $requiereCompra = $faltante > 0 || (bool) $material->requiere_compra;
+            $cantidadSugeridaCompra = $faltante > 0
+                ? $faltante
+                : ($requiereCompra ? (float) $material->cantidad_sugerida_compra : 0);
+
+            $material->update([
+                'stock_actual_calculado' => $stockActual,
+                'stock_reservado_calculado' => $stockReservado,
+                'stock_disponible_calculado' => $stockDisponible,
+                'faltante_calculado' => $faltante,
+                'requiere_compra' => $requiereCompra,
+                'cantidad_sugerida_compra' => $cantidadSugeridaCompra,
+                'compra_marcada_at' => $requiereCompra ? ($material->compra_marcada_at ?: now()) : null,
+                'compra_marcada_por' => $requiereCompra ? ($material->compra_marcada_por ?: auth()->id()) : null,
+            ]);
+        }
+
+        $orden->update([
+            'estado' => $faltantes > 0 ? 'pendiente_material' : 'lista_para_apartar',
+            'calculada_at' => now(),
+            'calculada_por' => auth()->id(),
+        ]);
+
+        return [
+            'materiales' => $orden->materiales->count(),
+            'faltantes' => $faltantes,
+        ];
+    }
+    public function apartarOrdenFabricacion(HuentitanOrdenFabricacion $orden)
+    {
+        $almacen = $this->almacenHuentitan();
+
+        try {
+            DB::transaction(function () use ($almacen, $orden) {
+                $orden = HuentitanOrdenFabricacion::query()
+                    ->whereKey($orden->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if (! in_array($orden->estado, ['lista_para_apartar'], true)) {
+                    throw new \RuntimeException('La orden debe estar lista para apartar material. Revisa disponibilidad antes de apartar.');
+                }
+
+                $resultado = $this->revisarDisponibilidadOrdenFabricacion($orden, $almacen);
+                $orden->refresh()->load('materiales');
+
+                if (($resultado['faltantes'] ?? 0) > 0 || $orden->estado !== 'lista_para_apartar') {
+                    throw new \RuntimeException('La orden aun tiene faltantes. No se puede apartar material.');
+                }
+
+                if ($orden->materiales->isEmpty()) {
+                    throw new \RuntimeException('La orden no tiene materiales para apartar.');
+                }
+
+                foreach ($orden->materiales as $material) {
+                    $cantidad = round((float) $material->cantidad_requerida, 3);
+
+                    if ($cantidad <= 0) {
+                        throw new \RuntimeException("El material {$material->material_nombre} tiene cantidad requerida invalida.");
+                    }
+
+                    $stockRow = DB::table('inventario_stock')
+                        ->where('almacen_id', $almacen->id)
+                        ->where('producto_id', $material->material_producto_id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    $stockActual = (float) ($stockRow->stock_actual ?? 0);
+                    $stockReservado = (float) ($stockRow->stock_reservado ?? 0);
+                    $stockDisponible = max(0, $stockActual - $stockReservado);
+
+                    if (! $stockRow || $cantidad > $stockDisponible) {
+                        throw new \RuntimeException("Stock insuficiente para '{$material->material_nombre}'. Disponible: {$stockDisponible}, requiere: {$cantidad}.");
+                    }
+
+                    DB::table('inventario_stock')
+                        ->where('almacen_id', $almacen->id)
+                        ->where('producto_id', $material->material_producto_id)
+                        ->update([
+                            'stock_reservado' => $stockReservado + $cantidad,
+                            'updated_at' => now(),
+                        ]);
+
+                    $nuevoReservado = $stockReservado + $cantidad;
+
+                    $material->update([
+                        'stock_reservado_calculado' => $nuevoReservado,
+                        'stock_disponible_calculado' => max(0, $stockActual - $nuevoReservado),
+                        'faltante_calculado' => 0,
+                        'cantidad_apartada' => $cantidad,
+                        'apartada_at' => now(),
+                        'apartada_por' => auth()->id(),
+                    ]);
+                }
+
+                $orden->update([
+                    'estado' => 'apartada',
+                    'apartada_at' => now(),
+                    'apartada_por' => auth()->id(),
+                ]);
+            });
+        } catch (\Throwable $e) {
+            return redirect()
+                ->route('huentitan.ordenes-fabricacion.show', $orden)
+                ->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('huentitan.ordenes-fabricacion.show', $orden)
+            ->with('status', 'Material apartado para la orden ' . $orden->folio . '.');
+    }
+    public function enviarProduccionOrdenFabricacion(HuentitanOrdenFabricacion $orden)
+    {
+        $almacen = $this->almacenHuentitan();
+
+        try {
+            DB::transaction(function () use ($almacen, $orden) {
+                $orden = HuentitanOrdenFabricacion::query()
+                    ->with('materiales.material')
+                    ->whereKey($orden->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if ($orden->estado !== 'apartada') {
+                    throw new \RuntimeException('Solo se pueden enviar a produccion ordenes con material apartado.');
+                }
+
+                if ($orden->produccion_iniciada_at) {
+                    throw new \RuntimeException('Esta orden ya fue enviada a produccion.');
+                }
+
+                if ($orden->materiales->isEmpty()) {
+                    throw new \RuntimeException('La orden no tiene materiales para consumir.');
+                }
+
+                foreach ($orden->materiales as $material) {
+                    $cantidad = round((float) $material->cantidad_apartada, 3);
+
+                    if ($cantidad <= 0) {
+                        throw new \RuntimeException("El material {$material->material_nombre} no tiene cantidad apartada para consumir.");
+                    }
+
+                    if (! $material->material_producto_id) {
+                        throw new \RuntimeException("El material {$material->material_nombre} no tiene producto ligado al catalogo.");
+                    }
+
+                    $stockRow = DB::table('inventario_stock')
+                        ->where('almacen_id', $almacen->id)
+                        ->where('producto_id', $material->material_producto_id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (! $stockRow) {
+                        throw new \RuntimeException("No existe stock para '{$material->material_nombre}' en HUENTITAN.");
+                    }
+
+                    $stockActual = (float) ($stockRow->stock_actual ?? 0);
+                    $stockReservado = (float) ($stockRow->stock_reservado ?? 0);
+
+                    if ($stockReservado + 0.0005 < $cantidad) {
+                        throw new \RuntimeException("El reservado de '{$material->material_nombre}' es menor al material apartado. Reservado: {$stockReservado}, requiere: {$cantidad}.");
+                    }
+
+                    if ($stockActual + 0.0005 < $cantidad) {
+                        throw new \RuntimeException("Stock insuficiente para consumir '{$material->material_nombre}'. Stock actual: {$stockActual}, requiere: {$cantidad}.");
+                    }
+
+                    $costoPromedio = (float) ($stockRow->costo_promedio ?? 0);
+                    $valorTotal = (float) ($stockRow->valor_total ?? 0);
+                    $nuevoStock = max(0, $stockActual - $cantidad);
+                    $nuevoReservado = max(0, $stockReservado - $cantidad);
+                    $nuevoValor = max(0, $valorTotal - ($cantidad * $costoPromedio));
+                    $nuevoCostoPromedio = $nuevoStock > 0 ? ($nuevoValor / $nuevoStock) : 0;
+
+                    DB::table('inventario_stock')
+                        ->where('almacen_id', $almacen->id)
+                        ->where('producto_id', $material->material_producto_id)
+                        ->update([
+                            'stock_actual' => $nuevoStock,
+                            'stock_reservado' => $nuevoReservado,
+                            'valor_total' => $nuevoValor,
+                            'costo_promedio' => $nuevoCostoPromedio,
+                            'updated_at' => now(),
+                        ]);
+
+                    DB::table('inventario_movimientos')->insert([
+                        'almacen_id' => $almacen->id,
+                        'producto_id' => $material->material_producto_id,
+                        'documento_id' => $orden->id,
+                        'fecha' => now(),
+                        'tipo_movimiento' => 'out',
+                        'cantidad' => $cantidad,
+                        'costo_unitario' => $costoPromedio,
+                        'saldo_cantidad' => $nuevoStock,
+                        'obra_id' => null,
+                        'residente_id' => null,
+                        'creado_por' => auth()->id(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    $material->update([
+                        'stock_actual_calculado' => $nuevoStock,
+                        'stock_reservado_calculado' => $nuevoReservado,
+                        'stock_disponible_calculado' => max(0, $nuevoStock - $nuevoReservado),
+                        'faltante_calculado' => 0,
+                        'cantidad_consumida' => $cantidad,
+                        'consumida_at' => now(),
+                        'consumida_por' => auth()->id(),
+                    ]);
+                }
+
+                $orden->update([
+                    'estado' => 'en_produccion',
+                    'produccion_iniciada_at' => now(),
+                    'produccion_iniciada_por' => auth()->id(),
+                ]);
+            });
+        } catch (\Throwable $e) {
+            return redirect()
+                ->route('huentitan.ordenes-fabricacion.show', $orden)
+                ->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('huentitan.ordenes-fabricacion.show', $orden)
+            ->with('status', 'Orden enviada a produccion. Los insumos apartados fueron descontados del inventario.');
     }
     public function actualizarCompraMaterialOrden(Request $request, HuentitanOrdenFabricacion $orden, HuentitanOrdenFabricacionMaterial $material)
     {
@@ -829,12 +1103,14 @@ class HuentitanInventarioController extends Controller
 
             $orden->update(['costo_material_estimado' => $costoTotal]);
 
+            $this->revisarDisponibilidadOrdenFabricacion($orden, $almacen);
+
             return $orden;
         });
 
         return redirect()
             ->route('huentitan.ordenes-fabricacion.index')
-            ->with('status', 'Orden de fabricacion ' . $orden->folio . ' creada en borrador.');
+            ->with('status', 'Orden de fabricacion ' . $orden->folio . ' creada con disponibilidad revisada.');
     }
 
     public function index(Request $request)
@@ -1012,6 +1288,15 @@ class HuentitanInventarioController extends Controller
         ]);
     }
 }
+
+
+
+
+
+
+
+
+
 
 
 
