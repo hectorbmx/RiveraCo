@@ -35,6 +35,7 @@
         action="{{ route('maquinas.seguros.update', [$maquina, $seguro]) }}"
         method="POST"
         enctype="multipart/form-data"
+        data-no-loading="true"
         class="rounded-xl border bg-white overflow-hidden"
     >
         @csrf

@@ -8,6 +8,7 @@ use App\Models\Vehiculo;
 use App\Models\Seguro;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Closure;
 
 class VehiculoSeguroController extends Controller
 {
@@ -22,7 +23,27 @@ public function store(Request $request, Vehiculo $vehiculo)
 {
     $validated = $request->validate([
         'aseguradora' => 'required|string|max:255',
-        'poliza_numero' => 'required|string|max:255',
+        'poliza_numero' => [
+            'required',
+            'string',
+            'max:255',
+            function (string $attribute, mixed $value, Closure $fail) use ($request, $vehiculo) {
+                if (!$request->filled('vigencia_desde')) {
+                    return;
+                }
+
+                $existe = Seguro::query()
+                    ->where('asegurable_type', $vehiculo->getMorphClass())
+                    ->where('asegurable_id', $vehiculo->getKey())
+                    ->where('poliza_numero', $value)
+                    ->whereDate('vigencia_desde', $request->input('vigencia_desde'))
+                    ->exists();
+
+                if ($existe) {
+                    $fail('Ya existe esta póliza para el vehículo y vigencia indicada.');
+                }
+            },
+        ],
         'tipo_seguro' => 'nullable|string|max:100',
         'metodo_pago' => 'nullable|string|max:100',
         'costo' => 'nullable|numeric|min:0',
@@ -109,7 +130,28 @@ public function update(Request $request, Vehiculo $vehiculo, Seguro $seguro)
 
     $validated = $request->validate([
         'aseguradora' => 'required|string|max:255',
-        'poliza_numero' => 'required|string|max:255',
+        'poliza_numero' => [
+            'required',
+            'string',
+            'max:255',
+            function (string $attribute, mixed $value, Closure $fail) use ($request, $vehiculo, $seguro) {
+                if (!$request->filled('vigencia_desde')) {
+                    return;
+                }
+
+                $existe = Seguro::query()
+                    ->where('asegurable_type', $vehiculo->getMorphClass())
+                    ->where('asegurable_id', $vehiculo->getKey())
+                    ->where('poliza_numero', $value)
+                    ->whereDate('vigencia_desde', $request->input('vigencia_desde'))
+                    ->whereKeyNot($seguro->id)
+                    ->exists();
+
+                if ($existe) {
+                    $fail('Ya existe esta póliza para el vehículo y vigencia indicada.');
+                }
+            },
+        ],
         'tipo_seguro' => 'nullable|string|max:100',
         'metodo_pago' => 'nullable|string|max:100',
         'costo' => 'nullable|numeric|min:0',

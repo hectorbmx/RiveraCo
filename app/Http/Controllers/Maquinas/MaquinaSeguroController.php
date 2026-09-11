@@ -89,9 +89,8 @@ class MaquinaSeguroController extends Controller
         }
 
         return redirect()
-            ->route('maquinas.show', $maquina)
-            ->with('success', 'Póliza registrada correctamente.')
-            ->with('tab', 'seguros');
+            ->route('maquinas.show', ['maquina' => $maquina->id, 'tab' => 'seguros'])
+            ->with('success', 'Póliza registrada correctamente.');
     }
 
     public function update(Request $request, Maquina $maquina, Seguro $seguro)
@@ -139,9 +138,8 @@ class MaquinaSeguroController extends Controller
         }
 
         return redirect()
-            ->route('maquinas.show', $maquina)
-            ->with('success', 'Póliza actualizada correctamente.')
-            ->with('tab', 'seguros');
+            ->route('maquinas.show', ['maquina' => $maquina->id, 'tab' => 'seguros'])
+            ->with('success', 'Póliza actualizada correctamente.');
     }
 
     public function destroy(Maquina $maquina, Seguro $seguro)

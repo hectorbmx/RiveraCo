@@ -29,7 +29,25 @@ function showGlobalSubmitLoader(message = 'Procesando...') {
     overlay.classList.add('flex');
 }
 
+function hideGlobalSubmitLoader() {
+    const overlay = document.getElementById('global-submit-loader');
+    if (!overlay) return;
+
+    overlay.classList.add('hidden');
+    overlay.classList.remove('flex');
+
+    const buttons = document.querySelectorAll('button[type="submit"], button:not([type])');
+    buttons.forEach((button) => {
+        button.disabled = false;
+        button.classList.remove('opacity-70', 'cursor-not-allowed');
+    });
+}
+
 window.showGlobalSubmitLoader = showGlobalSubmitLoader;
+window.hideGlobalSubmitLoader = hideGlobalSubmitLoader;
+window.addEventListener('pageshow', () => {
+    hideGlobalSubmitLoader();
+});
 
 document.addEventListener('submit', (event) => {
     const form = event.target;

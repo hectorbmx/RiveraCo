@@ -60,6 +60,8 @@
         <x-filters.actions
             submit-label="Filtrar"
             clear-url="{{ route('maquinas.index') }}"
+            new-url="{{ route('empresa_config.maquinas.create') }}"
+            new-label="+NUEVA"
             span="md:col-span-3" />
     </x-filters.card>
 

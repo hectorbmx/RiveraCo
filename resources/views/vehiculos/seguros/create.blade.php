@@ -21,10 +21,21 @@
         </a>
     </div>
 
+    @if ($errors->any())
+        <div class="rounded-lg border border-red-200 bg-red-50 p-4">
+            <div class="font-semibold text-red-700 mb-2">Hay errores en el formulario:</div>
+            <ul class="list-disc ml-5 text-sm text-red-600 space-y-1">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
     <form
         action="{{ route('vehiculos.seguros.store', $vehiculo) }}"
         method="POST"
         enctype="multipart/form-data"
+        data-no-loading="true"
         class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden"
     >
         @csrf

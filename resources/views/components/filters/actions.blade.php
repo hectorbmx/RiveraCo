@@ -1,6 +1,8 @@
 @props([
     'submitLabel' => 'Filtrar',
     'clearUrl' => null,
+    'newUrl' => null,
+    'newLabel' => '+NUEVA',
     'span' => 'md:col-span-3',
 ])
 
@@ -14,6 +16,12 @@
     @if($clearUrl)
         <a href="{{ $clearUrl }}" class="px-4 py-2 rounded-xl text-sm border border-white/25 bg-white/10 text-white hover:bg-white/20 shadow-sm">
             Limpiar
+        </a>
+    @endif
+
+    @if($newUrl)
+        <a href="{{ $newUrl }}" class="px-4 py-2 rounded-xl text-sm font-semibold bg-[#0B265A] text-white hover:bg-[#123675] shadow-sm">
+            {{ $newLabel }}
         </a>
     @endif
 </div>
