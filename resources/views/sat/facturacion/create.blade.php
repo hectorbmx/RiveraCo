@@ -274,8 +274,8 @@
                                 </label>
                                 <select name="tipo_iva" x-model="tipoIva" class="w-full rounded-xl border-slate-300">
                                     <option value="0.16">IVA 16%</option>
-                                    <option value="0.08">IVA 8% (Zona fronteriza)</option>
-                                    <option value="0">IVA 0% (Tasa cero)</option>
+                                    <!-- <option value="0.08">IVA 8% (Zona fronteriza)</option> -->
+                                    <!-- <option value="0">IVA 0% (Tasa cero)</option> -->
                                     <option value="exento">Exento (sin traslado)</option>
                                     <option value="sin_iva">Sin IVA (no objeto)</option>
                                 </select>
