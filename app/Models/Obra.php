@@ -101,6 +101,7 @@ class Obra extends Model
         'ubicacion',
         'profundidad_total',
         'kg_acero_total',
+        'usa_bentonita',
         'bentonita_total',
         'concreto_total',
 
@@ -110,6 +111,7 @@ class Obra extends Model
     'fecha_inicio_real'       => 'date',
     'fecha_fin_programada'    => 'date',
     'fecha_fin_real'          => 'date',
+    'usa_bentonita'           => 'boolean',
 ];
 
 

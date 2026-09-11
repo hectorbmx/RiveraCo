@@ -73,7 +73,8 @@ public function index(Request $request)
             $q->where('Area', $area);
         })
 
-        ->orderBy('Nombre')
+        ->orderByRaw('LOWER(TRIM(COALESCE(Apellidos, ""))) ASC')
+        ->orderByRaw('LOWER(TRIM(COALESCE(Nombre, ""))) ASC')
         ->paginate(15)
         ->appends([
             'q' => $search,

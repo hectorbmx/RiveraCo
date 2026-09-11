@@ -10,18 +10,23 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Verificar si existe un usuario admin
-        $user = User::firstOrCreate(
-            ['email' => 'pruebas@gmail.com'],
-            [
-                'name' => 'Residente de prueba',
-                'password' => bcrypt('12345678'), // cámbiala luego
-            ]
-        );
+        $testEmails = [
+            'hectorbmx@gmail.com' => 'Héctor',
+            'pruebas@gmail.com' => 'Residente de prueba',
+        ];
 
-        // Asignar rol super-admin
-        if (!$user->hasRole('super-admin')) {
-            $user->assignRole('super-admin');
+        foreach ($testEmails as $email => $name) {
+            $user = User::firstOrCreate(
+                ['email' => $email],
+                [
+                    'name' => $name,
+                    'password' => bcrypt('12345678'),
+                ]
+            );
+
+            if (!$user->hasRole('super-admin')) {
+                $user->assignRole('super-admin');
+            }
         }
     }
 }

@@ -176,6 +176,16 @@ KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtro
                         $porFacturar = max(0, $valorObra - $facturado);
                         $porCobrar = max(0, $facturado - $cobrado);
                         $avancePct = $valorObra > 0 ? min(100, round(($facturado / $valorObra) * 100)) : 0;
+
+                        $pilasProgramadas = (int) $obra->pilas()->sum('cantidad_programada');
+                        $pilasEjecutadas = (float) $obra->pilas()
+                            ->withSum('detallesComision as cantidad_ejecutada', 'cantidad')
+                            ->get()
+                            ->sum('cantidad_ejecutada');
+                        $avancePilasPct = $pilasProgramadas > 0
+                            ? min(100, round(($pilasEjecutadas / $pilasProgramadas) * 100))
+                            : 0;
+
                         $money = fn ($value) => '$' . number_format((float) $value, 2);
                     @endphp
                     <tr class="border-b hover:bg-slate-50 align-top">
@@ -230,12 +240,25 @@ KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtro
                         </td>
 
                         <td class="py-3 px-2">
-                            <div class="min-w-[110px]">
-                                <div class="flex items-center justify-between text-[10px] text-slate-500 mb-1">
-                                    <span>{{ $avancePct }}%</span>
+                            <div class="min-w-[140px] space-y-2">
+                                <div class="space-y-1">
+                                    <div class="flex items-center justify-between text-[10px] text-slate-500">
+                                        <span>Financiero</span>
+                                        <span>{{ $avancePct }}%</span>
+                                    </div>
+                                    <div class="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
+                                        <div class="h-full rounded-full bg-gradient-to-r from-[#0B265A] to-[#3B82F6]" style="width: {{ $avancePct }}%"></div>
+                                    </div>
                                 </div>
-                                <div class="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
-                                    <div class="h-full rounded-full bg-gradient-to-r from-[#0B265A] to-[#3B82F6]" style="width: {{ $avancePct }}%"></div>
+
+                                <div class="space-y-1">
+                                    <div class="flex items-center justify-between text-[10px] text-slate-500">
+                                        <span>Obra</span>
+                                        <span>{{ $avancePilasPct }}%</span>
+                                    </div>
+                                    <div class="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
+                                        <div class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-lime-400" style="width: {{ $avancePilasPct }}%"></div>
+                                    </div>
                                 </div>
                             </div>
                         </td>

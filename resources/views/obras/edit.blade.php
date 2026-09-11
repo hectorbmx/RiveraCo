@@ -49,6 +49,12 @@
             'ordenes-compra' => 'Ordenes de compra',
             'reportes'     => 'Reportes',
         ];
+
+        if ((bool) $obra->usa_bentonita) {
+            $tabs = array_slice($tabs, 0, 8, true)
+                + ['bentonita' => 'Bentonita']
+                + array_slice($tabs, 8, null, true);
+        }
     @endphp
 
     <div class="border-b border-slate-200 mb-4">
@@ -704,6 +710,14 @@
                                class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                                value="{{ old('bentonita_total', $obra->bentonita_total) }}">
                     </div>
+                    <div class="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                        <label class="inline-flex items-center gap-3 text-sm font-semibold text-slate-700">
+                            <input type="checkbox" name="usa_bentonita" value="1"
+                                   class="rounded border-slate-300 text-[#0B265A] shadow-sm focus:ring-[#FFC107]"
+                                   @checked(old('usa_bentonita', $obra->usa_bentonita))>
+                            <span>Usa bentonita</span>
+                        </label>
+                    </div>
                     <div>
                         <label for="concreto_total" class="block text-xs font-semibold text-slate-600 mb-1">Concreto (m³)</label>
                         <input type="number" step="0.01" id="concreto_total" name="concreto_total"
@@ -720,7 +734,7 @@
             $cobrado   = $avanceCobrado ?? 0;
             $pctCobrado = $montoBase > 0 ? min(100, round(($cobrado / $montoBase) * 100)) : 0;
 
-            $maxProfundidad = (float) ($obra->profundidad_total ?? 0);
+            $maxProfundidad = (float) ($avanceObra['profundidad_programada'] ?? $obra->profundidad_total ?? 0);
             $avProfundidad  = (float) ($avanceObra['profundidad'] ?? 0);
             $pctProfundidad = $maxProfundidad > 0 ? min(100, round(($avProfundidad / $maxProfundidad) * 100)) : 0;
 
@@ -2720,10 +2734,10 @@
                   class="bg-white border rounded-xl p-4">
                 @csrf
 
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 items-end">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2 items-end">
                     {{-- Buscar empleado --}}
-                    <div class="relative">
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">
+                    <div class="relative min-w-0">
+                        <label class="block text-[10px] font-semibold text-slate-600 mb-1">
                             Buscar empleado
                         </label>
 
@@ -2731,7 +2745,7 @@
                                id="buscador-empleado"
                                autocomplete="off"
                                placeholder="Escribe apellido o nombre"
-                               class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
+                               class="w-full rounded-xl border-slate-200 text-xs px-2.5 py-1.5">
 
                         <input type="hidden"
                                name="empleado_id"
@@ -2748,13 +2762,13 @@
                     </div>
 
                     {{-- Rol en la obra --}}
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">
+                    <div class="min-w-0">
+                        <label class="block text-[10px] font-semibold text-slate-600 mb-1">
                             Puesto en la obra
                         </label>
 
                         <select name="rol_id"
-                                class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
+                                class="w-full rounded-xl border-slate-200 text-xs px-2.5 py-1.5">
                             <option value="">Selecciona...</option>
                             @foreach($roles as $rol)
                                 <option value="{{ $rol->id }}" @selected(old('rol_id') == $rol->id)>
@@ -2768,15 +2782,30 @@
                         @enderror
                     </div>
 
+                    {{-- Fecha de alta --}}
+                    <div class="min-w-0">
+                        <label class="block text-[10px] font-semibold text-slate-600 mb-1">
+                            Fecha alta
+                        </label>
+                        <input type="date"
+                               name="fecha_alta"
+                               value="{{ old('fecha_alta', now()->toDateString()) }}"
+                               class="w-full rounded-xl border-slate-200 text-xs px-2.5 py-1.5">
+
+                        @error('fecha_alta')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     {{-- Notas --}}
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">
+                    <div class="min-w-0">
+                        <label class="block text-[10px] font-semibold text-slate-600 mb-1">
                             Notas
                         </label>
                         <input type="text"
                                name="notas"
                                value="{{ old('notas') }}"
-                               class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
+                               class="w-full rounded-xl border-slate-200 text-xs px-2.5 py-1.5">
 
                         @error('notas')
                             <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
@@ -2784,9 +2813,9 @@
                     </div>
 
                     {{-- Botón --}}
-                    <div class="flex md:justify-end">
+                    <div class="flex md:justify-end min-w-0">
                         <button type="submit"
-                                class="w-full md:w-auto px-4 py-2 bg-teal-600 text-white text-sm rounded-xl hover:bg-teal-700">
+                                class="w-full md:w-auto px-3 py-1.5 bg-teal-600 text-white text-xs rounded-xl hover:bg-teal-700 whitespace-nowrap">
                             Asignar empleado
                         </button>
                     </div>
@@ -2886,6 +2915,11 @@
 {{-- TAB ASISTENCIAS --}}
 @if($tab === 'asistencias')
     @include('obras.partials.asistencias.tab')
+@endif
+
+{{-- TAB: BENTONITA --}}
+@if($tab === 'bentonita')
+    @include('obras.partials.bentonita.tab')
 @endif
 
 {{-- TAB ORDENES DE COMPRA --}}
@@ -5989,6 +6023,10 @@ document.addEventListener('DOMContentLoaded', function () {
         contenedor.classList.add('hidden');
     }
 
+    function empleadoEsResidente(emp) {
+        return !!emp.es_residente;
+    }
+
     function mostrarResultados(lista) {
         contenedor.innerHTML = '';
         if (!lista.length) {
@@ -6012,12 +6050,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const nombreCompleto = (apellidos + ' ' + nombre).trim();
             const texto = nombreCompleto + (puesto ? ' (' + puesto + ')' : '');
 
+            const bloqueadoPorAsignacion = emp.asignado && (!empleadoEsResidente(emp) || emp.asignado_en_esta_obra);
+
             const item = document.createElement('button');
             item.type = 'button';
-            item.className = emp.asignado
+            item.className = bloqueadoPorAsignacion
                 ? 'w-full text-left px-3 py-2 bg-amber-50 text-slate-500 cursor-not-allowed border-b border-amber-100 last:border-b-0'
                 : 'w-full text-left px-3 py-2 hover:bg-slate-100 border-b border-slate-100 last:border-b-0';
-            item.disabled = !!emp.asignado;
+            item.disabled = bloqueadoPorAsignacion;
 
             const titulo = document.createElement('div');
             titulo.className = 'font-medium';
@@ -6029,12 +6069,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 detalle.className = 'mt-0.5 text-[11px] text-amber-700';
                 detalle.textContent = emp.asignado_en_esta_obra
                     ? 'Ya está asignado en esta obra'
-                    : 'Ya está asignado en otra obra' + (obraTexto ? ': ' + obraTexto : '');
+                    : (empleadoEsResidente(emp)
+                        ? 'Asignado en otra obra' + (obraTexto ? ': ' + obraTexto : '') + '. Se puede agregar porque es residente.'
+                        : 'Ya está asignado en otra obra' + (obraTexto ? ': ' + obraTexto : ''));
                 item.appendChild(detalle);
             }
 
             item.addEventListener('click', function () {
-                if (emp.asignado) {
+                if (bloqueadoPorAsignacion) {
                     return;
                 }
 
@@ -6069,6 +6111,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         mostrarResultados(filtrados);
     });
+
 
     // Cerrar lista si haces click fuera
     document.addEventListener('click', function (e) {

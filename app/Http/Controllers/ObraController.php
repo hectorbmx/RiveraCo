@@ -151,6 +151,7 @@ class ObraController extends Controller
         'ubicacion'                => ['nullable', 'string', 'max:255'],
         'profundidad_total'        => ['nullable', 'numeric', 'min:0'],
         'kg_acero_total'           => ['nullable', 'numeric', 'min:0'],
+        'usa_bentonita'            => ['nullable', 'boolean'],
         'bentonita_total'          => ['nullable', 'numeric', 'min:0'],
         'concreto_total'           => ['nullable', 'numeric', 'min:0'],
     ]);
@@ -878,10 +879,24 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
     // Empleados activos para el buscador, incluyendo su asignacion actual si existe.
     $empleadosAsignables = Empleado::query()
         ->with([
-            'asignacionActiva.obra:id,nombre,clave_obra',
+            'asignaciones' => function ($query) {
+                $query->where('activo', true)
+                    ->whereNull('fecha_baja')
+                    ->whereHas('obra', function ($obraQuery) {
+                        $obraQuery->whereNotIn('estatus_nuevo', [
+                            Obra::ESTATUS_TERMINADA,
+                            Obra::ESTATUS_CANCELADA,
+                        ]);
+                    })
+                    ->with('obra:id,nombre,clave_obra');
+            },
         ])
         ->where('Estatus', 1)
-        ->whereIn('puesto_base', $puestosBaseAsignables)
+        ->where(function ($query) use ($puestosBaseAsignables) {
+            $query->whereIn('puesto_base', $puestosBaseAsignables)
+                ->orWhere('puesto_base', 'like', '%RESIDENTE%')
+                ->orWhere('Puesto', 'like', '%RESIDENTE%');
+        })
         ->orderBy('Apellidos')
         ->orderBy('Nombre')
         ->get([
@@ -892,8 +907,15 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
             'puesto_base',
         ])
         ->map(function ($empleado) use ($obra) {
-            $asignacionActiva = $empleado->asignacionActiva;
+            $asignacionesActivasEmpleado = $empleado->asignaciones;
+            $asignacionActiva = $asignacionesActivasEmpleado->first();
             $obraActiva = $asignacionActiva?->obra;
+            $asignadoEnEstaObra = $asignacionesActivasEmpleado
+                ->contains(fn (ObraEmpleado $asignacion) => (int) $asignacion->obra_id === (int) $obra->id);
+            $puestoEmpleado = mb_strtoupper(trim((string) $empleado->Puesto));
+            $puestoBaseEmpleado = mb_strtoupper(trim((string) $empleado->puesto_base));
+            $esResidente = str_contains($puestoEmpleado, 'RESIDENTE')
+                || str_contains($puestoBaseEmpleado, 'RESIDENTE');
 
             return [
                 'id_Empleado' => $empleado->id_Empleado,
@@ -901,10 +923,9 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
                 'Apellidos' => $empleado->Apellidos,
                 'Puesto' => $empleado->Puesto,
                 'puesto_base' => $empleado->puesto_base,
-                'asignado' => (bool) $asignacionActiva,
-                'asignado_en_esta_obra' => $asignacionActiva
-                    ? (int) $asignacionActiva->obra_id === (int) $obra->id
-                    : false,
+                'es_residente' => $esResidente,
+                'asignado' => $asignacionesActivasEmpleado->isNotEmpty(),
+                'asignado_en_esta_obra' => $asignadoEnEstaObra,
                 'obra_asignada' => $obraActiva ? [
                     'id' => $obraActiva->id,
                     'nombre' => $obraActiva->nombre,
@@ -1095,9 +1116,16 @@ if ($tab === 'vehiculos') {
     ->values();
 }
   $tab = $request->query('tab', 'general');
+
+  if ($tab === 'bentonita' && ! (bool) $obra->usa_bentonita) {
+      return redirect()->route('obras.edit', ['obra' => $obra->id, 'tab' => 'general'])
+          ->with('info', 'Activa Usa bentonita para consultar este tab.');
+  }
   
+  $bentonitaRegistros = collect();
   $avanceObra = [
         'profundidad' => 0.0,
+        'profundidad_programada' => 0.0,
         'kg_acero'    => 0.0,
         'bentonita'   => 0.0,
         'concreto'    => 0.0,
@@ -1108,10 +1136,10 @@ if ($tab === 'vehiculos') {
         ],
     ];
 
-     if ($tab === 'general') {
+     if (in_array($tab, ['general', 'bentonita'], true)) {
         // Hacemos una sola consulta con SUMs agregados
         $totales = ComisionDetalle::selectRaw('
-                COALESCE(SUM(profundidad), 0)    as total_profundidad,
+                COALESCE(SUM(COALESCE(cantidad, 1) * COALESCE(profundidad, 0)), 0) as total_profundidad,
                 COALESCE(SUM(kg_acero), 0)       as total_kg_acero,
                 COALESCE(SUM(vol_bentonita), 0)  as total_vol_bentonita,
                 COALESCE(SUM(vol_concreto), 0)   as total_vol_concreto
@@ -1123,6 +1151,10 @@ if ($tab === 'vehiculos') {
             ->first();
 
         $avanceObra['profundidad'] = (float) $totales->total_profundidad;
+        $avanceObra['profundidad_programada'] = (float) $obra->pilas()
+            ->where('activo', true)
+            ->selectRaw('COALESCE(SUM(COALESCE(cantidad_programada, 0) * COALESCE(profundidad_proyecto, 0)), 0) as total_profundidad_programada')
+            ->value('total_profundidad_programada');
         $avanceObra['kg_acero']    = (float) $totales->total_kg_acero;
         $avanceObra['bentonita']   = (float) $totales->total_vol_bentonita;
         $avanceObra['concreto']    = (float) $totales->total_vol_concreto;
@@ -1150,6 +1182,17 @@ if ($tab === 'vehiculos') {
             'ejecutadas'  => (float) $pilasAvance->sum('ejecutadas'),
             'detalle'     => $pilasAvance,
         ];
+
+        if ($tab === 'bentonita') {
+            $bentonitaRegistros = ComisionDetalle::query()
+                ->with(['comision.residente', 'comision.pila'])
+                ->whereHas('comision', function ($q) use ($obra) {
+                    $q->where('obra_id', $obra->id);
+                })
+                ->where('vol_bentonita', '>', 0)
+                ->orderByDesc('id')
+                ->get();
+        }
     }
         // Facturas de la obra (para el tab de facturacion)
         $facturas = $obra->facturas()
@@ -1267,6 +1310,7 @@ return view('obras.edit', [
     'currentStatus'               => $currentStatus,
 
     'avanceObra'                  => $avanceObra,
+    'bentonitaRegistros'          => $bentonitaRegistros,
 
     'facturas'                    => $facturas,
     'facturasSatObra'             => $facturasSatObra,
@@ -1684,6 +1728,27 @@ private function resolverEstadoCampoSemanal(bool $planeado, $entrada, $salida, ?
 
     return $planeado ? 'sin_evidencia' : 'no_planeado';
 }
+
+public function updateBentonita(Request $request, Obra $obra)
+{
+    $this->abortarSiObraFueraDeArea($obra);
+
+    if (! (bool) $obra->usa_bentonita) {
+        return redirect()->route('obras.edit', ['obra' => $obra->id, 'tab' => 'general'])
+            ->with('info', 'Activa Usa bentonita antes de configurar la base.');
+    }
+
+    $data = $request->validate([
+        'bentonita_total' => ['nullable', 'numeric', 'min:0'],
+    ]);
+
+    $obra->update([
+        'bentonita_total' => $data['bentonita_total'] ?? null,
+    ]);
+
+    return redirect()->route('obras.edit', ['obra' => $obra->id, 'tab' => 'bentonita'])
+        ->with('success', 'Base de bentonita actualizada correctamente.');
+}
    public function update(Request $request, Obra $obra)
 {
     $this->abortarSiObraFueraDeArea($obra);
@@ -1707,6 +1772,7 @@ private function resolverEstadoCampoSemanal(bool $planeado, $entrada, $salida, ?
         'ubicacion'                => ['nullable', 'string', 'max:255'],
         'profundidad_total'        => ['nullable', 'numeric', 'min:0'],
         'kg_acero_total'           => ['nullable', 'numeric', 'min:0'],
+        'usa_bentonita'            => ['nullable', 'boolean'],
         'bentonita_total'          => ['nullable', 'numeric', 'min:0'],
         'concreto_total'           => ['nullable', 'numeric', 'min:0'],
     ]);
@@ -1716,6 +1782,7 @@ private function resolverEstadoCampoSemanal(bool $planeado, $entrada, $salida, ?
 
     // 4) (Esto NO se va a ejecutar mientras esté el dd)
     $data['area_id'] = $this->areaIdParaTipoObra($data['tipo_obra']);
+    $data['usa_bentonita'] = $request->boolean('usa_bentonita');
 
     $obra->update($data);
 

@@ -527,11 +527,29 @@
                         </div>
                     </div>
 
-                    <span class="text-sm font-medium">{{ auth()->user()->name }}</span>
+                    @php
+                        $headerUser = auth()->user();
+                        $headerUserPhoto = $headerUser?->empleado?->foto
+                            ? asset('storage/' . ltrim($headerUser->empleado->foto, '/'))
+                            : null;
+                    @endphp
 
-                    <div class="w-9 h-9 rounded-full bg-[#0B265A] text-white flex items-center justify-center">
-                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                    </div>
+                    <span class="text-sm font-medium">{{ $headerUser->name }}</span>
+
+                    @if($headerUserPhoto)
+                        <img
+                            src="{{ $headerUserPhoto }}"
+                            alt="{{ $headerUser->name }}"
+                            class="w-9 h-9 rounded-full object-cover border border-slate-200 shadow-sm"
+                        >
+                    @else
+                        <div class="w-9 h-9 rounded-full bg-[#0B265A] text-white flex items-center justify-center shadow-sm" aria-label="Avatar de {{ $headerUser->name }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5">
+                                <path d="M16 18a4 4 0 0 0-8 0"/>
+                                <circle cx="12" cy="8" r="4"/>
+                            </svg>
+                        </div>
+                    @endif
                 </div>
             </header>
 

@@ -95,7 +95,7 @@
                     <tr class="border-b last:border-b-0 hover:bg-slate-50">
                         <td class="py-2 px-3">
                             <span class="font-medium">
-                                {{ $emp->Nombre }} {{ $emp->Apellidos }}
+                                {{ $emp->Apellidos }} {{ $emp->Nombre }}
                             </span><br>
                             <span class="text-xs text-slate-400">
                                 ID: {{ $emp->id_Empleado }} · Ingreso:
