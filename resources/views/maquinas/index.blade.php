@@ -82,11 +82,36 @@
                         <th class="text-left px-4 py-3">Ubicación</th>
                         <th class="text-left px-4 py-3">Obra actual</th>
                         <th class="text-left px-4 py-3">Servicio preventivo</th>
+                        <th class="text-left px-4 py-3">Seguro</th>
                         <th class="text-left px-4 py-3">Detalles</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y">
                     @forelse($maquinas as $m)
+                        @php
+                            $seguroSeleccionado = null;
+
+                            if ($m->seguros && $m->seguros->isNotEmpty()) {
+                                $seguroSeleccionado = $m->seguros
+                                    ->sortByDesc(function ($seguro) {
+                                        return $seguro->vigencia_hasta ? $seguro->vigencia_hasta->format('Y-m-d') : '0000-00-00';
+                                    })
+                                    ->first(function ($seguro) {
+                                        $hoy = \Carbon\Carbon::today();
+
+                                        return in_array((string) ($seguro->estatus ?? ''), ['vigente', 'activo'], true)
+                                            || (
+                                                $seguro->vigencia_desde
+                                                && $seguro->vigencia_hasta
+                                                && $seguro->vigencia_desde->lte($hoy)
+                                                && $seguro->vigencia_hasta->gte($hoy)
+                                            );
+                                    })
+                                    ?? $m->seguros->sortByDesc(function ($seguro) {
+                                        return $seguro->vigencia_hasta ? $seguro->vigencia_hasta->format('Y-m-d') : '0000-00-00';
+                                    })->first();
+                            }
+                        @endphp
                         <tr class="hover:bg-slate-50">
                             <td class="px-4 py-3 whitespace-nowrap">{{ $m->codigo ?? '—' }}</td>
                             <td class="px-4 py-3 font-medium">
@@ -165,17 +190,36 @@
                             <td class="px-4 py-3">
                                 @include('maquinas.partials._preventivo_badge', ['preventivo' => $preventivos[$m->id] ?? null])
                             </td>
-                          <td class="px-4 py-3">
-                            <a href="{{ route('maquinas.show', ['maquina' => $m->id, 'tab' => 'general']) }}"
-                                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium
-                                        bg-white hover:bg-slate-50 text-slate-700 border-slate-200">
-                                Ver
-                            </a>
+                            <td class="px-4 py-3">
+                                @if($seguroSeleccionado && $seguroSeleccionado->documento_path)
+                                    <a href="{{ Storage::url($seguroSeleccionado->documento_path) }}"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       title="Ver documento del seguro"
+                                       class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-red-50 text-red-600 hover:bg-red-100 transition">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4" aria-hidden="true">
+                                            <path d="M7 3.5A2.5 2.5 0 0 1 9.5 1h5.25a.75.75 0 0 1 .53.22l3.5 3.5a.75.75 0 0 1 .22.53V18A2.5 2.5 0 0 1 17 20.5H9.5A2.5 2.5 0 0 1 7 18V3.5Zm2.5-.5a1 1 0 0 0-1 1V18a1 1 0 0 0 1 1H17a1 1 0 0 0 1-1V6.06L15.94 4H9.5a1 1 0 0 0-1 1Zm2.25 7.75h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5Zm0 3h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM11 6.5h4.5a.75.75 0 0 1 0 1.5H11a.75.75 0 0 1 0-1.5Z"/>
+                                        </svg>
+                                    </a>
+                                @else
+                                    <span title="SIN SEGURO" class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-amber-50 text-amber-600 border border-amber-200">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4" aria-hidden="true">
+                                            <path fill-rule="evenodd" d="M8.485 2.5a1.5 1.5 0 0 1 2.03 0l5.905 5.8a1.5 1.5 0 0 1 .42 1.013v4.687A2.5 2.5 0 0 1 14.34 16.5H5.66A2.5 2.5 0 0 1 3.16 14v-4.687a1.5 1.5 0 0 1 .42-1.013l5.905-5.8Zm1.515 4.5a.75.75 0 0 0-.75.75v2.75a.75.75 0 0 0 1.5 0V7.75a.75.75 0 0 0-.75-.75Zm0 6.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3">
+                                <a href="{{ route('maquinas.show', ['maquina' => $m->id, 'tab' => 'general']) }}"
+                                    class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium
+                                            bg-white hover:bg-slate-50 text-slate-700 border-slate-200">
+                                    Ver
+                                </a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-4 py-6 text-center text-slate-500">
+                            <td colspan="9" class="px-4 py-6 text-center text-slate-500">
                                 No hay máquinas registradas.
                             </td>
                         </tr>

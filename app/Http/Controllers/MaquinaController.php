@@ -32,7 +32,7 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
 
     // Lista
     $maquinas = Maquina::query()
-        ->with(['asignacionActiva.obra:id,nombre'])
+        ->with(['asignacionActiva.obra:id,nombre', 'seguros'])
         ->when($search !== '', function ($query) use ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('codigo', 'like', "%{$search}%")
