@@ -89,7 +89,12 @@
                     @forelse($maquinas as $m)
                         <tr class="hover:bg-slate-50">
                             <td class="px-4 py-3 whitespace-nowrap">{{ $m->codigo ?? '—' }}</td>
-                            <td class="px-4 py-3 font-medium text-slate-900">{{ $m->nombre ?? '—' }}</td>
+                            <td class="px-4 py-3 font-medium">
+                                <a href="{{ route('maquinas.show', ['maquina' => $m->id, 'tab' => 'general']) }}"
+                                   class="text-[#0B265A] hover:text-blue-700 hover:underline underline-offset-4">
+                                    {{ $m->nombre ?? '—' }}
+                                </a>
+                            </td>
                             <td class="px-4 py-3">{{ $m->tipo ?? '—' }}</td>
 
                             {{-- Estado --}}
@@ -149,9 +154,10 @@
                             {{-- Obra actual --}}
                             <td class="px-4 py-3">
                                 @if($m->asignacionActiva && $m->asignacionActiva->obra)
-                                    <span class="text-slate-900 font-medium">
+                                    <a href="{{ route('obras.edit', ['obra' => $m->asignacionActiva->obra->id]) }}"
+                                       class="font-medium text-[#0B265A] hover:text-blue-700 hover:underline underline-offset-4">
                                         {{ $m->asignacionActiva->obra->nombre ?? 'Obra' }}
-                                    </span>
+                                    </a>
                                 @else
                                     <span class="text-slate-500">—</span>
                                 @endif

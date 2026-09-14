@@ -43,10 +43,97 @@ function hideGlobalSubmitLoader() {
     });
 }
 
+function isModifiedNavigationClick(event) {
+    return event.defaultPrevented
+        || event.button !== 0
+        || event.metaKey
+        || event.ctrlKey
+        || event.shiftKey
+        || event.altKey;
+}
+
+function shouldShowNavigationLoader(link) {
+    if (!(link instanceof HTMLAnchorElement)) return false;
+    if (link.closest('[data-no-loading="true"], [data-no-loader="true"]')) return false;
+    if (link.hasAttribute('download')) return false;
+    if (link.target && link.target !== '_self') return false;
+
+    const rawHref = link.getAttribute('href') || '';
+    const trimmedHref = rawHref.trim();
+
+    if (!trimmedHref || trimmedHref === '#') return false;
+    if (trimmedHref.startsWith('#')) return false;
+    if (/^(javascript:|mailto:|tel:|sms:)/i.test(trimmedHref)) return false;
+
+    let url;
+    try {
+        url = new URL(trimmedHref, window.location.href);
+    } catch (_) {
+        return false;
+    }
+
+    if (url.origin !== window.location.origin) return false;
+
+    const current = new URL(window.location.href);
+    const samePage = url.pathname === current.pathname && url.search === current.search;
+    if (samePage && url.hash && url.hash !== current.hash) return false;
+    if (samePage && url.hash === current.hash) return false;
+
+    return true;
+}
+
+let globalNavigationLoading = false;
+let globalNavigationTimeout = null;
+
+function showGlobalNavigationLoader(message = 'Cargando pagina...') {
+    showGlobalSubmitLoader(message);
+}
+
 window.showGlobalSubmitLoader = showGlobalSubmitLoader;
 window.hideGlobalSubmitLoader = hideGlobalSubmitLoader;
+window.showGlobalNavigationLoader = showGlobalNavigationLoader;
 window.addEventListener('pageshow', () => {
+    globalNavigationLoading = false;
+    if (globalNavigationTimeout) {
+        window.clearTimeout(globalNavigationTimeout);
+        globalNavigationTimeout = null;
+    }
     hideGlobalSubmitLoader();
+});
+
+document.addEventListener('click', (event) => {
+    if (isModifiedNavigationClick(event)) return;
+
+    const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+    if (!shouldShowNavigationLoader(link)) return;
+
+    if (globalNavigationLoading) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    globalNavigationLoading = true;
+    const message = link.dataset.loadingMessage || 'Cargando pagina...';
+    showGlobalNavigationLoader(message);
+
+    if (globalNavigationTimeout) {
+        window.clearTimeout(globalNavigationTimeout);
+    }
+
+    globalNavigationTimeout = window.setTimeout(() => {
+        if (!globalNavigationLoading) return;
+
+        globalNavigationLoading = false;
+        hideGlobalSubmitLoader();
+    }, 10000);
+
+    window.setTimeout(() => {
+        window.location.assign(link.href);
+    }, 30);
 });
 
 document.addEventListener('submit', (event) => {
