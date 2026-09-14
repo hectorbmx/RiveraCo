@@ -208,11 +208,20 @@ class MaquinaSeguroController extends Controller
             'dias_preaviso' => ['nullable', 'integer', 'min:1', 'max:365'],
             'observaciones' => ['nullable', 'string'],
 
-            'documento' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
-            'comprobante' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
-        ]);
+            'documento' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:15360'],
+            'comprobante' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:15360'],
+        ], $this->archivoSeguroMessages());
     }
 
+    protected function archivoSeguroMessages(): array
+    {
+        return [
+            'documento.max' => 'El documento de poliza no debe pesar mas de 15 MB.',
+            'comprobante.max' => 'El comprobante de pago no debe pesar mas de 15 MB.',
+            'documento.mimes' => 'El documento de poliza debe ser PDF o imagen JPG, PNG o WEBP.',
+            'comprobante.mimes' => 'El comprobante de pago debe ser PDF o imagen JPG, PNG o WEBP.',
+        ];
+    }
     protected function resolverEstatus(?string $estatusManual, string $desde, string $hasta): string
     {
         if ($estatusManual === 'cancelada') {

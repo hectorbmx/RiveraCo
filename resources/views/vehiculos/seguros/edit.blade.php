@@ -21,8 +21,8 @@
     </div>
 
     @if ($errors->any())
-        <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
-            <div class="font-semibold text-red-700 mb-2">Hay errores en el formulario:</div>
+        <div class="mb-4 rounded-lg border-2 border-red-300 bg-red-50 p-5 shadow-sm">
+            <div class="font-semibold text-red-700 mb-2">No se pudo guardar la poliza:</div>
             <ul class="list-disc ml-5 text-sm text-red-600 space-y-1">
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -35,7 +35,7 @@
         action="{{ route('vehiculos.seguros.update', [$vehiculo, $seguro]) }}"
         method="POST"
         enctype="multipart/form-data"
-        data-no-loading="true"
+        data-loading-message="Subiendo documentos..."
         class="rounded-xl border bg-white overflow-hidden"
     >
         @csrf
@@ -192,7 +192,9 @@
                     type="file"
                     name="documento"
                     class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500"
-                >
+                 accept="application/pdf,image/jpeg,image/png,image/webp" data-max-file-mb="15" data-file-error="documento-file-error">
+                        <p class="mt-2 text-xs text-slate-500">PDF o imagen. Maximo 15 MB.</p>
+                        <p id="documento-file-error" class="mt-2 hidden text-sm font-semibold text-red-700"></p>
                 @if($seguro->documento_path)
                     <div class="mt-2 text-sm">
                         <a
@@ -212,7 +214,9 @@
                     type="file"
                     name="comprobante"
                     class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500"
-                >
+                 accept="application/pdf,image/jpeg,image/png,image/webp" data-max-file-mb="15" data-file-error="comprobante-file-error">
+                        <p class="mt-2 text-xs text-slate-500">PDF o imagen. Maximo 15 MB.</p>
+                        <p id="comprobante-file-error" class="mt-2 hidden text-sm font-semibold text-red-700"></p>
                 @if($seguro->comprobante_path)
                     <div class="mt-2 text-sm">
                         <a

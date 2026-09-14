@@ -55,9 +55,9 @@ public function store(Request $request, Vehiculo $vehiculo)
         'deducible' => 'nullable|numeric|min:0',
         'cobertura' => 'nullable|string',
         'observaciones' => 'nullable|string',
-        'documento' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
-        'comprobante' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
-    ]);
+        'documento' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:15360',
+        'comprobante' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:15360',
+    ], $this->archivoSeguroMessages());
 
     $rutaDocumento = null;
     $rutaComprobante = null;
@@ -163,9 +163,9 @@ public function update(Request $request, Vehiculo $vehiculo, Seguro $seguro)
         'deducible' => 'nullable|numeric|min:0',
         'cobertura' => 'nullable|string',
         'observaciones' => 'nullable|string',
-        'documento' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
-        'comprobante' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
-    ]);
+        'documento' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:15360',
+        'comprobante' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:15360',
+    ], $this->archivoSeguroMessages());
 
     DB::transaction(function () use ($request, $validated, $seguro) {
         $seguro->aseguradora = $validated['aseguradora'];
@@ -219,4 +219,13 @@ public function update(Request $request, Vehiculo $vehiculo, Seguro $seguro)
         ->with('success', 'Póliza actualizada correctamente.');
 }
 
+    private function archivoSeguroMessages(): array
+    {
+        return [
+            'documento.max' => 'El documento de poliza no debe pesar mas de 15 MB.',
+            'comprobante.max' => 'El comprobante de pago no debe pesar mas de 15 MB.',
+            'documento.mimes' => 'El documento de poliza debe ser PDF o imagen JPG, PNG o WEBP.',
+            'comprobante.mimes' => 'El comprobante de pago debe ser PDF o imagen JPG, PNG o WEBP.',
+        ];
+    }
 }

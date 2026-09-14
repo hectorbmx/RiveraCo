@@ -92,6 +92,68 @@ function showGlobalNavigationLoader(message = 'Cargando pagina...') {
 window.showGlobalSubmitLoader = showGlobalSubmitLoader;
 window.hideGlobalSubmitLoader = hideGlobalSubmitLoader;
 window.showGlobalNavigationLoader = showGlobalNavigationLoader;
+function formatFileSize(bytes) {
+    if (!Number.isFinite(bytes)) return '';
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(mb >= 10 ? 1 : 2)} MB`;
+}
+
+function setFileValidationMessage(input, message = '') {
+    const errorId = input.dataset.fileError;
+    if (!errorId) return;
+
+    const target = document.getElementById(errorId);
+    if (!target) return;
+
+    target.textContent = message;
+    target.classList.toggle('hidden', message === '');
+}
+
+function validateSizedFileInput(input) {
+    const maxMb = Number(input.dataset.maxFileMb);
+    if (!maxMb || !input.files || input.files.length === 0) {
+        setFileValidationMessage(input);
+        return true;
+    }
+
+    const maxBytes = maxMb * 1024 * 1024;
+    const invalidFile = Array.from(input.files).find((file) => file.size > maxBytes);
+
+    if (!invalidFile) {
+        setFileValidationMessage(input);
+        return true;
+    }
+
+    setFileValidationMessage(
+        input,
+        `El archivo "${invalidFile.name}" pesa ${formatFileSize(invalidFile.size)}. El maximo permitido es ${maxMb} MB.`
+    );
+
+    return false;
+}
+
+document.addEventListener('change', (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+    if (!input.dataset.maxFileMb) return;
+
+    validateSizedFileInput(input);
+});
+
+document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement)) return;
+
+    const fileInputs = Array.from(form.querySelectorAll('input[type="file"][data-max-file-mb]'));
+    const invalidInput = fileInputs.find((input) => !validateSizedFileInput(input));
+
+    if (invalidInput) {
+        event.preventDefault();
+        hideGlobalSubmitLoader();
+        invalidInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        invalidInput.focus();
+    }
+});
 window.addEventListener('pageshow', () => {
     globalNavigationLoading = false;
     if (globalNavigationTimeout) {
@@ -156,4 +218,3 @@ document.addEventListener('submit', (event) => {
         });
     }, 0);
 });
-

@@ -22,8 +22,8 @@
     </div>
 
     @if ($errors->any())
-        <div class="rounded-lg border border-red-200 bg-red-50 p-4">
-            <div class="font-semibold text-red-700 mb-2">Hay errores en el formulario:</div>
+        <div class="rounded-lg border-2 border-red-300 bg-red-50 p-5 shadow-sm">
+            <div class="font-semibold text-red-700 mb-2">No se pudo guardar la poliza:</div>
             <ul class="list-disc ml-5 text-sm text-red-600 space-y-1">
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -35,7 +35,7 @@
         action="{{ route('vehiculos.seguros.store', $vehiculo) }}"
         method="POST"
         enctype="multipart/form-data"
-        data-no-loading="true"
+        data-loading-message="Subiendo documentos..."
         class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden"
     >
         @csrf
@@ -146,12 +146,16 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div class="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-300 hover:border-slate-400 transition-colors">
                         <label class="block text-xs font-medium text-slate-700 mb-1">Documento de póliza (PDF/Imagen)</label>
-                        <input type="file" name="documento" class="mt-2 block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                        <input type="file" name="documento" class="mt-2 block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" accept="application/pdf,image/jpeg,image/png,image/webp" data-max-file-mb="15" data-file-error="documento-file-error">
+                        <p class="mt-2 text-xs text-slate-500">PDF o imagen. Maximo 15 MB.</p>
+                        <p id="documento-file-error" class="mt-2 hidden text-sm font-semibold text-red-700"></p>
                     </div>
 
                     <div class="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-300 hover:border-slate-400 transition-colors">
                         <label class="block text-xs font-medium text-slate-700 mb-1">Comprobante de pago (PDF/Imagen)</label>
-                        <input type="file" name="comprobante" class="mt-2 block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                        <input type="file" name="comprobante" class="mt-2 block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" accept="application/pdf,image/jpeg,image/png,image/webp" data-max-file-mb="15" data-file-error="comprobante-file-error">
+                        <p class="mt-2 text-xs text-slate-500">PDF o imagen. Maximo 15 MB.</p>
+                        <p id="comprobante-file-error" class="mt-2 hidden text-sm font-semibold text-red-700"></p>
                     </div>
                 </div>
             </div>
