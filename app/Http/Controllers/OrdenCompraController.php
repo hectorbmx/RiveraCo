@@ -1589,13 +1589,13 @@ foreach ($oc->detalles as $detalle) {
      * totales. Si el comentario es muy largo, se corta con elipsis; el texto
      * completo queda persistido en ordenes_compra.comentarios.
      */
-    $totW = 62;
+    $totW = 54;
     $totX = $X0 + $W - $totW;
     $notasLabelW = 15;
     $notasGap = 4;
     $notasX = $X0 + $notasLabelW + 1;
     $notasW = $totX - $notasX - $notasGap;
-    $notasLineH = 5.5;
+    $notasLineH = 5;
     $notasMaxLineas = 4;
 
     $partirTexto = function (string $texto, float $anchoMax) use ($pdf): array {
@@ -1641,7 +1641,7 @@ foreach ($oc->detalles as $detalle) {
         'L'
     );
 
-    $pdf->SetFont('Arial', '', 9);
+    $pdf->SetFont('Arial', '', 8);
 
     $notasLineas = $partirTexto((string) ($oc->comentarios ?? ''), $notasW);
     $notasTruncadas = count($notasLineas) > $notasMaxLineas;
@@ -1759,7 +1759,7 @@ foreach ($oc->detalles as $detalle) {
         );
 
         $pdf->Cell(
-            36,
+            30,
             $altoFilaTotal,
             $utf8($fila['label']),
             0,
@@ -1778,11 +1778,11 @@ foreach ($oc->detalles as $detalle) {
         $pdf->SetFont(
             'Arial',
             $esTotal ? 'B' : '',
-            $esTotal ? 10 : 9
+            $esTotal ? 9 : 8
         );
 
         $pdf->Cell(
-            26,
+            20,
             $altoFilaTotal,
             $montoTexto,
             0,
