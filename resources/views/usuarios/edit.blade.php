@@ -53,7 +53,7 @@
                 </div>
 
                 <div class="bg-white p-5 rounded-lg shadow-sm border xl:col-span-3">
-                    <form method="POST" action="{{ route('usuarios.update', $usuario->id) }}" class="space-y-4" @submit="saving = true">
+                    <form method="POST" action="{{ route('usuarios.update', $usuario->id) }}" class="space-y-4" enctype="multipart/form-data" @submit="saving = true">
                         @csrf
                         @method('PUT')
 
@@ -138,6 +138,35 @@
                             </div>
                         </div>
 
+                        <div class="border rounded-lg p-4 bg-slate-50/70">
+                            <div class="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Firma digitalizada</label>
+                                    <p class="text-xs text-gray-500">Carga una firma en PNG con fondo transparente para documentos imprimibles.</p>
+                                    @error('firma_digital')
+                                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+                                    @if($usuario->firma_digital_path)
+                                        <div class="h-20 w-48 rounded border bg-white p-2 flex items-center justify-center">
+                                            <img src="{{ asset('storage/' . $usuario->firma_digital_path) }}" alt="Firma digital de {{ $usuario->name }}" class="max-h-full max-w-full object-contain">
+                                        </div>
+                                        <label class="inline-flex items-center gap-2 text-sm text-red-600 cursor-pointer">
+                                            <input type="checkbox" name="eliminar_firma_digital" value="1" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
+                                            Quitar firma
+                                        </label>
+                                    @else
+                                        <div class="h-20 w-48 rounded border border-dashed bg-white p-2 flex items-center justify-center text-xs text-gray-400">
+                                            Sin firma cargada
+                                        </div>
+                                    @endif
+
+                                    <input type="file" name="firma_digital" accept="image/png" class="block w-full text-sm text-gray-600 file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100">
+                                </div>
+                            </div>
+                        </div>
                         <div class="flex gap-3 pt-2">
                             <button type="submit"
                                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition shadow-sm">

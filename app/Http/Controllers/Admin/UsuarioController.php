@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
@@ -561,6 +562,11 @@ public function syncFirmasImpresas(Request $request, User $usuario)
 
         // Estado app (si lo estás mostrando)
         'is_active' => ['nullable','boolean'],
+        'firma_digital' => ['nullable','file','mimes:png','max:4096'],
+        'eliminar_firma_digital' => ['nullable','boolean'],
+    ], [
+        'firma_digital.mimes' => 'La firma digital debe ser un archivo PNG.',
+        'firma_digital.max' => 'La firma digital no debe exceder 4 MB.',
     ]);
 
     $usuario->name  = $data['name'];
@@ -568,6 +574,20 @@ public function syncFirmasImpresas(Request $request, User $usuario)
 
     if (!empty($data['password'])) {
         $usuario->password = Hash::make($data['password']);
+    }
+
+    if ((bool) ($data['eliminar_firma_digital'] ?? false) && $usuario->firma_digital_path) {
+        Storage::disk('public')->delete($usuario->firma_digital_path);
+        $usuario->firma_digital_path = null;
+    }
+
+    if ($request->hasFile('firma_digital') && $request->file('firma_digital')->isValid()) {
+        if ($usuario->firma_digital_path) {
+            Storage::disk('public')->delete($usuario->firma_digital_path);
+        }
+
+        $usuario->firma_digital_path = $request->file('firma_digital')
+            ->store('usuarios/' . $usuario->id . '/firmas', 'public');
     }
 
     $usuario->save();

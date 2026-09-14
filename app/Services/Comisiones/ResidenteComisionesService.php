@@ -12,6 +12,7 @@ use App\Models\ObraEmpleado;
 use App\Models\ObraPila;
 use App\Models\User;
 use App\Models\UsuarioApp;
+use App\Services\Mobile\AppMobileContextService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\UploadedFile;
@@ -24,6 +25,10 @@ use Intervention\Image\ImageManager;
 
 class ResidenteComisionesService
 {
+    public function __construct(private AppMobileContextService $contextService)
+    {
+    }
+
     private const ETAPAS = [
         ComisionEtapa::ETAPA_PERFORACION => 1,
         ComisionEtapa::ETAPA_BENTONITA => 2,
@@ -70,9 +75,9 @@ class ResidenteComisionesService
         ],
     ];
 
-    public function indexForUser(User $user): array
+    public function indexForUser(User $user, ?int $obraId = null): array
     {
-        $obra = $this->obraActiva($user);
+        $obra = $this->obraActiva($user, $obraId);
 
         $comisiones = Comision::query()
             ->with([
@@ -117,9 +122,9 @@ class ResidenteComisionesService
         ];
     }
 
-    public function showForUser(User $user, Comision $comision): array
+    public function showForUser(User $user, Comision $comision, ?int $obraId = null): array
     {
-        $obra = $this->obraActiva($user);
+        $obra = $this->obraActiva($user, $obraId);
 
         if ((int) $comision->obra_id !== (int) $obra->id) {
             throw new AuthorizationException('La comision no pertenece a tu obra activa.');
@@ -146,9 +151,9 @@ class ResidenteComisionesService
         ];
     }
 
-    public function createForUser(User $user, array $data): array
+    public function createForUser(User $user, array $data, ?int $obraId = null): array
     {
-        $obra = $this->obraActiva($user);
+        $obra = $this->obraActiva($user, $obraId);
         $this->validarPilaDeObra($obra, (int) $data['pila_id']);
 
         $comision = DB::transaction(function () use ($user, $obra, $data) {
@@ -201,12 +206,12 @@ class ResidenteComisionesService
             return $comision;
         });
 
-        return $this->showForUser($user, $comision)['comision'];
+        return $this->showForUser($user, $comision, $obraId)['comision'];
     }
 
-    public function updateEtapaForUser(User $user, Comision $comision, string $etapaKey, array $data): array
+    public function updateEtapaForUser(User $user, Comision $comision, string $etapaKey, array $data, ?int $obraId = null): array
     {
-        $obra = $this->obraActiva($user);
+        $obra = $this->obraActiva($user, $obraId);
         $this->validarComisionDeObra($obra, $comision);
 
         if (! array_key_exists($etapaKey, self::ETAPAS)) {
@@ -225,12 +230,12 @@ class ResidenteComisionesService
             $this->actualizarEstadoComision($comision);
         });
 
-        return $this->showForUser($user, $comision->fresh())['comision'];
+        return $this->showForUser($user, $comision->fresh(), $obraId)['comision'];
     }
 
-    public function storeFotoForUser(User $user, Comision $comision, string $etapaKey, UploadedFile $foto, ?string $comentario = null): array
+    public function storeFotoForUser(User $user, Comision $comision, string $etapaKey, UploadedFile $foto, ?string $comentario = null, ?int $obraId = null): array
     {
-        $obra = $this->obraActiva($user);
+        $obra = $this->obraActiva($user, $obraId);
         $this->validarComisionDeObra($obra, $comision);
 
         if (! array_key_exists($etapaKey, self::ETAPAS)) {
@@ -279,7 +284,7 @@ class ResidenteComisionesService
         ];
     }
 
-    private function obraActiva(User $user): Obra
+    private function obraActiva(User $user, ?int $obraId = null): Obra
     {
         $usuarioApp = UsuarioApp::query()
             ->where('user_id', $user->id)
@@ -290,19 +295,22 @@ class ResidenteComisionesService
             throw new AuthorizationException('Este usuario no esta habilitado para la app.');
         }
 
-        $asignacion = ObraEmpleado::query()
-            ->with('obra.cliente:id,nombre_comercial')
-            ->where('empleado_id', $usuarioApp->empleado_id)
-            ->where('activo', true)
-            ->whereNull('fecha_baja')
-            ->latest('id')
-            ->first();
+        $contexto = $this->contextService->contextoResidente($user, $usuarioApp, $obraId);
+        $contextoObraId = $contexto['obra']['id'] ?? null;
 
-        if (! $asignacion || ! $asignacion->obra) {
+        if (! $contextoObraId) {
             throw new AuthorizationException('No tienes una obra activa asignada.');
         }
 
-        return $asignacion->obra;
+        $obra = Obra::query()
+            ->with('cliente:id,nombre_comercial')
+            ->find($contextoObraId);
+
+        if (! $obra) {
+            throw new AuthorizationException('No tienes una obra activa asignada.');
+        }
+
+        return $obra;
     }
 
     private function empleadoIdApp(User $user): ?int
@@ -759,3 +767,4 @@ class ResidenteComisionesService
         return trim(($empleado->Nombre ?? '') . ' ' . ($empleado->Apellidos ?? '')) ?: null;
     }
 }
+

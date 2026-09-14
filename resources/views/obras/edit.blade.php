@@ -3586,9 +3586,9 @@
     <div class="space-y-6">
         <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
             <div>
-                <h2 class="text-lg font-semibold text-slate-900">Vehiculos registrados en la obra</h2>
+                <h2 class="text-lg font-semibold text-slate-900">Vehiculos asignados a la obra</h2>
                 <p class="text-sm text-slate-500 mt-1">
-                    Registros de kilometraje y cargas de gasolina capturados desde la app movil.
+                    Vehiculos de empleados activos en esta obra y registros de kilometraje/gasolina capturados desde la app movil.
                 </p>
             </div>
             <div class="text-sm text-slate-500">
@@ -3598,7 +3598,7 @@
 
         @if($vehiculosObra->isEmpty())
             <div class="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-                Todavia no hay registros moviles de vehiculo ligados a esta obra.
+                Todavia no hay vehiculos ligados a empleados activos de esta obra ni registros moviles de vehiculo.
             </div>
         @else
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -3618,7 +3618,7 @@
                                 </div>
                             </div>
                             <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">
-                                {{ $resumen->lecturas }} logs
+                                {{ $resumen->lecturas }} {{ $resumen->lecturas === 1 ? 'log' : 'logs' }}
                             </span>
                         </div>
 
@@ -3659,6 +3659,7 @@
                             <th class="py-2 px-3 text-left">Vehiculo</th>
                             <th class="py-2 px-3 text-left">Empleado</th>
                             <th class="py-2 px-3 text-right">Km</th>
+                            <th class="py-2 px-3 text-right">Km recorridos</th>
                             <th class="py-2 px-3 text-right">Gasolina</th>
                             <th class="py-2 px-3 text-left">Notas</th>
                             <th class="py-2 px-3 text-left">Odometro</th>
@@ -3691,6 +3692,9 @@
                                 <td class="py-2 px-3 text-right font-semibold text-slate-900 whitespace-nowrap">
                                     {{ number_format((int) $log->km) }} km
                                 </td>
+                                <td class="py-2 px-3 text-right font-semibold text-emerald-700 whitespace-nowrap">
+                                    {{ $log->km_recorridos !== null ? number_format((int) $log->km_recorridos) . ' km' : '-' }}
+                                </td>
                                 <td class="py-2 px-3 text-right font-semibold text-slate-900 whitespace-nowrap">
                                     {{ $log->monto_gasolina !== null ? '$' . number_format((float) $log->monto_gasolina, 2) : '-' }}
                                 </td>
@@ -3718,7 +3722,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="py-6 text-center text-slate-500">
+                                <td colspan="9" class="py-6 text-center text-slate-500">
                                     Todavia no hay lecturas moviles ligadas a esta obra.
                                 </td>
                             </tr>

@@ -23,12 +23,13 @@ class ResidenteObraCivilMaterialController extends Controller
     public function index(Request $request)
     {
         $data = $request->validate([
+            'obra_id' => ['nullable', 'integer'],
             'q' => ['nullable', 'string', 'max:120'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:30'],
         ]);
 
-        $context = $this->contextService->resolve($request->user());
+        $context = $this->contextService->resolve($request->user(), $data['obra_id'] ?? null);
         $catalogo = $this->catalogService->search($context, $data);
 
         return response()->json([
@@ -42,11 +43,12 @@ class ResidenteObraCivilMaterialController extends Controller
     public function requests(Request $request)
     {
         $data = $request->validate([
+            'obra_id' => ['nullable', 'integer'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:30'],
         ]);
 
-        $context = $this->contextService->resolve($request->user());
+        $context = $this->contextService->resolve($request->user(), $data['obra_id'] ?? null);
         $empleadoId = $context->empleadoId();
 
         $requests = ObraCivilMaterialRequest::query()
@@ -84,6 +86,7 @@ class ResidenteObraCivilMaterialController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
+            'obra_id' => ['nullable', 'integer'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'items' => ['required', 'array', 'min:1', 'max:100'],
             'items.*.obra_civil_insumo_id' => ['required', 'integer', 'exists:obra_civil_insumos,id'],
@@ -96,7 +99,7 @@ class ResidenteObraCivilMaterialController extends Controller
             'items.*.notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $context = $this->contextService->resolve($request->user());
+        $context = $this->contextService->resolve($request->user(), $data['obra_id'] ?? null);
         $materialRequest = $this->requestService->store($context, $data);
 
         return response()->json([
@@ -183,5 +186,3 @@ class ResidenteObraCivilMaterialController extends Controller
         ];
     }
 }
-
-

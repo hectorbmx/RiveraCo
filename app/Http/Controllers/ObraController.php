@@ -39,6 +39,7 @@ use App\Models\CatalogoActividadComision;
 use App\Models\ObraAsistencia;
 use App\Models\ObraAsistenciaSemanalDetalle;
 use App\Models\ObraAsistenciaSemanalReporte;
+use App\Models\VehiculoEmpleado;
 use App\Models\VehiculoEmpleadoKmLog;
 use Carbon\Carbon;
 use App\Models\OrdenCompra;
@@ -522,10 +523,12 @@ $gastosBase = $registrosPlaneacion
     ->where('numero_semana', 0)
     ->values();
 
-    $cfdisDisponibles = SatCfdi::whereNull('obra_id')
-    ->orderByDesc('fecha_emision')
-    ->limit(300)
-    ->get();
+$cfdisDisponibles = $request->query('tab', 'general') === 'facturacion'
+    ? SatCfdi::whereNull('obra_id')
+        ->orderByDesc('fecha_emision')
+        ->limit(300)
+        ->get()
+    : collect();
 
 $planeacion = \App\Models\ObraPlaneacionSemanal::query()
     ->whereIn('planeacion_gasto_id', $gastosBase->pluck('id'))
@@ -1022,6 +1025,26 @@ if ($tab === 'horas-maquina') {
 
 
 if ($tab === 'vehiculos') {
+    $empleadosActivosObraIds = ObraEmpleado::query()
+        ->where('obra_id', $obra->id)
+        ->where('activo', true)
+        ->where(function ($query) {
+            $query->whereNull('fecha_baja')
+                ->orWhereDate('fecha_baja', '>=', now()->toDateString());
+        })
+        ->pluck('empleado_id')
+        ->filter()
+        ->unique()
+        ->values();
+
+    $asignacionesVehiculoActivas = VehiculoEmpleado::query()
+        ->with(['vehiculo', 'empleado'])
+        ->whereIn('empleado_id', $empleadosActivosObraIds)
+        ->whereNull('fecha_fin')
+        ->orderByDesc('fecha_asignacion')
+        ->orderByDesc('id')
+        ->get();
+
     $vehiculoKmLogs = VehiculoEmpleadoKmLog::query()
         ->with(['asignacion.vehiculo', 'asignacion.empleado'])
         ->where('obra_id', $obra->id)
@@ -1037,21 +1060,46 @@ if ($tab === 'vehiculos') {
             return $log;
         });
 
-    $vehiculosObra = $vehiculoKmLogs
-        ->map(fn ($log) => $log->asignacion)
+    $vehiculoKmLogs
+        ->groupBy(fn ($log) => $log->vehiculo_empleado_id)
+        ->each(function ($logs) {
+            $logsOrdenados = $logs->sortBy('fecha')->values();
+            $kmAnterior = null;
+
+            foreach ($logsOrdenados as $log) {
+                if ($kmAnterior === null) {
+                    $kmAnterior = $log->asignacion?->km_inicial !== null
+                        ? (int) $log->asignacion->km_inicial
+                        : null;
+                }
+
+                $log->km_anterior = $kmAnterior;
+                $log->km_recorridos = $kmAnterior !== null
+                    ? max(0, (int) $log->km - $kmAnterior)
+                    : null;
+                $kmAnterior = (int) $log->km;
+            }
+        });
+
+    $vehiculosObra = $asignacionesVehiculoActivas
+        ->concat($vehiculoKmLogs->map(fn ($log) => $log->asignacion))
         ->filter()
         ->unique('id')
         ->values();
 
-    $vehiculoKmResumen = $vehiculoKmLogs
-        ->groupBy(fn ($log) => $log->vehiculo_empleado_id)
-        ->map(function ($logs) {
-            $logsOrdenados = $logs->sortBy('fecha')->values();
+    $logsPorAsignacion = $vehiculoKmLogs->groupBy(fn ($log) => $log->vehiculo_empleado_id);
+
+    $vehiculoKmResumen = $vehiculosObra
+        ->map(function ($asignacion) use ($logsPorAsignacion) {
+            $logsOrdenados = ($logsPorAsignacion->get($asignacion->id) ?? collect())
+                ->sortBy('fecha')
+                ->values();
             $primerLog = $logsOrdenados->first();
             $ultimoLog = $logsOrdenados->last();
-            $asignacion = $ultimoLog?->asignacion;
-            $kmInicio = $primerLog ? (int) $primerLog->km : null;
-            $kmActual = $ultimoLog ? (int) $ultimoLog->km : null;
+            $kmInicio = $primerLog ? (int) $primerLog->km : ($asignacion->km_inicial !== null ? (int) $asignacion->km_inicial : null);
+            $kmActual = $ultimoLog
+                ? (int) $ultimoLog->km
+                : ($asignacion->km_final !== null ? (int) $asignacion->km_final : $kmInicio);
             $montoGasolina = $logsOrdenados->sum(fn ($log) => (float) ($log->monto_gasolina ?? 0));
 
             return (object) [
@@ -1207,23 +1255,57 @@ if ($tab === 'vehiculos') {
             ->sum('monto');
         $totalPendiente = max(0, $totalFacturado - $totalPagado);
 
-        $rfcCliente = $this->normalizeRfc($obra->cliente?->rfc);
-        $clienteId = $obra->cliente_id;
+        $facturasSatObra = collect();
+        $facturasDisponiblesRelacionar = collect();
+        $cuentasBanco = collect();
+        $metodosPago = collect();
+        $facturaBorradores = collect();
+        $satConceptos = collect();
+        $usosCfdi = [];
+        $metodosPagoCfdi = [];
+        $formasPagoCfdi = [];
+        $regimenesFiscales = [];
 
-        $facturasSatObra = $this->facturasSatObra($obra);
-        $facturasDisponiblesRelacionar = $this->facturasDisponiblesParaObra($rfcCliente, $clienteId);
-        $cuentasBanco = CuentaBancoEmpresa::where('activa', true)
-            ->orderByDesc('principal')
-            ->orderBy('banco')
-            ->orderBy('nombre')
-            ->get();
-        $metodosPago = MetodoPagoEmpresa::where('activo', true)
-            ->orderBy('nombre')
-            ->get();
-        $facturaBorradores = $obra->facturaBorradores()
-            ->with(['conceptoSat', 'creador', 'autorizador'])
-            ->latest()
-            ->get();
+        if ($tab === 'facturacion') {
+            $rfcCliente = $this->normalizeRfc($obra->cliente?->rfc);
+            $clienteId = $obra->cliente_id;
+
+            $facturasSatObra = $this->facturasSatObra($obra);
+            $facturasDisponiblesRelacionar = $this->facturasDisponiblesParaObra($rfcCliente, $clienteId);
+            $cuentasBanco = CuentaBancoEmpresa::where('activa', true)
+                ->orderByDesc('principal')
+                ->orderBy('banco')
+                ->orderBy('nombre')
+                ->get();
+            $metodosPago = MetodoPagoEmpresa::where('activo', true)
+                ->orderBy('nombre')
+                ->get();
+            $facturaBorradores = $obra->facturaBorradores()
+                ->with(['conceptoSat', 'creador', 'autorizador'])
+                ->latest()
+                ->get();
+            $satConceptos = SatConcepto::where('activo', true)
+                ->orderBy('descripcion')
+                ->get();
+            $usosCfdi = config('sat_catalogs.usos_cfdi', []);
+            $metodosPagoCfdi = config('sat_catalogs.metodos_pago', []);
+            $formasPagoCfdi = config('sat_catalogs.formas_pago', []);
+            $regimenesFiscales = config('sat_catalogs.regimenes_fiscales', []);
+
+            $totalFacturadoSat = (float) $facturasSatObra
+                ->where('estado', '!=', 'cancelada')
+                ->sum('total');
+            $totalPagadoSat = (float) $facturasSatObra
+                ->where('afecta_saldo_obra', true)
+                ->sum('pagado');
+
+            if ($facturasSatObra->isNotEmpty()) {
+                $totalFacturado = $totalFacturadoSat;
+                $totalPagado = $totalPagadoSat;
+                $totalPendiente = max(0, $totalFacturadoSat - $totalPagadoSat);
+            }
+        }
+
         $ordenesCompraObra = in_array($tab, ['facturacion', 'ordenes-compra'], true)
             ? OrdenCompra::with(['proveedor', 'areaCatalogo', 'centroCosto', 'pagoProveedorActivo'])
                 ->withCount('detalles')
@@ -1232,26 +1314,6 @@ if ($tab === 'vehiculos') {
                 ->orderByDesc('id')
                 ->get()
             : collect();
-        $satConceptos = SatConcepto::where('activo', true)
-            ->orderBy('descripcion')
-            ->get();
-        $usosCfdi = config('sat_catalogs.usos_cfdi', []);
-        $metodosPagoCfdi = config('sat_catalogs.metodos_pago', []);
-        $formasPagoCfdi = config('sat_catalogs.formas_pago', []);
-        $regimenesFiscales = config('sat_catalogs.regimenes_fiscales', []);
-
-        $totalFacturadoSat = (float) $facturasSatObra
-            ->where('estado', '!=', 'cancelada')
-            ->sum('total');
-        $totalPagadoSat = (float) $facturasSatObra
-            ->where('afecta_saldo_obra', true)
-            ->sum('pagado');
-
-        if ($facturasSatObra->isNotEmpty()) {
-            $totalFacturado = $totalFacturadoSat;
-            $totalPagado = $totalPagadoSat;
-            $totalPendiente = max(0, $totalFacturadoSat - $totalPagadoSat);
-        }
 
 // Totales de facturacion (para resumen y barras)
 // $totalFacturado = (float) $obra->facturas()->sum('monto');                         // todas las facturas emitidas

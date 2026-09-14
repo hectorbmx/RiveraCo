@@ -10,6 +10,7 @@ use App\Models\ObraReposicionGasto;
 use App\Models\ObraReposicionGastoDetalle;
 use App\Models\SatCfdi;
 use App\Models\UsuarioApp;
+use App\Services\Mobile\AppMobileContextService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,10 @@ use Illuminate\Validation\Rule;
 
 class ResidenteReposicionGastoController extends Controller
 {
+    public function __construct(private AppMobileContextService $contextService)
+    {
+    }
+
     public function index(Request $request)
     {
         $obra = $this->obraActivaResidente($request);
@@ -207,31 +212,27 @@ class ResidenteReposicionGastoController extends Controller
     {
         $user = $request->user();
 
-        if (!$user || !$user->hasRole('residente')) {
+        if (!$user) {
             throw new HttpResponseException(response()->json([
                 'ok' => false,
-                'message' => 'Solo el perfil residente puede usar este modulo.',
-            ], 403));
+                'message' => 'No se encontro usuario autenticado.',
+            ], 401));
         }
 
-        $usuarioApp = UsuarioApp::where('user_id', $user->id)->first();
+        $usuarioApp = UsuarioApp::where('user_id', $user->id)->where('is_active', true)->first();
 
-        if (!$usuarioApp || !$usuarioApp->is_active) {
+        if (!$usuarioApp) {
             throw new HttpResponseException(response()->json([
                 'ok' => false,
                 'message' => 'Este usuario no esta habilitado para la app.',
             ], 403));
         }
 
-        $asignacion = ObraEmpleado::query()
-            ->select('id', 'obra_id', 'empleado_id', 'rol_id')
-            ->where('empleado_id', $usuarioApp->empleado_id)
-            ->where('activo', 1)
-            ->whereNull('fecha_baja')
-            ->latest('id')
-            ->first();
+        $obraId = $request->input('obra_id', $request->query('obra_id'));
+        $contexto = $this->contextService->contextoResidente($user, $usuarioApp, $obraId ? (int) $obraId : null);
+        $contextoObraId = $contexto['obra']['id'] ?? null;
 
-        if (!$asignacion) {
+        if (!$contextoObraId) {
             throw new HttpResponseException(response()->json([
                 'ok' => false,
                 'message' => 'No tienes una obra activa asignada.',
@@ -240,7 +241,7 @@ class ResidenteReposicionGastoController extends Controller
 
         $obra = Obra::query()
             ->with(['cliente:id,nombre_comercial'])
-            ->where('id', $asignacion->obra_id)
+            ->where('id', $contextoObraId)
             ->first();
 
         if (!$obra) {
@@ -442,3 +443,4 @@ class ResidenteReposicionGastoController extends Controller
         };
     }
 }
+

@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\AppContextController;
 use App\Http\Controllers\Api\V1\AsistenciasController;
 use App\Http\Controllers\Api\V1\VehiculoKmController;
 use App\Http\Controllers\Api\V1\ComisionController;
@@ -61,6 +62,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('me', [AuthController::class, 'me']);
+        Route::get('app/contexto-opciones', [AppContextController::class, 'opciones']);
 
         Route::get('maquinas/{obraMaquina}/registros', [MaquinaRegistroController::class, 'index']);
         Route::post('maquinas/{obraMaquina}/registros', [MaquinaRegistroController::class, 'store']);
@@ -153,5 +155,8 @@ Route::prefix('agent')->group(function () {
         Route::post('logout', [\App\Http\Controllers\Api\Agent\AgentAuthController::class, 'logout']);
     });
 });
+
+
+
 
 

@@ -23,12 +23,13 @@ class ResidenteObraCivilAvanceController extends Controller
     public function catalogo(Request $request)
     {
         $data = $request->validate([
+            'obra_id' => ['nullable', 'integer'],
             'q' => ['nullable', 'string', 'max:120'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:30'],
         ]);
 
-        $context = $this->contextService->resolve($request->user());
+        $context = $this->contextService->resolve($request->user(), $data['obra_id'] ?? null);
         $catalogo = $this->catalogService->search($context, $data);
 
         return response()->json([
@@ -39,15 +40,15 @@ class ResidenteObraCivilAvanceController extends Controller
         ]);
     }
 
-
     public function reportes(Request $request)
     {
         $data = $request->validate([
+            'obra_id' => ['nullable', 'integer'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:30'],
         ]);
 
-        $context = $this->contextService->resolve($request->user());
+        $context = $this->contextService->resolve($request->user(), $data['obra_id'] ?? null);
         $empleadoId = $context->empleadoId();
 
         $reports = CivilWorkReport::query()
@@ -78,9 +79,11 @@ class ResidenteObraCivilAvanceController extends Controller
             ],
         ]);
     }
+
     public function store(Request $request)
     {
         $data = $request->validate([
+            'obra_id' => ['nullable', 'integer'],
             'civil_concept_id' => ['required', 'integer', 'exists:civil_concepts,id'],
             'quantity' => ['required', 'numeric', 'gt:0'],
             'notes' => ['nullable', 'string', 'max:2000'],
@@ -89,7 +92,7 @@ class ResidenteObraCivilAvanceController extends Controller
             'photos.*' => ['required', 'file', 'image', 'max:8192'],
         ]);
 
-        $context = $this->contextService->resolve($request->user());
+        $context = $this->contextService->resolve($request->user(), $data['obra_id'] ?? null);
         $report = $this->reportService->store($context, $data);
 
         return response()->json([
@@ -144,4 +147,3 @@ class ResidenteObraCivilAvanceController extends Controller
         ];
     }
 }
-

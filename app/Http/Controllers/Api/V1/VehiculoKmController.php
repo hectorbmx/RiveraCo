@@ -7,12 +7,17 @@ use App\Models\Obra;
 use App\Models\ObraEmpleado;
 use App\Models\VehiculoEmpleado;
 use App\Models\VehiculoEmpleadoKmLog;
+use App\Services\Mobile\AppMobileContextService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class VehiculoKmController extends Controller
 {
+    public function __construct(private AppMobileContextService $contextService)
+    {
+    }
+
     public function index(Request $request)
     {
         $user = $request->user()->load('usuarioApp');
@@ -22,7 +27,8 @@ class VehiculoKmController extends Controller
             return response()->json(['ok' => false, 'message' => 'No hay empleado asociado a este usuario.'], 422);
         }
 
-        $asignacion = VehiculoEmpleado::where('empleado_id', $empleadoId)
+        $asignacion = VehiculoEmpleado::with(['vehiculo', 'empleado'])
+            ->where('empleado_id', $empleadoId)
             ->whereNull('fecha_fin')
             ->orderByDesc('fecha_asignacion')
             ->first();
@@ -31,12 +37,13 @@ class VehiculoKmController extends Controller
             return response()->json(['ok' => false, 'message' => 'No tienes un vehiculo asignado actualmente.'], 404);
         }
 
-        $obraActiva = $this->obraActivaDelEmpleado((int) $empleadoId);
+        $obraActiva = $this->obraActivaDelEmpleado($request, (int) $empleadoId);
 
         if (!$obraActiva) {
             return response()->json([
                 'ok' => true,
                 'vehiculo_empleado_id' => $asignacion->id,
+                'asignacion' => $this->formatearAsignacion($asignacion),
                 'obra_actual' => null,
                 'message' => 'No tienes una obra activa asignada para consultar registros del vehiculo.',
                 'data' => [],
@@ -53,6 +60,7 @@ class VehiculoKmController extends Controller
         return response()->json([
             'ok' => true,
             'vehiculo_empleado_id' => $asignacion->id,
+            'asignacion' => $this->formatearAsignacion($asignacion),
             'obra_actual' => [
                 'id' => $obraActiva->id,
                 'nombre' => $obraActiva->nombre,
@@ -70,6 +78,7 @@ class VehiculoKmController extends Controller
             'foto_ticket_gasolina' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
             'monto_gasolina' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'notas' => ['nullable', 'string', 'max:500'],
+            'obra_id' => ['nullable', 'integer'],
         ]);
 
         $user = $request->user()->load('usuarioApp');
@@ -82,7 +91,8 @@ class VehiculoKmController extends Controller
             ], 422);
         }
 
-        $asignacion = VehiculoEmpleado::where('empleado_id', $empleadoId)
+        $asignacion = VehiculoEmpleado::with(['vehiculo', 'empleado'])
+            ->where('empleado_id', $empleadoId)
             ->whereNull('fecha_fin')
             ->orderByDesc('fecha_asignacion')
             ->first();
@@ -94,7 +104,7 @@ class VehiculoKmController extends Controller
             ], 404);
         }
 
-        $obraActiva = $this->obraActivaDelEmpleado((int) $empleadoId);
+        $obraActiva = $this->obraActivaDelEmpleado($request, (int) $empleadoId);
 
         if (!$obraActiva) {
             return response()->json([
@@ -145,26 +155,52 @@ class VehiculoKmController extends Controller
         });
     }
 
-    private function obraActivaDelEmpleado(int $empleadoId): ?Obra
+    private function obraActivaDelEmpleado(Request $request, int $empleadoId): ?Obra
     {
-        $asignacionObra = ObraEmpleado::query()
-            ->with('obra')
-            ->where('empleado_id', $empleadoId)
-            ->where('activo', true)
-            ->where(function ($query) {
-                $query->whereNull('fecha_baja')
-                    ->orWhereDate('fecha_baja', '>=', now()->toDateString());
-            })
-            ->whereHas('obra', function ($query) {
-                $query->whereNotIn('estatus_nuevo', [Obra::ESTATUS_TERMINADA, Obra::ESTATUS_CANCELADA]);
-            })
-            ->orderByDesc('fecha_alta')
-            ->orderByDesc('id')
-            ->first();
+        $user = $request->user();
+        $usuarioApp = $user?->usuarioApp;
 
-        return $asignacionObra?->obra;
+        if (! $user || ! $usuarioApp || (int) $usuarioApp->empleado_id !== $empleadoId) {
+            return null;
+        }
+
+        $obraId = $request->input('obra_id', $request->query('obra_id'));
+        $contexto = $this->contextService->contextoResidente($user, $usuarioApp, $obraId ? (int) $obraId : null);
+        $contextoObraId = $contexto['obra']['id'] ?? null;
+
+        if (! $contextoObraId) {
+            return null;
+        }
+
+        return Obra::query()->find($contextoObraId);
     }
 
+    private function formatearAsignacion(VehiculoEmpleado $asignacion): array
+    {
+        $vehiculo = $asignacion->vehiculo;
+        $empleado = $asignacion->empleado;
+        $nombreVehiculo = trim(($vehiculo->marca ?? '') . ' ' . ($vehiculo->modelo ?? ''));
+
+        return [
+            'id' => $asignacion->id,
+            'vehiculo_id' => $asignacion->vehiculo_id,
+            'empleado_id' => $asignacion->empleado_id,
+            'fecha_asignacion' => optional($asignacion->fecha_asignacion)->format('Y-m-d'),
+            'km_inicial' => $asignacion->km_inicial !== null ? (int) $asignacion->km_inicial : null,
+            'km_final' => $asignacion->km_final !== null ? (int) $asignacion->km_final : null,
+            'vehiculo' => $vehiculo ? [
+                'id' => $vehiculo->id,
+                'nombre' => $nombreVehiculo !== '' ? $nombreVehiculo : 'Vehiculo',
+                'marca' => $vehiculo->marca,
+                'modelo' => $vehiculo->modelo,
+                'placas' => $vehiculo->placas,
+            ] : null,
+            'empleado' => $empleado ? [
+                'id' => $empleado->id_Empleado,
+                'nombre' => trim(($empleado->Nombre ?? '') . ' ' . ($empleado->Apellidos ?? '')),
+            ] : null,
+        ];
+    }
     private function formatearLog(VehiculoEmpleadoKmLog $log): array
     {
         return [
@@ -180,3 +216,4 @@ class VehiculoKmController extends Controller
         ];
     }
 }
+

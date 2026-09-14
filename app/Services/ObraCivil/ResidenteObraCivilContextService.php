@@ -3,9 +3,9 @@
 namespace App\Services\ObraCivil;
 
 use App\Models\Obra;
-use App\Models\ObraEmpleado;
 use App\Models\User;
 use App\Models\UsuarioApp;
+use App\Services\Mobile\AppMobileContextService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ResidenteObraCivilContextService
@@ -17,39 +17,32 @@ class ResidenteObraCivilContextService
         'civil',
     ];
 
-    public function resolve(User $user): ResidenteObraCivilContext
+    public function __construct(private AppMobileContextService $contextService)
     {
-        if (! $user->hasRole('residente')) {
+    }
+
+    public function resolve(User $user, ?int $obraId = null): ResidenteObraCivilContext
+    {
+        if (! $this->contextService->puedeVerPanelResidente($user)) {
             $this->deny('Solo el perfil residente puede usar este modulo.', 403);
         }
 
-        $usuarioApp = UsuarioApp::where('user_id', $user->id)->first();
+        $usuarioApp = UsuarioApp::where('user_id', $user->id)->where('is_active', true)->first();
 
-        if (! $usuarioApp || ! $usuarioApp->is_active) {
+        if (! $usuarioApp) {
             $this->deny('Este usuario no esta habilitado para la app.', 403);
         }
 
-        $asignacion = ObraEmpleado::query()
-            ->select('id', 'obra_id', 'empleado_id', 'rol_id')
-            ->where('empleado_id', $usuarioApp->empleado_id)
-            ->where('activo', 1)
-            ->whereNull('fecha_baja')
-            ->whereHas('obra', function ($query) {
-                $query->whereNotIn('estatus_nuevo', [
-                    Obra::ESTATUS_TERMINADA,
-                    Obra::ESTATUS_CANCELADA,
-                ]);
-            })
-            ->latest('id')
-            ->first();
+        $contexto = $this->contextService->contextoResidente($user, $usuarioApp, $obraId);
+        $contextoObraId = $contexto['obra']['id'] ?? null;
 
-        if (! $asignacion) {
+        if (! $contextoObraId) {
             $this->deny('No tienes una obra activa asignada.', 403);
         }
 
         $obra = Obra::query()
             ->with(['cliente:id,nombre_comercial'])
-            ->find($asignacion->obra_id);
+            ->find($contextoObraId);
 
         if (! $obra) {
             $this->deny('No tienes una obra activa asignada.', 403);

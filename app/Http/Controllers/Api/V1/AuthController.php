@@ -3,13 +3,9 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Obra;
-use App\Models\ObraEmpleado;
-use App\Models\ObraMaquina;
-use App\Models\ObraPila;
 use App\Models\User;
 use App\Models\UsuarioApp;
-use App\Models\VehiculoEmpleado;
+use App\Services\Mobile\AppMobileContextService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Hash;
@@ -17,6 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function __construct(private AppMobileContextService $contextService)
+    {
+    }
+
     public function login(Request $request)
     {
         $request->validate([
@@ -33,8 +33,8 @@ class AuthController extends Controller
         }
 
         $usuarioApp = $this->validarUsuarioApp($user);
-        $isResidente = $user->hasRole('residente');
-        $isGerencial = $user->can('app.gerencial.access');
+        $isResidente = $this->contextService->puedeVerPanelResidente($user);
+        $isGerencial = $this->contextService->puedeVerGerencial($user);
 
         if (!$isResidente && !$isGerencial) {
             return response()->json([
@@ -43,11 +43,13 @@ class AuthController extends Controller
             ], 403);
         }
 
+        $opciones = $this->contextService->opciones($user, $usuarioApp);
         $contexto = null;
-        if ($isResidente) {
-            $contexto = $this->contextoResidente($usuarioApp);
 
-            if (!$contexto) {
+        if ($isResidente) {
+            $contexto = $this->contextService->contextoResidente($user, $usuarioApp);
+
+            if (!$contexto && !$isGerencial) {
                 return response()->json([
                     'ok' => false,
                     'message' => 'No tienes una obra activa asignada.',
@@ -58,16 +60,21 @@ class AuthController extends Controller
         $tokenName = $request->header('X-Device-Name', 'mobile');
         $token = $user->createToken($tokenName)->plainTextToken;
 
-        return response()->json($this->payloadSesion($user, $usuarioApp, $contexto, $token));
+        return response()->json($this->payloadSesion($user, $usuarioApp, $contexto, $token, $opciones));
     }
 
     public function me(Request $request)
     {
+        $data = $request->validate([
+            'obra_id' => ['nullable', 'integer'],
+            'with_context' => ['nullable', 'boolean'],
+        ]);
+
         $user = $request->user();
         $usuarioApp = $this->validarUsuarioApp($user);
 
-        $isResidente = $user->hasRole('residente');
-        $isGerencial = $user->can('app.gerencial.access');
+        $isResidente = $this->contextService->puedeVerPanelResidente($user);
+        $isGerencial = $this->contextService->puedeVerGerencial($user);
 
         if (!$isResidente && !$isGerencial) {
             return response()->json([
@@ -77,12 +84,14 @@ class AuthController extends Controller
         }
 
         $withContext = $request->boolean('with_context', true);
+        $obraId = $data['obra_id'] ?? null;
+        $opciones = $this->contextService->opciones($user, $usuarioApp, $obraId);
         $contexto = null;
 
         if ($withContext && $isResidente) {
-            $contexto = $this->contextoResidente($usuarioApp);
+            $contexto = $this->contextService->contextoResidente($user, $usuarioApp, $obraId);
 
-            if (!$contexto) {
+            if (!$contexto && !$isGerencial) {
                 return response()->json([
                     'ok' => false,
                     'message' => 'No tienes una obra activa asignada.',
@@ -90,7 +99,7 @@ class AuthController extends Controller
             }
         }
 
-        return response()->json($this->payloadSesion($user, $usuarioApp, $contexto));
+        return response()->json($this->payloadSesion($user, $usuarioApp, $contexto, null, $opciones));
     }
 
     public function logout(Request $request)
@@ -121,7 +130,7 @@ class AuthController extends Controller
         return $usuarioApp;
     }
 
-    private function payloadSesion(User $user, UsuarioApp $usuarioApp, ?array $contexto, ?string $token = null): array
+    private function payloadSesion(User $user, UsuarioApp $usuarioApp, ?array $contexto, ?string $token = null, ?array $opciones = null): array
     {
         $payload = [
             'ok' => true,
@@ -142,6 +151,12 @@ class AuthController extends Controller
             'contexto' => $contexto,
         ];
 
+        if ($opciones !== null) {
+            $payload['paneles_disponibles'] = $opciones['paneles'] ?? [];
+            $payload['obras_residente'] = $opciones['obras_residente'] ?? [];
+            $payload['defaults'] = $opciones['defaults'] ?? [];
+        }
+
         if ($token !== null) {
             $payload['token'] = $token;
         }
@@ -156,142 +171,9 @@ class AuthController extends Controller
         return $payload;
     }
 
-    private function contextoResidente(UsuarioApp $usuarioApp): ?array
-    {
-        $empleadoId = $usuarioApp->empleado_id;
-
-        $asignacionResidente = ObraEmpleado::query()
-            ->select('id', 'obra_id', 'empleado_id', 'rol_id')
-            ->where('empleado_id', $empleadoId)
-            ->where('activo', 1)
-            ->whereNull('fecha_baja')
-            ->latest('id')
-            ->first();
-
-        if (!$asignacionResidente) {
-            return null;
-        }
-
-        $obra = Obra::query()
-            ->select('id', 'cliente_id', 'nombre', 'clave_obra', 'tipo_obra', 'ubicacion', 'estatus_nuevo', 'fecha_inicio_programada', 'fecha_inicio_real')
-            ->with(['cliente:id,nombre_comercial'])
-            ->where('id', $asignacionResidente->obra_id)
-            ->first();
-
-        if (!$obra) {
-            return null;
-        }
-
-        $empleadosObra = ObraEmpleado::query()
-            ->with([
-                'empleado:id_Empleado,Nombre,Apellidos,Telefono',
-                'rol:id,rol_key,nombre',
-            ])
-            ->where('obra_id', $obra->id)
-            ->where('activo', 1)
-            ->whereNull('fecha_baja')
-            ->orderBy('id')
-            ->get()
-            ->map(function ($oe) {
-                return [
-                    'obra_empleado_id' => $oe->id,
-                    'empleado_id' => $oe->empleado_id,
-                    'rol_id' => $oe->rol_id,
-                    'rol' => $oe->rol ? [
-                        'id' => $oe->rol->id,
-                        'rol_key' => $oe->rol->rol_key ?? null,
-                        'nombre' => $oe->rol->nombre ?? null,
-                    ] : null,
-                    'empleado' => $oe->empleado ? [
-                        'id_Empleado' => $oe->empleado->id_Empleado,
-                        'nombre' => trim(($oe->empleado->Nombre ?? '') . ' ' . ($oe->empleado->Apellidos ?? '')),
-                        'telefono' => $oe->empleado->Telefono ?? $oe->empleado->telefono ?? null,
-                    ] : null,
-                ];
-            })
-            ->values();
-
-        $maquinaActiva = ObraMaquina::query()
-            ->with(['maquina'])
-            ->where('obra_id', $obra->id)
-            ->activas()
-            ->latest('fecha_inicio')
-            ->first();
-
-        $maquinaPayload = null;
-        if ($maquinaActiva) {
-            $maquinaPayload = [
-                'obra_maquina_id' => $maquinaActiva->id,
-                'maquina_id' => $maquinaActiva->maquina_id,
-                'fecha_inicio' => optional($maquinaActiva->fecha_inicio)->toDateString(),
-                'horometro_inicio' => $maquinaActiva->horometro_inicio,
-                'estado' => $maquinaActiva->estado,
-                'maquina' => $maquinaActiva->maquina ? [
-                    'id' => $maquinaActiva->maquina->id ?? null,
-                    'nombre' => $maquinaActiva->maquina->nombre ?? null,
-                ] : null,
-            ];
-        }
-
-        $vehiculoAsignado = VehiculoEmpleado::query()
-            ->with('vehiculo')
-            ->where('empleado_id', $empleadoId)
-            ->whereNull('fecha_fin')
-            ->latest('id')
-            ->first();
-
-        $pilasRaw = ObraPila::query()
-            ->where('obra_id', $obra->id)
-            ->orderBy('numero_pila')
-            ->get();
-
-        $pilas = $pilasRaw->map(function ($p) {
-            return [
-                'id' => (int) $p->id,
-                'obra_id' => (int) $p->obra_id,
-                'numero_pila' => $p->numero_pila ?? null,
-                'tipo' => $p->tipo ?? null,
-                'cantidad_programada' => $p->cantidad_programada !== null ? (int) $p->cantidad_programada : 0,
-                'diametro' => $p->diametro_proyecto !== null ? (float) $p->diametro_proyecto : null,
-                'profundidad' => $p->profundidad_proyecto !== null ? (float) $p->profundidad_proyecto : null,
-                'ubicacion' => $p->ubicacion ?? null,
-                'activo' => (bool) $p->activo,
-            ];
-        })->values();
-
-        return [
-            'obra' => [
-                'id' => $obra->id,
-                'cliente_id' => $obra->cliente_id,
-                'cliente_nombre' => $obra->cliente?->nombre_comercial,
-                'nombre' => $obra->nombre,
-                'clave_obra' => $obra->clave_obra,
-                'tipo_obra' => $obra->tipo_obra,
-                'ubicacion' => $obra->ubicacion,
-                'estatus_nuevo' => $obra->estatus_nuevo,
-                'fecha_inicio_programada' => optional($obra->fecha_inicio_programada)->toDateString(),
-                'fecha_inicio_real' => optional($obra->fecha_inicio_real)->toDateString(),
-                'pilas_total_programado' => (int) $pilasRaw->sum('cantidad_programada'),
-            ],
-            'empleados' => $empleadosObra,
-            'maquina' => $maquinaPayload,
-            'pilas' => $pilas,
-            'vehiculo' => $vehiculoAsignado ? [
-                'vehiculo_id' => $vehiculoAsignado->vehiculo_id,
-                'fecha_asignacion' => $vehiculoAsignado->fecha_asignacion?->toDateString(),
-                'fecha_fin' => $vehiculoAsignado->fecha_fin?->toDateString(),
-                'notas' => $vehiculoAsignado->notas,
-                'vehiculo' => $vehiculoAsignado->vehiculo ? [
-                    'id' => $vehiculoAsignado->vehiculo->id,
-                    'marca' => $vehiculoAsignado->vehiculo->marca ?? null,
-                    'modelo' => $vehiculoAsignado->vehiculo->modelo ?? null,
-                    'placas' => $vehiculoAsignado->vehiculo->placas ?? null,
-                    'anio' => $vehiculoAsignado->vehiculo->anio ?? null,
-                    'color' => $vehiculoAsignado->vehiculo->color ?? null,
-                    'tipo' => $vehiculoAsignado->vehiculo->tipo ?? null,
-                    'estatus' => $vehiculoAsignado->vehiculo->estatus ?? null,
-                ] : null,
-            ] : null,
-        ];
-    }
 }
+
+
+
+
+
