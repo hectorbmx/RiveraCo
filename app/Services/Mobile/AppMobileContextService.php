@@ -50,7 +50,7 @@ class AppMobileContextService
         $obras = $this->obrasDisponiblesResidente($user, $usuarioApp);
         $obra = $this->resolverObraSeleccionada($obras, $obraId);
 
-        return $obra ? $this->armarContextoResidente($usuarioApp, $obra) : null;
+        return $obra ? $this->armarContextoResidente($user, $usuarioApp, $obra) : null;
     }
 
     public function puedeVerPanelResidente(User $user): bool
@@ -61,6 +61,30 @@ class AppMobileContextService
     public function puedeVerGerencial(User $user): bool
     {
         return $user->can('app.gerencial.access');
+    }
+
+    public function puedeVerTodasLasObrasResidente(User $user): bool
+    {
+        return $this->esAdminRivera($user);
+    }
+
+    public function vehiculoActivoParaContexto(User $user, UsuarioApp $usuarioApp, Obra $obra): ?VehiculoEmpleado
+    {
+        if ($this->esAdminRivera($user)) {
+            $residenteId = $this->empleadoResidenteDeObra($obra);
+
+            if ($residenteId) {
+                $vehiculoResidente = $this->vehiculoActivoDeEmpleado($residenteId);
+
+                if ($vehiculoResidente) {
+                    return $vehiculoResidente;
+                }
+            }
+        }
+
+        return $usuarioApp->empleado_id
+            ? $this->vehiculoActivoDeEmpleado((int) $usuarioApp->empleado_id)
+            : null;
     }
 
     public function obrasDisponiblesResidente(User $user, UsuarioApp $usuarioApp): Collection
@@ -137,7 +161,7 @@ class AppMobileContextService
         return $obras->first();
     }
 
-    private function armarContextoResidente(UsuarioApp $usuarioApp, Obra $obra): array
+    private function armarContextoResidente(User $user, UsuarioApp $usuarioApp, Obra $obra): array
     {
         $empleadoId = $usuarioApp->empleado_id;
 
@@ -177,12 +201,7 @@ class AppMobileContextService
             ->latest('fecha_inicio')
             ->first();
 
-        $vehiculoAsignado = VehiculoEmpleado::query()
-            ->with('vehiculo')
-            ->where('empleado_id', $empleadoId)
-            ->whereNull('fecha_fin')
-            ->latest('id')
-            ->first();
+        $vehiculoAsignado = $this->vehiculoActivoParaContexto($user, $usuarioApp, $obra);
 
         $pilasRaw = ObraPila::query()
             ->where('obra_id', $obra->id)
@@ -271,6 +290,49 @@ class AppMobileContextService
     private function esAdminRivera(User $user): bool
     {
         return $user->hasAnyRole(self::ADMIN_ROLES);
+    }
+
+    private function vehiculoActivoDeEmpleado(int $empleadoId): ?VehiculoEmpleado
+    {
+        return VehiculoEmpleado::query()
+            ->with(['vehiculo', 'empleado'])
+            ->where('empleado_id', $empleadoId)
+            ->whereNull('fecha_fin')
+            ->latest('id')
+            ->first();
+    }
+
+    private function empleadoResidenteDeObra(Obra $obra): ?int
+    {
+        $asignacion = ObraEmpleado::query()
+            ->with(['empleado', 'rol'])
+            ->where('obra_id', $obra->id)
+            ->where('activo', 1)
+            ->whereNull('fecha_baja')
+            ->orderByDesc('id')
+            ->get()
+            ->first(fn (ObraEmpleado $asignacion) => $this->esAsignacionResidente($asignacion));
+
+        return $asignacion?->empleado_id ? (int) $asignacion->empleado_id : null;
+    }
+
+    private function esAsignacionResidente(ObraEmpleado $asignacion): bool
+    {
+        $campos = [
+            $asignacion->empleado?->Puesto,
+            $asignacion->empleado?->puesto_base,
+            $asignacion->puesto_en_obra,
+            $asignacion->rol?->rol_key,
+            $asignacion->rol?->nombre,
+        ];
+
+        foreach ($campos as $campo) {
+            if (str_contains(strtoupper((string) $campo), 'RESIDENTE')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 

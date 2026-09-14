@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Obra;
-use App\Models\ObraEmpleado;
 use App\Models\VehiculoEmpleado;
 use App\Models\VehiculoEmpleadoKmLog;
 use App\Services\Mobile\AppMobileContextService;
@@ -23,21 +22,16 @@ class VehiculoKmController extends Controller
         $user = $request->user()->load('usuarioApp');
         $empleadoId = $user->usuarioApp?->empleado_id;
 
-        if (!$empleadoId) {
+        if (!$empleadoId && !$this->contextService->puedeVerTodasLasObrasResidente($user)) {
             return response()->json(['ok' => false, 'message' => 'No hay empleado asociado a este usuario.'], 422);
         }
 
-        $asignacion = VehiculoEmpleado::with(['vehiculo', 'empleado'])
-            ->where('empleado_id', $empleadoId)
-            ->whereNull('fecha_fin')
-            ->orderByDesc('fecha_asignacion')
-            ->first();
+        $obraActiva = $this->obraActivaParaUsuario($request);
+        $asignacion = $this->vehiculoActivoParaContexto($request, $empleadoId ? (int) $empleadoId : null, $obraActiva);
 
         if (!$asignacion) {
             return response()->json(['ok' => false, 'message' => 'No tienes un vehiculo asignado actualmente.'], 404);
         }
-
-        $obraActiva = $this->obraActivaDelEmpleado($request, (int) $empleadoId);
 
         if (!$obraActiva) {
             return response()->json([
@@ -84,18 +78,15 @@ class VehiculoKmController extends Controller
         $user = $request->user()->load('usuarioApp');
         $empleadoId = $user->usuarioApp?->empleado_id;
 
-        if (!$empleadoId) {
+        if (!$empleadoId && !$this->contextService->puedeVerTodasLasObrasResidente($user)) {
             return response()->json([
                 'ok' => false,
                 'message' => 'No hay empleado asociado a este usuario.',
             ], 422);
         }
 
-        $asignacion = VehiculoEmpleado::with(['vehiculo', 'empleado'])
-            ->where('empleado_id', $empleadoId)
-            ->whereNull('fecha_fin')
-            ->orderByDesc('fecha_asignacion')
-            ->first();
+        $obraActiva = $this->obraActivaParaUsuario($request);
+        $asignacion = $this->vehiculoActivoParaContexto($request, $empleadoId ? (int) $empleadoId : null, $obraActiva);
 
         if (!$asignacion) {
             return response()->json([
@@ -103,8 +94,6 @@ class VehiculoKmController extends Controller
                 'message' => 'No tienes un vehiculo asignado actualmente.',
             ], 404);
         }
-
-        $obraActiva = $this->obraActivaDelEmpleado($request, (int) $empleadoId);
 
         if (!$obraActiva) {
             return response()->json([
@@ -155,12 +144,12 @@ class VehiculoKmController extends Controller
         });
     }
 
-    private function obraActivaDelEmpleado(Request $request, int $empleadoId): ?Obra
+    private function obraActivaParaUsuario(Request $request): ?Obra
     {
-        $user = $request->user();
+        $user = $request->user()?->loadMissing('usuarioApp');
         $usuarioApp = $user?->usuarioApp;
 
-        if (! $user || ! $usuarioApp || (int) $usuarioApp->empleado_id !== $empleadoId) {
+        if (! $user || ! $usuarioApp) {
             return null;
         }
 
@@ -173,6 +162,30 @@ class VehiculoKmController extends Controller
         }
 
         return Obra::query()->find($contextoObraId);
+    }
+
+    private function vehiculoActivoParaContexto(Request $request, ?int $empleadoId, ?Obra $obraActiva): ?VehiculoEmpleado
+    {
+        $user = $request->user()?->loadMissing('usuarioApp');
+        $usuarioApp = $user?->usuarioApp;
+
+        if ($user && $usuarioApp && $obraActiva) {
+            $asignacionContexto = $this->contextService->vehiculoActivoParaContexto($user, $usuarioApp, $obraActiva);
+
+            if ($asignacionContexto) {
+                return $asignacionContexto;
+            }
+        }
+
+        if (! $empleadoId) {
+            return null;
+        }
+
+        return VehiculoEmpleado::with(['vehiculo', 'empleado'])
+            ->where('empleado_id', $empleadoId)
+            ->whereNull('fecha_fin')
+            ->orderByDesc('fecha_asignacion')
+            ->first();
     }
 
     private function formatearAsignacion(VehiculoEmpleado $asignacion): array
