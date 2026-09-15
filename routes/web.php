@@ -678,6 +678,9 @@ Route::middleware('auth','verified')->group(function () {
     Route::post('obras/{obra}/empleados', [ObraEmpleadoController::class, 'store'])
     ->name('obras.empleados.store');
 
+    Route::patch('obras/{obra}/empleados/{asignacion}/fecha-alta', [ObraEmpleadoController::class, 'updateFechaAlta'])
+    ->name('obras.empleados.fecha-alta.update');
+
     Route::patch('obras/{obra}/empleados/{asignacion}/baja', [ObraEmpleadoController::class, 'baja'])
     ->name('obras.empleados.baja');
 

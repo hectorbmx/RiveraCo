@@ -2852,7 +2852,27 @@
                                 {{ $asig->puesto_en_obra ?? $asig->empleado->Puesto }}
                             </td>
                             <td class="py-2 px-3">
-                                {{ $asig->fecha_alta?->format('d/m/Y') }}
+                                @can('obras.empleados.fecha_alta.edit.access')
+                                    <form action="{{ route('obras.empleados.fecha-alta.update', [$obra->id, $asig->id]) }}"
+                                          method="POST"
+                                          class="flex flex-wrap items-center gap-2">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="date"
+                                               name="fecha_alta"
+                                               value="{{ old('fecha_alta', $asig->fecha_alta?->toDateString()) }}"
+                                               class="w-36 rounded-lg border-slate-200 text-xs px-2 py-1">
+                                        <button type="submit"
+                                                class="text-xs text-teal-700 hover:text-teal-900 font-medium">
+                                            Guardar
+                                        </button>
+                                    </form>
+                                    @error('fecha_alta')
+                                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                                    @enderror
+                                @else
+                                    {{ $asig->fecha_alta?->format('d/m/Y') }}
+                                @endcan
                             </td>
                             <td class="py-2 px-3">
                                 {{ $asig->dias_trabajados ?? $asig->fecha_alta?->diffInDays(now())+1 }}

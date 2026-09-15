@@ -6,6 +6,7 @@ use App\Models\Obra;
 use App\Models\Empleado;
 use App\Models\ObraEmpleado;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ObraEmpleadoController extends Controller
 {
@@ -91,6 +92,59 @@ class ObraEmpleadoController extends Controller
         return redirect()
             ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'empleados'])
             ->with('success', 'Empleado dado de baja en esta obra.');
+    }
+
+    public function updateFechaAlta(Request $request, Obra $obra, ObraEmpleado $asignacion)
+    {
+        abort_unless(
+            $request->user()?->can('obras.empleados.fecha_alta.edit.access'),
+            403
+        );
+
+        if ($asignacion->obra_id !== $obra->id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'fecha_alta' => ['required', 'date'],
+        ]);
+
+        if ($asignacion->fecha_baja && $data['fecha_alta'] > $asignacion->fecha_baja->toDateString()) {
+            return back()->withErrors([
+                'fecha_alta' => 'La fecha de alta no puede ser posterior a la fecha de baja.',
+            ]);
+        }
+
+        $fechaAnterior = $asignacion->fecha_alta?->toDateString();
+        $fechaNueva = $data['fecha_alta'];
+
+        if ($fechaAnterior === $fechaNueva) {
+            return redirect()
+                ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'empleados'])
+                ->with('success', 'La fecha de asignación no tuvo cambios.');
+        }
+
+        $asignacion->fecha_alta = $fechaNueva;
+        $asignacion->save();
+
+        Log::warning('Cambio de fecha de asignacion de empleado en obra; revisar afectaciones relacionadas.', [
+            'obra_id' => $obra->id,
+            'obra_empleado_id' => $asignacion->id,
+            'empleado_id' => $asignacion->empleado_id,
+            'fecha_anterior' => $fechaAnterior,
+            'fecha_nueva' => $fechaNueva,
+            'usuario_id' => $request->user()?->id,
+            'pendiente_revisar' => [
+                'asistencia_semanal',
+                'viaticos_reposiciones',
+                'lista_raya_obra_viva',
+                'registros_historicos_relacionados',
+            ],
+        ]);
+
+        return redirect()
+            ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'empleados'])
+            ->with('success', 'Fecha de asignación actualizada. Queda pendiente revisar afectaciones en asistencia, viáticos y lista de raya.');
     }
 }
 
