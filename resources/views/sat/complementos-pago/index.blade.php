@@ -366,7 +366,7 @@
                                                 </svg>
                                             </button>
                                         @endif
-                                        @if($pago->estado === 'cancelado')
+                                        @if($pago->estado === 'cancelado' && Route::has('sat.facturacion.pagos.acuse'))
                                             <a href="{{ route('sat.facturacion.pagos.acuse', [$pago, 'pdf']) }}"
                                                title="Acuse PDF"
                                                aria-label="Descargar acuse de cancelacion en PDF"

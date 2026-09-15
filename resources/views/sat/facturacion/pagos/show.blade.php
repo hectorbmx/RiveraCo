@@ -225,7 +225,7 @@
                             <span>Enviar por correo</span>
                         </button>
                     @endif
-                    @if($pago->estado === 'cancelado')
+                    @if($pago->estado === 'cancelado' && Route::has('sat.facturacion.pagos.acuse'))
                         <a href="{{ route('sat.facturacion.pagos.acuse', [$pago, 'pdf']) }}"
                            class="group relative flex items-center justify-center gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 transition hover:border-red-200 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500/20">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

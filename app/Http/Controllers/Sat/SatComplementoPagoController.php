@@ -43,8 +43,7 @@ class SatComplementoPagoController extends Controller
                 $query->where(function ($searchQuery) use ($search) {
                     $searchQuery
                         ->where('uuid', 'like', "%{$search}%")
-                        ->orWhere('facturapi_response->folio_number', 'like', "%{$search}%")
-                        ->orWhere('facturapi_response->series', 'like', "%{$search}%")
+                        ->orWhere('facturapi_response', 'like', "%{$search}%")
                         ->orWhereHas('factura', function ($facturaQuery) use ($search) {
                             $facturaQuery
                                 ->where('uuid', 'like', "%{$search}%")
@@ -225,25 +224,27 @@ class SatComplementoPagoController extends Controller
             ->whereIn('estado', ['timbrado', 'registrado'])
             ->count() + 1;
 
-        $taxes = match ($data['tipo_iva']) {
-            '0.16' => [
+        $taxes = [];
+
+        if ($data['tipo_iva'] === '0.16') {
+            $taxes = [
                 [
                     'type' => 'IVA',
                     'rate' => 0.16,
                     'factor' => 'Tasa',
                     'base' => round($monto / 1.16, 2),
                 ],
-            ],
-            'exento' => [
+            ];
+        } elseif ($data['tipo_iva'] === 'exento') {
+            $taxes = [
                 [
                     'type' => 'IVA',
                     'rate' => 0.0,
                     'factor' => 'Exento',
                     'base' => $monto,
                 ],
-            ],
-            default => [],
-        };
+            ];
+        }
 
         $payload = [
             'type' => 'P',
