@@ -193,7 +193,7 @@ public function index(){
         $catalogoRoles = CatalogoRol::orderBy('nombre')->get();    
         $tarifarios = ComisionTarifario::orderByDesc('vigente_desde')->orderByDesc('id')->get();
 
-        // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“vigenteÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â = el mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡s reciente (por ahora solo 1)
+        // Ã¢â‚¬Å“vigenteÃ¢â‚¬Â = el mÃƒÂ¡s reciente (por ahora solo 1)
         $tarifarioVigente = $tarifarios->first();
 
         // detalles del vigente (si existe)
@@ -205,7 +205,7 @@ public function index(){
                 ->get()
             : collect();
 
-        // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Seguridad (solo para admin/super-admin)
+        // Ã¢Å“â€¦ Seguridad (solo para admin/super-admin)
         $roles = collect();
         $permissions = collect();
         
@@ -226,7 +226,7 @@ public function index(){
                 ->orderBy('name')
                 ->get();
 
-            // SelecciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de rol: por query (?role=ID) o el primero
+            // SelecciÃƒÂ³n de rol: por query (?role=ID) o el primero
             $roleId = request()->integer('role');
             $selectedRole = $roleId
                 ? $roles->firstWhere('id', $roleId)
@@ -294,14 +294,14 @@ public function index(){
 
         $config->update($data);
 
-        return back()->with('success', 'ConfiguraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n general actualizada.');
+        return back()->with('success', 'ConfiguraciÃƒÂ³n general actualizada.');
     }
 
     /**
      * Secciones nuevas (tabs): por ahora no persisten en empresa_config
      * pero tampoco rompen la app.
      *
-     * AquÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­ despuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s conectamos a tabla meta o a tablas especÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­ficas.
+     * AquÃƒÂ­ despuÃƒÂ©s conectamos a tabla meta o a tablas especÃƒÂ­ficas.
      */
     if ($section === 'maquinaria') {
         $data = $request->validate([
@@ -314,7 +314,7 @@ public function index(){
 
         return redirect()
             ->route('empresa_config.edit', ['tab' => 'maquinaria'])
-            ->with('success', 'ConfiguraciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n de maquinaria guardada.');
+            ->with('success', 'ConfiguraciÃƒÆ’Ã‚Â³n de maquinaria guardada.');
     }
 
     if ($section === 'vehiculos') {
@@ -361,7 +361,7 @@ public function index(){
         return back()->with('success', 'Configuracion guardada.');
     }
 
-    return back()->with('error', 'SecciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de configuraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lida.');
+    return back()->with('error', 'SecciÃƒÂ³n de configuraciÃƒÂ³n invÃƒÂ¡lida.');
 }
 private function guardarDestinatariosAlertaVehiculos(EmpresaConfig $config, array $data, Request $request): void
 {
@@ -530,7 +530,7 @@ public function updateTipoObraConfiguracion(Request $request, ObraTipoConfigurac
 
     return redirect()
         ->route('empresa_config.edit', ['tab' => 'folios'])
-        ->with('success', 'ConfiguraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de tipo de obra actualizada.');
+        ->with('success', 'ConfiguraciÃƒÂ³n de tipo de obra actualizada.');
 }
 
 private function ultimoConsecutivoObraExistente(string $prefijo, int $anio): int
@@ -571,7 +571,7 @@ public function storeCuentaBanco(Request $request)
 
     $data['activa'] = true;
 
-    // si es la primera cuenta -> principal automÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡tica
+    // si es la primera cuenta -> principal automÃƒÂ¡tica
     $data['principal'] = CuentaBancoEmpresa::count() === 0;
 
     CuentaBancoEmpresa::create($data);
@@ -873,7 +873,7 @@ public function storeTipoRetencion(Request $request)
 
     return redirect()
         ->route('empresa_config.edit', ['tab' => 'tipos_iva'])
-        ->with('success', 'El tipo de retenciÃƒÂ³n fue creado correctamente.');
+        ->with('success', 'El tipo de retención fue creado correctamente.');
 }
 }
 

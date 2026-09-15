@@ -681,6 +681,9 @@ Route::middleware('auth','verified')->group(function () {
     Route::patch('obras/{obra}/empleados/{asignacion}/fecha-alta', [ObraEmpleadoController::class, 'updateFechaAlta'])
     ->name('obras.empleados.fecha-alta.update');
 
+    Route::patch('obras/{obra}/empleados/{asignacion}/rol', [ObraEmpleadoController::class, 'updateRol'])
+    ->name('obras.empleados.rol.update');
+
     Route::patch('obras/{obra}/empleados/{asignacion}/baja', [ObraEmpleadoController::class, 'baja'])
     ->name('obras.empleados.baja');
 
@@ -994,23 +997,4 @@ Route::prefix('pagos-proveedores')
 });
 
 require __DIR__.'/auth.php';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

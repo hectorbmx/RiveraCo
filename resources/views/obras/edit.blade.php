@@ -2849,7 +2849,31 @@
                                 </span>
                             </td>
                             <td class="py-2 px-3">
-                                {{ $asig->puesto_en_obra ?? $asig->empleado->Puesto }}
+                                @can('obras.empleados.rol.edit.access')
+                                    <form action="{{ route('obras.empleados.rol.update', [$obra->id, $asig->id]) }}"
+                                          method="POST"
+                                          class="flex flex-wrap items-center gap-2">
+                                        @csrf
+                                        @method('PATCH')
+                                        <select name="rol_id"
+                                                class="w-44 rounded-lg border-slate-200 text-xs px-2 py-1">
+                                            @foreach($roles as $rol)
+                                                <option value="{{ $rol->id }}" @selected((int) old('rol_id', $asig->rol_id) === (int) $rol->id)>
+                                                    {{ $rol->nombre }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <button type="submit"
+                                                class="text-xs text-teal-700 hover:text-teal-900 font-medium">
+                                            Guardar
+                                        </button>
+                                    </form>
+                                    @error('rol_id')
+                                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                                    @enderror
+                                @else
+                                    {{ $asig->puesto_en_obra ?? $asig->rol?->nombre ?? $asig->empleado->Puesto }}
+                                @endcan
                             </td>
                             <td class="py-2 px-3">
                                 @can('obras.empleados.fecha_alta.edit.access')

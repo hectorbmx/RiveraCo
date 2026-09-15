@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ObraEmpleado;
 use App\Models\ObraMaquina;
 use App\Models\ObraMaquinaRegistro;
+use App\Models\User;
 use App\Models\UsuarioApp;
 use Illuminate\Http\Request;
 use App\Services\Maquinas\MaquinaService;
@@ -13,6 +14,15 @@ use App\Models\Maquina;
 
 class MaquinaRegistroController extends Controller
 {
+    private const ADMIN_ROLES = [
+        'super-admin',
+        'admin-rivera',
+        'Super Admin',
+        'Admin Rivera',
+        'Administrador',
+        'admin',
+    ];
+
     /**
      * Lista registros y da “horómetro sugerido”
      * GET /api/v1/maquinas/{obraMaquina}/registros
@@ -131,15 +141,8 @@ public function index(Request $request, ObraMaquina $obraMaquina)
         ], 422);
     }
 
-    // 3) Verificar que el residente esté asignado a la obra de esa máquina
-    $estaAsignado = ObraEmpleado::query()
-        ->where('obra_id', $obraMaquina->obra_id)
-        ->where('empleado_id', $usuarioApp->empleado_id)
-        ->where('activo', 1)
-        ->whereNull('fecha_baja')
-        ->exists();
-
-    if (!$estaAsignado) {
+    // 3) Verificar que el usuario tenga acceso a la obra
+    if (! $this->usuarioPuedeAccederObra($user, $usuarioApp, $obraMaquina)) {
         return response()->json([
             'ok' => false,
             'message' => 'No tienes acceso a esta obra.',
@@ -221,14 +224,7 @@ public function index(Request $request, ObraMaquina $obraMaquina)
         }
 
         // 3) Verificar acceso a obra
-        $estaAsignado = ObraEmpleado::query()
-            ->where('obra_id', $obraMaquina->obra_id)
-            ->where('empleado_id', $usuarioApp->empleado_id)
-            ->where('activo', 1)
-            ->whereNull('fecha_baja')
-            ->exists();
-
-        if (!$estaAsignado) {
+        if (! $this->usuarioPuedeAccederObra($user, $usuarioApp, $obraMaquina)) {
             return response()->json([
                 'ok' => false,
                 'message' => 'No tienes acceso a esta obra.'
@@ -302,15 +298,8 @@ public function reportarFalla(Request $request, ObraMaquina $obraMaquina, Maquin
         ], 403);
     }
 
-    // 2) Verificar que esté asignado a la obra
-    $estaAsignado = ObraEmpleado::query()
-        ->where('obra_id', $obraMaquina->obra_id)
-        ->where('empleado_id', $usuarioApp->empleado_id)
-        ->where('activo', 1)
-        ->whereNull('fecha_baja')
-        ->exists();
-
-    if (!$estaAsignado) {
+    // 2) Verificar acceso a la obra
+    if (! $this->usuarioPuedeAccederObra($user, $usuarioApp, $obraMaquina)) {
         return response()->json([
             'ok' => false,
             'message' => 'No tienes acceso a esta obra.'
@@ -381,4 +370,22 @@ public function actualizarEstado(Request $request, ObraMaquina $obraMaquina, Maq
         return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
     }
 }
+
+    private function usuarioPuedeAccederObra(User $user, UsuarioApp $usuarioApp, ObraMaquina $obraMaquina): bool
+    {
+        if ($user->hasAnyRole(self::ADMIN_ROLES)) {
+            return true;
+        }
+
+        if (! $usuarioApp->empleado_id) {
+            return false;
+        }
+
+        return ObraEmpleado::query()
+            ->where('obra_id', $obraMaquina->obra_id)
+            ->where('empleado_id', $usuarioApp->empleado_id)
+            ->where('activo', 1)
+            ->whereNull('fecha_baja')
+            ->exists();
+    }
 }

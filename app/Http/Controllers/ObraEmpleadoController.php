@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Obra;
 use App\Models\Empleado;
 use App\Models\ObraEmpleado;
+use App\Models\CatalogoRol;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -145,6 +146,68 @@ class ObraEmpleadoController extends Controller
         return redirect()
             ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'empleados'])
             ->with('success', 'Fecha de asignación actualizada. Queda pendiente revisar afectaciones en asistencia, viáticos y lista de raya.');
+    }
+
+    public function updateRol(Request $request, Obra $obra, ObraEmpleado $asignacion)
+    {
+        abort_unless(
+            $request->user()?->can('obras.empleados.rol.edit.access'),
+            403
+        );
+
+        if ($asignacion->obra_id !== $obra->id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'rol_id' => ['required', 'integer', 'exists:catalogo_roles,id'],
+        ]);
+
+        $rolNuevo = CatalogoRol::query()
+            ->where('id', $data['rol_id'])
+            ->where('activo', true)
+            ->first();
+
+        if (! $rolNuevo) {
+            return back()->withErrors([
+                'rol_id' => 'El rol seleccionado no está activo.',
+            ]);
+        }
+
+        $rolAnterior = $asignacion->rol()->first();
+        $rolAnteriorId = $asignacion->rol_id;
+
+        if ((int) $rolAnteriorId === (int) $rolNuevo->id) {
+            return redirect()
+                ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'empleados'])
+                ->with('success', 'El puesto en obra no tuvo cambios.');
+        }
+
+        $asignacion->rol_id = $rolNuevo->id;
+        $asignacion->puesto_en_obra = $rolNuevo->nombre;
+        $asignacion->save();
+
+        Log::warning('Cambio de puesto/rol de empleado en obra; revisar afectaciones relacionadas.', [
+            'obra_id' => $obra->id,
+            'obra_empleado_id' => $asignacion->id,
+            'empleado_id' => $asignacion->empleado_id,
+            'rol_anterior_id' => $rolAnteriorId,
+            'rol_anterior_key' => $rolAnterior?->rol_key,
+            'rol_anterior_nombre' => $rolAnterior?->nombre,
+            'rol_nuevo_id' => $rolNuevo->id,
+            'rol_nuevo_key' => $rolNuevo->rol_key,
+            'rol_nuevo_nombre' => $rolNuevo->nombre,
+            'usuario_id' => $request->user()?->id,
+            'pendiente_revisar' => [
+                'comisiones_existentes',
+                'comision_personal.rol_id_snapshot',
+                'lista_raya_reportes',
+            ],
+        ]);
+
+        return redirect()
+            ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'empleados'])
+            ->with('success', 'Puesto en obra actualizado. Queda pendiente revisar comisiones existentes si ya fueron generadas.');
     }
 }
 
