@@ -245,6 +245,7 @@
                             <th class="px-5 py-4 text-left">Fecha pago</th>
                             <th class="px-5 py-4 text-left">Cliente</th>
                             <th class="px-5 py-4 text-left">Factura</th>
+                            <th class="px-5 py-4 text-left">Folio complemento</th>
                             <th class="px-5 py-4 text-left">UUID complemento</th>
                             <th class="px-5 py-4 text-center">Parcialidad</th>
                             <th class="px-5 py-4 text-right">Monto</th>
@@ -256,6 +257,11 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse($pagos as $pago)
+                            @php
+                                $serieComplemento = data_get($pago->facturapi_response, 'series');
+                                $folioComplemento = data_get($pago->facturapi_response, 'folio_number');
+                                $serieFolioComplemento = trim(($serieComplemento ? $serieComplemento . '-' : '') . ($folioComplemento ?? ''));
+                            @endphp
                             <tr class="hover:bg-slate-50">
                                 <td class="px-5 py-4 whitespace-nowrap">
                                     {{ $pago->fecha_pago?->format('d/m/Y H:i') ?? '-' }}
@@ -278,6 +284,12 @@
                                     @else
                                         <span class="text-slate-400">Factura no encontrada</span>
                                     @endif
+                                </td>
+                                <td class="px-5 py-4">
+                                    <div class="font-semibold text-slate-900">
+                                        {{ $serieFolioComplemento !== '' ? $serieFolioComplemento : '-' }}
+                                    </div>
+                                    <div class="text-xs text-slate-500 font-mono">{{ $pago->facturapi_invoice_id ?: '-' }}</div>
                                 </td>
                                 <td class="px-5 py-4">
                                     <div class="text-xs font-mono text-slate-700">{{ $pago->uuid ?: 'Sin UUID' }}</div>
@@ -354,6 +366,24 @@
                                                 </svg>
                                             </button>
                                         @endif
+                                        @if($pago->estado === 'cancelado')
+                                            <a href="{{ route('sat.facturacion.pagos.acuse', [$pago, 'pdf']) }}"
+                                               title="Acuse PDF"
+                                               aria-label="Descargar acuse de cancelacion en PDF"
+                                               class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-600 transition hover:border-red-200 hover:bg-red-100 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500/20">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6M9 8h3m-5 13h10a2 2 0 002-2V7.414a1 1 0 00-.293-.707l-3.414-3.414A1 1 0 0014.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                </svg>
+                                            </a>
+                                            <a href="{{ route('sat.facturacion.pagos.acuse', [$pago, 'xml']) }}"
+                                               title="Acuse XML"
+                                               aria-label="Descargar acuse de cancelacion en XML"
+                                               class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600 transition hover:border-blue-200 hover:bg-blue-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                                </svg>
+                                            </a>
+                                        @endif
                                         @if($pago->estado === 'timbrado')
                                             <form method="POST"
                                                   action="{{ route('sat.facturacion.pagos.cancelar', $pago) }}"
@@ -375,7 +405,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="px-5 py-10 text-center text-slate-500">
+                                <td colspan="11" class="px-5 py-10 text-center text-slate-500">
                                     No hay complementos de pago registrados.
                                 </td>
                             </tr>

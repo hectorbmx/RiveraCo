@@ -4,10 +4,17 @@
 
 @section('content')
 <div x-data="detalleComplementoPago()" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    @php
+        $serieComplemento = data_get($pago->facturapi_response, 'series');
+        $folioComplemento = data_get($pago->facturapi_response, 'folio_number');
+        $serieFolioComplemento = trim(($serieComplemento ? $serieComplemento . '-' : '') . ($folioComplemento ?? ''));
+    @endphp
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">Complemento de pago</h1>
             <p class="text-sm text-slate-500 mt-1">
+                Folio: <span class="font-semibold text-slate-700">{{ $serieFolioComplemento !== '' ? $serieFolioComplemento : '-' }}</span>
+                <span class="mx-2 text-slate-300">|</span>
                 UUID: <span class="font-mono">{{ $pago->uuid ?: 'Sin UUID' }}</span>
             </p>
         </div>
@@ -157,6 +164,10 @@
                 <h2 class="text-lg font-semibold text-slate-900 mb-4">Datos del complemento</h2>
                 <div class="space-y-3 text-sm">
                     <div>
+                        <div class="text-xs font-semibold text-slate-500 uppercase">Folio complemento</div>
+                        <div class="font-semibold text-slate-900">{{ $serieFolioComplemento !== '' ? $serieFolioComplemento : '-' }}</div>
+                    </div>
+                    <div>
                         <div class="text-xs font-semibold text-slate-500 uppercase">Fecha pago</div>
                         <div class="font-semibold text-slate-900">{{ $pago->fecha_pago?->format('d/m/Y H:i') ?? '-' }}</div>
                     </div>
@@ -213,6 +224,22 @@
                             </svg>
                             <span>Enviar por correo</span>
                         </button>
+                    @endif
+                    @if($pago->estado === 'cancelado')
+                        <a href="{{ route('sat.facturacion.pagos.acuse', [$pago, 'pdf']) }}"
+                           class="group relative flex items-center justify-center gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 transition hover:border-red-200 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500/20">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6M9 8h3m-5 13h10a2 2 0 002-2V7.414a1 1 0 00-.293-.707l-3.414-3.414A1 1 0 0014.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            <span>Acuse PDF</span>
+                        </a>
+                        <a href="{{ route('sat.facturacion.pagos.acuse', [$pago, 'xml']) }}"
+                           class="group relative flex items-center justify-center gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700 transition hover:border-blue-200 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                            </svg>
+                            <span>Acuse XML</span>
+                        </a>
                     @endif
                     @if(!$pago->xml_path && !$pago->pdf_path)
                         <p class="text-sm text-slate-500">No hay archivos guardados.</p>

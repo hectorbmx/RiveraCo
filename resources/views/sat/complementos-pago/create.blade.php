@@ -70,7 +70,7 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-2">Fecha de pago</label>
                             <input type="datetime-local"
@@ -89,6 +89,18 @@
                                 @foreach($formasPago as $clave => $label)
                                     <option value="{{ $clave }}">{{ $label }}</option>
                                 @endforeach
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">IVA</label>
+                            <select x-model="form.tipo_iva"
+                                    name="tipo_iva"
+                                    required
+                                    class="w-full rounded-xl border-slate-200 text-sm focus:border-slate-400 focus:ring-slate-200">
+                                <option value="0.16">IVA 16%</option>
+                                <option value="exento">Exento</option>
+                                <option value="sin_iva">No objeto</option>
                             </select>
                         </div>
                     </div>
@@ -182,6 +194,7 @@ function complementoPagoForm(facturas, selectedId) {
             factura_id: selectedId || (facturas[0]?.id ?? null),
             fecha_pago: new Date().toISOString().slice(0, 16),
             forma_pago: '03',
+            tipo_iva: '0.16',
             monto: 0,
         },
         init() {

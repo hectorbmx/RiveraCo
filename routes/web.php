@@ -219,6 +219,7 @@ Route::middleware(['auth', 'verified'])
             Route::get('/pagos/{pago}', [SatFacturaPagoController::class, 'show'])->name('pagos.show');
             Route::get('/pagos/{pago}/xml', [SatFacturaPagoController::class, 'xml'])->name('pagos.xml');
             Route::get('/pagos/{pago}/pdf', [SatFacturaPagoController::class, 'pdf'])->name('pagos.pdf');
+            Route::get('/pagos/{pago}/acuse-cancelacion/{format}', [SatFacturaPagoController::class, 'acuseCancelacion'])->name('pagos.acuse');
             Route::post('/pagos/{pago}/enviar', [SatFacturaPagoController::class, 'enviar'])->name('pagos.enviar');
             Route::post('/pagos/{pago}/cancelar', [SatFacturaPagoController::class, 'cancelar'])->name('pagos.cancelar');
         });

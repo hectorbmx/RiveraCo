@@ -205,6 +205,48 @@ public function pdf(SatFacturaPago $pago)
     );
 }
 
+public function acuseCancelacion(SatFacturaPago $pago, string $format)
+{
+    if ($pago->estado !== 'cancelado') {
+        return back()->with('error', 'El complemento no esta cancelado.');
+    }
+
+    if (!in_array($format, ['pdf', 'xml'], true)) {
+        abort(404);
+    }
+
+    if (!$pago->facturapi_invoice_id) {
+        return back()->with('error', 'El complemento no tiene ID de Facturapi.');
+    }
+
+    try {
+        $response = Http::withBasicAuth(config('services.facturapi.secret_key'), '')
+            ->get(
+                'https://www.facturapi.io/v2/invoices/' .
+                $pago->facturapi_invoice_id .
+                '/cancellation_receipt/' .
+                $format
+            );
+
+        if (!$response->successful()) {
+            $error = $response->json('message')
+                ?? $response->json('error')
+                ?? $response->body();
+
+            return back()->with('error', 'Error al descargar acuse: ' . $error);
+        }
+
+        $filename = 'acuse-cancelacion-pago-' . ($pago->uuid ?? $pago->id) . '.' . $format;
+
+        return response($response->body(), 200, [
+            'Content-Type' => $format === 'pdf' ? 'application/pdf' : 'application/xml',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    } catch (\Throwable $e) {
+        return back()->with('error', 'Error al descargar acuse: ' . $e->getMessage());
+    }
+}
+
 public function enviar(Request $request, SatFacturaPago $pago, MicrosoftGraphMailService $graphMail)
 {
     $pago->loadMissing('factura.cliente');

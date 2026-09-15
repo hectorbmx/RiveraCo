@@ -632,3 +632,380 @@ Checkpoint:
 - Los campos legacy de `seguros` siguen funcionando como control por poliza o fallback.
 - Si no hay configuracion nueva, el proceso no queda mudo: usa fallback controlado.
 - Vehiculos y maquinas generan alertas de vencimiento con links claros al registro correspondiente.
+
+## Feature adicional: vehiculos en panel gerencial Ionic
+
+Objetivo: ocultar temporalmente Inventario en el panel gerencial de Ionic sin borrar codigo, y agregar un apartado de Vehiculos similar al apartado de Maquinas. El listado debe mostrar todos los vehiculos de la empresa, parecido al index web de Laravel en `/mantenimiento/vehiculos`.
+
+### Principios
+
+- No borrar Inventario: solo comentar tab/rutas necesarias para ocultarlo.
+- Backend primero: definir contrato API gerencial antes de construir UI.
+- Reutilizar el patron de `gerencial/maquinas` para respuesta, paginacion y busqueda.
+- Reutilizar `VehiculoDocumentosConsultaService` para estados de poliza/tarjeta; Ionic no debe recalcular vigencias.
+- Primera version: solo listado de vehiculos, sin detalle ni edicion en Ionic.
+
+### Backend: pasos pequenos
+
+1. Revisar contrato actual de `GET /api/v1/gerencial/maquinas`.
+
+Checks:
+
+- [ ] Confirmar estructura `ok`, `data`, `meta`.
+- [ ] Confirmar paginacion con `per_page`.
+- [ ] Confirmar busqueda con `q`.
+- [ ] Confirmar filtros actuales de maquinas que valga la pena replicar.
+
+2. Crear controller API gerencial de vehiculos.
+
+Archivo sugerido: `app/Http/Controllers/Api/V1/Gerencial/VehiculosGerencialController.php`.
+
+Primera version: solo metodo `index(Request $request)`.
+
+Checks:
+
+- [ ] Controller creado en namespace `App\Http\Controllers\Api\V1\Gerencial`.
+- [ ] No se toca `VehiculoController` web.
+- [ ] No se agrega logica de UI en backend.
+- [ ] No se crea migracion; no se requieren cambios de estructura.
+
+3. Agregar ruta API.
+
+En `routes/api.php`, dentro del grupo:
+
+```php
+Route::prefix('gerencial')->middleware('permission:app.gerencial.access')->group(function () {
+```
+
+Agregar:
+
+```php
+Route::get('vehiculos', [VehiculosGerencialController::class, 'index']);
+```
+
+Checks:
+
+- [ ] Importar `VehiculosGerencialController` arriba de `routes/api.php`.
+- [ ] Ruta hereda `auth:sanctum`.
+- [ ] Ruta hereda `permission:app.gerencial.access`.
+- [ ] No se crea permiso nuevo en primera version.
+
+4. Definir query base de vehiculos.
+
+Usar `Vehiculo::query()` con relaciones:
+
+- `asignacionActual.empleado`.
+- `seguros`.
+- `documentoTarjetaCirculacionVigente`.
+
+Checks:
+
+- [ ] Lista todos los vehiculos de la empresa.
+- [ ] Incluye asignacion actual cuando existe.
+- [ ] Incluye empleado asignado cuando existe.
+- [ ] Incluye datos suficientes para documentos/alertas.
+
+5. Agregar busqueda `q`.
+
+Buscar por:
+
+- `placas`.
+- `marca`.
+- `modelo`.
+- `anio`.
+- `tipo`.
+- empleado asignado: `Nombre`, `Apellidos`, nombre completo.
+
+Checks:
+
+- [ ] `q` vacio no altera la consulta.
+- [ ] Busqueda por placa funciona.
+- [ ] Busqueda por empleado funciona.
+- [ ] Busqueda por marca/modelo funciona.
+
+6. Agregar filtros simples.
+
+Filtros recomendados:
+
+- `asignada=1`.
+- `asignada=0`.
+- `estatus=activo|baja|en_taller`.
+
+Checks:
+
+- [ ] `asignada=1` muestra solo vehiculos con `asignacionActual`.
+- [ ] `asignada=0` muestra vehiculos sin asignacion activa.
+- [ ] `estatus` respeta `vehiculos.estatus`.
+- [ ] Sin filtros muestra todos.
+
+7. Reutilizar documentos/alertas.
+
+Usar `App\Services\Vehiculos\VehiculoDocumentosConsultaService` para devolver `documentos_consulta` por vehiculo.
+
+Checks:
+
+- [ ] No se duplican reglas de fechas en el controller.
+- [ ] `seguro` puede venir `null` sin romper JSON.
+- [ ] `tarjeta_circulacion` puede venir `null` sin romper JSON.
+- [ ] `estado` puede ser `ok`, `warning`, `danger` o `empty`.
+
+8. Definir contrato final de listado.
+
+Contrato sugerido:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "data": [
+      {
+        "id": 15,
+        "nombre": "FORD P-8",
+        "marca": "FORD",
+        "modelo": "P-8",
+        "anio": 2020,
+        "placas": "JT40817",
+        "tipo": "pickup",
+        "estatus": "activo",
+        "asignada": true,
+        "empleado_asignado": {
+          "id": 10,
+          "nombre": "LUIS ALEJANDRO",
+          "apellidos": "NAVARRO"
+        },
+        "documentos_consulta": {
+          "estado": "ok",
+          "seguro": null,
+          "tarjeta_circulacion": null
+        }
+      }
+    ],
+    "current_page": 1,
+    "last_page": 1,
+    "total": 1
+  },
+  "meta": {
+    "current_page": 1,
+    "last_page": 1,
+    "per_page": 20,
+    "total": 1
+  }
+}
+```
+
+Checks:
+
+- [ ] Mantiene forma parecida a `gerencial/maquinas`.
+- [ ] Ionic puede leer `response.data.data`.
+- [ ] `meta` queda disponible para paginacion futura.
+- [ ] No se rompen clientes existentes porque es endpoint nuevo.
+
+9. Pruebas backend.
+
+Comandos/checks:
+
+- `php -l app/Http/Controllers/Api/V1/Gerencial/VehiculosGerencialController.php`.
+- `php artisan route:list --path=api/v1/gerencial/vehiculos`.
+- Probar request con usuario que tenga `app.gerencial.access`.
+- Probar `q`, `asignada` y `estatus`.
+
+Checks:
+
+- [ ] Sintaxis PHP limpia.
+- [ ] Ruta registrada.
+- [ ] Respuesta JSON correcta.
+- [ ] Permiso gerencial protege endpoint.
+- [ ] No hay migracion pendiente.
+
+### Ionic: pasos pequenos
+
+1. Ocultar Inventario sin borrar.
+
+Archivos:
+
+- `src/app/tabs-gerencial/tabs-gerencial.page.html`.
+- `src/app/tabs-gerencial/tabs-gerencial.routes.ts`.
+
+Accion:
+
+- Comentar el `ion-tab-button` de Inventario.
+- Comentar la ruta hija `inventario` y sus rutas internas.
+- No borrar archivos de `pages/gerencial-inventario`.
+
+Checks:
+
+- [ ] Inventario no aparece en tabbar.
+- [ ] Archivos de inventario siguen intactos.
+- [ ] El comentario explica que esta oculto temporalmente.
+- [ ] No se toca backend de inventario.
+
+2. Agregar tab Vehiculos.
+
+En `tabs-gerencial.page.html` agregar tab:
+
+- `tab="vehiculos"`.
+- `href="/tabs-gerencial/vehiculos"`.
+- icono sugerido `car-outline`.
+- label `Vehiculos`.
+
+En `tabs-gerencial.page.ts`:
+
+- importar `carOutline` desde `ionicons/icons`.
+- registrarlo en `addIcons`.
+
+Checks:
+
+- [ ] Tab visible en barra inferior.
+- [ ] Icono renderiza.
+- [ ] Tabs existentes siguen funcionando.
+- [ ] Orden recomendado: Home, Obras, Maquinas, Vehiculos, Empleados, Cambiar.
+
+3. Agregar ruta hija gerencial.
+
+En `tabs-gerencial.routes.ts` agregar:
+
+```ts
+{
+  path: 'vehiculos',
+  loadComponent: () =>
+    import('../pages/gerencial-vehiculos/gerencial-vehiculos.page')
+      .then(m => m.GerencialVehiculosPage),
+}
+```
+
+Checks:
+
+- [ ] `/tabs-gerencial/vehiculos` carga pagina.
+- [ ] Hereda `authGuard` y `gerencialGuard` del padre.
+- [ ] No se agrega ruta duplicada fuera de `tabs-gerencial` en primera version.
+
+4. Crear modelo Ionic.
+
+Archivo sugerido: `src/app/models/vehiculo.model.ts`.
+
+Interfaces sugeridas:
+
+- `VehiculoListItemDto`.
+- `VehiculosResponse`.
+- `VehiculoEmpleadoAsignadoDto`.
+- `VehiculoDocumentosConsultaDto`.
+
+Checks:
+
+- [ ] Tipos alineados al contrato backend.
+- [ ] Campos opcionales/nullables donde aplique.
+- [ ] No se sobre-tipifica `documentos_consulta` si el backend puede devolver `null`.
+
+5. Crear service Ionic.
+
+Archivo sugerido: `src/app/services/gerencial-vehiculo.service.ts`.
+
+Metodo inicial:
+
+```ts
+getVehiculos(page?: number, q?: string, asignada?: boolean, estatus?: string)
+```
+
+Endpoint:
+
+```txt
+gerencial/vehiculos
+```
+
+Checks:
+
+- [ ] Usa `ApiService`.
+- [ ] Limpia parametros vacios.
+- [ ] Patron similar a `gerencial-maquina.service.ts`.
+- [ ] No usa endpoint web `/mantenimiento/vehiculos`.
+
+6. Crear pagina lista.
+
+Carpeta sugerida: `src/app/pages/gerencial-vehiculos/`.
+
+Archivos:
+
+- `gerencial-vehiculos.page.ts`.
+- `gerencial-vehiculos.page.html`.
+- `gerencial-vehiculos.page.scss`.
+
+Checks:
+
+- [ ] Header visual similar a Maquinas.
+- [ ] Searchbar funcionando.
+- [ ] Lista muestra nombre/placas.
+- [ ] Badge `Asignado` / `En patio`.
+- [ ] Muestra empleado asignado si existe.
+- [ ] Estado vacio claro.
+- [ ] Loading claro.
+- [ ] Error manejado sin pantalla rota.
+
+7. Renderizar alertas documentales.
+
+Usar `documentos_consulta.estado`:
+
+- `danger`: badge rojo, por ejemplo `Documentos vencidos` o `Revisar documentos`.
+- `warning`: badge amarillo, por ejemplo `Por vencer`.
+- `ok`: badge verde o no mostrar si se quiere una lista mas limpia.
+- `empty`: badge gris o texto `Sin documentos`.
+
+Checks:
+
+- [ ] Ionic no recalcula fechas.
+- [ ] La lista usa estado del backend.
+- [ ] No se abre modal en primera version si no hace falta.
+- [ ] No bloquea el listado si `documentos_consulta` viene vacio.
+
+8. Build Ionic.
+
+Ejecutar:
+
+```bash
+npm run build
+```
+
+Checks:
+
+- [ ] Build sin errores.
+- [ ] Warnings existentes documentados si aparecen.
+- [ ] No se rompe `vehiculo-registro`.
+- [ ] No se rompe `tabs-gerencial/maquinas`.
+
+9. Prueba manual.
+
+Probar:
+
+- `/tabs-gerencial/vehiculos`.
+- Busqueda por placa.
+- Busqueda por empleado.
+- Filtro asignado si se agrega en UI.
+- Navegacion de tabs: Home, Obras, Maquinas, Vehiculos, Empleados.
+
+Checks:
+
+- [ ] Inventario ya no aparece.
+- [ ] Vehiculos aparece.
+- [ ] La lista trae datos reales.
+- [ ] El panel gerencial sigue protegido por permiso.
+- [ ] La experiencia se siente consistente con Maquinas.
+
+### Orden recomendado de ejecucion
+
+1. Backend controller/ruta/contrato.
+2. Prueba JSON del endpoint.
+3. Ionic modelo/service.
+4. Ionic pagina lista.
+5. Ocultar Inventario y agregar tab Vehiculos.
+6. Build.
+7. Prueba manual.
+
+### Criterio de listo
+
+- Inventario queda oculto, no borrado.
+- Existe `GET /api/v1/gerencial/vehiculos` protegido por permiso gerencial.
+- Ionic muestra tab `Vehiculos` en panel gerencial.
+- `/tabs-gerencial/vehiculos` lista vehiculos reales de la empresa.
+- Busqueda basica funciona.
+- Se muestra si el vehiculo esta asignado y a quien.
+- Se muestra estado documental basico reutilizando backend.
+- Build de Ionic queda sin errores.

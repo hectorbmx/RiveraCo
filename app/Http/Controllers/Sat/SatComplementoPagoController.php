@@ -43,6 +43,8 @@ class SatComplementoPagoController extends Controller
                 $query->where(function ($searchQuery) use ($search) {
                     $searchQuery
                         ->where('uuid', 'like', "%{$search}%")
+                        ->orWhere('facturapi_response->folio_number', 'like', "%{$search}%")
+                        ->orWhere('facturapi_response->series', 'like', "%{$search}%")
                         ->orWhereHas('factura', function ($facturaQuery) use ($search) {
                             $facturaQuery
                                 ->where('uuid', 'like', "%{$search}%")
@@ -185,6 +187,7 @@ class SatComplementoPagoController extends Controller
             'factura_id' => ['required', 'exists:sat_facturas,id'],
             'fecha_pago' => ['required', 'date'],
             'forma_pago' => ['required', 'string', 'max:5'],
+            'tipo_iva' => ['required', 'in:0.16,exento,sin_iva'],
             'monto' => ['required', 'numeric', 'min:0.01'],
         ]);
 
@@ -222,6 +225,26 @@ class SatComplementoPagoController extends Controller
             ->whereIn('estado', ['timbrado', 'registrado'])
             ->count() + 1;
 
+        $taxes = match ($data['tipo_iva']) {
+            '0.16' => [
+                [
+                    'type' => 'IVA',
+                    'rate' => 0.16,
+                    'factor' => 'Tasa',
+                    'base' => round($monto / 1.16, 2),
+                ],
+            ],
+            'exento' => [
+                [
+                    'type' => 'IVA',
+                    'rate' => 0.0,
+                    'factor' => 'Exento',
+                    'base' => $monto,
+                ],
+            ],
+            default => [],
+        };
+
         $payload = [
             'type' => 'P',
             'customer' => $factura->facturapi_customer_id,
@@ -240,13 +263,7 @@ class SatComplementoPagoController extends Controller
                                     'amount' => $monto,
                                     'installment' => $numeroParcialidad,
                                     'last_balance' => $saldoAnterior,
-                                    'taxes' => [
-                                        [
-                                            'type' => 'IVA',
-                                            'rate' => 0.16,
-                                            'base' => round($monto / 1.16, 2),
-                                        ],
-                                    ],
+                                    'taxes' => $taxes,
                                 ],
                             ],
                         ],
