@@ -593,6 +593,18 @@
             </div>
 
             <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">
+                    IVA
+                </label>
+                <select name="tipo_iva"
+                        class="w-full rounded-xl border-slate-200 focus:border-emerald-300 focus:ring-emerald-200">
+                    <option value="0.16">IVA 16%</option>
+                    <option value="exento">Exento</option>
+                    <option value="sin_iva">No objeto</option>
+                </select>
+            </div>
+
+            <div>
                 @php
                     $totalPagado = $factura->pagos()
                         ->where('estado', 'timbrado')

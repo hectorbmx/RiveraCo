@@ -35,6 +35,7 @@ class SatFacturaPagoController extends Controller
     $data = $request->validate([
         'fecha_pago' => ['required', 'date'],
         'forma_pago' => ['required', 'string', 'max:5'],
+        'tipo_iva' => ['required', 'in:0.16,exento,sin_iva'],
         'monto' => ['required', 'numeric', 'min:0.01'],
     ]);
 
@@ -66,6 +67,28 @@ class SatFacturaPagoController extends Controller
         ->whereIn('estado', ['timbrado', 'registrado'])
         ->count() + 1;
 
+    $taxes = [];
+
+    if ($data['tipo_iva'] === '0.16') {
+        $taxes = [
+            [
+                'type' => 'IVA',
+                'rate' => 0.16,
+                'factor' => 'Tasa',
+                'base' => round($monto / 1.16, 2),
+            ],
+        ];
+    } elseif ($data['tipo_iva'] === 'exento') {
+        $taxes = [
+            [
+                'type' => 'IVA',
+                'rate' => 0.0,
+                'factor' => 'Exento',
+                'base' => $monto,
+            ],
+        ];
+    }
+
     try {
      $payload = [
                 'type' => 'P',
@@ -88,14 +111,7 @@ class SatFacturaPagoController extends Controller
                                             'amount' => $monto,
                                             'installment' => $numeroParcialidad,
                                             'last_balance' => $saldoAnterior,
-
-                                            'taxes' => [
-                                                    [
-                                                        'type' => 'IVA',
-                                                        'rate' => 0.16,
-                                                        'base' => round($monto / 1.16, 2),
-                                                    ],
-                                                ],
+                                            'taxes' => $taxes,
                                         ],
                                     ],
                             ],
