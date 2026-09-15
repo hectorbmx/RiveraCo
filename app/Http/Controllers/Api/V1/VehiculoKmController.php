@@ -7,14 +7,17 @@ use App\Models\Obra;
 use App\Models\VehiculoEmpleado;
 use App\Models\VehiculoEmpleadoKmLog;
 use App\Services\Mobile\AppMobileContextService;
+use App\Services\Vehiculos\VehiculoDocumentosConsultaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class VehiculoKmController extends Controller
 {
-    public function __construct(private AppMobileContextService $contextService)
-    {
+    public function __construct(
+        private AppMobileContextService $contextService,
+        private VehiculoDocumentosConsultaService $documentosConsultaService,
+    ) {
     }
 
     public function index(Request $request)
@@ -207,6 +210,7 @@ class VehiculoKmController extends Controller
                 'marca' => $vehiculo->marca,
                 'modelo' => $vehiculo->modelo,
                 'placas' => $vehiculo->placas,
+                'documentos_consulta' => $this->documentosConsultaService->map($vehiculo),
             ] : null,
             'empleado' => $empleado ? [
                 'id' => $empleado->id_Empleado,
