@@ -109,7 +109,7 @@ class ObraController extends Controller
                 $query->where('area_id', $areaId);
             })
             ->orderBy('created_at', 'desc')
-            ->paginate(10)
+            ->paginate(20)
             ->withQueryString();
 
         return view('obras.index', compact('obras', 'search', 'status', 'areaId', 'kpisObras', 'areas'));
