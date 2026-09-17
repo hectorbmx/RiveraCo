@@ -115,24 +115,55 @@ KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtro
         </div>
     @endif
 
-    <div class="overflow-x-auto">
+    <div class="w-full overflow-x-auto rounded-xl border border-slate-200 shadow-sm bg-white">
         <table class="w-full min-w-[1200px] text-sm">
-            <thead>
-                <tr class="border-b text-slate-500 font-medium">
-                    <th class="py-3 px-2 text-left">Clave</th>
-                    <th class="py-3 px-2 text-left">Nombre</th>
-                    <th class="py-3 px-2 text-left">Cliente</th>
-                    <th class="py-3 px-2 text-left">Máquina asignada</th>
-                    <th class="py-3 px-2 text-left">Status</th>
-                    <th class="py-3 px-2 text-right">Valor obra</th>
-                    <th class="py-3 px-2 text-right">Facturado</th>
-                    <th class="py-3 px-2 text-right">Cobrado</th>
-                    <th class="py-3 px-2 text-right">Gastado</th>
-                    <th class="py-3 px-2 text-right">Por facturar</th>
-                    <th class="py-3 px-2 text-center">Avance</th>
-                    <th class="py-3 px-2 text-right">Acciones</th>
-                </tr>
-            </thead>
+      <thead>
+    <!-- Se cambia el fondo a gris oscuro (bg-slate-800) y el texto a blanco/gris claro -->
+    <tr class="bg-slate-800 text-slate-200 text-xs uppercase tracking-wider font-semibold rounded-t-lg">
+        <th class="py-3 px-3 text-left">Clave</th>
+        <th class="py-3 px-3 text-left">Nombre</th>
+        <th class="py-3 px-3 text-left">Cliente</th>
+        <th class="py-3 px-3 text-left">Máquina asignada</th>
+        <th class="py-3 px-3 text-left">Status</th>
+        <th class="py-3 px-3 text-right">Valor obra</th>
+        <th class="py-3 px-3 text-right">Facturado</th>
+        <th class="py-3 px-3 text-right">Cobrado</th>
+        <th class="py-3 px-3 text-right">Gastado</th>
+        <th class="py-3 px-3 text-right">Por facturar</th>
+
+        <!-- Columna Avance con ícono de ordenamiento y enlace dinámico -->
+        <th class="py-3 px-3 text-center">
+            @php
+                $isSorting = request('sort_by') === 'avance';
+                $nextOrder = $isSorting && request('order') === 'asc' ? 'desc' : 'asc';
+            @endphp
+            <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'avance', 'order' => $nextOrder]) }}" 
+               class="inline-flex items-center justify-center gap-1.5 hover:text-white transition-colors group">
+                <span>Avance</span>
+                <span class="inline-flex items-center">
+                    @if($isSorting && request('order') === 'asc')
+                        <!-- Flecha arriba (Menor a Mayor) -->
+                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                        </svg>
+                    @elseif($isSorting && request('order') === 'desc')
+                        <!-- Flecha abajo (Mayor a Menor) -->
+                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    @else
+                        <!-- Ícono neutro/doble flecha al pasar el mouse -->
+                        <svg class="w-4 h-4 text-slate-400 group-hover:text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                        </svg>
+                    @endif
+                </span>
+            </a>
+        </th>
+
+        <th class="py-3 px-3 text-right">Acciones</th>
+    </tr>
+</thead>
 
             <tbody>
                 @forelse($obras as $obra)
