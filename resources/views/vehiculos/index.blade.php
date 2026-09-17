@@ -115,7 +115,7 @@
 
                                 <td class="px-4 py-2 text-center">
                                     @if($tarjetaDocumento && $tarjetaDocumento->archivo_path)
-                                        <a href="{{ Storage::url($tarjetaDocumento->archivo_path) }}"
+                                        <a href="{{ Storage::disk('public')->url(ltrim($tarjetaDocumento->archivo_path, '/')) }}"
                                            target="_blank"
                                            rel="noopener noreferrer"
                                            title="Ver tarjeta de circulación"
@@ -136,7 +136,7 @@
 
                                 <td class="px-4 py-2 text-center">
                                     @if($seguroDocumento && $seguroDocumento->documento_path)
-                                        <a href="{{ Storage::url($seguroDocumento->documento_path) }}"
+                                        <a href="{{ Storage::disk('public')->url(ltrim($seguroDocumento->documento_path, '/')) }}"
                                            target="_blank"
                                            rel="noopener noreferrer"
                                            title="Ver seguro"
@@ -194,3 +194,4 @@
         </div>
     </div>
 @endsection
+

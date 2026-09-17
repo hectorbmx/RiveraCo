@@ -530,7 +530,7 @@
                     @php
                         $headerUser = auth()->user();
                         $headerUserPhoto = $headerUser?->empleado?->foto
-                            ? asset('storage/' . ltrim($headerUser->empleado->foto, '/'))
+                            ? Storage::disk('public')->url(ltrim($headerUser->empleado->foto, '/'))
                             : null;
                     @endphp
 
@@ -633,6 +633,8 @@
 
 </body>
 </html>
+
+
 
 
 

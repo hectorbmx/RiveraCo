@@ -33,7 +33,7 @@
                     <td class="py-2 px-3 text-center">
                         <div class="flex items-center justify-center gap-2">
                             @if($a->entrada_foto)
-                                <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-lg border hover:bg-slate-50" data-photo-url="{{ asset('storage/'.$a->entrada_foto) }}" data-photo-title="Foto de entrada" onclick="openAsistenciaPhoto(this)" title="Ver foto de entrada">
+                                <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-lg border hover:bg-slate-50" data-photo-url="{{ Storage::disk('public')->url(ltrim($a->entrada_foto, '/')) }}" data-photo-title="Foto de entrada" onclick="openAsistenciaPhoto(this)" title="Ver foto de entrada">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M9 2a1 1 0 0 0-.894.553L7.382 4H5a3 3 0 0 0-3 3v11a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3h-2.382l-.724-1.447A1 1 0 0 0 18 2H9z"/>
                                     </svg>
@@ -41,7 +41,7 @@
                             @endif
 
                             @if($a->salida_foto)
-                                <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-lg border hover:bg-slate-50" data-photo-url="{{ asset('storage/'.$a->salida_foto) }}" data-photo-title="Foto de salida" onclick="openAsistenciaPhoto(this)" title="Ver foto de salida">
+                                <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-lg border hover:bg-slate-50" data-photo-url="{{ Storage::disk('public')->url(ltrim($a->salida_foto, '/')) }}" data-photo-title="Foto de salida" onclick="openAsistenciaPhoto(this)" title="Ver foto de salida">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-indigo-600" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M9 2a1 1 0 0 0-.894.553L7.382 4H5a3 3 0 0 0-3 3v11a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3h-2.382l-.724-1.447A1 1 0 0 0 18 2H9z"/>
                                     </svg>
@@ -69,3 +69,4 @@
         </tbody>
     </table>
 </div>
+

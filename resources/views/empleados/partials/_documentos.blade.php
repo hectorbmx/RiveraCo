@@ -232,7 +232,7 @@
                     <tbody class="divide-y divide-slate-200 bg-white">
                         @foreach($documentos as $doc)
                             @php
-                                $fileUrl = $doc->archivo_path ? asset('storage/' . $doc->archivo_path) : null;
+                                $fileUrl = $doc->archivo_path ? Storage::disk('public')->url(ltrim($doc->archivo_path, '/')) : null;
                                 $nombreMostrar = $doc->nombre_documento ?: str_replace('_', ' ', $doc->tipo_documento);
                             @endphp
 

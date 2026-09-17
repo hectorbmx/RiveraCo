@@ -128,7 +128,7 @@
           <tbody class="divide-y divide-slate-100 bg-white">
             @foreach($documentos as $doc)
               @php
-                $fileUrl = $doc->archivo_path ? asset('storage/' . $doc->archivo_path) : null;
+                $fileUrl = $doc->archivo_path ? Storage::disk('public')->url(ltrim($doc->archivo_path, '/')) : null;
                 $nombreMostrar = $doc->nombre_documento ?: ($doc->documentoTipo->nombre ?? str_replace('_', ' ', $doc->tipo_documento));
               @endphp
               <tr class="hover:bg-slate-50">

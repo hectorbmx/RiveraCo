@@ -166,7 +166,7 @@ class MaquinaSeguroController extends Controller
 
     protected function validateData(Request $request, ?int $seguroId = null, ?Maquina $maquina = null): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'aseguradora' => ['required', 'string', 'max:255'],
             'poliza_numero' => [
                 'required',
@@ -211,6 +211,10 @@ class MaquinaSeguroController extends Controller
             'documento' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:15360'],
             'comprobante' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:15360'],
         ], $this->archivoSeguroMessages());
+
+        $data['costo'] = $request->filled('costo') ? (float) $data['costo'] : 0;
+
+        return $data;
     }
 
     protected function archivoSeguroMessages(): array
@@ -284,9 +288,9 @@ class MaquinaSeguroController extends Controller
             'ultima_alerta_enviada_at' => optional($seguro->ultima_alerta_enviada_at)?->format('Y-m-d H:i:s'),
             'observaciones' => $seguro->observaciones,
             'documento_path' => $seguro->documento_path,
-            'documento_url' => $seguro->documento_path ? asset('storage/' . $seguro->documento_path) : null,
+            'documento_url' => $seguro->documento_path ? Storage::disk('public')->url(ltrim($seguro->documento_path, '/')) : null,
             'comprobante_path' => $seguro->comprobante_path,
-            'comprobante_url' => $seguro->comprobante_path ? asset('storage/' . $seguro->comprobante_path) : null,
+            'comprobante_url' => $seguro->comprobante_path ? Storage::disk('public')->url(ltrim($seguro->comprobante_path, '/')) : null,
             'created_at' => optional($seguro->created_at)->format('Y-m-d H:i:s'),
             'updated_at' => optional($seguro->updated_at)->format('Y-m-d H:i:s'),
         ];
@@ -296,3 +300,5 @@ class MaquinaSeguroController extends Controller
     return view('maquinas.seguros.create', compact('maquina'));
 }
 }
+
+

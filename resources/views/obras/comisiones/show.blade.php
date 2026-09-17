@@ -183,7 +183,7 @@
                                 @else
                                     <div class="flex flex-wrap gap-3">
                                         @foreach($etapa->fotos as $foto)
-                                            @php $fotoUrl = asset('storage/' . ltrim($foto->path, '/')); @endphp
+                                            @php $fotoUrl = Storage::disk('public')->url(ltrim($foto->path, '/')); @endphp
                                             <a href="{{ $fotoUrl }}" target="_blank" class="block group">
                                                 <img src="{{ $fotoUrl }}"
                                                      alt="Foto {{ $etapaLabels[$etapa->etapa] ?? $etapa->etapa }}"
@@ -485,3 +485,5 @@
     </div> -->
 
 @endsection
+
+

@@ -110,7 +110,7 @@ if ($status === null || $status === '' || $status === 'todos') {
                     
                     // Verificamos si el archivo existe físicamente en el disco público
                     if (Storage::disk('public')->exists($path)) {
-                        $fotoUrl = asset('storage/' . ltrim($path, '/'));
+                        $fotoUrl = Storage::disk('public')->url(ltrim($path, '/'));
                     } else {
                         // Si no existe en public, quizás está en una carpeta img directa de public
                         $fotoUrl = asset(ltrim($path, '/'));
@@ -169,7 +169,7 @@ public function show(Empleado $empleado)
         $path = str_replace('../', '', $empleado->foto);
         $fotoUrl = str_starts_with($empleado->foto, 'http') 
             ? $empleado->foto 
-            : asset('storage/' . ltrim($path, '/'));
+            : Storage::disk('public')->url(ltrim($path, '/'));
     }
     $antiguedad = null;
 
@@ -210,7 +210,7 @@ public function show(Empleado $empleado)
                 'ubicacion_texto' => $asistencia->ubicacion_texto,
                 'registrado_por' => $asistencia->registradoPor?->name,
                 'photo_url' => $asistencia->photo_path
-                    ? asset('storage/' . ltrim($asistencia->photo_path, '/'))
+                    ? Storage::disk('public')->url(ltrim($asistencia->photo_path, '/'))
                     : null,
             ];
         })
@@ -266,3 +266,7 @@ public function show(Empleado $empleado)
     ]);
 }
 }
+
+
+
+

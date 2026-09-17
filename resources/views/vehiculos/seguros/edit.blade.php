@@ -198,7 +198,7 @@
                 @if($seguro->documento_path)
                     <div class="mt-2 text-sm">
                         <a
-                            href="{{ asset('storage/' . $seguro->documento_path) }}"
+                            href="{{ Storage::disk('public')->url(ltrim($seguro->documento_path, '/')) }}"
                             target="_blank"
                             class="text-blue-600 hover:underline"
                         >
@@ -220,7 +220,7 @@
                 @if($seguro->comprobante_path)
                     <div class="mt-2 text-sm">
                         <a
-                            href="{{ asset('storage/' . $seguro->comprobante_path) }}"
+                            href="{{ Storage::disk('public')->url(ltrim($seguro->comprobante_path, '/')) }}"
                             target="_blank"
                             class="text-blue-600 hover:underline"
                         >
@@ -250,3 +250,4 @@
     </form>
 </div>
 @endsection
+

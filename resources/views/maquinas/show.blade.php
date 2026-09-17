@@ -355,10 +355,10 @@
 
                 <td class="px-4 py-3">
                     @if($s->documento_path)
-                        <a href="{{ asset('storage/'.$s->documento_path) }}" target="_blank" class="text-blue-600 hover:underline">
+                        <a href="{{ Storage::disk('public')->url(ltrim($s->documento_path, '/')) }}" target="_blank" class="text-blue-600 hover:underline">
                             Ver archivo
                         </a>
-                        <!-- <a href="{{ Storage::url($s->documento_path) }}" target="_blank" class="text-blue-600 hover:underline">
+                        <!-- <a href="{{ Storage::disk('public')->url(ltrim($s->documento_path, '/')) }}" target="_blank" class="text-blue-600 hover:underline">
                             Ver archivo
                             </a> -->
                     @else
@@ -513,3 +513,4 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endpush
+

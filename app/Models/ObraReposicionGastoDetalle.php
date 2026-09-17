@@ -46,7 +46,7 @@ class ObraReposicionGastoDetalle extends Model
 
     public function getEvidenciaUrlAttribute(): ?string
     {
-        return $this->evidencia_path ? \Illuminate\Support\Facades\Storage::url($this->evidencia_path) : null;
+        return $this->evidencia_path ? \Illuminate\Support\Facades\Storage::disk('public')->url(ltrim($this->evidencia_path, '/')) : null;
     }
 
     public function reposicion()

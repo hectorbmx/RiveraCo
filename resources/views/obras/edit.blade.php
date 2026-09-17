@@ -926,7 +926,7 @@
                                 </td>
                                 <td class="py-2 px-3 text-right space-x-2">
                                     @if($contrato->archivo_path)
-                                        <a href="{{ asset('storage/'.$contrato->archivo_path) }}"
+                                        <a href="{{ Storage::disk('public')->url(ltrim($contrato->archivo_path, '/')) }}"
                                            target="_blank"
                                            class="text-blue-600 hover:text-blue-800 text-xs font-medium">
                                             Ver PDF
@@ -1121,7 +1121,7 @@
                                 <td class="py-2 px-3">{{ $plano->version ?? '-' }}</td>
                                 <td class="py-2 px-3 text-right space-x-2">
 
-                                    <a href="{{ asset('storage/'.$plano->archivo_path) }}"
+                                    <a href="{{ Storage::disk('public')->url(ltrim($plano->archivo_path, '/')) }}"
                                        target="_blank"
                                        class="text-blue-600 hover:text-blue-800 text-xs font-medium">
                                         Ver archivo
@@ -1259,7 +1259,7 @@
                                     {{ $presupuesto->fecha ? $presupuesto->fecha->format('d/m/Y') : '-' }}
                                 </td>
                                 <td class="py-2 px-3 text-right space-x-2">
-                                    <a href="{{ asset('storage/'.$presupuesto->archivo_path) }}"
+                                    <a href="{{ Storage::disk('public')->url(ltrim($presupuesto->archivo_path, '/')) }}"
                                        target="_blank"
                                        class="text-blue-600 hover:text-blue-800 text-xs font-medium">
                                         Ver PDF
@@ -3213,7 +3213,7 @@
                     <button
                             type="button"
                             class="inline-flex items-center justify-center w-8 h-8 rounded-lg border hover:bg-slate-50"
-                            data-photo-url="{{ asset('storage/'.$a->entrada_foto) }}"
+                            data-photo-url="{{ Storage::disk('public')->url(ltrim($a->entrada_foto, '/')) }}"
                             data-photo-title="Foto de entrada"
                             onclick="openAsistenciaPhoto(this)"
                             title="Ver foto de entrada"
@@ -3230,7 +3230,7 @@
                     <button
                         type="button"
                         class="inline-flex items-center justify-center w-8 h-8 rounded-lg border hover:bg-slate-50"
-                        data-photo-url="{{ asset('storage/'.$a->salida_foto) }}"
+                        data-photo-url="{{ Storage::disk('public')->url(ltrim($a->salida_foto, '/')) }}"
                         data-photo-title="Foto de salida"
                         onclick="openAsistenciaPhoto(this)"
                         title="Ver foto de salida"
@@ -4928,7 +4928,7 @@ function relacionFacturasModal() {
                                     @endif
                                 </div>
                                 @if($ultimoPago->comprobante_path)
-                                    <a href="{{ asset('storage/' . $ultimoPago->comprobante_path) }}"
+                                    <a href="{{ Storage::disk('public')->url(ltrim($ultimoPago->comprobante_path, '/')) }}"
                                        target="_blank"
                                        class="mt-1 inline-flex text-[10px] font-semibold text-[#0B265A] hover:underline">
                                         Ver evidencia
@@ -6400,4 +6400,5 @@ function calcularFila(idCampo) {
 //     });
 // });
 </script>
+
 

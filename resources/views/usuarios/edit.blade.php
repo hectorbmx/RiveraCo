@@ -151,7 +151,7 @@
                                 <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
                                     @if($usuario->firma_digital_path)
                                         <div class="h-20 w-48 rounded border bg-white p-2 flex items-center justify-center">
-                                            <img src="{{ asset('storage/' . $usuario->firma_digital_path) }}" alt="Firma digital de {{ $usuario->name }}" class="max-h-full max-w-full object-contain">
+                                            <img src="{{ Storage::disk('public')->url(ltrim($usuario->firma_digital_path, '/')) }}" alt="Firma digital de {{ $usuario->name }}" class="max-h-full max-w-full object-contain">
                                         </div>
                                         <label class="inline-flex items-center gap-2 text-sm text-red-600 cursor-pointer">
                                             <input type="checkbox" name="eliminar_firma_digital" value="1" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
@@ -629,6 +629,7 @@
     </div>
 </div>
 @endsection
+
 
 
 

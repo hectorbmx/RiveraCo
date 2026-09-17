@@ -435,7 +435,7 @@
                                                         @if($asig->fotos->isNotEmpty())
                                                             <button
                                                                 type="button"
-                                                                onclick="abrirModalFotos({{ $asig->fotos->map(fn($f) => asset('storage/'.$f->url))->toJson() }}, '{{ $asig->empleado->Nombre }} {{ $asig->empleado->Apellidos }}')"
+                                                                onclick="abrirModalFotos({{ $asig->fotos->map(fn($f) => Storage::disk('public')->url(ltrim($f->url, '/')))->toJson() }}, '{{ $asig->empleado->Nombre }} {{ $asig->empleado->Apellidos }}')"
                                                                 class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium transition">
                                                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none"
                                                                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
@@ -576,7 +576,7 @@
 
                                 @if($polizaVigente->documento_path)
                                     <div class="mt-2">
-                                        <a href="{{ asset('storage/'.$polizaVigente->documento_path) }}"
+                                        <a href="{{ Storage::disk('public')->url(ltrim($polizaVigente->documento_path, '/')) }}"
                                            target="_blank"
                                            class="text-xs text-blue-600 hover:underline">
                                             Ver archivo de póliza
@@ -696,7 +696,7 @@
 
                                         <td class="px-3 py-2 text-slate-600">
                                             @if($seguro->documento_path)
-                                                <a href="{{ asset('storage/'.$seguro->documento_path) }}"
+                                                <a href="{{ Storage::disk('public')->url(ltrim($seguro->documento_path, '/')) }}"
                                                    target="_blank"
                                                    class="text-xs text-blue-600 hover:underline">
                                                     Ver archivo
@@ -998,7 +998,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                 <div>
                                     <span class="block text-slate-500">Archivo</span>
-                                    <a href="{{ asset('storage/' . $tarjetaVigente->archivo_path) }}"
+                                    <a href="{{ Storage::disk('public')->url(ltrim($tarjetaVigente->archivo_path, '/')) }}"
                                        target="_blank"
                                        class="text-blue-600 hover:underline">
                                         Ver documento
@@ -1134,7 +1134,7 @@
                                                     {{ $documento->created_at?->format('d/m/Y H:i') ?? '—' }}
                                                 </td>
                                                 <td class="px-4 py-3">
-                                                    <a href="{{ asset('storage/' . $documento->archivo_path) }}"
+                                                    <a href="{{ Storage::disk('public')->url(ltrim($documento->archivo_path, '/')) }}"
                                                        target="_blank"
                                                        class="text-blue-600 hover:underline">
                                                         {{ $documento->nombre_original ?: 'Ver archivo' }}
@@ -1437,3 +1437,4 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endpush
+

@@ -49,6 +49,7 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
                   });
             });
         })
+        ->orderBy('codigo')
         ->orderBy('nombre')
         ->get();
 

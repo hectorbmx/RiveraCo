@@ -1,4 +1,4 @@
-﻿<h2 class="text-lg font-semibold mb-4">Datos generales del empleado</h2>
+<h2 class="text-lg font-semibold mb-4">Datos generales del empleado</h2>
 
 <form action="{{ route('empleados.update', $empleado->id_Empleado) }}" method="POST" enctype="multipart/form-data">
     @csrf
@@ -22,7 +22,7 @@
             <div class="w-36 h-36 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
                 @if(!empty($empleado->foto))
                     <img
-                        src="{{ asset('storage/' . $empleado->foto) }}"
+                        src="{{ Storage::disk('public')->url(ltrim($empleado->foto, '/')) }}"
                         alt="Foto del empleado"
                         class="w-full h-full object-cover"
                     >
@@ -388,4 +388,5 @@
     </div>
 
 </form>
+
 

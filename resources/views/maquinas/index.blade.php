@@ -192,7 +192,7 @@
                             </td>
                             <td class="px-4 py-3">
                                 @if($seguroSeleccionado && $seguroSeleccionado->documento_path)
-                                    <a href="{{ Storage::url($seguroSeleccionado->documento_path) }}"
+                                    <a href="{{ Storage::disk('public')->url(ltrim($seguroSeleccionado->documento_path, '/')) }}"
                                        target="_blank"
                                        rel="noopener noreferrer"
                                        title="Ver documento del seguro"
@@ -231,4 +231,5 @@
 
 </div>
 @endsection
+
 
