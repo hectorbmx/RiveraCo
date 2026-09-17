@@ -82,6 +82,7 @@
                         <th class="text-left px-4 py-3">Ubicación</th>
                         <th class="text-left px-4 py-3">Obra actual</th>
                         <th class="text-left px-4 py-3">Servicio preventivo</th>
+                        <th class="text-left px-4 py-3">Vence Seguro</th>
                         <th class="text-left px-4 py-3">Seguro</th>
                         <th class="text-left px-4 py-3">Detalles</th>
                     </tr>
@@ -189,6 +190,15 @@
                             </td>
                             <td class="px-4 py-3">
                                 @include('maquinas.partials._preventivo_badge', ['preventivo' => $preventivos[$m->id] ?? null])
+                            </td>
+                            <td class="px-4 py-3">
+                                @if($seguroSeleccionado && $seguroSeleccionado->vigencia_hasta)
+                                    <span class="inline-flex items-center px-2 py-1 rounded-lg border text-xs bg-sky-50 text-sky-700 border-sky-200">
+                                        {{ $seguroSeleccionado->vigencia_hasta->format('d/m/Y') }}
+                                    </span>
+                                @else
+                                    <span class="text-slate-400 text-xs">Sin seguro</span>
+                                @endif
                             </td>
                             <td class="px-4 py-3">
                                 @if($seguroSeleccionado && $seguroSeleccionado->documento_path)

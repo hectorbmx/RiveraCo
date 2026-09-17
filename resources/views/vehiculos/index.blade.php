@@ -47,7 +47,7 @@
                             <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Asignado a</th>
                             <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Ano</th>
                             <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Serie</th>
-                            <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Tipo</th>
+                            <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Vence Seguro</th>
                             <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">KM</th>
                             <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Servicio</th>
                             <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Tarjeta Circulación</th>
@@ -67,6 +67,9 @@
                                     ->filter(fn ($seguro) => $seguro->documento_path)
                                     ->sortByDesc(fn ($seguro) => $seguro->vigencia_hasta ? $seguro->vigencia_hasta->format('Y-m-d') : '0000-00-00')
                                     ->first();
+                                $seguroVence = $seguroDocumento && $seguroDocumento->vigencia_hasta
+                                    ? $seguroDocumento->vigencia_hasta->format('d/m/Y')
+                                    : null;
                             @endphp
                             <tr class="{{ $isBaja ? 'bg-red-50 border-b border-red-200 hover:bg-red-100/90 text-red-900' : 'border-b border-slate-100 hover:bg-slate-50/80 text-slate-700' }}">
                                 <td class="px-4 py-2 text-center {{ $isBaja ? 'text-red-700' : 'text-slate-600' }}">{{ $vehiculo->id }}</td>
@@ -103,7 +106,15 @@
                                 </td>
 
                                 <td class="px-4 py-2 text-center {{ $isBaja ? 'text-red-700' : '' }}">{{ $vehiculo->serie ?: '-' }}</td>
-                                <td class="px-4 py-2 text-center {{ $isBaja ? 'text-red-600' : 'text-slate-500' }}">{{ $vehiculo->tipo ?: '-' }}</td>
+                                <td class="px-4 py-2 text-center {{ $isBaja ? 'text-red-700' : 'text-slate-700' }}">
+                                    @if($seguroVence)
+                                        <span class="inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $isBaja ? 'bg-red-100 text-red-700' : 'bg-sky-100 text-sky-700' }}">
+                                            {{ $seguroVence }}
+                                        </span>
+                                    @else
+                                        <span class="text-slate-400 text-xs">Sin seguro</span>
+                                    @endif
+                                </td>
                                 <td class="px-3 py-2 text-center">{{ $kmActual !== null ? number_format($kmActual) : '-' }}</td>
 
                                 <td class="px-4 py-2 text-center">
