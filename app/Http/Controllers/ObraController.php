@@ -79,7 +79,16 @@ class ObraController extends Controller
         $statusMap = Obra::estatusSlugs();
         $areas = Area::orderBy('nombre')->get();
 
-        $obras = Obra::with(['cliente', 'responsable', 'area'])
+        $obras = Obra::with([
+            'cliente',
+            'responsable',
+            'area',
+            'maquinasAsignadas' => function ($query) {
+                $query->where('estado', 'activa')
+                    ->whereNull('fecha_fin')
+                    ->with('maquina:id,codigo,nombre,tipo,modelo');
+            },
+        ])
             ->tap(fn ($query) => $this->aplicarVisibilidadObras($query))
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
@@ -2664,6 +2673,7 @@ public function relacionarCfdis(Request $request, Obra $obra)
     ]);
 }
 }
+
 
 
 

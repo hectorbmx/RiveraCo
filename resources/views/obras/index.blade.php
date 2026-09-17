@@ -116,12 +116,13 @@ KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtro
     @endif
 
     <div class="overflow-x-auto">
-        <table class="w-full min-w-[1100px] text-sm">
+        <table class="w-full min-w-[1200px] text-sm">
             <thead>
                 <tr class="border-b text-slate-500 font-medium">
                     <th class="py-3 px-2 text-left">Clave</th>
                     <th class="py-3 px-2 text-left">Nombre</th>
                     <th class="py-3 px-2 text-left">Cliente</th>
+                    <th class="py-3 px-2 text-left">Máquina asignada</th>
                     <th class="py-3 px-2 text-left">Status</th>
                     <th class="py-3 px-2 text-right">Valor obra</th>
                     <th class="py-3 px-2 text-right">Facturado</th>
@@ -207,7 +208,32 @@ KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtro
                                 -
                             @endif
                         </td>
+                        <td class="py-3 px-2">
+                            @php
+                                $maquinasActivas = $obra->maquinasAsignadas->filter(fn ($asignacion) => $asignacion->maquina)->values();
+                            @endphp
 
+                            @if($maquinasActivas->isNotEmpty())
+                                <div class="space-y-1 min-w-[160px]">
+                                    @foreach($maquinasActivas->take(2) as $asignacion)
+                                        <div class="text-slate-700 leading-tight">
+                                            <span class="font-semibold">{{ $asignacion->maquina->nombre }}</span>
+                                            <div class="text-[11px] text-slate-400">
+                                                {{ collect([$asignacion->maquina->codigo, $asignacion->maquina->modelo])->filter()->join(' · ') ?: 'Sin código/modelo' }}
+                                            </div>
+                                        </div>
+                                    @endforeach
+
+                                    @if($maquinasActivas->count() > 2)
+                                        <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                                            +{{ $maquinasActivas->count() - 2 }} más
+                                        </span>
+                                    @endif
+                                </div>
+                            @else
+                                <span class="text-slate-400">Sin máquina</span>
+                            @endif
+                        </td>
                         <td class="py-3 px-2">
                             @php
                                 $val = (int)($obra->estatus_nuevo ?? 1);
@@ -284,7 +310,7 @@ KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtro
 
                 @empty
                     <tr>
-                        <td colspan="10" class="py-6 text-center text-slate-500">
+                        <td colspan="11" class="py-6 text-center text-slate-500">
                             No hay obras registradas aún.
                         </td>
                     </tr>
@@ -299,3 +325,6 @@ KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtro
 </div>
 
 @endsection
+
+
+
