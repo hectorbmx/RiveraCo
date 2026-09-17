@@ -20,73 +20,80 @@ class MaquinasGerencialController extends Controller
         $q = Maquina::query()
             ->select([
                 'id',
+                'codigo',
                 'nombre',
                 'placas',
                 'horometro_base',
                 'estado',
+                'marca',
                 'modelo',
                 'tipo',
-
-                // agrega aquí campos reales si existen: economico, marca, modelo, estatus, horometro_actual, etc.
-                // 'economico','marca','modelo','estatus'
-            ])
-            // Relación sugerida: asignacionActiva -> ObraMaquina (whereNull fecha_fin)
-            ->with([
-                'asignacionActiva.obra:id,nombre,clave_obra,estatus_nuevo',
             ])
             ->orderBy('nombre');
 
-        // filtros básicos
         if ($request->filled('q')) {
             $term = trim($request->q);
             $q->where(function ($x) use ($term) {
-                $x->where('nombre', 'like', "%{$term}%");
-                // si tienes economico/serie/modelo:
-                // ->orWhere('economico','like',"%{$term}%")
-                // ->orWhere('modelo','like',"%{$term}%");
+                $x->where('nombre', 'like', "%{$term}%")
+                    ->orWhere('codigo', 'like', "%{$term}%")
+                    ->orWhere('modelo', 'like', "%{$term}%")
+                    ->orWhere('placas', 'like', "%{$term}%");
             });
         }
 
         if ($request->filled('estatus')) {
-            // si tienes campo estatus en Maquina
-            $q->where('estatus', $request->estatus);
+            $q->where('estado', $request->estatus);
         }
+
+        $maquinasAsignadasQuery = ObraMaquina::query()
+            ->where('estado', 'activa')
+            ->whereNull('fecha_fin')
+            ->select('maquina_id');
 
         if ($request->filled('asignada')) {
             if ((int) $request->asignada === 1) {
-                $q->whereHas('asignacionActiva');
-            } else if ((int) $request->asignada === 0) {
-                $q->whereDoesntHave('asignacionActiva');
+                $q->whereIn('id', clone $maquinasAsignadasQuery);
+            } elseif ((int) $request->asignada === 0) {
+                $q->whereNotIn('id', clone $maquinasAsignadasQuery);
             }
         }
 
         if ($request->boolean('en_uso')) {
-            $q->whereHas('asignacionActiva', function ($asignacion) {
-                $asignacion->where('estado', 'activa')
-                    ->whereNull('fecha_fin');
-            });
+            $q->whereIn('id', clone $maquinasAsignadasQuery);
         }
 
         $perPage = min(max((int) $request->get('per_page', 20), 1), 50);
         $rows = $q->paginate($perPage)->withQueryString();
 
+        $maquinaIds = $rows->getCollection()->pluck('id')->filter()->values();
+        $asignacionesActivas = $maquinaIds->isEmpty()
+            ? collect()
+            : ObraMaquina::query()
+                ->with('obra:id,nombre,clave_obra,estatus_nuevo')
+                ->whereIn('maquina_id', $maquinaIds)
+                ->where('estado', 'activa')
+                ->whereNull('fecha_fin')
+                ->orderByDesc('fecha_inicio')
+                ->orderByDesc('id')
+                ->get()
+                ->unique('maquina_id')
+                ->keyBy('maquina_id');
+
         return response()->json([
             'ok' => true,
-            'data' => $rows->through(function ($m) {
-                $asig = $m->asignacionActiva;
+            'data' => $rows->through(function ($m) use ($asignacionesActivas) {
+                $asig = $asignacionesActivas->get($m->id);
 
                 return [
                     'id' => (int) $m->id,
+                    'codigo' => $m->codigo ?? null,
                     'nombre' => $m->nombre ?? null,
                     'tipo'   => $m->tipo ?? null,
                     'marca'  => $m->marca ?? null,
                     'modelo' => $m->modelo ?? null,
                     'placas' => $m->placas ?? null,
-                    'horometro_base'=>$m->horometro_base ?? null,
+                    'horometro_base' => $m->horometro_base ?? null,
                     'estado' => $m->estado ?? null,
-                    // 'economico' => $m->economico ?? null,
-                    // 'estatus' => $m->estatus ?? null,
-
                     'asignada' => (bool) $asig,
                     'obra_activa' => $asig && $asig->obra ? [
                         'id' => (int) $asig->obra->id,
@@ -104,7 +111,6 @@ class MaquinasGerencialController extends Controller
             ],
         ]);
     }
-
 public function show(Request $request, Maquina $maquina)
 {
     // Cargar asignación activa + obra
@@ -503,4 +509,7 @@ private function storageUrl(?string $path): ?string
     return Storage::disk('public')->url(ltrim($path, '/'));
 }
 }
+
+
+
 
