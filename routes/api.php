@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\ResidenteObraCivilAvanceController;
 use App\Http\Controllers\Api\V1\ResidenteObraCivilMaterialController;
 use App\Http\Controllers\Api\V1\Gerencial\ObrasGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\MaquinasGerencialController;
+use App\Http\Controllers\Api\V1\Gerencial\VehiculosGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\PersonalGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\InventarioGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\DashboardGerencialController;
@@ -125,6 +126,10 @@ Route::prefix('v1')->group(function () {
                 Route::get('maquinas/{maquina}', [MaquinasGerencialController::class, 'show']);
                 Route::get('maquinas/{maquina}/registros', [MaquinasGerencialController::class, 'registros']);
                 Route::get('maquinas/{maquina}/registros/resumen', [MaquinasGerencialController::class, 'registrosResumen']);
+
+                //catalogo de vehiculos
+                Route::get('vehiculos', [VehiculosGerencialController::class, 'index']);
+                Route::get('vehiculos/{vehiculo}', [VehiculosGerencialController::class, 'show']);
                 
                 //catalogo de empleados
                 Route::get('empleados', [PersonalGerencialController::class, 'index']);
@@ -155,6 +160,7 @@ Route::prefix('agent')->group(function () {
         Route::post('logout', [\App\Http\Controllers\Api\Agent\AgentAuthController::class, 'logout']);
     });
 });
+
 
 
 

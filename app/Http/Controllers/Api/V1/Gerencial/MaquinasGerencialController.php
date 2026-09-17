@@ -8,6 +8,9 @@ use Illuminate\Support\Carbon;
 use App\Models\Maquina;
 use App\Models\ObraMaquina;
 use App\Models\ObraMaquinaRegistro;
+use App\Models\Mantenimiento;
+use App\Models\Seguro;
+use Illuminate\Support\Facades\Storage;
 
 
 class MaquinasGerencialController extends Controller
@@ -107,6 +110,7 @@ public function show(Request $request, Maquina $maquina)
     // Cargar asignación activa + obra
     $maquina->load([
         'asignacionActiva.obra:id,nombre,clave_obra,estatus_nuevo,ubicacion',
+        'seguros',
     ]);
 
     // Historial corto de asignaciones (últimas 10)
@@ -146,18 +150,35 @@ public function show(Request $request, Maquina $maquina)
 
     $asig = $maquina->asignacionActiva;
 
+    $seguros = $maquina->seguros()
+        ->orderByDesc('vigencia_hasta')
+        ->limit(10)
+        ->get();
+
+    $mantenimientos = $maquina->mantenimientos()
+        ->with('mecanico:id_Empleado,Nombre,Apellidos')
+        ->orderByDesc('fecha_programada')
+        ->orderByDesc('id')
+        ->limit(10)
+        ->get();
+
     return response()->json([
         'ok' => true,
         'data' => [
             'maquina' => [
                 'id' => (int) $maquina->id,
+                'codigo' => $maquina->codigo ?? null,
                 'nombre' => $maquina->nombre ?? null,
-                // agrega campos reales si existen:
-                // 'economico' => $maquina->economico ?? null,
-                // 'marca' => $maquina->marca ?? null,
-                // 'modelo' => $maquina->modelo ?? null,
-                // 'estatus' => $maquina->estatus ?? null,
-                // 'horometro_actual' => $maquina->horometro_actual ?? null,
+                'tipo' => $maquina->tipo ?? null,
+                'marca' => $maquina->marca ?? null,
+                'modelo' => $maquina->modelo ?? null,
+                'numero_serie' => $maquina->numero_serie ?? null,
+                'placas' => $maquina->placas ?? null,
+                'color' => $maquina->color ?? null,
+                'horometro_base' => $maquina->horometro_base ?? null,
+                'estado' => $maquina->estado ?? null,
+                'ubicacion' => $maquina->ubicacion ?? null,
+                'notas' => $maquina->notas ?? null,
             ],
             'asignacion_activa' => $asig ? [
                 'obra_maquina_id' => (int) $asig->id,
@@ -173,6 +194,10 @@ public function show(Request $request, Maquina $maquina)
                 ] : null,
             ] : null,
             'asignaciones_recientes' => $asignaciones,
+            'seguro_vigente' => $this->resolverSeguroVigente($seguros),
+            'seguros_recientes' => $seguros->map(fn (Seguro $seguro) => $this->mapSeguro($seguro))->values(),
+            'mantenimientos_recientes' => $mantenimientos->map(fn (Mantenimiento $mantenimiento) => $this->mapMantenimiento($mantenimiento))->values(),
+            'mantenimientos_resumen' => $this->mapMantenimientosResumen($maquina),
         ],
     ]);
 }
@@ -366,4 +391,116 @@ public function registrosResumen(Request $request, Maquina $maquina)
     ]);
 }
 
+private function mapSeguro(Seguro $seguro): array
+{
+    return [
+        'id' => (int) $seguro->id,
+        'aseguradora' => $seguro->aseguradora,
+        'poliza_numero' => $seguro->poliza_numero,
+        'tipo_seguro' => $seguro->tipo_seguro,
+        'metodo_pago' => $seguro->metodo_pago,
+        'frecuencia_pago' => $seguro->frecuencia_pago,
+        'costo' => $seguro->costo !== null ? (float) $seguro->costo : null,
+        'moneda' => $seguro->moneda,
+        'fecha_compra' => optional($seguro->fecha_compra)->format('Y-m-d'),
+        'vigencia_desde' => optional($seguro->vigencia_desde)->format('Y-m-d'),
+        'vigencia_hasta' => optional($seguro->vigencia_hasta)->format('Y-m-d'),
+        'suma_asegurada' => $seguro->suma_asegurada !== null ? (float) $seguro->suma_asegurada : null,
+        'deducible' => $seguro->deducible !== null ? (float) $seguro->deducible : null,
+        'cobertura' => $seguro->cobertura,
+        'estatus' => $this->estatusSeguro($seguro),
+        'alerta_vencimiento_activa' => (bool) $seguro->alerta_vencimiento_activa,
+        'dias_preaviso' => $seguro->dias_preaviso,
+        'observaciones' => $seguro->observaciones,
+        'documento_url' => $this->storageUrl($seguro->documento_path),
+        'comprobante_url' => $this->storageUrl($seguro->comprobante_path),
+    ];
 }
+
+private function mapMantenimiento(Mantenimiento $mantenimiento): array
+{
+    $mecanico = $mantenimiento->mecanico;
+
+    return [
+        'id' => (int) $mantenimiento->id,
+        'tipo' => $mantenimiento->tipo,
+        'categoria_mantenimiento' => $mantenimiento->categoria_mantenimiento,
+        'descripcion' => $mantenimiento->descripcion,
+        'km_actuales' => $mantenimiento->km_actuales,
+        'km_proximo_servicio' => $mantenimiento->km_proximo_servicio,
+        'horometro' => $mantenimiento->horometro,
+        'fecha_programada' => optional($mantenimiento->fecha_programada)->format('Y-m-d'),
+        'fecha_inicio' => optional($mantenimiento->fecha_inicio)->format('Y-m-d H:i:s'),
+        'fecha_fin' => optional($mantenimiento->fecha_fin)->format('Y-m-d H:i:s'),
+        'estatus' => $mantenimiento->estatus,
+        'costo_total' => $mantenimiento->costo_total !== null ? (float) $mantenimiento->costo_total : null,
+        'notas' => $mantenimiento->notas,
+        'mecanico' => $mecanico ? [
+            'id' => (int) $mecanico->id_Empleado,
+            'nombre' => trim(($mecanico->Nombre ?? '') . ' ' . ($mecanico->Apellidos ?? '')),
+        ] : null,
+    ];
+}
+
+private function resolverSeguroVigente($seguros): ?array
+{
+    $seguros = collect($seguros);
+    $hoy = now();
+
+    $vigente = $seguros->first(function (Seguro $seguro) use ($hoy) {
+        return (string) $seguro->estatus !== 'cancelada'
+            && $seguro->vigencia_desde
+            && $seguro->vigencia_hasta
+            && $seguro->vigencia_desde->lte($hoy)
+            && $seguro->vigencia_hasta->gte($hoy);
+    });
+
+    return $vigente ? $this->mapSeguro($vigente) : null;
+}
+
+private function estatusSeguro(Seguro $seguro): string
+{
+    if ($seguro->estatus === 'cancelada') {
+        return 'cancelada';
+    }
+
+    $hoy = now();
+
+    if ($seguro->vigencia_desde && $seguro->vigencia_desde->gt($hoy)) {
+        return 'futura';
+    }
+
+    if ($seguro->vigencia_hasta && $seguro->vigencia_hasta->lt($hoy)) {
+        return 'vencida';
+    }
+
+    return 'vigente';
+}
+
+private function mapMantenimientosResumen(Maquina $maquina): array
+{
+    $query = $maquina->mantenimientos();
+
+    return [
+        'total' => (clone $query)->count(),
+        'pendiente' => (clone $query)->where('estatus', 'pendiente')->count(),
+        'en_proceso' => (clone $query)->where('estatus', 'en_proceso')->count(),
+        'completado' => (clone $query)->where('estatus', 'completado')->count(),
+        'cancelado' => (clone $query)->where('estatus', 'cancelado')->count(),
+    ];
+}
+
+private function storageUrl(?string $path): ?string
+{
+    if (!$path) {
+        return null;
+    }
+
+    if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+        return $path;
+    }
+
+    return Storage::disk('public')->url(ltrim($path, '/'));
+}
+}
+
