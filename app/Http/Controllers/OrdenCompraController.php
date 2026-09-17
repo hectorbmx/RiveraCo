@@ -719,6 +719,19 @@ public function autorizar(Request $request, $id, OrdenCompraNotificationService 
         return back()->with('error', 'No puedes autorizar una orden sin detalles.');
     }
 
+    $partidasSinVinculo = $oc->detalles()
+        ->whereNull('producto_id')
+        ->whereNull('civil_concept_id')
+        ->whereNull('obra_civil_insumo_id')
+        ->count();
+
+    if ($partidasSinVinculo > 0) {
+        return back()->with(
+            'error',
+            "No puedes autorizar esta orden: tiene {$partidasSinVinculo} partida(s) sin producto o insumo vinculado. Edita las partidas para vincularlas antes de autorizar."
+        );
+    }
+
     // ── NUEVO: validación de saldo disponible ────────────────────────────────
     if ($oc->planeacion_gasto_id) {
         $gasto = \App\Models\ObraPlaneacionGasto::find($oc->planeacion_gasto_id);
@@ -3674,8 +3687,4 @@ public function exportarListaPagos(
             ->header('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"');
     }
 }
-
-
-
-
 

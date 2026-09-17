@@ -12,6 +12,8 @@ class InventarioDocumentoDetalle extends Model
     protected $fillable = [
         'documento_id',
         'producto_id',
+        'orden_compra_id',
+        'orden_compra_detalle_id',
         'cantidad',
         'costo_unitario',
         'notas',
@@ -25,6 +27,16 @@ class InventarioDocumentoDetalle extends Model
     public function documento(): BelongsTo
     {
         return $this->belongsTo(InventarioDocumento::class, 'documento_id');
+    }
+
+    public function ordenCompra(): BelongsTo
+    {
+        return $this->belongsTo(OrdenCompra::class, 'orden_compra_id');
+    }
+
+    public function ordenCompraDetalle(): BelongsTo
+    {
+        return $this->belongsTo(OrdenCompraDetalle::class, 'orden_compra_detalle_id');
     }
 
     // Ajustar si tu modelo no se llama Producto::class

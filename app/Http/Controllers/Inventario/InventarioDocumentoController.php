@@ -177,6 +177,76 @@ public function update(Request $request, InventarioDocumento $doc)
 {
     abort(501); // placeholder, luego lo implementamos
 }
+    public function buscarOrdenesCompra(Request $request)
+    {
+        $q = trim((string) $request->get('q', ''));
+
+        $query = OrdenCompra::query()
+            ->with('proveedor')
+            ->whereIn('estado', ['AUTORIZADA', 'APROBADA'])
+            ->when($q !== '', function ($qq) use ($q) {
+                $qq->where(function ($w) use ($q) {
+                    $w->where('folio', 'like', "%{$q}%")
+                      ->orWhere('id', 'like', "%{$q}%")
+                      ->orWhereHas('proveedor', function ($prov) use ($q) {
+                          $prov->where('nombre', 'like', "%{$q}%")
+                               ->orWhere('rfc', 'like', "%{$q}%");
+                      });
+                });
+            })
+            ->orderByDesc('id');
+
+        $ordenesCompra = $query->limit(10)->get([
+            'id',
+            'folio',
+            'proveedor_id',
+            'estado',
+            'total',
+        ]);
+
+        return response()->json($ordenesCompra->map(function (OrdenCompra $oc) {
+            return [
+                'id' => $oc->id,
+                'folio' => $oc->folio ?: 'OC #' . $oc->id,
+                'estado' => $oc->estado,
+                'proveedor' => $oc->proveedor?->nombre ?? 'Sin proveedor',
+                'total' => (float) ($oc->total ?? 0),
+            ];
+        })->values());
+    }
+
+    public function detalleOrdenCompra(OrdenCompra $ordenCompra)
+    {
+        abort_unless(in_array($ordenCompra->estado, ['AUTORIZADA', 'APROBADA'], true), 404);
+
+        $ordenCompra->load(['proveedor', 'detalles.producto']);
+
+        return response()->json([
+            'id' => $ordenCompra->id,
+            'folio' => $ordenCompra->folio ?: 'OC #' . $ordenCompra->id,
+            'estado' => $ordenCompra->estado,
+            'proveedor' => $ordenCompra->proveedor?->nombre ?? 'Sin proveedor',
+            'detalles' => $ordenCompra->detalles->map(function ($detalle) use ($ordenCompra) {
+                $cantidadOrdenada = (float) ($detalle->cantidad ?? 0);
+                $cantidadPendiente = (float) ($detalle->cantidad_pendiente ?? $cantidadOrdenada);
+
+                return [
+                    'orden_compra_id' => $ordenCompra->id,
+                    'orden_compra_detalle_id' => $detalle->id,
+                    'producto_id' => $detalle->producto_id,
+                    'requiere_vinculo_producto' => empty($detalle->producto_id),
+                    'nombre' => $detalle->producto?->nombre ?? ($detalle->descripcion ?? 'Sin producto'),
+                    'unidad' => $detalle->unidad ?? '',
+                    'cantidad' => $cantidadPendiente > 0 ? $cantidadPendiente : $cantidadOrdenada,
+                    'cantidad_ordenada' => $cantidadOrdenada,
+                    'cantidad_pendiente' => $cantidadPendiente,
+                    'costo_unitario' => (float) ($detalle->precio_unitario ?? 0),
+                    'notas' => $detalle->notas ?? '',
+                ];
+            })->values(),
+        ]);
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -189,11 +259,13 @@ public function update(Request $request, InventarioDocumento $doc)
             'motivo'      => ['nullable','string','max:120'],
             'notas'       => ['nullable','string'],
 
-            'detalles'                => ['required','array','min:1'],
-            'detalles.*.producto_id'  => ['required','integer'],
-            'detalles.*.cantidad'     => ['required','numeric','gt:0'],
-            'detalles.*.costo_unitario'=> ['nullable','numeric','gte:0'],
-            'detalles.*.notas'        => ['nullable','string','max:150'],
+            'detalles'                         => ['required','array','min:1'],
+            'detalles.*.producto_id'           => ['required','integer'],
+            'detalles.*.orden_compra_id'       => ['nullable','integer','exists:ordenes_compra,id'],
+            'detalles.*.orden_compra_detalle_id'=> ['nullable','integer','exists:orden_compra_detalles,id'],
+            'detalles.*.cantidad'              => ['required','numeric','gt:0'],
+            'detalles.*.costo_unitario'        => ['nullable','numeric','gte:0'],
+            'detalles.*.notas'                 => ['nullable','string','max:150'],
         ]);
 
         // Reglas mínimas: obra_id obligatorio si salida/resguardo
@@ -220,11 +292,13 @@ public function update(Request $request, InventarioDocumento $doc)
 
         foreach ($data['detalles'] as $d) {
             InventarioDocumentoDetalle::create([
-                'documento_id'  => $doc->id,
-                'producto_id'   => $d['producto_id'],
-                'cantidad'      => $d['cantidad'],
-                'costo_unitario'=> $d['costo_unitario'] ?? null,
-                'notas'         => $d['notas'] ?? null,
+                'documento_id'            => $doc->id,
+                'producto_id'            => $d['producto_id'],
+                'orden_compra_id'       => $d['orden_compra_id'] ?? null,
+                'orden_compra_detalle_id'=> $d['orden_compra_detalle_id'] ?? null,
+                'cantidad'              => $d['cantidad'],
+                'costo_unitario'        => $d['costo_unitario'] ?? null,
+                'notas'                 => $d['notas'] ?? null,
             ]);
         }
 
@@ -284,3 +358,4 @@ return redirect()
             ->with('status', "Documento #{$doc->id} cancelado (reversado).");
     }
 }
+

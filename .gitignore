@@ -25,3 +25,4 @@ yarn-error.log
 /graphify-out/
 
 docs/riverac3_v2.sql 
+docs/*.sql

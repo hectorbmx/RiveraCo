@@ -11,7 +11,7 @@
     'entrada' => 'Entrada',
     'salida' => 'Salida',
     'resguardo' => 'Resguardo',
-    'devolucion' => 'Devolución',
+    'devolucion' => 'Devoluci&oacute;n',
     'ajuste' => 'Ajuste',
   ][$tipo] ?? ucfirst($tipo);
 
@@ -23,7 +23,7 @@
 
   <div class="flex items-center justify-between mb-6">
     <div>
-      <h1 class="text-2xl font-semibold">Nuevo documento — {{ $tipoLabel }}</h1>
+      <h1 class="text-2xl font-semibold">Nuevo documento &mdash; {!! $tipoLabel !!}</h1>
       <p class="text-slate-500 text-sm">Captura cabecera y partidas. Puedes guardar como borrador o aplicar.</p>
     </div>
 
@@ -46,12 +46,12 @@
       <h2 class="font-semibold mb-4">Cabecera</h2>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {{-- Almacén --}}
+        {{-- Almac&eacute;n --}}
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Almacén *</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Almac&eacute;n *</label>
           <select name="almacen_id" required
                   class="w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-200">
-            <option value="">Selecciona…</option>
+            <option value="">Selecciona&hellip;</option>
             @foreach(($almacenes ?? []) as $a)
               <option value="{{ $a->id }}" @selected(old('almacen_id')==$a->id)>{{ $a->nombre }}</option>
             @endforeach
@@ -77,7 +77,7 @@
         <input type="text" 
                x-model="search" 
                @input.debounce.300ms="buscar()"
-               placeholder="Escribe RFC o nombre (mín. 3 letras)..."
+               placeholder="Escribe RFC o nombre (m&iacute;n. 3 letras)..."
                class="w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-200 text-sm">
         
         <div x-show="loading" class="absolute right-3 top-2.5">
@@ -103,32 +103,6 @@
     @error('proveedor_id')<div class="text-red-600 text-xs mt-1">{{ $message }}</div>@enderror
   </div>
 @endif
-@if($tipo === 'entrada')
-
-
-    <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">
-            Orden de compra (opcional)
-        </label>
-
-        <select  id="orden_compra_id" name="orden_compra_id"
-                class="w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-200">
-            <option value="">Sin orden de compra</option>
-
-            @foreach($ordenesCompra as $oc)
-                <option value="{{ $oc->id }}" @selected(old('orden_compra_id') == $oc->id)>
-                    {{ $oc->folio ?? 'OC #'.$oc->id }}
-                    — {{ $oc->proveedor->nombre ?? 'Sin proveedor' }}
-                    — {{ ucfirst($oc->estado) }}
-                </option>
-            @endforeach
-        </select>
-
-        @error('orden_compra_id')
-            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-        @enderror
-    </div>
-@endif
 
         {{-- Obra (si aplica) --}}
         @if($needsObra)
@@ -136,7 +110,7 @@
             <label class="block text-sm font-medium text-slate-700 mb-1">Obra *</label>
             <select name="obra_id" 
                     class="w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-200">
-              <option value="">Selecciona…</option>
+              <option value="">Selecciona&hellip;</option>
               @foreach(($obras ?? []) as $o)
                 <option value="{{ $o->id }}" @selected(old('obra_id')==$o->id)>{{ $o->clave_obra }}</option>
               @endforeach
@@ -152,7 +126,7 @@
           </label>
           <input type="text" name="motivo" {{ $needsMotivo ? 'required' : '' }}
                  value="{{ old('motivo') }}"
-                 placeholder="{{ $tipo==='entrada' ? 'Ej. Compra directa, recepción, etc.' : 'Opcional' }}"
+                 placeholder="{{ $tipo==='entrada' ? 'Ej. Compra directa, recepcion, etc.' : 'Opcional' }}"
                  class="w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-200">
           @error('motivo')<div class="text-red-600 text-xs mt-1">{{ $message }}</div>@enderror
         </div>
@@ -162,7 +136,7 @@
           <label class="block text-sm font-medium text-slate-700 mb-1">Notas (opcional)</label>
           <textarea name="notas" rows="2"
                     class="w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-200"
-                    placeholder="Observaciones…">{{ old('notas') }}</textarea>
+                    placeholder="Observaciones&hellip;">{{ old('notas') }}</textarea>
           @error('notas')<div class="text-red-600 text-xs mt-1">{{ $message }}</div>@enderror
         </div>
 
@@ -184,10 +158,55 @@
 
 {{-- CARD: Partidas --}}
 <div class="bg-white rounded-2xl border border-slate-200 p-5" x-data="documentoPartidas()">
+  @if($tipo === 'entrada')
+    <div class="mb-5">
+        <label class="block text-sm font-medium text-slate-700 mb-1">
+            Orden de compra (opcional)
+        </label>
+
+        <div class="relative">
+            <input type="text"
+                   x-model="ocSearch"
+                   @input.debounce.300ms="buscarOrdenesCompra()"
+                   placeholder="Busca folio, proveedor o RFC..."
+                   class="w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-200 text-sm">
+
+            <div x-show="ocLoading" class="absolute right-3 top-2.5">
+                <svg class="animate-spin h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <div x-show="ocResults.length > 0"
+             class="relative z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-auto"
+             @click.away="ocResults = []">
+            <template x-for="oc in ocResults" :key="oc.id">
+                <button type="button"
+                        @click="selectOrdenCompra(oc)"
+                        class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 border-b border-slate-50 last:border-0">
+                    <div class="font-medium text-slate-800" x-text="oc.folio"></div>
+                    <div class="text-xs text-slate-500" x-text="oc.proveedor"></div>
+                </button>
+            </template>
+        </div>
+
+        <div x-show="selectedOrders.length > 0" class="mt-3 flex flex-wrap gap-2">
+            <template x-for="oc in selectedOrders" :key="oc.id">
+                <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 text-slate-700 px-2.5 py-1 text-xs font-medium">
+                    <span x-text="oc.folio"></span>
+                    <button type="button" @click="removeOrder(oc.id)" class="text-slate-500 hover:text-red-500" aria-label="Quitar orden">&times;</button>
+                </span>
+            </template>
+        </div>
+    </div>
+  @endif
+
   <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
     <div>
         <h2 class="font-semibold mb-2">Partidas</h2>
-        <p class="text-xs text-slate-500">Busca un producto para añadirlo a la lista</p>
+        <p class="text-xs text-slate-500">Busca un producto para a&ntilde;adirlo a la lista</p>
     </div>
 
     <div class="relative flex-1 max-w-xl">
@@ -197,7 +216,7 @@
                        x-model="search" 
                        @input.debounce.300ms="buscar()"
                        @keydown.enter.prevent="if(selectedProduct) addRow()"
-                       placeholder="Buscar producto por nombre o descripción..."
+                       placeholder="Buscar producto por nombre o descripci&oacute;n..."
                        class="w-full rounded-xl border-slate-200 text-sm focus:border-[#0B265A] focus:ring-0">
                 
                 <div x-show="results.length > 0" 
@@ -211,7 +230,7 @@
                             <div class="text-[10px] text-slate-400 uppercase tracking-wider" x-text="p.descripcion ? p.descripcion.substring(0, 60) + '...' : ''"></div>
                             <div x-show="isCostoReferencia" class="mt-1 text-xs text-slate-500">
                                 <span>Stock: </span><span x-text="formatNumber(p.stock_actual)"></span>
-                                <span class="mx-1">·</span>
+                                <span class="mx-1">&middot;</span>
                                 <span>Costo prom.: $</span><span x-text="formatMoney(p.costo_promedio)"></span>
                             </div>
                         </button>
@@ -235,17 +254,23 @@
         <tr class="border-b">
           <th class="text-left py-3 pr-3">Producto</th>
           <th class="text-left py-3 pr-3 w-32">Cantidad</th>
-          <!-- <th class="text-left py-3 pr-3 w-40">Costo unitario</th> -->
+          @if(in_array($tipo, ['entrada','ajuste'], true))
+            <th class="text-left py-3 pr-3 w-40">Costo unitario</th>
+          @endif
           <th class="text-left py-3 pr-3">Notas</th>
           <th class="text-right py-3 w-16"></th>
         </tr>
       </thead>
       <tbody>
         <template x-for="(item, index) in partidas" :key="index">
-            <tr class="border-b align-top bg-white">
+            <tr class="border-b align-top" :class="item.requiere_vinculo_producto ? 'bg-amber-50' : 'bg-white'">
               <td class="py-3 pr-3">
-                <div class="font-medium text-slate-700" x-text="item.nombre"></div>
+                <div class="font-medium" :class="item.requiere_vinculo_producto ? 'text-amber-900' : 'text-slate-700'" x-text="item.nombre"></div>
+                <p x-show="item.requiere_vinculo_producto" class="mt-1 text-xs text-amber-700">Esta partida de la OC no esta vinculada a un producto de inventario.</p>
                 <input type="hidden" :name="`detalles[${index}][producto_id]`" :value="item.producto_id">
+                <input type="hidden" :name="`detalles[${index}][orden_compra_id]`" :value="item.orden_compra_id || ''">
+                <input type="hidden" :name="`detalles[${index}][orden_compra_detalle_id]`" :value="item.orden_compra_detalle_id || ''">
+
               </td>
               <td class="py-3 pr-3">
                 <input type="number" step="0.001" min="0.001" required
@@ -253,17 +278,16 @@
                        x-model="item.cantidad"
                        class="w-full rounded-lg border-slate-200 text-sm">
               </td>
-              <!-- <td class="py-3 pr-3">
-                <input type="number" step="0.0001"
-                       :name="`detalles[${index}][costo_unitario]`"
-                       x-model="item.costo_unitario"
-                       :required="isCostRequired"
-                       :readonly="isCostoReferencia"
-                       :title="isCostoReferencia ? 'Costo promedio de inventario; se usa como referencia en salidas.' : ''"
-                       :class="isCostoReferencia ? 'bg-slate-100 text-slate-600 cursor-not-allowed' : ''"
-                       class="w-full rounded-lg border-slate-200 text-sm">
-                <p x-show="isCostoReferencia" class="mt-1 text-[11px] text-slate-500">Referencia costo promedio</p>
-              </td> -->
+              @if(in_array($tipo, ['entrada','ajuste'], true))
+                <td class="py-3 pr-3">
+                  <input type="number" step="0.0001" min="0" required
+                         :name="`detalles[${index}][costo_unitario]`"
+                         x-model="item.costo_unitario"
+                         class="w-full rounded-lg border-slate-200 text-sm">
+                </td>
+              @else
+                <input type="hidden" :name="`detalles[${index}][costo_unitario]`" :value="item.costo_unitario || 0">
+              @endif
               <td class="py-3 pr-3">
                 <input type="text" :name="`detalles[${index}][notas]`"
                        x-model="item.notas"
@@ -301,11 +325,11 @@
   </form>
 </div>
 
-{{-- JS mínimo para filas --}}
+{{-- JS minimo para filas --}}
 <script>
 
 /**
- * Lógica para el selector de Orden de Compra (Vanilla JS)
+ * Logica para el selector de Orden de Compra (Vanilla JS)
  */
 document.addEventListener('DOMContentLoaded', () => {
     const ordenCompraSelect = document.getElementById('orden_compra_id');
@@ -317,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Componente para la búsqueda de Proveedores
+ * Componente para la busqueda de Proveedores
  */
 function buscadorProveedor() {
     return {
@@ -349,16 +373,99 @@ function buscadorProveedor() {
 }
 
 /**
- * Componente principal de Partidas (Reemplaza toda la lógica manual anterior)
+ * Componente principal de Partidas (Reemplaza toda la logica manual anterior)
  */
 function documentoPartidas() {
     return {
         search: '',
         results: [],
         selectedProduct: null,
-        partidas: [], // Este array controla la tabla automáticamente
+        partidas: [], // Este array controla la tabla automaticamente
         tipoDoc: @json($tipo), // 'entrada', 'salida', 'ajuste'
         ajusteTipo: 'incremento', // Vinculado a x-model del select de ajuste
+        ocSearch: '',
+        ocResults: [],
+        selectedOrders: [],
+        ocLoading: false,
+
+        async buscarOrdenesCompra() {
+            if (this.ocSearch.length < 2) {
+                this.ocResults = [];
+                return;
+            }
+
+            this.ocLoading = true;
+            try {
+                const response = await fetch(`{{ route('inventario.documentos.buscar-ordenes-compra') }}?q=${encodeURIComponent(this.ocSearch)}`);
+                this.ocResults = await response.json();
+            } catch (e) {
+                console.error('Error al buscar ordenes de compra', e);
+                this.ocResults = [];
+            } finally {
+                this.ocLoading = false;
+            }
+        },
+
+        async selectOrdenCompra(order) {
+            if (!order || !order.id) return;
+
+            const exists = this.selectedOrders.some(item => item.id === order.id);
+            if (exists) {
+                this.ocResults = [];
+                this.ocSearch = '';
+                return;
+            }
+
+            this.ocLoading = true;
+
+            try {
+                const response = await fetch(`{{ route('inventario.documentos.orden-compra-detalles', ['ordenCompra' => ':id']) }}`.replace(':id', order.id));
+
+                if (!response.ok) {
+                    console.error('La orden de compra no esta autorizada o no se pudo consultar.');
+                    return;
+                }
+
+                const data = await response.json();
+
+                this.selectedOrders.push({
+                    id: data.id,
+                    folio: data.folio,
+                    proveedor: data.proveedor,
+                    estado: data.estado,
+                });
+
+                this.ocResults = [];
+                this.ocSearch = '';
+
+                (data.detalles || []).forEach((detalle) => {
+                    const exists = this.partidas.some((item) => item.orden_compra_detalle_id && item.orden_compra_detalle_id === detalle.orden_compra_detalle_id);
+                    if (exists) return;
+
+                    const unidad = detalle.unidad ? ` (${detalle.unidad})` : '';
+
+                    this.partidas.push({
+                        producto_id: detalle.producto_id,
+                        requiere_vinculo_producto: detalle.requiere_vinculo_producto || false,
+                        nombre: `${detalle.nombre}${unidad}`,
+                        cantidad: detalle.cantidad ?? detalle.cantidad_pendiente ?? 1,
+                        orden_compra_id: detalle.orden_compra_id,
+                        orden_compra_detalle_id: detalle.orden_compra_detalle_id,
+                        costo_unitario: detalle.costo_unitario ?? 0,
+                        notas: detalle.notas || '',
+                    });
+                });
+            } catch (e) {
+                console.error('Error al cargar detalles de la orden de compra', e);
+            } finally {
+                this.ocLoading = false;
+            }
+        },
+
+        removeOrder(orderId) {
+            this.partidas = this.partidas.filter(item => item.orden_compra_id !== orderId);
+            this.selectedOrders = this.selectedOrders.filter(item => item.id !== orderId);
+        },
 
         async buscar() {
             if (this.search.length < 3) {
@@ -392,7 +499,7 @@ function documentoPartidas() {
 
             const tempId = 'qty-' + Date.now();
 
-            // Al añadir al array, Alpine renderiza el <tr> automáticamente
+            // Al anadir al array, Alpine renderiza el <tr> automaticamente
             this.partidas.push({
                 producto_id: this.selectedProduct.id,
                 nombre: this.selectedProduct.nombre,
@@ -417,7 +524,7 @@ function documentoPartidas() {
         },
 
         removeRow(index) {
-            // No es necesario buscar el botón ni el .closest('tr')
+            // No es necesario buscar el boton ni el .closest('tr')
             this.partidas.splice(index, 1);
         },
 
@@ -455,3 +562,4 @@ function documentoPartidas() {
 }
 </script>
 @endsection
+

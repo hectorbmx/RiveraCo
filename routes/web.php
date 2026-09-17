@@ -118,6 +118,10 @@ Route::get('/', function () {
       return redirect()->route('login');
 });
 
+Route::get('/privacidad', function () {
+    return view('privacidad.index');
+})->name('privacidad');
+
 Route::middleware(['auth', 'verified'])
     ->prefix('sat')
     ->name('sat.')
@@ -438,7 +442,9 @@ Route::middleware('auth','verified')->group(function () {
         Route::get('stock', [InventarioStockController::class, 'view'])->name('inventario.stock.index');
 
         Route::get('documentos/buscar-proveedor', [InventarioDocumentoController::class, 'buscarProveedor'])->name('inventario.documentos.buscar-proveedor');
-        Route::get('documentos/buscar-producto',  [InventarioDocumentoController::class, 'buscarProducto'])->name('inventario.documentos.buscar-producto');
+        Route::get('documentos/buscar-producto', [InventarioDocumentoController::class, 'buscarProducto'])->name('inventario.documentos.buscar-producto');
+        Route::get('documentos/buscar-ordenes-compra', [InventarioDocumentoController::class, 'buscarOrdenesCompra'])->name('inventario.documentos.buscar-ordenes-compra');
+        Route::get('documentos/ordenes-compra/{ordenCompra}', [InventarioDocumentoController::class, 'detalleOrdenCompra'])->name('inventario.documentos.orden-compra-detalles');
 
         Route::get('stock.json', [InventarioStockController::class, 'index'])->name('inventario.stock.index.json');
         // DOCUMENTOS (MOVIMIENTOS)

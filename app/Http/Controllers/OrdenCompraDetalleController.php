@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateOrdenCompraDetalleRequest;
 use App\Models\OrdenCompra;
 use App\Models\OrdenCompraDetalle;
 use App\Models\ObraCivilInsumo;
+use App\Models\Producto;
 use App\Models\TipoRetencion;
 use App\Services\OrdenCompraTotalesService;
 use Illuminate\Http\Request;
@@ -69,9 +70,13 @@ class OrdenCompraDetalleController extends Controller
                 ->firstOrFail();
         }
 
+        $producto = ($civilConcept || $obraCivilInsumo)
+            ? null
+            : $this->resolveProductoDetalleCompra($request, $oc);
+
         $detalle = new OrdenCompraDetalle();
         $detalle->orden_compra_id = $oc->id;
-        $detalle->producto_id = ($civilConcept || $obraCivilInsumo) ? null : $request->producto_id;
+        $detalle->producto_id = $producto?->id;
         $detalle->civil_concept_id = $obraCivilInsumo ? null : $civilConcept?->id;
         $detalle->obra_civil_insumo_id = $obraCivilInsumo?->id;
         $detalle->legacy_prod_id = ($civilConcept || $obraCivilInsumo) ? null : $request->legacy_prod_id;
@@ -174,6 +179,126 @@ class OrdenCompraDetalleController extends Controller
             ->firstOrFail();
     }
 
+    private function resolveProductoDetalleCompra(Request $request, OrdenCompra $oc): Producto
+    {
+        $contexto = $this->contextoProductoOrdenCompra($oc);
+
+        if ($request->filled('producto_id')) {
+            $query = Producto::query()
+                ->where('activo', true);
+
+            $this->aplicarAlcanceProductoContexto($query, $contexto);
+
+            return $query
+                ->findOrFail($request->integer('producto_id'));
+        }
+
+        $nombre = $this->normalizarNombreProducto($request->input('descripcion', ''));
+        $unidad = $this->normalizarUnidadProducto($request->input('unidad', ''));
+
+        $productoQuery = Producto::query()
+            ->where('activo', true);
+
+        $this->aplicarAlcanceProductoContexto($productoQuery, $contexto);
+
+        $producto = $productoQuery
+            ->whereRaw('UPPER(TRIM(nombre)) = ?', [mb_strtoupper($nombre, 'UTF-8')])
+            ->when(
+                $unidad !== '',
+                fn ($query) => $query->whereRaw("UPPER(TRIM(COALESCE(unidad, ''))) = ?", [$unidad]),
+                fn ($query) => $query->where(fn ($unitQuery) => $unitQuery->whereNull('unidad')->orWhere('unidad', ''))
+            )
+            ->first();
+
+        if ($producto) {
+            return $producto;
+        }
+
+        $attributes = [
+            'nombre' => $nombre,
+            'descripcion' => $nombre,
+            'sku' => $this->generarSkuProductoAutoOc($contexto),
+            'unidad' => $unidad !== '' ? $unidad : null,
+            'iva_default' => $request->filled('iva') ? (float) $request->iva : null,
+            'activo' => true,
+        ];
+
+        if ($contexto === 'huentitan') {
+            $attributes = array_merge($attributes, [
+                'tipo_inventario' => 'materia_prima',
+                'origen_abastecimiento' => 'compra',
+                'requiere_formula' => false,
+                'stock_minimo' => 0,
+                'punto_reorden' => 0,
+            ]);
+        }
+
+        return Producto::create($attributes);
+    }
+
+    private function contextoProductoOrdenCompra(OrdenCompra $oc): string
+    {
+        $oc->loadMissing('areaCatalogo');
+
+        $codigoArea = mb_strtoupper(trim((string) ($oc->areaCatalogo?->codigo ?? '')), 'UTF-8');
+        $nombreArea = mb_strtoupper(trim((string) ($oc->areaCatalogo?->nombre ?? $oc->area ?? '')), 'UTF-8');
+
+        if ($codigoArea === 'HT' || str_contains($nombreArea, 'HUENTITAN') || str_contains($nombreArea, 'HUNTITAN')) {
+            return 'huentitan';
+        }
+
+        return 'general';
+    }
+
+    private function aplicarAlcanceProductoContexto($query, string $contexto): void
+    {
+        if ($contexto === 'huentitan') {
+            $query->where('sku', 'like', 'HUE-%');
+
+            return;
+        }
+
+        $query->where(function ($scope) {
+            $scope->whereNull('sku')
+                ->orWhere('sku', 'not like', 'HUE-%');
+        });
+    }
+
+    private function normalizarNombreProducto(?string $value): string
+    {
+        return trim((string) preg_replace('/\s+/u', ' ', (string) $value));
+    }
+
+    private function normalizarUnidadProducto(?string $value): string
+    {
+        return mb_strtoupper(trim((string) preg_replace('/\s+/u', ' ', (string) $value)), 'UTF-8');
+    }
+
+    private function generarSkuProductoAutoOc(string $contexto = 'general'): string
+    {
+        $prefix = $contexto === 'huentitan' ? 'HUE-' : 'OC-AUTO-';
+        $padding = $contexto === 'huentitan' ? 4 : 6;
+
+        $lastSku = Producto::query()
+            ->where('sku', 'like', $prefix . '%')
+            ->orderByDesc('id')
+            ->value('sku');
+
+        $next = 1;
+        $pattern = '/^' . preg_quote($prefix, '/') . '(\d+)$/';
+
+        if (preg_match($pattern, (string) $lastSku, $matches)) {
+            $next = ((int) $matches[1]) + 1;
+            $padding = max($padding, strlen($matches[1]));
+        }
+
+        do {
+            $sku = $prefix . str_pad((string) $next, $padding, '0', STR_PAD_LEFT);
+            $next++;
+        } while (Producto::query()->where('sku', $sku)->exists());
+
+        return $sku;
+    }
     private function buildObraCivilInsumoSnapshot(ObraCivilInsumo $insumo): array
     {
         $import = $insumo->import;
@@ -322,8 +447,11 @@ private function syncProductoProveedorDesdeDetalle(OrdenCompra $oc, OrdenCompraD
             $importe = $importes['importe'];
 
             $obraCivilInsumo = $this->resolveObraCivilInsumo($request, $oc);
+            $producto = $obraCivilInsumo
+                ? null
+                : $this->resolveProductoDetalleCompra($request, $oc);
 
-            $detalle->producto_id     = $obraCivilInsumo ? null : $request->producto_id;
+            $detalle->producto_id     = $producto?->id;
             $detalle->civil_concept_id = $obraCivilInsumo ? null : $request->civil_concept_id;
             $detalle->obra_civil_insumo_id = $obraCivilInsumo?->id;
             $detalle->legacy_prod_id  = $obraCivilInsumo ? null : $request->legacy_prod_id;
@@ -374,6 +502,8 @@ private function syncProductoProveedorDesdeDetalle(OrdenCompra $oc, OrdenCompraD
 
             $detalle->save();
 
+            $this->syncProductoProveedorDesdeDetalle($oc, $detalle);
+
             OrdenCompraTotalesService::recalcular($oc);
 
             if ($request->expectsJson()) {
@@ -401,3 +531,5 @@ private function syncProductoProveedorDesdeDetalle(OrdenCompra $oc, OrdenCompraD
         });
     }
 }
+
+
