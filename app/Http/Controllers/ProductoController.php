@@ -5,6 +5,7 @@ use App\Models\Producto;
 use App\Models\Proveedor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Support\Inventario\UnidadMedidaCatalogo;
 
 
 class ProductoController extends Controller
@@ -47,7 +48,8 @@ class ProductoController extends Controller
         $producto = new Producto();
         $producto->tipo = 'PRODUCTO';
         $producto->activo = 1;
-        return view('productos.create', compact('producto'));
+        $unidades = UnidadMedidaCatalogo::opciones();
+        return view('productos.create', compact('producto', 'unidades'));
     }
 
     public function store(Request $request)
@@ -56,11 +58,12 @@ class ProductoController extends Controller
             'nombre' => ['required','string','max:255'],
             'descripcion' => ['nullable','string','max:500'],
             'sku' => ['nullable','string','max:100','unique:productos,sku'],
-            'unidad' => ['nullable','string','max:50'],
+            'unidad' => ['nullable', UnidadMedidaCatalogo::regla()],
             'tipo' => ['nullable','string','max:20'],
             'activo' => ['nullable','boolean'],
         ]);
 
+        $data['unidad'] = UnidadMedidaCatalogo::normalizar($data['unidad'] ?? null);
         $data['activo'] = (bool)($data['activo'] ?? 1);
         $data['tipo'] = $data['tipo'] ?? 'PRODUCTO';
 
@@ -98,7 +101,7 @@ class ProductoController extends Controller
     //             }]);
 
     //             $proveedores = Proveedor::where('activo', 1)->orderBy('nombre')->get(['id','nombre','rfc']);
-    //             return view('productos.edit', compact('producto', 'tab', 'proveedores'));
+    //             return view('productos.edit', compact('producto', 'tab', 'proveedores', 'unidades'));
 
                 
     //         }
@@ -109,6 +112,7 @@ class ProductoController extends Controller
     public function edit(Producto $producto, Request $request)
 {
     $tab = $request->get('tab', 'general',);
+    $unidades = UnidadMedidaCatalogo::opciones();
   $historialCostos = null;
     if ($tab === 'proveedores') {
         $producto->load(['proveedores' => function ($q) {
@@ -116,7 +120,7 @@ class ProductoController extends Controller
         }]);
 
         $proveedores = Proveedor::where('activo', 1)->orderBy('nombre')->get(['id','nombre','rfc']);
-        return view('productos.edit', compact('producto', 'tab', 'proveedores'));
+        return view('productos.edit', compact('producto', 'tab', 'proveedores', 'unidades'));
     }
     if ($tab === 'costos'){
         $historialCostos = DB::table('producto_proveedor_precios as h')
@@ -181,12 +185,12 @@ class ProductoController extends Controller
         $movimientos = $q->paginate(30)->withQueryString();
 
         return view('productos.edit', compact(
-            'producto','tab','movimientos','almacenes','almacenId','desde','hasta',
+            'producto','tab','movimientos','almacenes','almacenId','desde','hasta','unidades',
         ));
     }
 
     // costos: placeholder por ahora
-    return view('productos.edit', compact('producto', 'tab','historialCostos'));
+    return view('productos.edit', compact('producto', 'tab','historialCostos', 'unidades'));
 }
 
     public function proveedoresAttach(Request $request, Producto $producto)
@@ -322,11 +326,12 @@ public function proveedoresUpdate(Request $request, Producto $producto, Proveedo
             'nombre' => ['required','string','max:255'],
             'descripcion' => ['nullable','string','max:500'],
             'sku' => ['nullable','string','max:100','unique:productos,sku,' . $producto->id],
-            'unidad' => ['nullable','string','max:50'],
+            'unidad' => ['nullable', UnidadMedidaCatalogo::regla()],
             'tipo' => ['nullable','string','max:20'],
             'activo' => ['nullable','boolean'],
         ]);
 
+        $data['unidad'] = UnidadMedidaCatalogo::normalizar($data['unidad'] ?? null);
         $data['activo'] = (bool)($data['activo'] ?? 0);
 
         $producto->update($data);
@@ -412,3 +417,4 @@ public function proveedoresUpdate(Request $request, Producto $producto, Proveedo
             }));
         }
 }
+

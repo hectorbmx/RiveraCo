@@ -303,12 +303,20 @@
                     <form method="POST" action="{{ route('huentitan.productos.formula.update', $producto) }}" class="border rounded-lg p-5 space-y-4">
                         @csrf
                         @method('PATCH')
-                        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                        <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-3">
                             <div>
                                 <h2 class="text-sm font-semibold text-gray-900">Formula de fabricacion</h2>
                                 <p class="mt-1 text-sm text-gray-600">Define el consumo esperado para fabricar la cantidad base de este producto.</p>
                             </div>
-                            <div class="text-sm font-semibold text-[#0B265A]">Costo base: ${{ number_format((float) $costoFormulaEstimado, 2) }} &middot; Unitario: ${{ number_format((float) $costoFormulaUnitario, 2) }}</div>
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                                <div class="text-sm font-semibold text-[#0B265A]">
+                                    Materiales: ${{ number_format((float) ($costoMaterialesFormula ?? 0), 2) }} &middot; Herramientas: ${{ number_format((float) ($costoHerramientasFormula ?? 0), 2) }} &middot; Total: ${{ number_format((float) $costoFormulaEstimado, 2) }} &middot; Unitario: ${{ number_format((float) $costoFormulaUnitario, 2) }}
+                                </div>
+                                <div class="flex gap-2">
+                                    <button type="button" data-open-modal="modal-material-formula" class="px-3 py-2 rounded-md bg-[#FFC107] text-[#0B265A] text-xs font-semibold hover:opacity-90">Agregar material</button>
+                                    <button type="button" data-open-modal="modal-herramienta-formula" class="px-3 py-2 rounded-md bg-[#0B265A] text-white text-xs font-semibold hover:bg-[#12336f]">Agregar herramienta</button>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
@@ -318,7 +326,12 @@
                             </label>
                             <label class="block">
                                 <span class="block text-xs font-semibold text-gray-500 mb-1">Unidad base</span>
-                                <input type="text" name="unidad_base" value="{{ old('unidad_base', $formulaProducto->unidad_base ?? $producto->unidad) }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                @php($formulaUnidadBase = old('unidad_base', $formulaProducto->unidad_base ?? ($producto->unidad_base ?: $producto->unidad)))
+                                <select name="unidad_base" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                    @foreach($unidadesBase as $codigo => $nombre)
+                                        <option value="{{ $codigo }}" @selected($formulaUnidadBase === $codigo)>{{ $codigo }} - {{ $nombre }}</option>
+                                    @endforeach
+                                </select>
                             </label>
                             <label class="block">
                                 <span class="block text-xs font-semibold text-gray-500 mb-1">Merma esperada %</span>
@@ -340,40 +353,117 @@
                         </div>
                     </form>
 
-                    <form method="POST" action="{{ route('huentitan.productos.formula-materiales.store', $producto) }}" class="border rounded-lg p-5 space-y-4">
-                        @csrf
-                        <h3 class="text-sm font-semibold text-gray-900">Agregar material</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 text-sm items-end">
-                            <div class="block md:col-span-5 relative" data-formula-material-search data-search-url="{{ route('huentitan.productos.formula-materiales.buscar', $producto) }}">
-                                <label class="block">
-                                    <span class="block text-xs font-semibold text-gray-500 mb-1">Material HUENTITAN</span>
-                                    <input type="hidden" name="material_producto_id" data-material-id value="{{ old('material_producto_id') }}">
-                                    <input type="text" data-material-search-input autocomplete="off" placeholder="Buscar por nombre o codigo" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]" required>
+                    <div id="modal-material-formula" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6" data-formula-modal>
+                        <div class="w-full max-w-3xl rounded-lg bg-white shadow-xl">
+                            <div class="flex items-center justify-between border-b px-5 py-4">
+                                <h3 class="text-sm font-semibold text-gray-900">Agregar material</h3>
+                                <button type="button" data-close-modal class="text-sm font-semibold text-gray-500 hover:text-gray-900">Cerrar</button>
+                            </div>
+                            <form method="POST" action="{{ route('huentitan.productos.formula-materiales.store', $producto) }}" class="p-5 space-y-4">
+                                @csrf
+                                <div class="grid grid-cols-1 md:grid-cols-12 gap-3 text-sm items-end">
+                                    <div class="block md:col-span-6 relative" data-formula-material-search data-search-url="{{ route('huentitan.productos.formula-materiales.buscar', $producto) }}">
+                                        <label class="block">
+                                            <span class="block text-xs font-semibold text-gray-500 mb-1">Material HUENTITAN</span>
+                                            <input type="hidden" name="material_producto_id" data-material-id value="{{ old('material_producto_id') }}">
+                                            <input type="text" data-material-search-input autocomplete="off" placeholder="Buscar por nombre o codigo" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]" required>
+                                        </label>
+                                        <div data-material-selected class="mt-2 hidden rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-[#0B265A]"></div>
+                                        <div data-material-results class="absolute z-20 mt-1 hidden max-h-64 w-full overflow-y-auto rounded-md border bg-white shadow-lg"></div>
+                                    </div>
+                                    <label class="block md:col-span-2">
+                                        <span class="block text-xs font-semibold text-gray-500 mb-1">Cantidad</span>
+                                        <input type="number" step="0.001" min="0.001" name="cantidad" value="{{ old('cantidad') }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]" required>
+                                    </label>
+                                    <label class="block md:col-span-2">
+                                        <span class="block text-xs font-semibold text-gray-500 mb-1">Unidad</span>
+                                        @php($materialUnidad = old('unidad'))
+                                        <select name="unidad" data-material-unit class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                            <option value="">Usar unidad del material</option>
+                                            @foreach($unidadesBase as $codigo => $nombre)
+                                                <option value="{{ $codigo }}" @selected($materialUnidad === $codigo)>{{ $codigo }} - {{ $nombre }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+                                    <label class="block md:col-span-2">
+                                        <span class="block text-xs font-semibold text-gray-500 mb-1">Merma %</span>
+                                        <input type="number" step="0.001" min="0" max="100" name="merma_porcentaje" value="{{ old('merma_porcentaje', 0) }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                    </label>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm items-end">
+                                    <label class="block">
+                                        <span class="block text-xs font-semibold text-gray-500 mb-1">Metodo costo</span>
+                                        <select name="metodo_costo" data-material-cost-method class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                            <option value="promedio_inventario">Promedio inventario</option>
+                                            <option value="manual">Manual</option>
+                                        </select>
+                                    </label>
+                                    <label class="block">
+                                        <span class="block text-xs font-semibold text-gray-500 mb-1">Costo promedio detectado</span>
+                                        <input type="text" data-material-average-cost readonly value="$0.0000" class="w-full rounded-md border-slate-200 bg-gray-50 text-sm text-gray-700">
+                                    </label>
+                                    <label class="block">
+                                        <span class="block text-xs font-semibold text-gray-500 mb-1">Costo manual</span>
+                                        <input type="number" step="0.0001" min="0" name="costo_unitario_override" data-material-manual-cost class="w-full rounded-md border-slate-200 bg-gray-50 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                    </label>
+                                </div>
+                                <label class="block text-sm">
+                                    <span class="block text-xs font-semibold text-gray-500 mb-1">Notas del material</span>
+                                    <input type="text" name="notas" value="{{ old('notas') }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
                                 </label>
-                                <div data-material-selected class="mt-2 hidden rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-[#0B265A]"></div>
-                                <div data-material-results class="absolute z-20 mt-1 hidden max-h-64 w-full overflow-y-auto rounded-md border bg-white shadow-lg"></div>
-                            </div>
-                            <label class="block md:col-span-2">
-                                <span class="block text-xs font-semibold text-gray-500 mb-1">Cantidad</span>
-                                <input type="number" step="0.001" min="0.001" name="cantidad" value="{{ old('cantidad') }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]" required>
-                            </label>
-                            <label class="block md:col-span-2">
-                                <span class="block text-xs font-semibold text-gray-500 mb-1">Unidad</span>
-                                <input type="text" name="unidad" value="{{ old('unidad') }}" data-material-unit readonly class="w-full rounded-md border-slate-200 bg-gray-50 text-sm text-gray-700 focus:border-[#0B265A] focus:ring-[#0B265A]">
-                            </label>
-                            <label class="block md:col-span-2">
-                                <span class="block text-xs font-semibold text-gray-500 mb-1">Merma %</span>
-                                <input type="number" step="0.001" min="0" max="100" name="merma_porcentaje" value="{{ old('merma_porcentaje', 0) }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
-                            </label>
-                            <div class="md:col-span-1">
-                                <button class="w-full px-3 py-2 rounded-md bg-[#FFC107] text-[#0B265A] text-sm font-semibold hover:opacity-90">Agregar</button>
-                            </div>
+                                <div class="flex justify-end gap-2">
+                                    <button type="button" data-close-modal class="px-4 py-2 rounded-md border text-sm font-medium hover:bg-gray-50">Cancelar</button>
+                                    <button class="px-4 py-2 rounded-md bg-[#FFC107] text-[#0B265A] text-sm font-semibold hover:opacity-90">Agregar material</button>
+                                </div>
+                            </form>
                         </div>
-                        <label class="block text-sm">
-                            <span class="block text-xs font-semibold text-gray-500 mb-1">Notas del material</span>
-                            <input type="text" name="notas" value="{{ old('notas') }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
-                        </label>
-                    </form>
+                    </div>
+
+                    <div id="modal-herramienta-formula" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6" data-formula-modal>
+                        <div class="w-full max-w-3xl rounded-lg bg-white shadow-xl">
+                            <div class="flex items-center justify-between border-b px-5 py-4">
+                                <h3 class="text-sm font-semibold text-gray-900">Agregar herramienta al precio unitario</h3>
+                                <button type="button" data-close-modal class="text-sm font-semibold text-gray-500 hover:text-gray-900">Cerrar</button>
+                            </div>
+                            <form method="POST" action="{{ route('huentitan.productos.formula-herramientas.store', $producto) }}" class="p-5 space-y-4">
+                                @csrf
+                                <div class="grid grid-cols-1 md:grid-cols-12 gap-3 text-sm items-end">
+                                    <div class="block md:col-span-6 relative" data-formula-herramienta-search data-search-url="{{ route('huentitan.productos.formula-herramientas.buscar', $producto) }}">
+                                        <label class="block">
+                                            <span class="block text-xs font-semibold text-gray-500 mb-1">Herramienta HUENTITAN</span>
+                                            <input type="hidden" name="herramienta_id" data-herramienta-id value="{{ old('herramienta_id') }}">
+                                            <input type="text" data-herramienta-search-input autocomplete="off" placeholder="Buscar por nombre, codigo o serie" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]" required>
+                                        </label>
+                                        <div data-herramienta-selected class="mt-2 hidden rounded-md border border-yellow-100 bg-yellow-50 px-3 py-2 text-xs text-yellow-900"></div>
+                                        <div data-herramienta-results class="absolute z-20 mt-1 hidden max-h-64 w-full overflow-y-auto rounded-md border bg-white shadow-lg"></div>
+                                    </div>
+                                    <label class="block md:col-span-2">
+                                        <span class="block text-xs font-semibold text-gray-500 mb-1">Cantidad</span>
+                                        <input type="number" step="0.001" min="0.001" name="cantidad" value="{{ old('cantidad', 1) }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]" required>
+                                    </label>
+                                    <label class="block md:col-span-2">
+                                        <span class="block text-xs font-semibold text-gray-500 mb-1">Costo aplicado</span>
+                                        <input type="number" step="0.0001" min="0" name="costo_unitario_aplicado" value="{{ old('costo_unitario_aplicado') }}" data-herramienta-costo class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]" required>
+                                    </label>
+                                    <label class="block md:col-span-2">
+                                        <span class="block text-xs font-semibold text-gray-500 mb-1">Metodo</span>
+                                        <select name="metodo_calculo" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                            <option value="manual">Manual</option>
+                                            <option value="prorrateo_por_piezas">Prorrateo por piezas</option>
+                                        </select>
+                                    </label>
+                                </div>
+                                <label class="block text-sm">
+                                    <span class="block text-xs font-semibold text-gray-500 mb-1">Notas de herramienta</span>
+                                    <input type="text" name="notas" value="{{ old('notas') }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                </label>
+                                <div class="flex justify-end gap-2">
+                                    <button type="button" data-close-modal class="px-4 py-2 rounded-md border text-sm font-medium hover:bg-gray-50">Cancelar</button>
+                                    <button class="px-4 py-2 rounded-md bg-[#0B265A] text-white text-sm font-semibold hover:bg-[#12336f]">Agregar herramienta</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
 
                     <div class="border rounded-lg overflow-hidden">
                         <div class="px-4 py-3 bg-gray-50 border-b flex items-center justify-between gap-3">
@@ -388,7 +478,7 @@
                                         <th class="px-3 py-2 text-right">Cantidad</th>
                                         <th class="px-3 py-2 text-right">Merma</th>
                                         <th class="px-3 py-2 text-right">Stock disp.</th>
-                                        <th class="px-3 py-2 text-right">Costo prom.</th>
+                                        <th class="px-3 py-2 text-right">Costo unit.</th>
                                         <th class="px-3 py-2 text-right">Costo esperado</th>
                                         <th class="px-3 py-2"></th>
                                     </tr>
@@ -398,18 +488,20 @@
                                         @php
                                             $stockMaterial = $materialStockMap->get($materialFormula->material_producto_id);
                                             $cantidadConMerma = (float) $materialFormula->cantidad * (1 + ((float) $materialFormula->merma_porcentaje / 100));
-                                            $costoEsperadoMaterial = $cantidadConMerma * (float) ($stockMaterial->costo_promedio ?? 0);
+                                            $costoUnitarioMaterial = $materialFormula->metodo_costo === 'manual' ? (float) ($materialFormula->costo_unitario_override ?? 0) : (float) ($stockMaterial->costo_promedio ?? 0);
+                                            $costoEsperadoMaterial = $cantidadConMerma * $costoUnitarioMaterial;
+                                            $metodoCostoMaterial = $materialFormula->metodo_costo === 'manual' ? 'Manual' : 'Promedio';
                                         @endphp
                                         <tr>
                                             <td class="px-3 py-2">
                                                 <div class="font-medium text-gray-900">{{ $materialFormula->material->nombre ?? 'Material no encontrado' }}</div>
-                                                <div class="text-xs text-gray-500">{{ $materialFormula->material->sku ?? '-' }}</div>
+                                                <div class="text-xs text-gray-500">{{ $materialFormula->material->sku ?? '-' }} · {{ $metodoCostoMaterial }}</div>
                                                 @if($materialFormula->notas)<div class="text-xs text-gray-500">{{ $materialFormula->notas }}</div>@endif
                                             </td>
                                             <td class="px-3 py-2 text-right">{{ number_format((float) $materialFormula->cantidad, 3) }} {{ $materialFormula->unidad }}</td>
                                             <td class="px-3 py-2 text-right">{{ number_format((float) $materialFormula->merma_porcentaje, 3) }}%</td>
                                             <td class="px-3 py-2 text-right">{{ number_format(max(0, (float) ($stockMaterial->stock_actual ?? 0) - (float) ($stockMaterial->stock_reservado ?? 0)), 3) }}</td>
-                                            <td class="px-3 py-2 text-right">${{ number_format((float) ($stockMaterial->costo_promedio ?? 0), 4) }}</td>
+                                            <td class="px-3 py-2 text-right">${{ number_format($costoUnitarioMaterial, 4) }}</td>
                                             <td class="px-3 py-2 text-right">${{ number_format($costoEsperadoMaterial, 2) }}</td>
                                             <td class="px-3 py-2 text-right">
                                                 <form method="POST" action="{{ route('huentitan.productos.formula-materiales.destroy', ['producto' => $producto->id, 'material' => $materialFormula->id]) }}">
@@ -428,9 +520,59 @@
                             </table>
                         </div>
                     </div>
+
+                    <div class="border rounded-lg overflow-hidden">
+                        <div class="px-4 py-3 bg-gray-50 border-b flex items-center justify-between gap-3">
+                            <h3 class="text-sm font-semibold text-gray-900">Herramientas del precio unitario</h3>
+                            <span class="text-xs text-gray-500">{{ $formulaProducto ? $formulaProducto->herramientas->count() : 0 }} herramientas</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50 text-gray-600">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left">Herramienta</th>
+                                        <th class="px-3 py-2 text-right">Cantidad</th>
+                                        <th class="px-3 py-2 text-right">Costo aplicado</th>
+                                        <th class="px-3 py-2 text-right">Costo esperado</th>
+                                        <th class="px-3 py-2 text-left">Metodo</th>
+                                        <th class="px-3 py-2"></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    @forelse(($formulaProducto->herramientas ?? collect()) as $herramientaFormula)
+                                        @php
+                                            $costoEsperadoHerramienta = (float) $herramientaFormula->cantidad * (float) $herramientaFormula->costo_unitario_aplicado;
+                                            $metodoHerramienta = $herramientaFormula->metodo_calculo === 'prorrateo_por_piezas' ? 'Prorrateo por piezas' : 'Manual';
+                                        @endphp
+                                        <tr>
+                                            <td class="px-3 py-2">
+                                                <div class="font-medium text-gray-900">{{ $herramientaFormula->herramienta->nombre ?? 'Herramienta no encontrada' }}</div>
+                                                <div class="text-xs text-gray-500">{{ $herramientaFormula->herramienta->codigo ?? '-' }}</div>
+                                                @if($herramientaFormula->notas)<div class="text-xs text-gray-500">{{ $herramientaFormula->notas }}</div>@endif
+                                            </td>
+                                            <td class="px-3 py-2 text-right">{{ number_format((float) $herramientaFormula->cantidad, 3) }}</td>
+                                            <td class="px-3 py-2 text-right">${{ number_format((float) $herramientaFormula->costo_unitario_aplicado, 4) }}</td>
+                                            <td class="px-3 py-2 text-right">${{ number_format($costoEsperadoHerramienta, 2) }}</td>
+                                            <td class="px-3 py-2">{{ $metodoHerramienta }}</td>
+                                            <td class="px-3 py-2 text-right">
+                                                <form method="POST" action="{{ route('huentitan.productos.formula-herramientas.destroy', ['producto' => $producto->id, 'herramienta' => $herramientaFormula->id]) }}">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button class="text-xs font-semibold text-red-600 hover:underline">Quitar</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="6" class="px-3 py-8 text-center text-gray-500">Aun no hay herramientas capturadas en el precio unitario.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             @endif
-
             @if($tab === 'proveedores')
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
@@ -523,7 +665,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const hiddenId = root.querySelector('[data-material-id]');
         const results = root.querySelector('[data-material-results]');
         const selected = root.querySelector('[data-material-selected]');
-        const unitInput = root.closest('form').querySelector('[data-material-unit]');
+        const form = root.closest('form');
+        const unitInput = form.querySelector('[data-material-unit]');
+        const costMethodInput = form.querySelector('[data-material-cost-method]');
+        const manualCostInput = form.querySelector('[data-material-manual-cost]');
+        const averageCostInput = form.querySelector('[data-material-average-cost]');
         const searchUrl = root.dataset.searchUrl;
         let timer = null;
 
@@ -537,6 +683,9 @@ document.addEventListener('DOMContentLoaded', () => {
             input.value = material.label;
             if (unitInput) {
                 unitInput.value = material.unidad || '';
+            }
+            if (averageCostInput) {
+                averageCostInput.value = '$' + Number(material.costo_promedio || 0).toFixed(4);
             }
             selected.textContent = material.label + (material.unidad ? ' / ' + material.unidad : '');
             selected.classList.remove('hidden');
@@ -565,7 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const unit = document.createElement('span');
                 unit.className = 'block text-xs text-gray-500';
-                unit.textContent = item.unidad ? 'Unidad: ' + item.unidad : 'Sin unidad';
+                unit.textContent = (item.unidad ? 'Unidad: ' + item.unidad : 'Sin unidad') + ' / costo prom. $' + Number(item.costo_promedio || 0).toFixed(4);
 
                 button.appendChild(label);
                 button.appendChild(unit);
@@ -599,12 +748,39 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 250);
         });
 
-        input.closest('form').addEventListener('submit', (event) => {
+        if (costMethodInput && manualCostInput) {
+            const syncManualCostInput = () => {
+                const isManual = costMethodInput.value === 'manual';
+                if (isManual) {
+                    manualCostInput.removeAttribute('readonly');
+                } else {
+                    manualCostInput.setAttribute('readonly', 'readonly');
+                }
+                manualCostInput.classList.toggle('bg-gray-50', !isManual);
+                manualCostInput.classList.toggle('bg-white', isManual);
+                if (!isManual) {
+                    manualCostInput.value = '';
+                }
+            };
+            costMethodInput.addEventListener('change', syncManualCostInput);
+            syncManualCostInput();
+        }
+
+        form.addEventListener('submit', (event) => {
             if (!hiddenId.value) {
                 event.preventDefault();
                 input.focus();
                 selected.textContent = 'Selecciona un material de la lista.';
                 selected.classList.remove('hidden');
+                return;
+            }
+
+            if (costMethodInput && manualCostInput && costMethodInput.value === 'manual' && Number(manualCostInput.value || 0) <= 0) {
+                event.preventDefault();
+                manualCostInput.readOnly = false;
+                manualCostInput.classList.remove('bg-gray-50');
+                manualCostInput.classList.add('bg-white');
+                manualCostInput.focus();
             }
         });
 
@@ -617,5 +793,127 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 @endpush
+@push('scripts')
+<script>
+(function () {
+    document.querySelectorAll('[data-formula-herramienta-search]').forEach((root) => {
+        const input = root.querySelector('[data-herramienta-search-input]');
+        const hiddenId = root.querySelector('[data-herramienta-id]');
+        const selected = root.querySelector('[data-herramienta-selected]');
+        const results = root.querySelector('[data-herramienta-results]');
+        const costoInput = document.querySelector('[data-herramienta-costo]');
+        const searchUrl = root.dataset.searchUrl;
+        let timer = null;
+        let controller = null;
+        if (!input || !hiddenId || !selected || !results || !searchUrl) return;
+
+        const closeResults = () => { results.classList.add('hidden'); results.innerHTML = ''; };
+        const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+
+        function showSelected(item) {
+            hiddenId.value = item.id;
+            input.value = item.label || item.nombre;
+            if (costoInput && item.costo_sugerido !== null && item.costo_sugerido !== undefined) {
+                costoInput.value = Number(item.costo_sugerido).toFixed(4);
+            }
+            selected.innerHTML = `<strong>${escapeHtml(item.label || item.nombre)}</strong>${item.costo_sugerido !== null && item.costo_sugerido !== undefined ? ` · sugerido $${Number(item.costo_sugerido).toFixed(4)}` : ''}`;
+            selected.classList.remove('hidden');
+            closeResults();
+        }
+
+        function render(items) {
+            if (!items.length) {
+                results.innerHTML = '<div class="p-2 text-sm text-gray-500">Sin resultados</div>';
+                results.classList.remove('hidden');
+                return;
+            }
+            results.innerHTML = items.map((item) => {
+                const encoded = escapeHtml(JSON.stringify(item));
+                const suggested = item.costo_sugerido !== null && item.costo_sugerido !== undefined ? `Sugerido: $${Number(item.costo_sugerido).toFixed(4)}` : 'Sin vida util capturada';
+                return `<button type="button" class="w-full text-left px-3 py-2 hover:bg-gray-50 border-b last:border-b-0" data-item="${encoded}"><div class="font-medium text-gray-900">${escapeHtml(item.label || item.nombre)}</div><div class="text-xs text-gray-500">${escapeHtml(suggested)}</div></button>`;
+            }).join('');
+            results.classList.remove('hidden');
+            results.querySelectorAll('button[data-item]').forEach((button) => {
+                button.addEventListener('click', () => showSelected(JSON.parse(button.dataset.item)));
+            });
+        }
+
+        async function search(q) {
+            if (q.length < 2) {
+                hiddenId.value = '';
+                selected.classList.add('hidden');
+                closeResults();
+                return;
+            }
+            if (controller) controller.abort();
+            controller = new AbortController();
+            try {
+                const response = await fetch(`${searchUrl}?q=${encodeURIComponent(q)}`, { signal: controller.signal, headers: { 'Accept': 'application/json' } });
+                if (!response.ok) throw new Error('Error buscando herramientas');
+                render(await response.json());
+            } catch (error) {
+                if (error.name === 'AbortError') return;
+                results.innerHTML = '<div class="p-2 text-sm text-red-600">Error buscando herramientas</div>';
+                results.classList.remove('hidden');
+            }
+        }
+
+        input.addEventListener('input', (event) => {
+            hiddenId.value = '';
+            selected.classList.add('hidden');
+            clearTimeout(timer);
+            timer = setTimeout(() => search(event.target.value.trim()), 250);
+        });
+        document.addEventListener('click', (event) => { if (!root.contains(event.target)) closeResults(); });
+    });
+})();
+</script>
+@endpush
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const openFormulaModal = (modal) => {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+    };
+
+    const closeFormulaModal = (modal) => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        if (!document.querySelector('[data-formula-modal]:not(.hidden)')) {
+            document.body.classList.remove('overflow-hidden');
+        }
+    };
+
+    document.querySelectorAll('[data-open-modal]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const modal = document.getElementById(button.dataset.openModal);
+            if (modal) {
+                openFormulaModal(modal);
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-formula-modal]').forEach((modal) => {
+        modal.querySelectorAll('[data-close-modal]').forEach((button) => {
+            button.addEventListener('click', () => closeFormulaModal(modal));
+        });
+
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                closeFormulaModal(modal);
+            }
+        });
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        document.querySelectorAll('[data-formula-modal]:not(.hidden)').forEach(closeFormulaModal);
+    });
+});
+</script>
+@endpush
+
 
 

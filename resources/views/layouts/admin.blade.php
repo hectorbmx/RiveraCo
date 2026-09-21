@@ -265,6 +265,9 @@
         @if($canMenu('huentitan.productos.view'))
         <a href="{{ route('huentitan.productos.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10 {{ request()->routeIs('huentitan.productos.*') ? 'bg-white/10' : '' }}">Productos</a>
         @endif
+        @if($canMenu('huentitan.herramientas.view'))
+        <a href="{{ route('huentitan.herramientas.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10 {{ request()->routeIs('huentitan.herramientas.*') ? 'bg-white/10' : '' }}">Herramientas</a>
+        @endif
         @if($canMenu('huentitan.inventario.view'))
         <a href="{{ route('huentitan.inventario.index') }}" class="block px-4 py-2 text-sm hover:bg-white/10 {{ request()->routeIs('huentitan.inventario.*') || request()->routeIs('inventario.huentitan.*') ? 'bg-white/10' : '' }}">Inventario</a>
         @endif
@@ -633,9 +636,4 @@
 
 </body>
 </html>
-
-
-
-
-
 

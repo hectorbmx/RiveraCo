@@ -4,6 +4,7 @@
 @php
   $bloqueado = in_array($oc->estado_normalizado, ['autorizada','verificada','cancelada']);
   $esObraCivil = in_array(strtoupper((string) ($oc->obra->tipo_obra ?? '')), ['OBRA_CIVIL', 'CIVIL'], true);
+  $unidadesInventario = \App\Support\Inventario\UnidadMedidaCatalogo::opciones();
 @endphp
 
 <div class="p-6">
@@ -103,9 +104,12 @@
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Unidad</label>
-                            <input name="unidad" id="mp_unidad"
-                                   class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm"
-                                   placeholder="pza, caja, m, kg...">
+                            <select name="unidad" id="mp_unidad" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                                <option value="">Sin unidad</option>
+                                @foreach($unidadesInventario as $codigo => $nombre)
+                                    <option value="{{ $codigo }}">{{ $codigo }} - {{ $nombre }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
 
@@ -415,7 +419,12 @@
   <input type="hidden" name="obra_civil_insumo_id" id="obra_civil_insumo_id">
   <input type="hidden" name="legacy_prod_id" id="legacy_prod_id">
   <div>
-      <input name="unidad" id="unidad" type="text" class="w-full border p-2 rounded uppercase" placeholder="PZA, KG, M, ML...">
+      <select name="unidad" id="unidad" class="w-full border p-2 rounded uppercase">
+          <option value="">Sin unidad</option>
+          @foreach($unidadesInventario as $codigo => $nombre)
+              <option value="{{ $codigo }}">{{ $codigo }} - {{ $nombre }}</option>
+          @endforeach
+      </select>
       <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">Unidad</span>
       <span class="text-[10px] text-slate-400 block mt-1 ml-1 leading-tight">Si el producto viene sin unidad, capturala aqui antes de guardar.</span>
   </div>
@@ -1260,3 +1269,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
+
+
+

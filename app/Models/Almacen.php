@@ -50,7 +50,10 @@ class Almacen extends Model
     {
         return $this->hasMany(HuentitanEntrada::class, 'almacen_id');
     }
+
+    public function herramientas(): HasMany
+    {
+        return $this->hasMany(Herramienta::class, 'almacen_id');
+    }
 }
-
-
 

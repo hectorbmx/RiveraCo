@@ -15,12 +15,15 @@ class HuentitanFormulaMaterial extends Model
         'cantidad',
         'unidad',
         'merma_porcentaje',
+        'metodo_costo',
+        'costo_unitario_override',
         'notas',
     ];
 
     protected $casts = [
         'cantidad' => 'decimal:3',
         'merma_porcentaje' => 'decimal:3',
+        'costo_unitario_override' => 'decimal:4',
     ];
 
     public function formula(): BelongsTo
@@ -33,3 +36,4 @@ class HuentitanFormulaMaterial extends Model
         return $this->belongsTo(Producto::class, 'material_producto_id');
     }
 }
+

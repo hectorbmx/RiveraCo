@@ -52,6 +52,12 @@
             <p class="mt-1 text-sm text-gray-600">Clasificacion, stock minimo y kardex.</p>
             <div class="mt-auto pt-5 text-sm font-medium text-gray-900">Abrir</div>
         </a>
+        <a href="{{ route('huentitan.herramientas.index') }}" class="bg-white border rounded-lg p-5 min-h-[170px] hover:border-gray-400 transition flex flex-col">
+            <div class="text-xs px-2 py-1 rounded border bg-yellow-50 text-yellow-700 w-fit">Costo unitario</div>
+            <h2 class="mt-4 text-base font-semibold text-gray-900">Herramientas</h2>
+            <p class="mt-1 text-sm text-gray-600">Catalogo por almacen para integrar costos al precio unitario.</p>
+            <div class="mt-auto pt-5 text-sm font-medium text-gray-900">Abrir</div>
+        </a>
 
         <a href="{{ route('huentitan.inventario.index') }}" class="bg-white border rounded-lg p-5 min-h-[170px] hover:border-gray-400 transition flex flex-col">
             <div class="text-xs px-2 py-1 rounded border bg-green-50 text-green-700 w-fit">Activo</div>
@@ -119,6 +125,4 @@
     </div>
 </div>
 @endsection
-
-
 

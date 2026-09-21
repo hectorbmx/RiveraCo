@@ -34,4 +34,9 @@ class HuentitanFormula extends Model
     {
         return $this->hasMany(HuentitanFormulaMaterial::class, 'formula_id');
     }
+
+    public function herramientas(): HasMany
+    {
+        return $this->hasMany(HuentitanFormulaHerramienta::class, 'formula_id');
+    }
 }

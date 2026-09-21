@@ -16,6 +16,9 @@ class Producto extends Model
     'descripcion',
     'sku',
     'unidad',
+    'unidad_compra',
+    'cantidad_por_unidad_compra',
+    'unidad_base',
 
     // inventario (si existen en tabla)
     'tipo_inventario',
@@ -38,6 +41,7 @@ class Producto extends Model
         'activo' => 'boolean',
         'requiere_formula' => 'boolean',
         'iva_default' => 'decimal:2',
+        'cantidad_por_unidad_compra' => 'decimal:6',
         'especificaciones_tecnicas' => 'array',
     ];
 
@@ -117,3 +121,4 @@ public function huentitanEntradaDetalles()
 }
 
 }
+

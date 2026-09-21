@@ -53,10 +53,13 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Unidad</label>
-                    <input name="unidad"
-                           value="{{ old('unidad', $producto->unidad ?? '') }}"
-                           placeholder="pza, kg, m, caja..."
-                           class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                    @php($unidadActual = old('unidad', $producto->unidad ?? ''))
+                    <select name="unidad" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                        <option value="">Sin unidad</option>
+                        @foreach($unidades as $codigo => $nombre)
+                            <option value="{{ $codigo }}" @selected($unidadActual === $codigo)>{{ $codigo }} - {{ $nombre }}</option>
+                        @endforeach
+                    </select>
                     @error('unidad')
                         <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
                     @enderror
@@ -107,3 +110,4 @@
     </div>
 </div>
 @endsection
+

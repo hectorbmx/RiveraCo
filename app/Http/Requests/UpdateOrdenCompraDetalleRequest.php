@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Support\Inventario\UnidadMedidaCatalogo;
 
 class UpdateOrdenCompraDetalleRequest extends FormRequest
 {
@@ -20,7 +21,7 @@ class UpdateOrdenCompraDetalleRequest extends FormRequest
             'legacy_prod_id'  => ['nullable','string','max:50'],
 
             'descripcion'     => ['required','string','max:5000'],
-            'unidad'          => ['nullable','string','max:50'],
+            'unidad'          => ['nullable', UnidadMedidaCatalogo::regla()],
 
             'cantidad'        => ['required','numeric','min:0.0001'],
             'precio_unitario' => ['required','numeric','min:0'],
@@ -36,3 +37,4 @@ class UpdateOrdenCompraDetalleRequest extends FormRequest
         ];
     }
 }
+

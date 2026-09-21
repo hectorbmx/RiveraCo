@@ -65,6 +65,11 @@ class Proveedor extends Model
             ->withTimestamps();
     }
 
+    public function herramientas()
+    {
+        return $this->hasMany(Herramienta::class, 'proveedor_id');
+    }
+
     // nombre_comercial <-> nombre
     public function getNombreComercialAttribute(): ?string
     {
@@ -142,3 +147,4 @@ class Proveedor extends Model
     public function getNotasAttribute(): ?string { return null; }
     public function setNotasAttribute($value): void { /* noop */ }
 }
+

@@ -393,6 +393,17 @@ Route::middleware('auth','verified')->group(function () {
             Route::get('/', [HuentitanInventarioController::class, 'dashboard'])->name('index');
             Route::get('/empleados', [HuentitanInventarioController::class, 'empleados'])->middleware('permission:huentitan.empleados.view')->name('empleados.index');
             Route::get('/productos', [HuentitanInventarioController::class, 'productos'])->middleware('permission:huentitan.productos.view')->name('productos.index');
+            Route::get('/herramientas', [HuentitanInventarioController::class, 'herramientas'])->middleware('permission:huentitan.herramientas.view')->name('herramientas.index');
+            Route::get('/herramientas/create', [HuentitanInventarioController::class, 'crearHerramienta'])->middleware('permission:huentitan.herramientas.create')->name('herramientas.create');
+            Route::post('/herramientas', [HuentitanInventarioController::class, 'guardarHerramienta'])->middleware('permission:huentitan.herramientas.create')->name('herramientas.store');
+            Route::get('/herramientas/{herramienta}/edit', [HuentitanInventarioController::class, 'editarHerramienta'])->middleware('permission:huentitan.herramientas.edit')->name('herramientas.edit');
+            Route::patch('/herramientas/{herramienta}', [HuentitanInventarioController::class, 'actualizarHerramienta'])->middleware('permission:huentitan.herramientas.edit')->name('herramientas.update');
+            Route::delete('/herramientas/{herramienta}', [HuentitanInventarioController::class, 'desactivarHerramienta'])->middleware('permission:huentitan.herramientas.delete')->name('herramientas.destroy');
+            Route::get('/productos/create', [HuentitanInventarioController::class, 'crearProducto'])->middleware('permission:huentitan.productos.view')->name('productos.create');
+            Route::post('/productos', [HuentitanInventarioController::class, 'guardarProducto'])->middleware('permission:huentitan.productos.view')->name('productos.store');
+            Route::get('/productos/{producto}/edit', [HuentitanInventarioController::class, 'editarProducto'])->middleware('permission:huentitan.productos.view')->name('productos.edit');
+            Route::patch('/productos/{producto}', [HuentitanInventarioController::class, 'actualizarProductoCatalogo'])->middleware('permission:huentitan.productos.view')->name('productos.catalogo.update');
+            Route::delete('/productos/{producto}', [HuentitanInventarioController::class, 'desactivarProducto'])->middleware('permission:huentitan.productos.view')->name('productos.destroy');
             Route::get('/productos-detalles/{producto}', [HuentitanInventarioController::class, 'productoDetalle'])->middleware('permission:huentitan.productos.view')->name('productos.show');
             Route::patch('/productos-detalles/{producto}', [HuentitanInventarioController::class, 'actualizarProductoGeneral'])->middleware('permission:huentitan.productos.view')->name('productos.update');
             Route::patch('/productos-detalles/{producto}/especificaciones', [HuentitanInventarioController::class, 'actualizarProductoEspecificaciones'])->middleware('permission:huentitan.productos.view')->name('productos.especificaciones.update');
@@ -400,6 +411,9 @@ Route::middleware('auth','verified')->group(function () {
             Route::get('/productos-detalles/{producto}/formula/materiales-buscar', [HuentitanInventarioController::class, 'buscarMaterialesFormula'])->middleware('permission:huentitan.productos.view')->name('productos.formula-materiales.buscar');
             Route::post('/productos-detalles/{producto}/formula/materiales', [HuentitanInventarioController::class, 'agregarProductoFormulaMaterial'])->middleware('permission:huentitan.productos.view')->name('productos.formula-materiales.store');
             Route::delete('/productos-detalles/{producto}/formula/materiales/{material}', [HuentitanInventarioController::class, 'eliminarProductoFormulaMaterial'])->middleware('permission:huentitan.productos.view')->name('productos.formula-materiales.destroy');
+            Route::get('/productos-detalles/{producto}/formula/herramientas-buscar', [HuentitanInventarioController::class, 'buscarHerramientasFormula'])->middleware('permission:huentitan.productos.view')->name('productos.formula-herramientas.buscar');
+            Route::post('/productos-detalles/{producto}/formula/herramientas', [HuentitanInventarioController::class, 'agregarProductoFormulaHerramienta'])->middleware('permission:huentitan.productos.view')->name('productos.formula-herramientas.store');
+            Route::delete('/productos-detalles/{producto}/formula/herramientas/{herramienta}', [HuentitanInventarioController::class, 'eliminarProductoFormulaHerramienta'])->middleware('permission:huentitan.productos.view')->name('productos.formula-herramientas.destroy');
             Route::get('/inventario', [HuentitanInventarioController::class, 'index'])->middleware('permission:huentitan.inventario.view')->name('inventario.index');
             Route::get('/ordenes-compra', [HuentitanInventarioController::class, 'ordenesCompra'])->middleware('permission:huentitan.ordenes_compra.view')->name('ordenes-compra.index');
             Route::get('/ordenes-fabricacion/create', [HuentitanInventarioController::class, 'crearOrdenFabricacion'])->middleware('permission:huentitan.ordenes_fabricacion.create')->name('ordenes-fabricacion.create');

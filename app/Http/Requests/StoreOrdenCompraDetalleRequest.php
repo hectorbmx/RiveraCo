@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Support\Inventario\UnidadMedidaCatalogo;
 
 class StoreOrdenCompraDetalleRequest extends FormRequest
 {
@@ -114,3 +115,4 @@ class StoreOrdenCompraDetalleRequest extends FormRequest
         ];
     }
 }
+

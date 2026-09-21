@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Almacen;
 use App\Models\Area;
 use App\Models\Empleado;
+use App\Models\Herramienta;
 use App\Models\HuentitanFormula;
+use App\Models\HuentitanFormulaHerramienta;
 use App\Models\HuentitanFormulaMaterial;
 use App\Models\HuentitanOrdenFabricacion;
 use App\Models\HuentitanEntrada;
@@ -19,6 +21,7 @@ use App\Models\Producto;
 use App\Services\Inventario\HuentitanInventoryImportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Support\Inventario\UnidadMedidaCatalogo;
 
 class HuentitanInventarioController extends Controller
 {
@@ -87,6 +90,196 @@ class HuentitanInventarioController extends Controller
         ];
 
         return view('huentitan.empleados', compact('almacen', 'areaHuentitan', 'empleados', 'resumenEmpleados', 'estatus', 'busqueda'));
+    }
+
+
+    public function herramientas(Request $request)
+    {
+        $almacen = $this->almacenHuentitan();
+        $busqueda = trim((string) $request->query('q', ''));
+        $estado = $request->query('estado');
+        $activo = $request->query('activo', 'activos');
+
+        $estadosPermitidos = ['activa', 'en_mantenimiento', 'baja'];
+        $estado = in_array($estado, $estadosPermitidos, true) ? $estado : null;
+        $activo = in_array($activo, ['activos', 'inactivos', 'todos'], true) ? $activo : 'activos';
+
+        $herramientas = Herramienta::query()
+            ->with('proveedor:id,nombre')
+            ->where('almacen_id', $almacen->id)
+            ->when($busqueda !== '', function ($query) use ($busqueda) {
+                $query->where(function ($herramienta) use ($busqueda) {
+                    $herramienta->where('nombre', 'like', '%' . $busqueda . '%')
+                        ->orWhere('codigo', 'like', '%' . $busqueda . '%')
+                        ->orWhere('descripcion', 'like', '%' . $busqueda . '%')
+                        ->orWhere('marca', 'like', '%' . $busqueda . '%')
+                        ->orWhere('modelo', 'like', '%' . $busqueda . '%')
+                        ->orWhere('numero_serie', 'like', '%' . $busqueda . '%');
+                });
+            })
+            ->when($estado, fn ($query) => $query->where('estado', $estado))
+            ->when($activo === 'activos', fn ($query) => $query->where('activo', true))
+            ->when($activo === 'inactivos', fn ($query) => $query->where('activo', false))
+            ->orderBy('nombre')
+            ->paginate(25)
+            ->withQueryString();
+
+        $resumenHerramientas = [
+            'total' => Herramienta::query()->where('almacen_id', $almacen->id)->count(),
+            'activas' => Herramienta::query()->where('almacen_id', $almacen->id)->where('activo', true)->count(),
+            'en_mantenimiento' => Herramienta::query()->where('almacen_id', $almacen->id)->where('estado', 'en_mantenimiento')->count(),
+            'valor' => Herramienta::query()->where('almacen_id', $almacen->id)->where('activo', true)->sum('costo'),
+        ];
+
+        return view('huentitan.herramientas.index', compact('almacen', 'herramientas', 'resumenHerramientas', 'busqueda', 'estado', 'activo'));
+    }
+
+    public function crearHerramienta()
+    {
+        $almacen = $this->almacenHuentitan();
+        $herramienta = new Herramienta([
+            'almacen_id' => $almacen->id,
+            'costo' => 0,
+            'costo_residual' => 0,
+            'estado' => 'activa',
+            'activo' => true,
+            'fecha_registro' => now()->toDateString(),
+        ]);
+        $modo = 'crear';
+
+        return view('huentitan.herramientas.create', compact('almacen', 'herramienta', 'modo'));
+    }
+
+    public function guardarHerramienta(Request $request)
+    {
+        $almacen = $this->almacenHuentitan();
+        $data = $this->validarHerramientaHuentitan($request);
+
+        $herramienta = DB::transaction(function () use ($almacen, $data, $request) {
+            return Herramienta::create([
+                'almacen_id' => $almacen->id,
+                'proveedor_id' => $data['proveedor_id'] ?? null,
+                'codigo' => $this->generarCodigoHerramientaHuentitan($almacen),
+                'nombre' => $data['nombre'],
+                'descripcion' => $data['descripcion'] ?? null,
+                'costo' => $data['costo'] ?? 0,
+                'vida_util_piezas' => $data['vida_util_piezas'] ?? null,
+                'costo_residual' => $data['costo_residual'] ?? 0,
+                'fecha_compra' => $data['fecha_compra'] ?? null,
+                'fecha_registro' => $data['fecha_registro'] ?? now()->toDateString(),
+                'proveedor_nombre' => $data['proveedor_nombre'] ?? null,
+                'marca' => $data['marca'] ?? null,
+                'modelo' => $data['modelo'] ?? null,
+                'numero_serie' => $data['numero_serie'] ?? null,
+                'estado' => $data['estado'],
+                'activo' => $request->boolean('activo', true),
+            ]);
+        });
+
+        return redirect()
+            ->route('huentitan.herramientas.edit', $herramienta)
+            ->with('status', 'Herramienta HUENTITAN creada correctamente.');
+    }
+
+    public function editarHerramienta(Herramienta $herramienta)
+    {
+        $almacen = $this->almacenHuentitan();
+        $this->validarHerramientaPerteneceHuentitan($herramienta, $almacen);
+        $modo = 'editar';
+
+        return view('huentitan.herramientas.edit', compact('almacen', 'herramienta', 'modo'));
+    }
+
+    public function actualizarHerramienta(Request $request, Herramienta $herramienta)
+    {
+        $almacen = $this->almacenHuentitan();
+        $this->validarHerramientaPerteneceHuentitan($herramienta, $almacen);
+        $data = $this->validarHerramientaHuentitan($request);
+
+        $herramienta->update([
+            'proveedor_id' => $data['proveedor_id'] ?? null,
+            'nombre' => $data['nombre'],
+            'descripcion' => $data['descripcion'] ?? null,
+            'costo' => $data['costo'] ?? 0,
+            'vida_util_piezas' => $data['vida_util_piezas'] ?? null,
+            'costo_residual' => $data['costo_residual'] ?? 0,
+            'fecha_compra' => $data['fecha_compra'] ?? null,
+            'fecha_registro' => $data['fecha_registro'] ?? null,
+            'proveedor_nombre' => $data['proveedor_nombre'] ?? null,
+            'marca' => $data['marca'] ?? null,
+            'modelo' => $data['modelo'] ?? null,
+            'numero_serie' => $data['numero_serie'] ?? null,
+            'estado' => $data['estado'],
+            'activo' => $request->boolean('activo'),
+        ]);
+
+        return redirect()
+            ->route('huentitan.herramientas.edit', $herramienta)
+            ->with('status', 'Herramienta HUENTITAN actualizada correctamente.');
+    }
+
+    public function desactivarHerramienta(Herramienta $herramienta)
+    {
+        $almacen = $this->almacenHuentitan();
+        $this->validarHerramientaPerteneceHuentitan($herramienta, $almacen);
+
+        $herramienta->update([
+            'activo' => false,
+            'estado' => 'baja',
+        ]);
+
+        return redirect()
+            ->route('huentitan.herramientas.index')
+            ->with('status', 'Herramienta HUENTITAN desactivada correctamente.');
+    }
+
+    private function validarHerramientaHuentitan(Request $request): array
+    {
+        return $request->validate([
+            'proveedor_id' => ['nullable', 'integer', 'exists:proveedores,id'],
+            'nombre' => ['required', 'string', 'max:150'],
+            'descripcion' => ['nullable', 'string', 'max:1000'],
+            'costo' => ['nullable', 'numeric', 'min:0'],
+            'vida_util_piezas' => ['nullable', 'integer', 'min:1'],
+            'costo_residual' => ['nullable', 'numeric', 'min:0'],
+            'fecha_compra' => ['nullable', 'date'],
+            'fecha_registro' => ['nullable', 'date'],
+            'proveedor_nombre' => ['nullable', 'string', 'max:150'],
+            'marca' => ['nullable', 'string', 'max:100'],
+            'modelo' => ['nullable', 'string', 'max:100'],
+            'numero_serie' => ['nullable', 'string', 'max:100'],
+            'estado' => ['required', 'in:activa,en_mantenimiento,baja'],
+            'activo' => ['nullable', 'boolean'],
+        ]);
+    }
+
+    private function validarHerramientaPerteneceHuentitan(Herramienta $herramienta, Almacen $almacen): void
+    {
+        abort_unless((int) $herramienta->almacen_id === (int) $almacen->id, 404);
+    }
+
+    private function generarCodigoHerramientaHuentitan(Almacen $almacen): string
+    {
+        $ultimoCodigo = Herramienta::query()
+            ->where('almacen_id', $almacen->id)
+            ->where('codigo', 'like', 'HUE-HER-%')
+            ->whereRaw("codigo REGEXP '^HUE-HER-[0-9]+$'")
+            ->lockForUpdate()
+            ->orderByRaw('CAST(SUBSTRING(codigo, 9) AS UNSIGNED) DESC')
+            ->value('codigo');
+
+        $ultimoNumero = 0;
+        $padding = 6;
+        if ($ultimoCodigo && preg_match('/HUE-HER-(\d+)$/', (string) $ultimoCodigo, $matches)) {
+            $ultimoNumero = (int) $matches[1];
+            $padding = max($padding, strlen($matches[1]));
+        }
+
+        do {
+            $codigo = 'HUE-HER-' . str_pad((string) (++$ultimoNumero), $padding, '0', STR_PAD_LEFT);
+        } while (Herramienta::query()->where('almacen_id', $almacen->id)->where('codigo', $codigo)->exists());
+
+        return $codigo;
     }
 
     public function productos(Request $request)
@@ -235,6 +428,173 @@ class HuentitanInventarioController extends Controller
             ]];
         });
     }
+    public function crearProducto()
+    {
+        $almacen = $this->almacenHuentitan();
+        $producto = new Producto([
+            'tipo_inventario' => 'materia_prima',
+            'origen_abastecimiento' => 'compra',
+            'requiere_formula' => false,
+            'stock_minimo' => 0,
+            'activo' => true,
+            'unidad_compra' => 'PZA',
+            'cantidad_por_unidad_compra' => 1,
+            'unidad_base' => 'PZA',
+        ]);
+        $modo = 'crear';
+        $unidadesCompra = UnidadMedidaCatalogo::compra();
+        $unidadesBase = UnidadMedidaCatalogo::base();
+
+        return view('huentitan.productos.create', compact('almacen', 'producto', 'modo', 'unidadesCompra', 'unidadesBase'));
+    }
+
+    public function guardarProducto(Request $request)
+    {
+        $data = $this->validarProductoHuentitan($request);
+        $almacen = $this->almacenHuentitan();
+
+        $producto = DB::transaction(function () use ($data, $request, $almacen) {
+            $producto = Producto::create([
+                'sku' => $this->generarSkuHuentitan(),
+                'nombre' => $data['nombre'],
+                'descripcion' => $data['descripcion'] ?? null,
+                'unidad' => UnidadMedidaCatalogo::textoLegacy($data['unidad_compra'], $data['cantidad_por_unidad_compra'], $data['unidad_base']),
+                'unidad_compra' => $data['unidad_compra'],
+                'cantidad_por_unidad_compra' => $data['cantidad_por_unidad_compra'],
+                'unidad_base' => $data['unidad_base'],
+                'tipo_inventario' => $data['tipo_inventario'],
+                'origen_abastecimiento' => $data['origen_abastecimiento'],
+                'requiere_formula' => $request->boolean('requiere_formula'),
+                'stock_minimo' => $data['stock_minimo'] ?? 0,
+                'activo' => $request->boolean('activo', true),
+            ]);
+
+            InventarioStock::firstOrCreate(
+                [
+                    'almacen_id' => $almacen->id,
+                    'producto_id' => $producto->id,
+                ],
+                [
+                    'stock_actual' => 0,
+                    'stock_reservado' => 0,
+                    'valor_total' => 0,
+                    'costo_promedio' => 0,
+                ]
+            );
+
+            return $producto;
+        });
+
+        return redirect()
+            ->route('huentitan.productos.show', [
+                'producto' => $producto->id,
+                'tab' => $producto->requiere_formula ? 'formula' : 'resumen',
+            ])
+            ->with('status', 'Producto HUENTITAN creado correctamente.');
+    }
+
+    public function editarProducto(Producto $producto)
+    {
+        abort_unless(str_starts_with((string) $producto->sku, 'HUE-'), 404);
+
+        $almacen = $this->almacenHuentitan();
+        $modo = 'editar';
+        $unidadesCompra = UnidadMedidaCatalogo::compra();
+        $unidadesBase = UnidadMedidaCatalogo::base();
+
+        return view('huentitan.productos.edit', compact('almacen', 'producto', 'modo', 'unidadesCompra', 'unidadesBase'));
+    }
+
+    public function actualizarProductoCatalogo(Request $request, Producto $producto)
+    {
+        abort_unless(str_starts_with((string) $producto->sku, 'HUE-'), 404);
+
+        $data = $this->validarProductoHuentitan($request);
+
+        $producto->update([
+            'nombre' => $data['nombre'],
+            'descripcion' => $data['descripcion'] ?? null,
+            'unidad' => UnidadMedidaCatalogo::textoLegacy($data['unidad_compra'], $data['cantidad_por_unidad_compra'], $data['unidad_base']),
+                'unidad_compra' => $data['unidad_compra'],
+                'cantidad_por_unidad_compra' => $data['cantidad_por_unidad_compra'],
+                'unidad_base' => $data['unidad_base'],
+            'tipo_inventario' => $data['tipo_inventario'],
+            'origen_abastecimiento' => $data['origen_abastecimiento'],
+            'requiere_formula' => $request->boolean('requiere_formula'),
+            'stock_minimo' => $data['stock_minimo'] ?? 0,
+            'activo' => $request->boolean('activo'),
+        ]);
+
+        InventarioStock::firstOrCreate(
+            [
+                'almacen_id' => $this->almacenHuentitan()->id,
+                'producto_id' => $producto->id,
+            ],
+            [
+                'stock_actual' => 0,
+                'stock_reservado' => 0,
+                'valor_total' => 0,
+                'costo_promedio' => 0,
+            ]
+        );
+
+        return redirect()
+            ->route('huentitan.productos.show', [
+                'producto' => $producto->id,
+                'tab' => $producto->requiere_formula ? 'formula' : 'resumen',
+            ])
+            ->with('status', 'Producto HUENTITAN actualizado correctamente.');
+    }
+
+    public function desactivarProducto(Producto $producto)
+    {
+        abort_unless(str_starts_with((string) $producto->sku, 'HUE-'), 404);
+
+        $producto->update(['activo' => false]);
+
+        return redirect()
+            ->route('huentitan.productos.index')
+            ->with('status', 'Producto HUENTITAN desactivado correctamente.');
+    }
+
+    private function validarProductoHuentitan(Request $request): array
+    {
+        return $request->validate([
+            'nombre' => ['required', 'string', 'max:255'],
+            'descripcion' => ['nullable', 'string', 'max:500'],
+            'unidad_compra' => ['required', UnidadMedidaCatalogo::regla()],
+            'cantidad_por_unidad_compra' => ['required', 'numeric', 'gt:0'],
+            'unidad_base' => ['required', UnidadMedidaCatalogo::regla()],
+            'tipo_inventario' => ['required', 'in:materia_prima,producto_terminado,subensamble'],
+            'origen_abastecimiento' => ['required', 'in:compra,fabricacion,ambos'],
+            'requiere_formula' => ['nullable', 'boolean'],
+            'stock_minimo' => ['nullable', 'numeric', 'min:0'],
+            'activo' => ['nullable', 'boolean'],
+        ]);
+    }
+
+    private function generarSkuHuentitan(): string
+    {
+        $ultimoSku = Producto::query()
+            ->where('sku', 'like', 'HUE-%')
+            ->whereRaw("sku REGEXP '^HUE-[0-9]+$'")
+            ->lockForUpdate()
+            ->orderByRaw('CAST(SUBSTRING(sku, 5) AS UNSIGNED) DESC')
+            ->value('sku');
+
+        $ultimoNumero = 0;
+        $padding = 6;
+        if ($ultimoSku && preg_match('/HUE-(\d+)$/', (string) $ultimoSku, $matches)) {
+            $ultimoNumero = (int) $matches[1];
+            $padding = max($padding, strlen($matches[1]));
+        }
+
+        do {
+            $sku = 'HUE-' . str_pad((string) (++$ultimoNumero), $padding, '0', STR_PAD_LEFT);
+        } while (Producto::query()->where('sku', $sku)->exists());
+
+        return $sku;
+    }
     public function actualizarProductoGeneral(Request $request, Producto $producto)
     {
         abort_unless(str_starts_with((string) $producto->sku, 'HUE-'), 404);
@@ -315,15 +675,133 @@ class HuentitanInventarioController extends Controller
             })
             ->orderBy('nombre')
             ->limit(15)
-            ->get(['id', 'sku', 'nombre', 'unidad']);
+            ->get(['id', 'sku', 'nombre', 'unidad', 'unidad_base']);
 
-        return response()->json($materiales->map(fn ($material) => [
-            'id' => $material->id,
-            'sku' => $material->sku,
-            'nombre' => $material->nombre,
-            'unidad' => $material->unidad,
-            'label' => trim(($material->sku ? $material->sku . ' - ' : '') . $material->nombre),
-        ]));
+        $almacen = $this->almacenHuentitan();
+        $stockMap = InventarioStock::query()
+            ->where('almacen_id', $almacen->id)
+            ->whereIn('producto_id', $materiales->pluck('id'))
+            ->get()
+            ->keyBy('producto_id');
+
+        return response()->json($materiales->map(function ($material) use ($stockMap) {
+            $stock = $stockMap->get($material->id);
+
+            return [
+                'id' => $material->id,
+                'sku' => $material->sku,
+                'nombre' => $material->nombre,
+                'unidad' => $material->unidad_base ?: $material->unidad,
+                'costo_promedio' => (float) ($stock->costo_promedio ?? 0),
+                'label' => trim(($material->sku ? $material->sku . ' - ' : '') . $material->nombre),
+            ];
+        }));
+    }
+
+
+    public function buscarHerramientasFormula(Request $request, Producto $producto)
+    {
+        abort_unless(str_starts_with((string) $producto->sku, 'HUE-'), 404);
+
+        $term = trim((string) $request->query('q', ''));
+        if (mb_strlen($term) < 2) {
+            return response()->json([]);
+        }
+
+        $almacen = $this->almacenHuentitan();
+
+        $herramientas = Herramienta::query()
+            ->where('almacen_id', $almacen->id)
+            ->where('activo', true)
+            ->where(function ($query) use ($term) {
+                $query->where('nombre', 'like', '%' . $term . '%')
+                    ->orWhere('codigo', 'like', '%' . $term . '%')
+                    ->orWhere('marca', 'like', '%' . $term . '%')
+                    ->orWhere('modelo', 'like', '%' . $term . '%')
+                    ->orWhere('numero_serie', 'like', '%' . $term . '%');
+            })
+            ->orderBy('nombre')
+            ->limit(15)
+            ->get(['id', 'codigo', 'nombre', 'costo', 'costo_residual', 'vida_util_piezas', 'marca', 'modelo']);
+
+        return response()->json($herramientas->map(function ($herramienta) {
+            $vidaUtil = (int) ($herramienta->vida_util_piezas ?? 0);
+            $costoSugerido = $vidaUtil > 0
+                ? max(((float) $herramienta->costo - (float) $herramienta->costo_residual) / $vidaUtil, 0)
+                : null;
+
+            return [
+                'id' => $herramienta->id,
+                'codigo' => $herramienta->codigo,
+                'nombre' => $herramienta->nombre,
+                'marca' => $herramienta->marca,
+                'modelo' => $herramienta->modelo,
+                'costo' => (float) $herramienta->costo,
+                'vida_util_piezas' => $herramienta->vida_util_piezas,
+                'costo_sugerido' => $costoSugerido,
+                'label' => trim(($herramienta->codigo ? $herramienta->codigo . ' - ' : '') . $herramienta->nombre),
+            ];
+        }));
+    }
+
+    public function agregarProductoFormulaHerramienta(Request $request, Producto $producto)
+    {
+        abort_unless(str_starts_with((string) $producto->sku, 'HUE-'), 404);
+
+        $data = $request->validate([
+            'herramienta_id' => ['required', 'exists:herramientas,id'],
+            'cantidad' => ['nullable', 'numeric', 'gt:0'],
+            'costo_unitario_aplicado' => ['required', 'numeric', 'min:0'],
+            'metodo_calculo' => ['nullable', 'in:manual,prorrateo_por_piezas'],
+            'notas' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $almacen = $this->almacenHuentitan();
+        $herramienta = Herramienta::query()
+            ->where('id', $data['herramienta_id'])
+            ->where('almacen_id', $almacen->id)
+            ->where('activo', true)
+            ->firstOrFail();
+
+        $producto->update(['requiere_formula' => true]);
+
+        $formula = HuentitanFormula::firstOrCreate(
+            ['producto_id' => $producto->id],
+            [
+                'cantidad_base' => 1,
+                'unidad_base' => $producto->unidad_base ?: $producto->unidad,
+                'merma_esperada_porcentaje' => 0,
+            ]
+        );
+
+        HuentitanFormulaHerramienta::updateOrCreate(
+            [
+                'formula_id' => $formula->id,
+                'herramienta_id' => $herramienta->id,
+            ],
+            [
+                'cantidad' => $data['cantidad'] ?? 1,
+                'costo_unitario_aplicado' => $data['costo_unitario_aplicado'],
+                'metodo_calculo' => $data['metodo_calculo'] ?? 'manual',
+                'notas' => $data['notas'] ?? null,
+            ]
+        );
+
+        return redirect()
+            ->route('huentitan.productos.show', ['producto' => $producto->id, 'tab' => 'formula'])
+            ->with('status', 'Herramienta agregada al precio unitario.');
+    }
+
+    public function eliminarProductoFormulaHerramienta(Producto $producto, HuentitanFormulaHerramienta $herramienta)
+    {
+        abort_unless(str_starts_with((string) $producto->sku, 'HUE-'), 404);
+        abort_unless($herramienta->formula && (int) $herramienta->formula->producto_id === (int) $producto->id, 404);
+
+        $herramienta->delete();
+
+        return redirect()
+            ->route('huentitan.productos.show', ['producto' => $producto->id, 'tab' => 'formula'])
+            ->with('status', 'Herramienta eliminada del precio unitario.');
     }
 
     public function actualizarProductoFormula(Request $request, Producto $producto)
@@ -332,7 +810,7 @@ class HuentitanInventarioController extends Controller
 
         $data = $request->validate([
             'cantidad_base' => ['required', 'numeric', 'gt:0'],
-            'unidad_base' => ['nullable', 'string', 'max:50'],
+            'unidad_base' => ['nullable', UnidadMedidaCatalogo::regla()],
             'merma_esperada_porcentaje' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'tiempo_estimado_minutos' => ['nullable', 'integer', 'min:0'],
             'notas' => ['nullable', 'string', 'max:1000'],
@@ -344,7 +822,7 @@ class HuentitanInventarioController extends Controller
             ['producto_id' => $producto->id],
             [
                 'cantidad_base' => $data['cantidad_base'],
-                'unidad_base' => $data['unidad_base'] ?: $producto->unidad,
+                'unidad_base' => $data['unidad_base'] ?: ($producto->unidad_base ?: $producto->unidad),
                 'merma_esperada_porcentaje' => $data['merma_esperada_porcentaje'] ?? 0,
                 'tiempo_estimado_minutos' => $data['tiempo_estimado_minutos'] ?? null,
                 'notas' => $data['notas'] ?? null,
@@ -363,8 +841,10 @@ class HuentitanInventarioController extends Controller
         $data = $request->validate([
             'material_producto_id' => ['required', 'exists:productos,id'],
             'cantidad' => ['required', 'numeric', 'gt:0'],
-            'unidad' => ['nullable', 'string', 'max:50'],
+            'unidad' => ['nullable', UnidadMedidaCatalogo::regla()],
             'merma_porcentaje' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'metodo_costo' => ['nullable', 'in:promedio_inventario,manual'],
+            'costo_unitario_override' => ['nullable', 'numeric', 'min:0'],
             'notas' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -387,7 +867,7 @@ class HuentitanInventarioController extends Controller
             ['producto_id' => $producto->id],
             [
                 'cantidad_base' => 1,
-                'unidad_base' => $producto->unidad,
+                'unidad_base' => $producto->unidad_base ?: $producto->unidad,
                 'merma_esperada_porcentaje' => 0,
             ]
         );
@@ -399,8 +879,10 @@ class HuentitanInventarioController extends Controller
             ],
             [
                 'cantidad' => $data['cantidad'],
-                'unidad' => $data['unidad'] ?: $material->unidad,
+                'unidad' => $data['unidad'] ?: ($material->unidad_base ?: $material->unidad),
                 'merma_porcentaje' => $data['merma_porcentaje'] ?? 0,
+                'metodo_costo' => $data['metodo_costo'] ?? 'promedio_inventario',
+                'costo_unitario_override' => ($data['metodo_costo'] ?? 'promedio_inventario') === 'manual' ? ($data['costo_unitario_override'] ?? 0) : null,
                 'notas' => $data['notas'] ?? null,
             ]
         );
@@ -439,7 +921,7 @@ class HuentitanInventarioController extends Controller
         }]);
 
         $formulaProducto = $producto->huentitanFormula()
-            ->with(['materiales.material'])
+            ->with(['materiales.material', 'herramientas.herramienta'])
             ->first();
 
         $materialesDisponibles = Producto::query()
@@ -452,7 +934,7 @@ class HuentitanInventarioController extends Controller
                 $query->where('requiere_formula', false)->orWhereNull('requiere_formula');
             })
             ->orderBy('nombre')
-            ->get(['id', 'sku', 'nombre', 'unidad']);
+            ->get(['id', 'sku', 'nombre', 'unidad', 'unidad_base']);
 
         $materialStockMap = InventarioStock::query()
             ->where('almacen_id', $almacen->id)
@@ -460,15 +942,25 @@ class HuentitanInventarioController extends Controller
             ->get()
             ->keyBy('producto_id');
 
-        $costoFormulaEstimado = $formulaProducto
+        $costoMaterialesFormula = $formulaProducto
             ? $formulaProducto->materiales->sum(function ($materialFormula) use ($materialStockMap) {
                 $stock = $materialStockMap->get($materialFormula->material_producto_id);
                 $cantidad = (float) $materialFormula->cantidad;
                 $merma = (float) $materialFormula->merma_porcentaje;
 
-                return $cantidad * (1 + ($merma / 100)) * (float) ($stock->costo_promedio ?? 0);
+                $costoUnitario = $materialFormula->metodo_costo === 'manual'
+                    ? (float) ($materialFormula->costo_unitario_override ?? 0)
+                    : (float) ($stock->costo_promedio ?? 0);
+
+                return $cantidad * (1 + ($merma / 100)) * $costoUnitario;
             })
             : 0;
+
+        $costoHerramientasFormula = $formulaProducto
+            ? $formulaProducto->herramientas->sum(fn ($herramientaFormula) => (float) $herramientaFormula->cantidad * (float) $herramientaFormula->costo_unitario_aplicado)
+            : 0;
+
+        $costoFormulaEstimado = $costoMaterialesFormula + $costoHerramientasFormula;
 
         $costoFormulaUnitario = $formulaProducto && (float) $formulaProducto->cantidad_base > 0
             ? $costoFormulaEstimado / (float) $formulaProducto->cantidad_base
@@ -548,6 +1040,9 @@ class HuentitanInventarioController extends Controller
                 ->get();
         }
 
+        $unidadesCompra = UnidadMedidaCatalogo::compra();
+        $unidadesBase = UnidadMedidaCatalogo::base();
+
         $resumen = [
             'stock_actual' => (float) ($stockActual->stock_actual ?? 0),
             'stock_reservado' => (float) ($stockActual->stock_reservado ?? 0),
@@ -571,9 +1066,13 @@ class HuentitanInventarioController extends Controller
             'formulaProducto',
             'materialesDisponibles',
             'materialStockMap',
+            'costoMaterialesFormula',
+            'costoHerramientasFormula',
             'costoFormulaEstimado',
             'costoFormulaUnitario',
-            'resumen'
+            'resumen',
+            'unidadesCompra',
+            'unidadesBase'
         ));
     }
 
@@ -623,7 +1122,7 @@ class HuentitanInventarioController extends Controller
             ->where('requiere_formula', true)
             ->whereHas('huentitanFormula.materiales')
             ->orderBy('nombre')
-            ->get(['id', 'sku', 'nombre', 'unidad']);
+            ->get(['id', 'sku', 'nombre', 'unidad', 'unidad_base']);
 
         $materialIds = $productosFabricables
             ->flatMap(fn ($producto) => $producto->huentitanFormula?->materiales->pluck('material_producto_id') ?? collect())
@@ -1285,35 +1784,12 @@ class HuentitanInventarioController extends Controller
             'nombre' => 'AL-HUENTITAN',
             'tipo' => 'general',
             'activo' => true,
+            'unidad_compra' => 'PZA',
+            'cantidad_por_unidad_compra' => 1,
+            'unidad_base' => 'PZA',
         ]);
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

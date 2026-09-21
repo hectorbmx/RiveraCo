@@ -11,7 +11,8 @@
             <p class="mt-1 text-sm text-gray-600">Catalogo operativo con stock vivo, costo promedio y ultimo movimiento.</p>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="{{ route('huentitan.index') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-md border text-sm font-medium hover:bg-gray-50">Panel</a>
+            {{-- <a href="{{ route('huentitan.index') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-md border text-sm font-medium hover:bg-gray-50">Panel</a> --}}
+            <a href="{{ route('huentitan.productos.create') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-[#FFC107] text-[#0B265A] text-sm font-semibold hover:opacity-90">Nuevo</a>
             <a href="{{ route('huentitan.entradas.create') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Nueva entrada</a>
             <a href="{{ route('huentitan.inventario.index') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-gray-900 text-white text-sm font-medium hover:bg-gray-800">Inventario</a>
         </div>
@@ -91,6 +92,8 @@
                         <th class="px-4 py-3 text-right">Stock minimo</th>
                         <th class="px-4 py-3 text-right">Valor en stock</th>
                         <th class="px-4 py-3 text-left">Ultimo movimiento</th>
+                        <th class="px-4 py-3 text-center">Estado</th>
+                        <th class="px-4 py-3 text-right">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y">
@@ -146,10 +149,28 @@
                                     <span class="text-gray-400">Sin movimientos</span>
                                 @endif
                             </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="inline-flex px-2 py-1 rounded text-xs font-semibold {{ $producto->activo ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-slate-50 text-slate-600 border border-slate-100' }}">
+                                    {{ $producto->activo ? 'Activo' : 'Inactivo' }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <div class="flex flex-wrap justify-end gap-2">
+                                    <a href="{{ route('huentitan.productos.show', $producto) }}" class="text-xs font-semibold text-[#0B265A] hover:underline">Ver</a>
+                                    <a href="{{ route('huentitan.productos.edit', $producto) }}" class="text-xs font-semibold text-blue-600 hover:underline">Editar</a>
+                                    @if($producto->activo)
+                                        <form method="POST" action="{{ route('huentitan.productos.destroy', $producto) }}" onsubmit="return confirm('¿Desactivar este producto HUENTITAN?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="text-xs font-semibold text-red-600 hover:underline">Desactivar</button>
+                                        </form>
+                                    @endif
+                                </div>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-4 py-8 text-center text-gray-500">No hay productos HUENTITAN cargados.</td>
+                            <td colspan="10" class="px-4 py-8 text-center text-gray-500">No hay productos HUENTITAN cargados.</td>
                         </tr>
                     @endforelse
                 </tbody>

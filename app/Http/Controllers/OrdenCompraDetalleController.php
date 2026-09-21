@@ -13,6 +13,7 @@ use App\Services\OrdenCompraTotalesService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Support\Inventario\UnidadMedidaCatalogo;
 
 
 class OrdenCompraDetalleController extends Controller
@@ -219,6 +220,9 @@ class OrdenCompraDetalleController extends Controller
             'descripcion' => $nombre,
             'sku' => $this->generarSkuProductoAutoOc($contexto),
             'unidad' => $unidad !== '' ? $unidad : null,
+            'unidad_compra' => $unidad !== '' ? $unidad : null,
+            'cantidad_por_unidad_compra' => 1,
+            'unidad_base' => $unidad !== '' ? $unidad : null,
             'iva_default' => $request->filled('iva') ? (float) $request->iva : null,
             'activo' => true,
         ];
@@ -277,16 +281,16 @@ class OrdenCompraDetalleController extends Controller
     private function generarSkuProductoAutoOc(string $contexto = 'general'): string
     {
         $prefix = $contexto === 'huentitan' ? 'HUE-' : 'OC-AUTO-';
-        $padding = $contexto === 'huentitan' ? 4 : 6;
+        $padding = 6;
+        $pattern = '/^' . preg_quote($prefix, '/') . '(\d+)$/';
 
         $lastSku = Producto::query()
             ->where('sku', 'like', $prefix . '%')
-            ->orderByDesc('id')
+            ->whereRaw('sku REGEXP ?', ['^' . preg_quote($prefix, '/') . '[0-9]+$'])
+            ->orderByRaw('CAST(SUBSTRING(sku, ' . (strlen($prefix) + 1) . ') AS UNSIGNED) DESC')
             ->value('sku');
 
         $next = 1;
-        $pattern = '/^' . preg_quote($prefix, '/') . '(\d+)$/';
-
         if (preg_match($pattern, (string) $lastSku, $matches)) {
             $next = ((int) $matches[1]) + 1;
             $padding = max($padding, strlen($matches[1]));
@@ -531,5 +535,8 @@ private function syncProductoProveedorDesdeDetalle(OrdenCompra $oc, OrdenCompraD
         });
     }
 }
+
+
+
 
 

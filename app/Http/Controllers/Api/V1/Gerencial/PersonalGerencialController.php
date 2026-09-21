@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Empleado; // AJUSTA: este es el modelo de tu tabla empleados
 use App\Models\ObraAsistencia;
 use App\Models\ObraEmpleado;
+use App\Services\Asistencias\AsistenciaResumenService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
@@ -154,7 +155,7 @@ if ($status === null || $status === '' || $status === 'todos') {
     ]);
 }
 //mostar detalle de un empleado
-public function show(Empleado $empleado)
+public function show(Request $request, Empleado $empleado, AsistenciaResumenService $asistenciaResumen)
 {
     // Cargamos las relaciones necesarias para el detalle
     $empleado->load([
@@ -172,6 +173,8 @@ public function show(Empleado $empleado)
             : Storage::disk('public')->url(ltrim($path, '/'));
     }
     $antiguedad = null;
+
+    $obraActual = $empleado->obraActiva->first();
 
     if ($empleado->Fecha_ingreso) {
         $fechaIngreso = Carbon::parse($empleado->Fecha_ingreso);
@@ -243,12 +246,12 @@ public function show(Empleado $empleado)
                 'id' => $empleado->areaRef->id,
                 'nombre' => $empleado->areaRef->nombre,
             ] : null,
-            'obra_actual' => $empleado->obraActiva->first() ? [
-                'id' => $empleado->obraActiva->first()->id,
-                'nombre' => $empleado->obraActiva->first()->nombre,
-                'clave_obra' => $empleado->obraActiva->first()->clave_obra,
-                'puesto_en_obra' => $empleado->obraActiva->first()->pivot->puesto_en_obra ?? null,
-                'fecha_asignacion' => $empleado->obraActiva->first()->pivot->created_at ?? null,
+            'obra_actual' => $obraActual ? [
+                'id' => $obraActual->id,
+                'nombre' => $obraActual->nombre,
+                'clave_obra' => $obraActual->clave_obra,
+                'puesto_en_obra' => $obraActual->pivot->puesto_en_obra ?? null,
+                'fecha_asignacion' => $obraActual->pivot->created_at ?? null,
             ] : null,
             'contactos_emergencia' => $empleado->contactosEmergencia->map(function ($contacto) {
                     return [
@@ -261,11 +264,17 @@ public function show(Empleado $empleado)
                         'notas' => $contacto->notas,
                     ];
                 })->values(),
+            'asistencia_semana' => $asistenciaResumen->resumenSemanalEmpleado(
+                (int) $empleado->id_Empleado,
+                $request->query('week_start'),
+                $obraActual?->id ? (int) $obraActual->id : null
+            ),
             'asistencias' => $asistencias,
         ]
     ]);
 }
 }
+
 
 
 
