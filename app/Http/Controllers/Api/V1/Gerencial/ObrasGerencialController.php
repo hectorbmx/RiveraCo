@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Gerencial;
 
 use App\Http\Controllers\Controller;
+use App\Models\Comision;
 use App\Models\Obra;
 use Illuminate\Http\Request;
 use App\Models\ObraEmpleado;
@@ -169,6 +170,48 @@ public function show(Request $request, Obra $obra, AsistenciaResumenService $asi
         ];
     })->values();
 
+    $comisionesPorPila = Comision::query()
+        ->select('pila_id', 'estado', DB::raw('count(*) as total'))
+        ->where('obra_id', $obra->id)
+        ->whereNotNull('pila_id')
+        ->groupBy('pila_id', 'estado')
+        ->get()
+        ->groupBy('pila_id');
+
+    $pilasPorTipo = $pilasRaw
+        ->groupBy(fn ($p) => trim((string) ($p->tipo ?? '')) ?: 'Sin tipo')
+        ->map(function ($items, string $tipo) use ($comisionesPorPila) {
+            $programadas = (int) $items->sum(fn ($p) => (int) ($p->cantidad_programada ?? 0));
+            $cerradas = 0;
+            $canceladas = 0;
+            $enProceso = 0;
+
+            foreach ($items as $p) {
+                $estados = $comisionesPorPila->get($p->id, collect());
+                $cerradas += (int) optional($estados->firstWhere('estado', 'cerrada'))->total;
+                $canceladas += (int) optional($estados->firstWhere('estado', 'cancelada'))->total;
+                $enProceso += (int) $estados
+                    ->filter(fn ($row) => ! in_array($row->estado, ['cerrada', 'cancelada'], true))
+                    ->sum('total');
+            }
+
+            $faltantes = max(0, $programadas - $cerradas);
+            $porcentaje = $programadas > 0 ? round(($cerradas / $programadas) * 100, 2) : 0;
+
+            return [
+                'tipo' => $tipo,
+                'programadas' => $programadas,
+                'cerradas' => $cerradas,
+                'faltantes' => $faltantes,
+                'en_proceso' => $enProceso,
+                'canceladas' => $canceladas,
+                'porcentaje' => min($porcentaje, 100),
+                'rows' => (int) $items->count(),
+            ];
+        })
+        ->sortBy('tipo')
+        ->values();
+
     // 5) COBRANZA (misma fuente que web: facturas pagadas)
     // Asegúrate de incluir el campo en tu select si en algún lado usas select([...])
     $montoContratado = (float) ($obra->monto_contratado ?? 0);
@@ -246,6 +289,7 @@ public function show(Request $request, Obra $obra, AsistenciaResumenService $asi
 
 
 }
+
 
 
 

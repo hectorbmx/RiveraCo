@@ -57,43 +57,97 @@
 
     {{-- Tab content --}}
     @if($tab === 'general')
+        @if ($errors->any())
+            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <div class="font-semibold mb-1">Revisa los datos generales:</div>
+                <ul class="list-disc pl-5 space-y-1">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div class="rounded-xl border bg-white p-4">
-                <div class="text-sm font-semibold text-slate-800 mb-3">Datos generales</div>
-
-                <div class="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                        <div class="text-xs text-slate-500">Tipo</div>
-                        <div class="font-medium text-slate-900">{{ $maquina->tipo ?? '—' }}</div>
-                    </div>
-                    <div>
-                        <div class="text-xs text-slate-500">Marca / Modelo</div>
-                        <div class="font-medium text-slate-900">{{ $maquina->marca ?? '—' }} {{ $maquina->modelo ?? '' }}</div>
-                    </div>
-                    <div>
-                        <div class="text-xs text-slate-500">No. serie</div>
-                        <div class="font-medium text-slate-900">{{ $maquina->numero_serie ?? '—' }}</div>
-                    </div>
-                    <div>
-                        <div class="text-xs text-slate-500">Placas</div>
-                        <div class="font-medium text-slate-900">{{ $maquina->placas ?? '—' }}</div>
-                    </div>
-                    <div>
-                        <div class="text-xs text-slate-500">Color</div>
-                        <div class="font-medium text-slate-900">{{ $maquina->color ?? '—' }}</div>
-                    </div>
-                    <div>
-                        <div class="text-xs text-slate-500">Horómetro base</div>
-                        <div class="font-medium text-slate-900">{{ $maquina->horometro_base ?? '—' }}</div>
-                    </div>
+                <div class="mb-4">
+                    <div class="text-sm font-semibold text-slate-800">Datos generales</div>
+                    <div class="text-xs text-slate-500">Edita la información base del equipo sin entrar a configuración empresa.</div>
                 </div>
 
-                @if($maquina->notas)
-                    <div class="mt-4">
-                        <div class="text-xs text-slate-500">Notas</div>
-                        <div class="text-sm text-slate-800 whitespace-pre-line">{{ $maquina->notas }}</div>
+                <form method="POST" action="{{ route('maquinas.updateGeneral', $maquina) }}" class="space-y-4">
+                    @csrf
+                    @method('PUT')
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Nombre *</label>
+                            <input name="nombre" required value="{{ old('nombre', $maquina->nombre) }}"
+                                   class="w-full rounded-lg border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]/20">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Código</label>
+                            <input name="codigo" value="{{ old('codigo', $maquina->codigo) }}"
+                                   class="w-full rounded-lg border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]/20">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Tipo</label>
+                            <input name="tipo" value="{{ old('tipo', $maquina->tipo) }}"
+                                   class="w-full rounded-lg border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]/20">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Marca</label>
+                            <input name="marca" value="{{ old('marca', $maquina->marca) }}"
+                                   class="w-full rounded-lg border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]/20">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Modelo / Año</label>
+                            <input name="modelo" value="{{ old('modelo', $maquina->modelo) }}"
+                                   class="w-full rounded-lg border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]/20">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Número de serie</label>
+                            <input name="numero_serie" value="{{ old('numero_serie', $maquina->numero_serie) }}"
+                                   class="w-full rounded-lg border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]/20">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Placas</label>
+                            <input name="placas" value="{{ old('placas', $maquina->placas) }}"
+                                   class="w-full rounded-lg border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]/20">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Color</label>
+                            <input name="color" value="{{ old('color', $maquina->color) }}"
+                                   class="w-full rounded-lg border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]/20">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Horómetro base</label>
+                            <input name="horometro_base" type="number" step="0.01" min="0"
+                                   value="{{ old('horometro_base', $maquina->horometro_base) }}"
+                                   class="w-full rounded-lg border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]/20">
+                        </div>
                     </div>
-                @endif
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Notas</label>
+                        <textarea name="notas" rows="3"
+                                  class="w-full rounded-lg border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]/20">{{ old('notas', $maquina->notas) }}</textarea>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="submit"
+                                class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium bg-[#0B265A] text-white hover:opacity-90">
+                            Guardar datos generales
+                        </button>
+                    </div>
+                </form>
             </div>
 
             <div class="rounded-xl border bg-white p-4">

@@ -817,6 +817,7 @@ Route::middleware('auth','verified')->group(function () {
 
         Route::get('/', [MaquinaController::class, 'index'])->name('index');
         Route::get('maquinas/{maquina}', [MaquinaController::class, 'show'])->name('show');
+        Route::put('maquinas/{maquina}/general', [MaquinaController::class, 'updateGeneral'])->name('updateGeneral');
     // acciones puntuales (NO crear maquina, solo cambiar estado/ubicacion y agregar seguro)
         Route::post('maquinas/{maquina}/cambiar-estado', [MaquinaController::class, 'cambiarEstado'])->name('cambiarEstado');
         Route::post('maquinas/{maquina}/cambiar-ubicacion', [MaquinaController::class, 'cambiarUbicacion'])->name('cambiarUbicacion');

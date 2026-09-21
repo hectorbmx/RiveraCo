@@ -100,6 +100,28 @@ public function show(Request $request, Maquina $maquina)
 
     return view('maquinas.show', compact('maquina', 'tab'));
 }
+
+public function updateGeneral(Request $request, Maquina $maquina)
+{
+    $data = $request->validate([
+        'codigo'         => ['nullable', 'string', 'max:50'],
+        'nombre'         => ['required', 'string', 'max:120'],
+        'tipo'           => ['nullable', 'string', 'max:120'],
+        'marca'          => ['nullable', 'string', 'max:80'],
+        'modelo'         => ['nullable', 'string', 'max:80'],
+        'numero_serie'   => ['nullable', 'string', 'max:120'],
+        'placas'         => ['nullable', 'string', 'max:30'],
+        'color'          => ['nullable', 'string', 'max:50'],
+        'horometro_base' => ['nullable', 'numeric', 'min:0'],
+        'notas'          => ['nullable', 'string', 'max:2000'],
+    ]);
+
+    $maquina->update($data);
+
+    return redirect()
+        ->route('maquinas.show', ['maquina' => $maquina->id, 'tab' => 'general'])
+        ->with('success', 'Datos generales de la máquina actualizados.');
+}
 public function cambiarEstado(Request $request, Maquina $maquina, MaquinaService $svc)
 {
     \Log::info('MAQUINA cambiarEstado HIT', [
