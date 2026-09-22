@@ -74,7 +74,7 @@
             ],
             [
                 'estado' => 'pendientes',
-                'label' => 'Pendientes',
+                'label' => 'Borradores',
                 'count' => $pendientes,
                 'countClass' => 'text-amber-600',
                 'activeClass' => 'border-amber-500 bg-amber-50 text-amber-800 shadow-sm ring-2 ring-amber-100',
@@ -253,7 +253,7 @@
         };
 
         $estatusSatLabel = match ($estatusSat) {
-            'pendiente' => 'Pendiente de timbrar',
+            'pendiente' => 'Borrador por timbrar',
             'vigente' => 'Vigente',
             'cancelada' => 'Cancelada',
             'solicitud_cancelacion' => 'En proceso de cancelacion',
@@ -327,4 +327,5 @@
 
 </div>
 @endsection
+
 

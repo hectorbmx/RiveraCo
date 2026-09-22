@@ -4578,6 +4578,15 @@ function relacionFacturasModal() {
                                bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition">
                     + Relacionar facturas
                 </button>
+                <button type="button"
+                        @click="openBorradoresHistoricosModal()"
+                        class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg
+                               border border-slate-200 text-slate-700 hover:bg-slate-50 transition">
+                    Borradores
+                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">
+                        {{ $facturaBorradoresHistoricos->count() }}
+                    </span>
+                </button>
 
                 @can('obra_factura_borradores.create.access')
                     <button type="button"
@@ -4860,6 +4869,135 @@ function relacionFacturasModal() {
     @endif
 </div>
 
+
+{{-- Modal de borradores historicos --}}
+<div x-show="openBorradoresHistoricos"
+     x-cloak
+     class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
+    <div class="w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-xl" @click.away="closeBorradoresHistoricosModal()">
+        <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+            <div>
+                <h3 class="text-base font-semibold text-slate-900">Borradores de factura</h3>
+                <p class="text-xs text-slate-500">Autorizados, rechazados, facturados y cancelados de esta obra.</p>
+            </div>
+            <button type="button"
+                    @click="closeBorradoresHistoricosModal()"
+                    class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                Cerrar
+            </button>
+        </div>
+
+        <div class="max-h-[72vh] overflow-auto p-5">
+            @if($facturaBorradoresHistoricos->isEmpty())
+                <div class="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
+                    No hay borradores historicos para esta obra.
+                </div>
+            @else
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-50 text-xs font-semibold text-slate-600">
+                        <tr>
+                            <th class="px-3 py-2 text-left">Fecha</th>
+                            <th class="px-3 py-2 text-left">Concepto</th>
+                            <th class="px-3 py-2 text-right">Total</th>
+                            <th class="px-3 py-2 text-center">Estatus</th>
+                            <th class="px-3 py-2 text-left">Creado por</th>
+                            <th class="px-3 py-2 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach($facturaBorradoresHistoricos as $borrador)
+                            @php
+                                $borradorEditable = $borrador->estatus === \App\Models\ObraFacturaBorrador::ESTATUS_RECHAZADO;
+                                $borradorPayload = [
+                                    'id' => $borrador->id,
+                                    'action' => route('obras.factura-borradores.update', [$obra, $borrador]),
+                                    'fecha' => optional($borrador->fecha)->format('Y-m-d'),
+                                    'forma_pago' => $borrador->forma_pago,
+                                    'metodo_pago' => $borrador->metodo_pago,
+                                    'uso_cfdi' => $borrador->uso_cfdi,
+                                    'sat_concepto_id' => $borrador->sat_concepto_id,
+                                    'concepto_descripcion' => $borrador->concepto_descripcion,
+                                    'cantidad' => (float) $borrador->cantidad,
+                                    'subtotal' => (float) $borrador->subtotal,
+                                    'tipo_iva' => $borrador->tipo_iva_resolved,
+                                    'iva_tasa' => (float) $borrador->iva_tasa,
+                                    'iva' => (float) $borrador->iva,
+                                    'retencion_tipo' => $borrador->retencion_tipo ?: 'sin_retencion',
+                                    'retenciones' => (float) $borrador->retenciones,
+                                    'descuentos' => (float) $borrador->descuentos,
+                                    'usar_complemento_construccion' => (bool) $borrador->usar_complemento_construccion,
+                                    'complemento_construccion' => $borrador->complemento_construccion ?: [],
+                                ];
+                            @endphp
+                            <tr>
+                                <td class="px-3 py-2 whitespace-nowrap">{{ optional($borrador->fecha)->format('d/m/Y') }}</td>
+                                <td class="px-3 py-2">
+                                    <div class="font-semibold text-slate-800">{{ $borrador->concepto_descripcion }}</div>
+                                    @if($borrador->estatus === 'rechazado' && $borrador->observaciones_revision)
+                                        <div class="mt-1 max-w-xl rounded-lg border border-red-100 bg-red-50 px-2 py-1 text-[11px] font-medium text-red-700">
+                                            {{ \Illuminate\Support\Str::limit($borrador->observaciones_revision, 140) }}
+                                        </div>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-2 text-right font-semibold text-slate-900">$ {{ number_format((float) $borrador->total, 2) }}</td>
+                                <td class="px-3 py-2 text-center">
+                                    <span class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold
+                                        {{ $borrador->estatus === 'autorizado'
+                                            ? 'bg-emerald-100 text-emerald-800'
+                                            : ($borrador->estatus === 'rechazado'
+                                                ? 'bg-red-100 text-red-800'
+                                                : ($borrador->estatus === 'facturado'
+                                                    ? 'bg-blue-100 text-blue-800'
+                                                    : 'bg-slate-100 text-slate-700')) }}">
+                                        {{ \App\Models\ObraFacturaBorrador::estatusLabels()[$borrador->estatus] ?? ucfirst($borrador->estatus) }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-2">{{ $borrador->creador?->name ?: '-' }}</td>
+                                <td class="px-3 py-2 text-center">
+                                    <div class="flex flex-wrap items-center justify-center gap-1.5">
+                                        @can('obra_factura_borradores.view.access')
+                                            <a href="{{ route('obras.factura-borradores.show', [$obra, $borrador]) }}"
+                                               class="rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                                                Detalle
+                                            </a>
+                                        @endcan
+
+                                        @can('obra_factura_borradores.print.access')
+                                            <a href="{{ route('obras.factura-borradores.print', [$obra, $borrador]) }}"
+                                               target="_blank"
+                                               class="rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-[#0B265A] hover:bg-slate-50">
+                                                Imprimir
+                                            </a>
+                                        @endcan
+
+                                        @can('obra_factura_borradores.invoice.access')
+                                            @if($borrador->estatus === \App\Models\ObraFacturaBorrador::ESTATUS_AUTORIZADO && !$borrador->sat_factura_id)
+                                                <a href="{{ route('sat.facturacion.create', ['borrador_id' => $borrador->id]) }}"
+                                                   class="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
+                                                    Facturar
+                                                </a>
+                                            @endif
+                                        @endcan
+
+                                        @can('obra_factura_borradores.edit.access')
+                                            @if($borradorEditable)
+                                                <button type="button"
+                                                        @click="closeBorradoresHistoricosModal(); openEditarBorradorModal(@js($borradorPayload))"
+                                                        class="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
+                                                    Editar
+                                                </button>
+                                            @endif
+                                        @endcan
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endif
+        </div>
+    </div>
+</div>
        {{-- Tabla de facturas --}}
 @if($facturasSatObra->isEmpty())
     <div class="border border-dashed border-slate-200 rounded-lg p-4 text-sm text-slate-500">
@@ -5683,6 +5821,7 @@ function relacionFacturasModal() {
                 open: false,
                 openPago: false,
                 openBorrador: false,
+                openBorradoresHistoricos: false,
                 borradorEditando: false,
                 borradorAction: @js(route('obras.factura-borradores.store', $obra)),
                 borradorModalTitle: 'Crear borrador de factura',
@@ -5825,6 +5964,14 @@ function relacionFacturasModal() {
                             referencia: '.',
                         },
                     };
+                },
+
+                openBorradoresHistoricosModal() {
+                    this.openBorradoresHistoricos = true;
+                },
+
+                closeBorradoresHistoricosModal() {
+                    this.openBorradoresHistoricos = false;
                 },
 
                 openBorradorModal() {
@@ -6400,5 +6547,7 @@ function calcularFila(idCampo) {
 //     });
 // });
 </script>
+
+
 
 

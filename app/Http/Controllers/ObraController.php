@@ -1269,6 +1269,7 @@ if ($tab === 'vehiculos') {
         $cuentasBanco = collect();
         $metodosPago = collect();
         $facturaBorradores = collect();
+        $facturaBorradoresHistoricos = collect();
         $satConceptos = collect();
         $usosCfdi = [];
         $metodosPagoCfdi = [];
@@ -1289,10 +1290,18 @@ if ($tab === 'vehiculos') {
             $metodosPago = MetodoPagoEmpresa::where('activo', true)
                 ->orderBy('nombre')
                 ->get();
-            $facturaBorradores = $obra->facturaBorradores()
+            $facturaBorradoresTodos = $obra->facturaBorradores()
                 ->with(['conceptoSat', 'creador', 'autorizador'])
                 ->latest()
                 ->get();
+
+            $facturaBorradores = $facturaBorradoresTodos
+                ->where('estatus', ObraFacturaBorrador::ESTATUS_PENDIENTE_REVISION)
+                ->values();
+
+            $facturaBorradoresHistoricos = $facturaBorradoresTodos
+                ->reject(fn (ObraFacturaBorrador $borrador) => $borrador->estatus === ObraFacturaBorrador::ESTATUS_PENDIENTE_REVISION)
+                ->values();
             $satConceptos = SatConcepto::where('activo', true)
                 ->orderBy('descripcion')
                 ->get();
@@ -1389,6 +1398,7 @@ return view('obras.edit', [
     'cuentasBanco'                => $cuentasBanco,
     'metodosPago'                 => $metodosPago,
     'facturaBorradores'           => $facturaBorradores,
+    'facturaBorradoresHistoricos' => $facturaBorradoresHistoricos,
     'ordenesCompraObra'           => $ordenesCompraObra,
     'satConceptos'                => $satConceptos,
     'usosCfdi'                    => $usosCfdi,
@@ -2673,6 +2683,7 @@ public function relacionarCfdis(Request $request, Obra $obra)
     ]);
 }
 }
+
 
 
 
