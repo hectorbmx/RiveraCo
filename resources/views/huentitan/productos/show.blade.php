@@ -741,8 +741,61 @@
                         </div>
                     </div>
 
-                    <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-5 text-sm text-gray-500">
-                        La tabla de herramientas sigue retirada temporalmente. El formulario para agregar herramientas se mantiene activo.
+                    <div class="border rounded-lg overflow-hidden">
+                        <div class="px-4 py-3 bg-gray-50 border-b flex items-center justify-between gap-3">
+                            <h3 class="text-sm font-semibold text-gray-900">Herramientas del precio unitario</h3>
+                            <span class="text-xs text-gray-500">{{ $formulaHerramientas->count() }} herramientas</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50 text-left text-gray-700">
+                                    <tr>
+                                        <th class="px-4 py-3 font-semibold">Herramienta</th>
+                                        <th class="px-4 py-3 font-semibold text-right">Cantidad</th>
+                                        <th class="px-4 py-3 font-semibold text-right">Costo aplicado</th>
+                                        <th class="px-4 py-3 font-semibold text-right">Costo esperado</th>
+                                        <th class="px-4 py-3 font-semibold">Metodo</th>
+                                        <th class="px-4 py-3"></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <?php if ($formulaHerramientas->isEmpty()) : ?>
+                                        <tr>
+                                            <td colspan="6" class="px-4 py-5 text-sm text-gray-500">
+                                                Aun no hay herramientas agregadas a la formula.
+                                            </td>
+                                        </tr>
+                                    <?php else : ?>
+                                        <?php foreach ($formulaHerramientas as $herramientaFormula) : ?>
+                                            <?php
+                                                $costoEsperadoHerramienta = (float) $herramientaFormula->cantidad * (float) $herramientaFormula->costo_unitario_aplicado;
+                                                $metodoHerramienta = $herramientaFormula->metodo_calculo === 'prorrateo_por_piezas' ? 'Prorrateo por piezas' : 'Manual';
+                                            ?>
+                                            <tr>
+                                                <td class="px-4 py-3">
+                                                    <div class="font-medium text-gray-900">{{ $herramientaFormula->herramienta->nombre ?? 'Herramienta no encontrada' }}</div>
+                                                    <div class="text-xs text-gray-500">{{ $herramientaFormula->herramienta->codigo ?? '-' }}</div>
+                                                    @if($herramientaFormula->notas)
+                                                        <div class="mt-1 text-xs text-gray-500">{{ $herramientaFormula->notas }}</div>
+                                                    @endif
+                                                </td>
+                                                <td class="px-4 py-3 text-right">{{ number_format((float) $herramientaFormula->cantidad, 3) }}</td>
+                                                <td class="px-4 py-3 text-right">${{ number_format((float) $herramientaFormula->costo_unitario_aplicado, 4) }}</td>
+                                                <td class="px-4 py-3 text-right">${{ number_format($costoEsperadoHerramienta, 2) }}</td>
+                                                <td class="px-4 py-3">{{ $metodoHerramienta }}</td>
+                                                <td class="px-4 py-3 text-right">
+                                                    <form method="POST" action="{{ route('huentitan.productos.formula-herramientas.destroy', ['producto' => $producto->id, 'herramienta' => $herramientaFormula->id]) }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="text-xs font-semibold text-red-600 hover:underline">Quitar</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             @endif
