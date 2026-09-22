@@ -20,6 +20,14 @@
     $tipoLabel = str_replace('_', ' ', $producto->tipo_inventario ?? '-');
     $origenLabel = str_replace('_', ' ', $producto->origen_abastecimiento ?? '-');
     $estaBajoMinimo = $resumen['stock_minimo'] > 0 && $resumen['stock_disponible'] <= $resumen['stock_minimo'];
+    $unidadCompraLabel = $producto->unidad_compra ?: ($producto->unidad ?: '-');
+    $unidadBaseLabel = $producto->unidad_base ?: ($producto->unidad ?: '-');
+    $cantidadPorUnidad = (float) ($producto->cantidad_por_unidad_compra ?: 1);
+    $cantidadPorUnidadLabel = rtrim(rtrim(number_format($cantidadPorUnidad, 6, '.', ''), '0'), '.');
+    $unidadLegacyLabel = $producto->unidad ?: trim($unidadCompraLabel . ' ' . $cantidadPorUnidadLabel . ' ' . $unidadBaseLabel);
+    $equivalenciaUnidadLabel = $unidadCompraLabel === $unidadBaseLabel && abs($cantidadPorUnidad - 1) < 0.000001
+        ? '1 ' . $unidadCompraLabel . ' = 1 ' . $unidadBaseLabel
+        : '1 ' . $unidadCompraLabel . ' = ' . $cantidadPorUnidadLabel . ' ' . $unidadBaseLabel;
 @endphp
 
 <div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
@@ -28,12 +36,12 @@
             <div class="text-xs font-semibold uppercase tracking-wide text-gray-500">HUENTITAN / Productos</div>
             <h1 class="mt-1 text-2xl font-semibold text-gray-900">{{ $producto->nombre }}</h1>
             <p class="mt-1 text-sm text-gray-600">
-                {{ $producto->sku ?? 'Sin codigo' }} &middot; {{ $producto->unidad ?? 'Sin unidad' }} &middot; {{ $producto->activo ? 'Activo' : 'Inactivo' }}
+                {{ $producto->sku ?? 'Sin codigo' }} &middot; Base: {{ $unidadBaseLabel }} &middot; Compra: {{ $unidadCompraLabel }} &middot; {{ $producto->activo ? 'Activo' : 'Inactivo' }}
             </p>
         </div>
         <div class="flex flex-wrap gap-2">
             <a href="{{ route('huentitan.productos.index') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-md border text-sm font-medium hover:bg-gray-50">Volver a productos</a>
-            <a href="{{ route('productos.edit', ['producto' => $producto->id, 'tab' => 'general']) }}" class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-gray-900 text-white text-sm font-medium hover:bg-gray-800">Editar catalogo general</a>
+            {{-- <a href="{{ route('huentitan.productos.edit', $producto) }}" class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-gray-900 text-white text-sm font-medium hover:bg-gray-800">Editar producto HUENTITAN</a> --}}
         </div>
     </div>
 
@@ -53,18 +61,22 @@
         <div class="bg-white border rounded-lg p-4">
             <div class="text-xs text-gray-500">Stock actual</div>
             <div class="mt-2 text-2xl font-semibold text-gray-900">{{ number_format($resumen['stock_actual'], 3) }}</div>
+            <div class="mt-1 text-xs text-gray-500">{{ $unidadBaseLabel }}</div>
         </div>
         <div class="bg-white border rounded-lg p-4">
             <div class="text-xs text-gray-500">Disponible</div>
             <div class="mt-2 text-2xl font-semibold {{ $estaBajoMinimo ? 'text-red-600' : 'text-gray-900' }}">{{ number_format($resumen['stock_disponible'], 3) }}</div>
+            <div class="mt-1 text-xs text-gray-500">{{ $unidadBaseLabel }}</div>
         </div>
         <div class="bg-white border rounded-lg p-4">
             <div class="text-xs text-gray-500">Reservado</div>
             <div class="mt-2 text-2xl font-semibold text-gray-900">{{ number_format($resumen['stock_reservado'], 3) }}</div>
+            <div class="mt-1 text-xs text-gray-500">{{ $unidadBaseLabel }}</div>
         </div>
         <div class="bg-white border rounded-lg p-4">
             <div class="text-xs text-gray-500">Stock minimo</div>
             <div class="mt-2 text-2xl font-semibold text-gray-900">{{ number_format($resumen['stock_minimo'], 3) }}</div>
+            <div class="mt-1 text-xs text-gray-500">{{ $unidadBaseLabel }}</div>
         </div>
         <div class="bg-white border rounded-lg p-4">
             <div class="text-xs text-gray-500">Costo promedio</div>
@@ -74,7 +86,7 @@
 
     <div class="bg-white border rounded-lg overflow-hidden">
         <div class="px-4 py-4 border-b bg-[#0B265A] text-white">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm">
                 <div>
                     <div class="text-white/65 text-xs">Tipo</div>
                     <div class="font-semibold capitalize">{{ $tipoLabel }}</div>
@@ -86,6 +98,10 @@
                 <div>
                     <div class="text-white/65 text-xs">Formula</div>
                     <div class="font-semibold">{{ $producto->requiere_formula ? 'Requiere formula' : 'No requiere formula' }}</div>
+                </div>
+                <div>
+                    <div class="text-white/65 text-xs">Unidad base</div>
+                    <div class="font-semibold">{{ $unidadBaseLabel }}</div>
                 </div>
                 <div>
                     <div class="text-white/65 text-xs">Almacen</div>
@@ -143,9 +159,36 @@
                                     <input type="number" step="0.001" min="0" name="stock_minimo" value="{{ old('stock_minimo', $producto->stock_minimo ?? 0) }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
                                 </label>
 
+                                <label class="block">
+                                    <span class="block text-xs font-semibold text-gray-500 mb-1">Unidad compra</span>
+                                    <select name="unidad_compra" required class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                        @foreach($unidadesCompra as $codigo => $nombre)
+                                            <option value="{{ $codigo }}" @selected(old('unidad_compra', $producto->unidad_compra ?: ($producto->unidad_base ?: 'PZA')) === $codigo)>{{ $codigo }} - {{ $nombre }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('unidad_compra')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror
+                                </label>
+
+                                <label class="block">
+                                    <span class="block text-xs font-semibold text-gray-500 mb-1">Cantidad por unidad</span>
+                                    <input type="number" step="0.000001" min="0.000001" name="cantidad_por_unidad_compra" value="{{ old('cantidad_por_unidad_compra', $producto->cantidad_por_unidad_compra ?: 1) }}" required class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                    @error('cantidad_por_unidad_compra')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror
+                                </label>
+
+                                <label class="block">
+                                    <span class="block text-xs font-semibold text-gray-500 mb-1">Unidad base</span>
+                                    <select name="unidad_base" required class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                        @foreach($unidadesBase as $codigo => $nombre)
+                                            <option value="{{ $codigo }}" @selected(old('unidad_base', $producto->unidad_base ?: ($producto->unidad ?: 'PZA')) === $codigo)>{{ $codigo }} - {{ $nombre }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('unidad_base')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror
+                                </label>
+
                                 <div class="border rounded-md p-3">
-                                    <div class="text-xs text-gray-500">Unidad</div>
-                                    <div class="mt-1 text-gray-900">{{ $producto->unidad ?: '-' }}</div>
+                                    <div class="text-xs text-gray-500">Texto legacy actual</div>
+                                    <div class="mt-1 text-gray-900">{{ $unidadLegacyLabel ?: '-' }}</div>
+                                    <div class="mt-1 text-xs text-gray-500">Se recalcula al guardar.</div>
                                 </div>
 
                                 <label class="sm:col-span-2 flex items-start gap-3 rounded-md border border-blue-100 bg-blue-50 p-3">
@@ -208,97 +251,241 @@
                     </section>
                 </div>
             @endif
-
             @if($tab === 'inventario')
-                <div class="space-y-4">
+                @php
+                    $stockActualValor = (float) ($resumen['stock_actual'] ?? 0);
+                    $stockReservadoValor = (float) ($resumen['stock_reservado'] ?? 0);
+                    $stockDisponibleValor = (float) ($resumen['stock_disponible'] ?? 0);
+                    $stockMinimoValor = (float) ($resumen['stock_minimo'] ?? 0);
+                    $porcentajeDisponible = $stockActualValor > 0 ? min(100, max(0, ($stockDisponibleValor / $stockActualValor) * 100)) : 0;
+                @endphp
+
+                <div class="space-y-5">
                     @if($estaBajoMinimo)
-                        <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
                             El stock disponible esta en o por debajo del minimo configurado.
                         </div>
                     @endif
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                        <div class="border rounded-md p-4">
-                            <div class="text-xs text-gray-500">Stock actual</div>
-                            <div class="mt-1 text-xl font-semibold text-gray-900">{{ number_format($resumen['stock_actual'], 3) }}</div>
+                    <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 text-sm">
+                        <div class="rounded-lg border p-4">
+                            <div class="text-xs font-semibold uppercase text-gray-500">Stock actual</div>
+                            <div class="mt-2 text-2xl font-semibold text-gray-900">{{ number_format($stockActualValor, 3) }}</div>
+                            <div class="mt-1 text-xs text-gray-500">{{ $producto->unidad_base ?: ($producto->unidad ?: 'unidad') }}</div>
                         </div>
-                        <div class="border rounded-md p-4">
-                            <div class="text-xs text-gray-500">Stock reservado</div>
-                            <div class="mt-1 text-xl font-semibold text-gray-900">{{ number_format($resumen['stock_reservado'], 3) }}</div>
+                        <div class="rounded-lg border p-4">
+                            <div class="text-xs font-semibold uppercase text-gray-500">Disponible</div>
+                            <div class="mt-2 text-2xl font-semibold {{ $estaBajoMinimo ? 'text-red-600' : 'text-gray-900' }}">{{ number_format($stockDisponibleValor, 3) }}</div>
+                            <div class="mt-3 h-2 overflow-hidden rounded-full bg-gray-100">
+                                <div class="h-full rounded-full {{ $estaBajoMinimo ? 'bg-red-500' : 'bg-[#0B265A]' }}" style="width: {{ $porcentajeDisponible }}%"></div>
+                            </div>
                         </div>
-                        <div class="border rounded-md p-4">
-                            <div class="text-xs text-gray-500">Stock disponible</div>
-                            <div class="mt-1 text-xl font-semibold {{ $estaBajoMinimo ? 'text-red-600' : 'text-gray-900' }}">{{ number_format($resumen['stock_disponible'], 3) }}</div>
+                        <div class="rounded-lg border p-4">
+                            <div class="text-xs font-semibold uppercase text-gray-500">Reservado</div>
+                            <div class="mt-2 text-2xl font-semibold text-gray-900">{{ number_format($stockReservadoValor, 3) }}</div>
+                            <div class="mt-1 text-xs text-gray-500">Apartado para ordenes o salidas</div>
                         </div>
-                        <div class="border rounded-md p-4">
-                            <div class="text-xs text-gray-500">Stock minimo</div>
-                            <div class="mt-1 text-xl font-semibold text-gray-900">{{ number_format($resumen['stock_minimo'], 3) }}</div>
+                        <div class="rounded-lg border p-4">
+                            <div class="text-xs font-semibold uppercase text-gray-500">Stock minimo</div>
+                            <div class="mt-2 text-2xl font-semibold text-gray-900">{{ number_format($stockMinimoValor, 3) }}</div>
+                            <div class="mt-1 text-xs text-gray-500">Editable en Informacion general</div>
                         </div>
-                    </div>
+                    </section>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div class="border rounded-md p-4">
-                            <div class="text-xs text-gray-500">Costo promedio</div>
-                            <div class="mt-1 text-lg font-semibold text-gray-900">${{ number_format($resumen['costo_promedio'], 4) }}</div>
+                    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 text-sm">
+                        <div class="rounded-lg border p-4">
+                            <div class="text-xs font-semibold uppercase text-gray-500">Costo promedio</div>
+                            <div class="mt-2 text-xl font-semibold text-gray-900">${{ number_format((float) ($resumen['costo_promedio'] ?? 0), 4) }}</div>
                         </div>
-                        <div class="border rounded-md p-4">
-                            <div class="text-xs text-gray-500">Valor total</div>
-                            <div class="mt-1 text-lg font-semibold text-gray-900">${{ number_format($resumen['valor_total'], 2) }}</div>
+                        <div class="rounded-lg border p-4">
+                            <div class="text-xs font-semibold uppercase text-gray-500">Valor total</div>
+                            <div class="mt-2 text-xl font-semibold text-gray-900">${{ number_format((float) ($resumen['valor_total'] ?? 0), 2) }}</div>
                         </div>
-                        <div class="border rounded-md p-4">
-                            <div class="text-xs text-gray-500">Almacen</div>
-                            <div class="mt-1 text-lg font-semibold text-gray-900">{{ $almacen->nombre }}</div>
+                        <div class="rounded-lg border p-4">
+                            <div class="text-xs font-semibold uppercase text-gray-500">Almacen</div>
+                            <div class="mt-2 text-xl font-semibold text-gray-900">{{ $almacen->nombre }}</div>
+                            <div class="mt-1 text-xs text-gray-500">{{ $almacen->codigo ?: 'Sin codigo' }}</div>
                         </div>
-                    </div>
+                    </section>
+
+                    <section class="rounded-lg border p-4 text-sm">
+                        <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h2 class="font-semibold text-gray-900">Ultimo corte de inventario</h2>
+                                <p class="text-xs text-gray-500">Referencia del ultimo corte donde aparece este producto.</p>
+                            </div>
+                            <a href="{{ route('huentitan.productos.show', ['producto' => $producto->id, 'tab' => 'kardex']) }}" class="text-xs font-semibold text-[#0B265A] hover:underline">Ver kardex</a>
+                        </div>
+
+                        @if($ultimoDetalleCorte)
+                            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div class="rounded-md bg-gray-50 p-3">
+                                    <div class="text-xs text-gray-500">Corte</div>
+                                    <div class="mt-1 font-semibold text-gray-900">{{ $ultimoDetalleCorte->corte->titulo ?? ('Corte #' . $ultimoDetalleCorte->corte_id) }}</div>
+                                </div>
+                                <div class="rounded-md bg-gray-50 p-3">
+                                    <div class="text-xs text-gray-500">Existencia corte</div>
+                                    <div class="mt-1 font-semibold text-gray-900">{{ number_format((float) $ultimoDetalleCorte->existencia_actual, 3) }}</div>
+                                </div>
+                                <div class="rounded-md bg-gray-50 p-3">
+                                    <div class="text-xs text-gray-500">Valor corte</div>
+                                    <div class="mt-1 font-semibold text-gray-900">${{ number_format((float) $ultimoDetalleCorte->valor_actual, 2) }}</div>
+                                </div>
+                            </div>
+                        @else
+                            <div class="mt-4 rounded-md border border-dashed border-gray-300 bg-gray-50 p-4 text-gray-500">
+                                Este producto aun no tiene cortes de inventario ligados.
+                            </div>
+                        @endif
+                    </section>
                 </div>
             @endif
 
+            @if($tab === 'especificaciones')
+                @php
+                    $especificaciones = (array) ($producto->especificaciones_tecnicas ?? []);
+                @endphp
+
+                <form method="POST" action="{{ route('huentitan.productos.especificaciones.update', $producto) }}" class="space-y-5">
+                    @csrf
+                    @method('PATCH')
+
+                    <section class="rounded-lg border p-5 space-y-4">
+                        <div>
+                            <h2 class="text-sm font-semibold text-gray-900">Especificaciones tecnicas</h2>
+                            <p class="mt-1 text-sm text-gray-500">Captura las medidas, material y notas tecnicas del producto.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <label class="block">
+                                <span class="block text-xs font-semibold text-gray-500 mb-1">Diametro (mm)</span>
+                                <input type="number" step="0.001" min="0" name="diametro" value="{{ old('diametro', $especificaciones['diametro'] ?? '') }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                @error('diametro')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror
+                            </label>
+
+                            <label class="block">
+                                <span class="block text-xs font-semibold text-gray-500 mb-1">Largo (m)</span>
+                                <input type="number" step="0.001" min="0" name="largo" value="{{ old('largo', $especificaciones['largo'] ?? '') }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                @error('largo')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror
+                            </label>
+
+                            <label class="block">
+                                <span class="block text-xs font-semibold text-gray-500 mb-1">Ancho (m)</span>
+                                <input type="number" step="0.001" min="0" name="ancho" value="{{ old('ancho', $especificaciones['ancho'] ?? '') }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                @error('ancho')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror
+                            </label>
+
+                            <label class="block">
+                                <span class="block text-xs font-semibold text-gray-500 mb-1">Alto (m)</span>
+                                <input type="number" step="0.001" min="0" name="alto" value="{{ old('alto', $especificaciones['alto'] ?? '') }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                @error('alto')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror
+                            </label>
+
+                            <label class="block">
+                                <span class="block text-xs font-semibold text-gray-500 mb-1">Espesor (mm)</span>
+                                <input type="number" step="0.001" min="0" name="espesor_calibre" value="{{ old('espesor_calibre', $especificaciones['espesor_calibre'] ?? '') }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                @error('espesor_calibre')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror
+                            </label>
+
+                            <label class="block">
+                                <span class="block text-xs font-semibold text-gray-500 mb-1">Peso (kg)</span>
+                                <input type="number" step="0.001" min="0" name="peso" value="{{ old('peso', $especificaciones['peso'] ?? '') }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                @error('peso')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror
+                            </label>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <label class="block">
+                                <span class="block text-xs font-semibold text-gray-500 mb-1">Material base</span>
+                                <input type="text" name="material_base" value="{{ old('material_base', $especificaciones['material_base'] ?? '') }}" maxlength="160" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                @error('material_base')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror
+                            </label>
+
+                            <label class="block">
+                                <span class="block text-xs font-semibold text-gray-500 mb-1">Acabado</span>
+                                <input type="text" name="acabado" value="{{ old('acabado', $especificaciones['acabado'] ?? '') }}" maxlength="160" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                @error('acabado')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror
+                            </label>
+
+                            <label class="block">
+                                <span class="block text-xs font-semibold text-gray-500 mb-1">Norma</span>
+                                <input type="text" name="norma" value="{{ old('norma', $especificaciones['norma'] ?? '') }}" maxlength="160" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                @error('norma')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror
+                            </label>
+                        </div>
+
+                        <label class="block text-sm">
+                            <span class="block text-xs font-semibold text-gray-500 mb-1">Observaciones</span>
+                            <textarea name="observaciones" rows="4" maxlength="1000" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">{{ old('observaciones', $especificaciones['observaciones'] ?? '') }}</textarea>
+                            @error('observaciones')<span class="mt-1 block text-xs text-red-600">{{ $message }}</span>@enderror
+                        </label>
+
+                        <div class="flex justify-end">
+                            <button class="px-4 py-2 rounded-md bg-[#0B265A] text-white text-sm font-semibold hover:bg-[#12336f]">Guardar especificaciones</button>
+                        </div>
+                    </section>
+                </form>
+            @endif
             @if($tab === 'kardex')
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm">
-                        <thead class="bg-gray-50 text-gray-600">
-                            <tr>
-                                <th class="px-3 py-2 text-left">Fecha</th>
-                                <th class="px-3 py-2 text-left">Movimiento</th>
-                                <th class="px-3 py-2 text-right">Cantidad</th>
-                                <th class="px-3 py-2 text-right">Costo</th>
-                                <th class="px-3 py-2 text-right">Saldo</th>
-                                <th class="px-3 py-2 text-left">Documento</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y">
-                            @forelse($movimientos as $movimiento)
+                <div class="space-y-4">
+                    <div class="rounded-lg border bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                        Las cantidades del kardex se muestran en unidad base: <span class="font-semibold text-gray-900">{{ $unidadBaseLabel }}</span>.
+                    </div>
+
+                    <div class="overflow-x-auto rounded-lg border">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-gray-50 text-gray-600">
                                 <tr>
-                                    <td class="px-3 py-2">{{ $movimiento->fecha ? \Illuminate\Support\Carbon::parse($movimiento->fecha)->format('Y-m-d') : '-' }}</td>
-                                    <td class="px-3 py-2">{{ $movimiento->tipo_movimiento }}</td>
-                                    <td class="px-3 py-2 text-right">{{ number_format((float) $movimiento->cantidad, 3) }}</td>
-                                    <td class="px-3 py-2 text-right">${{ number_format((float) $movimiento->costo_unitario, 4) }}</td>
-                                    <td class="px-3 py-2 text-right">{{ number_format((float) $movimiento->saldo_cantidad, 3) }}</td>
-                                    <td class="px-3 py-2">
-                                        @if($movimiento->documento_huentitan_route)
-                                            <a href="{{ $movimiento->documento_huentitan_route }}" class="font-semibold text-[#0B265A] hover:underline">
-                                                {{ $movimiento->documento_huentitan_tipo }} {{ $movimiento->documento_huentitan_folio }}
-                                            </a>
-                                            @if($movimiento->documento_huentitan_obra)
-                                                <div class="text-xs text-gray-500">{{ $movimiento->documento_huentitan_obra }}</div>
-                                            @endif
-                                        @else
-                                            {{ $movimiento->documento_tipo ?? 'Sin documento' }} {{ $movimiento->documento_id ? '#' . $movimiento->documento_id : '' }}
-                                        @endif
-                                    </td>
+                                    <th class="px-3 py-2 text-left">Fecha</th>
+                                    <th class="px-3 py-2 text-left">Movimiento</th>
+                                    <th class="px-3 py-2 text-right">Cantidad</th>
+                                    <th class="px-3 py-2 text-left">Unidad</th>
+                                    <th class="px-3 py-2 text-right">Costo unit.</th>
+                                    <th class="px-3 py-2 text-right">Saldo</th>
+                                    <th class="px-3 py-2 text-left">Documento</th>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="px-3 py-8 text-center text-gray-500">Todavia no hay movimientos aplicados para este producto en HUENTITAN.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody class="divide-y">
+                                @if($movimientos->isEmpty())
+                                    <tr>
+                                        <td colspan="7" class="px-3 py-8 text-center text-gray-500">Todavia no hay movimientos aplicados para este producto en HUENTITAN.</td>
+                                    </tr>
+                                @else
+                                    @foreach($movimientos as $movimiento)
+                                        <tr>
+                                            <td class="px-3 py-2">{{ $movimiento->fecha ? \Illuminate\Support\Carbon::parse($movimiento->fecha)->format('Y-m-d') : '-' }}</td>
+                                            <td class="px-3 py-2">{{ $movimiento->tipo_movimiento }}</td>
+                                            <td class="px-3 py-2 text-right">{{ number_format((float) $movimiento->cantidad, 3) }}</td>
+                                            <td class="px-3 py-2 text-gray-700">{{ $unidadBaseLabel }}</td>
+                                            <td class="px-3 py-2 text-right">${{ number_format((float) $movimiento->costo_unitario, 4) }}</td>
+                                            <td class="px-3 py-2 text-right">{{ number_format((float) $movimiento->saldo_cantidad, 3) }}</td>
+                                            <td class="px-3 py-2">
+                                                @if($movimiento->documento_huentitan_route)
+                                                    <a href="{{ $movimiento->documento_huentitan_route }}" class="font-semibold text-[#0B265A] hover:underline">
+                                                        {{ $movimiento->documento_huentitan_tipo }} {{ $movimiento->documento_huentitan_folio }}
+                                                    </a>
+                                                    @if($movimiento->documento_huentitan_obra)
+                                                        <div class="text-xs text-gray-500">{{ $movimiento->documento_huentitan_obra }}</div>
+                                                    @endif
+                                                @else
+                                                    {{ $movimiento->documento_tipo ?? 'Sin documento' }} {{ $movimiento->documento_id ? '#' . $movimiento->documento_id : '' }}
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                @endif
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>{{ $movimientos->links() }}</div>
                 </div>
-                <div class="mt-4">{{ $movimientos->links() }}</div>
             @endif
 
             @if($tab === 'formula')
+                @php
+                    $formulaMateriales = $formulaProducto ? $formulaProducto->materiales : collect();
+                    $formulaHerramientas = $formulaProducto ? $formulaProducto->herramientas : collect();
+                @endphp
                 <div class="space-y-5">
                     <form method="POST" action="{{ route('huentitan.productos.formula.update', $producto) }}" class="border rounded-lg p-5 space-y-4">
                         @csrf
@@ -319,7 +506,7 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm">
                             <label class="block">
                                 <span class="block text-xs font-semibold text-gray-500 mb-1">Cantidad base</span>
                                 <input type="number" step="0.001" min="0.001" name="cantidad_base" value="{{ old('cantidad_base', $formulaProducto->cantidad_base ?? 1) }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
@@ -369,6 +556,7 @@
                                             <input type="text" data-material-search-input autocomplete="off" placeholder="Buscar por nombre o codigo" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]" required>
                                         </label>
                                         <div data-material-selected class="mt-2 hidden rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-[#0B265A]"></div>
+                                        <div data-material-unit-summary class="mt-2 hidden rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600"></div>
                                         <div data-material-results class="absolute z-20 mt-1 hidden max-h-64 w-full overflow-y-auto rounded-md border bg-white shadow-lg"></div>
                                     </div>
                                     <label class="block md:col-span-2">
@@ -464,11 +652,10 @@
                             </form>
                         </div>
                     </div>
-
                     <div class="border rounded-lg overflow-hidden">
                         <div class="px-4 py-3 bg-gray-50 border-b flex items-center justify-between gap-3">
                             <h3 class="text-sm font-semibold text-gray-900">Materiales de la formula</h3>
-                            <span class="text-xs text-gray-500">{{ $formulaProducto ? $formulaProducto->materiales->count() : 0 }} materiales</span>
+                            <span class="text-xs text-gray-500">{{ $formulaMateriales->count() }} materiales</span>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="min-w-full text-sm">
@@ -476,136 +663,140 @@
                                     <tr>
                                         <th class="px-3 py-2 text-left">Material</th>
                                         <th class="px-3 py-2 text-right">Cantidad</th>
+                                        <th class="px-3 py-2 text-left">Unidad consumo</th>
+                                        <th class="px-3 py-2 text-left">Equiv. compra</th>
                                         <th class="px-3 py-2 text-right">Merma</th>
                                         <th class="px-3 py-2 text-right">Stock disp.</th>
                                         <th class="px-3 py-2 text-right">Costo unit.</th>
-                                        <th class="px-3 py-2 text-right">Costo esperado</th>
-                                        <th class="px-3 py-2"></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y">
-                                    @forelse(($formulaProducto->materiales ?? collect()) as $materialFormula)
-                                        @php
-                                            $stockMaterial = $materialStockMap->get($materialFormula->material_producto_id);
-                                            $cantidadConMerma = (float) $materialFormula->cantidad * (1 + ((float) $materialFormula->merma_porcentaje / 100));
-                                            $costoUnitarioMaterial = $materialFormula->metodo_costo === 'manual' ? (float) ($materialFormula->costo_unitario_override ?? 0) : (float) ($stockMaterial->costo_promedio ?? 0);
-                                            $costoEsperadoMaterial = $cantidadConMerma * $costoUnitarioMaterial;
-                                            $metodoCostoMaterial = $materialFormula->metodo_costo === 'manual' ? 'Manual' : 'Promedio';
-                                        @endphp
-                                        <tr>
-                                            <td class="px-3 py-2">
-                                                <div class="font-medium text-gray-900">{{ $materialFormula->material->nombre ?? 'Material no encontrado' }}</div>
-                                                <div class="text-xs text-gray-500">{{ $materialFormula->material->sku ?? '-' }} · {{ $metodoCostoMaterial }}</div>
-                                                @if($materialFormula->notas)<div class="text-xs text-gray-500">{{ $materialFormula->notas }}</div>@endif
-                                            </td>
-                                            <td class="px-3 py-2 text-right">{{ number_format((float) $materialFormula->cantidad, 3) }} {{ $materialFormula->unidad }}</td>
-                                            <td class="px-3 py-2 text-right">{{ number_format((float) $materialFormula->merma_porcentaje, 3) }}%</td>
-                                            <td class="px-3 py-2 text-right">{{ number_format(max(0, (float) ($stockMaterial->stock_actual ?? 0) - (float) ($stockMaterial->stock_reservado ?? 0)), 3) }}</td>
-                                            <td class="px-3 py-2 text-right">${{ number_format($costoUnitarioMaterial, 4) }}</td>
-                                            <td class="px-3 py-2 text-right">${{ number_format($costoEsperadoMaterial, 2) }}</td>
-                                            <td class="px-3 py-2 text-right">
-                                                <form method="POST" action="{{ route('huentitan.productos.formula-materiales.destroy', ['producto' => $producto->id, 'material' => $materialFormula->id]) }}">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button class="text-xs font-semibold text-red-600 hover:underline">Quitar</button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="7" class="px-3 py-8 text-center text-gray-500">Aun no hay materiales capturados en la formula.</td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="border rounded-lg overflow-hidden">
-                        <div class="px-4 py-3 bg-gray-50 border-b flex items-center justify-between gap-3">
-                            <h3 class="text-sm font-semibold text-gray-900">Herramientas del precio unitario</h3>
-                            <span class="text-xs text-gray-500">{{ $formulaProducto ? $formulaProducto->herramientas->count() : 0 }} herramientas</span>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50 text-gray-600">
-                                    <tr>
-                                        <th class="px-3 py-2 text-left">Herramienta</th>
-                                        <th class="px-3 py-2 text-right">Cantidad</th>
-                                        <th class="px-3 py-2 text-right">Costo aplicado</th>
                                         <th class="px-3 py-2 text-right">Costo esperado</th>
                                         <th class="px-3 py-2 text-left">Metodo</th>
                                         <th class="px-3 py-2"></th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y">
-                                    @forelse(($formulaProducto->herramientas ?? collect()) as $herramientaFormula)
-                                        @php
-                                            $costoEsperadoHerramienta = (float) $herramientaFormula->cantidad * (float) $herramientaFormula->costo_unitario_aplicado;
-                                            $metodoHerramienta = $herramientaFormula->metodo_calculo === 'prorrateo_por_piezas' ? 'Prorrateo por piezas' : 'Manual';
-                                        @endphp
+                                    <?php if ($formulaMateriales->isEmpty()) : ?>
                                         <tr>
-                                            <td class="px-3 py-2">
-                                                <div class="font-medium text-gray-900">{{ $herramientaFormula->herramienta->nombre ?? 'Herramienta no encontrada' }}</div>
-                                                <div class="text-xs text-gray-500">{{ $herramientaFormula->herramienta->codigo ?? '-' }}</div>
-                                                @if($herramientaFormula->notas)<div class="text-xs text-gray-500">{{ $herramientaFormula->notas }}</div>@endif
-                                            </td>
-                                            <td class="px-3 py-2 text-right">{{ number_format((float) $herramientaFormula->cantidad, 3) }}</td>
-                                            <td class="px-3 py-2 text-right">${{ number_format((float) $herramientaFormula->costo_unitario_aplicado, 4) }}</td>
-                                            <td class="px-3 py-2 text-right">${{ number_format($costoEsperadoHerramienta, 2) }}</td>
-                                            <td class="px-3 py-2">{{ $metodoHerramienta }}</td>
-                                            <td class="px-3 py-2 text-right">
-                                                <form method="POST" action="{{ route('huentitan.productos.formula-herramientas.destroy', ['producto' => $producto->id, 'herramienta' => $herramientaFormula->id]) }}">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button class="text-xs font-semibold text-red-600 hover:underline">Quitar</button>
-                                                </form>
-                                            </td>
+                                            <td colspan="10" class="px-3 py-8 text-center text-gray-500">Aun no hay materiales capturados en la formula.</td>
                                         </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="6" class="px-3 py-8 text-center text-gray-500">Aun no hay herramientas capturadas en el precio unitario.</td>
-                                        </tr>
-                                    @endforelse
+                                    <?php else : ?>
+                                        <?php foreach ($formulaMateriales as $materialFormula) : ?>
+                                            <?php
+                                                $stockMaterial = $materialStockMap->get($materialFormula->material_producto_id);
+                                                $materialProducto = $materialFormula->material;
+                                                $unidadConsumoMaterial = $materialFormula->unidad ?: ($materialProducto->unidad_base ?? $materialProducto->unidad ?? null);
+                                                $unidadCompraMaterial = $materialProducto ? ($materialProducto->unidad_compra ?: $unidadConsumoMaterial) : $unidadConsumoMaterial;
+                                                $cantidadPorUnidadMaterial = $materialProducto ? (float) ($materialProducto->cantidad_por_unidad_compra ?: 1) : 1;
+                                                $cantidadPorUnidadMaterialLabel = rtrim(rtrim(number_format($cantidadPorUnidadMaterial, 6, '.', ''), '0'), '.');
+                                                $equivalenciaMaterial = $unidadCompraMaterial && $unidadConsumoMaterial
+                                                    ? '1 ' . $unidadCompraMaterial . ' = ' . $cantidadPorUnidadMaterialLabel . ' ' . $unidadConsumoMaterial
+                                                    : null;
+                                                $cantidadCompraMaterial = $cantidadPorUnidadMaterial > 0
+                                                    ? (float) $materialFormula->cantidad / $cantidadPorUnidadMaterial
+                                                    : null;
+                                                $stockDisponibleMaterial = max(0, (float) ($stockMaterial->stock_actual ?? 0) - (float) ($stockMaterial->stock_reservado ?? 0));
+                                                $cantidadConMerma = (float) $materialFormula->cantidad * (1 + ((float) $materialFormula->merma_porcentaje / 100));
+                                                $costoUnitarioMaterial = $materialFormula->metodo_costo === 'manual'
+                                                    ? (float) ($materialFormula->costo_unitario_override ?? 0)
+                                                    : (float) ($stockMaterial->costo_promedio ?? 0);
+                                                $costoEsperadoMaterial = $cantidadConMerma * $costoUnitarioMaterial;
+                                                $metodoCostoMaterial = $materialFormula->metodo_costo === 'manual' ? 'Manual' : 'Promedio inventario';
+                                            ?>
+                                            <tr>
+                                                <td class="px-3 py-2">
+                                                    <div class="font-medium text-gray-900">{{ $materialFormula->material->nombre ?? 'Material no encontrado' }}</div>
+                                                    <div class="text-xs text-gray-500">{{ $materialFormula->material->sku ?? '-' }}</div>
+                                                    @if($materialFormula->notas)
+                                                        <div class="text-xs text-gray-500">{{ $materialFormula->notas }}</div>
+                                                    @endif
+                                                </td>
+                                                <td class="px-3 py-2 text-right">{{ number_format((float) $materialFormula->cantidad, 3) }}</td>
+                                                <td class="px-3 py-2">{{ $unidadConsumoMaterial ?: '-' }}</td>
+                                                <td class="px-3 py-2">
+                                                    @if($cantidadCompraMaterial !== null && $unidadCompraMaterial)
+                                                        <div>{{ number_format($cantidadCompraMaterial, 3) }} {{ $unidadCompraMaterial }}</div>
+                                                        @if($equivalenciaMaterial)
+                                                            <div class="text-xs text-gray-500">{{ $equivalenciaMaterial }}</div>
+                                                        @endif
+                                                    @else
+                                                        -
+                                                    @endif
+                                                </td>
+                                                <td class="px-3 py-2 text-right">{{ number_format((float) $materialFormula->merma_porcentaje, 3) }}%</td>
+                                                <td class="px-3 py-2 text-right">{{ number_format($stockDisponibleMaterial, 3) }}</td>
+                                                <td class="px-3 py-2 text-right">${{ number_format($costoUnitarioMaterial, 4) }}</td>
+                                                <td class="px-3 py-2 text-right">${{ number_format($costoEsperadoMaterial, 2) }}</td>
+                                                <td class="px-3 py-2">{{ $metodoCostoMaterial }}</td>
+                                                <td class="px-3 py-2 text-right">
+                                                    <form method="POST" action="{{ route('huentitan.productos.formula-materiales.destroy', ['producto' => $producto->id, 'material' => $materialFormula->id]) }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button class="text-xs font-semibold text-red-600 hover:underline">Quitar</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
                     </div>
+
+                    <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-5 text-sm text-gray-500">
+                        La tabla de herramientas sigue retirada temporalmente. El formulario para agregar herramientas se mantiene activo.
+                    </div>
                 </div>
             @endif
             @if($tab === 'proveedores')
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm">
-                        <thead class="bg-gray-50 text-gray-600">
-                            <tr>
-                                <th class="px-3 py-2 text-left">Proveedor</th>
-                                <th class="px-3 py-2 text-left">RFC</th>
-                                <th class="px-3 py-2 text-right">Precio lista</th>
-                                <th class="px-3 py-2 text-left">Moneda</th>
-                                <th class="px-3 py-2 text-right">Entrega</th>
-                                <th class="px-3 py-2 text-left">Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y">
-                            @forelse($producto->proveedores as $proveedor)
+                <div class="space-y-4">
+                    <div class="rounded-lg border bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                        Los precios de proveedor se interpretan por unidad de compra: <span class="font-semibold text-gray-900">{{ $unidadCompraLabel }}</span>. Equivalencia actual: <span class="font-semibold text-gray-900">{{ $equivalenciaUnidadLabel }}</span>.
+                    </div>
+
+                    <div class="overflow-x-auto rounded-lg border">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-gray-50 text-gray-600">
                                 <tr>
-                                    <td class="px-3 py-2 font-medium text-gray-900">{{ $proveedor->nombre }}</td>
-                                    <td class="px-3 py-2">{{ $proveedor->rfc ?? '-' }}</td>
-                                    <td class="px-3 py-2 text-right">${{ number_format((float) $proveedor->pivot->precio_lista, 2) }}</td>
-                                    <td class="px-3 py-2">{{ $proveedor->pivot->moneda ?? '-' }}</td>
-                                    <td class="px-3 py-2 text-right">{{ $proveedor->pivot->tiempo_entrega_dias !== null ? $proveedor->pivot->tiempo_entrega_dias . ' dias' : '-' }}</td>
-                                    <td class="px-3 py-2">{{ $proveedor->pivot->activo ? 'Activo' : 'Inactivo' }}</td>
+                                    <th class="px-3 py-2 text-left">Proveedor</th>
+                                    <th class="px-3 py-2 text-left">RFC</th>
+                                    <th class="px-3 py-2 text-right">Precio compra</th>
+                                    <th class="px-3 py-2 text-left">Unidad compra</th>
+                                    <th class="px-3 py-2 text-right">Costo base est.</th>
+                                    <th class="px-3 py-2 text-left">Moneda</th>
+                                    <th class="px-3 py-2 text-right">Entrega</th>
+                                    <th class="px-3 py-2 text-left">Estado</th>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="px-3 py-8 text-center text-gray-500">Todavia no hay proveedores ligados a este producto.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody class="divide-y">
+                                <?php if ($producto->proveedores->isEmpty()) : ?>
+                                    <tr>
+                                        <td colspan="8" class="px-3 py-8 text-center text-gray-500">Todavia no hay proveedores ligados a este producto.</td>
+                                    </tr>
+                                <?php else : ?>
+                                    <?php foreach ($producto->proveedores as $proveedor) : ?>
+                                        <?php
+                                            $precioLista = (float) ($proveedor->pivot->precio_lista ?? 0);
+                                            $costoBaseEstimado = $cantidadPorUnidad > 0 ? $precioLista / $cantidadPorUnidad : $precioLista;
+                                        ?>
+                                        <tr>
+                                            <td class="px-3 py-2 font-medium text-gray-900">{{ $proveedor->nombre }}</td>
+                                            <td class="px-3 py-2">{{ $proveedor->rfc ?? '-' }}</td>
+                                            <td class="px-3 py-2 text-right">${{ number_format($precioLista, 2) }}</td>
+                                            <td class="px-3 py-2 text-gray-700">{{ $unidadCompraLabel }}</td>
+                                            <td class="px-3 py-2 text-right">
+                                                ${{ number_format($costoBaseEstimado, 4) }}
+                                                <div class="text-xs text-gray-500">por {{ $unidadBaseLabel }}</div>
+                                            </td>
+                                            <td class="px-3 py-2">{{ $proveedor->pivot->moneda ?? '-' }}</td>
+                                            <td class="px-3 py-2 text-right">{{ $proveedor->pivot->tiempo_entrega_dias !== null ? $proveedor->pivot->tiempo_entrega_dias . ' dias' : '-' }}</td>
+                                            <td class="px-3 py-2">{{ $proveedor->pivot->activo ? 'Activo' : 'Inactivo' }}</td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             @endif
-
             @if($tab === 'costos')
                 <div class="space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -635,19 +826,21 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y">
-                                @forelse($historialCostos as $costo)
-                                    <tr>
-                                        <td class="px-3 py-2">{{ $costo->created_at ? \Illuminate\Support\Carbon::parse($costo->created_at)->format('Y-m-d') : '-' }}</td>
-                                        <td class="px-3 py-2">{{ $costo->proveedor_nombre }}</td>
-                                        <td class="px-3 py-2 text-right">${{ number_format((float) $costo->precio, 2) }}</td>
-                                        <td class="px-3 py-2">{{ $costo->moneda ?? '-' }}</td>
-                                        <td class="px-3 py-2">{{ $costo->orden_compra_id ? '#' . $costo->orden_compra_id : '-' }}</td>
-                                    </tr>
-                                @empty
+                                @if($historialCostos->isEmpty())
                                     <tr>
                                         <td colspan="5" class="px-3 py-8 text-center text-gray-500">No hay historial de costos para este producto.</td>
                                     </tr>
-                                @endforelse
+                                @else
+                                    @foreach($historialCostos as $costo)
+                                        <tr>
+                                            <td class="px-3 py-2">{{ $costo->created_at ? \Illuminate\Support\Carbon::parse($costo->created_at)->format('Y-m-d') : '-' }}</td>
+                                            <td class="px-3 py-2">{{ $costo->proveedor_nombre }}</td>
+                                            <td class="px-3 py-2 text-right">${{ number_format((float) $costo->precio, 2) }}</td>
+                                            <td class="px-3 py-2">{{ $costo->moneda ?? '-' }}</td>
+                                            <td class="px-3 py-2">{{ $costo->orden_compra_id ? '#' . $costo->orden_compra_id : '-' }}</td>
+                                        </tr>
+                                    @endforeach
+                                @endif
                             </tbody>
                         </table>
                     </div>
@@ -665,6 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const hiddenId = root.querySelector('[data-material-id]');
         const results = root.querySelector('[data-material-results]');
         const selected = root.querySelector('[data-material-selected]');
+        const unitSummary = root.querySelector('[data-material-unit-summary]');
         const form = root.closest('form');
         const unitInput = form.querySelector('[data-material-unit]');
         const costMethodInput = form.querySelector('[data-material-cost-method]');
@@ -679,16 +873,37 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const setSelected = (material) => {
+            const unidadConsumo = material.unidad_consumo || material.unidad || '';
+            const unidadCompra = material.unidad_compra || '';
+            const equivalencia = material.equivalencia || '';
+
             hiddenId.value = material.id;
             input.value = material.label;
             if (unitInput) {
-                unitInput.value = material.unidad || '';
+                unitInput.value = unidadConsumo;
             }
             if (averageCostInput) {
                 averageCostInput.value = '$' + Number(material.costo_promedio || 0).toFixed(4);
             }
-            selected.textContent = material.label + (material.unidad ? ' / ' + material.unidad : '');
+            selected.textContent = material.label;
             selected.classList.remove('hidden');
+
+            if (unitSummary) {
+                const parts = [];
+                if (unidadConsumo) {
+                    parts.push('Consumo en formula: ' + unidadConsumo);
+                }
+                if (unidadCompra) {
+                    parts.push('Compra: ' + unidadCompra);
+                }
+                if (equivalencia) {
+                    parts.push('Equivalencia: ' + equivalencia);
+                }
+                parts.push('Costo prom.: $' + Number(material.costo_promedio || 0).toFixed(4));
+                unitSummary.textContent = parts.join(' / ');
+                unitSummary.classList.remove('hidden');
+            }
+
             clearResults();
         };
 
@@ -714,7 +929,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const unit = document.createElement('span');
                 unit.className = 'block text-xs text-gray-500';
-                unit.textContent = (item.unidad ? 'Unidad: ' + item.unidad : 'Sin unidad') + ' / costo prom. $' + Number(item.costo_promedio || 0).toFixed(4);
+                unit.textContent = 'Consumo: ' + (item.unidad_consumo || item.unidad || 'sin unidad') + (item.unidad_compra ? ' / Compra: ' + item.unidad_compra : '') + (item.equivalencia ? ' / ' + item.equivalencia : '') + ' / costo prom. $' + Number(item.costo_promedio || 0).toFixed(4);
 
                 button.appendChild(label);
                 button.appendChild(unit);
@@ -729,6 +944,10 @@ document.addEventListener('DOMContentLoaded', () => {
             hiddenId.value = '';
             if (unitInput) {
                 unitInput.value = '';
+            }
+            if (unitSummary) {
+                unitSummary.textContent = '';
+                unitSummary.classList.add('hidden');
             }
             selected.classList.add('hidden');
             selected.textContent = '';
@@ -914,6 +1133,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 @endpush
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

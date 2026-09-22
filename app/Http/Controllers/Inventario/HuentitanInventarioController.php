@@ -520,6 +520,10 @@ class HuentitanInventarioController extends Controller
                 'unidad_base' => $data['unidad_base'],
             'tipo_inventario' => $data['tipo_inventario'],
             'origen_abastecimiento' => $data['origen_abastecimiento'],
+            'unidad' => UnidadMedidaCatalogo::textoLegacy($data['unidad_compra'], $data['cantidad_por_unidad_compra'], $data['unidad_base']),
+            'unidad_compra' => $data['unidad_compra'],
+            'cantidad_por_unidad_compra' => $data['cantidad_por_unidad_compra'],
+            'unidad_base' => $data['unidad_base'],
             'requiere_formula' => $request->boolean('requiere_formula'),
             'stock_minimo' => $data['stock_minimo'] ?? 0,
             'activo' => $request->boolean('activo'),
@@ -602,6 +606,9 @@ class HuentitanInventarioController extends Controller
         $data = $request->validate([
             'tipo_inventario' => ['required', 'in:materia_prima,producto_terminado,subensamble'],
             'origen_abastecimiento' => ['required', 'in:compra,fabricacion,ambos'],
+            'unidad_compra' => ['required', UnidadMedidaCatalogo::regla()],
+            'cantidad_por_unidad_compra' => ['required', 'numeric', 'gt:0'],
+            'unidad_base' => ['required', UnidadMedidaCatalogo::regla()],
             'requiere_formula' => ['nullable', 'boolean'],
             'stock_minimo' => ['nullable', 'numeric', 'min:0'],
         ]);
@@ -609,6 +616,10 @@ class HuentitanInventarioController extends Controller
         $producto->update([
             'tipo_inventario' => $data['tipo_inventario'],
             'origen_abastecimiento' => $data['origen_abastecimiento'],
+            'unidad' => UnidadMedidaCatalogo::textoLegacy($data['unidad_compra'], $data['cantidad_por_unidad_compra'], $data['unidad_base']),
+            'unidad_compra' => $data['unidad_compra'],
+            'cantidad_por_unidad_compra' => $data['cantidad_por_unidad_compra'],
+            'unidad_base' => $data['unidad_base'],
             'requiere_formula' => $request->boolean('requiere_formula'),
             'stock_minimo' => $data['stock_minimo'] ?? 0,
         ]);
@@ -626,12 +637,12 @@ class HuentitanInventarioController extends Controller
         abort_unless(str_starts_with((string) $producto->sku, 'HUE-'), 404);
 
         $data = $request->validate([
-            'diametro' => ['nullable', 'string', 'max:100'],
-            'largo' => ['nullable', 'string', 'max:100'],
-            'ancho' => ['nullable', 'string', 'max:100'],
-            'alto' => ['nullable', 'string', 'max:100'],
-            'espesor_calibre' => ['nullable', 'string', 'max:100'],
-            'peso' => ['nullable', 'string', 'max:100'],
+            'diametro' => ['nullable', 'numeric', 'min:0'],
+            'largo' => ['nullable', 'numeric', 'min:0'],
+            'ancho' => ['nullable', 'numeric', 'min:0'],
+            'alto' => ['nullable', 'numeric', 'min:0'],
+            'espesor_calibre' => ['nullable', 'numeric', 'min:0'],
+            'peso' => ['nullable', 'numeric', 'min:0'],
             'material_base' => ['nullable', 'string', 'max:160'],
             'acabado' => ['nullable', 'string', 'max:160'],
             'norma' => ['nullable', 'string', 'max:160'],
@@ -675,7 +686,7 @@ class HuentitanInventarioController extends Controller
             })
             ->orderBy('nombre')
             ->limit(15)
-            ->get(['id', 'sku', 'nombre', 'unidad', 'unidad_base']);
+            ->get(['id', 'sku', 'nombre', 'unidad', 'unidad_compra', 'cantidad_por_unidad_compra', 'unidad_base']);
 
         $almacen = $this->almacenHuentitan();
         $stockMap = InventarioStock::query()
@@ -687,11 +698,24 @@ class HuentitanInventarioController extends Controller
         return response()->json($materiales->map(function ($material) use ($stockMap) {
             $stock = $stockMap->get($material->id);
 
+            $unidadBase = $material->unidad_base ?: $material->unidad;
+            $unidadCompra = $material->unidad_compra ?: $unidadBase;
+            $cantidadPorUnidad = (float) ($material->cantidad_por_unidad_compra ?: 1);
+            $cantidadPorUnidadLabel = rtrim(rtrim(number_format($cantidadPorUnidad, 6, '.', ''), '0'), '.');
+            $equivalencia = $unidadCompra && $unidadBase
+                ? '1 ' . $unidadCompra . ' = ' . $cantidadPorUnidadLabel . ' ' . $unidadBase
+                : null;
+
             return [
                 'id' => $material->id,
                 'sku' => $material->sku,
                 'nombre' => $material->nombre,
-                'unidad' => $material->unidad_base ?: $material->unidad,
+                'unidad' => $unidadBase,
+                'unidad_consumo' => $unidadBase,
+                'unidad_base' => $unidadBase,
+                'unidad_compra' => $unidadCompra,
+                'cantidad_por_unidad_compra' => $cantidadPorUnidad,
+                'equivalencia' => $equivalencia,
                 'costo_promedio' => (float) ($stock->costo_promedio ?? 0),
                 'label' => trim(($material->sku ? $material->sku . ' - ' : '') . $material->nombre),
             ];
@@ -936,9 +960,20 @@ class HuentitanInventarioController extends Controller
             ->orderBy('nombre')
             ->get(['id', 'sku', 'nombre', 'unidad', 'unidad_base']);
 
+        $materialIdsFormula = $formulaProducto
+            ? $formulaProducto->materiales->pluck('material_producto_id')
+            : collect();
+
+        $materialStockIds = $materialesDisponibles
+            ->pluck('id')
+            ->merge($materialIdsFormula)
+            ->filter()
+            ->unique()
+            ->values();
+
         $materialStockMap = InventarioStock::query()
             ->where('almacen_id', $almacen->id)
-            ->whereIn('producto_id', $materialesDisponibles->pluck('id'))
+            ->whereIn('producto_id', $materialStockIds)
             ->get()
             ->keyBy('producto_id');
 
