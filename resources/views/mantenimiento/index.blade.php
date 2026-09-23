@@ -24,7 +24,7 @@
 
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <table class="min-w-full text-sm">
-                <thead class="bg-slate-50 border-b border-slate-200">
+                <thead class="bg-[#0B265A] text-white">
                     <tr>
                         <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">ID</th>
                         <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Activo</th>
