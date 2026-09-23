@@ -12,12 +12,15 @@ use App\Models\ObraEmpleado;
 use App\Models\ObraPila;
 use App\Models\User;
 use App\Models\UsuarioApp;
+use App\Notifications\ObraOperacionNotification;
 use App\Services\Mobile\AppMobileContextService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -206,6 +209,14 @@ class ResidenteComisionesService
             return $comision;
         });
 
+        $etapaPerforacion = $comision->etapas()
+            ->where('etapa', ComisionEtapa::ETAPA_PERFORACION)
+            ->first();
+
+        if ($etapaPerforacion) {
+            $this->notificarMovimientoObra($user, $obra, $comision, $etapaPerforacion);
+        }
+
         return $this->showForUser($user, $comision, $obraId)['comision'];
     }
 
@@ -229,6 +240,11 @@ class ResidenteComisionesService
             $this->guardarEtapa($user, $obra, $comision, $etapa, $data);
             $this->actualizarEstadoComision($comision);
         });
+
+        $etapaRefrescada = $etapa->fresh();
+        if ($etapaRefrescada) {
+            $this->notificarMovimientoObra($user, $obra, $comision, $etapaRefrescada);
+        }
 
         return $this->showForUser($user, $comision->fresh(), $obraId)['comision'];
     }
@@ -470,6 +486,36 @@ class ResidenteComisionesService
                 'estado' => 'cerrada',
                 'cerrada_at' => now(),
             ])->save();
+        }
+    }
+
+    private function notificarMovimientoObra(User $user, Obra $obra, Comision $comision, ComisionEtapa $etapa): void
+    {
+        if ($etapa->estado !== ComisionEtapa::ESTADO_COMPLETADA) {
+            return;
+        }
+
+        try {
+            $comision->loadMissing(['pila']);
+            $etapa->loadMissing(['pila']);
+
+            $destinatarios = User::role(['super-admin', 'admin-rivera'])
+                ->whereKeyNot($user->id)
+                ->get();
+
+            if ($destinatarios->isEmpty()) {
+                return;
+            }
+
+            Notification::send($destinatarios, new ObraOperacionNotification($obra, $comision, $etapa, $user));
+        } catch (\Throwable $e) {
+            Log::warning('No se pudo enviar notificacion de operacion de obra.', [
+                'obra_id' => $obra->id,
+                'comision_id' => $comision->id,
+                'etapa_id' => $etapa->id,
+                'etapa' => $etapa->etapa,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

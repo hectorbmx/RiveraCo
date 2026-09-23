@@ -542,62 +542,62 @@
 
                     <div id="modal-material-formula" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6" data-formula-modal>
                         <div class="w-full max-w-3xl rounded-lg bg-white shadow-xl">
-                            <div class="flex items-center justify-between border-b px-5 py-4">
-                                <h3 class="text-sm font-semibold text-gray-900">Agregar material</h3>
-                                <button type="button" data-close-modal class="text-sm font-semibold text-gray-500 hover:text-gray-900">Cerrar</button>
+                            <div class="flex items-center justify-between border-b border-[#0B265A] bg-[#0B265A] px-5 py-4 text-white rounded-t-lg">
+                                <h3 class="text-sm font-semibold text-white">Agregar material</h3>
+                                <button type="button" data-close-modal class="text-sm font-semibold text-white/80 hover:text-white">Cerrar</button>
                             </div>
                             <form method="POST" action="{{ route('huentitan.productos.formula-materiales.store', $producto) }}" class="p-5 space-y-4">
                                 @csrf
                                 <div class="grid grid-cols-1 md:grid-cols-12 gap-3 text-sm items-end">
-                                    <div class="block md:col-span-6 relative" data-formula-material-search data-search-url="{{ route('huentitan.productos.formula-materiales.buscar', $producto) }}">
+                                    <div class="block md:col-span-6 relative border-l-2 border-[#0B265A]/20 pl-3" data-formula-material-search data-search-url="{{ route('huentitan.productos.formula-materiales.buscar', $producto) }}">
                                         <label class="block">
                                             <span class="block text-xs font-semibold text-gray-500 mb-1">Material HUENTITAN</span>
                                             <input type="hidden" name="material_producto_id" data-material-id value="{{ old('material_producto_id') }}">
-                                            <input type="text" data-material-search-input autocomplete="off" placeholder="Buscar por nombre o codigo" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]" required>
+                                            <input type="text" data-material-search-input autocomplete="off" placeholder="Buscar por nombre o codigo" class="w-full rounded-md border-[#0B265A]/20 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]" required>
                                         </label>
                                         <div data-material-selected class="mt-2 hidden rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-[#0B265A]"></div>
                                         <div data-material-unit-summary class="mt-2 hidden rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600"></div>
                                         <div data-material-results class="absolute z-20 mt-1 hidden max-h-64 w-full overflow-y-auto rounded-md border bg-white shadow-lg"></div>
                                     </div>
-                                    <label class="block md:col-span-2">
+                                    <label class="block md:col-span-2 border-l-2 border-[#0B265A]/20 pl-3">
                                         <span class="block text-xs font-semibold text-gray-500 mb-1">Cantidad</span>
-                                        <input type="number" step="0.001" min="0.001" name="cantidad" value="{{ old('cantidad') }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]" required>
+                                        <input type="number" step="0.001" min="0.001" name="cantidad" value="{{ old('cantidad') }}" class="w-full rounded-md border-[#0B265A]/20 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]" required>
                                     </label>
-                                    <label class="block md:col-span-2">
+                                    <label class="block md:col-span-2 border-l-2 border-[#0B265A]/20 pl-3">
                                         <span class="block text-xs font-semibold text-gray-500 mb-1">Unidad</span>
                                         @php($materialUnidad = old('unidad'))
-                                        <select name="unidad" data-material-unit class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                        <select name="unidad" data-material-unit class="w-full rounded-md border-[#0B265A]/20 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
                                             <option value="">Usar unidad del material</option>
                                             @foreach($unidadesBase as $codigo => $nombre)
                                                 <option value="{{ $codigo }}" @selected($materialUnidad === $codigo)>{{ $codigo }} - {{ $nombre }}</option>
                                             @endforeach
                                         </select>
                                     </label>
-                                    <label class="block md:col-span-2">
+                                    <label class="block md:col-span-2 border-l-2 border-[#0B265A]/20 pl-3">
                                         <span class="block text-xs font-semibold text-gray-500 mb-1">Merma %</span>
-                                        <input type="number" step="0.001" min="0" max="100" name="merma_porcentaje" value="{{ old('merma_porcentaje', 0) }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                        <input type="number" step="0.001" min="0" max="100" name="merma_porcentaje" value="{{ old('merma_porcentaje', 0) }}" class="w-full rounded-md border-[#0B265A]/20 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
                                     </label>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm items-end">
-                                    <label class="block">
+                                    <label class="block border-l-2 border-[#0B265A]/20 pl-3">
                                         <span class="block text-xs font-semibold text-gray-500 mb-1">Metodo costo</span>
-                                        <select name="metodo_costo" data-material-cost-method class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                        <select name="metodo_costo" data-material-cost-method class="w-full rounded-md border-[#0B265A]/20 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
                                             <option value="promedio_inventario">Promedio inventario</option>
                                             <option value="manual">Manual</option>
                                         </select>
                                     </label>
-                                    <label class="block">
+                                    <label class="block border-l-2 border-[#0B265A]/20 pl-3">
                                         <span class="block text-xs font-semibold text-gray-500 mb-1">Costo promedio detectado</span>
-                                        <input type="text" data-material-average-cost readonly value="$0.0000" class="w-full rounded-md border-slate-200 bg-gray-50 text-sm text-gray-700">
+                                        <input type="text" data-material-average-cost readonly value="$0.0000" class="w-full rounded-md border-[#0B265A]/20 bg-gray-50 text-sm text-gray-700">
                                     </label>
-                                    <label class="block">
+                                    <label class="block border-l-2 border-[#0B265A]/20 pl-3">
                                         <span class="block text-xs font-semibold text-gray-500 mb-1">Costo manual</span>
-                                        <input type="number" step="0.0001" min="0" name="costo_unitario_override" data-material-manual-cost class="w-full rounded-md border-slate-200 bg-gray-50 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                        <input type="number" step="0.0001" min="0" name="costo_unitario_override" data-material-manual-cost class="w-full rounded-md border-[#0B265A]/20 bg-gray-50 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
                                     </label>
                                 </div>
-                                <label class="block text-sm">
+                                <label class="block text-sm border-l-2 border-[#0B265A]/20 pl-3">
                                     <span class="block text-xs font-semibold text-gray-500 mb-1">Notas del material</span>
-                                    <input type="text" name="notas" value="{{ old('notas') }}" class="w-full rounded-md border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                    <input type="text" name="notas" value="{{ old('notas') }}" class="w-full rounded-md border-[#0B265A]/20 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
                                 </label>
                                 <div class="flex justify-end gap-2">
                                     <button type="button" data-close-modal class="px-4 py-2 rounded-md border text-sm font-medium hover:bg-gray-50">Cancelar</button>
@@ -607,6 +607,64 @@
                         </div>
                     </div>
 
+                    <div id="modal-material-formula-edit" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6" data-formula-modal>
+                        <div class="w-full max-w-3xl rounded-lg bg-white shadow-xl">
+                            <div class="flex items-center justify-between border-b border-[#0B265A] bg-[#0B265A] px-5 py-4 text-white rounded-t-lg">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-white">Editar material</h3>
+                                    <p class="mt-1 text-xs text-white/80" data-edit-material-label></p>
+                                </div>
+                                <button type="button" data-close-modal class="text-sm font-semibold text-white/80 hover:text-white">Cerrar</button>
+                            </div>
+                            <form method="POST" action="#" class="p-5 space-y-4" data-material-edit-form>
+                                @csrf
+                                @method('PATCH')
+                                <div class="grid grid-cols-1 md:grid-cols-12 gap-3 text-sm items-end">
+                                    <label class="block md:col-span-3 border-l-2 border-[#0B265A]/20 pl-3">
+                                        <span class="block text-xs font-semibold text-gray-500 mb-1">Cantidad</span>
+                                        <input type="number" step="0.001" min="0.001" name="cantidad" data-edit-material-cantidad class="w-full rounded-md border-[#0B265A]/20 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]" required>
+                                    </label>
+                                    <label class="block md:col-span-3 border-l-2 border-[#0B265A]/20 pl-3">
+                                        <span class="block text-xs font-semibold text-gray-500 mb-1">Unidad</span>
+                                        <select name="unidad" data-edit-material-unidad class="w-full rounded-md border-[#0B265A]/20 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                            @foreach($unidadesBase as $codigo => $nombre)
+                                                <option value="{{ $codigo }}">{{ $codigo }} - {{ $nombre }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+                                    <label class="block md:col-span-3 border-l-2 border-[#0B265A]/20 pl-3">
+                                        <span class="block text-xs font-semibold text-gray-500 mb-1">Merma %</span>
+                                        <input type="number" step="0.001" min="0" max="100" name="merma_porcentaje" data-edit-material-merma class="w-full rounded-md border-[#0B265A]/20 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                    </label>
+                                    <label class="block md:col-span-3 border-l-2 border-[#0B265A]/20 pl-3">
+                                        <span class="block text-xs font-semibold text-gray-500 mb-1">Metodo costo</span>
+                                        <select name="metodo_costo" data-material-cost-method data-edit-material-metodo class="w-full rounded-md border-[#0B265A]/20 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                            <option value="promedio_inventario">Promedio inventario</option>
+                                            <option value="manual">Manual</option>
+                                        </select>
+                                    </label>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm items-end">
+                                    <label class="block border-l-2 border-[#0B265A]/20 pl-3">
+                                        <span class="block text-xs font-semibold text-gray-500 mb-1">Costo promedio detectado</span>
+                                        <input type="text" readonly data-edit-material-costo-promedio class="w-full rounded-md border-[#0B265A]/20 bg-gray-50 text-sm text-gray-700">
+                                    </label>
+                                    <label class="block border-l-2 border-[#0B265A]/20 pl-3">
+                                        <span class="block text-xs font-semibold text-gray-500 mb-1">Costo manual</span>
+                                        <input type="number" step="0.0001" min="0" name="costo_unitario_override" data-material-manual-cost data-edit-material-costo-manual class="w-full rounded-md border-[#0B265A]/20 bg-gray-50 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                    </label>
+                                </div>
+                                <label class="block text-sm border-l-2 border-[#0B265A]/20 pl-3">
+                                    <span class="block text-xs font-semibold text-gray-500 mb-1">Notas del material</span>
+                                    <input type="text" name="notas" data-edit-material-notas class="w-full rounded-md border-[#0B265A]/20 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                </label>
+                                <div class="flex justify-end gap-2">
+                                    <button type="button" data-close-modal class="px-4 py-2 rounded-md border text-sm font-medium hover:bg-gray-50">Cancelar</button>
+                                    <button class="px-4 py-2 rounded-md bg-[#FFC107] text-[#0B265A] text-sm font-semibold hover:opacity-90">Guardar cambios</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                     <div id="modal-herramienta-formula" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6" data-formula-modal>
                         <div class="w-full max-w-3xl rounded-lg bg-white shadow-xl">
                             <div class="flex items-center justify-between border-b px-5 py-4">
@@ -653,15 +711,15 @@
                         </div>
                     </div>
                     <div class="border rounded-lg overflow-hidden">
-                        <div class="px-4 py-3 bg-gray-50 border-b flex items-center justify-between gap-3">
-                            <h3 class="text-sm font-semibold text-gray-900">Materiales de la formula</h3>
-                            <span class="text-xs text-gray-500">{{ $formulaMateriales->count() }} materiales</span>
+                        <div class="px-4 py-3 bg-[#0B265A] text-white border-b border-[#0B265A] flex items-center justify-between gap-3">
+                            <h3 class="text-sm font-semibold text-white">Materiales de la formula</h3>
+                            <span class="text-xs text-white/80">{{ $formulaMateriales->count() }} materiales</span>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50 text-gray-600">
+                                <thead class="bg-[#0B265A] text-white">
                                     <tr>
-                                        <th class="px-3 py-2 text-left">Material</th>
+                                        <th class="px-3 py-2 text-left font-semibold">Material</th>
                                         <th class="px-3 py-2 text-right">Cantidad</th>
                                         <th class="px-3 py-2 text-left">Unidad consumo</th>
                                         <th class="px-3 py-2 text-left">Equiv. compra</th>
@@ -700,6 +758,7 @@
                                                     : (float) ($stockMaterial->costo_promedio ?? 0);
                                                 $costoEsperadoMaterial = $cantidadConMerma * $costoUnitarioMaterial;
                                                 $metodoCostoMaterial = $materialFormula->metodo_costo === 'manual' ? 'Manual' : 'Promedio inventario';
+                                                $materialLabelEdit = trim(($materialProducto->sku ? $materialProducto->sku . ' - ' : '') . ($materialProducto->nombre ?? 'Material no encontrado'));
                                             ?>
                                             <tr>
                                                 <td class="px-3 py-2">
@@ -727,11 +786,27 @@
                                                 <td class="px-3 py-2 text-right">${{ number_format($costoEsperadoMaterial, 2) }}</td>
                                                 <td class="px-3 py-2">{{ $metodoCostoMaterial }}</td>
                                                 <td class="px-3 py-2 text-right">
-                                                    <form method="POST" action="{{ route('huentitan.productos.formula-materiales.destroy', ['producto' => $producto->id, 'material' => $materialFormula->id]) }}">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button class="text-xs font-semibold text-red-600 hover:underline">Quitar</button>
-                                                    </form>
+                                                    <div class="flex items-center justify-end gap-2">
+<button type="button" title="Editar" aria-label="Editar" data-edit-material-formula data-action="{{ route('huentitan.productos.formula-materiales.update', ['producto' => $producto->id, 'material' => $materialFormula->id]) }}" data-material-label="{{ $materialLabelEdit }}" data-cantidad="{{ $materialFormula->cantidad }}" data-unidad="{{ $unidadConsumoMaterial }}" data-merma="{{ $materialFormula->merma_porcentaje }}" data-metodo="{{ $materialFormula->metodo_costo ?: 'promedio_inventario' }}" data-costo-manual="{{ $materialFormula->costo_unitario_override }}" data-costo-promedio="{{ number_format((float) ($stockMaterial->costo_promedio ?? 0), 4, '.', '') }}" data-notas="{{ $materialFormula->notas }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#0B265A]/20 text-[#0B265A] hover:bg-[#0B265A]/5">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                                <path d="M12 20h9" />
+                                                                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                                            </svg>
+                                                        </button>
+                                                        <form method="POST" action="{{ route('huentitan.productos.formula-materiales.destroy', ['producto' => $producto->id, 'material' => $materialFormula->id]) }}">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" title="Quitar" aria-label="Quitar" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-100 text-red-600 hover:bg-red-50">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                                    <path d="M3 6h18" />
+                                                                    <path d="M8 6V4h8v2" />
+                                                                    <path d="M19 6l-1 14H6L5 6" />
+                                                                    <path d="M10 11v6" />
+                                                                    <path d="M14 11v6" />
+                                                                </svg>
+                                                            </button>
+                                                        </form>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -741,14 +816,15 @@
                         </div>
                     </div>
 
+
                     <div class="border rounded-lg overflow-hidden">
-                        <div class="px-4 py-3 bg-gray-50 border-b flex items-center justify-between gap-3">
-                            <h3 class="text-sm font-semibold text-gray-900">Herramientas del precio unitario</h3>
-                            <span class="text-xs text-gray-500">{{ $formulaHerramientas->count() }} herramientas</span>
+                        <div class="px-4 py-3 bg-[#0B265A] text-white border-b border-[#0B265A] flex items-center justify-between gap-3">
+                            <h3 class="text-sm font-semibold text-white">Herramientas del precio unitario</h3>
+                            <span class="text-xs text-white/80">{{ $formulaHerramientas->count() }} herramientas</span>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50 text-left text-gray-700">
+                                <thead class="bg-[#0B265A] text-left text-white">
                                     <tr>
                                         <th class="px-4 py-3 font-semibold">Herramienta</th>
                                         <th class="px-4 py-3 font-semibold text-right">Cantidad</th>
@@ -1179,6 +1255,59 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    document.querySelectorAll('[data-material-edit-form]').forEach((form) => {
+        const costMethodInput = form.querySelector('[data-material-cost-method]');
+        const manualCostInput = form.querySelector('[data-material-manual-cost]');
+        if (!costMethodInput || !manualCostInput) return;
+
+        const syncManualCostInput = () => {
+            const isManual = costMethodInput.value === 'manual';
+            if (isManual) {
+                manualCostInput.removeAttribute('readonly');
+            } else {
+                manualCostInput.setAttribute('readonly', 'readonly');
+            }
+            manualCostInput.classList.toggle('bg-gray-50', !isManual);
+            manualCostInput.classList.toggle('bg-white', isManual);
+            if (!isManual) {
+                manualCostInput.value = '';
+            }
+        };
+
+        costMethodInput.addEventListener('change', syncManualCostInput);
+        syncManualCostInput();
+
+        form.addEventListener('submit', (event) => {
+            if (costMethodInput.value === 'manual' && Number(manualCostInput.value || 0) <= 0) {
+                event.preventDefault();
+                manualCostInput.removeAttribute('readonly');
+                manualCostInput.classList.remove('bg-gray-50');
+                manualCostInput.classList.add('bg-white');
+                manualCostInput.focus();
+            }
+        });
+    });
+    const materialEditModal = document.getElementById('modal-material-formula-edit');
+    const materialEditForm = materialEditModal ? materialEditModal.querySelector('[data-material-edit-form]') : null;
+
+    document.querySelectorAll('[data-edit-material-formula]').forEach((button) => {
+        button.addEventListener('click', () => {
+            if (!materialEditModal || !materialEditForm) return;
+
+            materialEditForm.action = button.dataset.action || '#';
+            materialEditModal.querySelector('[data-edit-material-label]').textContent = button.dataset.materialLabel || '';
+            materialEditForm.querySelector('[data-edit-material-cantidad]').value = button.dataset.cantidad || '';
+            materialEditForm.querySelector('[data-edit-material-unidad]').value = button.dataset.unidad || '';
+            materialEditForm.querySelector('[data-edit-material-merma]').value = button.dataset.merma || '0';
+            materialEditForm.querySelector('[data-edit-material-metodo]').value = button.dataset.metodo || 'promedio_inventario';
+            materialEditForm.querySelector('[data-edit-material-costo-manual]').value = button.dataset.costoManual || '';
+            materialEditForm.querySelector('[data-edit-material-costo-promedio]').value = '$' + Number(button.dataset.costoPromedio || 0).toFixed(4);
+            materialEditForm.querySelector('[data-edit-material-notas]').value = button.dataset.notas || '';
+            materialEditForm.querySelector('[data-edit-material-metodo]').dispatchEvent(new Event('change'));
+
+            openFormulaModal(materialEditModal);
+        });
+    });
     document.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape') return;
         document.querySelectorAll('[data-formula-modal]:not(.hidden)').forEach(closeFormulaModal);

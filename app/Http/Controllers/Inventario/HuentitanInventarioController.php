@@ -916,6 +916,35 @@ class HuentitanInventarioController extends Controller
             ->with('status', 'Material agregado a la formula.');
     }
 
+    public function actualizarProductoFormulaMaterial(Request $request, Producto $producto, HuentitanFormulaMaterial $material)
+    {
+        abort_unless(str_starts_with((string) $producto->sku, 'HUE-'), 404);
+        abort_unless($material->formula && (int) $material->formula->producto_id === (int) $producto->id, 404);
+
+        $data = $request->validate([
+            'cantidad' => ['required', 'numeric', 'gt:0'],
+            'unidad' => ['nullable', UnidadMedidaCatalogo::regla()],
+            'merma_porcentaje' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'metodo_costo' => ['nullable', 'in:promedio_inventario,manual'],
+            'costo_unitario_override' => ['nullable', 'numeric', 'min:0'],
+            'notas' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $materialProducto = $material->material;
+
+        $material->update([
+            'cantidad' => $data['cantidad'],
+            'unidad' => $data['unidad'] ?: ($materialProducto->unidad_base ?? $materialProducto->unidad ?? $material->unidad),
+            'merma_porcentaje' => $data['merma_porcentaje'] ?? 0,
+            'metodo_costo' => $data['metodo_costo'] ?? 'promedio_inventario',
+            'costo_unitario_override' => ($data['metodo_costo'] ?? 'promedio_inventario') === 'manual' ? ($data['costo_unitario_override'] ?? 0) : null,
+            'notas' => $data['notas'] ?? null,
+        ]);
+
+        return redirect()
+            ->route('huentitan.productos.show', ['producto' => $producto->id, 'tab' => 'formula'])
+            ->with('status', 'Material actualizado en la formula.');
+    }
     public function eliminarProductoFormulaMaterial(Producto $producto, HuentitanFormulaMaterial $material)
     {
         abort_unless(str_starts_with((string) $producto->sku, 'HUE-'), 404);

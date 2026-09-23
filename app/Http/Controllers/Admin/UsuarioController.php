@@ -29,14 +29,36 @@ use App\Models\ObraEmpleado;
 
 class UsuarioController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        //
-            $usuarios = User::with('usuarioApp')->orderBy('name')->paginate(15);
+        $search = trim((string) $request->query('q', ''));
+        $role = trim((string) $request->query('role', ''));
 
-            return view('usuarios.index', compact('usuarios'));
+        $roles = Role::query()
+            ->where('guard_name', 'web')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $usuarios = User::query()
+            ->with(['usuarioApp', 'roles'])
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            })
+            ->when($role !== '', function ($query) use ($role) {
+                $query->whereHas('roles', function ($q) use ($role) {
+                    $q->where('guard_name', 'web')
+                      ->where('name', $role);
+                });
+            })
+            ->orderBy('name')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('usuarios.index', compact('usuarios', 'roles', 'search', 'role'));
     }
-
     // public function create()
     // {
     //     //

@@ -491,9 +491,9 @@
         @method('PUT')
 
         {{-- CARD 1: Datos Identificadores --}}
-        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
-                <span class="w-1.5 h-3 bg-blue-500 rounded-full"></span> Identificación de la Obra
+        <div class="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-5 shadow-sm">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-700 mb-4 flex items-center gap-2">
+                <span class="w-1.5 h-3 bg-indigo-500 rounded-full"></span> Identificación de la Obra
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
@@ -552,9 +552,9 @@
         </div>
 
         {{-- CARD 2: Operación y Montos --}}
-        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
-                <span class="w-1.5 h-3 bg-blue-500 rounded-full"></span> Operación Financiera y Control
+        <div class="rounded-2xl border border-amber-100 bg-amber-50/60 p-5 shadow-sm">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-amber-700 mb-4 flex items-center gap-2">
+                <span class="w-1.5 h-3 bg-amber-500 rounded-full"></span> Operación Financiera y Control
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div>
@@ -651,79 +651,77 @@
             </div>
         </div>
 
-        {{-- FILA DE CARDS COMPARTIDAS (Fechas y Métricas) --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {{-- CARD 3: Cronograma --}}
-            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
-                    <span class="w-1.5 h-3 bg-blue-500 rounded-full"></span> Cronograma de Fechas
-                </h3>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label for="fecha_inicio_programada" class="block text-xs font-semibold text-slate-600 mb-1">Inicio prog.</label>
-                        <input type="date" id="fecha_inicio_programada" name="fecha_inicio_programada"
-                               class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                               value="{{ old('fecha_inicio_programada', optional($obra->fecha_inicio_programada)->format('Y-m-d')) }}">
-                    </div>
-                    <div>
-                        <label for="fecha_inicio_real" class="block text-xs font-semibold text-slate-600 mb-1">Inicio real</label>
-                        <input type="date" id="fecha_inicio_real" name="fecha_inicio_real"
-                               class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                               value="{{ old('fecha_inicio_real', optional($obra->fecha_inicio_real)->format('Y-m-d')) }}">
-                    </div>
-                    <div>
-                        <label for="fecha_fin_programada" class="block text-xs font-semibold text-slate-600 mb-1">Fin prog.</label>
-                        <input type="date" id="fecha_fin_programada" name="fecha_fin_programada"
-                               class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                               value="{{ old('fecha_fin_programada', optional($obra->fecha_fin_programada)->format('Y-m-d')) }}">
-                    </div>
-                    <div>
-                        <label for="fecha_fin_real" class="block text-xs font-semibold text-slate-600 mb-1">Fin real</label>
-                        <input type="date" id="fecha_fin_real" name="fecha_fin_real"
-                               class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                               value="{{ old('fecha_fin_real', optional($obra->fecha_fin_real)->format('Y-m-d')) }}">
-                    </div>
+        {{-- Cronograma de fechas --}}
+        <div class="rounded-2xl border border-blue-100 bg-blue-50/70 p-5 shadow-sm">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-blue-700 mb-4 flex items-center gap-2">
+                <span class="w-1.5 h-3 bg-blue-500 rounded-full"></span> Cronograma de Fechas
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div class="rounded-xl border border-blue-100 bg-white/85 p-4 shadow-sm">
+                    <label for="fecha_inicio_programada" class="block text-xs font-semibold text-slate-600 mb-1">Inicio prog.</label>
+                    <input type="date" id="fecha_inicio_programada" name="fecha_inicio_programada"
+                           class="block w-full rounded-xl border-slate-200 bg-white text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                           value="{{ old('fecha_inicio_programada', optional($obra->fecha_inicio_programada)->format('Y-m-d')) }}">
+                </div>
+                <div class="rounded-xl border border-sky-100 bg-white/85 p-4 shadow-sm">
+                    <label for="fecha_inicio_real" class="block text-xs font-semibold text-slate-600 mb-1">Inicio real</label>
+                    <input type="date" id="fecha_inicio_real" name="fecha_inicio_real"
+                           class="block w-full rounded-xl border-slate-200 bg-white text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                           value="{{ old('fecha_inicio_real', optional($obra->fecha_inicio_real)->format('Y-m-d')) }}">
+                </div>
+                <div class="rounded-xl border border-indigo-100 bg-white/85 p-4 shadow-sm">
+                    <label for="fecha_fin_programada" class="block text-xs font-semibold text-slate-600 mb-1">Fin prog.</label>
+                    <input type="date" id="fecha_fin_programada" name="fecha_fin_programada"
+                           class="block w-full rounded-xl border-slate-200 bg-white text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                           value="{{ old('fecha_fin_programada', optional($obra->fecha_fin_programada)->format('Y-m-d')) }}">
+                </div>
+                <div class="rounded-xl border border-violet-100 bg-white/85 p-4 shadow-sm">
+                    <label for="fecha_fin_real" class="block text-xs font-semibold text-slate-600 mb-1">Fin real</label>
+                    <input type="date" id="fecha_fin_real" name="fecha_fin_real"
+                           class="block w-full rounded-xl border-slate-200 bg-white text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                           value="{{ old('fecha_fin_real', optional($obra->fecha_fin_real)->format('Y-m-d')) }}">
                 </div>
             </div>
+        </div>
 
-            {{-- CARD 4: Volúmenes Técnicos --}}
-            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
-                    <span class="w-1.5 h-3 bg-blue-500 rounded-full"></span> Volúmenes Totales
-                </h3>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label for="profundidad_total" class="block text-xs font-semibold text-slate-600 mb-1">Profundidad (m)</label>
-                        <input type="number" step="0.01" id="profundidad_total" name="profundidad_total"
-                               class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                               value="{{ old('profundidad_total', $obra->profundidad_total) }}">
-                    </div>
-                    <div>
-                        <label for="kg_acero_total" class="block text-xs font-semibold text-slate-600 mb-1">KG Acero</label>
-                        <input type="number" step="0.01" id="kg_acero_total" name="kg_acero_total"
-                               class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                               value="{{ old('kg_acero_total', $obra->kg_acero_total) }}">
-                    </div>
-                    <div>
-                        <label for="bentonita_total" class="block text-xs font-semibold text-slate-600 mb-1">Bentonita (m³)</label>
-                        <input type="number" step="0.01" id="bentonita_total" name="bentonita_total"
-                               class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                               value="{{ old('bentonita_total', $obra->bentonita_total) }}">
-                    </div>
-                    <div class="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                        <label class="inline-flex items-center gap-3 text-sm font-semibold text-slate-700">
-                            <input type="checkbox" name="usa_bentonita" value="1"
-                                   class="rounded border-slate-300 text-[#0B265A] shadow-sm focus:ring-[#FFC107]"
-                                   @checked(old('usa_bentonita', $obra->usa_bentonita))>
-                            <span>Usa bentonita</span>
-                        </label>
-                    </div>
-                    <div>
-                        <label for="concreto_total" class="block text-xs font-semibold text-slate-600 mb-1">Concreto (m³)</label>
-                        <input type="number" step="0.01" id="concreto_total" name="concreto_total"
-                               class="block w-full rounded-xl border-slate-200 text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                               value="{{ old('concreto_total', $obra->concreto_total) }}">
-                    </div>
+        {{-- Volúmenes técnicos --}}
+        <div class="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-5 shadow-sm">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-700 mb-4 flex items-center gap-2">
+                <span class="w-1.5 h-3 bg-emerald-500 rounded-full"></span> Volúmenes Totales
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+                <div class="rounded-xl border border-emerald-100 bg-white/90 p-4 shadow-sm">
+                    <label for="profundidad_total" class="block text-xs font-semibold text-slate-600 mb-1">Profundidad (m)</label>
+                    <input type="number" step="0.01" id="profundidad_total" name="profundidad_total"
+                           class="block w-full rounded-xl border-slate-200 bg-white text-sm transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                           value="{{ old('profundidad_total', $obra->profundidad_total) }}">
+                </div>
+                <div class="rounded-xl border border-amber-100 bg-white/90 p-4 shadow-sm">
+                    <label for="kg_acero_total" class="block text-xs font-semibold text-slate-600 mb-1">KG Acero</label>
+                    <input type="number" step="0.01" id="kg_acero_total" name="kg_acero_total"
+                           class="block w-full rounded-xl border-slate-200 bg-white text-sm transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                           value="{{ old('kg_acero_total', $obra->kg_acero_total) }}">
+                </div>
+                <div class="rounded-xl border border-cyan-100 bg-white/90 p-4 shadow-sm">
+                    <label for="bentonita_total" class="block text-xs font-semibold text-slate-600 mb-1">Bentonita (m³)</label>
+                    <input type="number" step="0.01" id="bentonita_total" name="bentonita_total"
+                           class="block w-full rounded-xl border-slate-200 bg-white text-sm transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
+                           value="{{ old('bentonita_total', $obra->bentonita_total) }}">
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-white/90 p-4 shadow-sm">
+                    <label class="block text-xs font-semibold text-slate-600 mb-2">Bentonita</label>
+                    <label class="inline-flex items-center gap-3 text-sm font-semibold text-slate-700">
+                        <input type="checkbox" name="usa_bentonita" value="1"
+                               class="rounded border-slate-300 text-[#0B265A] shadow-sm focus:ring-[#FFC107]"
+                               @checked(old('usa_bentonita', $obra->usa_bentonita))>
+                        <span>Usa bentonita</span>
+                    </label>
+                </div>
+                <div class="rounded-xl border border-blue-100 bg-white/90 p-4 shadow-sm">
+                    <label for="concreto_total" class="block text-xs font-semibold text-slate-600 mb-1">Concreto (m³)</label>
+                    <input type="number" step="0.01" id="concreto_total" name="concreto_total"
+                           class="block w-full rounded-xl border-slate-200 bg-white text-sm transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                           value="{{ old('concreto_total', $obra->concreto_total) }}">
                 </div>
             </div>
         </div>
@@ -5006,7 +5004,7 @@ function relacionFacturasModal() {
 @else
     <div class="border border-slate-200 rounded-lg overflow-hidden">
         <table class="min-w-full text-sm">
-            <thead class="bg-slate-50 text-xs font-semibold text-slate-600">
+            <thead class="bg-[#0B265A] text-white">
                 <tr>
                     <th class="px-3 py-2 text-left">Fecha</th>
                     <th class="px-3 py-2 text-left">Factura</th>

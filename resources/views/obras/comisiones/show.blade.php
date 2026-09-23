@@ -209,7 +209,7 @@
                                 @else
                                     <div class="overflow-x-auto border border-slate-100 rounded-lg">
                                         <table class="min-w-full text-xs md:text-sm">
-                                            <thead class="bg-slate-50 text-slate-500">
+                                            <thead class="bg-[#0B265A] text-white">
                                                 <tr>
                                                     <th class="px-3 py-2 text-left">Empleado</th>
                                                     <th class="px-3 py-2 text-left">Rol</th>
@@ -264,7 +264,7 @@
         @else
             <div class="overflow-x-auto">
                 <table class="min-w-full text-xs md:text-sm">
-                    <thead class="bg-slate-50 border-b text-slate-500">
+                    <thead class="bg-[#0B265A] border-b border-[#0B265A] text-white">
                         <tr>
                             <th class="py-2 px-2 text-left">Inicio</th>
                             <th class="py-2 px-2 text-left">Fin</th>
@@ -323,7 +323,7 @@
     @else
         <div class="overflow-x-auto">
             <table class="min-w-full text-xs md:text-sm">
-                <thead class="bg-slate-50 border-b text-slate-500">
+                <thead class="bg-[#0B265A] border-b border-[#0B265A] text-white">
                     <tr>
                         <th class="py-2 px-2 text-left">Pila</th>
                         <th class="py-2 px-2 text-left">Inicio</th>
@@ -388,19 +388,25 @@
     @endif
 </div>
 {{-- COSTOS / ACTIVIDADES POR EMPLEADO --}}
-<div class="overflow-x-auto">
+<div class="bg-white border rounded-xl shadow-sm mb-6 overflow-hidden">
+    <div class="bg-[#0B265A] px-6 py-3">
+        <h2 class="text-sm font-semibold text-white">
+            Resumen de comisiones por empleado
+        </h2>
+    </div>
+    <div class="overflow-x-auto">
     <table class="min-w-full text-sm">
-        <thead class="bg-slate-50 border-b border-slate-200">
+        <thead class="bg-[#0B265A] border-b border-[#0B265A]">
             <tr>
-                <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Empleado</th>
-                <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Rol</th>
+                <th class="px-4 py-2 text-left text-xs font-semibold text-white">Empleado</th>
+                <th class="px-4 py-2 text-left text-xs font-semibold text-white">Rol</th>
 
                 @foreach(($columnas ?? []) as $key => $label)
-                    <th class="px-4 py-2 text-right text-xs font-semibold text-slate-500">{{ $label }}</th>
+                    <th class="px-4 py-2 text-right text-xs font-semibold text-white">{{ $label }}</th>
                 @endforeach
 
-                <th class="px-4 py-2 text-right text-xs font-semibold text-slate-500">T. extra</th>
-                <th class="px-4 py-2 text-right text-xs font-semibold text-slate-700">Total</th>
+                <th class="px-4 py-2 text-right text-xs font-semibold text-white">T. extra</th>
+                <th class="px-4 py-2 text-right text-xs font-semibold text-white">Total</th>
             </tr>
         </thead>
 
@@ -447,6 +453,7 @@
             </tfoot>
         @endif
     </table>
+    </div>
 </div>
 
 
@@ -463,7 +470,7 @@
         @else
             <div class="overflow-x-auto">
                 <table class="min-w-full text-xs md:text-sm">
-                    <thead class="bg-slate-50 border-b text-slate-500">
+                    <thead class="bg-[#0B265A] border-b border-[#0B265A] text-white">
                         <tr>
                             <th class="py-2 px-2 text-left">Inicio</th>
                             <th class="py-2 px-2 text-left">Término</th>
