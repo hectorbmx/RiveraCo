@@ -79,7 +79,7 @@
     {{-- Tabla --}}
     <div class="bg-white rounded-2xl shadow overflow-hidden">
         <table class="min-w-full text-sm">
-            <thead class="bg-slate-50">
+            <thead  class="bg-[#0B265A] text-white">
                 <tr class="text-left text-slate-500 border-b">
                     <th class="py-2 px-3">Empleado</th>
                     <th class="py-2 px-3">Área</th>
@@ -93,15 +93,18 @@
             <tbody>
                 @forelse($empleados as $emp)
                     <tr class="border-b last:border-b-0 hover:bg-slate-50">
-                        <td class="py-2 px-3">
-                            <span class="font-medium">
-                                {{ $emp->Apellidos }} {{ $emp->Nombre }}
-                            </span><br>
-                            <span class="text-xs text-slate-400">
-                                ID: {{ $emp->id_Empleado }} · Ingreso:
-                                {{ $emp->Fecha_ingreso ? $emp->Fecha_ingreso->format('d/m/Y') : '-' }}
-                            </span>
-                        </td>
+                      <td class="py-2 px-3">
+                        <!-- Enlace en el nombre -->
+                        <a href="{{ route('empleados.edit', ['empleado' => $emp->id_Empleado, 'tab' => 'datos']) }}" 
+                        class="font-medium text-slate-800 hover:text-blue-600 transition-colors">
+                            {{ $emp->Apellidos }} {{ $emp->Nombre }}
+                        </a>
+                        <br>
+                        <span class="text-xs text-slate-400">
+                            ID: {{ $emp->id_Empleado }} · Ingreso:
+                            {{ $emp->Fecha_ingreso ? $emp->Fecha_ingreso->format('d/m/Y') : '-' }}
+                        </span>
+                    </td>
                         <td class="py-2 px-3">{{ $emp->areaRef->nombre ?? '-' }}</td>
                         <td class="py-2 px-3">{{ $emp->Puesto ?? '-' }}</td>
                         <td class="py-2 px-3">
@@ -177,22 +180,42 @@
                             @endif
                         </td>
                         <td class="py-2 px-3 text-right space-x-2">
-                            <a href="{{ route('empleados.edit', ['empleado' => $emp->id_Empleado, 'tab' => 'datos']) }}"
-                               class="text-xs text-blue-600 hover:text-blue-800 font-medium">
-                                Expediente
+                        <a href="{{ route('empleados.edit', ['empleado' => $emp->id_Empleado, 'tab' => 'datos']) }}"
+                            title="Expediente"
+                            class="inline-flex items-center p-1 text-blue-600 hover:text-blue-800 rounded transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                </svg>
                             </a>
 
-                            <form action="{{ route('empleados.toggle-status', $emp->id_Empleado) }}"
-                                  method="POST"
-                                  class="inline-block"
-                                  onsubmit="return confirm('¿Cambiar estatus de este empleado?')">
-                                @csrf
-                                @method('PATCH')
+                         <form action="{{ route('empleados.toggle-status', $emp->id_Empleado) }}"
+      method="POST"
+      class="inline-block"
+      onsubmit="return confirm('¿Cambiar estatus de este empleado?')">
+    @csrf
+    @method('PATCH')
 
-                                <button class="text-xs text-slate-600 hover:text-slate-900 font-medium">
-                                    {{ (int)$emp->Estatus === 2 ? 'Reactivar' : 'Dar de baja' }}
-                                </button>
-                            </form>
+    <button type="submit"
+            class="group relative inline-flex items-center p-1 rounded transition-colors {{ (int)$emp->Estatus === 2 ? 'text-green-600 hover:text-green-800' : 'text-red-600 hover:text-red-800' }}">
+        
+        @if((int)$emp->Estatus === 2)
+            <!-- Ícono para Reactivar (Power/Activar) -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1 0 12.728 0M12 3v9" />
+            </svg>
+        @else
+            <!-- Ícono para Dar de baja (Usuario desactivado/bloqueado) -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+        @endif
+
+        <!-- Tooltip dinámico -->
+        <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap shadow-lg z-10 font-normal">
+            {{ (int)$emp->Estatus === 2 ? 'Reactivar' : 'Dar de baja' }}
+        </span>
+    </button>
+</form>
                         </td>
                     </tr>
                 @empty
