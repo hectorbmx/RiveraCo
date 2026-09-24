@@ -806,7 +806,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
      */
    public function store(Request $request, FacturapiService $facturapiService)
 {
-        abort_unless(auth()->user()?->can('obra_factura_borradores.invoice.access'), 403);
+        abort_unless(auth()->user()?->can('sat.cfdi_autoriza.access'), 403);
 
         // dd($request->all());
 //         dd(
@@ -872,7 +872,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
     $borrador = null;
 
     if (!empty($data['obra_factura_borrador_id'])) {
-        abort_unless(auth()->user()?->can('obra_factura_borradores.invoice.access'), 403);
+        abort_unless(auth()->user()?->can('sat.cfdi_autoriza.access'), 403);
 
         $borrador = ObraFacturaBorrador::findOrFail($data['obra_factura_borrador_id']);
 

@@ -706,7 +706,7 @@
                         </div>
 
                         <div class="mt-7 space-y-3">
-                            @can('obra_factura_borradores.invoice.access')
+                            @can('sat.cfdi_autoriza.access')
                             <button type="submit"
                                     data-action="timbrar"
                                     :disabled="loadingTimbrar"
@@ -776,7 +776,7 @@
                             </button>
                         </div>
 
-                        @can('obra_factura_borradores.invoice.access')
+                        @can('sat.cfdi_autoriza.access')
                         <div class="mt-7 rounded-lg border border-white/10 bg-slate-900/70 p-4 text-xs leading-5 text-slate-400">
                             Al timbrar esta factura, se generara el archivo XML y PDF oficial ante el SAT. Asegurate de que los datos sean correctos.
                         </div>
