@@ -195,22 +195,28 @@
     <div x-show="openSat" x-transition class="ml-10">
 
         <!-- Empresas -->
+          @if($canMenu('sat.empresas.access'))
         <a href="{{ route('sat.empresas.index') }}"
            class="block px-4 py-2 text-sm hover:bg-white/10">
             Empresas
         </a>
+          @endif
 
         <!-- Solicitudes -->
+          @if($canMenu('sat.solicitudes.access'))
         <a href="{{ route('sat.descargas.index') }}"
            class="block px-4 py-2 text-sm hover:bg-white/10">
             Solicitudes
         </a>
+          @endif
 
         <!-- CFDIs -->
+          @if($canMenu('sat.documentos.access'))
         <a href="{{ route('sat.cfdis.index') }}"
            class="block px-4 py-2 text-sm hover:bg-white/10">
             Documentos
         </a>
+          @endif
           @if($canMenu('sat.borradores.access'))
           <a href="{{ route('sat.borradores.index') }}"
              class="block px-4 py-2 rounded-lg hover:bg-blue-900/40 {{ request()->routeIs('sat.borradores.*') ? 'bg-blue-900/60 text-white' : 'text-blue-100' }}">
@@ -218,10 +224,12 @@
           </a>
           @endif
 
+          @if($canMenu('sat.facturacion.access'))
         <a href="{{ route('sat.facturacion.index') }}"
             class="block px-4 py-2 rounded-lg hover:bg-blue-900/40 {{ request()->routeIs('sat.facturacion.*') ? 'bg-blue-900/60 text-white' : 'text-blue-100' }}">
                 Facturación
             </a>
+          @endif
 
     </div>
 </div>

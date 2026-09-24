@@ -133,7 +133,7 @@ Route::middleware(['auth', 'verified'])
         | EMPRESAS SAT
         |--------------------------------------------------------------------------
         */
-        Route::prefix('empresas')->name('empresas.')->group(function () {
+        Route::prefix('empresas')->name('empresas.')->middleware('permission:sat.empresas.access')->group(function () {
             Route::get('/', [SatEmpresaController::class, 'index'])->name('index');
             Route::get('/create', [SatEmpresaController::class, 'create'])->name('create');
             Route::post('/', [SatEmpresaController::class, 'store'])->name('store');
@@ -149,7 +149,7 @@ Route::middleware(['auth', 'verified'])
         | SOLICITUDES / DESCARGAS SAT
         |--------------------------------------------------------------------------
         */
-        Route::prefix('descargas')->name('descargas.')->group(function () {
+        Route::prefix('descargas')->name('descargas.')->middleware('permission:sat.solicitudes.access')->group(function () {
             Route::get('/', [SatDownloadController::class, 'index'])->name('index');
             Route::get('/create', [SatDownloadController::class, 'create'])->name('create');
             Route::post('/', [SatDownloadController::class, 'store'])->name('store');
@@ -161,7 +161,7 @@ Route::middleware(['auth', 'verified'])
         | CFDIs DESCARGADOS
         |--------------------------------------------------------------------------
         */
-     Route::prefix('cfdis')->name('cfdis.')->group(function () {
+     Route::prefix('cfdis')->name('cfdis.')->middleware('permission:sat.documentos.access')->group(function () {
 
         /*
         |----------------------------------------------------------------------
@@ -214,7 +214,7 @@ Route::middleware(['auth', 'verified'])
         | FACTURACION CFDI
         |--------------------------------------------------------------------------
         */
-        Route::prefix('facturacion')->name('facturacion.')->group(function () {
+        Route::prefix('facturacion')->name('facturacion.')->middleware('permission:sat.facturacion.access')->group(function () {
             Route::get('/', [SatFacturacionController::class, 'index'])->name('index');
             Route::get('/create', [SatFacturacionController::class, 'create'])->name('create');
             Route::get('/relacionables', [SatFacturacionController::class, 'relacionables'])->name('relacionables');
