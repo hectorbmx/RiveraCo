@@ -5,20 +5,7 @@
 @section('content')
 <div class="max-w-8xl mx-auto">
 
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-        <div>
-            <h1 class="text-2xl font-bold text-[#0B265A]">Empleados</h1>
-            <p class="text-sm text-slate-500">
-                Catalogo de personal de Rivera Construcciones.
-            </p>
-        </div>
 
-        <a href="{{ route('empleados.create') }}"
-           class="bg-[#FFC107] text-[#0B265A] font-semibold px-4 py-2 rounded-xl shadow hover:bg-[#e0ac05] transition">
-            + Nuevo empleado
-        </a>
-    </div>
 
     @php
         $areaFiltroOpciones = ['' => 'Todas'];
@@ -43,7 +30,7 @@
             label="Buscar"
             :value="$search ?? ''"
             placeholder="Nombre, area o puesto..."
-            span="md:col-span-5"
+            span="md:col-span-4"
             type="search"
             glow />
 
@@ -59,9 +46,9 @@
             label="Area"
             :value="$area ?? ''"
             :options="$areaFiltroOpciones"
-            span="md:col-span-2 md:max-w-56" />
+            span="md:col-span-2" />
 
-        <div class="md:col-span-3 flex items-end gap-2">
+        <div class="md:col-span-4 flex flex-wrap items-end gap-2">
             <x-filters.actions
                 submit-label="Filtrar"
                 clear-url="{{ route('empleados.index') }}"
@@ -74,6 +61,11 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Excel
+            </a>
+
+            <a href="{{ route('empleados.create') }}"
+               class="bg-[#FFC107] text-[#0B265A] font-semibold px-3 py-2 rounded-xl shadow hover:bg-[#e0ac05] transition flex items-center gap-1.5 text-xs h-[38px] whitespace-nowrap mb-[2px]">
+                + Nuevo empleado
             </a>
         </div>
     </x-filters.card>

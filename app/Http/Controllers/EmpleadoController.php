@@ -15,9 +15,8 @@ use App\Services\Empleados\EmpleadoKardexService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use App\Exports\EmpleadosExport;
-use Maatwebsite\Excel\Facades\Excel;
 
 class EmpleadoController extends Controller
 {
@@ -430,20 +429,109 @@ if ($tab === 'epp') {
         ]);
     }
     public function export(Request $request)
-{
-    $search  = $request->get('q');
-    $estatus = $request->get('estatus', 'activo');
-    $estatus = in_array($estatus, ['activo', 'baja', 'todos'], true) ? $estatus : 'activo';
-    $area    = $request->get('area');
-    $areaCodigo = $request->get('area_codigo');
+    {
+        $search  = $request->get('q');
+        $estatus = $request->get('estatus', 'activo');
+        $estatus = in_array($estatus, ['activo', 'baja', 'todos'], true) ? $estatus : 'activo';
+        $area    = $request->get('area');
+        $areaCodigo = $request->get('area_codigo');
 
-    if ($areaCodigo && !$area) {
-        $area = Area::where('codigo', $areaCodigo)->value('id');
+        if ($areaCodigo && !$area) {
+            $area = Area::where('codigo', $areaCodigo)->value('id');
+        }
+
+        $query = Empleado::with(['areaRef'])
+            ->when($search, function ($q) use ($search) {
+                $q->where(function ($q) use ($search) {
+                    $q->where('Nombre', 'like', "%{$search}%")
+                        ->orWhere('Apellidos', 'like', "%{$search}%")
+                        ->orWhere('Puesto', 'like', "%{$search}%")
+                        ->orWhereHas('areaRef', function ($areaQ) use ($search) {
+                            $areaQ->where('nombre', 'like', "%{$search}%")
+                                ->orWhere('codigo', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->when($estatus === 'activo', fn ($q) => $q->where('Estatus', 1))
+            ->when($estatus === 'baja', fn ($q) => $q->where('Estatus', 2))
+            ->when($area, fn ($q) => $q->where('Area', $area))
+            ->orderByRaw('LOWER(TRIM(COALESCE(Apellidos, ""))) ASC')
+            ->orderByRaw('LOWER(TRIM(COALESCE(Nombre, ""))) ASC');
+
+        $fileName = 'empleados_' . now()->format('Y_m_d_His') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+        ];
+
+        Log::info('Iniciando exportacion de empleados', [
+            'file' => $fileName,
+            'filters' => [
+                'q' => $search,
+                'estatus' => $estatus,
+                'area' => $area,
+                'area_codigo' => $areaCodigo,
+            ],
+        ]);
+
+        return response()->streamDownload(function () use ($query, $fileName) {
+            try {
+                Log::info('Abriendo stream de exportacion de empleados', [
+                    'file' => $fileName,
+                ]);
+
+                $handle = fopen('php://output', 'w');
+
+                if ($handle === false) {
+                    throw new \RuntimeException('No se pudo abrir php://output para exportar empleados.');
+                }
+
+                fwrite($handle, "\xEF\xBB\xBF");
+
+                fputcsv($handle, [
+                    'Empleado',
+                    'Area',
+                    'Puesto',
+                    'Sueldo',
+                    'Estatus',
+                ]);
+
+                $exportados = 0;
+
+                $query->chunk(500, function ($empleados) use ($handle, &$exportados) {
+                    foreach ($empleados as $emp) {
+                        fputcsv($handle, [
+                            trim(($emp->Apellidos ?? '') . ' ' . ($emp->Nombre ?? '')),
+                            $emp->areaRef->nombre ?? '-',
+                            $emp->Puesto ?? '-',
+                            $emp->Sueldo_real ?? $emp->Sueldo ?? 0,
+                            (int) $emp->Estatus === 2 ? 'Baja' : 'Activo',
+                        ]);
+
+                        $exportados++;
+                    }
+                });
+
+                fclose($handle);
+
+                Log::info('Exportacion de empleados finalizada', [
+                    'file' => $fileName,
+                    'registros' => $exportados,
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('Error durante exportacion de empleados', [
+                    'file' => $fileName,
+                    'message' => $e->getMessage(),
+                    'exception' => get_class($e),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+
+                throw $e;
+            }
+        }, $fileName, $headers);
     }
-
-    $fileName = 'empleados_' . now()->format('Y_m_d_His') . '.xlsx';
-
-    return Excel::download(new EmpleadosExport($search, $estatus, $area), $fileName);
 }
-}
+
+
+
 
