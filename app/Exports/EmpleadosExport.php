@@ -28,7 +28,8 @@ class EmpleadosExport implements FromQuery, WithHeadings, WithMapping, ShouldAut
         if ($empresa) {
             $this->documentosObligatorios = EmpresaDocumentoTipo::query()
                 ->where('empresa_config_id', $empresa->id)
-                ->where('activo', true)
+                ->activos()
+                ->aplicaAEmpleado()
                 ->where('obligatorio', true)
                 ->get();
         } else {
