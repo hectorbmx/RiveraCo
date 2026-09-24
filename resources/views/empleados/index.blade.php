@@ -30,6 +30,8 @@
         $documentosSortActual = $documentosSort ?? request('documentos_sort');
         $documentosNextSort = $documentosSortActual === 'desc' ? 'asc' : 'desc';
         $documentosSortUrl = route('empleados.index', array_merge(request()->except('page'), ['documentos_sort' => $documentosNextSort]));
+        $perPageActual = $perPage ?? (int) request('per_page', 15);
+        $perPageOpciones = [15, 25, 50, 100];
     @endphp
 
     <x-filters.card action="{{ route('empleados.index') }}" class="mb-6">
@@ -280,8 +282,34 @@
         </table>
     </div>
 
-    <div class="mt-4">
-        {{ $empleados->links() }}
+    <div class="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <form method="GET" action="{{ route('empleados.index') }}" class="flex items-center gap-2 text-sm text-slate-600">
+            @foreach(request()->except(['page', 'per_page']) as $key => $value)
+                @if(is_array($value))
+                    @foreach($value as $item)
+                        <input type="hidden" name="{{ $key }}[]" value="{{ $item }}">
+                    @endforeach
+                @else
+                    <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                @endif
+            @endforeach
+
+            <span>Mostrar</span>
+            <select name="per_page"
+                    onchange="this.form.submit()"
+                    class="rounded-lg border-slate-300 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                @foreach($perPageOpciones as $opcion)
+                    <option value="{{ $opcion }}" @selected((int) $perPageActual === $opcion)>
+                        {{ $opcion }}
+                    </option>
+                @endforeach
+            </select>
+            <span>registros</span>
+        </form>
+
+        <div>
+            {{ $empleados->links() }}
+        </div>
     </div>
 </div>
 @endsection
