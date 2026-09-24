@@ -26,9 +26,16 @@
         foreach ($areas as $item) {
             $areaFiltroOpciones[$item->id] = trim(($item->codigo ? $item->codigo . ' - ' : '') . $item->nombre);
         }
+
+        $documentosSortActual = $documentosSort ?? request('documentos_sort');
+        $documentosNextSort = $documentosSortActual === 'desc' ? 'asc' : 'desc';
+        $documentosSortUrl = route('empleados.index', array_merge(request()->except('page'), ['documentos_sort' => $documentosNextSort]));
     @endphp
 
     <x-filters.card action="{{ route('empleados.index') }}" class="mb-6">
+        @if($documentosSortActual)
+            <input type="hidden" name="documentos_sort" value="{{ $documentosSortActual }}">
+        @endif
         <x-filters.input
             name="q"
             label="Buscar"
@@ -85,7 +92,20 @@
                     <th class="py-2 px-3">Área</th>
                     <th class="py-2 px-3">Puesto</th>
                     <th class="py-2 px-3">Sueldo</th>
-                    <th class="py-2 px-3">Documentos</th>
+                    <th class="py-2 px-3">
+                        <a href="{{ $documentosSortUrl }}"
+                           class="inline-flex items-center gap-1 text-white hover:text-[#FFC107] transition"
+                           title="Ordenar por avance de documentos">
+                            <span>Documentos</span>
+                            @if($documentosSortActual === 'desc')
+                                <span class="text-[10px]">&darr;</span>
+                            @elseif($documentosSortActual === 'asc')
+                                <span class="text-[10px]">&uarr;</span>
+                            @else
+                                <span class="text-[10px] opacity-60">&updownarrow;</span>
+                            @endif
+                        </a>
+                    </th>
                     <th class="py-2 px-3">Estatus</th>
                     <th class="py-2 px-3 text-right">Acciones</th>
                 </tr>
@@ -131,6 +151,11 @@
 
                             $totalObligatorios = count($obligatoriosIds);
 
+                            $documentosFaltantes = $documentosObligatorios
+                                ->whereNotIn('id', $documentosCargadosIds)
+                                ->pluck('nombre')
+                                ->values();
+
                             $totalCargados = collect($obligatoriosIds)
                                 ->filter(fn($id) => in_array($id, $documentosCargadosIds))
                                 ->count();
@@ -155,7 +180,7 @@
                         @endphp
 
                         <td class="py-2 px-3">
-                            <div class="w-36">
+                            <div class="group relative w-36 cursor-help">
                                 <div class="flex items-center justify-between mb-1">
                                     <span class="text-xs font-semibold {{ $colorTexto }}">
                                         {{ $porcentajeDocumentos }}%
@@ -169,6 +194,32 @@
                                     <div class="h-2 {{ $colorBarra }} rounded-full"
                                          style="width: {{ $porcentajeDocumentos }}%">
                                     </div>
+                                </div>
+
+                                <div class="pointer-events-none absolute left-0 top-full z-30 mt-2 hidden w-72 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-xl group-hover:block">
+                                    @if($documentosFaltantes->isEmpty())
+                                        <div class="text-xs font-semibold text-green-700">
+                                            Expediente completo
+                                        </div>
+                                    @else
+                                        <div class="mb-2 text-xs font-semibold text-slate-700">
+                                            Documentos faltantes
+                                        </div>
+                                        <ul class="space-y-1 text-xs text-slate-600">
+                                            @foreach($documentosFaltantes->take(5) as $documentoFaltante)
+                                                <li class="flex gap-1.5">
+                                                    <span class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-red-400"></span>
+                                                    <span>{{ $documentoFaltante }}</span>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+
+                                        @if($documentosFaltantes->count() > 5)
+                                            <div class="mt-2 text-xs font-medium text-slate-500">
+                                                +{{ $documentosFaltantes->count() - 5 }} más
+                                            </div>
+                                        @endif
+                                    @endif
                                 </div>
                             </div>
                         </td>

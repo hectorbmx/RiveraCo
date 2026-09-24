@@ -764,7 +764,7 @@
         </div>
 
         {{-- FORM NUEVO --}}
-        <div class="p-6 border-b border-slate-200 bg-slate-50">
+        <div class="p-6 border-b border-[#0B265A] bg-[#0B265A]">
             <form
                 method="POST"
                 action="{{ route('empresa_config.documentos.store') }}"
@@ -774,7 +774,7 @@
 
                 {{-- NOMBRE --}}
                 <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                    <label class="block text-sm font-medium text-white mb-1">
                         Nombre
                     </label>
 
@@ -782,35 +782,35 @@
                         type="text"
                         name="nombre"
                         required
-                        class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500"
+                        class="w-full rounded-xl border-white/30 bg-white text-slate-900 placeholder:text-slate-400 focus:border-[#FFC107] focus:ring-[#FFC107]"
                         placeholder="Ej. INE"
                     >
                 </div>
 
                 {{-- DESCRIPCION --}}
                 <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                    <label class="block text-sm font-medium text-white mb-1">
                         Descripción
                     </label>
 
                     <input
                         type="text"
                         name="descripcion"
-                        class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500"
+                        class="w-full rounded-xl border-white/30 bg-white text-slate-900 placeholder:text-slate-400 focus:border-[#FFC107] focus:ring-[#FFC107]"
                         placeholder="Opcional"
                     >
                 </div>
 
                 {{-- APLICA A --}}
                 <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                    <label class="block text-sm font-medium text-white mb-1">
                         Aplica a
                     </label>
 
                     <select
                         name="aplica_a"
                         required
-                        class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500"
+                        class="w-full rounded-xl border-white/30 bg-white text-slate-900 placeholder:text-slate-400 focus:border-[#FFC107] focus:ring-[#FFC107]"
                     >
                         <option value="empleado" selected>Empleados</option>
                         <option value="cliente">Clientes</option>
@@ -825,10 +825,10 @@
                             type="checkbox"
                             name="obligatorio"
                             value="1"
-                            class="rounded border-slate-300 text-red-600 focus:ring-red-500"
+                            class="rounded border-white/40 text-[#FFC107] focus:ring-[#FFC107]"
                         >
 
-                        <span class="text-sm text-slate-700">
+                        <span class="text-sm text-white">
                             Obligatorio
                         </span>
                     </label>
@@ -838,10 +838,10 @@
                             type="checkbox"
                             name="requiere_vencimiento"
                             value="1"
-                            class="rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                            class="rounded border-white/40 text-[#FFC107] focus:ring-[#FFC107]"
                         >
 
-                        <span class="text-sm text-slate-700">
+                        <span class="text-sm text-white">
                             Vencimiento
                         </span>
                     </label>
@@ -851,7 +851,7 @@
                 <div class="flex items-end">
                     <button
                         type="submit"
-                        class="w-full inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 transition"
+                        class="w-full inline-flex items-center justify-center rounded-xl bg-[#FFC107] px-4 py-2.5 text-sm font-semibold text-[#0B265A] hover:bg-[#e0ac05] transition"
                     >
                         Agregar
                     </button>

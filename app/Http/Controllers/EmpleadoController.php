@@ -30,6 +30,8 @@ public function index(Request $request)
     $estatus = in_array($estatus, ['activo', 'baja', 'todos'], true) ? $estatus : 'activo';
     $area    = $request->get('area');    // id de area
     $areaCodigo = $request->get('area_codigo');
+    $documentosSort = $request->get('documentos_sort');
+    $documentosSort = in_array($documentosSort, ['asc', 'desc'], true) ? $documentosSort : null;
 
     $areas = Area::query()
         ->where('activo', 1)
@@ -49,8 +51,13 @@ public function index(Request $request)
             ->orderBy('orden')
             ->orderBy('nombre')
             ->get();
+    $documentosObligatoriosIds = $documentosObligatorios
+        ->pluck('id')
+        ->map(fn ($id) => (int) $id)
+        ->values()
+        ->toArray();
 
-    $empleados = Empleado::with(['areaRef', 'documentos.documentoTipo'])  
+    $empleadosQuery = Empleado::with(['areaRef', 'documentos.documentoTipo'])  
         ->when($search, function ($q) use ($search) {
             $q->where(function($q) use ($search) {
                 $q->where('Nombre', 'like', "%{$search}%")
@@ -72,8 +79,21 @@ public function index(Request $request)
 
         ->when($area, function ($q) use ($area) {
             $q->where('Area', $area);
-        })
+        });
 
+    if ($documentosSort && count($documentosObligatoriosIds) > 0) {
+        $documentosIdsSql = implode(',', $documentosObligatoriosIds);
+
+        $empleadosQuery->orderByRaw("(
+            SELECT COUNT(DISTINCT ed.documento_tipo_id)
+            FROM empleado_documentos ed
+            WHERE ed.empleado_id = empleados.id_Empleado
+              AND ed.deleted_at IS NULL
+              AND ed.documento_tipo_id IN ({$documentosIdsSql})
+        ) {$documentosSort}");
+    }
+
+    $empleados = $empleadosQuery
         ->orderByRaw('LOWER(TRIM(COALESCE(Apellidos, ""))) ASC')
         ->orderByRaw('LOWER(TRIM(COALESCE(Nombre, ""))) ASC')
         ->paginate(15)
@@ -81,6 +101,7 @@ public function index(Request $request)
             'q' => $search,
             'estatus' => $estatus,
             'area' => $area,
+            'documentos_sort' => $documentosSort,
         ]);
 
     return view('empleados.index', 
@@ -91,6 +112,7 @@ public function index(Request $request)
         'areas', 
         'area',
         'documentosObligatorios',
+        'documentosSort',
         ));
 }
 
@@ -411,6 +433,8 @@ if ($tab === 'epp') {
     $estatus = in_array($estatus, ['activo', 'baja', 'todos'], true) ? $estatus : 'activo';
     $area    = $request->get('area');
     $areaCodigo = $request->get('area_codigo');
+    $documentosSort = $request->get('documentos_sort');
+    $documentosSort = in_array($documentosSort, ['asc', 'desc'], true) ? $documentosSort : null;
 
     if ($areaCodigo && !$area) {
         $area = Area::where('codigo', $areaCodigo)->value('id');
