@@ -706,6 +706,7 @@
                         </div>
 
                         <div class="mt-7 space-y-3">
+                            @can('obra_factura_borradores.invoice.access')
                             <button type="submit"
                                     data-action="timbrar"
                                     :disabled="loadingTimbrar"
@@ -738,7 +739,9 @@
                                     Timbrando...
                                 </span>
                             </button>
+                            @endcan
 
+                            @can('sat.borradores.access')
                             <button type="submit"
                                     data-action="borrador"
                                     formaction="{{ route('sat.facturacion.borradores.store') }}"
@@ -753,6 +756,7 @@
                                     Guardar borrador
                                 </span>
                             </button>
+                            @endcan
 
                             <button type="submit"
                                     data-action="preview"
@@ -772,9 +776,15 @@
                             </button>
                         </div>
 
+                        @can('obra_factura_borradores.invoice.access')
                         <div class="mt-7 rounded-lg border border-white/10 bg-slate-900/70 p-4 text-xs leading-5 text-slate-400">
                             Al timbrar esta factura, se generara el archivo XML y PDF oficial ante el SAT. Asegurate de que los datos sean correctos.
                         </div>
+                        @elsecan('sat.borradores.access')
+                        <div class="mt-7 rounded-lg border border-white/10 bg-slate-900/70 p-4 text-xs leading-5 text-slate-400">
+                            Guarda la captura como borrador para que el area de facturacion pueda revisarla y timbrarla.
+                        </div>
+                        @endcan
                     </div>
 
                 </div>

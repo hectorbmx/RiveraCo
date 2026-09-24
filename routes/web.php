@@ -78,6 +78,7 @@ use App\Http\Controllers\Sat\SatCaptchaController;
 use App\Http\Controllers\Sat\SatCfdiEstadisticaController;
 use App\Http\Controllers\Sat\SatCfdiPagoController;
 use App\Http\Controllers\Sat\SatFacturacionController;
+use App\Http\Controllers\Sat\SatFacturaBorradorController;
 use App\Http\Controllers\Sat\SatCatalogoController;
 use App\Http\Controllers\Sat\SatFacturaPagoController;
 use App\Http\Controllers\Sat\SatComplementoPagoController;
@@ -197,6 +198,17 @@ Route::middleware(['auth', 'verified'])
 
         Route::post('/pagos/{pago}/cancelar', [SatCfdiPagoController::class, 'cancelar'])->name('pagos.cancelar');
 });
+        /*
+        |--------------------------------------------------------------------------
+        | BORRADORES CFDI
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('borradores')
+            ->name('borradores.')
+            ->middleware('permission:sat.borradores.access')
+            ->group(function () {
+                Route::get('/', [SatFacturaBorradorController::class, 'index'])->name('index');
+            });
         /*
         |--------------------------------------------------------------------------
         | FACTURACION CFDI

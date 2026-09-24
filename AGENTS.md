@@ -24,4 +24,6 @@ Rules:
 - Cuando un comando necesario falle por ese motivo, vuelve a ejecutarlo inmediatamente con `sandbox_permissions: "require_escalated"`, una justificacion breve y un `prefix_rule` acotado cuando aplique.
 - No te detengas a buscar rodeos ni alternativas fragiles si la accion es segura y necesaria para leer, escribir o validar archivos del proyecto.
 - Esto aplica a inspeccion, creacion/edicion de archivos, `php -l`, `php artisan route:list`, `php artisan view:cache`, `git status` y validaciones equivalentes.
+## Preferencias de colaboracion
 
+- Si un cambio es simple y puede hacerse manualmente de forma segura, como crear un permiso puntual en la UI o base de datos, avisar primero al usuario y darle la opcion de ejecutarlo el mismo antes de crear migraciones o tocar codigo.

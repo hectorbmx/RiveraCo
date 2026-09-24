@@ -50,22 +50,14 @@ class SatFacturacionController extends Controller
             ->latest()
             ->get();
 
-        $borradoresCfdi = SatFacturaBorrador::with(['cliente', 'obra', 'empresa'])
-            ->where('estado', 'borrador')
-            ->latest()
-            ->get();
 
         $borradoresObra = ObraFacturaBorrador::with(['cliente', 'obra', 'conceptoSat'])
             ->whereNull('sat_factura_id')
-            ->whereNotIn('estatus', [
-                ObraFacturaBorrador::ESTATUS_FACTURADO,
-                ObraFacturaBorrador::ESTATUS_CANCELADO,
-            ])
+            ->where('estatus', ObraFacturaBorrador::ESTATUS_AUTORIZADO)
             ->latest()
             ->get();
 
         $items = $facturasTimbradas
-            ->concat($borradoresCfdi)
             ->concat($borradoresObra)
             ->when($busqueda !== '', function ($items) use ($busqueda) {
                 $needle = mb_strtolower($busqueda);
@@ -112,16 +104,12 @@ class SatFacturacionController extends Controller
         );
 
         $totalFacturado = SatFactura::where('estado', 'timbrada')->sum('total');
-        $totalFacturas = $facturasTimbradas->count() + $borradoresCfdi->count() + $borradoresObra->count();
+        $totalFacturas = $facturasTimbradas->count() + $borradoresObra->count();
 
         $timbradas = SatFactura::where('estado', 'timbrada')->count();
         $pendientes = SatFactura::where('estado', 'borrador')->count()
-            + SatFacturaBorrador::where('estado', 'borrador')->count()
             + ObraFacturaBorrador::whereNull('sat_factura_id')
-                ->whereNotIn('estatus', [
-                    ObraFacturaBorrador::ESTATUS_FACTURADO,
-                    ObraFacturaBorrador::ESTATUS_CANCELADO,
-                ])
+                ->where('estatus', ObraFacturaBorrador::ESTATUS_AUTORIZADO)
                 ->count();
         $canceladas = SatFactura::where('estado', 'cancelada')->count();
 
@@ -139,17 +127,11 @@ class SatFacturacionController extends Controller
 
     private function facturaMatchesEstadoFiltro($factura, string $estadoFiltro): bool
     {
-        if ($factura instanceof SatFacturaBorrador) {
-            return $estadoFiltro === 'pendientes' && $factura->estado === 'borrador';
-        }
 
         if ($factura instanceof ObraFacturaBorrador) {
             return $estadoFiltro === 'pendientes'
                 && $factura->sat_factura_id === null
-                && ! in_array($factura->estatus, [
-                    ObraFacturaBorrador::ESTATUS_FACTURADO,
-                    ObraFacturaBorrador::ESTATUS_CANCELADO,
-                ], true);
+                && $factura->estatus === ObraFacturaBorrador::ESTATUS_AUTORIZADO;
         }
 
         return match ($estadoFiltro) {
@@ -305,6 +287,8 @@ class SatFacturacionController extends Controller
 
 public function storeBorrador(Request $request)
 {
+    abort_unless(auth()->user()?->can('sat.borradores.access'), 403);
+
     $request->validate([
         'cliente_id' => ['nullable', $this->clienteActivoRule()],
     ], $this->clienteActivoMessages());
@@ -356,6 +340,7 @@ public function storeBorrador(Request $request)
 
 public function destroyBorrador(SatFacturaBorrador $borrador)
 {
+    abort_unless(auth()->user()?->can('sat.borradores.access'), 403);
     abort_unless($borrador->estado === 'borrador' && !$borrador->sat_factura_id, 404);
 
     $user = auth()->user();
@@ -821,6 +806,8 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
      */
    public function store(Request $request, FacturapiService $facturapiService)
 {
+        abort_unless(auth()->user()?->can('obra_factura_borradores.invoice.access'), 403);
+
         // dd($request->all());
 //         dd(
 //     $request->input('usar_complemento_construccion'),
