@@ -212,13 +212,18 @@ public function pdf(SatFacturaPago $pago)
         return back()->with('error', 'El PDF del complemento de pago no existe.');
     }
 
-    return Storage::disk('local')->download(
-        $pago->pdf_path,
-        'pago-' . ($pago->uuid ?? $pago->id) . '.pdf',
-        [
+    $filename = 'pago-' . ($pago->uuid ?? $pago->id) . '.pdf';
+
+    if (request()->boolean('download')) {
+        return Storage::disk('local')->download($pago->pdf_path, $filename, [
             'Content-Type' => 'application/pdf',
-        ]
-    );
+        ]);
+    }
+
+    return response(Storage::disk('local')->get($pago->pdf_path), 200, [
+        'Content-Type' => 'application/pdf',
+        'Content-Disposition' => 'inline; filename="' . $filename . '"',
+    ]);
 }
 
 public function acuseCancelacion(SatFacturaPago $pago, string $format)
@@ -394,5 +399,4 @@ public function cancelar(Request $request, SatFacturaPago $pago)
         return back()->with('error', 'Error al cancelar complemento: ' . $e->getMessage());
     }
 }
-
 }

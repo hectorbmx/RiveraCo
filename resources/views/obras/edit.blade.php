@@ -5076,30 +5076,17 @@ function relacionFacturasModal() {
                         <td class="px-3 py-2">
                             @if($complementoPrincipal)
                                 @php
-                                    $folioComplemento = 'P' . ($complementoPrincipal->numero_parcialidad ?? $complementoPrincipal->id);
+                                    $serieComplemento = data_get($complementoPrincipal->facturapi_response, 'series');
+                                    $folioComplemento = data_get($complementoPrincipal->facturapi_response, 'folio_number');
+                                    $serieFolioComplemento = trim(($serieComplemento ? $serieComplemento . '-' : '') . ($folioComplemento ?? ''));
                                     $pdfComplementoUrl = $complementoPrincipal->pdf_path ? route('sat.facturacion.pagos.pdf', $complementoPrincipal) : null;
                                 @endphp
-                                <div class="max-w-[210px] space-y-1">
-                                    <button type="button"
-                                            @if($pdfComplementoUrl) @click="openComplementoPdfModal(@js($pdfComplementoUrl), @js($folioComplemento))" @endif
-                                            class="text-xs font-bold text-[#0B265A] hover:text-blue-700 hover:underline disabled:text-slate-400 disabled:no-underline"
-                                            @disabled(! $pdfComplementoUrl)>
-                                        {{ $folioComplemento }}
-                                    </button>
-                                    <div class="font-mono text-[10px] text-slate-600 break-all">
-                                        {{ $complementoPrincipal->uuid ?? 'Sin UUID' }}
-                                    </div>
-                                    <div class="text-[10px] text-slate-500">
-                                        @if($complementoPrincipal->fecha_pago)
-                                            {{ $complementoPrincipal->fecha_pago->format('d/m/Y') }}
-                                        @else
-                                            Sin fecha
-                                        @endif
-                                    </div>
-                                    <div class="text-[10px] font-semibold text-emerald-700">
-                                        $ {{ number_format((float) $complementoPrincipal->monto, 2) }}
-                                    </div>
-                                </div>
+                                <button type="button"
+                                        @if($pdfComplementoUrl && $serieFolioComplemento !== '') @click="openComplementoPdfModal(@js($pdfComplementoUrl), @js($serieFolioComplemento))" @endif
+                                        class="text-xs font-bold text-[#0B265A] hover:text-blue-700 hover:underline disabled:text-slate-400 disabled:no-underline"
+                                        @disabled(! $pdfComplementoUrl || $serieFolioComplemento === '')>
+                                    {{ $serieFolioComplemento !== '' ? $serieFolioComplemento : '-' }}
+                                </button>
                             @else
                                 <span class="text-xs text-slate-400">-</span>
                             @endif
