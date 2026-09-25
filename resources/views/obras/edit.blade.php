@@ -5064,12 +5064,6 @@ function relacionFacturasModal() {
                                 @php
                                     $ultimoPago = $factura['pagos']->first();
                                 @endphp
-                                <div class="mt-1 text-[10px] font-normal text-slate-500">
-                                    {{ $factura['pagos']->count() }} pago(s)
-                                    @if($ultimoPago->referencia)
-                                        / {{ $ultimoPago->referencia }}
-                                    @endif
-                                </div>
                                 @if($ultimoPago->comprobante_path)
                                     <a href="{{ Storage::disk('public')->url(ltrim($ultimoPago->comprobante_path, '/')) }}"
                                        target="_blank"
@@ -5081,36 +5075,29 @@ function relacionFacturasModal() {
                         </td>
                         <td class="px-3 py-2">
                             @if($complementoPrincipal)
+                                @php
+                                    $folioComplemento = 'P' . ($complementoPrincipal->numero_parcialidad ?? $complementoPrincipal->id);
+                                    $pdfComplementoUrl = $complementoPrincipal->pdf_path ? route('sat.facturacion.pagos.pdf', $complementoPrincipal) : null;
+                                @endphp
                                 <div class="max-w-[210px] space-y-1">
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold
-                                            {{ $complementoPrincipal->estado === 'timbrado'
-                                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                : 'bg-amber-50 text-amber-700 border border-amber-200' }}">
-                                            {{ ucfirst($complementoPrincipal->estado ?? 'registrado') }}
-                                        </span>
-                                        @if($complementosPago->count() > 1)
-                                            <span class="text-[10px] text-slate-400">+{{ $complementosPago->count() - 1 }}</span>
-                                        @endif
-                                    </div>
+                                    <button type="button"
+                                            @if($pdfComplementoUrl) @click="openComplementoPdfModal(@js($pdfComplementoUrl), @js($folioComplemento))" @endif
+                                            class="text-xs font-bold text-[#0B265A] hover:text-blue-700 hover:underline disabled:text-slate-400 disabled:no-underline"
+                                            @disabled(! $pdfComplementoUrl)>
+                                        {{ $folioComplemento }}
+                                    </button>
                                     <div class="font-mono text-[10px] text-slate-600 break-all">
                                         {{ $complementoPrincipal->uuid ?? 'Sin UUID' }}
                                     </div>
                                     <div class="text-[10px] text-slate-500">
-                                        Parcialidad {{ $complementoPrincipal->numero_parcialidad ?? '-' }}
                                         @if($complementoPrincipal->fecha_pago)
-                                            / {{ $complementoPrincipal->fecha_pago->format('d/m/Y') }}
+                                            {{ $complementoPrincipal->fecha_pago->format('d/m/Y') }}
+                                        @else
+                                            Sin fecha
                                         @endif
                                     </div>
                                     <div class="text-[10px] font-semibold text-emerald-700">
                                         $ {{ number_format((float) $complementoPrincipal->monto, 2) }}
-                                        @if($complementoPrincipal->pdf_path)
-                                            <a href="{{ route('sat.facturacion.pagos.pdf', $complementoPrincipal) }}"
-                                               target="_blank"
-                                               class="ml-1 text-[#0B265A] hover:underline">
-                                                PDF
-                                            </a>
-                                        @endif
                                     </div>
                                 </div>
                             @else
@@ -5743,6 +5730,39 @@ function relacionFacturasModal() {
     </div>
 </div>
 
+{{-- MODAL PDF COMPLEMENTO --}}
+<div x-show="complementoPdfOpen"
+     x-cloak
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+    <div class="flex h-[82vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between gap-3 border-b px-4 py-3">
+            <div>
+                <h3 class="text-sm font-semibold text-slate-900" x-text="complementoPdfTitle"></h3>
+                <p class="text-xs text-slate-500">Complemento de pago</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <a :href="complementoPdfDownloadUrl"
+                   class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                    Descargar
+                </a>
+                <button type="button"
+                        @click="printComplementoPdf()"
+                        class="rounded-lg bg-[#0B265A] px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-900">
+                    Imprimir
+                </button>
+                <button type="button"
+                        @click="closeComplementoPdfModal()"
+                        class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+        <iframe x-ref="complementoPdfFrame"
+                :src="complementoPdfUrl"
+                class="h-full w-full bg-slate-100"
+                title="Complemento de pago"></iframe>
+    </div>
+</div>
 {{-- FORM NUEVA FACTURA --}}
 <div id="factura-form-container" class="hidden">
     <div class="mt-4 pt-4 border-t border-slate-100">
@@ -5858,6 +5878,7 @@ function relacionFacturasModal() {
             return {
                 open: false,
                 openPago: false,
+                complementoPdfOpen: false,
                 openBorrador: false,
                 openBorradoresHistoricos: false,
                 borradorEditando: false,
@@ -5869,6 +5890,8 @@ function relacionFacturasModal() {
                 filteredCfdis: [],
                 selected: [],
                 pagoFactura: null,
+                complementoPdfUrl: '',
+                complementoPdfTitle: 'Complemento de pago',
                 pagoSubmitting: false,
                 pagoIdempotencyKey: '',
                 borradorForm: {
@@ -5964,6 +5987,31 @@ function relacionFacturasModal() {
                     this.pagoIdempotencyKey = '';
                 },
 
+                get complementoPdfDownloadUrl() {
+                    return this.complementoPdfUrl
+                        ? `${this.complementoPdfUrl}${this.complementoPdfUrl.includes('?') ? '&' : '?'}download=1`
+                        : '#';
+                },
+
+                openComplementoPdfModal(url, title) {
+                    this.complementoPdfUrl = url;
+                    this.complementoPdfTitle = title || 'Complemento de pago';
+                    this.complementoPdfOpen = true;
+                },
+
+                closeComplementoPdfModal() {
+                    this.complementoPdfOpen = false;
+                    this.complementoPdfUrl = '';
+                },
+
+                printComplementoPdf() {
+                    const frame = this.$refs.complementoPdfFrame;
+
+                    if (frame?.contentWindow) {
+                        frame.contentWindow.focus();
+                        frame.contentWindow.print();
+                    }
+                },
                 newPagoIdempotencyKey() {
                     if (window.crypto?.randomUUID) {
                         return window.crypto.randomUUID();
