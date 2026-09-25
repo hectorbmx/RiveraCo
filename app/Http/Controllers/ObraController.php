@@ -48,6 +48,7 @@ use App\Notifications\FacturaBorradorAutorizado;
 use App\Notifications\FacturaBorradorCreado;
 use App\Notifications\FacturaBorradorListoParaFacturar;
 use App\Notifications\FacturaBorradorRechazado;
+use App\Services\Maquinas\MaquinaService;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
@@ -1830,7 +1831,7 @@ public function updateBentonita(Request $request, Obra $obra)
     return redirect()->route('obras.edit', ['obra' => $obra->id, 'tab' => 'bentonita'])
         ->with('success', 'Base de bentonita actualizada correctamente.');
 }
-   public function update(Request $request, Obra $obra)
+   public function update(Request $request, Obra $obra, MaquinaService $maquinaService)
 {
     $this->abortarSiObraFueraDeArea($obra);
     $estatusAnterior = (int) $obra->estatus_nuevo;
@@ -1884,14 +1885,15 @@ public function updateBentonita(Request $request, Obra $obra)
                 'activo' => false,
                 'fecha_baja' => $data['fecha_fin_real'] ?? now()->toDateString(),
             ]);
+        $fechaLiberacion = $data['fecha_fin_real'] ?? now()->toDateString();
+
         $obra->maquinasAsignadas()
             ->where('estado', 'activa')
             ->whereNull('fecha_fin')
-            ->update([
-                'estado' => 'finalizada',
-                'fecha_fin' => $data['fecha_fin_real'] ?? now()->toDateString(),
-                'updated_by' => auth()->id(),
-            ]);
+            ->get()
+            ->each(fn (ObraMaquina $asignacion) => $maquinaService->finalizarAsignacion($asignacion, [
+                'fecha_fin' => $fechaLiberacion,
+            ]));
 
     }
 
@@ -2683,9 +2685,4 @@ public function relacionarCfdis(Request $request, Obra $obra)
     ]);
 }
 }
-
-
-
-
-
 

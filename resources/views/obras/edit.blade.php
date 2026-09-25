@@ -5013,6 +5013,7 @@ function relacionFacturasModal() {
                     <th class="px-3 py-2 text-center">Estado CFDI</th>
                     <th class="px-3 py-2 text-right">Monto</th>
                     <th class="px-3 py-2 text-right">Pagado</th>
+                    <th class="px-3 py-2 text-left">Complemento</th>
                     <th class="px-3 py-2 text-right">Saldo</th>
                     <th class="px-3 py-2 text-center">Estado pago</th>
                     <th class="px-3 py-2 text-center">PDF</th>
@@ -5021,6 +5022,12 @@ function relacionFacturasModal() {
             </thead>
             <tbody class="divide-y divide-slate-100">
                 @foreach($facturasSatObra as $factura)
+                    @php
+                        $complementosPago = collect($factura['complementos_pago'] ?? []);
+                        $complementosTimbrados = $complementosPago->filter(fn ($pago) => $pago->estado === 'timbrado')->values();
+                        $complementoPrincipal = $complementosTimbrados->first() ?? $complementosPago->first();
+                        $pagosSinComplemento = $factura['pagos']->filter(fn ($pago) => blank($pago->sat_factura_pago_id));
+                    @endphp
                     <tr>
                         <td class="px-3 py-2">
                             {{ $factura['fecha_formateada'] ?? ($factura['fecha_emision'] ?? '-') }}
@@ -5072,6 +5079,44 @@ function relacionFacturasModal() {
                                 @endif
                             @endif
                         </td>
+                        <td class="px-3 py-2">
+                            @if($complementoPrincipal)
+                                <div class="max-w-[210px] space-y-1">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold
+                                            {{ $complementoPrincipal->estado === 'timbrado'
+                                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                : 'bg-amber-50 text-amber-700 border border-amber-200' }}">
+                                            {{ ucfirst($complementoPrincipal->estado ?? 'registrado') }}
+                                        </span>
+                                        @if($complementosPago->count() > 1)
+                                            <span class="text-[10px] text-slate-400">+{{ $complementosPago->count() - 1 }}</span>
+                                        @endif
+                                    </div>
+                                    <div class="font-mono text-[10px] text-slate-600 break-all">
+                                        {{ $complementoPrincipal->uuid ?? 'Sin UUID' }}
+                                    </div>
+                                    <div class="text-[10px] text-slate-500">
+                                        Parcialidad {{ $complementoPrincipal->numero_parcialidad ?? '-' }}
+                                        @if($complementoPrincipal->fecha_pago)
+                                            / {{ $complementoPrincipal->fecha_pago->format('d/m/Y') }}
+                                        @endif
+                                    </div>
+                                    <div class="text-[10px] font-semibold text-emerald-700">
+                                        $ {{ number_format((float) $complementoPrincipal->monto, 2) }}
+                                        @if($complementoPrincipal->pdf_path)
+                                            <a href="{{ route('sat.facturacion.pagos.pdf', $complementoPrincipal) }}"
+                                               target="_blank"
+                                               class="ml-1 text-[#0B265A] hover:underline">
+                                                PDF
+                                            </a>
+                                        @endif
+                                    </div>
+                                </div>
+                            @else
+                                <span class="text-xs text-slate-400">-</span>
+                            @endif
+                        </td>
                         <td class="px-3 py-2 text-right {{ $factura['saldo'] > 0 ? 'text-amber-700' : 'text-slate-600' }}">
                             $ {{ number_format($factura['saldo'], 2) }}
                         </td>
@@ -5087,11 +5132,6 @@ function relacionFacturasModal() {
                                 {{ ucfirst($factura['estado_pago']) }}
                             </span>
                             @if($factura['requiere_complemento_pago'])
-                                @php
-                                    $complementosTimbrados = collect($factura['complementos_pago'] ?? []);
-                                    $pagosSinComplemento = $factura['pagos']->filter(fn ($pago) => blank($pago->sat_factura_pago_id));
-                                @endphp
-
                                 @if($pagosSinComplemento->isNotEmpty() && $factura['saldo'] > 0)
                                     <div class="mt-1 text-[10px] font-semibold text-amber-700">
                                         Requiere complemento
@@ -6545,7 +6585,4 @@ function calcularFila(idCampo) {
 //     });
 // });
 </script>
-
-
-
 

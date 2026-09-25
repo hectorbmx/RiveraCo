@@ -301,45 +301,7 @@
     </div>
 </div>
 @endif
-                <!-- @can('sat.access') -->
-                
-<!-- <div x-data="{ open: false }">
-
-    {{-- Botón principal --}}
-    <button @click="open = !open"
-        class="w-full flex items-center justify-between px-6 py-3 text-sm font-medium hover:bg-white/10"
-        title="SAT">
-
-        <div class="flex items-center gap-3">
-            <span class="text-lg">🧾</span>
-            <span class="sidebar-text">SAT</span>
-        </div>
-
-        <span class="text-xs" x-text="open ? '▲' : '▼'"></span>
-    </button>
-
-    {{-- Submenú --}}
-    <div x-show="open" x-transition class="ml-6">
-
-        <a href="{{ route('sat.empresas.index') }}"
-           class="flex items-center gap-2 px-6 py-2 text-sm text-gray-200 hover:bg-white/10">
-            🏢 Empresas SAT
-        </a>
-
-        <a href="{{ route('sat.descargas.index') }}"
-           class="flex items-center gap-2 px-6 py-2 text-sm text-gray-200 hover:bg-white/10">
-            ⬇️ Solicitudes SAT
-        </a>
-
-        <a href="{{ route('sat.cfdis.index') }}"
-           class="flex items-center gap-2 px-6 py-2 text-sm text-gray-200 hover:bg-white/10">
-            📄 CFDIs
-        </a>
-
-    </div>
-
-</div> -->
-<!-- @endcan --> @if($canMenu('programacion_pagos.access'))
+            @if($canMenu('programacion_pagos.access'))
      <a href="{{ route('programacion-pagos.index') }}"
             class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 transition-colors"
                 title="Programación de pagos">

@@ -306,7 +306,14 @@
                         @forelse($maquina->asignaciones ?? [] as $a)
                             <tr class="hover:bg-slate-50">
                                 <td class="px-4 py-3">
-                                    {{ $a->obra->nombre ?? '—' }}
+                                    @if($a->obra)
+                                        <a href="{{ route('obras.edit', $a->obra) }}"
+                                           class="font-medium text-[#0B265A] hover:text-blue-700 hover:underline underline-offset-4">
+                                            {{ $a->obra->nombre ?? 'Obra' }}
+                                        </a>
+                                    @else
+                                        <span class="text-slate-400">—</span>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-3">{{ $a->fecha_inicio?->format('Y-m-d') ?? '—' }}</td>
                                 <td class="px-4 py-3">{{ $a->fecha_fin?->format('Y-m-d') ?? '—' }}</td>
