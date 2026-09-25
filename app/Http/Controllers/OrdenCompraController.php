@@ -3531,36 +3531,35 @@ public function exportarListaPagos(
         $finSemana = $fechaSemana->copy()->endOfWeek(Carbon::SUNDAY)->endOfDay();
 
         $ordenes = OrdenCompra::query()
-            ->with(['proveedor', 'obra', 'centroCosto', 'areaCatalogo'])
-            ->whereIn('estado', ['AUTORIZADA', 'VERIFICADA'])
+            ->with(['proveedor', 'detalles'])
             ->where('area_id', $areaCatalogo->id)
-            ->where('folio', 'like', 'OC-GL-%')
+            ->where('folio', 'like', 'OC-GL%')
             ->whereBetween('fecha', [
                 $inicioSemana->toDateString(),
                 $finSemana->toDateString(),
             ])
-            ->orderBy('fecha')
-            ->orderBy('folio')
+            ->orderByDesc('fecha')
+            ->orderByDesc('id')
             ->get();
 
-        $grupos = collect([
-            'caja_efectivo' => [
-                'titulo' => 'Caja chica - efectivo',
-                'ordenes' => $ordenes->filter(fn ($oc) => $oc->es_caja_chica && (string) $oc->forma_pago === '01')->values(),
-            ],
-            'caja_tarjeta' => [
-                'titulo' => 'Caja chica - tarjeta de credito',
-                'ordenes' => $ordenes->filter(fn ($oc) => $oc->es_caja_chica && (string) $oc->forma_pago === '04')->values(),
-            ],
-            'gastos_sin_factura' => [
-                'titulo' => 'Gastos sin factura',
-                'ordenes' => $ordenes->filter(fn ($oc) => (bool) $oc->gastos_sin_factura)->values(),
-            ],
-            'otras' => [
-                'titulo' => 'Otras ordenes GL',
-                'ordenes' => $ordenes->filter(fn ($oc) => ! $oc->es_caja_chica && ! $oc->gastos_sin_factura)->values(),
-            ],
-        ]);
+        foreach ($ordenes as $oc) {
+            $subtotal = 0.0;
+            $iva = 0.0;
+            $otros = 0.0;
+            $retenciones = 0.0;
+
+            foreach ($oc->detalles as $detalle) {
+                $lineaSubtotal = (float) ($detalle->importe ?? ((float) $detalle->precio_unitario * (float) $detalle->cantidad));
+                $lineaIva = $this->ivaEfectivoDetalle($detalle, $lineaSubtotal);
+
+                $subtotal += $lineaSubtotal;
+                $iva += $lineaIva;
+                $otros += (float) ($detalle->otros_impuestos ?? 0);
+                $retenciones += (float) ($detalle->retenciones ?? 0);
+            }
+
+            $oc->total = $subtotal + $iva + $otros - $retenciones;
+        }
 
         $pdf = new \FPDF('P', 'mm', 'Letter');
         $pdf->SetMargins(10, 10, 10);
@@ -3569,8 +3568,19 @@ public function exportarListaPagos(
 
         $utf8 = fn ($texto) => utf8_decode((string) $texto);
         $money = fn ($cantidad) => '$' . number_format((float) $cantidad, 2);
+        $formaPagoTexto = function ($formaPago) {
+            return match ((string) $formaPago) {
+                '01' => 'Efectivo',
+                '02' => 'Cheque nominativo',
+                '03' => 'Transferencia electronica',
+                '04' => 'Tarjeta de credito',
+                '28' => 'Tarjeta de debito',
+                '99' => 'Por definir',
+                default => 'Sin definir',
+            };
+        };
         $BLUE = [0, 74, 173];
-        $GRAY = [242, 244, 247];
+        $GRAY = [248, 250, 252];
 
         $pdf->SetTextColor($BLUE[0], $BLUE[1], $BLUE[2]);
         $pdf->SetFont('Arial', 'B', 18);
@@ -3582,99 +3592,55 @@ public function exportarListaPagos(
         $pdf->Cell(0, 6, $utf8('Generado: ' . now()->format('d/m/Y H:i')), 0, 1, 'C');
         $pdf->Ln(5);
 
-        $pdf->SetFillColor($BLUE[0], $BLUE[1], $BLUE[2]);
-        $pdf->SetTextColor(255, 255, 255);
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(88, 8, $utf8('TIPO'), 1, 0, 'C', true);
-        $pdf->Cell(30, 8, $utf8('ORDENES'), 1, 0, 'C', true);
-        $pdf->Cell(38, 8, $utf8('TOTAL'), 1, 0, 'C', true);
-        $pdf->Cell(40, 8, $utf8('FOLIOS'), 1, 1, 'C', true);
-
-        $totalGeneral = 0.0;
-        $totalOrdenes = 0;
-
-        foreach ($grupos as $grupo) {
-            $items = $grupo['ordenes'];
-            $totalGrupo = (float) $items->sum(fn ($oc) => (float) $oc->total);
-            $folios = $items->pluck('folio')->implode(', ');
-            $totalGeneral += $totalGrupo;
-            $totalOrdenes += $items->count();
-
-            $pdf->SetFillColor($GRAY[0], $GRAY[1], $GRAY[2]);
-            $pdf->SetTextColor(20, 20, 20);
-            $pdf->SetFont('Arial', '', 8);
-            $pdf->Cell(88, 8, $utf8($grupo['titulo']), 1, 0, 'L', true);
-            $pdf->Cell(30, 8, (string) $items->count(), 1, 0, 'C', true);
-            $pdf->SetFont('Arial', 'B', 8);
-            $pdf->Cell(38, 8, $money($totalGrupo), 1, 0, 'R', true);
-            $pdf->SetFont('Arial', '', 7);
-            $pdf->Cell(40, 8, $utf8(mb_strimwidth($folios ?: '-', 0, 28, '...')), 1, 1, 'L', true);
-        }
-
-        $pdf->SetFont('Arial', 'B', 10);
-        $pdf->SetTextColor(0, 0, 0);
-        $pdf->Cell(88, 9, $utf8('TOTAL GENERAL'), 1, 0, 'R');
-        $pdf->Cell(30, 9, (string) $totalOrdenes, 1, 0, 'C');
-        $pdf->Cell(38, 9, $money($totalGeneral), 1, 0, 'R');
-        $pdf->Cell(40, 9, '', 1, 1, 'L');
-        $pdf->Ln(7);
-
-        foreach ($grupos as $grupo) {
-            $items = $grupo['ordenes'];
-
-            if ($pdf->GetY() > 235) {
-                $pdf->AddPage();
-            }
-
+        $imprimirEncabezadoTabla = function () use ($pdf, $utf8, $BLUE) {
             $pdf->SetFillColor($BLUE[0], $BLUE[1], $BLUE[2]);
             $pdf->SetTextColor(255, 255, 255);
             $pdf->SetFont('Arial', 'B', 9);
-            $pdf->Cell(0, 7, $utf8($grupo['titulo'] . ' (' . $items->count() . ')'), 1, 1, 'L', true);
+            $pdf->Cell(25, 8, $utf8('FECHA'), 1, 0, 'C', true);
+            $pdf->Cell(34, 8, $utf8('FOLIO'), 1, 0, 'C', true);
+            $pdf->Cell(75, 8, $utf8('PROVEEDOR'), 1, 0, 'C', true);
+            $pdf->Cell(32, 8, $utf8('F.PAGO'), 1, 0, 'C', true);
+            $pdf->Cell(30, 8, $utf8('TOTAL'), 1, 1, 'C', true);
+        };
 
-            $pdf->SetFillColor(248, 250, 252);
-            $pdf->SetTextColor(70, 70, 70);
-            $pdf->SetFont('Arial', 'B', 7);
-            $pdf->Cell(28, 7, $utf8('FOLIO'), 1, 0, 'C', true);
-            $pdf->Cell(61, 7, $utf8('PROVEEDOR'), 1, 0, 'C', true);
-            $pdf->Cell(53, 7, $utf8('DESTINO'), 1, 0, 'C', true);
-            $pdf->Cell(24, 7, $utf8('FECHA'), 1, 0, 'C', true);
-            $pdf->Cell(30, 7, $utf8('TOTAL'), 1, 1, 'C', true);
+        $imprimirEncabezadoTabla();
 
-            if ($items->isEmpty()) {
-                $pdf->SetFont('Arial', '', 8);
-                $pdf->SetTextColor(90, 90, 90);
-                $pdf->Cell(196, 7, $utf8('Sin ordenes para este tipo.'), 1, 1, 'C');
-                $pdf->Ln(3);
-                continue;
-            }
+        $totalGeneral = 0.0;
 
-            foreach ($items as $oc) {
-                if ($pdf->GetY() > 250) {
-                    $pdf->AddPage();
-                }
-
-                $proveedorNombre = $oc->proveedor?->nombre ?: $oc->proveedor?->razon_social ?: 'SIN PROVEEDOR';
-
-                if ($oc->obra) {
-                    $destino = trim(($oc->obra->clave_obra ? $oc->obra->clave_obra . ' - ' : '') . ($oc->obra->nombre ?? ''));
-                } elseif ($oc->centroCosto) {
-                    $destino = trim(($oc->centroCosto->codigo ? $oc->centroCosto->codigo . ' - ' : '') . ($oc->centroCosto->nombre ?? ''));
-                } else {
-                    $destino = 'Compra general';
-                }
-
-                $pdf->SetFont('Arial', '', 7);
-                $pdf->SetTextColor(20, 20, 20);
-                $pdf->Cell(28, 7, $utf8($oc->folio), 1, 0, 'L');
-                $pdf->Cell(61, 7, $utf8(mb_strimwidth($proveedorNombre, 0, 39, '...')), 1, 0, 'L');
-                $pdf->Cell(53, 7, $utf8(mb_strimwidth($destino, 0, 34, '...')), 1, 0, 'L');
-                $pdf->Cell(24, 7, $utf8($oc->fecha ? $oc->fecha->format('d/m/Y') : '-'), 1, 0, 'C');
-                $pdf->SetFont('Arial', 'B', 7);
-                $pdf->Cell(30, 7, $money($oc->total), 1, 1, 'R');
-            }
-
-            $pdf->Ln(4);
+        if ($ordenes->isEmpty()) {
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->SetTextColor(90, 90, 90);
+            $pdf->Cell(196, 8, $utf8('Sin ordenes registradas en esta semana.'), 1, 1, 'C');
         }
+
+        foreach ($ordenes as $oc) {
+            if ($pdf->GetY() > 250) {
+                $pdf->AddPage();
+                $imprimirEncabezadoTabla();
+            }
+
+            $proveedorNombre = $oc->proveedor?->nombre ?: $oc->proveedor?->razon_social ?: 'Sin proveedor';
+            $totalGeneral += (float) $oc->total;
+
+            $pdf->SetFillColor($GRAY[0], $GRAY[1], $GRAY[2]);
+            $pdf->SetFont('Arial', '', 7);
+            $pdf->SetTextColor(20, 20, 20);
+            $pdf->Cell(25, 7, $utf8($oc->fecha ? $oc->fecha->format('d/m/Y') : '-'), 1, 0, 'C');
+            $pdf->Cell(34, 7, $utf8($oc->folio), 1, 0, 'L');
+            $pdf->Cell(75, 7, $utf8(mb_strimwidth($proveedorNombre, 0, 48, '...')), 1, 0, 'L');
+            $pdf->Cell(32, 7, $utf8(mb_strimwidth($formaPagoTexto($oc->forma_pago), 0, 20, '...')), 1, 0, 'L');
+            $pdf->SetFont('Arial', 'B', 7);
+            $pdf->Cell(30, 7, $money($oc->total), 1, 1, 'R');
+        }
+
+        if ($pdf->GetY() > 250) {
+            $pdf->AddPage();
+        }
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->Cell(166, 8, $utf8('TOTAL GENERAL (' . $ordenes->count() . ' OC)'), 1, 0, 'R');
+        $pdf->Cell(30, 8, $money($totalGeneral), 1, 1, 'R');
 
         $nombreArchivo = 'OC_Giralda_caratula_'
             . $inicioSemana->format('Y-m-d')
