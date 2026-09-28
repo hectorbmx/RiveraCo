@@ -79,8 +79,7 @@
                         <th class="text-left px-4 py-3">Nombre</th>
                         <th class="text-left px-4 py-3">Tipo</th>
                         <th class="text-left px-4 py-3">Estado</th>
-                        <th class="text-left px-4 py-3">Ubicación</th>
-                        <th class="text-left px-4 py-3">Obra actual</th>
+                        <th class="text-left px-4 py-3">Ubicación actual</th>
                         <th class="text-left px-4 py-3">Servicio preventivo</th>
                         <th class="text-left px-4 py-3">Vence Seguro</th>
                         <th class="text-left px-4 py-3">Seguro</th>
@@ -149,43 +148,25 @@
                                 </span>
                             </td>
 
-                            {{-- Ubicación --}}
-                            
-                        <td class="px-4 py-3">
-                            @php
-                                $ubic = $m->ubicacion ?? '';
-
-                                $ubicLabel = match($ubic) {
-                                    'en_obra'       => 'En obra',
-                                    'en_camino'     => 'En camino',
-                                    'en_reparacion' => 'En reparación',
-                                    'en_patio'      => 'En patio',
-                                    default         => $ubic ?: '—',
-                                };
-
-                                $ubicClass = match($ubic) {
-                                    'en_obra'       => 'bg-blue-50 text-blue-700 border-blue-200',
-                                    'en_camino'     => 'bg-indigo-50 text-indigo-700 border-indigo-200',
-                                    'en_reparacion' => 'bg-amber-50 text-amber-700 border-amber-200',
-                                    'en_patio'      => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                    default         => 'bg-slate-50 text-slate-700 border-slate-200',
-                                };
-                            @endphp
-
-                            <span class="inline-flex items-center px-2 py-1 rounded-lg border text-xs {{ $ubicClass }}">
-                                {{ $ubicLabel }}
-                            </span>
-                        </td>
-
-                            {{-- Obra actual --}}
+                            {{-- Ubicación actual --}}
                             <td class="px-4 py-3">
-                                @if($m->asignacionActiva && $m->asignacionActiva->obra)
-                                    <a href="{{ route('obras.edit', ['obra' => $m->asignacionActiva->obra->id]) }}"
+                                @php
+                                    $obraActual = $m->asignacionActiva?->obra;
+                                    $ubicLabel = $obraActual ? 'En obra' : 'En patio';
+                                    $ubicClass = $obraActual
+                                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                        : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                                @endphp
+
+                                @if($obraActual)
+                                    <a href="{{ route('obras.edit', ['obra' => $obraActual->id]) }}"
                                        class="font-medium text-[#0B265A] hover:text-blue-700 hover:underline underline-offset-4">
-                                        {{ $m->asignacionActiva->obra->nombre ?? 'Obra' }}
+                                        {{ $obraActual->nombre ?? 'Obra' }}
                                     </a>
                                 @else
-                                    <span class="text-slate-500">—</span>
+                                    <span class="inline-flex w-fit items-center px-2 py-1 rounded-lg border text-xs {{ $ubicClass }}">
+                                        En patio
+                                    </span>
                                 @endif
                             </td>
                             <td class="px-4 py-3">
@@ -229,7 +210,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-4 py-6 text-center text-slate-500">
+                            <td colspan="8" class="px-4 py-6 text-center text-slate-500">
                                 No hay máquinas registradas.
                             </td>
                         </tr>

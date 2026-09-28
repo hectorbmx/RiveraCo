@@ -84,7 +84,7 @@ class PreventivoVehiculoService
         $intervaloMeses = (int) ($config?->vehiculo_servicio_meses ?? 6);
         $alertaKm = (int) ($config?->vehiculo_alerta_km ?? 500);
 
-        $kmActual = $this->primerEntero([
+        $kmActual = $this->mayorEntero([
             $ultimoLog?->km,
             $ultimaAsignacion?->km_final,
             $ultimaAsignacion?->km_inicial,
@@ -182,6 +182,18 @@ class PreventivoVehiculoService
         return null;
     }
 
+    private function mayorEntero(array $valores): ?int
+    {
+        $enteros = [];
+
+        foreach ($valores as $valor) {
+            if ($valor !== null && $valor !== '') {
+                $enteros[] = (int) $valor;
+            }
+        }
+
+        return $enteros === [] ? null : max($enteros);
+    }
     private function fechaUltimoServicio(?Mantenimiento $ultimoServicio): ?Carbon
     {
         $fecha = $ultimoServicio?->fecha_fin
