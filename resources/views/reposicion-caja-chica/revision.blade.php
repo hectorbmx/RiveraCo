@@ -47,8 +47,8 @@
                             'rechazado' => 'bg-red-100 text-red-800',
                             default => 'bg-slate-100 text-slate-700',
                         };
-                        $puedeAutorizar = auth()->user()?->can('caja_chica.authorize');
-                        $puedeRechazar = auth()->user()?->canAny(['caja_chica.reject', 'caja_chica.authorize']);
+                        $puedeAutorizar = auth()->user()?->can('caja_chica.authorize.access');
+                        $puedeRechazar = auth()->user()?->canAny(['caja_chica.reject.access', 'caja_chica.authorize.access']);
                     @endphp
                     <tr class="align-top">
                         <td class="px-4 py-3">
@@ -65,6 +65,9 @@
                                 {{ $gasto->obra->nombre ?? 'Obra no definida' }}
                             @else
                                 {{ $gasto->almacen->nombre ?? 'Almacen no definido' }}
+                            @endif
+                            @if($gasto->es_para_maquina)
+                                <div class="mt-1 font-semibold text-slate-500">Máquina: {{ trim(($gasto->maquina?->codigo ? $gasto->maquina->codigo . ' - ' : '') . ($gasto->maquina?->nombre ?? 'Sin máquina')) }}</div>
                             @endif
                         </td>
                         <td class="px-4 py-3">{{ $gasto->solicitadoPor->name ?? '-' }}</td>

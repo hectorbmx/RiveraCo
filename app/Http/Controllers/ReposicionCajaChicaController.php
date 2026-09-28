@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Almacen;
 use App\Models\DocumentoFirmante;
+use App\Models\Maquina;
 use App\Models\Obra;
+use App\Models\Proveedor;
 use App\Models\ReposicionCajaChicaCategoria;
 use App\Models\ReposicionCajaChicaGasto;
 use App\Models\ReposicionCajaChicaGastoArchivo;
 use App\Models\ReposicionCajaChicaRelacion;
 use App\Models\ReposicionCajaChicaSubcategoria;
+use App\Models\User;
 use App\Services\Sat\CfdiXmlParserService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -32,6 +35,7 @@ class ReposicionCajaChicaController extends Controller
         $categorias = $this->categoriasActivas();
         $stats = $this->stats($request, $fechaInicio, $fechaFin);
         $ambitoFirma = $this->resolverAmbitoFirmaReposicionDisponible($request, $gastos->getCollection());
+        $puedeElegirAmbitoFirma = $this->puedeElegirAmbitoFirmaReposicion($request);
 
         $semanaAnteriorInicio = $fechaInicio->copy()->subWeek()->toDateString();
         $semanaAnteriorFin = $fechaFin->copy()->subWeek()->toDateString();
@@ -48,7 +52,8 @@ class ReposicionCajaChicaController extends Controller
             'semanaAnteriorFin',
             'semanaSiguienteInicio',
             'semanaSiguienteFin',
-            'ambitoFirma'
+            'ambitoFirma',
+            'puedeElegirAmbitoFirma'
         ));
     }
 
@@ -65,9 +70,14 @@ class ReposicionCajaChicaController extends Controller
             ->whereIn('estatus_nuevo', [Obra::ESTATUS_PLANEACION, Obra::ESTATUS_EJECUCION])
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'clave_obra', 'estatus_nuevo']);
-        $almacenes = Almacen::query()->where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'tipo']);
+        $almacenes = Almacen::query()->where('activo', true)->orderBy('nombre')->get(['id', 'codigo', 'nombre', 'tipo']);
+        $maquinas = Maquina::query()
+            ->where('estado', '!=', Maquina::ESTADO_BAJA_DEFINITIVA)
+            ->orderBy('codigo')
+            ->orderBy('nombre')
+            ->get(['id', 'codigo', 'nombre', 'tipo', 'estado', 'ubicacion']);
 
-        return view('reposicion-caja-chica.create', compact('categorias', 'subcategorias', 'obras', 'almacenes'));
+        return view('reposicion-caja-chica.create', compact('categorias', 'subcategorias', 'obras', 'almacenes', 'maquinas'));
     }
 
     /**
@@ -128,6 +138,7 @@ class ReposicionCajaChicaController extends Controller
                     'importe_registrado' => $request->input('importe_registrado'),
                     'motivo_sin_factura' => $request->input('motivo_sin_factura'),
                     'observaciones' => $request->input('observaciones'),
+                    'proveedor_id' => $request->input('proveedor_id'),
                 ]
             ];
         }
@@ -165,6 +176,9 @@ class ReposicionCajaChicaController extends Controller
             }
         }
 
+        $targetAlmacen = null;
+        $esAlmacenGiralda = false;
+
         if ($targetDestino === 'almacen') {
             if (empty($targetAlmacenId)) {
                 throw ValidationException::withMessages([
@@ -172,16 +186,19 @@ class ReposicionCajaChicaController extends Controller
                 ]);
             }
 
-            $almacenValido = Almacen::query()
+            $targetAlmacen = Almacen::query()
                 ->where('id', $targetAlmacenId)
                 ->where('activo', true)
-                ->exists();
+                ->first();
 
-            if (!$almacenValido) {
+            if (!$targetAlmacen) {
                 throw ValidationException::withMessages([
                     'target_almacen_id' => 'El almacen seleccionado no esta activo.',
                 ]);
             }
+
+            $esAlmacenGiralda = Str::contains(Str::lower((string) $targetAlmacen->codigo), 'gl')
+                || Str::contains(Str::lower((string) $targetAlmacen->nombre), 'giralda');
         }
 
         $enviarDirecto = $request->input('action') === 'enviar';
@@ -215,11 +232,62 @@ class ReposicionCajaChicaController extends Controller
                     ]);
                 }
 
+                $proveedorId = $item['proveedor_id'] ?? null;
+                if ($proveedorId !== null && $proveedorId !== '') {
+                    $proveedor = Proveedor::query()
+                        ->where('id', $proveedorId)
+                        ->where('activo', true)
+                        ->first();
+
+                    if (!$proveedor) {
+                        throw ValidationException::withMessages([
+                            "gastos.{$idx}.proveedor_id" => "El proveedor seleccionado no esta activo o no existe en la fila #" . ($idx + 1),
+                        ]);
+                    }
+
+                    $proveedorId = $proveedor->id;
+                } else {
+                    $proveedorId = null;
+                }
+
                 if (empty($item['importe_registrado']) || (float) $item['importe_registrado'] <= 0) {
                     throw ValidationException::withMessages([
                         "gastos.{$idx}.importe_registrado" => "El importe debe ser mayor a 0 en la fila #" . ($idx + 1),
                     ]);
                 }
+
+                $esParaMaquina = filter_var($item['es_para_maquina'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                $maquinaId = $item['maquina_id'] ?? null;
+
+                if ($esParaMaquina && !$esAlmacenGiralda) {
+                    throw ValidationException::withMessages([
+                        "gastos.{$idx}.es_para_maquina" => "Solo puedes asignar maquina en gastos del almacen Giralda en la fila #" . ($idx + 1),
+                    ]);
+                }
+
+                if ($esParaMaquina) {
+                    if (empty($maquinaId)) {
+                        throw ValidationException::withMessages([
+                            "gastos.{$idx}.maquina_id" => "Selecciona la maquina para la fila #" . ($idx + 1),
+                        ]);
+                    }
+
+                    $maquinaValida = Maquina::query()
+                        ->where('id', $maquinaId)
+                        ->where('estado', '!=', Maquina::ESTADO_BAJA_DEFINITIVA)
+                        ->exists();
+
+                    if (!$maquinaValida) {
+                        throw ValidationException::withMessages([
+                            "gastos.{$idx}.maquina_id" => "La maquina seleccionada no esta disponible en la fila #" . ($idx + 1),
+                        ]);
+                    }
+                }
+
+                if (!$esParaMaquina) {
+                    $maquinaId = null;
+                }
+
                 $destino = $targetDestino;
                 $obraId = $targetDestino === 'obra' ? $targetObraId : null;
                 $almacenId = $targetDestino === 'almacen' ? $targetAlmacenId : null;
@@ -239,8 +307,11 @@ class ReposicionCajaChicaController extends Controller
                     'destino' => $destino,
                     'obra_id' => $obraId,
                     'almacen_id' => $almacenId,
+                    'es_para_maquina' => $esParaMaquina,
+                    'maquina_id' => $maquinaId,
                     'fecha_gasto' => $item['fecha_gasto'] ?: now()->toDateString(),
                     'proveedor_nombre' => $item['proveedor_nombre'],
+                    'proveedor_id' => $proveedorId,
                     'proveedor_rfc' => $item['proveedor_rfc'] ?? null,
                     'concepto' => $item['concepto'],
                     'forma_pago' => $formaPago,
@@ -333,8 +404,14 @@ class ReposicionCajaChicaController extends Controller
         $stats = $this->stats($request, $fechaInicio, $fechaFin);
         $ambitoFirma = $this->resolverAmbitoFirmaReposicion($request, $gastos);
         $firmasImpresas = $this->firmasImpresasReposicion($ambitoFirma);
+        $elaboroNombre = $this->nombresUsuariosReporte($gastos->pluck('created_by'));
+        $autorizoNombre = $this->nombresUsuariosReporte(
+            $gastos
+                ->whereIn('estado_autorizacion', ['autorizado', 'autorizado_parcial'])
+                ->pluck('resuelto_por')
+        );
 
-        return view('reposicion-caja-chica.reporte-imprimir', compact('gastos', 'grupos', 'stats', 'fechaInicio', 'fechaFin', 'ambitoFirma', 'firmasImpresas'));
+        return view('reposicion-caja-chica.reporte-imprimir', compact('gastos', 'grupos', 'stats', 'fechaInicio', 'fechaFin', 'ambitoFirma', 'firmasImpresas', 'elaboroNombre', 'autorizoNombre'));
     }
 
     public function exportarExcel(Request $request)
@@ -357,7 +434,7 @@ class ReposicionCajaChicaController extends Controller
                 echo "<h2>" . e($grupo['nombre']) . "</h2>";
                 echo "<table border=\"1\">";
                 echo "<thead><tr>";
-                foreach (['Folio', 'Fecha gasto', 'Fecha captura', 'Proveedor', 'RFC', 'Concepto', 'Categoria', 'Forma pago', 'Destino', 'Registrado', 'Autorizado', 'Estado'] as $header) {
+                foreach (['Folio', 'Fecha gasto', 'Fecha captura', 'Proveedor', 'RFC', 'Concepto', 'Categoria', 'Forma pago', 'Destino', 'Maquina', 'Registrado', 'Autorizado', 'Estado'] as $header) {
                     echo "<th>" . e($header) . "</th>";
                 }
                 echo "</tr></thead><tbody>";
@@ -376,14 +453,17 @@ class ReposicionCajaChicaController extends Controller
                     echo "<td>" . e($gasto->concepto) . "</td>";
                     echo "<td>" . e($gasto->subcategoria->nombre ?? 'Sin categoria') . "</td>";
                     echo "<td>" . e(ucfirst((string) $gasto->forma_pago)) . "</td>";
+                    $maquina = $gasto->es_para_maquina ? ($gasto->maquina?->codigo ? $gasto->maquina->codigo . ' - ' . $gasto->maquina->nombre : ($gasto->maquina?->nombre ?? '-')) : '-';
+
                     echo "<td>" . e($destino) . "</td>";
+                    echo "<td>" . e($maquina) . "</td>";
                     echo "<td>" . number_format((float) $gasto->importe_registrado, 2) . "</td>";
                     echo "<td>" . number_format((float) ($gasto->importe_autorizado ?? 0), 2) . "</td>";
                     echo "<td>" . e(str_replace('_', ' ', $gasto->estado_autorizacion)) . "</td>";
                     echo "</tr>";
                 }
 
-                echo "<tr><td colspan=\"9\"><strong>Total " . e($grupo['nombre']) . "</strong></td>";
+                echo "<tr><td colspan=\"10\"><strong>Total " . e($grupo['nombre']) . "</strong></td>";
                 echo "<td><strong>" . number_format((float) $grupo['total_registrado'], 2) . "</strong></td>";
                 echo "<td><strong>" . number_format((float) $grupo['total_autorizado'], 2) . "</strong></td><td></td></tr>";
                 echo "</tbody></table><br>";
@@ -396,7 +476,7 @@ class ReposicionCajaChicaController extends Controller
     }
     public function show(ReposicionCajaChicaGasto $gasto)
     {
-        $gasto->load(['categoria', 'subcategoria', 'obra', 'almacen', 'archivos', 'solicitadoPor', 'resueltoPor']);
+        $gasto->load(['categoria', 'subcategoria', 'obra', 'almacen', 'maquina', 'archivos', 'solicitadoPor', 'resueltoPor']);
 
         return view('reposicion-caja-chica.show', compact('gasto'));
     }
@@ -404,7 +484,7 @@ class ReposicionCajaChicaController extends Controller
     public function revision(Request $request)
     {
         $gastos = ReposicionCajaChicaGasto::query()
-            ->with(['categoria', 'subcategoria', 'obra', 'almacen', 'solicitadoPor'])
+            ->with(['categoria', 'subcategoria', 'obra', 'almacen', 'maquina', 'solicitadoPor'])
             ->whereIn('estado_autorizacion', ['pendiente', 'autorizado', 'autorizado_parcial', 'rechazado'])
             ->latest('id')
             ->paginate(20)
@@ -415,7 +495,7 @@ class ReposicionCajaChicaController extends Controller
 
     public function autorizar(Request $request, ReposicionCajaChicaGasto $gasto)
     {
-        $this->authorizeAny(['caja_chica.authorize'], 'No tienes permiso para autorizar gastos de caja chica.');
+        $this->authorizeAny(['caja_chica.authorize.access'], 'No tienes permiso para autorizar gastos de caja chica.');
         $this->validarGastoPendiente($gasto);
 
         $gasto->update([
@@ -433,7 +513,7 @@ class ReposicionCajaChicaController extends Controller
 
     public function autorizarParcial(Request $request, ReposicionCajaChicaGasto $gasto)
     {
-        $this->authorizeAny(['caja_chica.authorize'], 'No tienes permiso para autorizar gastos de caja chica.');
+        $this->authorizeAny(['caja_chica.authorize.access'], 'No tienes permiso para autorizar gastos de caja chica.');
         $this->validarGastoPendiente($gasto);
 
         $validated = $request->validate([
@@ -456,7 +536,7 @@ class ReposicionCajaChicaController extends Controller
 
     public function rechazar(Request $request, ReposicionCajaChicaGasto $gasto)
     {
-        $this->authorizeAny(['caja_chica.reject', 'caja_chica.authorize'], 'No tienes permiso para rechazar gastos de caja chica.');
+        $this->authorizeAny(['caja_chica.reject.access', 'caja_chica.authorize.access'], 'No tienes permiso para rechazar gastos de caja chica.');
         $this->validarGastoPendiente($gasto);
 
         $validated = $request->validate([
@@ -496,6 +576,7 @@ class ReposicionCajaChicaController extends Controller
             'gastos.subcategoria',
             'gastos.obra',
             'gastos.almacen',
+            'gastos.maquina',
             'gastos.solicitadoPor',
             'gastos.resueltoPor',
         ]);
@@ -506,6 +587,10 @@ class ReposicionCajaChicaController extends Controller
         return view('reposicion-caja-chica.relaciones-imprimir', compact('relacion', 'ambitoFirma', 'firmasImpresas'));
     }
 
+    private function puedeElegirAmbitoFirmaReposicion(?Request $request = null): bool
+    {
+        return (bool) $request?->user()?->hasAnyRole(['admin-rivera', 'super-admin']);
+    }
     private function resolverAmbitoFirmaReposicion(?Request $request = null, $gastos = null, ?string $almacenNombre = null): string
     {
         $ambitosValidos = [
@@ -514,7 +599,7 @@ class ReposicionCajaChicaController extends Controller
         ];
 
         $ambitoSolicitado = $request?->input('ambito');
-        if (in_array($ambitoSolicitado, $ambitosValidos, true)) {
+        if ($this->puedeElegirAmbitoFirmaReposicion($request) && in_array($ambitoSolicitado, $ambitosValidos, true)) {
             return $ambitoSolicitado;
         }
 
@@ -575,6 +660,23 @@ class ReposicionCajaChicaController extends Controller
             ->get()
             ->keyBy('campo');
     }
+    private function nombresUsuariosReporte($userIds): string
+    {
+        $ids = collect($userIds)
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return '';
+        }
+
+        return User::query()
+            ->whereIn('id', $ids)
+            ->orderBy('name')
+            ->pluck('name')
+            ->implode(', ');
+    }
     private function validarGastoPendiente(ReposicionCajaChicaGasto $gasto): void
     {
         if ($gasto->estado_autorizacion !== 'pendiente') {
@@ -620,7 +722,7 @@ class ReposicionCajaChicaController extends Controller
     private function gastosReporteQuery(Request $request, Carbon $fechaInicio, Carbon $fechaFin)
     {
         return ReposicionCajaChicaGasto::query()
-            ->with(['categoria', 'subcategoria', 'obra', 'almacen', 'solicitadoPor'])
+            ->with(['categoria', 'subcategoria', 'obra', 'almacen', 'maquina', 'solicitadoPor'])
             ->whereBetween('created_at', [$fechaInicio, $fechaFin])
             ->when($request->filled('q'), function ($query) use ($request) {
                 $q = trim((string) $request->q);

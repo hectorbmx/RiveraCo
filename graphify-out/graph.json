@@ -10460,7 +10460,7 @@
       "source_location": "L2594",
       "_origin": "ast",
       "id": "app_http_controllers_ordencompracontroller_ordencompracontroller_attachhuentitansalidamaterialestoorder",
-      "community": 25,
+      "community": 177,
       "norm_label": ".attachhuentitansalidamaterialestoorder()"
     },
     {
@@ -12457,7 +12457,7 @@
       "label": ".acuseCancelacion()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L224",
+      "source_location": "L229",
       "_origin": "ast",
       "id": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_acusecancelacion",
       "community": 222,
@@ -12467,7 +12467,7 @@
       "label": ".enviar()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L266",
+      "source_location": "L271",
       "_origin": "ast",
       "id": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_enviar",
       "community": 222,
@@ -12477,7 +12477,7 @@
       "label": ".cancelar()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L319",
+      "source_location": "L324",
       "_origin": "ast",
       "id": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_cancelar",
       "community": 222,
@@ -12490,7 +12490,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_http_controllers_sat_satfacturacioncontroller",
-      "community": 764,
+      "community": 1,
       "norm_label": "satfacturacioncontroller.php"
     },
     {
@@ -16270,7 +16270,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_models_comisionetapapersonal",
-      "community": 753,
+      "community": 172,
       "norm_label": "comisionetapapersonal.php"
     },
     {
@@ -16280,7 +16280,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "app_models_comisionetapapersonal_comisionetapapersonal",
-      "community": 753,
+      "community": 172,
       "norm_label": "comisionetapapersonal"
     },
     {
@@ -16290,7 +16290,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "app_models_comisionetapapersonal_comisionetapapersonal_etapa",
-      "community": 753,
+      "community": 172,
       "norm_label": ".etapa()"
     },
     {
@@ -16300,7 +16300,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "app_models_comisionetapapersonal_comisionetapapersonal_asignacionempleado",
-      "community": 753,
+      "community": 172,
       "norm_label": ".asignacionempleado()"
     },
     {
@@ -16310,7 +16310,7 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "app_models_comisionetapapersonal_comisionetapapersonal_empleado",
-      "community": 753,
+      "community": 172,
       "norm_label": ".empleado()"
     },
     {
@@ -16320,7 +16320,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "app_models_comisionetapapersonal_comisionetapapersonal_rol",
-      "community": 753,
+      "community": 172,
       "norm_label": ".rol()"
     },
     {
@@ -16330,7 +16330,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "app_models_comisionetapapersonal_comisionetapapersonal_actividad",
-      "community": 753,
+      "community": 172,
       "norm_label": ".actividad()"
     },
     {
@@ -20240,7 +20240,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_models_obraasistenciasemanaldetalle",
-      "community": 759,
+      "community": 764,
       "norm_label": "obraasistenciasemanaldetalle.php"
     },
     {
@@ -20250,7 +20250,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "app_models_obraasistenciasemanaldetalle_obraasistenciasemanaldetalle",
-      "community": 759,
+      "community": 764,
       "norm_label": "obraasistenciasemanaldetalle"
     },
     {
@@ -20260,7 +20260,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "app_models_obraasistenciasemanaldetalle_obraasistenciasemanaldetalle_reporte",
-      "community": 759,
+      "community": 764,
       "norm_label": ".reporte()"
     },
     {
@@ -20270,7 +20270,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "app_models_obraasistenciasemanaldetalle_obraasistenciasemanaldetalle_empleado",
-      "community": 759,
+      "community": 764,
       "norm_label": ".empleado()"
     },
     {
@@ -20280,7 +20280,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "app_models_obraasistenciasemanaldetalle_obraasistenciasemanaldetalle_entrada",
-      "community": 759,
+      "community": 764,
       "norm_label": ".entrada()"
     },
     {
@@ -20290,7 +20290,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "app_models_obraasistenciasemanaldetalle_obraasistenciasemanaldetalle_salida",
-      "community": 759,
+      "community": 764,
       "norm_label": ".salida()"
     },
     {
@@ -20910,7 +20910,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_models_obrafacturaborrador",
-      "community": 764,
+      "community": 1,
       "norm_label": "obrafacturaborrador.php"
     },
     {
@@ -23840,7 +23840,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_models_satempresa",
-      "community": 764,
+      "community": 1,
       "norm_label": "satempresa.php"
     },
     {
@@ -24050,7 +24050,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_models_satfacturaconcepto",
-      "community": 764,
+      "community": 1,
       "norm_label": "satfacturaconcepto.php"
     },
     {
@@ -24060,7 +24060,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "app_models_satfacturaconcepto_satfacturaconcepto",
-      "community": 764,
+      "community": 1,
       "norm_label": "satfacturaconcepto"
     },
     {
@@ -24070,7 +24070,7 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "app_models_satfacturaconcepto_satfacturaconcepto_factura",
-      "community": 764,
+      "community": 1,
       "norm_label": ".factura()"
     },
     {
@@ -24080,7 +24080,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_models_satfacturapago",
-      "community": 764,
+      "community": 1,
       "norm_label": "satfacturapago.php"
     },
     {
@@ -29260,7 +29260,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_services_obracivil_obracivilmaterialrequestitembalanceservice",
-      "community": 757,
+      "community": 52,
       "norm_label": "obracivilmaterialrequestitembalanceservice.php"
     },
     {
@@ -29270,7 +29270,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "app_services_obracivil_obracivilmaterialrequestitembalanceservice_obracivilmaterialrequestitembalanceservice",
-      "community": 757,
+      "community": 52,
       "norm_label": "obracivilmaterialrequestitembalanceservice"
     },
     {
@@ -29280,7 +29280,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "app_services_obracivil_obracivilmaterialrequestitembalanceservice_obracivilmaterialrequestitembalanceservice_summaries",
-      "community": 757,
+      "community": 52,
       "norm_label": ".summaries()"
     },
     {
@@ -29290,7 +29290,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "app_services_obracivil_obracivilmaterialrequestitembalanceservice_php_collection",
-      "community": 757,
+      "community": 52,
       "norm_label": "collection"
     },
     {
@@ -29300,7 +29300,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "app_services_obracivil_obracivilmaterialrequestitembalanceservice_obracivilmaterialrequestitembalanceservice_summary",
-      "community": 757,
+      "community": 52,
       "norm_label": ".summary()"
     },
     {
@@ -29310,7 +29310,7 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "app_services_obracivil_obracivilmaterialrequestitembalanceservice_obracivilmaterialrequestitembalanceservice_sumbyorderstates",
-      "community": 757,
+      "community": 52,
       "norm_label": ".sumbyorderstates()"
     },
     {
@@ -29340,7 +29340,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "app_services_obracivil_obracivilmaterialrequestorderservice_obracivilmaterialrequestorderservice_construct",
-      "community": 757,
+      "community": 52,
       "norm_label": ".__construct()"
     },
     {
@@ -29600,7 +29600,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_services_obracivil_residenteobracivilavancecatalogservice",
-      "community": 164,
+      "community": 90,
       "norm_label": "residenteobracivilavancecatalogservice.php"
     },
     {
@@ -29610,7 +29610,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "app_services_obracivil_residenteobracivilavancecatalogservice_residenteobracivilavancecatalogservice",
-      "community": 164,
+      "community": 90,
       "norm_label": "residenteobracivilavancecatalogservice"
     },
     {
@@ -29620,7 +29620,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "app_services_obracivil_residenteobracivilavancecatalogservice_residenteobracivilavancecatalogservice_construct",
-      "community": 164,
+      "community": 90,
       "norm_label": ".__construct()"
     },
     {
@@ -29630,7 +29630,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "app_services_obracivil_residenteobracivilavancecatalogservice_residenteobracivilavancecatalogservice_search",
-      "community": 164,
+      "community": 90,
       "norm_label": ".search()"
     },
     {
@@ -29640,7 +29640,7 @@
       "source_location": "L51",
       "_origin": "ast",
       "id": "app_services_obracivil_residenteobracivilavancecatalogservice_residenteobracivilavancecatalogservice_mappaginator",
-      "community": 164,
+      "community": 90,
       "norm_label": ".mappaginator()"
     },
     {
@@ -29650,7 +29650,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "app_services_obracivil_residenteobracivilavancecatalogservice_php_lengthawarepaginator",
-      "community": 164,
+      "community": 90,
       "norm_label": "lengthawarepaginator"
     },
     {
@@ -29660,7 +29660,7 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "app_services_obracivil_residenteobracivilavancecatalogservice_residenteobracivilavancecatalogservice_reportedquantities",
-      "community": 164,
+      "community": 90,
       "norm_label": ".reportedquantities()"
     },
     {
@@ -29670,7 +29670,7 @@
       "source_location": "L112",
       "_origin": "ast",
       "id": "app_services_obracivil_residenteobracivilavancecatalogservice_residenteobracivilavancecatalogservice_perpage",
-      "community": 164,
+      "community": 90,
       "norm_label": ".perpage()"
     },
     {
@@ -30140,7 +30140,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_services_ordencompratotalesservice",
-      "community": 52,
+      "community": 177,
       "norm_label": "ordencompratotalesservice.php"
     },
     {
@@ -30160,7 +30160,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "app_services_ordencompratotalesservice_ordencompratotalesservice_recalcular",
-      "community": 758,
+      "community": 177,
       "norm_label": ".recalcular()"
     },
     {
@@ -46230,7 +46230,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "storage_framework_views_f30fae91b7f964826e30b99a32dff0f5",
-      "community": 768,
+      "community": 753,
       "norm_label": "f30fae91b7f964826e30b99a32dff0f5.php"
     },
     {
@@ -109035,7 +109035,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L224",
+      "source_location": "L229",
       "weight": 1.0,
       "source": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller",
       "target": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_acusecancelacion",
@@ -109045,7 +109045,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L319",
+      "source_location": "L324",
       "weight": 1.0,
       "source": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller",
       "target": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_cancelar",
@@ -109055,7 +109055,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L266",
+      "source_location": "L271",
       "weight": 1.0,
       "source": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller",
       "target": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_enviar",
@@ -109192,7 +109192,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L319",
+      "source_location": "L324",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_cancelar",
@@ -109203,7 +109203,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L266",
+      "source_location": "L271",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_enviar",
@@ -109269,7 +109269,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L224",
+      "source_location": "L229",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_acusecancelacion",
@@ -109282,7 +109282,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L239",
+      "source_location": "L244",
       "weight": 1.0,
       "source": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_acusecancelacion",
       "target": "app_services_telephony_grandstreamclient_grandstreamclient_config"
@@ -109293,7 +109293,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L239",
+      "source_location": "L244",
       "weight": 1.0,
       "source": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_acusecancelacion",
       "target": "app_services_telephony_grandstreamclient_grandstreamclient_http"
@@ -109302,7 +109302,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L266",
+      "source_location": "L271",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_enviar",
@@ -109313,7 +109313,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L266",
+      "source_location": "L271",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_enviar",
@@ -109326,7 +109326,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L302",
+      "source_location": "L307",
       "weight": 1.0,
       "source": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_enviar",
       "target": "app_services_telephony_grandstreamclient_grandstreamclient_config"
@@ -109335,7 +109335,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L319",
+      "source_location": "L324",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_cancelar",
@@ -109348,7 +109348,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L352",
+      "source_location": "L357",
       "weight": 1.0,
       "source": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_cancelar",
       "target": "app_services_telephony_grandstreamclient_grandstreamclient_config"
@@ -109359,7 +109359,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/Sat/SatFacturaPagoController.php",
-      "source_location": "L352",
+      "source_location": "L357",
       "weight": 1.0,
       "source": "app_http_controllers_sat_satfacturapagocontroller_satfacturapagocontroller_cancelar",
       "target": "app_services_telephony_grandstreamclient_grandstreamclient_http"
@@ -177459,5 +177459,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "af89dd7b9aaf97615024fe47c3ad966aff1a6004"
+  "built_at_commit": "73556bcc29969a12f2c61b5a5475279ff8669ca8"
 }

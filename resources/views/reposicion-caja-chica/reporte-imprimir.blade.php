@@ -103,6 +103,9 @@
                             @else
                                 {{ $gasto->almacen->nombre ?? 'Almacen no definido' }}
                             @endif
+                            @if($gasto->es_para_maquina)
+                                <br><span class="muted">Máquina: {{ trim(($gasto->maquina?->codigo ? $gasto->maquina->codigo . ' - ' : '') . ($gasto->maquina?->nombre ?? 'Sin máquina')) }}</span>
+                            @endif
                         </td>
                         <td class="right">${{ number_format((float) $gasto->importe_registrado, 2) }}</td>
                         <td class="right">${{ number_format((float) ($gasto->importe_autorizado ?? 0), 2) }}</td>
@@ -134,7 +137,7 @@
 
     <div class="signatures">
         <div class="signature">
-            <div class="signature-name">{{ $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_ELABORO)?->user?->name }}</div>
+            <div class="signature-name">{{ $elaboroNombre ?: $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_ELABORO)?->user?->name }}</div>
             Elaboro
         </div>
         <div class="signature">
@@ -142,7 +145,7 @@
             VoBo
         </div>
         <div class="signature">
-            <div class="signature-name">{{ $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_AUTORIZO)?->user?->name }}</div>
+            <div class="signature-name">{{ $autorizoNombre ?: $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_AUTORIZO)?->user?->name }}</div>
             Autorizo
         </div>
     </div>

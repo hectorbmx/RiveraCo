@@ -146,13 +146,13 @@
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             
             {{-- ENCABEZADO DE LA HOJA --}}
-            <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-4 py-3">
+            <div class="flex items-center justify-between border-b border-[#0B265A] bg-[#0B265A] px-4 py-3">
                 <div class="flex items-center gap-3">
-                    <span class="font-bold text-slate-800 text-sm">Hoja de Gastos</span>
-                    <span class="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800" x-text="rows.length + ' renglones'"></span>
+                    <span class="font-bold text-white text-sm">Hoja de Gastos</span>
+                    <span class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white ring-1 ring-white/25" x-text="rows.length + ' renglones'"></span>
                 </div>
                 <template x-if="rows.length > 0">
-                    <button type="button" @click="rows = []" class="text-xs font-semibold text-red-600 hover:underline">
+                    <button type="button" @click="rows = []" class="text-xs font-semibold text-red-100 hover:text-white hover:underline">
                         Limpiar todos los renglones
                     </button>
                 </template>
@@ -169,6 +169,8 @@
                             <th class="w-56 px-3 py-2.5 text-left">Proveedor</th>
                             <th class="w-36 px-3 py-2.5 text-left">RFC</th>
                             <th class="min-w-[340px] px-3 py-2.5 text-left">Concepto</th>
+                            <th x-show="isGiraldaSelected" class="w-28 px-3 py-2.5 text-center">¿Máquina?</th>
+                            <th x-show="isGiraldaSelected" class="w-64 px-3 py-2.5 text-left">Máquina</th>
                             <th class="w-44 px-3 py-2.5 text-left">Categoría</th>
                             <th class="w-32 px-3 py-2.5 text-left">Forma pago</th>
                             <th class="w-32 px-3 py-2.5 text-right">Importe ($)</th>
@@ -207,19 +209,52 @@
 
                                 {{-- PROVEEDOR --}}
                                 <td class="px-2 py-2">
-                                    <input type="text" :name="'gastos[' + index + '][proveedor_nombre]'" 
-                                           x-model="row.proveedor_nombre" 
-                                           placeholder="Nombre o razón social" 
-                                           required
-                                           class="w-full rounded border-slate-300 text-xs py-1 px-1.5 font-semibold text-slate-800 focus:ring-1 focus:ring-blue-500">
+                                    <div class="relative" @click.away="row.proveedor_results = []">
+                                        <input type="hidden" :name="'gastos[' + index + '][proveedor_id]'" x-model="row.proveedor_id">
+                                        <input type="text" :name="'gastos[' + index + '][proveedor_nombre]'"
+                                               x-model="row.proveedor_nombre"
+                                               @input.debounce.300ms="onProveedorInput(row, 'nombre', $event)"
+                                               @focus="buscarProveedores(row, row.proveedor_nombre, 'nombre', $event)"
+                                               autocomplete="off"
+                                               placeholder="Nombre o razón social"
+                                               required
+                                               class="w-full rounded border-slate-300 text-xs py-1 px-1.5 font-semibold text-slate-800 focus:ring-1 focus:ring-blue-500">
+                                        <div x-show="row.proveedor_loading && row.proveedor_result_source === 'nombre'" class="absolute right-2 top-1.5 text-[10px] text-slate-400">Buscando...</div>
+                                        <div x-show="row.proveedor_results.length > 0 && row.proveedor_result_source === 'nombre'"
+                                             class="fixed z-[9999] max-h-56 w-72 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-2xl"
+                                             :style="row.proveedor_dropdown_style">
+                                            <template x-for="proveedor in row.proveedor_results" :key="proveedor.id">
+                                                <button type="button" @click="selectProveedor(row, proveedor)" class="block w-full border-b border-slate-100 px-3 py-2 text-left text-xs hover:bg-blue-50 last:border-b-0">
+                                                    <div class="font-semibold text-slate-800" x-text="proveedor.nombre"></div>
+                                                    <div class="text-[11px] text-slate-500" x-text="proveedor.rfc || 'Sin RFC'"></div>
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
                                 </td>
 
                                 {{-- RFC --}}
                                 <td class="px-2 py-2">
-                                    <input type="text" :name="'gastos[' + index + '][proveedor_rfc]'" 
-                                           x-model="row.proveedor_rfc" 
-                                           placeholder="RFC opcional" 
-                                           class="w-full rounded border-slate-300 text-xs py-1 px-1.5 uppercase text-slate-700 focus:ring-1 focus:ring-blue-500">
+                                    <div class="relative" @click.away="row.proveedor_results = []">
+                                        <input type="text" :name="'gastos[' + index + '][proveedor_rfc]'"
+                                               x-model="row.proveedor_rfc"
+                                               @input.debounce.300ms="onProveedorInput(row, 'rfc', $event)"
+                                               @focus="buscarProveedores(row, row.proveedor_rfc, 'rfc', $event)"
+                                               autocomplete="off"
+                                               placeholder="RFC opcional"
+                                               class="w-full rounded border-slate-300 text-xs py-1 px-1.5 uppercase text-slate-700 focus:ring-1 focus:ring-blue-500">
+                                        <div x-show="row.proveedor_loading && row.proveedor_result_source === 'rfc'" class="absolute right-2 top-1.5 text-[10px] text-slate-400">Buscando...</div>
+                                        <div x-show="row.proveedor_results.length > 0 && row.proveedor_result_source === 'rfc'"
+                                             class="fixed z-[9999] max-h-56 w-72 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-2xl"
+                                             :style="row.proveedor_dropdown_style">
+                                            <template x-for="proveedor in row.proveedor_results" :key="proveedor.id">
+                                                <button type="button" @click="selectProveedor(row, proveedor)" class="block w-full border-b border-slate-100 px-3 py-2 text-left text-xs hover:bg-blue-50 last:border-b-0">
+                                                    <div class="font-semibold text-slate-800" x-text="proveedor.nombre"></div>
+                                                    <div class="text-[11px] text-slate-500" x-text="proveedor.rfc || 'Sin RFC'"></div>
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
                                 </td>
 
                                 {{-- CONCEPTO Y MOTIVO --}}
@@ -240,6 +275,31 @@
                                                class="w-full rounded border-amber-300 bg-amber-50 text-[11px] py-0.5 px-1.5 text-amber-900 placeholder:text-amber-600">
                                     </div>
                                     --}}
+                                </td>
+
+                                {{-- MAQUINARIA GIRALDA --}}
+                                <td x-show="isGiraldaSelected" class="px-2 py-2 text-center">
+                                    <input type="hidden" :name="'gastos[' + index + '][es_para_maquina]'" value="0">
+                                    <label class="inline-flex items-center justify-center gap-2 rounded border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700">
+                                        <input type="checkbox"
+                                               :name="'gastos[' + index + '][es_para_maquina]'"
+                                               value="1"
+                                               x-model="row.es_para_maquina"
+                                               class="rounded border-slate-300 text-[#0B265A] focus:ring-[#0B265A]">
+                                        <span>Sí</span>
+                                    </label>
+                                </td>
+
+                                <td x-show="isGiraldaSelected" class="px-2 py-2">
+                                    <select :name="'gastos[' + index + '][maquina_id]'"
+                                            x-model="row.maquina_id"
+                                            :disabled="!row.es_para_maquina"
+                                            class="w-full rounded border-slate-300 text-xs py-1 px-1.5 disabled:bg-slate-100 disabled:text-slate-400">
+                                        <option value="">Selecciona máquina...</option>
+                                        <template x-for="maquina in maquinas" :key="maquina.id">
+                                            <option :value="maquina.id" x-text="(maquina.codigo ? maquina.codigo + ' - ' : '') + maquina.nombre"></option>
+                                        </template>
+                                    </select>
                                 </td>
 
                                 {{-- CATEGORÍA / SUBCATEGORÍA --}}
@@ -299,7 +359,7 @@
                         {{-- ESTADO VACÍO --}}
                         <template x-if="rows.length === 0">
                             <tr>
-                                <td colspan="10" class="px-4 py-12 text-center text-slate-400">
+                                <td :colspan="isGiraldaSelected ? 12 : 10" class="px-4 py-12 text-center text-slate-400">
                                     <div class="flex flex-col items-center justify-center gap-2">
                                         <span class="text-4xl">📊</span>
                                         <p class="font-semibold text-slate-600">No hay gastos en la hoja de captura.</p>
@@ -313,30 +373,31 @@
             </div>
 
             {{-- FOOTER / TOTALES EN VIVO --}}
-            <div class="border-t border-slate-200 bg-slate-50 px-6 py-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                
+            <div class="grid gap-4 border-t border-slate-200 bg-slate-50 px-6 py-4 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
+                <div class="hidden lg:block"></div>
+
                 {{-- MÉTRICAS EN VIVO --}}
-                <div class="flex flex-wrap items-center gap-6">
-                    <div>
+                <div class="flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-center">
+                    <div class="min-w-[95px]">
                         <span class="text-xs uppercase font-bold text-slate-400">Gastos capturados</span>
                         <p class="text-lg font-bold text-slate-800" x-text="rows.length"></p>
                     </div>
-                    <div class="border-l border-slate-200 pl-6">
+                    <div class="min-w-[105px] border-l border-slate-200 pl-7">
                         <span class="text-xs uppercase font-bold text-green-600">Con factura</span>
                         <p class="text-lg font-bold text-green-700" x-text="'$' + formatMoney(totalConFactura)"></p>
                     </div>
-                    <div class="border-l border-slate-200 pl-6">
+                    <div class="min-w-[105px] border-l border-slate-200 pl-7">
                         <span class="text-xs uppercase font-bold text-purple-600">Sin factura</span>
                         <p class="text-lg font-bold text-purple-700" x-text="'$' + formatMoney(totalSinFactura)"></p>
                     </div>
-                    <div class="border-l border-slate-200 pl-6">
+                    <div class="min-w-[130px] border-l border-slate-200 pl-7">
                         <span class="text-xs uppercase font-bold text-[#0B265A]">Total General</span>
                         <p class="text-2xl font-black text-[#0B265A]" x-text="'$' + formatMoney(totalGeneral)"></p>
                     </div>
                 </div>
 
                 {{-- BOTONES DE GUARDADO / ENVÍO --}}
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center justify-center gap-3 lg:justify-end">
                     <button type="submit" 
                             @click="formAction = 'borrador'" 
                             :disabled="rows.length === 0 || isSubmitting"
@@ -379,7 +440,21 @@ function reposicionCajaChicaExcel() {
         ])->values()) !!},
 
         obras: {!! json_encode($obras->map(fn($o) => ['id' => $o->id, 'nombre' => $o->nombre, 'estatus_nuevo' => (int) $o->estatus_nuevo])->values()) !!},
-        almacenes: {!! json_encode($almacenes->map(fn($a) => ['id' => $a->id, 'nombre' => $a->nombre])->values()) !!},
+        almacenes: {!! json_encode($almacenes->map(fn($a) => [
+            'id' => $a->id,
+            'codigo' => $a->codigo,
+            'nombre' => $a->nombre,
+            'tipo' => $a->tipo,
+        ])->values()) !!},
+
+        maquinas: {!! json_encode($maquinas->map(fn($m) => [
+            'id' => $m->id,
+            'codigo' => $m->codigo,
+            'nombre' => $m->nombre,
+            'tipo' => $m->tipo,
+            'estado' => $m->estado,
+            'ubicacion' => $m->ubicacion,
+        ])->values()) !!},
 
         rows: [],
         dragover: false,
@@ -415,18 +490,41 @@ function reposicionCajaChicaExcel() {
                             obra_id: g.obra_id || (this.targetDestino === 'obra' ? this.targetObraId : ''),
                             almacen_id: g.almacen_id || (this.targetDestino === 'almacen' ? this.targetAlmacenId : ''),
                             fecha_gasto: g.fecha_gasto || new Date().toISOString().slice(0, 10),
+                            proveedor_id: g.proveedor_id || '',
                             proveedor_nombre: g.proveedor_nombre || '',
                             proveedor_rfc: g.proveedor_rfc || '',
+                            proveedor_results: [],
+                            proveedor_loading: false,
+                            proveedor_search_token: '',
+                            proveedor_result_source: '',
+                            proveedor_dropdown_style: '',
                             concepto: g.concepto || '',
                             forma_pago: g.forma_pago || (cat ? cat.forma_pago_base : 'efectivo'),
                             importe_registrado: parseFloat(g.importe_registrado) || 0,
                             motivo_sin_factura: g.motivo_sin_factura || '',
+                            es_para_maquina: Boolean(Number(g.es_para_maquina || 0)),
+                            maquina_id: g.maquina_id || '',
                             xml_file_name: '',
                             evidencia_count: 0,
                         });
                     });
                 }
             @endif
+        },
+
+        get selectedAlmacen() {
+            return this.almacenes.find(alm => String(alm.id) === String(this.targetAlmacenId)) || null;
+        },
+
+        get isGiraldaSelected() {
+            if (this.targetDestino !== 'almacen' || !this.selectedAlmacen) {
+                return false;
+            }
+
+            const codigo = String(this.selectedAlmacen.codigo || '').toLowerCase();
+            const nombre = String(this.selectedAlmacen.nombre || '').toLowerCase();
+
+            return codigo.includes('gl') || nombre.includes('giralda');
         },
 
         getSubcategorias(categoriaId) {
@@ -447,6 +545,69 @@ function reposicionCajaChicaExcel() {
             }
         },
 
+        onProveedorInput(row, source = 'nombre', event = null) {
+            row.proveedor_id = '';
+            this.buscarProveedores(row, source === 'rfc' ? row.proveedor_rfc : row.proveedor_nombre, source, event);
+        },
+
+        updateProveedorDropdownPosition(row, event = null) {
+            const input = event?.target;
+            if (!input || typeof input.getBoundingClientRect !== 'function') {
+                return;
+            }
+
+            const rect = input.getBoundingClientRect();
+            row.proveedor_dropdown_style = `top: ${rect.bottom + 6}px; left: ${rect.left}px; width: ${Math.max(rect.width, 288)}px;`;
+        },
+
+        async buscarProveedores(row, term, source = 'nombre', event = null) {
+            this.updateProveedorDropdownPosition(row, event);
+            const q = String(term || '').trim();
+            row.proveedor_result_source = source;
+
+            if (q.length < 3) {
+                row.proveedor_results = [];
+                row.proveedor_loading = false;
+                row.proveedor_dropdown_style = '';
+                return;
+            }
+
+            const token = Date.now().toString() + Math.random().toString(36).slice(2);
+            row.proveedor_search_token = token;
+            row.proveedor_loading = true;
+
+            try {
+                const response = await fetch(`{{ route('proveedores.buscar') }}?q=${encodeURIComponent(q)}`, {
+                    headers: { 'Accept': 'application/json' },
+                });
+
+                if (!response.ok) {
+                    throw new Error('No se pudo buscar proveedores.');
+                }
+
+                const data = await response.json();
+                if (row.proveedor_search_token === token) {
+                    row.proveedor_results = Array.isArray(data) ? data : [];
+                }
+            } catch (error) {
+                if (row.proveedor_search_token === token) {
+                    row.proveedor_results = [];
+                }
+            } finally {
+                if (row.proveedor_search_token === token) {
+                    row.proveedor_loading = false;
+                }
+            }
+        },
+
+        selectProveedor(row, proveedor) {
+            row.proveedor_id = proveedor.id || '';
+            row.proveedor_nombre = proveedor.nombre || '';
+            row.proveedor_rfc = proveedor.rfc || '';
+            row.proveedor_results = [];
+            row.proveedor_loading = false;
+            row.proveedor_result_source = '';
+        },
         onTargetDestinoChange() {
             this.syncTargetToAllRows();
         },
@@ -460,6 +621,11 @@ function reposicionCajaChicaExcel() {
                 } else {
                     r.almacen_id = this.targetAlmacenId;
                     r.obra_id = '';
+                }
+
+                if (!this.isGiraldaSelected) {
+                    r.es_para_maquina = false;
+                    r.maquina_id = '';
                 }
             });
         },
@@ -478,12 +644,20 @@ function reposicionCajaChicaExcel() {
                 obra_id: this.targetDestino === 'obra' ? this.targetObraId : '',
                 almacen_id: this.targetDestino === 'almacen' ? this.targetAlmacenId : '',
                 fecha_gasto: new Date().toISOString().slice(0, 10),
+                proveedor_id: '',
                 proveedor_nombre: '',
                 proveedor_rfc: '',
+                proveedor_results: [],
+                proveedor_loading: false,
+                proveedor_search_token: '',
+                proveedor_result_source: '',
+                            proveedor_dropdown_style: '',
                 concepto: '',
                 forma_pago: cat ? cat.forma_pago_base : 'efectivo',
                 importe_registrado: 0,
                 motivo_sin_factura: '',
+                es_para_maquina: false,
+                maquina_id: '',
                 xml_file_name: '',
                 evidencia_count: 0,
             });
@@ -573,12 +747,20 @@ function reposicionCajaChicaExcel() {
                             obra_id: this.targetDestino === 'obra' ? this.targetObraId : '',
                             almacen_id: this.targetDestino === 'almacen' ? this.targetAlmacenId : '',
                             fecha_gasto: cfdi.fecha || new Date().toISOString().slice(0, 10),
+                            proveedor_id: '',
                             proveedor_nombre: cfdi.emisor_nombre || '',
                             proveedor_rfc: cfdi.emisor_rfc || '',
+                            proveedor_results: [],
+                            proveedor_loading: false,
+                            proveedor_search_token: '',
+                            proveedor_result_source: '',
+                            proveedor_dropdown_style: '',
                             concepto: cfdi.concepto || 'Gasto con factura',
                             forma_pago: cfdi.forma_pago || 'efectivo',
                             importe_registrado: parseFloat(cfdi.total) || 0,
                             motivo_sin_factura: '',
+                            es_para_maquina: false,
+                            maquina_id: '',
                             xml_file_name: cfdi.filename || sourceFile?.name || 'factura.xml',
                             evidencia_count: 0,
                         });

@@ -20,6 +20,8 @@ class ReposicionCajaChicaGasto extends Model
         'destino',
         'obra_id',
         'almacen_id',
+        'es_para_maquina',
+        'maquina_id',
         'fecha_gasto',
         'proveedor_nombre',
         'proveedor_id',
@@ -47,6 +49,7 @@ class ReposicionCajaChicaGasto extends Model
         'importe_autorizado' => 'decimal:2',
         'resuelto_at' => 'datetime',
         'solicitado_at' => 'datetime',
+        'es_para_maquina' => 'boolean',
     ];
 
     public function relacion(): BelongsTo
@@ -77,6 +80,11 @@ class ReposicionCajaChicaGasto extends Model
     public function proveedor(): BelongsTo
     {
         return $this->belongsTo(Proveedor::class, 'proveedor_id');
+    }
+
+    public function maquina(): BelongsTo
+    {
+        return $this->belongsTo(Maquina::class, 'maquina_id');
     }
 
     public function archivos(): HasMany

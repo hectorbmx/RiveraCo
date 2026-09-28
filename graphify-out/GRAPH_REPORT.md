@@ -1,16 +1,16 @@
 # Graph Report - rivera-v2  (2026-09-25)
 
 ## Corpus Check
-- 1099 files · ~1,234,373 words
+- 1356 files · ~1,208,606 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 6116 nodes · 11047 edges · 832 communities (757 shown, 75 thin omitted)
+- 6116 nodes · 11047 edges · 829 communities (757 shown, 72 thin omitted)
 - Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 637 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `af89dd7b`
+- Built from commit: `73556bcc`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -324,11 +324,8 @@
 - 2026_08_03_130000_create_giralda_horas_extras_table.php
 - empleados.blade.php
 - 61fb6a002be41ea48351a2a445368ab8.php
-- ComisionEtapaPersonal
 - 62ac9c8a6c06307fd0085119c26d4223.php
-- ObraCivilMaterialRequestItemBalanceService
 - 656587f19a8d6a9d140226a7f6877fc0.php
-- ObraAsistenciaSemanalDetalle
 - ReposicionCajaChicaSubcategoria.php
 - InventarioGerencialController.php
 - 6ce2e5ec7fe70f480d45906ae80b667a.php
@@ -367,15 +364,15 @@
 ## Import Cycles
 - None detected.
 
-## Communities (832 total, 75 thin omitted)
+## Communities (829 total, 72 thin omitted)
 
 ### Community 0 - "Seeder"
 Cohesion: 0.07
 Nodes (32): EmpresaSecurityController, Request, assignPermissions(), up(), assignPermissions(), up(), up(), down() (+24 more)
 
 ### Community 1 - "ObraReposicionGasto"
-Cohesion: 0.08
-Nodes (4): AgendaController, Request, CajaChicaController, Request
+Cohesion: 0.07
+Nodes (5): AgendaController, Request, CajaChicaController, Request, SatFacturaConcepto
 
 ### Community 2 - "User"
 Cohesion: 0.16
@@ -558,8 +555,8 @@ Cohesion: 0.07
 Nodes (26): 2026-08-31 - Hallazgo sobre configuracion empresa, 2026-08-31 - Paso 1 ejecutado, Bitacora, Checkpoint 1. Base de datos lista, Checkpoint 2. Configuracion empresa lista, Checkpoint 3. UI de usuarios lista, Checkpoint 4. Reposicion imprime VoBo, Checkpoint 5. Flujo listo para futuras firmas (+18 more)
 
 ### Community 52 - "OrdenCompra"
-Cohesion: 0.14
-Nodes (4): ObraCivilMaterialRequestItem, ObraCivilMaterialRequestOrderLink, ObraCivilMaterialRequestOrderService, Collection
+Cohesion: 0.12
+Nodes (6): ObraCivilMaterialRequestItem, ObraCivilMaterialRequestOrderLink, ObraCivilMaterialRequestItemBalanceService, Collection, ObraCivilMaterialRequestOrderService, Collection
 
 ### Community 53 - "SatFacturaPago"
 Cohesion: 0.14
@@ -698,8 +695,8 @@ Cohesion: 0.22
 Nodes (9): require-dev, fakerphp/faker, laravel/breeze, laravel/pint, laravel/sail, mockery/mockery, nunomaduro/collision, phpunit/phpunit (+1 more)
 
 ### Community 90 - "AuthenticatedSessionController.php"
-Cohesion: 0.23
-Nodes (4): Request, ResidenteObraCivilAvanceController, UploadedFile, ResidenteObraCivilAvanceReportService
+Cohesion: 0.16
+Nodes (6): Request, ResidenteObraCivilAvanceController, LengthAwarePaginator, ResidenteObraCivilAvanceCatalogService, UploadedFile, ResidenteObraCivilAvanceReportService
 
 ### Community 91 - "ZkDeviceClient"
 Cohesion: 0.11
@@ -882,8 +879,8 @@ Cohesion: 0.40
 Nodes (5): Fase 9: pruebas manuales, Paso 9.1: detalle sin descuento, Paso 9.2: detalle con descuento, Paso 9.3: mezcla de productos, Paso 9.4: caja chica con descuento
 
 ### Community 164 - "2025_12_05_180218_create_catalogo_pilas_table.php"
-Cohesion: 0.12
-Nodes (8): ObraCivilConceptReportController, View, CivilConcept, CivilConceptBalanceService, Collection, ObraCivilConceptReportService, LengthAwarePaginator, ResidenteObraCivilAvanceCatalogService
+Cohesion: 0.15
+Nodes (6): ObraCivilConceptReportController, View, CivilConcept, CivilConceptBalanceService, Collection, ObraCivilConceptReportService
 
 ### Community 166 - "2025_12_09_191332_add_totales_materiales_to_obras_table.php"
 Cohesion: 0.15
@@ -899,7 +896,7 @@ Nodes (13): Checkpoint 1: propagar `commercial_request` hacia OC, Checkpoint 2: 
 
 ### Community 172 - "2025_12_11_192314_create_mantenimiento_detalles_table.php"
 Cohesion: 0.04
-Nodes (13): AreaHorario, CivilBuilding, CivilEstimationItem, CivilPartida, CivilWorkReportItem, CivilWorkReportPhoto, ClienteContacto, ComisionEtapaFoto (+5 more)
+Nodes (14): AreaHorario, CivilBuilding, CivilEstimationItem, CivilPartida, CivilWorkReportItem, CivilWorkReportPhoto, ClienteContacto, ComisionEtapaFoto (+6 more)
 
 ### Community 173 - "InventarioStock"
 Cohesion: 0.15
@@ -914,7 +911,7 @@ Cohesion: 0.10
 Nodes (10): InventarioCorte, BelongsTo, HasMany, InventarioCorteDetalle, BelongsTo, InventarioMovimiento, BelongsTo, HuentitanInventoryImportService (+2 more)
 
 ### Community 177 - "2025_12_17_185153_create_producto_proveedor_precios_table.php"
-Cohesion: 0.29
+Cohesion: 0.22
 Nodes (3): OrdenCompraDetalleController, Request, OrdenCompraTotalesService
 
 ### Community 179 - "2025_12_18_184151_create_catalogo_roles_alias_table.php"
@@ -1347,7 +1344,7 @@ Nodes (3): BelongsTo, HasMany, ReposicionCajaChicaSubcategoria
 
 ### Community 764 - "6dc35812b5eba211ea39552f61dcc225.php"
 Cohesion: 0.05
-Nodes (15): CatalogoRolAlias, DocumentoVehiculo, MantenimientoDetalle, MantenimientoFoto, NominaPagoExtra, ProductoProveedorPrecio, BelongsTo, SatCfdiConcepto (+7 more)
+Nodes (15): CatalogoRolAlias, DocumentoVehiculo, MantenimientoDetalle, MantenimientoFoto, NominaPagoExtra, ObraAsistenciaSemanalDetalle, ProductoProveedorPrecio, BelongsTo (+7 more)
 
 ### Community 815 - "2026_06_23_120000_create_obra_factura_pagos_table.php"
 Cohesion: 0.53
@@ -1368,12 +1365,12 @@ Nodes (15): InventarioKardexGerencialController, Request, ObraComisionesApiContr
 ## Knowledge Gaps
 - **1262 isolated node(s):** `name`, `type`, `description`, `laravel`, `framework` (+1257 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **75 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **72 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Controller` connect `92699fb55b9efb166cdcf4169351f6ec.php` to `Seeder`, `ObraReposicionGasto`, `SatCfdiEstadisticaController.php`, `AttendanceUser`, `ResidenteComisionesService`, `EquipoComputo`, `Obra`, `InventarioDocumento`, `Queueable`, `ObraMaquina`, `Presupuesto`, `.edit`, `ObraController`, `SatDocumentRequest`, `MaquinariaReporteSnapshot`, `Producto`, `NominaListaRaya`, `ObraSolicitudGasto`, `ObraEmpleado`, `Seguro`, `MaquinaEstadoCambiado`, `MaquinaService`, `PagoProveedor`, `web.php`, `MaquinaController.php`, `UsuarioController.php`, `SatFacturaPago`, `SatDownloadRequest`, `EmpresaConfig`, `ResidenteComisionController`, `RedirectIfAuthenticated.php`, `InventarioKardexGerencialController.php`, `ObraAsistencia`, `SnapshotsController.php`, `.create`, `SatComplementoPagoController`, `SatCfdiPago`, `InventarioStockController.php`, `ProveedorController`, `Component`, `AuthenticatedSessionController.php`, `AgentNotificationController`, `ConfirmablePasswordController.php`, `PasswordResetLinkController.php`, `RegisteredUserController.php`, `ObraPila`, `InventarioSeedInicial.php`, `UserFactory`, `2026_08_19_000002_create_civil_work_report_items_table.php`, `ComisionPersonal`, `2026_07_28_130000_add_vehiculo_preventivo_fields_to_empresa_config.php`, `ComisionEtapaPersonal`, `Estados recomendados`, `2014_10_12_000000_create_users_table.php`, `2025_11_24_193802_create_clientes_table.php`, `2025_11_25_193519_create_obra_empleado_table.php`, `2025_11_27_181836_create_empleado_contactos_emergencia_table.php`, `20e025c0f8ca396ec9b548ce06c6e36a.php`, `2025_12_02_185346_create_proveedores_table.php`, `2245dd3aa97fc47a270890bcaf72c56d.php`, `2025_12_02_185705_create_orden_compra_detalles_table.php`, `2025_12_04_194719_create_obras_pilas_table.php`, `2025_12_05_180218_create_catalogo_pilas_table.php`, `2025_12_09_191332_add_totales_materiales_to_obras_table.php`, `EmailVerificationPromptController.php`, `2025_12_11_192310_create_mantenimientos_table.php`, `InventarioStock`, `2025_12_15_161442_create_areas_table.php`, `2025_12_17_185153_create_producto_proveedor_precios_table.php`, `2025_12_18_184201_add_rol_id_to_comision_personal_table.php`, `2025_12_19_191636_add_ademe_bauer_and_campana_to_comision_detalles_table.php`, `2026_01_05_195229_make_numero_pila_nullable_in_obras_pilas_table.php`, `ClientePortal`, `2026_01_07_184728_create_comision_tarifario_detalles_table.php`, `2026_01_16_192603_create_maquinaria_reporte_snapshots_tables.php`, `FacturaBorradorAutorizado`, `2026_02_03_171602_create_almacenes_table.php`, `2026_02_03_171637_add_inventario_fields_to_productos_table.php`, `5c66cbcff20d6499750a3084b2463891.php`, `2026_02_25_160241_create_facturas_table.php`, `2026_02_27_183137_add_ubicacion_to_maquinas_table.php`, `CatalogoPilasSeeder.php`, `2026_03_10_165357_create_seguros_table.php`, `2026_03_17_190518_create_vehiculo_documentos_table.php`, `2026_04_07_180519_create_presupuesto_pilas.php`, `2026_04_10_190703_create_obra_planeacion_semanal_table.php`, `InventarioGerencialController.php`, `6dc35812b5eba211ea39552f61dcc225.php`, `GrandstreamExtensionMapper`, `ClienteContactoController`, `TelephonyPhoneIndexBuilder`, `InventarioDocumentoController`, `EmailVerificationPromptController.php`, `VehiculosAlertasPreventivoKm.php`, `2026_06_23_120000_create_obra_factura_pagos_table.php`, `2026_06_24_110000_add_comprobante_to_obra_factura_pagos_table.php`, `CatalogoPila`, `2026_08_03_120000_change_descripcion_to_text_on_sat_factura_conceptos_table.php`, `VehiculoObra`?**
+- **Why does `Controller` connect `92699fb55b9efb166cdcf4169351f6ec.php` to `Seeder`, `ObraReposicionGasto`, `SatCfdiEstadisticaController.php`, `AttendanceUser`, `ResidenteComisionesService`, `EquipoComputo`, `Obra`, `InventarioDocumento`, `Queueable`, `ObraMaquina`, `Presupuesto`, `.edit`, `ObraController`, `SatDocumentRequest`, `MaquinariaReporteSnapshot`, `Producto`, `NominaListaRaya`, `ObraSolicitudGasto`, `ObraEmpleado`, `Seguro`, `MaquinaEstadoCambiado`, `MaquinaService`, `PagoProveedor`, `web.php`, `MaquinaController.php`, `UsuarioController.php`, `SatFacturaPago`, `SatDownloadRequest`, `EmpresaConfig`, `ResidenteComisionController`, `RedirectIfAuthenticated.php`, `InventarioKardexGerencialController.php`, `ObraAsistencia`, `SnapshotsController.php`, `.create`, `SatComplementoPagoController`, `SatCfdiPago`, `InventarioStockController.php`, `ProveedorController`, `Component`, `AuthenticatedSessionController.php`, `AgentNotificationController`, `ConfirmablePasswordController.php`, `PasswordResetLinkController.php`, `RegisteredUserController.php`, `ObraPila`, `InventarioSeedInicial.php`, `UserFactory`, `2026_08_19_000002_create_civil_work_report_items_table.php`, `ComisionPersonal`, `2026_07_28_130000_add_vehiculo_preventivo_fields_to_empresa_config.php`, `ComisionEtapaPersonal`, `Estados recomendados`, `2014_10_12_000000_create_users_table.php`, `2025_11_24_193802_create_clientes_table.php`, `2025_11_25_193519_create_obra_empleado_table.php`, `2025_11_27_181836_create_empleado_contactos_emergencia_table.php`, `20e025c0f8ca396ec9b548ce06c6e36a.php`, `2025_12_02_185346_create_proveedores_table.php`, `2245dd3aa97fc47a270890bcaf72c56d.php`, `2025_12_02_185705_create_orden_compra_detalles_table.php`, `2025_12_04_194719_create_obras_pilas_table.php`, `2025_12_05_180218_create_catalogo_pilas_table.php`, `2025_12_09_191332_add_totales_materiales_to_obras_table.php`, `EmailVerificationPromptController.php`, `2025_12_11_192310_create_mantenimientos_table.php`, `InventarioStock`, `2025_12_15_161442_create_areas_table.php`, `2025_12_17_185153_create_producto_proveedor_precios_table.php`, `2025_12_18_184201_add_rol_id_to_comision_personal_table.php`, `2025_12_19_191636_add_ademe_bauer_and_campana_to_comision_detalles_table.php`, `2026_01_05_195229_make_numero_pila_nullable_in_obras_pilas_table.php`, `ClientePortal`, `2026_01_07_184728_create_comision_tarifario_detalles_table.php`, `2026_01_16_192603_create_maquinaria_reporte_snapshots_tables.php`, `FacturaBorradorAutorizado`, `2026_02_03_171602_create_almacenes_table.php`, `2026_02_03_171637_add_inventario_fields_to_productos_table.php`, `5c66cbcff20d6499750a3084b2463891.php`, `2026_02_25_160241_create_facturas_table.php`, `2026_02_27_183137_add_ubicacion_to_maquinas_table.php`, `CatalogoPilasSeeder.php`, `2026_03_10_165357_create_seguros_table.php`, `2026_03_17_190518_create_vehiculo_documentos_table.php`, `2026_04_07_180519_create_presupuesto_pilas.php`, `2026_04_10_190703_create_obra_planeacion_semanal_table.php`, `InventarioGerencialController.php`, `GrandstreamExtensionMapper`, `ClienteContactoController`, `TelephonyPhoneIndexBuilder`, `InventarioDocumentoController`, `EmailVerificationPromptController.php`, `VehiculosAlertasPreventivoKm.php`, `2026_06_23_120000_create_obra_factura_pagos_table.php`, `2026_06_24_110000_add_comprobante_to_obra_factura_pagos_table.php`, `CatalogoPila`, `2026_08_03_120000_change_descripcion_to_text_on_sat_factura_conceptos_table.php`, `VehiculoObra`?**
   _High betweenness centrality (0.058) - this node is a cross-community bridge._
 - **Why does `Obra` connect `Obra` to `ObraReposicionGasto`, `SatCfdiEstadisticaController.php`, `AttendanceUser`, `Model`, `ResidenteComisionesService`, `2025_11_24_193802_create_clientes_table.php`, `EquipoComputo`, `InventarioDocumento`, `2025_11_25_193519_create_obra_empleado_table.php`, `.edit`, `2025_11_27_181836_create_empleado_contactos_emergencia_table.php`, `92699fb55b9efb166cdcf4169351f6ec.php`, `ObraController`, `20e025c0f8ca396ec9b548ce06c6e36a.php`, `NominaListaRaya`, `2245dd3aa97fc47a270890bcaf72c56d.php`, `ObraSolicitudGasto`, `Empleado`, `HasFactory`, `InventarioDocumentoController`, `Seguro`, `2025_12_05_180218_create_catalogo_pilas_table.php`, `EmailVerificationPromptController.php`, `2025_12_09_191332_add_totales_materiales_to_obras_table.php`, `Mantenimiento`, `EmailVerificationPromptController.php`, `2025_12_11_192314_create_mantenimiento_detalles_table.php`, `CsfRequestService`, `AuthenticatedSessionController.php`, `MaquinaController.php`, `OrdenCompra`, `SatFacturaPago`, `2025_12_19_191636_add_ademe_bauer_and_campana_to_comision_detalles_table.php`, `2026_01_07_184728_create_comision_tarifario_detalles_table.php`, `2026_01_21_192257_create_vehiculo_obra_table.php`, `SatCfdiPago`, `InventarioStockController.php`, `Component`, `AuthenticatedSessionController.php`, `5c66cbcff20d6499750a3084b2463891.php`, `ObraPila`, `61fb6a002be41ea48351a2a445368ab8.php`, `2026_08_03_120000_change_descripcion_to_text_on_sat_factura_conceptos_table.php`, `UserFactory`, `6dc35812b5eba211ea39552f61dcc225.php`, `Estados recomendados`?**
   _High betweenness centrality (0.051) - this node is a cross-community bridge._
@@ -1386,4 +1383,4 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `Seeder` be split into smaller, more focused modules?**
   _Cohesion score 0.06599597585513078 - nodes in this community are weakly interconnected._
 - **Should `ObraReposicionGasto` be split into smaller, more focused modules?**
-  _Cohesion score 0.08362369337979095 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.070578231292517 - nodes in this community are weakly interconnected._

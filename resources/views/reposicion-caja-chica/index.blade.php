@@ -4,8 +4,12 @@
 
 @section('content')
 @php
-    $ambitoFirmaSeleccionado = request('ambito', $ambitoFirma ?? \App\Models\DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN);
-    $printQuery = array_merge(request()->query(), ['ambito' => $ambitoFirmaSeleccionado]);
+    $puedeElegirAmbitoFirma = $puedeElegirAmbitoFirma ?? false;
+    $ambitoFirmaSeleccionado = $puedeElegirAmbitoFirma
+        ? request('ambito', $ambitoFirma ?? \App\Models\DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN)
+        : ($ambitoFirma ?? \App\Models\DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN);
+    $printQueryBase = $puedeElegirAmbitoFirma ? request()->query() : request()->except('ambito');
+    $printQuery = array_merge($printQueryBase, ['ambito' => $ambitoFirmaSeleccionado]);
 @endphp
 <div class="max-w-8xl mx-auto space-y-6">
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -80,15 +84,19 @@
             placeholder="Todos"
             span="md:col-span-1" />
 
-        <x-filters.select
-            name="ambito"
-            label="Firma impresa"
-            :value="$ambitoFirmaSeleccionado"
-            :options="[
-                \App\Models\DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN => 'Reposicion gastos almacen',
-                \App\Models\DocumentoFirmante::AMBITO_GIRALDA => 'Giralda',
-            ]"
-            span="md:col-span-2" />
+        @if($puedeElegirAmbitoFirma)
+            <x-filters.select
+                name="ambito"
+                label="Firma impresa"
+                :value="$ambitoFirmaSeleccionado"
+                :options="[
+                    \App\Models\DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN => 'Reposicion gastos almacen',
+                    \App\Models\DocumentoFirmante::AMBITO_GIRALDA => 'Giralda',
+                ]"
+                span="md:col-span-2" />
+        @else
+            <input type="hidden" name="ambito" value="{{ $ambitoFirmaSeleccionado }}">
+        @endif
 
         <x-filters.actions
             submit-label="Filtrar"
@@ -157,6 +165,7 @@
                     <th class="px-4 py-3 text-left">Fecha</th>
                     <th class="px-4 py-3 text-left">Tipo de comprobacion</th>
                     <th class="px-4 py-3 text-left">Proveedor / concepto</th>
+                    <th class="px-4 py-3 text-left">Categoría</th>
                     <th class="px-4 py-3 text-left">Destino</th>
                     <th class="px-4 py-3 text-right">Registrado</th>
                     <th class="px-4 py-3 text-center">Estado</th>
@@ -170,17 +179,21 @@
                         <td class="px-4 py-3">{{ optional($gasto->fecha_gasto)->format('d/m/Y') }}</td>
                         <td class="px-4 py-3">
                             <div class="font-semibold text-slate-800">{{ $gasto->categoria->nombre ?? '-' }}</div>
-                            <div class="text-xs text-slate-500">{{ $gasto->subcategoria->nombre ?? 'Sin categoria' }}</div>
                         </td>
                         <td class="px-4 py-3">
                             <div class="font-semibold text-slate-800">{{ $gasto->proveedor_nombre }}</div>
                             <div class="text-xs text-slate-500">{{ $gasto->concepto }}</div>
                         </td>
                         <td class="px-4 py-3">
+                            {{ $gasto->subcategoria->nombre ?? 'Sin categoria' }}
+                        </td>
+                        <td class="px-4 py-3 font-semibold text-slate-800">
                             @if($gasto->destino === 'obra')
                                 {{ $gasto->obra->nombre ?? 'Obra no definida' }}
+                            @elseif($gasto->es_para_maquina)
+                                {{ trim(($gasto->maquina?->codigo ? $gasto->maquina->codigo . ' - ' : '') . ($gasto->maquina?->nombre ?? 'Sin máquina')) }}
                             @else
-                                {{ $gasto->almacen->nombre ?? 'Almacen no definido' }}
+                                -
                             @endif
                         </td>
                         <td class="px-4 py-3 text-right font-semibold">${{ number_format((float) $gasto->importe_registrado, 2) }}</td>
@@ -191,11 +204,13 @@
                             <div class="flex items-center justify-end gap-2">
                                 <a href="{{ route('reposicion-caja-chica.show', $gasto) }}" class="font-semibold text-blue-700 hover:underline">Ver</a>
 
-                                @if($gasto->estado_autorizacion === 'pendiente' && auth()->user()?->can('caja_chica.authorize'))
+                                @if($gasto->estado_autorizacion === 'pendiente' && auth()->user()?->can('caja_chica.authorize.access'))
                                     <form method="POST" action="{{ route('reposicion-caja-chica.autorizar', $gasto) }}" onsubmit="return confirm('¿Autorizar este gasto completo?')">
                                         @csrf
-                                        <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm font-bold text-white hover:bg-green-700" title="Autorizar gasto">
-                                            ✓
+                                        <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-white transition hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2" title="Autorizar gasto" aria-label="Autorizar gasto">
+                                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                <path fill-rule="evenodd" d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.25 7.32a1 1 0 0 1-1.42.002L3.29 9.276a1 1 0 0 1 1.414-1.414l4.04 4.04 6.546-6.606a1 1 0 0 1 1.414-.006Z" clip-rule="evenodd" />
+                                            </svg>
                                         </button>
                                     </form>
                                 @endif
@@ -204,7 +219,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="px-4 py-10 text-center text-slate-500">Aun no hay gastos de reposicion de caja chica.</td>
+                        <td colspan="9" class="px-4 py-10 text-center text-slate-500">Aun no hay gastos de reposicion de caja chica.</td>
                     </tr>
                 @endforelse
             </tbody>
