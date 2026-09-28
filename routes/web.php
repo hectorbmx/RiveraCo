@@ -818,6 +818,10 @@ Route::middleware('auth','verified')->group(function () {
         Route::post('vehiculos/{vehiculo}/asignar', [VehiculoController::class, 'asignar'])
         ->name('vehiculos.asignar');
 
+        Route::post('vehiculos/{vehiculo}/km-log', [VehiculoController::class, 'guardarKmLog'])
+            ->middleware('permission:vehiculos.km_logs.create.access')
+            ->name('vehiculos.km-log.store');
+
         // Route::post('vehiculos/{vehiculo}/seguro', [VehiculoController::class, 'guardarSeguro'])
         // ->name('vehiculos.seguro.store');
         // Mantenimientos de vehiculos

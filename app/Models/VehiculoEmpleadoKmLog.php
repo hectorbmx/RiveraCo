@@ -17,6 +17,8 @@ class VehiculoEmpleadoKmLog extends Model
         'foto_ticket_gasolina',
         'monto_gasolina',
         'notas',
+        'capturado_por_user_id',
+        'origen',
     ];
 
     protected $casts = [
@@ -32,5 +34,10 @@ class VehiculoEmpleadoKmLog extends Model
     public function obra()
     {
         return $this->belongsTo(Obra::class);
+    }
+
+    public function capturadoPor()
+    {
+        return $this->belongsTo(User::class, 'capturado_por_user_id');
     }
 }

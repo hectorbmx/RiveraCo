@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Vehiculo;
 use App\Models\VehiculoEmpleado;
 use App\Models\VehiculoAsignacionFoto;
+use App\Models\VehiculoEmpleadoKmLog;
 use App\Models\Empleado;
 use App\Models\SeguroVehiculo;
 use App\Models\Mantenimiento;
@@ -478,7 +479,60 @@ protected function resolverKmInicialAsignacion(Vehiculo $vehiculo, ?VehiculoEmpl
 
     return null;
 }
+    public function guardarKmLog(Request $request, Vehiculo $vehiculo)
+    {
+        abort_unless($request->user()?->can('vehiculos.km_logs.create.access'), 403);
 
+        $validated = $request->validate([
+            'km' => ['required', 'integer', 'min:0'],
+            'fecha' => ['nullable', 'date'],
+            'foto' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
+            'notas' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $asignacion = $vehiculo->asignaciones()
+            ->whereNull('fecha_fin')
+            ->latest('fecha_asignacion')
+            ->first();
+
+        if (! $asignacion) {
+            return back()
+                ->withErrors(['km' => 'El vehiculo no tiene una asignacion activa para registrar kilometraje.'])
+                ->withInput();
+        }
+
+        $ultimoKmLog = VehiculoEmpleadoKmLog::where('vehiculo_empleado_id', $asignacion->id)->max('km');
+        $minPermitido = max(
+            (int) ($asignacion->km_inicial ?? 0),
+            (int) ($ultimoKmLog ?? 0)
+        );
+
+        if ((int) $validated['km'] < $minPermitido) {
+            return back()
+                ->withErrors(['km' => "El kilometraje no puede ser menor a {$minPermitido}."])
+                ->withInput();
+        }
+
+        DB::transaction(function () use ($validated, $asignacion, $request) {
+            $path = $request->file('foto')->store('vehiculos/km-logs', 'public');
+
+            VehiculoEmpleadoKmLog::create([
+                'vehiculo_empleado_id' => $asignacion->id,
+                'obra_id' => null,
+                'fecha' => isset($validated['fecha']) ? Carbon::parse($validated['fecha']) : now(),
+                'km' => (int) $validated['km'],
+                'foto' => $path,
+                'notas' => $validated['notas'] ?? null,
+                'capturado_por_user_id' => $request->user()?->id,
+                'origen' => 'web',
+            ]);
+
+            $asignacion->km_final = (int) $validated['km'];
+            $asignacion->save();
+        });
+
+        return back()->with('success', 'Kilometraje registrado correctamente.');
+    }
 
     /**
      * Actualizar vehículo

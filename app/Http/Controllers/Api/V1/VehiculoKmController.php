@@ -134,6 +134,8 @@ class VehiculoKmController extends Controller
                 'foto_ticket_gasolina' => $ticketPath,
                 'monto_gasolina' => $data['monto_gasolina'] ?? null,
                 'notas' => $data['notas'] ?? null,
+                'capturado_por_user_id' => $request->user()?->id,
+                'origen' => 'app',
             ]);
 
             $asignacion->km_final = (int) $data['km'];
