@@ -23,6 +23,7 @@ class ObraMaquinaRegistro extends Model
         'notas',
         'created_by',
         'updated_by',
+        'origen',
     ];
 
     protected $casts = [
@@ -52,3 +53,4 @@ class ObraMaquinaRegistro extends Model
         return $this->belongsTo(Maquina::class, 'maquina_id');
     }
 }
+

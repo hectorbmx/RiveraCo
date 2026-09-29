@@ -840,6 +840,9 @@ Route::middleware('auth','verified')->group(function () {
         Route::post('maquinas/{maquina}/cambiar-ubicacion', [MaquinaController::class, 'cambiarUbicacion'])->name('cambiarUbicacion');
         // Route::post('maquinas/{maquina}/seguros', [MaquinaSeguroController::class, 'store'])->name('seguros.store');
         Route::post('maquinas/{maquina}/toggle-servicio', [MaquinaController::class, 'toggleServicio'])->name('toggleServicio');
+        Route::post('maquinas/{maquina}/horas', [MaquinaController::class, 'guardarHoras'])
+            ->middleware('permission:maquinas.horas.create.access')
+            ->name('horas.store');
         Route::post('maquinas/{maquina}/estado', [MaquinaController::class, 'cambiarEstado'])->name('maquinas.cambiarEstado');
 
     });
@@ -1020,6 +1023,9 @@ Route::prefix('pagos-proveedores')
                 Route::post('/{gasto}/autorizar', [ReposicionCajaChicaController::class, 'autorizar'])->name('autorizar');
                 Route::post('/{gasto}/autorizar-parcial', [ReposicionCajaChicaController::class, 'autorizarParcial'])->name('autorizar-parcial');
                 Route::post('/{gasto}/rechazar', [ReposicionCajaChicaController::class, 'rechazar'])->name('rechazar');
+                Route::delete('/{gasto}', [ReposicionCajaChicaController::class, 'destroy'])
+                    ->middleware('permission:caja_chica.delete.access')
+                    ->name('destroy');
                 Route::get('/{gasto}', [ReposicionCajaChicaController::class, 'show'])->name('show');
             });
 
@@ -1035,4 +1041,5 @@ Route::prefix('pagos-proveedores')
 });
 
 require __DIR__.'/auth.php';
+
 

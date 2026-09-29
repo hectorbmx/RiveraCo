@@ -79,7 +79,7 @@ class PreventivoMaquinaService
         $intervaloMeses = (int) ($config?->maquinaria_servicio_meses ?? 6);
         $alertaHoras = (float) ($config?->maquinaria_alerta_horas ?? 20);
 
-        $horometroActual = $this->primerNumero([
+        $horometroActual = $this->mayorNumero([
             $ultimoRegistro?->horometro_fin,
             $ultimaAsignacion?->horometro_fin,
             $ultimaAsignacion?->horometro_inicio,
@@ -176,6 +176,18 @@ class PreventivoMaquinaService
         return null;
     }
 
+    private function mayorNumero(array $valores): ?float
+    {
+        $numeros = [];
+
+        foreach ($valores as $valor) {
+            if ($valor !== null && $valor !== '') {
+                $numeros[] = (float) $valor;
+            }
+        }
+
+        return $numeros === [] ? null : max($numeros);
+    }
     private function fechaUltimoServicio(?Mantenimiento $ultimoServicio): ?Carbon
     {
         $fecha = $ultimoServicio?->fecha_fin
@@ -185,3 +197,4 @@ class PreventivoMaquinaService
         return $fecha ? Carbon::parse($fecha) : null;
     }
 }
+

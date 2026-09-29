@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Maquina;
+use App\Models\ObraMaquinaRegistro;
 use App\Services\Maquinas\MaquinaService;
 use App\Models\EmpresaConfig;
 use App\Services\Maquinas\PreventivoMaquinaService;
@@ -189,5 +190,65 @@ public function toggleServicio(Request $request, Maquina $maquina, MaquinaServic
         return back()->withErrors(['general' => $e->getMessage()]);
     }
 }
-}
+public function guardarHoras(Request $request, Maquina $maquina)
+{
+    abort_unless($request->user()?->can('maquinas.horas.create.access'), 403);
 
+    $data = $request->validate([
+        'horometro_fin' => ['required', 'numeric', 'min:0'],
+        'inicio'        => ['nullable', 'date'],
+        'fin'           => ['nullable', 'date', 'after_or_equal:inicio'],
+        'notas'         => ['nullable', 'string', 'max:500'],
+    ]);
+
+    $asignacion = $maquina->asignacionActiva()->with('obra')->first();
+
+    if (! $asignacion) {
+        return back()
+            ->withErrors(['horometro_fin' => 'La maquina no tiene una asignacion activa para registrar horas.'])
+            ->withInput();
+    }
+
+    $ultimo = $asignacion->registrosHoras()
+        ->orderByDesc('fin')
+        ->orderByDesc('id')
+        ->first();
+
+    $horometroInicio = collect([
+        $ultimo?->horometro_fin,
+        $asignacion->horometro_inicio,
+        $maquina->horometro_base,
+    ])
+        ->filter(fn ($valor) => $valor !== null && $valor !== '')
+        ->map(fn ($valor) => (float) $valor)
+        ->max() ?? 0;
+
+    $horometroFin = (float) $data['horometro_fin'];
+
+    if ($horometroFin < $horometroInicio) {
+        return back()
+            ->withErrors(['horometro_fin' => "El horometro final no puede ser menor al ultimo registrado ({$horometroInicio})."])
+            ->withInput();
+    }
+
+    $inicio = $data['inicio'] ?? now();
+    $fin = $data['fin'] ?? now();
+
+    ObraMaquinaRegistro::create([
+        'obra_maquina_id'  => $asignacion->id,
+        'obra_id'          => $asignacion->obra_id,
+        'maquina_id'       => $maquina->id,
+        'inicio'           => $inicio,
+        'fin'              => $fin,
+        'horometro_inicio' => $horometroInicio,
+        'horometro_fin'    => $horometroFin,
+        'horas'            => round(max(0, $horometroFin - $horometroInicio), 2),
+        'notas'            => $data['notas'] ?? null,
+        'created_by'       => $request->user()?->id,
+        'updated_by'       => $request->user()?->id,
+        'origen'           => 'web',
+    ]);
+
+    return back()->with('success', 'Horas registradas correctamente.');
+}
+}

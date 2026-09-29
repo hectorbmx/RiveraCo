@@ -3,7 +3,7 @@
 @section('title', 'Maquinas')
 
 @section('content')
-<div class="max-w-7xl mx-auto">
+<div class="max-w-7xl mx-auto" x-data="maquinasHorasModal()">
 
     {{-- Header --}}
     <div class="flex items-center justify-between mb-4">
@@ -64,6 +64,21 @@
             new-label="+NUEVA"
             span="md:col-span-3" />
     </x-filters.card>
+    @if(session('success'))
+        <div class="mb-4 p-3 bg-green-100 text-green-700 rounded-lg text-sm">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+            <ul class="list-disc pl-5 space-y-1">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     {{-- Tabla --}}
     <div class="rounded-xl border bg-white overflow-hidden">
@@ -80,6 +95,7 @@
                         <th class="text-left px-4 py-3">Tipo</th>
                         <th class="text-left px-4 py-3">Estado</th>
                         <th class="text-left px-4 py-3">Ubicación actual</th>
+                        <th class="text-left px-4 py-3">Horómetro actual</th>
                         <th class="text-left px-4 py-3">Servicio preventivo</th>
                         <th class="text-left px-4 py-3">Vence Seguro</th>
                         <th class="text-left px-4 py-3">Seguro</th>
@@ -90,6 +106,17 @@
                     @forelse($maquinas as $m)
                         @php
                             $seguroSeleccionado = null;
+                            $preventivoMaquina = $preventivos[$m->id] ?? null;
+                            $horometroActual = $preventivoMaquina['horometro_actual'] ?? null;
+                            $asignacionActiva = $m->asignacionActiva;
+                            $canRegistrarHoras = auth()->user()?->can('maquinas.horas.create.access') ?? false;
+                            $puedeRegistrarHoras = $canRegistrarHoras && $asignacionActiva && $horometroActual !== null;
+                            $horasModalPayload = $puedeRegistrarHoras ? json_encode([
+                                'action' => route('maquinas.horas.store', $m),
+                                'maquina' => trim(($m->codigo ?? '') . ' ' . ($m->nombre ?? '')) ?: 'Maquina',
+                                'obra' => $asignacionActiva?->obra?->nombre ?? 'Obra',
+                                'horometroActual' => (float) $horometroActual,
+                            ], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) : '{}';
 
                             if ($m->seguros && $m->seguros->isNotEmpty()) {
                                 $seguroSeleccionado = $m->seguros
@@ -169,8 +196,25 @@
                                     </span>
                                 @endif
                             </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                @if($horometroActual !== null)
+                                    @if($puedeRegistrarHoras)
+                                        <button
+                                            type="button"
+                                            class="font-semibold text-[#0B265A] hover:text-blue-700 hover:underline underline-offset-4"
+                                            title="Registrar horas"
+                                            @click='openHorasModal({!! $horasModalPayload !!})'>
+                                            {{ number_format($horometroActual, 1) }} h
+                                        </button>
+                                    @else
+                                        <span class="text-slate-700">{{ number_format($horometroActual, 1) }} h</span>
+                                    @endif
+                                @else
+                                    <span class="text-slate-400 text-xs">Sin horómetro</span>
+                                @endif
+                            </td>
                             <td class="px-4 py-3">
-                                @include('maquinas.partials._preventivo_badge', ['preventivo' => $preventivos[$m->id] ?? null])
+                                @include('maquinas.partials._preventivo_badge', ['preventivo' => $preventivoMaquina])
                             </td>
                             <td class="px-4 py-3">
                                 @if($seguroSeleccionado && $seguroSeleccionado->vigencia_hasta)
@@ -210,7 +254,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-4 py-6 text-center text-slate-500">
+                            <td colspan="10" class="px-4 py-6 text-center text-slate-500">
                                 No hay máquinas registradas.
                             </td>
                         </tr>
@@ -220,7 +264,104 @@
         </div>
     </div>
 
+    @can('maquinas.horas.create.access')
+        <div
+            x-cloak
+            x-show="horasModalOpen"
+            x-transition.opacity
+            class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6"
+            @keydown.escape.window="closeHorasModal()">
+            <div class="w-full max-w-lg rounded-xl bg-white shadow-xl border border-slate-200" @click.outside="closeHorasModal()">
+                <div class="flex items-start justify-between border-b border-slate-100 px-5 py-4">
+                    <div>
+                        <h2 class="text-base font-semibold text-[#0B265A]">Registrar horas de maquina</h2>
+                        <p class="text-xs text-slate-500" x-text="form.maquina"></p>
+                    </div>
+                    <button type="button" class="text-slate-400 hover:text-slate-600" @click="closeHorasModal()">&times;</button>
+                </div>
+
+                <form method="POST" :action="form.action" class="space-y-4 px-5 py-5">
+                    @csrf
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <div class="text-xs font-semibold text-slate-500">Obra actual</div>
+                            <div class="font-medium text-slate-800" x-text="form.obra"></div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold text-slate-500">Horometro actual</div>
+                            <div class="font-medium text-slate-800"><span x-text="formatHoras(form.horometroActual)"></span> h</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nuevo horometro <span class="text-red-500">*</span></label>
+                        <input type="number" name="horometro_fin" required min="0" step="0.01" class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500" :placeholder="formatHoras(form.horometroActual)">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Inicio</label>
+                            <input type="datetime-local" name="inicio" x-model="form.inicio" class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Fin</label>
+                            <input type="datetime-local" name="fin" x-model="form.fin" class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Notas</label>
+                        <textarea name="notas" rows="3" maxlength="500" class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Comentario opcional"></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 border-t border-slate-100 pt-4">
+                        <button type="button" class="px-4 py-2 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="closeHorasModal()">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg bg-[#0B265A] text-sm font-semibold text-white hover:bg-blue-900">Guardar horas</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endcan
 </div>
 @endsection
+@push('scripts')
+<script>
+    function maquinasHorasModal() {
+        return {
+            horasModalOpen: false,
+            form: {
+                action: '',
+                maquina: '',
+                obra: '',
+                horometroActual: 0,
+                inicio: '',
+                fin: '',
+            },
+            openHorasModal(data) {
+                const now = new Date();
+                const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 
-
+                this.form = {
+                    action: data.action,
+                    maquina: data.maquina || 'Maquina',
+                    obra: data.obra || 'Obra',
+                    horometroActual: Number(data.horometroActual || 0),
+                    inicio: localNow,
+                    fin: localNow,
+                };
+                this.horasModalOpen = true;
+            },
+            closeHorasModal() {
+                this.horasModalOpen = false;
+            },
+            formatHoras(value) {
+                return Number(value || 0).toLocaleString('en-US', {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                });
+            },
+        };
+    }
+</script>
+@endpush

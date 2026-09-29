@@ -481,6 +481,37 @@ class ReposicionCajaChicaController extends Controller
         return view('reposicion-caja-chica.show', compact('gasto'));
     }
 
+    public function destroy(Request $request, ReposicionCajaChicaGasto $gasto)
+    {
+        $this->authorizeAny(['caja_chica.delete.access'], 'No tienes permiso para eliminar gastos de caja chica.');
+
+        if (in_array($gasto->estado_autorizacion, ['autorizado', 'autorizado_parcial'], true)) {
+            return back()->with('error', 'No se puede eliminar un gasto autorizado.');
+        }
+
+        if ($gasto->relacion_id) {
+            return back()->with('error', 'No se puede eliminar un gasto que ya pertenece a una relacion.');
+        }
+
+        DB::transaction(function () use ($gasto) {
+            $gasto->load('archivos');
+
+            foreach ($gasto->archivos as $archivo) {
+                if ($archivo->path) {
+                    Storage::disk($archivo->disk ?: 'public')->delete($archivo->path);
+                }
+
+                $archivo->delete();
+            }
+
+            $gasto->delete();
+        });
+
+        return redirect()
+            ->route('reposicion-caja-chica.index', $request->query())
+            ->with('success', 'Gasto eliminado correctamente.');
+    }
+
     public function revision(Request $request)
     {
         $gastos = ReposicionCajaChicaGasto::query()

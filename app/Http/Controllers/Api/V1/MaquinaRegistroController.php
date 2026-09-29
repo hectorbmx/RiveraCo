@@ -270,6 +270,7 @@ public function index(Request $request, ObraMaquina $obraMaquina)
             'notas'            => $data['notas'] ?? null,
             'created_by'       => $user->id,
             'updated_by'       => $user->id,
+            'origen'           => 'app',
         ]);
 
         return response()->json([

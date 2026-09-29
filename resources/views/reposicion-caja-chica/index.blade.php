@@ -201,8 +201,26 @@
                             <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{{ str_replace('_', ' ', $gasto->estado_autorizacion) }}</span>
                         </td>
                         <td class="px-4 py-3 text-right">
+                            @php
+                                $puedeEliminarGasto = !in_array($gasto->estado_autorizacion, ['autorizado', 'autorizado_parcial'], true)
+                                    && blank($gasto->relacion_id);
+                            @endphp
                             <div class="flex items-center justify-end gap-2">
                                 <a href="{{ route('reposicion-caja-chica.show', $gasto) }}" class="font-semibold text-blue-700 hover:underline">Ver</a>
+
+                                @can('caja_chica.delete.access')
+                                    @if($puedeEliminarGasto)
+                                        <form method="POST" action="{{ route('reposicion-caja-chica.destroy', array_merge(['gasto' => $gasto->id], request()->query())) }}" onsubmit="return confirm('¿Eliminar este gasto? Esta acción no se puede deshacer.')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-600 transition hover:bg-red-100 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2" title="Eliminar gasto" aria-label="Eliminar gasto">
+                                                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                    <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75V4.5H3.75a.75.75 0 0 0 0 1.5h.3l.62 10.22A3 3 0 0 0 7.66 19h4.68a3 3 0 0 0 2.99-2.78L15.95 6h.3a.75.75 0 0 0 0-1.5H14v-.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM12.5 4.5v-.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.75h5Zm-4.75 4a.75.75 0 0 1 .75.75v5a.75.75 0 0 1-1.5 0v-5a.75.75 0 0 1 .75-.75Zm4.5 0a.75.75 0 0 1 .75.75v5a.75.75 0 0 1-1.5 0v-5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    @endif
+                                @endcan
 
                                 @if($gasto->estado_autorizacion === 'pendiente' && auth()->user()?->can('caja_chica.authorize.access'))
                                     <form method="POST" action="{{ route('reposicion-caja-chica.autorizar', $gasto) }}" onsubmit="return confirm('¿Autorizar este gasto completo?')">
