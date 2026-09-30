@@ -109,13 +109,21 @@
                             $preventivoMaquina = $preventivos[$m->id] ?? null;
                             $horometroActual = $preventivoMaquina['horometro_actual'] ?? null;
                             $asignacionActiva = $m->asignacionActiva;
+                            $nombreMaquina = trim(($m->codigo ?? '') . ' ' . ($m->nombre ?? '')) ?: 'Maquina';
                             $canRegistrarHoras = auth()->user()?->can('maquinas.horas.create.access') ?? false;
+                            $canAsignarObra = auth()->user()?->can('maquinas.asignar_obra.access') ?? false;
                             $puedeRegistrarHoras = $canRegistrarHoras && $asignacionActiva && $horometroActual !== null;
+                            $puedeAsignarObra = $canAsignarObra && !$asignacionActiva && ($m->estado ?? null) === 'operativa';
                             $horasModalPayload = $puedeRegistrarHoras ? json_encode([
                                 'action' => route('maquinas.horas.store', $m),
-                                'maquina' => trim(($m->codigo ?? '') . ' ' . ($m->nombre ?? '')) ?: 'Maquina',
+                                'maquina' => $nombreMaquina,
                                 'obra' => $asignacionActiva?->obra?->nombre ?? 'Obra',
                                 'horometroActual' => (float) $horometroActual,
+                            ], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) : '{}';
+                            $asignarObraPayload = $puedeAsignarObra ? json_encode([
+                                'action' => route('maquinas.asignarObra', $m),
+                                'maquina' => $nombreMaquina,
+                                'horometroInicio' => (float) ($horometroActual ?? $m->horometro_base ?? 0),
                             ], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) : '{}';
 
                             if ($m->seguros && $m->seguros->isNotEmpty()) {
@@ -190,8 +198,18 @@
                                        class="font-medium text-[#0B265A] hover:text-blue-700 hover:underline underline-offset-4">
                                         {{ $obraActual->nombre ?? 'Obra' }}
                                     </a>
+                                @elseif($puedeAsignarObra)
+                                    <button type="button"
+                                            class="inline-flex w-fit items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-medium {{ $ubicClass }} hover:bg-emerald-100 hover:border-emerald-300 transition"
+                                            title="Asignar a una obra"
+                                            @click.stop='openAsignarModal({!! $asignarObraPayload !!})'>
+                                        <span>En patio</span>
+                                        <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path fill-rule="evenodd" d="M10 2a.75.75 0 0 1 .75.75v6.5h6.5a.75.75 0 0 1 0 1.5h-6.5v6.5a.75.75 0 0 1-1.5 0v-6.5h-6.5a.75.75 0 0 1 0-1.5h6.5v-6.5A.75.75 0 0 1 10 2Z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
                                 @else
-                                    <span class="inline-flex w-fit items-center px-2 py-1 rounded-lg border text-xs {{ $ubicClass }}">
+                                    <span class="inline-flex w-fit items-center px-2 py-1 rounded-lg border text-xs {{ $ubicClass }}" title="Solo máquinas operativas pueden asignarse desde esta vista">
                                         En patio
                                     </span>
                                 @endif
@@ -203,7 +221,7 @@
                                             type="button"
                                             class="font-semibold text-[#0B265A] hover:text-blue-700 hover:underline underline-offset-4"
                                             title="Registrar horas"
-                                            @click='openHorasModal({!! $horasModalPayload !!})'>
+                                            @click.stop='openHorasModal({!! $horasModalPayload !!})'>
                                             {{ number_format($horometroActual, 1) }} h
                                         </button>
                                     @else
@@ -264,6 +282,61 @@
         </div>
     </div>
 
+    @can('maquinas.asignar_obra.access')
+        <div
+            x-cloak
+            x-show="asignarModalOpen"
+            x-transition.opacity
+            class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6"
+            @keydown.escape.window="closeAsignarModal()">
+            <div class="w-full max-w-lg rounded-xl bg-white shadow-xl border border-slate-200" @click.outside="closeAsignarModal()">
+                <div class="flex items-start justify-between border-b border-slate-100 px-5 py-4">
+                    <div>
+                        <h2 class="text-base font-semibold text-[#0B265A]">Asignar máquina a obra</h2>
+                        <p class="text-xs text-slate-500" x-text="asignarForm.maquina"></p>
+                    </div>
+                    <button type="button" class="text-slate-400 hover:text-slate-600" @click="closeAsignarModal()">&times;</button>
+                </div>
+
+                <form method="POST" :action="asignarForm.action" class="space-y-4 px-5 py-5">
+                    @csrf
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Obra destino <span class="text-red-500">*</span></label>
+                        <select name="obra_id" required class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Selecciona una obra</option>
+                            @foreach($obrasDisponibles as $obraDisponible)
+                                <option value="{{ $obraDisponible->id }}">
+                                    {{ trim(($obraDisponible->clave_obra ?? '') . ' ' . ($obraDisponible->nombre ?? '')) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha de inicio <span class="text-red-500">*</span></label>
+                            <input type="date" name="fecha_inicio" required x-model="asignarForm.fechaInicio" class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Horómetro inicial <span class="text-red-500">*</span></label>
+                            <input type="number" name="horometro_inicio" required min="0" step="0.01" x-model="asignarForm.horometroInicio" class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Notas</label>
+                        <textarea name="notas" rows="3" maxlength="1000" class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Comentario opcional"></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 border-t border-slate-100 pt-4">
+                        <button type="button" class="px-4 py-2 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="closeAsignarModal()">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg bg-[#0B265A] text-sm font-semibold text-white hover:bg-blue-900">Asignar a obra</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endcan
     @can('maquinas.horas.create.access')
         <div
             x-cloak
@@ -330,6 +403,7 @@
     function maquinasHorasModal() {
         return {
             horasModalOpen: false,
+            asignarModalOpen: false,
             form: {
                 action: '',
                 maquina: '',
@@ -337,6 +411,12 @@
                 horometroActual: 0,
                 inicio: '',
                 fin: '',
+            },
+            asignarForm: {
+                action: '',
+                maquina: '',
+                fechaInicio: '',
+                horometroInicio: 0,
             },
             openHorasModal(data) {
                 const now = new Date();
@@ -354,6 +434,21 @@
             },
             closeHorasModal() {
                 this.horasModalOpen = false;
+            },
+            openAsignarModal(data) {
+                const now = new Date();
+                const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+                this.asignarForm = {
+                    action: data.action,
+                    maquina: data.maquina || 'Maquina',
+                    fechaInicio: today,
+                    horometroInicio: Number(data.horometroInicio || 0),
+                };
+                this.asignarModalOpen = true;
+            },
+            closeAsignarModal() {
+                this.asignarModalOpen = false;
             },
             formatHoras(value) {
                 return Number(value || 0).toLocaleString('en-US', {

@@ -547,6 +547,60 @@
                             </button>
                         </div>
                     </form>
+
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                        <div class="p-4 border-b border-gray-100">
+                            <h3 class="text-base font-semibold text-gray-900">Tipos de servicio preventivo</h3>
+                            <p class="text-sm text-gray-600">Catálogo de servicios por kilometraje para vehículos.</p>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50 text-gray-700">
+                                    <tr>
+                                        <th class="text-left px-4 py-3">Nombre</th>
+                                        <th class="text-left px-4 py-3">Código</th>
+                                        <th class="text-left px-4 py-3">Intervalo</th>
+                                        <th class="text-left px-4 py-3">Meses</th>
+                                        <th class="text-left px-4 py-3">Alerta (km)</th>
+                                        <th class="text-left px-4 py-3">Alerta (días)</th>
+                                        <th class="text-left px-4 py-3">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    @forelse($serviciosPreventivosVehiculos as $servicio)
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-3 font-medium text-gray-900">{{ $servicio->nombre }}</td>
+                                            <td class="px-4 py-3 text-gray-700">{{ $servicio->codigo }}</td>
+                                            <td class="px-4 py-3 text-gray-700">
+                                                {{ number_format((float) $servicio->intervalo_valor, 0) }} km
+                                            </td>
+                                            <td class="px-4 py-3 text-gray-700">
+                                                {{ $servicio->intervalo_meses ? $servicio->intervalo_meses . ' meses' : '—' }}
+                                            </td>
+                                            <td class="px-4 py-3 text-gray-700">
+                                                {{ $servicio->alerta_valor !== null ? number_format((float) $servicio->alerta_valor, 0) . ' km antes' : '—' }}
+                                            </td>
+                                            <td class="px-4 py-3 text-gray-700">
+                                                {{ $servicio->alerta_dias !== null ? $servicio->alerta_dias . ' días antes' : '—' }}
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                @if($servicio->activo)
+                                                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">Activo</span>
+                                                @else
+                                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600 ring-1 ring-gray-200">Inactivo</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="7" class="px-4 py-8 text-center text-gray-500">Aún no hay tipos de servicio preventivo para vehículos.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- ======================
@@ -589,6 +643,55 @@
                         </div>
                     </form>
                     <div class="text-xs text-gray-500">
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                        <div class="p-4 border-b border-gray-100">
+                            <h3 class="text-base font-semibold text-gray-900">Tipos de servicio preventivo</h3>
+                            <p class="text-sm text-gray-600">Catálogo de servicios por horómetro para maquinaria.</p>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50 text-gray-700">
+                                    <tr>
+                                        <th class="text-left px-4 py-3">Nombre</th>
+                                        <th class="text-left px-4 py-3">Código</th>
+                                        <th class="text-left px-4 py-3">Intervalo</th>
+                                        <th class="text-left px-4 py-3">Meses</th>
+                                        <th class="text-left px-4 py-3">Alerta</th>
+                                        <th class="text-left px-4 py-3">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    @forelse($serviciosPreventivosMaquinaria as $servicio)
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-3 font-medium text-gray-900">{{ $servicio->nombre }}</td>
+                                            <td class="px-4 py-3 text-gray-700">{{ $servicio->codigo }}</td>
+                                            <td class="px-4 py-3 text-gray-700">
+                                                {{ number_format((float) $servicio->intervalo_valor, 0) }} {{ $servicio->unidad === 'horas' ? 'h' : $servicio->unidad }}
+                                            </td>
+                                            <td class="px-4 py-3 text-gray-700">
+                                                {{ $servicio->intervalo_meses ? $servicio->intervalo_meses . ' meses' : '—' }}
+                                            </td>
+                                            <td class="px-4 py-3 text-gray-700">
+                                                {{ $servicio->alerta_valor !== null ? number_format((float) $servicio->alerta_valor, 0) . ' h antes' : '—' }}
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                @if($servicio->activo)
+                                                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">Activo</span>
+                                                @else
+                                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600 ring-1 ring-gray-200">Inactivo</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">Aún no hay tipos de servicio preventivo para maquinaria.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                         {{-- ======================
    Catálogo de Máquinas
 ====================== --}}

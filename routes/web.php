@@ -844,6 +844,9 @@ Route::middleware('auth','verified')->group(function () {
             ->middleware('permission:maquinas.horas.create.access')
             ->name('horas.store');
         Route::post('maquinas/{maquina}/estado', [MaquinaController::class, 'cambiarEstado'])->name('maquinas.cambiarEstado');
+        Route::post('maquinas/{maquina}/asignar-obra', [MaquinaController::class, 'asignarObra'])
+            ->middleware('permission:maquinas.asignar_obra.access')
+            ->name('asignarObra');
 
     });
     Route::middleware(['auth'])->prefix('maquinas/{maquina}/seguros')->name('maquinas.seguros.')->group(function () {

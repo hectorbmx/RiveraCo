@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EmpresaConfig;
+use App\Models\EmpresaServicioPreventivoTipo;
 use App\Models\EmpresaViaticoTarifa;
 use App\Models\EmpresaAlertaDestinatario;
 use App\Models\User;
@@ -190,6 +191,14 @@ public function index(){
 
         $maquinas = Maquina::orderBy('nombre')->get();
         $preventivosMaquinaria = $preventivoService->calcularParaColeccion($maquinas, $config);
+        $serviciosPreventivosMaquinaria = EmpresaServicioPreventivoTipo::query()
+            ->maquinaria()
+            ->ordenados()
+            ->get();
+        $serviciosPreventivosVehiculos = EmpresaServicioPreventivoTipo::query()
+            ->vehiculos()
+            ->ordenados()
+            ->get();
         $catalogoRoles = CatalogoRol::orderBy('nombre')->get();    
         $tarifarios = ComisionTarifario::orderByDesc('vigente_desde')->orderByDesc('id')->get();
 
@@ -263,6 +272,8 @@ public function index(){
         'tiposObraConfiguraciones',
         'anioFoliosObra',
         'preventivosMaquinaria',
+        'serviciosPreventivosMaquinaria',
+        'serviciosPreventivosVehiculos',
         'listasRaya',
         'almacenes',
         'vehiculoAlertaDestinatarios',

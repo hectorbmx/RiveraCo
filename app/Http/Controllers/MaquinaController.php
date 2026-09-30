@@ -7,6 +7,7 @@ use App\Models\Maquina;
 use App\Models\ObraMaquinaRegistro;
 use App\Services\Maquinas\MaquinaService;
 use App\Models\EmpresaConfig;
+use App\Models\Obra;
 use App\Services\Maquinas\PreventivoMaquinaService;
 
 
@@ -57,13 +58,22 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
     $config = EmpresaConfig::first();
     $preventivos = $preventivoService->calcularParaColeccion($maquinas, $config);
 
+    $obrasDisponibles = Obra::query()
+        ->whereNotIn('estatus_nuevo', [
+            Obra::ESTATUS_TERMINADA,
+            Obra::ESTATUS_CANCELADA,
+        ])
+        ->orderBy('nombre')
+        ->get(['id', 'nombre', 'clave_obra']);
+
     return view('maquinas.index', compact(
         'maquinas',
         'total',
         'porUbicacion',
         'asignadas',
         'preventivos',
-        'search'
+        'search',
+        'obrasDisponibles'
     ));
 }
 public function show(Request $request, Maquina $maquina)
@@ -250,5 +260,26 @@ public function guardarHoras(Request $request, Maquina $maquina)
     ]);
 
     return back()->with('success', 'Horas registradas correctamente.');
+}
+
+
+public function asignarObra(Request $request, Maquina $maquina, MaquinaService $maquinaService)
+{
+    $data = $request->validate([
+        'obra_id'          => ['required', 'exists:obras,id'],
+        'fecha_inicio'     => ['required', 'date'],
+        'horometro_inicio' => ['required', 'numeric', 'min:0'],
+        'notas'            => ['nullable', 'string', 'max:1000'],
+    ]);
+
+    $obra = Obra::findOrFail($data['obra_id']);
+
+    try {
+        $maquinaService->asignarAObra($maquina, $obra, $data);
+
+        return back()->with('success', "Máquina asignada correctamente a la obra '{$obra->nombre}'.");
+    } catch (\Throwable $e) {
+        return back()->withErrors(['general' => $e->getMessage()]);
+    }
 }
 }
