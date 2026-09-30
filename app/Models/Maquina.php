@@ -68,7 +68,7 @@ class Maquina extends Model
                     Obra::ESTATUS_CANCELADA,
                 ]);
             })
-            ->latestOfMany('fecha_inicio'); // si hay varias activas por error, toma la mas reciente
+            ->latest('id'); // si hay varias activas por error, toma la creada mas reciente
     }
 // Movimientos (bitácora)
 public function movimientos()
@@ -128,3 +128,4 @@ public function seguroVigente()
         ->latestOfMany('vigencia_hasta');
 }
 }
+

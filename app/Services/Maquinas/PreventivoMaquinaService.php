@@ -3,6 +3,7 @@
 namespace App\Services\Maquinas;
 
 use App\Models\EmpresaConfig;
+use App\Models\EmpresaServicioPreventivoTipo;
 use App\Models\Mantenimiento;
 use App\Models\Maquina;
 use App\Models\ObraMaquina;
@@ -49,8 +50,14 @@ class PreventivoMaquinaService
             ->unique('maquina_id')
             ->keyBy('maquina_id');
 
+        $serviciosPreventivos = EmpresaServicioPreventivoTipo::query()
+            ->maquinaria()
+            ->activos()
+            ->ordenados()
+            ->get();
+
         return $maquinas
-            ->mapWithKeys(function (Maquina $maquina) use ($config, $ultimosRegistros, $ultimasAsignaciones, $ultimosServicios) {
+            ->mapWithKeys(function (Maquina $maquina) use ($config, $ultimosRegistros, $ultimasAsignaciones, $ultimosServicios, $serviciosPreventivos) {
                 $ultimoRegistro = $ultimosRegistros->get($maquina->id);
                 $ultimaAsignacion = $ultimasAsignaciones->get($maquina->id);
                 $ultimoServicio = $ultimosServicios->get($maquina->id);
@@ -61,7 +68,8 @@ class PreventivoMaquinaService
                         $config,
                         $ultimoRegistro,
                         $ultimaAsignacion,
-                        $ultimoServicio
+                        $ultimoServicio,
+                        $serviciosPreventivos
                     ),
                 ];
             })
@@ -73,12 +81,9 @@ class PreventivoMaquinaService
         ?EmpresaConfig $config,
         ?ObraMaquinaRegistro $ultimoRegistro,
         ?ObraMaquina $ultimaAsignacion,
-        ?Mantenimiento $ultimoServicio
+        ?Mantenimiento $ultimoServicio,
+        Collection $serviciosPreventivos
     ): array {
-        $intervaloHoras = (float) ($config?->maquinaria_servicio_horas ?? 250);
-        $intervaloMeses = (int) ($config?->maquinaria_servicio_meses ?? 6);
-        $alertaHoras = (float) ($config?->maquinaria_alerta_horas ?? 20);
-
         $horometroActual = $this->mayorNumero([
             $ultimoRegistro?->horometro_fin,
             $ultimaAsignacion?->horometro_fin,
@@ -91,19 +96,70 @@ class PreventivoMaquinaService
             $maquina->horometro_base,
         ]);
 
+        $fechaUltimoServicio = $this->fechaUltimoServicio($ultimoServicio);
+
+        if ($serviciosPreventivos->isEmpty()) {
+            $serviciosPreventivos = collect([
+                new EmpresaServicioPreventivoTipo([
+                    'nombre' => 'Servicio preventivo',
+                    'codigo' => 'legacy',
+                    'intervalo_valor' => (int) ($config?->maquinaria_servicio_horas ?? 250),
+                    'intervalo_meses' => (int) ($config?->maquinaria_servicio_meses ?? 6),
+                    'alerta_valor' => (int) ($config?->maquinaria_alerta_horas ?? 20),
+                ]),
+            ]);
+        }
+
+        $servicios = $serviciosPreventivos
+            ->map(fn (EmpresaServicioPreventivoTipo $servicio) => $this->calcularServicio(
+                $servicio,
+                $horometroActual,
+                $horometroBaseServicio,
+                $fechaUltimoServicio
+            ))
+            ->values();
+
+        $principal = $servicios
+            ->sort(function (array $a, array $b) {
+                $estado = $this->prioridadEstado($b['estado']) <=> $this->prioridadEstado($a['estado']);
+
+                return $estado !== 0
+                    ? $estado
+                    : (($a['horas_restantes'] ?? PHP_FLOAT_MAX) <=> ($b['horas_restantes'] ?? PHP_FLOAT_MAX));
+            })
+            ->first();
+
+        return array_merge($principal, [
+            'horometro_actual' => $horometroActual,
+            'horometro_ultimo_servicio' => $horometroBaseServicio,
+            'ultimo_servicio_fecha' => $fechaUltimoServicio,
+            'servicios' => $servicios->all(),
+        ]);
+    }
+
+    private function calcularServicio(
+        EmpresaServicioPreventivoTipo $servicio,
+        ?float $horometroActual,
+        ?float $horometroBaseServicio,
+        ?Carbon $fechaUltimoServicio
+    ): array {
+        $intervaloHoras = (float) $servicio->intervalo_valor;
+        $intervaloMeses = (int) ($servicio->intervalo_meses ?? 0);
+        $alertaHoras = (float) ($servicio->alerta_valor ?? 0);
+
         if ($intervaloHoras <= 0 || $horometroActual === null || $horometroBaseServicio === null) {
             return [
+                'servicio_id' => $servicio->exists ? $servicio->id : null,
+                'servicio_nombre' => $servicio->nombre,
+                'servicio_codigo' => $servicio->codigo,
                 'estado' => 'sin_datos',
                 'label' => $intervaloHoras <= 0 ? 'Configurar intervalo' : 'Sin horometro',
                 'color' => 'slate',
-                'horometro_actual' => $horometroActual,
-                'horometro_ultimo_servicio' => $horometroBaseServicio,
                 'horas_usadas' => null,
                 'horas_restantes' => null,
                 'intervalo_horas' => $intervaloHoras,
                 'porcentaje' => 0,
                 'proximo_horometro' => null,
-                'ultimo_servicio_fecha' => null,
                 'proximo_fecha' => null,
             ];
         }
@@ -112,8 +168,6 @@ class PreventivoMaquinaService
         $proximoHorometro = $horometroBaseServicio + $intervaloHoras;
         $horasRestantes = $proximoHorometro - $horometroActual;
         $porcentaje = min(100, max(0, ($horasUsadas / $intervaloHoras) * 100));
-
-        $fechaUltimoServicio = $this->fechaUltimoServicio($ultimoServicio);
         $proximoFecha = $fechaUltimoServicio && $intervaloMeses > 0
             ? $fechaUltimoServicio->copy()->addMonths($intervaloMeses)
             : null;
@@ -128,10 +182,7 @@ class PreventivoMaquinaService
             ? 'vencido'
             : 'ok';
 
-        $estado = $estadoHoras;
-        if ($estadoTiempo === 'vencido') {
-            $estado = 'vencido';
-        }
+        $estado = $estadoTiempo === 'vencido' ? 'vencido' : $estadoHoras;
 
         $color = match ($estado) {
             'vencido' => 'rose',
@@ -150,19 +201,29 @@ class PreventivoMaquinaService
         }
 
         return [
+            'servicio_id' => $servicio->exists ? $servicio->id : null,
+            'servicio_nombre' => $servicio->nombre,
+            'servicio_codigo' => $servicio->codigo,
             'estado' => $estado,
             'label' => $label,
             'color' => $color,
-            'horometro_actual' => $horometroActual,
-            'horometro_ultimo_servicio' => $horometroBaseServicio,
             'horas_usadas' => $horasUsadas,
             'horas_restantes' => $horasRestantes,
             'intervalo_horas' => $intervaloHoras,
             'porcentaje' => $porcentaje,
             'proximo_horometro' => $proximoHorometro,
-            'ultimo_servicio_fecha' => $fechaUltimoServicio,
             'proximo_fecha' => $proximoFecha,
         ];
+    }
+
+    private function prioridadEstado(string $estado): int
+    {
+        return match ($estado) {
+            'vencido' => 4,
+            'proximo' => 3,
+            'ok' => 2,
+            default => 1,
+        };
     }
 
     private function primerNumero(array $valores): ?float
@@ -197,4 +258,7 @@ class PreventivoMaquinaService
         return $fecha ? Carbon::parse($fecha) : null;
     }
 }
+
+
+
 

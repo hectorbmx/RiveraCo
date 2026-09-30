@@ -81,6 +81,20 @@
     @endif
 
     {{-- Tabla --}}
+    @php
+        $sortUrl = function (string $column) use ($sort, $direction) {
+            $nextDirection = $sort === $column && $direction === 'asc' ? 'desc' : 'asc';
+
+            return route('maquinas.index', array_merge(request()->query(), [
+                'sort' => $column,
+                'direction' => $nextDirection,
+            ]));
+        };
+
+        $sortIcon = fn (string $column): string => $sort === $column
+            ? ($direction === 'asc' ? '↑' : '↓')
+            : '↕';
+    @endphp
     <div class="rounded-xl border bg-white overflow-hidden">
         <div class="px-4 py-3 border-b">
             <div class="text-sm font-semibold text-slate-800">Listado general</div>
@@ -91,10 +105,25 @@
                 <thead class="bg-slate-50 text-slate-600">
                     <tr>
                         <th class="text-left px-4 py-3">Código</th>
-                        <th class="text-left px-4 py-3">Nombre</th>
+                        <th class="text-left px-4 py-3">
+                            <a href="{{ $sortUrl('nombre') }}" class="inline-flex items-center gap-1 font-semibold text-slate-700 hover:text-[#0B265A]">
+                                <span>Nombre</span>
+                                <span class="text-xs">{{ $sortIcon('nombre') }}</span>
+                            </a>
+                        </th>
                         <th class="text-left px-4 py-3">Tipo</th>
-                        <th class="text-left px-4 py-3">Estado</th>
-                        <th class="text-left px-4 py-3">Ubicación actual</th>
+                        <th class="text-left px-4 py-3">
+                            <a href="{{ $sortUrl('estado') }}" class="inline-flex items-center gap-1 font-semibold text-slate-700 hover:text-[#0B265A]">
+                                <span>Estado</span>
+                                <span class="text-xs">{{ $sortIcon('estado') }}</span>
+                            </a>
+                        </th>
+                        <th class="text-left px-4 py-3">
+                            <a href="{{ $sortUrl('ubicacion') }}" class="inline-flex items-center gap-1 font-semibold text-slate-700 hover:text-[#0B265A]">
+                                <span>Ubicación actual</span>
+                                <span class="text-xs">{{ $sortIcon('ubicacion') }}</span>
+                            </a>
+                        </th>
                         <th class="text-left px-4 py-3">Horómetro actual</th>
                         <th class="text-left px-4 py-3">Servicio preventivo</th>
                         <th class="text-left px-4 py-3">Vence Seguro</th>

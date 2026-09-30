@@ -44,6 +44,7 @@ use App\Http\Controllers\Admin\EmpresaConfigAreaController;
 use App\Http\Controllers\Admin\EmpresaConfigListaRayaController;
 
 use App\Http\Controllers\EmpresaConfigController;
+use App\Http\Controllers\EmpresaServicioPreventivoTipoController;
 use App\Http\Controllers\ObraMaquinaHorasController;
 use App\Http\Controllers\FacturaController;
 use App\Http\Controllers\EmpresaConfigMaquinaController;
@@ -501,6 +502,10 @@ Route::middleware('auth','verified')->group(function () {
 
         Route::get('/configuracion-empresa', [EmpresaConfigController::class, 'edit'])->name('empresa_config.edit');
         Route::put('/configuracion-empresa', [EmpresaConfigController::class, 'update'])->name('empresa_config.update');
+        Route::get('/configuracion-empresa/servicios-preventivos/validar-codigo', [EmpresaServicioPreventivoTipoController::class, 'validarCodigo'])->name('empresa_config.servicios-preventivos.validar-codigo');
+        Route::post('/configuracion-empresa/servicios-preventivos', [EmpresaServicioPreventivoTipoController::class, 'store'])->name('empresa_config.servicios-preventivos.store');
+        Route::put('/configuracion-empresa/servicios-preventivos/{tipo}', [EmpresaServicioPreventivoTipoController::class, 'update'])->name('empresa_config.servicios-preventivos.update');
+        Route::patch('/configuracion-empresa/servicios-preventivos/{tipo}/toggle-activo', [EmpresaServicioPreventivoTipoController::class, 'toggleActivo'])->name('empresa_config.servicios-preventivos.toggle-activo');
         Route::post('/configuracion-empresa/cuentas-banco', [EmpresaConfigController::class,'storeCuentaBanco'])->name('empresa_config.cuentas.store');
         Route::post('/configuracion-empresa/viaticos-tarifas', [EmpresaConfigController::class, 'storeViaticoTarifa'])->name('empresa_config.viaticos.store');
         Route::patch('/configuracion-empresa/cuentas-banco/{cuenta}/toggle-activa', [EmpresaConfigController::class,'toggleCuentaBancoActiva'])->name('empresa_config.cuentas.toggle-activa');

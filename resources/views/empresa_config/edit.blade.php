@@ -6,11 +6,20 @@
     <div class="max-w-8xl mx-auto px-4 py-6"
          x-data="{
             tab: new URLSearchParams(window.location.search).get('tab') || 'general',
+            servicioPreventivoModalOpen: false,
+            servicioPreventivoAmbito: 'maquinaria',
             setTab(t){
                 this.tab = t;
                 const url = new URL(window.location.href);
                 url.searchParams.set('tab', t);
                 window.history.replaceState({}, '', url);
+            },
+            openServicioPreventivoModal(ambito){
+                this.servicioPreventivoAmbito = ambito;
+                this.servicioPreventivoModalOpen = true;
+            },
+            closeServicioPreventivoModal(){
+                this.servicioPreventivoModalOpen = false;
             }
          }">
 
@@ -422,6 +431,63 @@
                         <p class="text-sm text-gray-600">Frecuencias de servicio y alertas globales.</p>
                     </div>
 
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                        <div class="p-4 border-b border-gray-100 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <h3 class="text-base font-semibold text-gray-900">Tipos de servicio preventivo</h3>
+                                <p class="text-sm text-gray-600">Catálogo de servicios por kilometraje para vehículos.</p>
+                            </div>
+                            <button type="button" @click="$dispatch('open-servicio-preventivo', { ambito: 'vehiculo' })" class="inline-flex w-fit items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800">
+                                + Nuevo servicio
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50 text-gray-700">
+                                    <tr>
+                                        <th class="text-left px-4 py-3">Nombre</th>
+                                        <th class="text-left px-4 py-3">Código</th>
+                                        <th class="text-left px-4 py-3">Intervalo</th>
+                                        <th class="text-left px-4 py-3">Meses</th>
+                                        <th class="text-left px-4 py-3">Alerta (km)</th>
+                                        <th class="text-left px-4 py-3">Alerta (días)</th>
+                                        <th class="text-left px-4 py-3">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    @forelse($serviciosPreventivosVehiculos as $servicio)
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-3 font-medium text-gray-900">{{ $servicio->nombre }}</td>
+                                            <td class="px-4 py-3 text-gray-700">{{ $servicio->codigo }}</td>
+                                            <td class="px-4 py-3 text-gray-700">{{ number_format((float) $servicio->intervalo_valor, 0) }} km</td>
+                                            <td class="px-4 py-3 text-gray-700">{{ $servicio->intervalo_meses ? $servicio->intervalo_meses . ' meses' : '—' }}</td>
+                                            <td class="px-4 py-3 text-gray-700">{{ $servicio->alerta_valor !== null ? number_format((float) $servicio->alerta_valor, 0) . ' km antes' : '—' }}</td>
+                                            <td class="px-4 py-3 text-gray-700">{{ $servicio->alerta_dias !== null ? $servicio->alerta_dias . ' días antes' : '—' }}</td>
+                                            <td class="px-4 py-3">
+                                                @if($servicio->activo)
+                                                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">Activo</span>
+                                                @else
+                                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600 ring-1 ring-gray-200">Inactivo</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="7" class="px-4 py-8 text-center text-gray-500">Aún no hay tipos de servicio preventivo para vehículos.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-amber-200 bg-amber-50/50 p-4 space-y-4">
+                        <div>
+                            <h3 class="text-sm font-semibold text-amber-900">Configuración global anterior / fallback</h3>
+                            <p class="text-xs text-amber-700">Estos valores siguen alimentando el cálculo preventivo actual mientras migramos al catálogo de tipos de servicio.</p>
+                        </div>
+
                     <form method="POST" action="{{ route('empresa_config.update') }}" class="space-y-6">
                         @csrf
                         @method('PUT')
@@ -547,59 +613,6 @@
                             </button>
                         </div>
                     </form>
-
-                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
-                        <div class="p-4 border-b border-gray-100">
-                            <h3 class="text-base font-semibold text-gray-900">Tipos de servicio preventivo</h3>
-                            <p class="text-sm text-gray-600">Catálogo de servicios por kilometraje para vehículos.</p>
-                        </div>
-
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50 text-gray-700">
-                                    <tr>
-                                        <th class="text-left px-4 py-3">Nombre</th>
-                                        <th class="text-left px-4 py-3">Código</th>
-                                        <th class="text-left px-4 py-3">Intervalo</th>
-                                        <th class="text-left px-4 py-3">Meses</th>
-                                        <th class="text-left px-4 py-3">Alerta (km)</th>
-                                        <th class="text-left px-4 py-3">Alerta (días)</th>
-                                        <th class="text-left px-4 py-3">Estado</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y">
-                                    @forelse($serviciosPreventivosVehiculos as $servicio)
-                                        <tr class="hover:bg-gray-50">
-                                            <td class="px-4 py-3 font-medium text-gray-900">{{ $servicio->nombre }}</td>
-                                            <td class="px-4 py-3 text-gray-700">{{ $servicio->codigo }}</td>
-                                            <td class="px-4 py-3 text-gray-700">
-                                                {{ number_format((float) $servicio->intervalo_valor, 0) }} km
-                                            </td>
-                                            <td class="px-4 py-3 text-gray-700">
-                                                {{ $servicio->intervalo_meses ? $servicio->intervalo_meses . ' meses' : '—' }}
-                                            </td>
-                                            <td class="px-4 py-3 text-gray-700">
-                                                {{ $servicio->alerta_valor !== null ? number_format((float) $servicio->alerta_valor, 0) . ' km antes' : '—' }}
-                                            </td>
-                                            <td class="px-4 py-3 text-gray-700">
-                                                {{ $servicio->alerta_dias !== null ? $servicio->alerta_dias . ' días antes' : '—' }}
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                @if($servicio->activo)
-                                                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">Activo</span>
-                                                @else
-                                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600 ring-1 ring-gray-200">Inactivo</span>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="7" class="px-4 py-8 text-center text-gray-500">Aún no hay tipos de servicio preventivo para vehículos.</td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
                     </div>
                 </div>
 
@@ -611,6 +624,61 @@
                         <h2 class="text-lg font-semibold text-gray-900">Maquinaria</h2>
                         <p class="text-sm text-gray-600">Servicios por horas de uso y por tiempo.</p>
                     </div>
+
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                        <div class="p-4 border-b border-gray-100 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <h3 class="text-base font-semibold text-gray-900">Tipos de servicio preventivo</h3>
+                                <p class="text-sm text-gray-600">Catálogo de servicios por horómetro para maquinaria.</p>
+                            </div>
+                            <button type="button" @click="$dispatch('open-servicio-preventivo', { ambito: 'maquinaria' })" class="inline-flex w-fit items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800">
+                                + Nuevo servicio
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50 text-gray-700">
+                                    <tr>
+                                        <th class="text-left px-4 py-3">Nombre</th>
+                                        <th class="text-left px-4 py-3">Código</th>
+                                        <th class="text-left px-4 py-3">Intervalo</th>
+                                        <th class="text-left px-4 py-3">Meses</th>
+                                        <th class="text-left px-4 py-3">Alerta</th>
+                                        <th class="text-left px-4 py-3">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    @forelse($serviciosPreventivosMaquinaria as $servicio)
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-3 font-medium text-gray-900">{{ $servicio->nombre }}</td>
+                                            <td class="px-4 py-3 text-gray-700">{{ $servicio->codigo }}</td>
+                                            <td class="px-4 py-3 text-gray-700">{{ number_format((float) $servicio->intervalo_valor, 0) }} {{ $servicio->unidad === 'horas' ? 'h' : $servicio->unidad }}</td>
+                                            <td class="px-4 py-3 text-gray-700">{{ $servicio->intervalo_meses ? $servicio->intervalo_meses . ' meses' : '—' }}</td>
+                                            <td class="px-4 py-3 text-gray-700">{{ $servicio->alerta_valor !== null ? number_format((float) $servicio->alerta_valor, 0) . ' h antes' : '—' }}</td>
+                                            <td class="px-4 py-3">
+                                                @if($servicio->activo)
+                                                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">Activo</span>
+                                                @else
+                                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600 ring-1 ring-gray-200">Inactivo</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">Aún no hay tipos de servicio preventivo para maquinaria.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-amber-200 bg-amber-50/50 p-4 space-y-4">
+                        <div>
+                            <h3 class="text-sm font-semibold text-amber-900">Configuración global anterior / fallback</h3>
+                            <p class="text-xs text-amber-700">Estos valores siguen alimentando el cálculo preventivo actual mientras migramos al catálogo de tipos de servicio.</p>
+                        </div>
 
                     <form method="POST" action="{{ route('empresa_config.update')}}"
                           class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -642,55 +710,6 @@
                             </button>
                         </div>
                     </form>
-                    <div class="text-xs text-gray-500">
-                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
-                        <div class="p-4 border-b border-gray-100">
-                            <h3 class="text-base font-semibold text-gray-900">Tipos de servicio preventivo</h3>
-                            <p class="text-sm text-gray-600">Catálogo de servicios por horómetro para maquinaria.</p>
-                        </div>
-
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50 text-gray-700">
-                                    <tr>
-                                        <th class="text-left px-4 py-3">Nombre</th>
-                                        <th class="text-left px-4 py-3">Código</th>
-                                        <th class="text-left px-4 py-3">Intervalo</th>
-                                        <th class="text-left px-4 py-3">Meses</th>
-                                        <th class="text-left px-4 py-3">Alerta</th>
-                                        <th class="text-left px-4 py-3">Estado</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y">
-                                    @forelse($serviciosPreventivosMaquinaria as $servicio)
-                                        <tr class="hover:bg-gray-50">
-                                            <td class="px-4 py-3 font-medium text-gray-900">{{ $servicio->nombre }}</td>
-                                            <td class="px-4 py-3 text-gray-700">{{ $servicio->codigo }}</td>
-                                            <td class="px-4 py-3 text-gray-700">
-                                                {{ number_format((float) $servicio->intervalo_valor, 0) }} {{ $servicio->unidad === 'horas' ? 'h' : $servicio->unidad }}
-                                            </td>
-                                            <td class="px-4 py-3 text-gray-700">
-                                                {{ $servicio->intervalo_meses ? $servicio->intervalo_meses . ' meses' : '—' }}
-                                            </td>
-                                            <td class="px-4 py-3 text-gray-700">
-                                                {{ $servicio->alerta_valor !== null ? number_format((float) $servicio->alerta_valor, 0) . ' h antes' : '—' }}
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                @if($servicio->activo)
-                                                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">Activo</span>
-                                                @else
-                                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600 ring-1 ring-gray-200">Inactivo</span>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">Aún no hay tipos de servicio preventivo para maquinaria.</td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
                     </div>
                         {{-- ======================
    Catálogo de Máquinas
@@ -2535,6 +2554,136 @@ function areasTab() {
     </div>
     
     
+
+        <div
+            x-data="{
+                servicioPreventivoModalOpen: false,
+                servicioPreventivoAmbito: 'maquinaria',
+                codigoServicioPreventivo: '',
+                codigoValidando: false,
+                codigoExiste: false,
+                codigoNormalizado: '',
+                validarCodigoUrl: '{{ route('empresa_config.servicios-preventivos.validar-codigo') }}',
+                openServicioPreventivoModal(ambito){
+                    this.servicioPreventivoAmbito = ambito || 'maquinaria';
+                    this.codigoServicioPreventivo = '';
+                    this.codigoExiste = false;
+                    this.codigoValidando = false;
+                    this.codigoNormalizado = '';
+                    this.servicioPreventivoModalOpen = true;
+                },
+                closeServicioPreventivoModal(){
+                    this.servicioPreventivoModalOpen = false;
+                },
+                async validarCodigoServicioPreventivo(){
+                    const codigo = (this.codigoServicioPreventivo || '').trim();
+
+                    this.codigoExiste = false;
+                    this.codigoNormalizado = '';
+
+                    if (!codigo) {
+                        return;
+                    }
+
+                    this.codigoValidando = true;
+
+                    try {
+                        const params = new URLSearchParams({
+                            ambito: this.servicioPreventivoAmbito,
+                            codigo,
+                        });
+                        const response = await fetch(`${this.validarCodigoUrl}?${params.toString()}`, {
+                            headers: { 'Accept': 'application/json' },
+                        });
+
+                        if (!response.ok) {
+                            return;
+                        }
+
+                        const data = await response.json();
+                        this.codigoExiste = Boolean(data.exists);
+                        this.codigoNormalizado = data.codigo || '';
+                    } finally {
+                        this.codigoValidando = false;
+                    }
+                }
+            }"
+            @open-servicio-preventivo.window="openServicioPreventivoModal($event.detail.ambito)"
+            x-cloak
+            x-show="servicioPreventivoModalOpen"
+            x-transition.opacity
+            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 px-4 py-6"
+            @keydown.escape.window="closeServicioPreventivoModal()">
+            <div class="w-full max-w-xl rounded-xl border border-gray-200 bg-white shadow-xl" @click.outside="closeServicioPreventivoModal()">
+                <div class="flex items-start justify-between border-b border-gray-100 px-5 py-4">
+                    <div>
+                        <h2 class="text-base font-semibold text-gray-900">Nuevo servicio preventivo</h2>
+                        <p class="text-sm text-gray-600" x-text="servicioPreventivoAmbito === 'vehiculo' ? 'Servicio por kilometraje para vehículos.' : 'Servicio por horómetro para maquinaria.'"></p>
+                    </div>
+                    <button type="button" class="text-gray-400 hover:text-gray-600" @click="closeServicioPreventivoModal()">&times;</button>
+                </div>
+
+                <form method="POST" action="{{ route('empresa_config.servicios-preventivos.store') }}" class="space-y-4 px-5 py-5">
+                    @csrf
+                    <input type="hidden" name="ambito" :value="servicioPreventivoAmbito">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Nombre <span class="text-red-500">*</span></label>
+                            <input type="text" name="nombre" required maxlength="100" placeholder="Basico, General, Mayor" class="mt-1 w-full rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-gray-900/20">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Código <span class="text-red-500">*</span></label>
+                            <input type="text" name="codigo" required maxlength="80" placeholder="basico, general, mayor" x-model="codigoServicioPreventivo" @blur="validarCodigoServicioPreventivo()" @input.debounce.500ms="validarCodigoServicioPreventivo()" :class="codigoExiste ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-gray-900/20'" class="mt-1 w-full rounded-lg text-sm focus:ring-2">
+                            <p x-show="codigoValidando" x-cloak class="mt-1 text-xs text-gray-500">Validando código...</p>
+                            <p x-show="codigoExiste" x-cloak class="mt-1 text-xs font-semibold text-red-600">Ese código ya está tomado para este tipo de servicio.</p>
+                            <p x-show="!codigoExiste && codigoNormalizado && codigoNormalizado !== codigoServicioPreventivo" x-cloak class="mt-1 text-xs text-gray-500">Se guardará como: <span x-text="codigoNormalizado"></span></p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">
+                                <span x-text="servicioPreventivoAmbito === 'vehiculo' ? 'Intervalo (km)' : 'Intervalo (horas)'"></span>
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" name="intervalo_valor" required min="1" step="1" class="mt-1 w-full rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-gray-900/20">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Intervalo meses</label>
+                            <input type="number" name="intervalo_meses" min="1" max="120" step="1" class="mt-1 w-full rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-gray-900/20">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700" x-text="servicioPreventivoAmbito === 'vehiculo' ? 'Alerta antes (km)' : 'Alerta antes (horas)'"></label>
+                            <input type="number" name="alerta_valor" min="0" step="1" class="mt-1 w-full rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-gray-900/20">
+                        </div>
+                        <div x-show="servicioPreventivoAmbito === 'vehiculo'">
+                            <label class="block text-sm font-medium text-gray-700">Alerta antes (días)</label>
+                            <input type="number" name="alerta_dias" min="0" step="1" class="mt-1 w-full rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-gray-900/20">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Orden</label>
+                            <input type="number" name="orden" min="0" step="1" class="mt-1 w-full rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-gray-900/20">
+                        </div>
+                        <label class="flex items-center gap-2 pt-7 text-sm text-gray-700">
+                            <input type="checkbox" name="activo" value="1" checked class="rounded border-gray-300">
+                            Activo
+                        </label>
+                    </div>
+
+                    <div class="flex justify-end gap-3 border-t border-gray-100 pt-4">
+                        <button type="button" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="closeServicioPreventivoModal()">Cancelar</button>
+                        <button type="submit" :disabled="codigoExiste || codigoValidando" :class="(codigoExiste || codigoValidando) ? 'cursor-not-allowed bg-gray-400' : 'bg-gray-900 hover:bg-gray-800'" class="rounded-lg px-4 py-2 text-sm font-semibold text-white">Guardar servicio</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 @endsection
 
 

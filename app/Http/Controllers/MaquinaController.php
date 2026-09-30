@@ -17,7 +17,13 @@ class MaquinaController extends Controller
 public function index(Request $request, PreventivoMaquinaService $preventivoService)
 {
     $search = trim((string) $request->query('search', ''));
-
+    $sort = (string) $request->query('sort', '');
+    $direction = strtolower((string) $request->query('direction', 'asc')) === 'desc' ? 'desc' : 'asc';
+    $sortableColumns = [
+        'nombre' => 'nombre',
+        'estado' => 'estado',
+        'ubicacion' => 'ubicacion',
+    ];
     // KPIs
     $total = Maquina::count();
 
@@ -33,7 +39,7 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
         ->count();
 
     // Lista
-    $maquinas = Maquina::query()
+    $maquinasQuery = Maquina::query()
         ->with(['asignacionActiva.obra:id,nombre', 'seguros'])
         ->when($search !== '', function ($query) use ($search) {
             $query->where(function ($q) use ($search) {
@@ -50,10 +56,18 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
                       $obraQuery->where('nombre', 'like', "%{$search}%");
                   });
             });
-        })
-        ->orderBy('codigo')
-        ->orderBy('nombre')
-        ->get();
+        });
+
+    if (array_key_exists($sort, $sortableColumns)) {
+        $maquinasQuery->orderBy($sortableColumns[$sort], $direction)
+            ->orderBy('codigo')
+            ->orderBy('nombre');
+    } else {
+        $maquinasQuery->orderBy('codigo')
+            ->orderBy('nombre');
+    }
+
+    $maquinas = $maquinasQuery->get();
 
     $config = EmpresaConfig::first();
     $preventivos = $preventivoService->calcularParaColeccion($maquinas, $config);
@@ -73,6 +87,8 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
         'asignadas',
         'preventivos',
         'search',
+        'sort',
+        'direction',
         'obrasDisponibles'
     ));
 }
