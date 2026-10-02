@@ -87,7 +87,7 @@ class ReposicionCajaChicaController extends Controller
     {
         $request->validate([
             'xml_files' => ['required', 'array', 'min:1'],
-            'xml_files.*' => ['file', 'mimes:xml,text/xml,text/plain', 'max:5120'],
+            'xml_files.*' => ['file', 'mimes:xml,txt', 'max:5120'],
         ]);
 
         $resultados = [];

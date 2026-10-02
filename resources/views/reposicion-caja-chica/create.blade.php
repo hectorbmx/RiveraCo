@@ -703,6 +703,17 @@ function reposicionCajaChicaExcel() {
 
                 const res = await response.json();
 
+                if (!response.ok) {
+                    const validationErrors = res.errors
+                        ? Object.values(res.errors).flat()
+                        : [];
+
+                    this.xmlErrores = validationErrors.length > 0
+                        ? validationErrors
+                        : [res.message || 'No se pudieron procesar los XML seleccionados.'];
+                    return;
+                }
+
                 if (res.errores && res.errores.length > 0) {
                     this.xmlErrores = res.errores;
                 }
