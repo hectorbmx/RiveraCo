@@ -73,6 +73,11 @@ class Empleado extends Model
         return $this->belongsTo(\App\Models\NominaListaRaya::class, 'lista_raya_principal_id');
     }
 
+    public function tipoSueldo()
+    {
+        return $this->belongsTo(NominaTipoSueldo::class, 'Sueldo_tipo');
+    }
+
     public function asignaciones()
     {
         return $this->hasMany(ObraEmpleado::class, 'empleado_id', 'id_Empleado');
@@ -212,3 +217,4 @@ public function getAreaIdAttribute()
             ->orderByDesc('id');
     }
 }
+

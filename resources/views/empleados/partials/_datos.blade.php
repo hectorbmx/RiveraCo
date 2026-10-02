@@ -278,8 +278,11 @@
                     <select name="Sueldo_tipo"
                             class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm focus:border-[#FFC107] focus:ring-[#FFC107] text-sm">
                         <option value="">-- Seleccionar --</option>
-                        <option value="1" @selected((int)$tipo === 1)>Semanal</option>
-                        <option value="2" @selected((int)$tipo === 2)>Quincenal</option>
+                        @foreach(($tiposSueldo ?? collect()) as $tipoSueldo)
+                            <option value="{{ $tipoSueldo->id }}" @selected((string)$tipo === (string)$tipoSueldo->id)>
+                                {{ $tipoSueldo->nombre }}
+                            </option>
+                        @endforeach
                     </select>
                     @error('Sueldo_tipo') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>

@@ -9,6 +9,7 @@ use App\Models\EmpleadoNota;
 use App\Models\EmpresaConfig;
 use App\Models\EmpresaDocumentoTipo;
 use App\Models\NominaListaRaya;
+use App\Models\NominaTipoSueldo;
 use Illuminate\Http\Request;
 use App\Services\Empleados\EmpleadoKardexService;
 
@@ -128,8 +129,12 @@ public function create()
         ->orderBy('orden')
         ->orderBy('nombre')
         ->get();
+    $tiposSueldo = NominaTipoSueldo::query()
+        ->activos()
+        ->ordenados()
+        ->get();
 
-    return view('empleados.create', compact('areas', 'roles', 'listasRaya'));
+    return view('empleados.create', compact('areas', 'roles', 'listasRaya', 'tiposSueldo'));
 }
 
     // public function store(Request $request)
@@ -287,6 +292,10 @@ if ($tab === 'epp') {
         ->orderBy('orden')
         ->orderBy('nombre')
         ->get();
+    $tiposSueldo = NominaTipoSueldo::query()
+        ->activos()
+        ->ordenados()
+        ->get();
 
     return view('empleados.edit', compact(
         'empleado',
@@ -296,6 +305,7 @@ if ($tab === 'epp') {
         'areas',
         'roles',
         'listasRaya',
+        'tiposSueldo',
         'documentosTipos',
         'obrasActivas'
     ));
@@ -415,7 +425,7 @@ if ($tab === 'epp') {
             'Sueldo'           => ['nullable', 'numeric'],
             'Sueldo_real'      => ['nullable', 'numeric'],
             'Complemento'      => ['nullable', 'numeric'],
-            'Sueldo_tipo'      => ['nullable', 'integer'],
+            'Sueldo_tipo'      => ['nullable', 'integer', 'exists:nomina_tipos_sueldo,id'],
             'listaraya'        => ['nullable', 'integer'],
             'lista_raya_principal_id' => ['nullable', 'integer', 'exists:nomina_listas_raya,id'],
             'Horassemana'      => ['nullable', 'string', 'max:50'],
@@ -531,7 +541,5 @@ if ($tab === 'epp') {
         }, $fileName, $headers);
     }
 }
-
-
 
 
