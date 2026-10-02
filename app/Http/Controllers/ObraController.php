@@ -2129,16 +2129,20 @@ private function facturaSatEstadoBadgeClass(?string $estado): string
 }
 private function facturasDisponiblesParaObra(string $rfcCliente, ?int $clienteId): Collection
 {
+    $esSuperAdmin = auth()->user()?->hasRole('super-admin') || auth()->user()?->hasRole('Super Admin') || auth()->user()?->hasRole('superadmin');
+
     $facturasApi = SatFactura::whereNull('obra_id')
         ->whereNotNull('uuid')
-        ->where(function ($query) use ($rfcCliente, $clienteId) {
-            if ($rfcCliente !== '') {
-                $query->where('receptor_rfc', $rfcCliente);
-            }
+        ->when(! $esSuperAdmin, function ($query) use ($rfcCliente, $clienteId) {
+            $query->where(function ($subquery) use ($rfcCliente, $clienteId) {
+                if ($rfcCliente !== '') {
+                    $subquery->where('receptor_rfc', $rfcCliente);
+                }
 
-            if ($clienteId) {
-                $query->orWhere('cliente_id', $clienteId);
-            }
+                if ($clienteId) {
+                    $subquery->orWhere('cliente_id', $clienteId);
+                }
+            });
         })
         ->orderByDesc('fecha_emision')
         ->limit(300)
@@ -2155,11 +2159,13 @@ private function facturasDisponiblesParaObra(string $rfcCliente, ?int $clienteId
 
     $cfdisSat = SatCfdi::whereNull('obra_id')
         ->whereNotNull('uuid')
-        ->when($rfcCliente !== '', function ($query) use ($rfcCliente) {
+        ->when(! $esSuperAdmin, function ($query) use ($rfcCliente) {
             $query->where(function ($subquery) use ($rfcCliente) {
-                $subquery
-                    ->where('receptor_rfc', $rfcCliente)
-                    ->orWhere('rfc_receptor', $rfcCliente);
+                if ($rfcCliente !== '') {
+                    $subquery
+                        ->where('receptor_rfc', $rfcCliente)
+                        ->orWhere('rfc_receptor', $rfcCliente);
+                }
             });
         })
         ->orderByDesc('fecha_emision')

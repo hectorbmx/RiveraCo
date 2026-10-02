@@ -4573,6 +4573,16 @@ function relacionFacturasModal() {
             </h3>
 
             <div class="flex items-center gap-2">
+                @php
+                    $esSuperAdmin = auth()->user()?->hasRole('super-admin') || auth()->user()?->hasRole('Super Admin') || auth()->user()?->hasRole('superadmin');
+                @endphp
+
+                @if($esSuperAdmin)
+                    <span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                        Super-admin: todas las facturas sin obra
+                    </span>
+                @endif
+
                 <button type="button"
                         @click="openModal()"
                         class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg
