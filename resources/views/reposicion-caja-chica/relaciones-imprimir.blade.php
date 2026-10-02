@@ -99,8 +99,8 @@
                         @else
                             {{ $gasto->almacen->nombre ?? 'Almacen no definido' }}
                         @endif
-                        @if($gasto->es_para_maquina)
-                            <br><span class="muted">Máquina: {{ trim(($gasto->maquina?->codigo ? $gasto->maquina->codigo . ' - ' : '') . ($gasto->maquina?->nombre ?? 'Sin máquina')) }}</span>
+                        @if($gasto->activo_operativo_label !== '-')
+                            <br><span class="muted">{{ $gasto->activo_operativo_label }}</span>
                         @endif
                     </td>
                     <td class="right">${{ number_format((float) $gasto->importe_registrado, 2) }}</td>
@@ -154,3 +154,4 @@
     </div>
 </body>
 </html>
+

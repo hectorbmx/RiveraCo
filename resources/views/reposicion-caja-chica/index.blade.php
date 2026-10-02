@@ -190,8 +190,8 @@
                         <td class="px-4 py-3 font-semibold text-slate-800">
                             @if($gasto->destino === 'obra')
                                 {{ $gasto->obra->nombre ?? 'Obra no definida' }}
-                            @elseif($gasto->es_para_maquina)
-                                {{ trim(($gasto->maquina?->codigo ? $gasto->maquina->codigo . ' - ' : '') . ($gasto->maquina?->nombre ?? 'Sin máquina')) }}
+                            @elseif($gasto->activo_operativo_label !== '-')
+                                {{ $gasto->activo_operativo_label }}
                             @else
                                 -
                             @endif
@@ -278,6 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 @endpush
+
 
 
 

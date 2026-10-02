@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\UsuarioApp;
 use Illuminate\Http\Request;
 use App\Services\Maquinas\MaquinaService;
+use App\Services\Maquinas\MaquinaHorometroService;
 use App\Models\Maquina;
 
 class MaquinaRegistroController extends Controller
@@ -202,7 +203,7 @@ public function index(Request $request, ObraMaquina $obraMaquina)
      * Crea un registro de horas
      * POST /api/v1/maquinas/{obraMaquina}/registros
      */
-    public function store(Request $request, ObraMaquina $obraMaquina)
+    public function store(Request $request, ObraMaquina $obraMaquina, MaquinaHorometroService $horometroService)
     {
         $user = $request->user();
 
@@ -238,40 +239,15 @@ public function index(Request $request, ObraMaquina $obraMaquina)
             'notas'         => 'nullable|string|max:500',
         ]);
 
-        // Horómetro inicio sugerido: último registro o baseline
-        $ultimo = $obraMaquina->registrosHoras()
-            ->orderByDesc('fin')
-            ->orderByDesc('id')
-            ->first();
-
-        $horometroInicio = (float) ($ultimo?->horometro_fin ?? $obraMaquina->horometro_inicio ?? 0);
-        $horometroFin    = (float) $data['horometro_fin'];
-
-        if ($horometroFin < $horometroInicio) {
+        try {
+            $registro = $horometroService->crearRegistro($obraMaquina, $data, $user, 'app');
+        } catch (\Throwable $e) {
             return response()->json([
                 'ok' => false,
-                'message' => "El horómetro final no puede ser menor al último registrado ({$horometroInicio}).",
-                'horometro_inicio' => $horometroInicio
+                'message' => $e->getMessage(),
+                'horometro_inicio' => $horometroService->horometroInicioParaRegistro($obraMaquina),
             ], 422);
         }
-
-        $inicio = $data['inicio'] ?? now();
-        $fin    = $data['fin'] ?? now();
-
-        $registro = ObraMaquinaRegistro::create([
-            'obra_maquina_id'  => $obraMaquina->id,
-            'obra_id'          => $obraMaquina->obra_id,
-            'maquina_id'       => $obraMaquina->maquina_id,
-            'inicio'           => $inicio,
-            'fin'              => $fin,
-            'horometro_inicio' => $horometroInicio,
-            'horometro_fin'    => $horometroFin,
-            'horas'            => round(max(0, $horometroFin - $horometroInicio), 2),
-            'notas'            => $data['notas'] ?? null,
-            'created_by'       => $user->id,
-            'updated_by'       => $user->id,
-            'origen'           => 'app',
-        ]);
 
         return response()->json([
             'ok' => true,
@@ -279,7 +255,6 @@ public function index(Request $request, ObraMaquina $obraMaquina)
             'registro' => $registro,
         ], 201);
     }
-
     //reportar falla en obra
     /**
  * Reportar falla de máquina
@@ -390,3 +365,4 @@ public function actualizarEstado(Request $request, ObraMaquina $obraMaquina, Maq
             ->exists();
     }
 }
+

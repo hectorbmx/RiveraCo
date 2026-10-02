@@ -986,6 +986,7 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
 //tab maquionas
     //    if ($tab === 'maquinaria' || $tab === 'comisiones') {
     if (in_array($tab, ['maquinaria', 'horas-maquina', 'comisiones'], true)) {
+        $horometroService = app(\App\Services\Maquinas\MaquinaHorometroService::class);
 
         // Asignaciones de maquinaria de esta obra
       $asignacionesMaquina = ObraMaquina::query()
@@ -1008,6 +1009,10 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
                 ->orderBy('fecha_inicio')
                 ->get();
 
+        $asignacionesMaquina->each(function ($asignacion) use ($horometroService) {
+            $asignacion->horometro_actual = $horometroService->horometroInicioParaRegistro($asignacion);
+        });
+
         $maquinasAsignadasActivas    = $asignacionesMaquina->where('estado', 'activa');
         $maquinasAsignadasHistoricas = $asignacionesMaquina->where('estado', 'finalizada');
 
@@ -1021,6 +1026,10 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
             ->whereNotIn('id', $maquinasOcupadasIds)
             ->orderBy('nombre')
             ->get();
+
+        $maquinasDisponibles->each(function ($maquina) use ($horometroService) {
+            $maquina->horometro_actual_sugerido = $horometroService->horometroSugeridoParaAsignacion($maquina);
+        });
     }
 if ($tab === 'horas-maquina') {
     $registrosHorasMaquina = ObraMaquinaRegistro::query()
@@ -2685,4 +2694,5 @@ public function relacionarCfdis(Request $request, Obra $obra)
     ]);
 }
 }
+
 

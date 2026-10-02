@@ -13,6 +13,7 @@ use App\Models\ReposicionCajaChicaGastoArchivo;
 use App\Models\ReposicionCajaChicaRelacion;
 use App\Models\ReposicionCajaChicaSubcategoria;
 use App\Models\User;
+use App\Models\Vehiculo;
 use App\Services\Sat\CfdiXmlParserService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -76,8 +77,13 @@ class ReposicionCajaChicaController extends Controller
             ->orderBy('codigo')
             ->orderBy('nombre')
             ->get(['id', 'codigo', 'nombre', 'tipo', 'estado', 'ubicacion']);
+        $vehiculos = Vehiculo::query()
+            ->orderBy('marca')
+            ->orderBy('modelo')
+            ->orderBy('placas')
+            ->get(['id', 'marca', 'modelo', 'placas', 'tipo', 'estatus']);
 
-        return view('reposicion-caja-chica.create', compact('categorias', 'subcategorias', 'obras', 'almacenes', 'maquinas'));
+        return view('reposicion-caja-chica.create', compact('categorias', 'subcategorias', 'obras', 'almacenes', 'maquinas', 'vehiculos'));
     }
 
     /**
@@ -256,37 +262,68 @@ class ReposicionCajaChicaController extends Controller
                     ]);
                 }
 
-                $esParaMaquina = filter_var($item['es_para_maquina'] ?? false, FILTER_VALIDATE_BOOLEAN);
-                $maquinaId = $item['maquina_id'] ?? null;
+                $esParaActivo = filter_var($item['es_para_activo'] ?? ($item['es_para_maquina'] ?? false), FILTER_VALIDATE_BOOLEAN);
+                $activoOperativo = trim((string) ($item['activo_operativo'] ?? ''));
+                $maquinaId = null;
+                $vehiculoId = null;
 
-                if ($esParaMaquina && !$esAlmacenGiralda) {
+                if ($esParaActivo && !$esAlmacenGiralda) {
                     throw ValidationException::withMessages([
-                        "gastos.{$idx}.es_para_maquina" => "Solo puedes asignar maquina en gastos del almacen Giralda en la fila #" . ($idx + 1),
+                        "gastos.{$idx}.es_para_activo" => "Solo puedes asignar activo operativo en gastos del almacen Giralda en la fila #" . ($idx + 1),
                     ]);
                 }
 
-                if ($esParaMaquina) {
-                    if (empty($maquinaId)) {
+                if ($esParaActivo) {
+                    if ($activoOperativo === '' && !empty($item['maquina_id'])) {
+                        $activoOperativo = 'maquina:' . $item['maquina_id'];
+                    }
+
+                    if ($activoOperativo === '') {
                         throw ValidationException::withMessages([
-                            "gastos.{$idx}.maquina_id" => "Selecciona la maquina para la fila #" . ($idx + 1),
+                            "gastos.{$idx}.activo_operativo" => "Selecciona el activo operativo para la fila #" . ($idx + 1),
                         ]);
                     }
 
-                    $maquinaValida = Maquina::query()
-                        ->where('id', $maquinaId)
-                        ->where('estado', '!=', Maquina::ESTADO_BAJA_DEFINITIVA)
-                        ->exists();
+                    [$activoTipo, $activoId] = array_pad(explode(':', $activoOperativo, 2), 2, null);
+                    $activoId = (int) $activoId;
 
-                    if (!$maquinaValida) {
+                    if (!in_array($activoTipo, ['maquina', 'vehiculo'], true) || $activoId <= 0) {
                         throw ValidationException::withMessages([
-                            "gastos.{$idx}.maquina_id" => "La maquina seleccionada no esta disponible en la fila #" . ($idx + 1),
+                            "gastos.{$idx}.activo_operativo" => "El activo operativo seleccionado no es valido en la fila #" . ($idx + 1),
                         ]);
+                    }
+
+                    if ($activoTipo === 'maquina') {
+                        $maquinaValida = Maquina::query()
+                            ->where('id', $activoId)
+                            ->where('estado', '!=', Maquina::ESTADO_BAJA_DEFINITIVA)
+                            ->exists();
+
+                        if (!$maquinaValida) {
+                            throw ValidationException::withMessages([
+                                "gastos.{$idx}.activo_operativo" => "La maquina seleccionada no esta disponible en la fila #" . ($idx + 1),
+                            ]);
+                        }
+
+                        $maquinaId = $activoId;
+                    }
+
+                    if ($activoTipo === 'vehiculo') {
+                        $vehiculoValido = Vehiculo::query()
+                            ->where('id', $activoId)
+                            ->exists();
+
+                        if (!$vehiculoValido) {
+                            throw ValidationException::withMessages([
+                                "gastos.{$idx}.activo_operativo" => "El vehiculo seleccionado no esta disponible en la fila #" . ($idx + 1),
+                            ]);
+                        }
+
+                        $vehiculoId = $activoId;
                     }
                 }
 
-                if (!$esParaMaquina) {
-                    $maquinaId = null;
-                }
+                $esParaMaquina = $maquinaId !== null;
 
                 $destino = $targetDestino;
                 $obraId = $targetDestino === 'obra' ? $targetObraId : null;
@@ -309,6 +346,7 @@ class ReposicionCajaChicaController extends Controller
                     'almacen_id' => $almacenId,
                     'es_para_maquina' => $esParaMaquina,
                     'maquina_id' => $maquinaId,
+                    'vehiculo_id' => $vehiculoId,
                     'fecha_gasto' => $item['fecha_gasto'] ?: now()->toDateString(),
                     'proveedor_nombre' => $item['proveedor_nombre'],
                     'proveedor_id' => $proveedorId,
@@ -434,7 +472,7 @@ class ReposicionCajaChicaController extends Controller
                 echo "<h2>" . e($grupo['nombre']) . "</h2>";
                 echo "<table border=\"1\">";
                 echo "<thead><tr>";
-                foreach (['Folio', 'Fecha gasto', 'Fecha captura', 'Proveedor', 'RFC', 'Concepto', 'Categoria', 'Forma pago', 'Destino', 'Maquina', 'Registrado', 'Autorizado', 'Estado'] as $header) {
+                foreach (['Folio', 'Fecha gasto', 'Fecha captura', 'Proveedor', 'RFC', 'Concepto', 'Categoria', 'Forma pago', 'Destino', 'Activo', 'Registrado', 'Autorizado', 'Estado'] as $header) {
                     echo "<th>" . e($header) . "</th>";
                 }
                 echo "</tr></thead><tbody>";
@@ -453,10 +491,8 @@ class ReposicionCajaChicaController extends Controller
                     echo "<td>" . e($gasto->concepto) . "</td>";
                     echo "<td>" . e($gasto->subcategoria->nombre ?? 'Sin categoria') . "</td>";
                     echo "<td>" . e(ucfirst((string) $gasto->forma_pago)) . "</td>";
-                    $maquina = $gasto->es_para_maquina ? ($gasto->maquina?->codigo ? $gasto->maquina->codigo . ' - ' . $gasto->maquina->nombre : ($gasto->maquina?->nombre ?? '-')) : '-';
-
                     echo "<td>" . e($destino) . "</td>";
-                    echo "<td>" . e($maquina) . "</td>";
+                    echo "<td>" . e($gasto->activo_operativo_label) . "</td>";
                     echo "<td>" . number_format((float) $gasto->importe_registrado, 2) . "</td>";
                     echo "<td>" . number_format((float) ($gasto->importe_autorizado ?? 0), 2) . "</td>";
                     echo "<td>" . e(str_replace('_', ' ', $gasto->estado_autorizacion)) . "</td>";
@@ -476,7 +512,7 @@ class ReposicionCajaChicaController extends Controller
     }
     public function show(ReposicionCajaChicaGasto $gasto)
     {
-        $gasto->load(['categoria', 'subcategoria', 'obra', 'almacen', 'maquina', 'archivos', 'solicitadoPor', 'resueltoPor']);
+        $gasto->load(['categoria', 'subcategoria', 'obra', 'almacen', 'maquina', 'vehiculo', 'archivos', 'solicitadoPor', 'resueltoPor']);
 
         return view('reposicion-caja-chica.show', compact('gasto'));
     }
@@ -515,7 +551,7 @@ class ReposicionCajaChicaController extends Controller
     public function revision(Request $request)
     {
         $gastos = ReposicionCajaChicaGasto::query()
-            ->with(['categoria', 'subcategoria', 'obra', 'almacen', 'maquina', 'solicitadoPor'])
+            ->with(['categoria', 'subcategoria', 'obra', 'almacen', 'maquina', 'vehiculo', 'solicitadoPor'])
             ->whereIn('estado_autorizacion', ['pendiente', 'autorizado', 'autorizado_parcial', 'rechazado'])
             ->latest('id')
             ->paginate(20)
@@ -753,7 +789,7 @@ class ReposicionCajaChicaController extends Controller
     private function gastosReporteQuery(Request $request, Carbon $fechaInicio, Carbon $fechaFin)
     {
         return ReposicionCajaChicaGasto::query()
-            ->with(['categoria', 'subcategoria', 'obra', 'almacen', 'maquina', 'solicitadoPor'])
+            ->with(['categoria', 'subcategoria', 'obra', 'almacen', 'maquina', 'vehiculo', 'solicitadoPor'])
             ->whereBetween('created_at', [$fechaInicio, $fechaFin])
             ->when($request->filled('q'), function ($query) use ($request) {
                 $q = trim((string) $request->q);
@@ -810,17 +846,6 @@ class ReposicionCajaChicaController extends Controller
         ];
     }
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 

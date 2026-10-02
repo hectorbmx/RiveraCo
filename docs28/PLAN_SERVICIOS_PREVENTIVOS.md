@@ -274,4 +274,24 @@ Empezar por Fase 1 completa:
 4. Registrar o documentar ejecucion del seeder.
 5. No tocar calculos ni UI todavia.
 
-Esto deja la base lista sin cambiar comportamiento productivo.
+Esto deja la base lista sin cambiar comportamiento productivo.{
+NOTAS ECTRAS 
+Notas operativas generales
+nos falta en config-empresa
+crear elcatalogo de tipos de suedo-> hoy tenemos 2 tipos pre-definidos semanal y quincenal, pero no puedo agregar otro desde el sistema, tendria que hacerlo desde la base de datos , quiero verlos en la vista de config de empresa, en un tab nuebvo siguiendo el patron de partialls para no cargar mucho la vista
+
+en el partial 
+[https://sirico.riveraco.com.mx/v2/public/configuracion-empresa?tab=general](https://sirico.riveraco.com.mx/v2/public/configuracion-empresa?tab=general)
+quiero agregar el check para que que la empresa que elijamos (hoy solo hay una pero mas adelante seran mas en facturacion )-> quiero poder elegir la empresa por defecto en el select 
+[https://sirico.riveraco.com.mx/v2/public/sat/facturacion/create](https://sirico.riveraco.com.mx/v2/public/sat/facturacion/create)
+
+aqui agregar un boton para reporte mensual
+https://sirico.riveraco.com.mx/v2/public/sat/facturacion
+facturado->total
+facturado->no cobrado
+facturado->cobrado
+ahi mismo podiramos agregar datos generales
+cliente con mayor facturacion
+cliente que se tardo mas en pagar una factura
+cliente que paga mas rapido las facturas (algo asi)
+

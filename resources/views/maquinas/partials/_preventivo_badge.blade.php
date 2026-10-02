@@ -1,6 +1,7 @@
 @php
     $preventivo = $preventivo ?? null;
-    $color = $preventivo['color'] ?? 'slate';
+    $preventivoData = is_array($preventivo) ? $preventivo : [];
+    $color = $preventivoData['color'] ?? 'slate';
     $barClass = match($color) {
         'rose' => 'bg-rose-500',
         'amber' => 'bg-amber-400',
@@ -13,7 +14,22 @@
         'emerald' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
         default => 'bg-slate-50 text-slate-600 border-slate-200',
     };
-    $porcentaje = $preventivo ? min(100, max(0, (float)($preventivo['porcentaje'] ?? 0))) : 0;
+    $porcentaje = $preventivoData ? min(100, max(0, (float)($preventivoData['porcentaje'] ?? 0))) : 0;
+    $servicioNombre = $preventivoData['servicio_tipo_nombre'] ?? $preventivoData['servicio_nombre'] ?? null;
+    $labelPreventivo = $preventivoData['label'] ?? 'Sin datos';
+    $badgeText = $servicioNombre ? ($servicioNombre . ': ' . $labelPreventivo) : $labelPreventivo;
+    $serviciosTooltip = collect($preventivoData['servicios'] ?? [])
+        ->map(function ($servicio) {
+            $nombre = $servicio['servicio_tipo_nombre'] ?? $servicio['servicio_nombre'] ?? 'Servicio';
+            $label = $servicio['label'] ?? 'Sin datos';
+            $meta = isset($servicio['proximo_horometro']) && $servicio['proximo_horometro'] !== null
+                ? ' Meta ' . number_format((float) $servicio['proximo_horometro'], 1) . ' h'
+                : '';
+
+            return trim($nombre . ': ' . $label . $meta);
+        })
+        ->filter()
+        ->implode("\n");
 @endphp
 
 @if(!$preventivo)
@@ -23,12 +39,12 @@
 @else
     <div class="min-w-[190px] space-y-1.5">
         <div class="flex items-center justify-between gap-2">
-            <span class="inline-flex px-2 py-0.5 rounded-lg border text-xs font-medium {{ $badgeClass }}">
-                {{ $preventivo['label'] }}
+            <span class="inline-flex px-2 py-0.5 rounded-lg border text-xs font-medium {{ $badgeClass }}" title="{{ $serviciosTooltip ?: $badgeText }}">
+                {{ $badgeText }}
             </span>
-            @if($preventivo['horometro_actual'] !== null)
+            @if(($preventivoData['horometro_actual'] ?? null) !== null)
                 <span class="text-[11px] text-slate-500 whitespace-nowrap">
-                    {{ number_format($preventivo['horometro_actual'], 1) }} h
+                    {{ number_format($preventivoData['horometro_actual'], 1) }} h
                 </span>
             @endif
         </div>
@@ -37,11 +53,11 @@
             <div class="h-full rounded-full {{ $barClass }}" style="width: {{ $porcentaje }}%"></div>
         </div>
 
-        @if($preventivo['horas_usadas'] !== null)
+        @if(($preventivoData['horas_usadas'] ?? null) !== null)
             <div class="flex items-center justify-between text-[11px] text-slate-500">
-                <span>{{ number_format($preventivo['horas_usadas'], 1) }} / {{ number_format($preventivo['intervalo_horas'], 0) }} h</span>
-                @if($preventivo['proximo_horometro'] !== null)
-                    <span>Meta {{ number_format($preventivo['proximo_horometro'], 1) }} h</span>
+                <span>{{ number_format($preventivoData['horas_usadas'], 1) }} / {{ number_format($preventivoData['intervalo_horas'], 0) }} h</span>
+                @if(($preventivoData['proximo_horometro'] ?? null) !== null)
+                    <span>Meta {{ number_format($preventivoData['proximo_horometro'], 1) }} h</span>
                 @endif
             </div>
         @endif

@@ -9,12 +9,13 @@ use App\Services\Maquinas\MaquinaService;
 use App\Models\EmpresaConfig;
 use App\Models\Obra;
 use App\Services\Maquinas\PreventivoMaquinaService;
+use App\Services\Maquinas\MaquinaHorometroService;
 
 
 class MaquinaController extends Controller
 {
     //
-public function index(Request $request, PreventivoMaquinaService $preventivoService)
+public function index(Request $request, PreventivoMaquinaService $preventivoService, MaquinaHorometroService $horometroService)
 {
     $search = trim((string) $request->query('search', ''));
     $sort = (string) $request->query('sort', '');
@@ -71,6 +72,9 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
 
     $config = EmpresaConfig::first();
     $preventivos = $preventivoService->calcularParaColeccion($maquinas, $config);
+    $horometrosActuales = $maquinas
+        ->mapWithKeys(fn (Maquina $maquina) => [$maquina->id => $horometroService->horometroActual($maquina)])
+        ->all();
 
     $obrasDisponibles = Obra::query()
         ->whereNotIn('estatus_nuevo', [
@@ -86,6 +90,7 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
         'porUbicacion',
         'asignadas',
         'preventivos',
+        'horometrosActuales',
         'search',
         'sort',
         'direction',
@@ -216,7 +221,7 @@ public function toggleServicio(Request $request, Maquina $maquina, MaquinaServic
         return back()->withErrors(['general' => $e->getMessage()]);
     }
 }
-public function guardarHoras(Request $request, Maquina $maquina)
+public function guardarHoras(Request $request, Maquina $maquina, MaquinaHorometroService $horometroService)
 {
     abort_unless($request->user()?->can('maquinas.horas.create.access'), 403);
 
@@ -235,49 +240,16 @@ public function guardarHoras(Request $request, Maquina $maquina)
             ->withInput();
     }
 
-    $ultimo = $asignacion->registrosHoras()
-        ->orderByDesc('fin')
-        ->orderByDesc('id')
-        ->first();
-
-    $horometroInicio = collect([
-        $ultimo?->horometro_fin,
-        $asignacion->horometro_inicio,
-        $maquina->horometro_base,
-    ])
-        ->filter(fn ($valor) => $valor !== null && $valor !== '')
-        ->map(fn ($valor) => (float) $valor)
-        ->max() ?? 0;
-
-    $horometroFin = (float) $data['horometro_fin'];
-
-    if ($horometroFin < $horometroInicio) {
+    try {
+        $horometroService->crearRegistro($asignacion, $data, $request->user(), 'web_maquinas');
+    } catch (\Throwable $e) {
         return back()
-            ->withErrors(['horometro_fin' => "El horometro final no puede ser menor al ultimo registrado ({$horometroInicio})."])
+            ->withErrors(['horometro_fin' => $e->getMessage()])
             ->withInput();
     }
 
-    $inicio = $data['inicio'] ?? now();
-    $fin = $data['fin'] ?? now();
-
-    ObraMaquinaRegistro::create([
-        'obra_maquina_id'  => $asignacion->id,
-        'obra_id'          => $asignacion->obra_id,
-        'maquina_id'       => $maquina->id,
-        'inicio'           => $inicio,
-        'fin'              => $fin,
-        'horometro_inicio' => $horometroInicio,
-        'horometro_fin'    => $horometroFin,
-        'horas'            => round(max(0, $horometroFin - $horometroInicio), 2),
-        'notas'            => $data['notas'] ?? null,
-        'created_by'       => $request->user()?->id,
-        'updated_by'       => $request->user()?->id,
-        'origen'           => 'web',
-    ]);
-
     return back()->with('success', 'Horas registradas correctamente.');
 }
-
 
 public function asignarObra(Request $request, Maquina $maquina, MaquinaService $maquinaService)
 {
@@ -298,4 +270,64 @@ public function asignarObra(Request $request, Maquina $maquina, MaquinaService $
         return back()->withErrors(['general' => $e->getMessage()]);
     }
 }
+
+//para el desglose de pilas despues de seleccionar maquinas ** revisar codex
+public function pilasActivasObra(Request $request, Obra $obra)
+{
+    abort_unless(
+        $request->user()?->can('maquinas.asignar_obra.access'),
+        403
+    );
+
+    $pilas = $obra->pilas()
+        ->where('activo', true)
+        ->withSum(
+            'detallesComision as cantidad_ejecutada',
+            'cantidad'
+        )
+        ->orderBy('numero_pila')
+        ->get()
+        ->map(function ($pila) {
+            $programadas = (float) ($pila->cantidad_programada ?? 0);
+            $ejecutadas  = (float) ($pila->cantidad_ejecutada ?? 0);
+            $faltantes   = max($programadas - $ejecutadas, 0);
+
+            return [
+                'id' => $pila->id,
+                'numero_pila' => $pila->numero_pila,
+                'tipo' => $pila->tipo ?: '—',
+                'cantidad_programada' => $programadas,
+                'cantidad_ejecutada' => $ejecutadas,
+                'cantidad_faltante' => $faltantes,
+
+                'diametro_proyecto' => is_null($pila->diametro_proyecto)
+                    ? null
+                    : (float) $pila->diametro_proyecto,
+
+                'profundidad_proyecto' => is_null($pila->profundidad_proyecto)
+                    ? null
+                    : (float) $pila->profundidad_proyecto,
+
+                'ubicacion' => $pila->ubicacion ?: '—',
+            ];
+        })
+        ->values();
+
+    return response()->json([
+        'obra' => [
+            'id' => $obra->id,
+            'clave' => $obra->clave_obra,
+            'nombre' => $obra->nombre,
+        ],
+        'pilas' => $pilas,
+        'resumen' => [
+            'tipos_activos' => $pilas->count(),
+            'programadas' => $pilas->sum('cantidad_programada'),
+            'ejecutadas' => $pilas->sum('cantidad_ejecutada'),
+            'faltantes' => $pilas->sum('cantidad_faltante'),
+        ],
+    ]);
 }
+}
+
+

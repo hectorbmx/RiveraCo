@@ -169,8 +169,8 @@
                             <th class="w-56 px-3 py-2.5 text-left">Proveedor</th>
                             <th class="w-36 px-3 py-2.5 text-left">RFC</th>
                             <th class="min-w-[340px] px-3 py-2.5 text-left">Concepto</th>
-                            <th x-show="isGiraldaSelected" class="w-28 px-3 py-2.5 text-center">¿Máquina?</th>
-                            <th x-show="isGiraldaSelected" class="w-64 px-3 py-2.5 text-left">Máquina</th>
+                            <th x-show="isGiraldaSelected" class="w-28 px-3 py-2.5 text-center">¿Activo?</th>
+                            <th x-show="isGiraldaSelected" class="w-72 px-3 py-2.5 text-left">Activo</th>
                             <th class="w-44 px-3 py-2.5 text-left">Categoría</th>
                             <th class="w-32 px-3 py-2.5 text-left">Forma pago</th>
                             <th class="w-32 px-3 py-2.5 text-right">Importe ($)</th>
@@ -277,27 +277,28 @@
                                     --}}
                                 </td>
 
-                                {{-- MAQUINARIA GIRALDA --}}
+                                {{-- ACTIVO OPERATIVO GIRALDA --}}
                                 <td x-show="isGiraldaSelected" class="px-2 py-2 text-center">
-                                    <input type="hidden" :name="'gastos[' + index + '][es_para_maquina]'" value="0">
+                                    <input type="hidden" :name="'gastos[' + index + '][es_para_activo]'" value="0">
                                     <label class="inline-flex items-center justify-center gap-2 rounded border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700">
                                         <input type="checkbox"
-                                               :name="'gastos[' + index + '][es_para_maquina]'"
+                                               :name="'gastos[' + index + '][es_para_activo]'"
                                                value="1"
-                                               x-model="row.es_para_maquina"
+                                               x-model="row.es_para_activo"
+                                               @change="if (!row.es_para_activo) row.activo_operativo = ''"
                                                class="rounded border-slate-300 text-[#0B265A] focus:ring-[#0B265A]">
                                         <span>Sí</span>
                                     </label>
                                 </td>
 
                                 <td x-show="isGiraldaSelected" class="px-2 py-2">
-                                    <select :name="'gastos[' + index + '][maquina_id]'"
-                                            x-model="row.maquina_id"
-                                            :disabled="!row.es_para_maquina"
+                                    <select :name="'gastos[' + index + '][activo_operativo]'"
+                                            x-model="row.activo_operativo"
+                                            :disabled="!row.es_para_activo"
                                             class="w-full rounded border-slate-300 text-xs py-1 px-1.5 disabled:bg-slate-100 disabled:text-slate-400">
-                                        <option value="">Selecciona máquina...</option>
-                                        <template x-for="maquina in maquinas" :key="maquina.id">
-                                            <option :value="maquina.id" x-text="(maquina.codigo ? maquina.codigo + ' - ' : '') + maquina.nombre"></option>
+                                        <option value="">Selecciona activo...</option>
+                                        <template x-for="activo in activosOperativos" :key="activo.value">
+                                            <option :value="activo.value" x-text="activo.label"></option>
                                         </template>
                                     </select>
                                 </td>
@@ -455,6 +456,14 @@ function reposicionCajaChicaExcel() {
             'estado' => $m->estado,
             'ubicacion' => $m->ubicacion,
         ])->values()) !!},
+        vehiculos: {!! json_encode(($vehiculos ?? collect())->map(fn($v) => [
+            'id' => $v->id,
+            'marca' => $v->marca,
+            'modelo' => $v->modelo,
+            'placas' => $v->placas,
+            'tipo' => $v->tipo,
+            'estatus' => $v->estatus,
+        ])->values()) !!},
 
         rows: [],
         dragover: false,
@@ -502,14 +511,30 @@ function reposicionCajaChicaExcel() {
                             forma_pago: g.forma_pago || (cat ? cat.forma_pago_base : 'efectivo'),
                             importe_registrado: parseFloat(g.importe_registrado) || 0,
                             motivo_sin_factura: g.motivo_sin_factura || '',
+                            es_para_activo: Boolean(Number(g.es_para_activo || g.es_para_maquina || 0)),
+                            activo_operativo: g.activo_operativo || (g.maquina_id ? 'maquina:' + g.maquina_id : (g.vehiculo_id ? 'vehiculo:' + g.vehiculo_id : '')),
                             es_para_maquina: Boolean(Number(g.es_para_maquina || 0)),
                             maquina_id: g.maquina_id || '',
+                            vehiculo_id: g.vehiculo_id || '',
                             xml_file_name: '',
                             evidencia_count: 0,
                         });
                     });
                 }
             @endif
+        },
+
+        get activosOperativos() {
+            const maquinas = this.maquinas.map(maquina => ({
+                value: 'maquina:' + maquina.id,
+                label: 'Máquina - ' + ((maquina.codigo ? maquina.codigo + ' - ' : '') + maquina.nombre),
+            }));
+            const vehiculos = this.vehiculos.map(vehiculo => ({
+                value: 'vehiculo:' + vehiculo.id,
+                label: 'Vehículo - ' + [vehiculo.marca, vehiculo.modelo, vehiculo.placas].filter(Boolean).join(' '),
+            }));
+
+            return [...maquinas, ...vehiculos];
         },
 
         get selectedAlmacen() {
@@ -624,8 +649,11 @@ function reposicionCajaChicaExcel() {
                 }
 
                 if (!this.isGiraldaSelected) {
+                    r.es_para_activo = false;
+                    r.activo_operativo = '';
                     r.es_para_maquina = false;
                     r.maquina_id = '';
+                    r.vehiculo_id = '';
                 }
             });
         },
@@ -656,8 +684,11 @@ function reposicionCajaChicaExcel() {
                 forma_pago: cat ? cat.forma_pago_base : 'efectivo',
                 importe_registrado: 0,
                 motivo_sin_factura: '',
+                es_para_activo: false,
+                activo_operativo: '',
                 es_para_maquina: false,
                 maquina_id: '',
+                vehiculo_id: '',
                 xml_file_name: '',
                 evidencia_count: 0,
             });
@@ -770,8 +801,11 @@ function reposicionCajaChicaExcel() {
                             forma_pago: cfdi.forma_pago || 'efectivo',
                             importe_registrado: parseFloat(cfdi.total) || 0,
                             motivo_sin_factura: '',
-                            es_para_maquina: false,
-                            maquina_id: '',
+                            es_para_activo: false,
+                activo_operativo: '',
+                es_para_maquina: false,
+                maquina_id: '',
+                vehiculo_id: '',
                             xml_file_name: cfdi.filename || sourceFile?.name || 'factura.xml',
                             evidencia_count: 0,
                         });
@@ -831,11 +865,4 @@ function reposicionCajaChicaExcel() {
 }
 </script>
 @endpush
-
-
-
-
-
-
-
 

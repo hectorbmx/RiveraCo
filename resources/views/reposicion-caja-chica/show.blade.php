@@ -25,7 +25,7 @@
                 <div class="md:col-span-2"><dt class="text-xs font-semibold uppercase text-slate-500">Concepto</dt><dd>{{ $gasto->concepto }}</dd></div>
                 <div><dt class="text-xs font-semibold uppercase text-slate-500">Destino</dt><dd>{{ $gasto->destino === 'obra' ? 'Obra' : 'Almacen' }}</dd></div>
                 <div><dt class="text-xs font-semibold uppercase text-slate-500">Obra / almacen</dt><dd>{{ $gasto->obra->nombre ?? $gasto->almacen->nombre ?? '-' }}</dd></div>
-                <div><dt class="text-xs font-semibold uppercase text-slate-500">Máquina</dt><dd>{{ $gasto->es_para_maquina ? trim(($gasto->maquina?->codigo ? $gasto->maquina->codigo . ' - ' : '') . ($gasto->maquina?->nombre ?? 'Sin máquina')) : '-' }}</dd></div>
+                <div><dt class="text-xs font-semibold uppercase text-slate-500">Activo</dt><dd>{{ $gasto->activo_operativo_label }}</dd></div>
                 <div class="md:col-span-2"><dt class="text-xs font-semibold uppercase text-slate-500">Motivo sin factura</dt><dd>{{ $gasto->motivo_sin_factura ?? '-' }}</dd></div>
                 <div class="md:col-span-2"><dt class="text-xs font-semibold uppercase text-slate-500">Observaciones</dt><dd>{{ $gasto->observaciones ?? '-' }}</dd></div>
             </dl>
@@ -56,4 +56,5 @@
     </div>
 </div>
 @endsection
+
 

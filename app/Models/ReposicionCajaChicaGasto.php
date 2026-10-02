@@ -22,6 +22,7 @@ class ReposicionCajaChicaGasto extends Model
         'almacen_id',
         'es_para_maquina',
         'maquina_id',
+        'vehiculo_id',
         'fecha_gasto',
         'proveedor_nombre',
         'proveedor_id',
@@ -87,6 +88,29 @@ class ReposicionCajaChicaGasto extends Model
         return $this->belongsTo(Maquina::class, 'maquina_id');
     }
 
+    public function vehiculo(): BelongsTo
+    {
+        return $this->belongsTo(Vehiculo::class, 'vehiculo_id');
+    }
+
+    public function getActivoOperativoLabelAttribute(): string
+    {
+        if ($this->maquina_id) {
+            $nombreMaquina = trim(($this->maquina?->codigo ? $this->maquina->codigo . ' - ' : '') . ($this->maquina?->nombre ?? 'Sin maquina'));
+
+            return 'Maquina: ' . $nombreMaquina;
+        }
+
+        if ($this->vehiculo_id) {
+            $vehiculo = $this->vehiculo;
+            $nombreVehiculo = trim(implode(' ', array_filter([$vehiculo?->marca, $vehiculo?->modelo, $vehiculo?->placas])));
+
+            return 'Vehiculo: ' . ($nombreVehiculo ?: 'Sin vehiculo');
+        }
+
+        return '-';
+    }
+
     public function archivos(): HasMany
     {
         return $this->hasMany(ReposicionCajaChicaGastoArchivo::class, 'gasto_id');
@@ -102,3 +126,4 @@ class ReposicionCajaChicaGasto extends Model
         return $this->belongsTo(User::class, 'resuelto_por');
     }
 }
+

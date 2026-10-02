@@ -8,7 +8,10 @@
             $desdeMaquina = !empty($selectedMaquinaId);
             $desdeVehiculo = !empty($selectedVehiculoId) && !$desdeMaquina;
             $maquinaSeleccionada = $desdeMaquina ? $maquinas->firstWhere('id', (int) $selectedMaquinaId) : null;
+            $horometroMaquinaSugerido = $maquinaSeleccionada?->horometro_actual_sugerido;
+            $horometroMaquinaValue = $horometroMaquinaSugerido !== null ? number_format((float) $horometroMaquinaSugerido, 1, '.', '') : '';
             $vehiculoSeleccionado = $desdeVehiculo ? $vehiculos->firstWhere('id', (int) $selectedVehiculoId) : null;
+            $serviciosPreventivos = $desdeMaquina ? ($serviciosPreventivosMaquinaria ?? collect()) : ($serviciosPreventivosVehiculos ?? collect());
             $cancelUrl = $desdeMaquina
                 ? route('maquinas.show', ['maquina' => $selectedMaquinaId, 'tab' => 'servicios'])
                 : route('mantenimiento.mantenimientos.index');
@@ -94,6 +97,21 @@
                     </div>
 
                     <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de servicio preventivo</label>
+                        <select name="servicio_preventivo_tipo_id"
+                                class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Sin tipo específico</option>
+                            @foreach($serviciosPreventivos as $servicioPreventivo)
+                                <option value="{{ $servicioPreventivo->id }}" @selected(old('servicio_preventivo_tipo_id') == $servicioPreventivo->id)>
+                                    {{ $servicioPreventivo->nombre }} - cada {{ number_format($servicioPreventivo->intervalo_valor) }} {{ $servicioPreventivo->unidad === 'horas' ? 'h' : 'km' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('servicio_preventivo_tipo_id')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Categoria</label>
                         <input type="text" name="categoria_mantenimiento"
                                value="{{ old('categoria_mantenimiento') }}"
@@ -124,7 +142,7 @@
                     @if($desdeMaquina)
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Horometro actual</label>
-                            <input type="number" step="0.1" name="horometro" value="{{ old('horometro') }}"
+                            <input type="number" step="0.1" name="horometro" value="{{ old('horometro', $horometroMaquinaValue) }}"
                                    class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
                         </div>
                     @else

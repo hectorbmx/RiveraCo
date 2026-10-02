@@ -66,8 +66,8 @@
                             @else
                                 {{ $gasto->almacen->nombre ?? 'Almacen no definido' }}
                             @endif
-                            @if($gasto->es_para_maquina)
-                                <div class="mt-1 font-semibold text-slate-500">Máquina: {{ trim(($gasto->maquina?->codigo ? $gasto->maquina->codigo . ' - ' : '') . ($gasto->maquina?->nombre ?? 'Sin máquina')) }}</div>
+                            @if($gasto->activo_operativo_label !== '-')
+                                <div class="mt-1 font-semibold text-slate-500">{{ $gasto->activo_operativo_label }}</div>
                             @endif
                         </td>
                         <td class="px-4 py-3">{{ $gasto->solicitadoPor->name ?? '-' }}</td>
@@ -132,3 +132,4 @@
     <div>{{ $gastos->links() }}</div>
 </div>
 @endsection
+

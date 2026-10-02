@@ -3542,7 +3542,8 @@
                 </p>
             @else
                 <form method="POST"
-                      action="{{ route('obras.maquinaria.store', $obra) }}">
+                      action="{{ route('obras.maquinaria.store', $obra) }}"
+                      x-data="{ horometroInicio: '{{ old('horometro_inicio') }}' }">
                     @csrf
 
                     <div class="space-y-3">
@@ -3552,10 +3553,12 @@
                                 Máquina
                             </label>
                             <select name="maquina_id"
+                                    @change="horometroInicio = $event.target.selectedOptions[0]?.dataset.horometro || ''"
                                     class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
                                 <option value="">Selecciona una máquina</option>
                                 @foreach($maquinasDisponibles as $maq)
                                     <option value="{{ $maq->id }}"
+                                            data-horometro="{{ number_format((float) ($maq->horometro_actual_sugerido ?? $maq->horometro_base ?? 0), 2, '.', '') }}"
                                         {{ old('maquina_id') == $maq->id ? 'selected' : '' }}>
                                         {{ $maq->nombre }} ({{ $maq->codigo }})
                                     </option>
@@ -3588,8 +3591,8 @@
                                 name="horometro_inicio"
                                 step="0.01"
                                 min="0.01"
-                                value="{{ old('horometro_inicio') }}"
-                                placeholder="Ej. 105.0"
+                                x-model="horometroInicio"
+                                placeholder="Se llena al seleccionar máquina"
                                 class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
                             @error('horometro_inicio')
                                 <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
@@ -6620,4 +6623,5 @@ function calcularFila(idCampo) {
 //     });
 // });
 </script>
+
 

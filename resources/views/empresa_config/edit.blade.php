@@ -74,6 +74,7 @@
                                 'areas'   => ['label' => 'Areas', 'desc' => 'Areas de la empresa'],
                                 'folios'   => ['label' => 'Folios', 'desc' => 'Consecutivos de obras'],
                                 'listas_raya' => ['label' => 'Listas de raya', 'desc' => 'Agrupadores de nomina'],
+                                'tipos_sueldo' => ['label' => 'Tipos de sueldo', 'desc' => 'Periodos y formas de pago'],
                             ];
                              if (auth()->check() && auth()->user()->hasAnyRole(['admin','super-admin'])) {
                                 $tabs['roles']    = ['label' => 'Roles', 'desc' => 'Perfiles de acceso'];
@@ -1247,6 +1248,7 @@
 @include('empresa_config.partials._equipos_computo')
 @include('empresa_config.partials._centros_costo')
 @include('empresa_config.partials._tipos_iva')
+@include('empresa_config.partials._tipos_sueldo')
 
                 {{-- ======================
      COMISIONES
@@ -2685,6 +2687,7 @@ function areasTab() {
             </div>
         </div>
 @endsection
+
 
 
 

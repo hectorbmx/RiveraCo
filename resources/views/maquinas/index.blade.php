@@ -136,7 +136,7 @@
                         @php
                             $seguroSeleccionado = null;
                             $preventivoMaquina = $preventivos[$m->id] ?? null;
-                            $horometroActual = $preventivoMaquina['horometro_actual'] ?? null;
+                            $horometroActual = $horometrosActuales[$m->id] ?? ($preventivoMaquina['horometro_actual'] ?? null);
                             $asignacionActiva = $m->asignacionActiva;
                             $nombreMaquina = trim(($m->codigo ?? '') . ' ' . ($m->nombre ?? '')) ?: 'Maquina';
                             $canRegistrarHoras = auth()->user()?->can('maquinas.horas.create.access') ?? false;
@@ -312,60 +312,740 @@
     </div>
 
     @can('maquinas.asignar_obra.access')
+    <div
+        x-data="{
+            obras: @js(
+                $obrasDisponibles->map(fn ($obra) => [
+                    'id'     => $obra->id,
+                    'clave'  => $obra->clave_obra ?? '',
+                    'nombre' => $obra->nombre ?? '',
+                    'texto'  => trim(($obra->clave_obra ?? '') . ' ' . ($obra->nombre ?? '')),
+                ])->values()
+            ),
+
+            buscarObra: '',
+            obraId: '',
+            obraSeleccionada: null,
+            mostrarOpciones: false,
+            errorObra: '',
+
+            cargandoPilas: false,
+            pilasCargadas: false,
+            errorPilas: '',
+            pilasObra: [],
+
+            resumenPilas: {
+                tipos_activos: 0,
+                programadas: 0,
+                ejecutadas: 0,
+                faltantes: 0
+            },
+
+          get obrasFiltradas() {
+    const busqueda = this.buscarObra
+        .toString()
+        .trim()
+        .toLowerCase();
+
+    // No mostrar ninguna obra mientras no exista una búsqueda
+    if (busqueda.length < 2) {
+        return [];
+    }
+
+    return this.obras.filter(obra => {
+        const texto = `${obra.clave} ${obra.nombre}`.toLowerCase();
+
+        return texto.includes(busqueda);
+    });
+},
+
+            seleccionarObra(obra) {
+                this.obraId = obra.id;
+                this.obraSeleccionada = obra;
+                this.buscarObra = obra.texto;
+                this.mostrarOpciones = false;
+                this.errorObra = '';
+
+                this.cargarPilasObra();
+            },
+
+            limpiarSeleccionObra() {
+                this.buscarObra = '';
+                this.obraId = '';
+                this.obraSeleccionada = null;
+                this.mostrarOpciones = false;
+                this.errorObra = '';
+
+                this.limpiarPilas();
+            },
+
+            limpiarPilas() {
+                this.cargandoPilas = false;
+                this.pilasCargadas = false;
+                this.errorPilas = '';
+                this.pilasObra = [];
+
+                this.resumenPilas = {
+                    tipos_activos: 0,
+                    programadas: 0,
+                    ejecutadas: 0,
+                    faltantes: 0
+                };
+            },
+
+            reiniciarModal() {
+                this.limpiarSeleccionObra();
+            },
+
+            async cargarPilasObra() {
+                const obraIdConsultada = this.obraId;
+
+                this.limpiarPilas();
+
+                if (!obraIdConsultada) {
+                    return;
+                }
+
+                this.cargandoPilas = true;
+
+                try {
+                    const urlBase = @js(url('/maquinas/obras'));
+
+                    const response = await fetch(
+                        `${urlBase}/${obraIdConsultada}/pilas-activas`,
+                        {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        }
+                    );
+
+                    if (!response.ok) {
+                        throw new Error(
+                            `No fue posible consultar las pilas. Código ${response.status}.`
+                        );
+                    }
+
+                    const data = await response.json();
+
+                    // Evita mostrar el resultado de una consulta anterior
+                    // si el usuario seleccionó otra obra rápidamente.
+                    if (String(this.obraId) !== String(obraIdConsultada)) {
+                        return;
+                    }
+
+                    this.pilasObra = Array.isArray(data.pilas)
+                        ? data.pilas
+                        : [];
+
+                    this.resumenPilas = {
+                        tipos_activos: data.resumen?.tipos_activos ?? 0,
+                        programadas: data.resumen?.programadas ?? 0,
+                        ejecutadas: data.resumen?.ejecutadas ?? 0,
+                        faltantes: data.resumen?.faltantes ?? 0
+                    };
+
+                    this.pilasCargadas = true;
+                } catch (error) {
+                    console.error(error);
+
+                    if (String(this.obraId) === String(obraIdConsultada)) {
+                        this.errorPilas =
+                            error.message ||
+                            'Ocurrió un error al consultar las pilas de la obra.';
+                    }
+                } finally {
+                    if (String(this.obraId) === String(obraIdConsultada)) {
+                        this.cargandoPilas = false;
+                    }
+                }
+            },
+
+            validarFormulario(event) {
+                if (!this.obraId) {
+                    event.preventDefault();
+
+                    this.errorObra = 'Selecciona una obra de la lista.';
+                    this.mostrarOpciones = true;
+
+                    this.$nextTick(() => {
+                        this.$refs.buscarObraInput?.focus();
+                    });
+                }
+            },
+
+            formatearCantidad(valor) {
+                const numero = Number(valor ?? 0);
+
+                return new Intl.NumberFormat('es-MX', {
+                    maximumFractionDigits: 2
+                }).format(numero);
+            },
+
+            formatearMedida(valor) {
+                if (
+                    valor === null ||
+                    valor === undefined ||
+                    valor === ''
+                ) {
+                    return '—';
+                }
+
+                return `${Number(valor).toLocaleString('es-MX', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                })} m`;
+            }
+        }"
+        x-init="
+            $watch('asignarModalOpen', value => {
+                if (value) {
+                    reiniciarModal();
+
+                    $nextTick(() => {
+                        $refs.buscarObraInput?.focus();
+                    });
+                }
+            })
+        "
+    >
         <div
             x-cloak
             x-show="asignarModalOpen"
             x-transition.opacity
             class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6"
-            @keydown.escape.window="closeAsignarModal()">
-            <div class="w-full max-w-lg rounded-xl bg-white shadow-xl border border-slate-200" @click.outside="closeAsignarModal()">
+            @keydown.escape.window="
+                reiniciarModal();
+                closeAsignarModal();
+            "
+        >
+            <div
+                class="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
+                @click.outside="
+                    reiniciarModal();
+                    closeAsignarModal();
+                "
+            >
+                {{-- ENCABEZADO --}}
                 <div class="flex items-start justify-between border-b border-slate-100 px-5 py-4">
                     <div>
-                        <h2 class="text-base font-semibold text-[#0B265A]">Asignar máquina a obra</h2>
-                        <p class="text-xs text-slate-500" x-text="asignarForm.maquina"></p>
+                        <h2 class="text-base font-semibold text-[#0B265A]">
+                            Asignar máquina a obra
+                        </h2>
+
+                        <p
+                            class="text-xs text-slate-500"
+                            x-text="asignarForm.maquina"
+                        ></p>
                     </div>
-                    <button type="button" class="text-slate-400 hover:text-slate-600" @click="closeAsignarModal()">&times;</button>
+
+                    <button
+                        type="button"
+                        class="text-2xl leading-none text-slate-400 hover:text-slate-600"
+                        @click="
+                            reiniciarModal();
+                            closeAsignarModal();
+                        "
+                    >
+                        &times;
+                    </button>
                 </div>
 
-                <form method="POST" :action="asignarForm.action" class="space-y-4 px-5 py-5">
+                {{-- FORMULARIO --}}
+                <form
+                    method="POST"
+                    :action="asignarForm.action"
+                    class="flex min-h-0 flex-1 flex-col"
+                    @submit="validarFormulario($event)"
+                >
                     @csrf
 
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Obra destino <span class="text-red-500">*</span></label>
-                        <select name="obra_id" required class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
-                            <option value="">Selecciona una obra</option>
-                            @foreach($obrasDisponibles as $obraDisponible)
-                                <option value="{{ $obraDisponible->id }}">
-                                    {{ trim(($obraDisponible->clave_obra ?? '') . ' ' . ($obraDisponible->nombre ?? '')) }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                    <div class="flex-1 space-y-5 overflow-y-auto px-5 py-5">
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {{-- BUSCADOR DE OBRAS --}}
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha de inicio <span class="text-red-500">*</span></label>
-                            <input type="date" name="fecha_inicio" required x-model="asignarForm.fechaInicio" class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">
+                                Obra destino
+                                <span class="text-red-500">*</span>
+                            </label>
+
+                            {{-- Valor que se envía al controlador --}}
+                            <input
+                                type="hidden"
+                                name="obra_id"
+                                :value="obraId"
+                            >
+
+                            <div
+                                class="relative"
+                                @click.outside="mostrarOpciones = false"
+                            >
+                                <div class="relative">
+                                    <input
+                                        x-ref="buscarObraInput"
+                                        type="search"
+                                        x-model="buscarObra"
+                                        autocomplete="off"
+                                        placeholder="Buscar por clave o nombre de la obra..."
+                                        class="w-full rounded-lg border-slate-300 pr-20 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                        :class="errorObra ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : ''"
+                                        @focus="mostrarOpciones = true"
+                                        @input="
+                                            mostrarOpciones = true;
+
+                                            if (
+                                                obraSeleccionada &&
+                                                buscarObra !== obraSeleccionada.texto
+                                            ) {
+                                                obraId = '';
+                                                obraSeleccionada = null;
+                                                limpiarPilas();
+                                            }
+
+                                            errorObra = '';
+                                        "
+                                        @keydown.escape.stop="mostrarOpciones = false"
+                                        @keydown.arrow-down.prevent="
+                                            mostrarOpciones = true;
+                                            $refs.listaObras?.querySelector('button')?.focus();
+                                        "
+                                    >
+
+                                    <div class="absolute inset-y-0 right-0 flex items-center gap-1 pr-2">
+                                        <button
+                                            x-show="buscarObra !== ''"
+                                            x-cloak
+                                            type="button"
+                                            class="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                                            title="Limpiar selección"
+                                            @click="limpiarSeleccionObra()"
+                                        >
+                                            &times;
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            class="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                                            @click="mostrarOpciones = !mostrarOpciones"
+                                        >
+                                            <svg
+                                                class="h-4 w-4"
+                                                viewBox="0 0 20 20"
+                                                fill="currentColor"
+                                            >
+                                                <path
+                                                    fill-rule="evenodd"
+                                                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                                                    clip-rule="evenodd"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {{-- RESULTADOS DE LA BÚSQUEDA --}}
+                                <div
+                                    x-cloak
+                                    x-show="mostrarOpciones"
+                                    x-transition.opacity
+                                    x-ref="listaObras"
+                                    class="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg"
+                                >
+                                    <template
+                                        x-for="obra in obrasFiltradas"
+                                        :key="obra.id"
+                                    >
+                                        <button
+                                            type="button"
+                                            class="block w-full border-b border-slate-100 px-4 py-3 text-left last:border-b-0 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
+                                            :class="String(obraId) === String(obra.id) ? 'bg-blue-50' : ''"
+                                            @click="seleccionarObra(obra)"
+                                            @keydown.arrow-down.prevent="
+                                                $el.nextElementSibling?.focus()
+                                            "
+                                            @keydown.arrow-up.prevent="
+                                                $el.previousElementSibling?.focus()
+                                            "
+                                            @keydown.escape.prevent="
+                                                mostrarOpciones = false;
+                                                $refs.buscarObraInput?.focus();
+                                            "
+                                        >
+                                            <div class="flex items-center justify-between gap-3">
+                                                <div class="min-w-0">
+                                                    <div
+                                                        class="truncate text-sm font-semibold text-slate-700"
+                                                        x-text="obra.nombre || 'Obra sin nombre'"
+                                                    ></div>
+
+                                                    <div
+                                                        class="mt-0.5 text-xs text-slate-500"
+                                                        x-text="obra.clave || 'Sin clave'"
+                                                    ></div>
+                                                </div>
+
+                                                <span
+                                                    x-show="String(obraId) === String(obra.id)"
+                                                    class="shrink-0 text-xs font-semibold text-blue-700"
+                                                >
+                                                    Seleccionada
+                                                </span>
+                                            </div>
+                                        </button>
+                                    </template>
+
+                                    <div
+                                        x-show="obrasFiltradas.length === 0"
+                                        class="px-4 py-6 text-center"
+                                    >
+                                        <p class="text-sm font-medium text-slate-600">
+                                            No se encontraron obras
+                                        </p>
+
+                                        <p class="mt-1 text-xs text-slate-400">
+                                            Intenta buscar por otra clave o nombre.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p
+                                x-show="errorObra"
+                                x-cloak
+                                class="mt-1 text-xs text-red-600"
+                                x-text="errorObra"
+                            ></p>
+
+                            <p
+                                x-show="obraSeleccionada"
+                                x-cloak
+                                class="mt-2 text-xs text-emerald-700"
+                            >
+                                Obra seleccionada:
+                                <span
+                                    class="font-semibold"
+                                    x-text="obraSeleccionada?.texto"
+                                ></span>
+                            </p>
                         </div>
+
+                        {{-- CARGANDO PILAS --}}
+                        <div
+                            x-show="cargandoPilas"
+                            x-cloak
+                            class="flex items-center justify-center gap-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-6"
+                        >
+                            <svg
+                                class="h-5 w-5 animate-spin text-blue-700"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                            >
+                                <circle
+                                    class="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    stroke-width="4"
+                                ></circle>
+
+                                <path
+                                    class="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                ></path>
+                            </svg>
+
+                            <span class="text-sm font-medium text-blue-800">
+                                Consultando pilas de la obra...
+                            </span>
+                        </div>
+
+                        {{-- ERROR AL CONSULTAR --}}
+                        <div
+                            x-show="errorPilas"
+                            x-cloak
+                            class="rounded-lg border border-red-200 bg-red-50 px-4 py-3"
+                        >
+                            <p
+                                class="text-sm text-red-700"
+                                x-text="errorPilas"
+                            ></p>
+
+                            <button
+                                type="button"
+                                class="mt-2 text-xs font-semibold text-red-700 underline"
+                                @click="cargarPilasObra()"
+                            >
+                                Intentar nuevamente
+                            </button>
+                        </div>
+
+                        {{-- INFORMACIÓN DE PILAS --}}
+                        <section
+                            x-show="pilasCargadas && !cargandoPilas && !errorPilas"
+                            x-cloak
+                            class="space-y-4"
+                        >
+                            <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-[#0B265A]">
+                                        Pilas activas de la obra
+                                    </h3>
+
+                                    <p class="text-xs text-slate-500">
+                                        Desglose actual del proyecto seleccionado.
+                                    </p>
+                                </div>
+
+                                <span
+                                    class="text-xs font-medium text-slate-500"
+                                    x-text="`${resumenPilas.tipos_activos} registro(s)`"
+                                ></span>
+                            </div>
+
+                            {{-- RESUMEN --}}
+                            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                    <p class="text-xs text-slate-500">
+                                        Tipos activos
+                                    </p>
+
+                                    <p
+                                        class="mt-1 text-lg font-bold text-slate-800"
+                                        x-text="formatearCantidad(resumenPilas.tipos_activos)"
+                                    ></p>
+                                </div>
+
+                                <div class="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                                    <p class="text-xs text-blue-700">
+                                        Programadas
+                                    </p>
+
+                                    <p
+                                        class="mt-1 text-lg font-bold text-blue-900"
+                                        x-text="formatearCantidad(resumenPilas.programadas)"
+                                    ></p>
+                                </div>
+
+                                <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                                    <p class="text-xs text-emerald-700">
+                                        Hechas
+                                    </p>
+
+                                    <p
+                                        class="mt-1 text-lg font-bold text-emerald-900"
+                                        x-text="formatearCantidad(resumenPilas.ejecutadas)"
+                                    ></p>
+                                </div>
+
+                                <div class="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                                    <p class="text-xs text-amber-700">
+                                        Faltantes
+                                    </p>
+
+                                    <p
+                                        class="mt-1 text-lg font-bold text-amber-900"
+                                        x-text="formatearCantidad(resumenPilas.faltantes)"
+                                    ></p>
+                                </div>
+                            </div>
+
+                            {{-- SIN PILAS --}}
+                            <div
+                                x-show="pilasObra.length === 0"
+                                class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4"
+                            >
+                                <p class="text-sm font-semibold text-amber-800">
+                                    Esta obra no tiene pilas activas asignadas.
+                                </p>
+
+                                <p class="mt-1 text-xs text-amber-700">
+                                    Puedes continuar con la asignación de la máquina,
+                                    pero no existe un desglose de pilas activo.
+                                </p>
+                            </div>
+
+                            {{-- TABLA DE PILAS --}}
+                            <div
+                                x-show="pilasObra.length > 0"
+                                class="overflow-hidden rounded-xl border border-slate-200"
+                            >
+                                <div class="max-h-72 overflow-auto">
+                                    <table class="min-w-[850px] w-full text-sm">
+                                        <thead class="sticky top-0 bg-slate-50">
+                                            <tr class="border-b text-xs text-slate-500">
+                                                <th class="px-3 py-2 text-left">
+                                                    No.
+                                                </th>
+
+                                                <th class="px-3 py-2 text-left">
+                                                    Tipo
+                                                </th>
+
+                                                <th class="px-3 py-2 text-center">
+                                                    Proyecto
+                                                </th>
+
+                                                <th class="px-3 py-2 text-center">
+                                                    Hechas
+                                                </th>
+
+                                                <th class="px-3 py-2 text-center">
+                                                    Faltan
+                                                </th>
+
+                                                <th class="px-3 py-2 text-left">
+                                                    Diámetro
+                                                </th>
+
+                                                <th class="px-3 py-2 text-left">
+                                                    Profundidad
+                                                </th>
+
+                                                <th class="px-3 py-2 text-left">
+                                                    Ubicación
+                                                </th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody>
+                                            <template
+                                                x-for="pila in pilasObra"
+                                                :key="pila.id"
+                                            >
+                                                <tr class="border-b last:border-b-0 hover:bg-slate-50">
+                                                    <td
+                                                        class="px-3 py-2 font-medium text-slate-700"
+                                                        x-text="pila.numero_pila ?? '—'"
+                                                    ></td>
+
+                                                    <td
+                                                        class="px-3 py-2"
+                                                        x-text="pila.tipo || '—'"
+                                                    ></td>
+
+                                                    <td
+                                                        class="px-3 py-2 text-center"
+                                                        x-text="formatearCantidad(pila.cantidad_programada)"
+                                                    ></td>
+
+                                                    <td
+                                                        class="px-3 py-2 text-center text-emerald-700"
+                                                        x-text="formatearCantidad(pila.cantidad_ejecutada)"
+                                                    ></td>
+
+                                                    <td
+                                                        class="px-3 py-2 text-center font-semibold text-amber-700"
+                                                        x-text="formatearCantidad(pila.cantidad_faltante)"
+                                                    ></td>
+
+                                                    <td
+                                                        class="px-3 py-2"
+                                                        x-text="formatearMedida(pila.diametro_proyecto)"
+                                                    ></td>
+
+                                                    <td
+                                                        class="px-3 py-2"
+                                                        x-text="formatearMedida(pila.profundidad_proyecto)"
+                                                    ></td>
+
+                                                    <td
+                                                        class="px-3 py-2"
+                                                        x-text="pila.ubicacion || '—'"
+                                                    ></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </section>
+
+                        {{-- DATOS DE LA ASIGNACIÓN --}}
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="mb-1 block text-xs font-semibold text-slate-600">
+                                    Fecha de inicio
+                                    <span class="text-red-500">*</span>
+                                </label>
+
+                                <input
+                                    type="date"
+                                    name="fecha_inicio"
+                                    required
+                                    x-model="asignarForm.fechaInicio"
+                                    class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                >
+                            </div>
+
+                            <div>
+                                <label class="mb-1 block text-xs font-semibold text-slate-600">
+                                    Horómetro inicial
+                                    <span class="text-red-500">*</span>
+                                </label>
+
+                                <input
+                                    type="number"
+                                    name="horometro_inicio"
+                                    required
+                                    min="0"
+                                    step="0.01"
+                                    x-model="asignarForm.horometroInicio"
+                                    class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                >
+                            </div>
+                        </div>
+
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Horómetro inicial <span class="text-red-500">*</span></label>
-                            <input type="number" name="horometro_inicio" required min="0" step="0.01" x-model="asignarForm.horometroInicio" class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">
+                                Notas
+                            </label>
+
+                            <textarea
+                                name="notas"
+                                rows="3"
+                                maxlength="1000"
+                                class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                placeholder="Comentario opcional"
+                            ></textarea>
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Notas</label>
-                        <textarea name="notas" rows="3" maxlength="1000" class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Comentario opcional"></textarea>
-                    </div>
+                    {{-- ACCIONES --}}
+                    <div class="flex justify-end gap-3 border-t border-slate-100 bg-white px-5 py-4">
+                        <button
+                            type="button"
+                            class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                            @click="
+                                reiniciarModal();
+                                closeAsignarModal();
+                            "
+                        >
+                            Cancelar
+                        </button>
 
-                    <div class="flex justify-end gap-3 border-t border-slate-100 pt-4">
-                        <button type="button" class="px-4 py-2 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="closeAsignarModal()">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 rounded-lg bg-[#0B265A] text-sm font-semibold text-white hover:bg-blue-900">Asignar a obra</button>
+                        <button
+                            type="submit"
+                            :disabled="cargandoPilas"
+                            class="rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <span x-show="!cargandoPilas">
+                                Asignar a obra
+                            </span>
+
+                            <span x-show="cargandoPilas" x-cloak>
+                                Consultando...
+                            </span>
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
-    @endcan
+    </div>
+@endcan
     @can('maquinas.horas.create.access')
         <div
             x-cloak
@@ -489,3 +1169,4 @@
     }
 </script>
 @endpush
+

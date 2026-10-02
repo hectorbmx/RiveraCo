@@ -14,6 +14,7 @@ class Mantenimiento extends Model
         'obra_id',
         'tipo',
         'categoria_mantenimiento',
+        'servicio_preventivo_tipo_id',
         'descripcion',
         'km_actuales',
         'km_proximo_servicio',
@@ -56,6 +57,11 @@ class Mantenimiento extends Model
     public function mecanico()
     {
         return $this->belongsTo(Empleado::class, 'mecanico_id', 'id_Empleado');
+    }
+
+    public function servicioPreventivoTipo()
+    {
+        return $this->belongsTo(EmpresaServicioPreventivoTipo::class, 'servicio_preventivo_tipo_id');
     }
 
     public function detalles()

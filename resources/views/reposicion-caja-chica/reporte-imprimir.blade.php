@@ -98,13 +98,12 @@
                         <td>{{ $gasto->subcategoria->nombre ?? 'Sin categoria' }}</td>
                         <td>{{ ucfirst((string) $gasto->forma_pago) }}</td>
                         <td>
-                            @if($gasto->destino === 'obra')
+                            @if($gasto->activo_operativo_label !== '-')
+                                {{ $gasto->activo_operativo_label }}
+                            @elseif($gasto->destino === 'obra')
                                 {{ $gasto->obra->nombre ?? 'Obra no definida' }}
                             @else
                                 {{ $gasto->almacen->nombre ?? 'Almacen no definido' }}
-                            @endif
-                            @if($gasto->es_para_maquina)
-                                <br><span class="muted">Máquina: {{ trim(($gasto->maquina?->codigo ? $gasto->maquina->codigo . ' - ' : '') . ($gasto->maquina?->nombre ?? 'Sin máquina')) }}</span>
                             @endif
                         </td>
                         <td class="right">${{ number_format((float) $gasto->importe_registrado, 2) }}</td>
@@ -151,3 +150,5 @@
     </div>
 </body>
 </html>
+
+

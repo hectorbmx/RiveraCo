@@ -523,6 +523,8 @@ Route::middleware('auth','verified')->group(function () {
     Route::post('/configuracion-empresa/tipos-iva', [EmpresaConfigController::class, 'storeTipoIva'])->name('empresa_config.tipos-iva.store');
     Route::patch('/configuracion-empresa/tipos-iva/{tipoIva}/toggle-activo', [EmpresaConfigController::class, 'toggleTipoIva'])->name('empresa_config.tipos-iva.toggle-activo');
     Route::patch('/configuracion-empresa/tipos-iva/{tipoIva}/default', [EmpresaConfigController::class, 'marcarTipoIvaDefault'])->name('empresa_config.tipos-iva.default');
+    Route::post('/configuracion-empresa/tipos-sueldo', [EmpresaConfigController::class, 'storeTipoSueldo'])->name('empresa_config.tipos-sueldo.store');
+    Route::patch('/configuracion-empresa/tipos-sueldo/{tipoSueldo}/toggle-activo', [EmpresaConfigController::class, 'toggleTipoSueldo'])->name('empresa_config.tipos-sueldo.toggle-activo');
     Route::patch('/configuracion-empresa/folios-obra/{folio}', [EmpresaConfigController::class, 'updateFolioObra'])->name('empresa_config.folios-obra.update');
     Route::post('/configuracion-empresa/tipos-obra', [EmpresaConfigController::class, 'storeTipoObraConfiguracion'])->name('empresa_config.tipos-obra.store');
     Route::patch('/configuracion-empresa/tipos-obra/{tipo}', [EmpresaConfigController::class, 'updateTipoObraConfiguracion'])->name('empresa_config.tipos-obra.update');
@@ -838,6 +840,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::prefix('maquinas')->name('maquinas.')->group(function(){
 
         Route::get('/', [MaquinaController::class, 'index'])->name('index');
+        Route::get('obras/{obra}/pilas-activas',[MaquinaController::class, 'pilasActivasObra'])->middleware('permission:maquinas.asignar_obra.access')->name('obras.pilas-activas');
         Route::get('maquinas/{maquina}', [MaquinaController::class, 'show'])->name('show');
         Route::put('maquinas/{maquina}/general', [MaquinaController::class, 'updateGeneral'])->name('updateGeneral');
     // acciones puntuales (NO crear maquina, solo cambiar estado/ubicacion y agregar seguro)
@@ -852,6 +855,7 @@ Route::middleware('auth','verified')->group(function () {
         Route::post('maquinas/{maquina}/asignar-obra', [MaquinaController::class, 'asignarObra'])
             ->middleware('permission:maquinas.asignar_obra.access')
             ->name('asignarObra');
+            
 
     });
     Route::middleware(['auth'])->prefix('maquinas/{maquina}/seguros')->name('maquinas.seguros.')->group(function () {
@@ -1049,5 +1053,6 @@ Route::prefix('pagos-proveedores')
 });
 
 require __DIR__.'/auth.php';
+
 
 

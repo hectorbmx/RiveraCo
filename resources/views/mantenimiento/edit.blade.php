@@ -4,6 +4,7 @@
     <div class="max-w-3xl mx-auto py-8">
         @php
             $esMaquina = !empty($mantenimiento->maquina_id);
+            $serviciosPreventivos = $esMaquina ? ($serviciosPreventivosMaquinaria ?? collect()) : ($serviciosPreventivosVehiculos ?? collect());
             $cancelUrl = $esMaquina
                 ? route('maquinas.show', ['maquina' => $mantenimiento->maquina_id, 'tab' => 'servicios'])
                 : route('mantenimiento.mantenimientos.index');
@@ -88,6 +89,21 @@
                         </select>
                     </div>
 
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Tipo de servicio preventivo</label>
+                        <select name="servicio_preventivo_tipo_id"
+                                class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm focus:border-[#FFC107] focus:ring-[#FFC107]">
+                            <option value="">Sin tipo específico</option>
+                            @foreach($serviciosPreventivos as $servicioPreventivo)
+                                <option value="{{ $servicioPreventivo->id }}" @selected(old('servicio_preventivo_tipo_id', $mantenimiento->servicio_preventivo_tipo_id) == $servicioPreventivo->id)>
+                                    {{ $servicioPreventivo->nombre }} - cada {{ number_format($servicioPreventivo->intervalo_valor) }} {{ $servicioPreventivo->unidad === 'horas' ? 'h' : 'km' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('servicio_preventivo_tipo_id')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700">Categoria</label>
                         <input type="text" name="categoria_mantenimiento"

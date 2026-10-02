@@ -28,6 +28,7 @@ use App\Models\Obra;
 use App\Models\ObraFolio;
 use App\Models\ObraTipoConfiguracion;
 use App\Models\NominaListaRaya;
+use App\Models\NominaTipoSueldo;
 use App\Models\Almacen;
 use App\Models\TipoRetencion;
 use Illuminate\Validation\Rule;
@@ -139,6 +140,10 @@ public function index(){
         $tiposRetencion = TipoRetencion::query()
             ->orderByDesc('activo')
             ->orderBy('porcentaje')
+            ->get();
+
+        $tiposSueldo = NominaTipoSueldo::query()
+            ->ordenados()
             ->get();
 
         $tarifaViaticoActual = EmpresaViaticoTarifa::actual();
@@ -266,6 +271,7 @@ public function index(){
         'centrosCosto',
         'tiposIva',
         'tiposRetencion',
+        'tiposSueldo',
         'tarifaViaticoActual',
         'historialViaticoTarifas',
         'foliosObra',
@@ -859,6 +865,49 @@ public function marcarTipoIvaDefault(TipoIva $tipoIva)
         ->route('empresa_config.edit', ['tab' => 'iva'])
         ->with('success', 'IVA por defecto actualizado.');
 }
+public function storeTipoSueldo(Request $request)
+{
+    $request->merge([
+        'codigo' => Str::slug((string) $request->input('codigo'), '_'),
+    ]);
+
+    $data = $request->validate([
+        'codigo' => ['required', 'string', 'max:80', 'regex:/^[a-z0-9_]+$/', Rule::unique('nomina_tipos_sueldo', 'codigo')],
+        'nombre' => ['required', 'string', 'max:100'],
+        'dias_periodo' => ['nullable', 'integer', 'min:1', 'max:366'],
+        'factor_mensual' => ['nullable', 'numeric', 'min:0', 'max:99.9999'],
+        'orden' => ['nullable', 'integer', 'min:0', 'max:9999'],
+        'activo' => ['nullable', 'boolean'],
+    ], [
+        'codigo.regex' => 'El codigo solo puede usar letras minusculas, numeros y guion bajo.',
+        'codigo.unique' => 'Ese codigo de tipo de sueldo ya existe.',
+    ]);
+
+    NominaTipoSueldo::create([
+        'codigo' => $data['codigo'],
+        'nombre' => trim($data['nombre']),
+        'dias_periodo' => $data['dias_periodo'] ?? null,
+        'factor_mensual' => $data['factor_mensual'] ?? null,
+        'orden' => $data['orden'] ?? 0,
+        'activo' => $request->boolean('activo', true),
+    ]);
+
+    return redirect()
+        ->route('empresa_config.edit', ['tab' => 'tipos_sueldo'])
+        ->with('success', 'Tipo de sueldo creado correctamente.');
+}
+
+public function toggleTipoSueldo(NominaTipoSueldo $tipoSueldo)
+{
+    $tipoSueldo->update([
+        'activo' => !$tipoSueldo->activo,
+    ]);
+
+    return redirect()
+        ->route('empresa_config.edit', ['tab' => 'tipos_sueldo'])
+        ->with('success', 'Estado del tipo de sueldo actualizado.');
+}
+
 public function storeTipoRetencion(Request $request)
 {
     $validated = $request->validate([
@@ -887,6 +936,9 @@ public function storeTipoRetencion(Request $request)
         ->with('success', 'El tipo de retención fue creado correctamente.');
 }
 }
+
+
+
 
 
 
