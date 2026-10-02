@@ -472,6 +472,18 @@
                                 @endcanany
                             @endif
 
+                            @if($oc->estado_normalizado === 'autorizada')
+                                @canany(['ordenes_compra.revoke_authorization', 'ordenes_compra.revoke_authorization.access'])
+                                    <form method="POST" action="{{ route('ordenes_compra.revocar_autorizacion', $oc->id) }}" class="inline">
+                                        @csrf
+                                        <button type="submit"
+                                                class="text-orange-600 hover:text-orange-800 font-medium text-sm transition"
+                                                onclick="return confirm('¿Revocar la autorizacion de la orden {{ $oc->folio }}? La orden volvera a borrador para poder editarse.');">
+                                            Revocar
+                                        </button>
+                                    </form>
+                                @endcanany
+                            @endif
                             {{-- Cancelar (solo si NO está cancelada) --}}
                             @if(!in_array($oc->estado_normalizado, ['autorizada','autorizado','verificada','verificado','cancelada','cancelado']) && auth()->user()?->can('ordenes_compra.cancel.access'))
                                 <form method="POST" action="{{ route('ordenes_compra.cancelar', $oc->id) }}" class="inline">
@@ -513,5 +525,6 @@
     </div>
 </div>
 @endsection
+
 
 

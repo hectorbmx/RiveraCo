@@ -777,6 +777,7 @@ Route::middleware('auth','verified')->group(function () {
     });
     Route::resource('ordenes_compra', OrdenCompraController::class)->except(['show']);
     Route::post('ordenes_compra/{id}/autorizar', [OrdenCompraController::class, 'autorizar'])->name('ordenes_compra.autorizar');
+    Route::post('ordenes_compra/{id}/revocar-autorizacion', [OrdenCompraController::class, 'revocarAutorizacion'])->name('ordenes_compra.revocar_autorizacion');
     Route::post('ordenes_compra/{id}/verificar', [OrdenCompraController::class, 'verificar'])->name('ordenes_compra.verificar');
     Route::post('ordenes_compra/{id}/cancelar', [OrdenCompraController::class, 'cancelar'])->name('ordenes_compra.cancelar');
                     // Detalles anidados
@@ -1056,6 +1057,7 @@ Route::prefix('pagos-proveedores')
 });
 
 require __DIR__.'/auth.php';
+
 
 
 

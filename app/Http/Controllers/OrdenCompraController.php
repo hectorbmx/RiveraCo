@@ -778,6 +778,42 @@ public function autorizar(Request $request, $id, OrdenCompraNotificationService 
     return back()->with('success', 'Orden autorizada.');
 }
 
+public function revocarAutorizacion(Request $request, $id)
+{
+    $this->authorizeAny([
+        'ordenes_compra.revoke_authorization',
+        'ordenes_compra.revoke_authorization.access',
+    ], 'No tienes permiso para revocar autorizaciones de ordenes de compra.');
+
+    $oc = OrdenCompra::findOrFail($id);
+    $estadoNorm = $oc->estado_normalizado;
+
+    if ($estadoNorm === 'verificada') {
+        return back()->with('error', 'No puedes revocar una orden verificada.');
+    }
+
+    if ($estadoNorm === 'cancelada') {
+        return back()->with('error', 'No puedes revocar una orden cancelada.');
+    }
+
+    if ($estadoNorm !== 'autorizada') {
+        return back()->with('success', 'La orden no esta autorizada.');
+    }
+
+    if ($oc->pagosProveedor()->exists()) {
+        return back()->with('error', 'No puedes revocar la autorizacion de una orden con pagos de proveedor ligados.');
+    }
+
+    DB::transaction(function () use ($oc) {
+        $oc->estado = 'BORRADOR';
+        $oc->fecha_autorizacion = null;
+        $oc->usuario_autoriza = null;
+        $oc->autorizado_por = null;
+        $oc->save();
+    });
+
+    return back()->with('success', 'Autorizacion revocada. La orden vuelve a borrador y puede editarse.');
+}
 private function civilAuthorizationExcessMessage(array $excesses): string
 {
     $first = $excesses[0] ?? [];
@@ -3714,4 +3750,5 @@ public function exportarListaPagos(
             ->header('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"');
     }
 }
+
 
