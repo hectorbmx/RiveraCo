@@ -65,11 +65,11 @@
         'label' => 'Cuentas banco',
         'desc' => 'Cuentas para pagos y aprovisionamiento'
     ],
-
+<!-- 
     'vehiculos' => [
         'label' => 'Vehículos',
         'desc' => 'Mantenimientos y alertas'
-    ],
+    ], -->
 
     'maquinaria' => [
         'label' => 'Maquinaria',
