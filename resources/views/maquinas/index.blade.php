@@ -142,7 +142,11 @@
                             $canRegistrarHoras = auth()->user()?->can('maquinas.horas.create.access') ?? false;
                             $canAsignarObra = auth()->user()?->can('maquinas.asignar_obra.access') ?? false;
                             $puedeRegistrarHoras = $canRegistrarHoras && $asignacionActiva && $horometroActual !== null;
-                            $puedeAsignarObra = $canAsignarObra && !$asignacionActiva && ($m->estado ?? null) === 'operativa';
+                            $tienePilasActivasEnObra = false;
+                            $puedeAsignarObra = $canAsignarObra
+                                && !$asignacionActiva
+                                && ($m->estado ?? null) === 'operativa';
+
                             $horasModalPayload = $puedeRegistrarHoras ? json_encode([
                                 'action' => route('maquinas.horas.store', $m),
                                 'maquina' => $nombreMaquina,
@@ -341,6 +345,10 @@
                 faltantes: 0
             },
 
+            get obraSinPilas() {
+                return !!this.obraSeleccionada && this.pilasCargadas && this.pilasObra.length === 0;
+            },
+
           get obrasFiltradas() {
     const busqueda = this.buscarObra
         .toString()
@@ -469,6 +477,19 @@
 
                     this.errorObra = 'Selecciona una obra de la lista.';
                     this.mostrarOpciones = true;
+
+                    this.$nextTick(() => {
+                        this.$refs.buscarObraInput?.focus();
+                    });
+
+                    return;
+                }
+
+                if (this.obraSinPilas) {
+                    event.preventDefault();
+
+                    this.errorObra = 'La obra seleccionada no tiene pilas activas asignadas.';
+                    this.mostrarOpciones = false;
 
                     this.$nextTick(() => {
                         this.$refs.buscarObraInput?.focus();
@@ -719,7 +740,16 @@
                             ></p>
 
                             <p
-                                x-show="obraSeleccionada"
+                                x-show="obraSinPilas"
+                                x-cloak
+                                class="mt-2 text-xs text-amber-700 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2"
+                            >
+                                La obra seleccionada no tiene pilas activas asignadas.
+                                No se puede asignar la máquina.
+                            </p>
+
+                            <p
+                                x-show="obraSeleccionada && !obraSinPilas"
                                 x-cloak
                                 class="mt-2 text-xs text-emerald-700"
                             >
@@ -1029,15 +1059,19 @@
 
                         <button
                             type="submit"
-                            :disabled="cargandoPilas"
+                            :disabled="cargandoPilas || obraSinPilas || !obraId"
                             class="rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            <span x-show="!cargandoPilas">
+                            <span x-show="!cargandoPilas && !obraSinPilas">
                                 Asignar a obra
                             </span>
 
-                            <span x-show="cargandoPilas" x-cloak>
+                            <span x-show="cargandoPilas && !obraSinPilas" x-cloak>
                                 Consultando...
+                            </span>
+
+                            <span x-show="obraSinPilas && !cargandoPilas" x-cloak>
+                                No disponible
                             </span>
                         </button>
                     </div>

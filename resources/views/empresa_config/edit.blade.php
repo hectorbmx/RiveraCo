@@ -437,90 +437,248 @@ uasort(
     </div>
 
     {{-- LISTADO --}}
-    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div class="p-4 bg-gray-50 border-b border-gray-200">
-            <h3 class="text-sm font-bold text-gray-800">
-                Cuentas registradas
-            </h3>
+    <div x-data="cuentasBancoTab()" class="space-y-4">
+        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div class="p-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between gap-3">
+                <h3 class="text-sm font-bold text-gray-800">
+                    Cuentas registradas
+                </h3>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm border-collapse">
+                    <thead class="bg-[#0B265A] text-white">
+                        <tr>
+                            <th class="p-3 border text-left">Nombre</th>
+                            <th class="p-3 border text-left">Banco</th>
+                            <th class="p-3 border text-left">Titular</th>
+                            <th class="p-3 border text-left">Cuenta</th>
+                            <th class="p-3 border text-left">CLABE</th>
+                            <th class="p-3 border text-center">Moneda</th>
+                            <th class="p-3 border text-center">Estado</th>
+                            <th class="p-3 border text-center">Principal</th>
+                            <th class="p-3 border text-center">Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @forelse($cuentasBancoEmpresa ?? [] as $cuenta)
+                            <tr class="hover:bg-gray-50">
+                                <td class="p-3 border font-semibold text-gray-800">
+                                    {{ $cuenta->nombre ?? '-' }}
+                                </td>
+
+                                <td class="p-3 border">
+                                    {{ $cuenta->banco }}
+                                </td>
+
+                                <td class="p-3 border">
+                                    {{ $cuenta->titular ?? '-' }}
+                                </td>
+
+                                <td class="p-3 border">
+                                    {{ $cuenta->numero_cuenta ?? '-' }}
+                                </td>
+
+                                <td class="p-3 border">
+                                    {{ $cuenta->clabe ?? '-' }}
+                                </td>
+
+                                <td class="p-3 border text-center">
+                                    {{ $cuenta->moneda }}
+                                </td>
+
+                                <td class="p-3 border text-center">
+                                    @if($cuenta->activa)
+                                        <span class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                            Activa
+                                        </span>
+                                    @else
+                                        <span class="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                                            Inactiva
+                                        </span>
+                                    @endif
+                                </td>
+
+                                <td class="p-3 border text-center">
+                                    @if($cuenta->principal)
+                                        <span class="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                                            Principal
+                                        </span>
+                                    @else
+                                        <span class="text-gray-400">-</span>
+                                    @endif
+                                </td>
+
+                                <td class="p-3 border text-center">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <button type="button"
+                                                @click="openEdit(@js($cuenta))"
+                                                class="px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-800 hover:bg-slate-200">
+                                            Editar
+                                        </button>
+
+                                        <form method="POST" action="{{ route('empresa_config.cuentas.toggle-activa', $cuenta) }}" onsubmit="return confirm('¿Cambiar el estatus de esta cuenta?')">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="px-2 py-1 rounded text-xs font-medium {{ $cuenta->activa ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : 'bg-green-100 text-green-800 hover:bg-green-200' }}">
+                                                {{ $cuenta->activa ? 'Deshabilitar' : 'Habilitar' }}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="9" class="p-8 text-center text-gray-400">
+                                    No hay cuentas bancarias registradas.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm border-collapse">
-                <thead class="bg-gray-100">
-                    <tr>
-                        <th class="p-3 border text-left">Nombre</th>
-                        <th class="p-3 border text-left">Banco</th>
-                        <th class="p-3 border text-left">Titular</th>
-                        <th class="p-3 border text-left">Cuenta</th>
-                        <th class="p-3 border text-left">CLABE</th>
-                        <th class="p-3 border text-center">Moneda</th>
-                        <th class="p-3 border text-center">Estado</th>
-                        <th class="p-3 border text-center">Principal</th>
-                    </tr>
-                </thead>
+        <div x-show="modalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40" @click="close()"></div>
 
-                <tbody>
-                    @forelse($cuentasBancoEmpresa ?? [] as $cuenta)
-                        <tr class="hover:bg-gray-50">
-                            <td class="p-3 border font-semibold text-gray-800">
-                                {{ $cuenta->nombre ?? '-' }}
-                            </td>
+            <div class="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl border">
+                <div class="p-5 border-b flex items-center justify-between">
+                    <div>
+                        <div class="text-base font-semibold text-slate-900" x-text="isEdit ? 'Editar cuenta bancaria' : 'Nueva cuenta bancaria'"></div>
+                        <div class="text-xs text-slate-500">Actualiza los datos y el estatus de la cuenta.</div>
+                    </div>
+                    <button type="button" @click="close()" class="p-2 rounded-lg hover:bg-slate-100">×</button>
+                </div>
 
-                            <td class="p-3 border">
-                                {{ $cuenta->banco }}
-                            </td>
+                <form :action="formAction" method="POST" class="p-5 space-y-4">
+                    @csrf
+                    <template x-if="isEdit">
+                        <input type="hidden" name="_method" value="PUT">
+                    </template>
 
-                            <td class="p-3 border">
-                                {{ $cuenta->titular ?? '-' }}
-                            </td>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-slate-600 mb-1">Nombre interno</label>
+                            <input type="text" name="nombre" x-model="form.nombre" class="w-full rounded-xl border-slate-300 focus:ring-0 focus:border-slate-500" required>
+                        </div>
 
-                            <td class="p-3 border">
-                                {{ $cuenta->numero_cuenta ?? '-' }}
-                            </td>
+                        <div>
+                            <label class="block text-xs text-slate-600 mb-1">Banco</label>
+                            <input type="text" name="banco" x-model="form.banco" class="w-full rounded-xl border-slate-300 focus:ring-0 focus:border-slate-500" required>
+                        </div>
 
-                            <td class="p-3 border">
-                                {{ $cuenta->clabe ?? '-' }}
-                            </td>
+                        <div>
+                            <label class="block text-xs text-slate-600 mb-1">Titular</label>
+                            <input type="text" name="titular" x-model="form.titular" class="w-full rounded-xl border-slate-300 focus:ring-0 focus:border-slate-500" required>
+                        </div>
 
-                            <td class="p-3 border text-center">
-                                {{ $cuenta->moneda }}
-                            </td>
+                        <div>
+                            <label class="block text-xs text-slate-600 mb-1">Moneda</label>
+                            <select name="moneda" x-model="form.moneda" class="w-full rounded-xl border-slate-300 focus:ring-0 focus:border-slate-500">
+                                <option value="MXN">MXN</option>
+                                <option value="USD">USD</option>
+                            </select>
+                        </div>
 
-                            <td class="p-3 border text-center">
-                                @if($cuenta->activa)
-                                    <span class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                                        Activa
-                                    </span>
-                                @else
-                                    <span class="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
-                                        Inactiva
-                                    </span>
-                                @endif
-                            </td>
+                        <div>
+                            <label class="block text-xs text-slate-600 mb-1">Número de cuenta</label>
+                            <input type="text" name="numero_cuenta" x-model="form.numero_cuenta" class="w-full rounded-xl border-slate-300 focus:ring-0 focus:border-slate-500">
+                        </div>
 
-                            <td class="p-3 border text-center">
-                                @if($cuenta->principal)
-                                    <span class="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-                                        Principal
-                                    </span>
-                                @else
-                                    <span class="text-gray-400">-</span>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" class="p-8 text-center text-gray-400">
-                                No hay cuentas bancarias registradas.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                        <div>
+                            <label class="block text-xs text-slate-600 mb-1">CLABE</label>
+                            <input type="text" name="clabe" x-model="form.clabe" class="w-full rounded-xl border-slate-300 focus:ring-0 focus:border-slate-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-slate-600 mb-1">Observaciones</label>
+                        <textarea name="observaciones" x-model="form.observaciones" rows="3" class="w-full rounded-xl border-slate-300 focus:ring-0 focus:border-slate-500"></textarea>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-3 pt-2">
+                        <div class="flex items-center gap-4">
+                            <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                                <input type="checkbox" name="activa" value="1" x-model="form.activa" class="rounded border-slate-300">
+                                Activa
+                            </label>
+
+                            <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                                <input type="checkbox" name="principal" value="1" x-model="form.principal" class="rounded border-slate-300">
+                                Principal
+                            </label>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button type="button" @click="close()" class="px-4 py-2 rounded-xl text-sm bg-slate-100 text-slate-800 hover:bg-slate-200">Cancelar</button>
+                            <button type="submit" class="px-4 py-2 rounded-xl text-sm bg-gray-900 text-white hover:bg-gray-800">Guardar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
 </div>
+
+<script>
+function cuentasBancoTab() {
+    return {
+        modalOpen: false,
+        isEdit: false,
+        formAction: @js(route('empresa_config.cuentas.store')),
+        form: {
+            id: null,
+            nombre: '',
+            banco: '',
+            titular: '',
+            numero_cuenta: '',
+            clabe: '',
+            moneda: 'MXN',
+            activa: true,
+            principal: false,
+            observaciones: '',
+        },
+        openEdit(cuenta) {
+            this.isEdit = true;
+            this.formAction = @js(url('/configuracion-empresa/cuentas-banco')) + '/' + cuenta.id;
+            this.form = {
+                id: cuenta.id ?? null,
+                nombre: cuenta.nombre ?? '',
+                banco: cuenta.banco ?? '',
+                titular: cuenta.titular ?? '',
+                numero_cuenta: cuenta.numero_cuenta ?? '',
+                clabe: cuenta.clabe ?? '',
+                moneda: cuenta.moneda ?? 'MXN',
+                activa: !!cuenta.activa,
+                principal: !!cuenta.principal,
+                observaciones: cuenta.observaciones ?? '',
+            };
+            this.modalOpen = true;
+        },
+        close() {
+            this.modalOpen = false;
+            this.isEdit = false;
+            this.formAction = @js(route('empresa_config.cuentas.store'));
+            this.form = {
+                id: null,
+                nombre: '',
+                banco: '',
+                titular: '',
+                numero_cuenta: '',
+                clabe: '',
+                moneda: 'MXN',
+                activa: true,
+                principal: false,
+                observaciones: '',
+            };
+        }
+    }
+}
+</script>
+
 {{-- ======================
      TERMINA CUENTAS BANCO
 ======================= --}}

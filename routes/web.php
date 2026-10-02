@@ -507,6 +507,7 @@ Route::middleware('auth','verified')->group(function () {
         Route::put('/configuracion-empresa/servicios-preventivos/{tipo}', [EmpresaServicioPreventivoTipoController::class, 'update'])->name('empresa_config.servicios-preventivos.update');
         Route::patch('/configuracion-empresa/servicios-preventivos/{tipo}/toggle-activo', [EmpresaServicioPreventivoTipoController::class, 'toggleActivo'])->name('empresa_config.servicios-preventivos.toggle-activo');
         Route::post('/configuracion-empresa/cuentas-banco', [EmpresaConfigController::class,'storeCuentaBanco'])->name('empresa_config.cuentas.store');
+        Route::put('/configuracion-empresa/cuentas-banco/{cuenta}', [EmpresaConfigController::class, 'updateCuentaBanco'])->name('empresa_config.cuentas.update');
         Route::post('/configuracion-empresa/viaticos-tarifas', [EmpresaConfigController::class, 'storeViaticoTarifa'])->name('empresa_config.viaticos.store');
         Route::patch('/configuracion-empresa/cuentas-banco/{cuenta}/toggle-activa', [EmpresaConfigController::class,'toggleCuentaBancoActiva'])->name('empresa_config.cuentas.toggle-activa');
         Route::patch('/configuracion-empresa/cuentas-banco/{cuenta}/principal', [EmpresaConfigController::class,'marcarCuentaBancoPrincipal'])->name('empresa_config.cuentas.principal');

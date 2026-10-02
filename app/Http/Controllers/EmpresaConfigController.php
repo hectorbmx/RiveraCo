@@ -600,6 +600,43 @@ public function storeCuentaBanco(Request $request)
     return back()->with('success', 'Cuenta bancaria registrada correctamente.');
 }
 
+public function updateCuentaBanco(Request $request, CuentaBancoEmpresa $cuenta)
+{
+    $data = $request->validate([
+        'nombre' => ['required', 'string', 'max:255'],
+        'banco' => ['required', 'string', 'max:255'],
+        'titular' => ['required', 'string', 'max:255'],
+        'numero_cuenta' => ['nullable', 'string', 'max:255'],
+        'clabe' => ['nullable', 'string', 'max:255'],
+        'moneda' => ['required', 'string', 'max:10'],
+        'observaciones' => ['nullable', 'string'],
+        'activa' => ['nullable', 'boolean'],
+        'principal' => ['nullable', 'boolean'],
+    ]);
+
+    if (isset($data['principal']) && $data['principal']) {
+        DB::transaction(function () use ($cuenta) {
+            CuentaBancoEmpresa::query()->update(['principal' => false]);
+            $cuenta->update(['principal' => true]);
+        });
+
+        unset($data['principal']);
+    }
+
+    $cuenta->update([
+        'nombre' => trim($data['nombre']),
+        'banco' => trim($data['banco']),
+        'titular' => trim($data['titular']),
+        'numero_cuenta' => $data['numero_cuenta'] ?? null,
+        'clabe' => $data['clabe'] ?? null,
+        'moneda' => strtoupper($data['moneda']),
+        'observaciones' => $data['observaciones'] ?? null,
+        'activa' => $request->boolean('activa', $cuenta->activa),
+    ]);
+
+    return back()->with('success', 'Cuenta bancaria actualizada correctamente.');
+}
+
 public function toggleCuentaBancoActiva(CuentaBancoEmpresa $cuenta)
 {
     $cuenta->update([

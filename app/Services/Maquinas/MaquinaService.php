@@ -31,6 +31,14 @@ class MaquinaService
                 throw new \RuntimeException('La máquina ya tiene una asignación activa.');
             }
 
+            $tienePilasActivas = $obra->pilas()
+                ->where('activo', true)
+                ->exists();
+
+            if (! $tienePilasActivas) {
+                throw new \RuntimeException('La obra seleccionada no tiene pilas activas asignadas.');
+            }
+
             // 2) Crear asignación
             $asignacion = ObraMaquina::create([
                 'obra_id'          => $obra->id,
