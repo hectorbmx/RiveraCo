@@ -581,6 +581,8 @@ Route::middleware('auth','verified')->group(function () {
     Route::put('/empresa-config/maquinas/{maquina}', [EmpresaConfigMaquinaController::class, 'update'])->name('empresa_config.maquinas.update');
 
     Route::post('/empresa-config/almacenes', [EmpresaConfigAreaController::class, 'storeAlmacen'])->name('empresa-config.almacenes.store');
+    Route::patch('/empresa-config/almacenes/{almacen}', [EmpresaConfigAreaController::class, 'updateAlmacen'])->name('empresa-config.almacenes.update');
+    Route::patch('/empresa-config/almacenes/{almacen}/toggle', [EmpresaConfigAreaController::class, 'toggleAlmacen'])->name('empresa-config.almacenes.toggle');
     Route::post('/empresa-config/areas', [EmpresaConfigAreaController::class, 'store'])->name('empresa-config.areas.store');
     Route::patch('/empresa-config/areas/{area}', [EmpresaConfigAreaController::class, 'update'])->name('empresa-config.areas.update');
     Route::patch('/empresa-config/areas/{area}/toggle', [EmpresaConfigAreaController::class, 'toggle'])->name('empresa-config.areas.toggle');

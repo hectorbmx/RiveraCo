@@ -75,7 +75,11 @@ public function index(){
             ->orderBy('tipo')
             ->orderBy('nombre')
             ->get();
-        $almacenes = Almacen::query()->where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'area_id']);
+        $almacenes = Almacen::query()
+            ->with('area')
+            ->orderByDesc('activo')
+            ->orderBy('nombre')
+            ->get(['id', 'codigo', 'nombre', 'tipo', 'area_id', 'activo']);
         $vehiculoAlertaDestinatarios = EmpresaAlertaDestinatario::query()
             ->with('user')
             ->where('empresa_config_id', $config->id)
@@ -936,6 +940,7 @@ public function storeTipoRetencion(Request $request)
         ->with('success', 'El tipo de retención fue creado correctamente.');
 }
 }
+
 
 
 

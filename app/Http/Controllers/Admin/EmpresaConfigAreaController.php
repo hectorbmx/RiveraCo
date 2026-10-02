@@ -31,9 +31,46 @@ class EmpresaConfigAreaController extends Controller
         }
 
         return redirect()
-            ->route('empresa_config.edit', ['tab' => 'areas'])
+            ->route('empresa_config.edit', ['tab' => 'almacenes'])
             ->with('success', 'Almacen creado correctamente.');
     }
+
+    public function updateAlmacen(Request $request, Almacen $almacen)
+    {
+        $data = $request->validate([
+            'nombre' => ['required', 'string', 'max:150', Rule::unique('almacenes', 'nombre')->ignore($almacen->id)],
+            'tipo' => ['nullable', 'string', 'in:general,obra'],
+            'area_id' => ['nullable', 'integer', 'exists:areas,id'],
+            'activo' => ['nullable', 'boolean'],
+        ]);
+
+        $almacen->update([
+            'nombre' => trim($data['nombre']),
+            'tipo' => $data['tipo'] ?? $almacen->tipo,
+            'activo' => (bool) ($data['activo'] ?? $almacen->activo),
+        ]);
+
+        if (empty($data['area_id'])) {
+            $almacen->update(['area_id' => null]);
+        } else {
+            $area = Area::find($data['area_id']);
+            $this->syncAlmacenRelacionado($area, $almacen->id);
+        }
+
+        return redirect()
+            ->route('empresa_config.edit', ['tab' => 'almacenes'])
+            ->with('success', 'Almacen actualizado correctamente.');
+    }
+
+    public function toggleAlmacen(Almacen $almacen)
+    {
+        $almacen->update(['activo' => ! (bool) $almacen->activo]);
+
+        return redirect()
+            ->route('empresa_config.edit', ['tab' => 'almacenes'])
+            ->with('success', 'Estatus del almacen actualizado.');
+    }
+
     public function store(Request $request)
     {
         $data = $this->validatedData($request, null);
