@@ -35,6 +35,7 @@ class ReposicionCajaChicaController extends Controller
 
         $categorias = $this->categoriasActivas();
         $stats = $this->stats($request, $fechaInicio, $fechaFin);
+        $destinosImpresion = $this->destinosImpresionReposicion($request, $fechaInicio, $fechaFin);
         $ambitoFirma = $this->resolverAmbitoFirmaReposicionDisponible($request, $gastos->getCollection());
         $puedeElegirAmbitoFirma = $this->puedeElegirAmbitoFirmaReposicion($request);
 
@@ -54,7 +55,8 @@ class ReposicionCajaChicaController extends Controller
             'semanaSiguienteInicio',
             'semanaSiguienteFin',
             'ambitoFirma',
-            'puedeElegirAmbitoFirma'
+            'puedeElegirAmbitoFirma',
+            'destinosImpresion'
         ));
     }
 
@@ -440,6 +442,7 @@ class ReposicionCajaChicaController extends Controller
 
         $grupos = $this->agruparGastosPorCategoria($gastos);
         $stats = $this->stats($request, $fechaInicio, $fechaFin);
+        $reporteContexto = $this->contextoImpresionReposicion($request);
         $ambitoFirma = $this->resolverAmbitoFirmaReposicion($request, $gastos);
         $firmasImpresas = $this->firmasImpresasReposicion($ambitoFirma);
         $elaboroNombre = $this->nombresUsuariosReporte($gastos->pluck('created_by'));
@@ -449,7 +452,7 @@ class ReposicionCajaChicaController extends Controller
                 ->pluck('resuelto_por')
         );
 
-        return view('reposicion-caja-chica.reporte-imprimir', compact('gastos', 'grupos', 'stats', 'fechaInicio', 'fechaFin', 'ambitoFirma', 'firmasImpresas', 'elaboroNombre', 'autorizoNombre'));
+        return view('reposicion-caja-chica.reporte-imprimir', compact('gastos', 'grupos', 'stats', 'fechaInicio', 'fechaFin', 'ambitoFirma', 'firmasImpresas', 'elaboroNombre', 'autorizoNombre', 'reporteContexto'));
     }
 
     public function exportarExcel(Request $request)
@@ -786,6 +789,76 @@ class ReposicionCajaChicaController extends Controller
         return [$fechaInicio, $fechaFin];
     }
 
+    private function contextoImpresionReposicion(Request $request): string
+    {
+        if ($request->input('destino') === 'obra' && $request->filled('obra_id')) {
+            $obra = Obra::find($request->integer('obra_id'));
+            $nombre = trim(($obra?->clave_obra ? $obra->clave_obra . ' - ' : '') . ($obra?->nombre ?? 'Obra no definida'));
+
+            return 'Obra: ' . $nombre;
+        }
+
+        if ($request->input('destino') === 'almacen' && $request->filled('almacen_id')) {
+            $almacen = Almacen::find($request->integer('almacen_id'));
+
+            return 'Almacen: ' . ($almacen?->nombre ?? 'Almacen no definido');
+        }
+
+        return 'Reporte general';
+    }
+    private function destinosImpresionReposicion(Request $request, Carbon $fechaInicio, Carbon $fechaFin)
+    {
+        $queryRequest = $request->duplicate(
+            array_merge($request->query(), [
+                'destino' => null,
+                'obra_id' => null,
+                'almacen_id' => null,
+            ])
+        );
+
+        $gastos = $this->gastosReporteQuery($queryRequest, $fechaInicio, $fechaFin)
+            ->where(function ($query) {
+                $query
+                    ->whereNotNull('obra_id')
+                    ->orWhereNotNull('almacen_id');
+            })
+            ->get();
+
+        $destinos = collect();
+
+        $gastos
+            ->where('destino', 'almacen')
+            ->whereNotNull('almacen_id')
+            ->groupBy('almacen_id')
+            ->each(function ($items, $almacenId) use ($destinos) {
+                $almacen = $items->first()->almacen;
+
+                $destinos->push([
+                    'tipo' => 'almacen',
+                    'id' => (int) $almacenId,
+                    'label' => 'Almacen: ' . ($almacen?->nombre ?? 'Sin almacen'),
+                ]);
+            });
+
+        $gastos
+            ->where('destino', 'obra')
+            ->whereNotNull('obra_id')
+            ->groupBy('obra_id')
+            ->each(function ($items, $obraId) use ($destinos) {
+                $obra = $items->first()->obra;
+                $nombre = trim(($obra?->clave_obra ? $obra->clave_obra . ' - ' : '') . ($obra?->nombre ?? 'Sin obra'));
+
+                $destinos->push([
+                    'tipo' => 'obra',
+                    'id' => (int) $obraId,
+                    'label' => 'Obra: ' . $nombre,
+                ]);
+            });
+
+        return $destinos
+            ->sortBy([['tipo', 'asc'], ['label', 'asc']])
+            ->values();
+    }
     private function gastosReporteQuery(Request $request, Carbon $fechaInicio, Carbon $fechaFin)
     {
         return ReposicionCajaChicaGasto::query()
@@ -807,7 +880,9 @@ class ReposicionCajaChicaController extends Controller
             })
             ->when($request->filled('estado'), fn ($query) => $query->where('estado_autorizacion', $request->estado))
             ->when($request->filled('categoria_id'), fn ($query) => $query->where('categoria_id', $request->categoria_id))
-            ->when($request->filled('destino'), fn ($query) => $query->where('destino', $request->destino));
+            ->when($request->filled('destino'), fn ($query) => $query->where('destino', $request->destino))
+            ->when($request->filled('obra_id'), fn ($query) => $query->where('obra_id', $request->integer('obra_id')))
+            ->when($request->filled('almacen_id'), fn ($query) => $query->where('almacen_id', $request->integer('almacen_id')));
     }
 
     private function agruparGastosPorCategoria($gastos)
@@ -846,6 +921,11 @@ class ReposicionCajaChicaController extends Controller
         ];
     }
 }
+
+
+
+
+
 
 
 

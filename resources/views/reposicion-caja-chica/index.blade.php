@@ -10,6 +10,8 @@
         : ($ambitoFirma ?? \App\Models\DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN);
     $printQueryBase = $puedeElegirAmbitoFirma ? request()->query() : request()->except('ambito');
     $printQuery = array_merge($printQueryBase, ['ambito' => $ambitoFirmaSeleccionado]);
+    $destinosImpresion = collect($destinosImpresion ?? []);
+    $hayObrasParaImprimir = $destinosImpresion->contains(fn ($destino) => ($destino['tipo'] ?? null) === 'obra');
 @endphp
 <div class="max-w-8xl mx-auto space-y-6">
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -18,7 +20,21 @@
             <p class="text-sm text-slate-500">Gastos capturados por ingenieria con autorizacion individual.</p>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a id="reposicion-print-link" href="{{ route('reposicion-caja-chica.imprimir', $printQuery) }}" data-print-base="{{ route('reposicion-caja-chica.imprimir') }}" target="_blank" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Imprimir</a>
+            @if($hayObrasParaImprimir)
+                <div class="flex overflow-hidden rounded-lg border border-slate-300 bg-white">
+                    <select id="reposicion-print-scope" class="min-w-[220px] border-0 bg-white px-3 py-2 text-sm font-semibold text-slate-700 focus:ring-0">
+                        <option value="general">Reporte general</option>
+                        @foreach($destinosImpresion as $destinoImpresion)
+                            <option value="{{ $destinoImpresion['tipo'] }}:{{ $destinoImpresion['id'] }}">
+                                {{ $destinoImpresion['label'] }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <a id="reposicion-print-link" href="{{ route('reposicion-caja-chica.imprimir', $printQuery) }}" data-print-base="{{ route('reposicion-caja-chica.imprimir') }}" target="_blank" class="border-l border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Imprimir</a>
+                </div>
+            @else
+                <a id="reposicion-print-link" href="{{ route('reposicion-caja-chica.imprimir', $printQuery) }}" data-print-base="{{ route('reposicion-caja-chica.imprimir') }}" target="_blank" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Imprimir</a>
+            @endif
             <a href="{{ route('reposicion-caja-chica.exportar-excel', request()->query()) }}" class="rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100">Exportar Excel</a>
             <a href="{{ route('reposicion-caja-chica.revision') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Revision oficina</a>
             <a href="{{ route('reposicion-caja-chica.relaciones.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Relaciones</a>
@@ -252,6 +268,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('reposicion-filtros');
     const printLink = document.getElementById('reposicion-print-link');
+    const printScope = document.getElementById('reposicion-print-scope');
 
     if (!form || !printLink) {
         return;
@@ -266,6 +283,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        if (printScope) {
+            params.delete('destino');
+            params.delete('obra_id');
+            params.delete('almacen_id');
+
+            const [tipo, id] = String(printScope.value || 'general').split(':');
+
+            if (tipo === 'obra' && id) {
+                params.set('destino', 'obra');
+                params.set('obra_id', id);
+            }
+
+            if (tipo === 'almacen' && id) {
+                params.set('destino', 'almacen');
+                params.set('almacen_id', id);
+            }
+        }
+
         const queryString = params.toString();
         printLink.href = queryString
             ? `${printLink.dataset.printBase}?${queryString}`
@@ -274,10 +309,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     form.addEventListener('change', updatePrintLink);
     form.addEventListener('input', updatePrintLink);
+    printScope?.addEventListener('change', updatePrintLink);
     updatePrintLink();
 });
 </script>
 @endpush
+
+
 
 
 

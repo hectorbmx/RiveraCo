@@ -42,6 +42,7 @@
         <div>
             <h1>Reposicion de caja chica</h1>
             <div class="muted">Reporte semanal agrupado por tipo de comprobacion</div>
+            <div class="value">{{ $reporteContexto ?? 'Reporte general' }}</div>
         </div>
         <div>
             <div class="label">Periodo de captura</div>
@@ -150,5 +151,6 @@
     </div>
 </body>
 </html>
+
 
 
