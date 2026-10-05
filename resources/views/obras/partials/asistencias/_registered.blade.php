@@ -2,8 +2,8 @@
 
 <div class="border rounded-xl overflow-hidden w-full">
     <table class="w-full text-sm table-fixed">
-        <thead class="bg-slate-50">
-            <tr class="border-b text-slate-500">
+        <thead class="bg-[#0B265A] text-slate-600">
+            <tr class="border-b text-white">
                 <th class="py-2 px-3 text-left w-[40%]">Empleado</th>
                 <th class="py-2 px-3 text-left w-[15%]">Dia</th>
                 <th class="py-2 px-3 text-left w-[15%]">Entrada</th>

@@ -40,6 +40,6 @@ class ComisionTarifario extends Model
 
     public function detalles()
     {
-        return $this->hasMany(ComisionTarifarioDetalle::class, 'comision_tarifario_id');
+        return $this->hasMany(ComisionTarifarioDetalle::class, 'tarifario_id');
     }
 }

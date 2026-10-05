@@ -405,7 +405,7 @@
                     <th class="px-4 py-2 text-right text-xs font-semibold text-white">{{ $label }}</th>
                 @endforeach
 
-                <th class="px-4 py-2 text-right text-xs font-semibold text-white">T. extra</th>
+                {{-- <th class="px-4 py-2 text-right text-xs font-semibold text-white">T. extra</th> --}}
                 <th class="px-4 py-2 text-right text-xs font-semibold text-white">Total</th>
             </tr>
         </thead>
@@ -422,12 +422,12 @@
                         </td>
                     @endforeach
 
-                    <td class="px-4 py-2 text-right">{{ number_format($r['importe_extra'] ?? 0, 2) }}</td>
+                    {{-- <td class="px-4 py-2 text-right">{{ number_format($r['importe_extra'] ?? 0, 2) }}</td> --}}
                     <td class="px-4 py-2 text-right font-semibold">{{ number_format($r['total'] ?? 0, 2) }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td class="px-4 py-6 text-center text-slate-500" colspan="{{ 4 + count($columnas ?? []) }}">
+                    <td class="px-4 py-6 text-center text-slate-500" colspan="{{ 3 + count($columnas ?? []) }}">
                         No hay personal registrado en esta comisión.
                     </td>
                 </tr>
@@ -445,7 +445,7 @@
                         </td>
                     @endforeach
 
-                    <td class="px-4 py-2"></td>
+                    {{-- <td class="px-4 py-2"></td> --}}
                     <td class="px-4 py-2 text-right font-bold">
                         {{ number_format($granTotal ?? 0, 2) }}
                     </td>

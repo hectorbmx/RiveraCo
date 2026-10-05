@@ -180,7 +180,7 @@
                 Personal en la obra
             </h2>
             <p class="text-xs text-slate-500 mb-4">
-                Captura el horario trabajado por cada elemento. El residente no se incluye en esta tabla.
+                Selecciona las actividades comisionables por cada elemento. El residente no se incluye en esta tabla.
             </p>
 
             @php
@@ -203,11 +203,6 @@
                     <table class="min-w-full text-xs md:text-sm">
                         <thead class="bg-slate-50 border-b text-slate-500">
                             <tr>
-                                <th class="py-2 px-2 text-left">Inicio</th>
-                                <th class="py-2 px-2 text-left">Fin</th>
-                                <th class="py-2 px-2 text-left">Comida (hrs)</th>
-                                <th class="py-2 px-2 text-left">Horas laboradas</th>
-                                <th class="py-2 px-2 text-left">Tiempo extra</th>
                                 <th class="py-2 px-2 text-left">Personal</th>
                                 <th class="py-2 px-2 text-left text-xs font-semibold text-slate-500">Actividades</th>
                                                                
@@ -223,58 +218,19 @@
                                                name="personales[{{ $index }}][asignacion_empleado_id]"
                                                value="{{ $asignacion->id }}">
 
-                                        {{-- Inicio --}}
+                                        {{-- Personal --}}
                                         <td class="py-2 px-2">
-                                            <input type="time"
-                                                   name="personales[{{ $index }}][hora_inicio]"
-                                                   value="{{ old('personales.'.$index.'.hora_inicio', '08:00') }}"
-                                                   class="w-32 border rounded-lg px-2 py-1 text-xs personal-inicio"
-                                                   data-row="{{ $index }}">
+                                            <div class="flex flex-col">
+                                                <span class="font-medium text-slate-800">
+                                                    {{ $emp->Nombre }} {{ $emp->Apellidos }}
+                                                </span>
+                                                <span class="text-[11px] text-slate-500">
+                                                    <!-- {{ $emp->Puesto ?? $emp->puesto_base }} -->
+                                                    {{ $asignacion->rol?->nombre ?? ($emp->Puesto ?? $emp->puesto_base) }}
+                                                </span>
+                                            </div>
                                         </td>
 
-                                        {{-- Fin --}}
-                                        <td class="py-2 px-2">
-                                            <input type="time"
-                                                   name="personales[{{ $index }}][hora_fin]"
-                                                   value="{{ old('personales.'.$index.'.hora_fin', '17:00') }}"
-                                                   class="w-32 border rounded-lg px-2 py-1 text-xs personal-fin"
-                                                   data-row="{{ $index }}">
-                                        </td>
-
-                                        {{-- Comida (horas) --}}
-                                        <td class="py-2 px-2">
-                                            <input type="number"
-                                                   step="0.25"
-                                                   min="0"
-                                                   name="personales[{{ $index }}][tiempo_comida]"
-                                                   value="{{ old('personales.'.$index.'.tiempo_comida', 1) }}"
-                                                   class="w-32 border rounded-lg px-2 py-1 text-xs personal-comida"
-                                                   data-row="{{ $index }}">
-                                        </td>
-
-                                        {{-- Horas laboradas (calculado) --}}
-                                        <td class="py-2 px-2">
-                                            <input type="number"
-                                                   step="0.25"
-                                                   min="0"
-                                                   name="personales[{{ $index }}][horas_laboradas]"
-                                                   value="{{ old('personales.'.$index.'.horas_laboradas') }}"
-                                                   class="w-32 border rounded-lg px-2 py-1 text-xs personal-horas"
-                                                   data-row="{{ $index }}"
-                                                   readonly>
-                                        </td>
-
-                                        {{-- Tiempo extra (calculado) --}}
-                                        <td class="py-2 px-2">
-                                            <input type="number"
-                                                   step="0.25"
-                                                   min="0"
-                                                   name="personales[{{ $index }}][tiempo_extra]"
-                                                   value="{{ old('personales.'.$index.'.tiempo_extra') }}"
-                                                   class="w-32 border rounded-lg px-2 py-1 text-xs personal-extra"
-                                                   data-row="{{ $index }}"
-                                                   readonly>
-                                        </td>
                                         {{-- Actividades comisionables --}}
                                         <td class="py-2 px-2">
                                             <div class="flex flex-wrap gap-3">
@@ -287,22 +243,6 @@
                                                         <span>{{ $act->nombre }}</span>
                                                     </label>
                                                 @endforeach
-                                            </div>
-                                        </td>
-
-
-                                        {{-- Personal --}}
-                                        <td class="py-2 px-2">
-                                            <div class="flex flex-col">
-                                                <span class="font-medium text-slate-800">
-                                                    {{ $emp->Nombre }} {{ $emp->Apellidos }}
-                                                </span>
-                                                <span class="text-[11px] text-slate-500">
-                                                    <!-- {{ $emp->Puesto ?? $emp->puesto_base }} -->
-                                                    {{ $asignacion->rol?->nombre ?? ($emp->Puesto ?? $emp->puesto_base) }}
-
-                                                    
-                                                </span>
                                             </div>
                                         </td>
                                     </tr>
@@ -320,17 +260,17 @@
                 Detalle de perforación (diámetros y volúmenes)
             </h2>
             <p class="text-xs text-slate-500 mb-4">
-                Captura los diámetros, profundidades y volúmenes correspondientes a esta pila.
+                Captura los diámetros, profundidades y volúmenes correspondientes a esta perforación.
             </p>
-            {{-- Selector de tipo de pila para agregar filas --}}
+            {{-- Selector de tipo de perforación para agregar filas --}}
             <div class="mb-4 flex flex-col md:flex-row md:items-end gap-3">
                 <div class="md:w-1/3">
                     <label class="block text-xs font-semibold text-slate-600 mb-1">
-                        Tipo de pila a agregar
+                        Tipo de perforación a agregar
                     </label>
                     <select id="select-tipo-pila"
                             class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
-                        <option value="">Selecciona un tipo de pila</option>
+                        <option value="">Selecciona un tipo</option>
                         @foreach($pilas as $pila)
                             <option
                                 value="{{ $pila->id }}"
@@ -338,7 +278,7 @@
                                 data-cantidad="{{ $pila->cantidad_programada ?? 1 }}"
                                 data-profundidad="{{ $pila->profundidad_proyecto ?? '' }}"
                             >
-                                {{ $pila->tipo }} (Pila {{ $pila->numero_pila }})
+                                {{ $pila->tipo }}
                             </option>
                         @endforeach
                     </select>
@@ -549,58 +489,8 @@
         </div>
 </form>
     <script>
-        function calcularFilaPersonal(row) {
-            const inicioInput = document.querySelector('input.personal-inicio[data-row="' + row + '"]');
-            const finInput    = document.querySelector('input.personal-fin[data-row="' + row + '"]');
-            const comidaInput = document.querySelector('input.personal-comida[data-row="' + row + '"]');
-            const horasInput  = document.querySelector('input.personal-horas[data-row="' + row + '"]');
-            const extraInput  = document.querySelector('input.personal-extra[data-row="' + row + '"]');
 
-            if (!inicioInput || !finInput || !comidaInput || !horasInput || !extraInput) return;
 
-            const inicio = inicioInput.value;
-            const fin    = finInput.value;
-            const comida = parseFloat(comidaInput.value || 0);
-
-            if (!inicio || !fin) {
-                horasInput.value = '';
-                extraInput.value = '';
-                return;
-            }
-
-            // Convertimos HH:MM a horas decimales
-            function aHorasDecimales(hhmm) {
-                const [h, m] = hhmm.split(':').map(Number);
-                return h + (m / 60);
-            }
-
-            let horasTotales = aHorasDecimales(fin) - aHorasDecimales(inicio);
-
-            // si el turno pasó la medianoche, ajustamos
-            if (horasTotales < 0) {
-                horasTotales += 24;
-            }
-
-            const horasLaboradas = Math.max(horasTotales - comida, 0);
-            const tiempoExtra    = Math.max(horasLaboradas - 8, 0);
-
-            horasInput.value = horasLaboradas.toFixed(2);
-            extraInput.value = tiempoExtra.toFixed(2);
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const inputs = document.querySelectorAll('.personal-inicio, .personal-fin, .personal-comida');
-
-            inputs.forEach(function (input) {
-                const row = input.getAttribute('data-row');
-                input.addEventListener('change', function () {
-                    calcularFilaPersonal(row);
-                });
-
-                // cálculo inicial con los valores por defecto
-                calcularFilaPersonal(row);
-            });
-        });
        function recalcularTotalesDiametro() {
         const body = document.getElementById('detalles-diametro-body');
         if (!body) return;
@@ -651,7 +541,7 @@
         const pilaId   = select.value;
 
         if (!pilaId) {
-            alert('Selecciona un tipo de pila antes de agregar una fila.');
+            alert('Selecciona un tipo antes de agregar una fila.');
             return;
         }
 
@@ -805,16 +695,6 @@ function calcularMetrosComision(diametroValor, profundidadValor) {
 }
 
     document.addEventListener('DOMContentLoaded', function () {
-        // --- PERSONAL (se queda igual) ---
-        const inputsPersonal = document.querySelectorAll('.personal-inicio, .personal-fin, .personal-comida');
-
-        inputsPersonal.forEach(function (input) {
-            const row = input.getAttribute('data-row');
-            input.addEventListener('change', function () {
-                calcularFilaPersonal(row);
-            });
-            calcularFilaPersonal(row);
-        });
 
         // --- DETALLES DIÁMETRO ---
         const bodyDetalles   = document.getElementById('detalles-diametro-body');
@@ -835,5 +715,4 @@ function calcularMetrosComision(diametroValor, profundidadValor) {
     });
     </script>
 @endsection
-
 

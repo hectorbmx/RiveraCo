@@ -693,6 +693,8 @@ Route::middleware('auth','verified')->group(function () {
     });
     Route::get('obras/{obra}/asistencias/reporte', [ObraController::class, 'reporteAsistencias'])
         ->name('obras.asistencias.reporte');
+    Route::post('obras/{obra}/asistencias/manual', [ObraController::class, 'guardarAsistenciaManual'])
+        ->name('obras.asistencias.manual.guardar');
     Route::post('obras/{obra}/asistencias/semanal', [ObraController::class, 'guardarAsistenciaSemanal'])
         ->name('obras.asistencias.semanal.guardar');
     Route::get('obras/{obra}/asistencias/semanal/{reporte}/imprimir', [ObraController::class, 'imprimirAsistenciaSemanal'])

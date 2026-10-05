@@ -31,18 +31,15 @@ class AsistenciasController extends Controller
         'meta'             => ['nullable','array'],
     ]);
 
-    // 2) Parsear fecha/hora del dispositivo
-   
-$raw = $data['checked_at'];
-$hasTz = (bool) preg_match('/(Z|[+-]\d{2}:?\d{2})$/', $raw);
+    // 2) Parsear fecha/hora del dispositivo y normalizar a la hora de la obra
+    $raw = $data['checked_at'];
+    $hasTz = (bool) preg_match('/(Z|[+-]\d{2}:?\d{2})$/', $raw);
 
-$checkedAt = $hasTz
-    ? Carbon::parse($raw)->utc()  // Si tiene zona, ya viene en UTC
-    : Carbon::parse($raw, 'America/Mexico_City')->utc(); // Si NO tiene zona, interpretarlo como México
+    $checkedAt = $hasTz
+        ? Carbon::parse($raw)->setTimezone('America/Mexico_City')
+        : Carbon::parse($raw, 'America/Mexico_City')->setTimezone('America/Mexico_City');
 
-$checkedDate = $checkedAt->clone()
-    ->timezone('America/Mexico_City')
-    ->toDateString();
+    $checkedDate = $checkedAt->clone()->toDateString();
 
     // $checkedAt = $checkedAtLocal->clone()->utc(); // <-- guardar en UTC
     // $checkedDate = $checkedAtLocal->toDateString(); // <-- IMPORTANTE: el día “local” del empleado
@@ -208,7 +205,7 @@ public function show(Request $request, $obraId)
 
                 'entrada' => $entrada ? [
                     'id'         => $entrada->id,
-                    'hora'       => $entrada->checked_at?->format('H:i'),
+                    'hora'       => $entrada->checked_at?->timezone('America/Mexico_City')->format('H:i'),
                     'photo_path' => $entrada->photo_path,
                     'photo_url'  => $entrada->photo_path
                         ? Storage::disk('public')->url($entrada->photo_path)
@@ -217,7 +214,7 @@ public function show(Request $request, $obraId)
 
                 'salida' => $salida ? [
                     'id'         => $salida->id,
-                    'hora'       => $salida->checked_at?->format('H:i'),
+                    'hora'       => $salida->checked_at?->timezone('America/Mexico_City')->format('H:i'),
                     'photo_path' => $salida->photo_path,
                     'photo_url'  => $salida->photo_path
                         ? Storage::disk('public')->url($salida->photo_path)

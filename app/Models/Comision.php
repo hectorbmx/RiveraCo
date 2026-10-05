@@ -92,7 +92,7 @@ class Comision extends Model
     }
     public function tarifario()
     {
-        return $this->belongsTo(ComisionTarifario::class, 'comision_tarifario_id');
+        return $this->belongsTo(ComisionTarifario::class, 'tarifario_id');
     }
     
    

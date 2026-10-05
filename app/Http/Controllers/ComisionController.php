@@ -411,8 +411,20 @@ public function store(Request $request, Obra $obra)
         // horas de perforación dentro del detalle (se guardan en comision_perforaciones)
         'detalles.*.hora_inicio'              => ['nullable', 'date_format:H:i'],
         'detalles.*.hora_fin'                 => ['nullable', 'date_format:H:i'],
+    ], [
+        'detalles.*.pila_id.required' => 'Selecciona una pila antes de guardar la comision.',
+        'detalles.*.pila_id.integer' => 'Selecciona una pila valida antes de guardar la comision.',
+        'detalles.*.pila_id.exists' => 'La pila seleccionada no existe o no pertenece al catalogo disponible.',
     ]);
 
+    $detalleConPila = collect($validated['detalles'] ?? [])
+        ->first(fn ($detalle) => ! empty($detalle['pila_id']));
+
+    if (! $detalleConPila) {
+        return back()
+            ->withErrors(['detalles.0.pila_id' => 'Selecciona una pila antes de guardar la comision.'])
+            ->withInput();
+    }
     $obraMaquinaId = $validated['obra_maquina_id'] ?? null;
     // Si ya lo mandas desde form:
     // $trabajoId     = $validated['trabajo_id'] ?? null;
@@ -486,8 +498,6 @@ public function store(Request $request, Obra $obra)
             $obraEmpleadoId = (int) ($row['asignacion_empleado_id'] ?? 0);
             if (!$obraEmpleadoId) continue;
 
-            // Si no capturaron horario, lo ignoramos
-            if (empty($row['hora_inicio']) && empty($row['hora_fin'])) continue;
 
             $cp = ComisionPersonal::create([
                 'comision_id'      => $comision->id,
@@ -496,13 +506,11 @@ public function store(Request $request, Obra $obra)
                 'rol_id'           => $rolMap[$obraEmpleadoId] ?? null,
                 'rol'              => null,
                 'trabaja'          => 1,
-                'hora_inicio'      => $row['hora_inicio'] ?? null,
-                'hora_fin'         => $row['hora_fin'] ?? null,
-                'comida_min'       => isset($row['tiempo_comida'])
-                    ? (int) round(((float)$row['tiempo_comida']) * 60)
-                    : 0,
-                'horas_laboradas'  => (float) ($row['horas_laboradas'] ?? 0),
-                'tiempo_extra'     => (float) ($row['tiempo_extra'] ?? 0),
+                'hora_inicio'      => null,
+                'hora_fin'         => null,
+                'comida_min'       => null,
+                'horas_laboradas'  => null,
+                'tiempo_extra'     => 0,
                 'importe_comision' => 0, // se recalcula abajo
             ]);
 

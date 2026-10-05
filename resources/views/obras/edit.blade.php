@@ -37,7 +37,8 @@
             'solicitudes-gastos' => 'Solicitudes',
             // 'gastos'       => 'Gastos',
             'reposicion-gastos' => 'Reposición gastos',
-            'pilas'        => 'Pilas',
+            'caja-chica' => 'Caja chica',
+            'pilas'        => 'Perforaciones',
             'empleados'    => 'Empleados',
             'maquinaria'   => 'Maquinaria',
             'vehiculos'    => 'Vehiculos',
@@ -2701,259 +2702,15 @@
 @endif
 
 {{-- TERMINA REPOSICION GASTOS --}}
- {{-- TAB: EMPLEADOS --}}
+{{-- TAB: EMPLEADOS --}}
 @if($tab === 'empleados')
-    <h2 class="text-lg font-semibold mb-4">Empleados asignados a la obra</h2>
-
-    @if(session('success'))
-        <div class="mb-4 p-3 bg-green-100 text-green-700 rounded-lg text-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    @if($errors->any())
-        <div class="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
-            Hay errores en el formulario, revisa la información.
-        </div>
-    @endif
-
-    {{-- FORM PARA ASIGNAR NUEVO EMPLEADO --}}
-    <div class="mb-6">
-        <h3 class="text-sm font-semibold text-slate-700 mb-3">Asignar empleado a esta obra</h3>
-
-        @if($empleadosAsignables->isEmpty())
-            <p class="text-sm text-slate-500">
-                No hay empleados disponibles sin asignación activa.
-            </p>
-        @else
-            <form id="form-asignar-empleado"
-                  method="POST"
-                  action="{{ route('obras.empleados.store', $obra) }}"
-                  class="bg-white border rounded-xl p-4">
-                @csrf
-
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2 items-end">
-                    {{-- Buscar empleado --}}
-                    <div class="relative min-w-0">
-                        <label class="block text-[10px] font-semibold text-slate-600 mb-1">
-                            Buscar empleado
-                        </label>
-
-                        <input type="text"
-                               id="buscador-empleado"
-                               autocomplete="off"
-                               placeholder="Escribe apellido o nombre"
-                               class="w-full rounded-xl border-slate-200 text-xs px-2.5 py-1.5">
-
-                        <input type="hidden"
-                               name="empleado_id"
-                               id="empleado_id"
-                               value="{{ old('empleado_id') }}">
-
-                        <div id="resultados-empleado"
-                             class="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow text-sm max-h-60 overflow-y-auto hidden">
-                        </div>
-
-                        @error('empleado_id')
-                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    {{-- Rol en la obra --}}
-                    <div class="min-w-0">
-                        <label class="block text-[10px] font-semibold text-slate-600 mb-1">
-                            Puesto en la obra
-                        </label>
-
-                        <select name="rol_id"
-                                class="w-full rounded-xl border-slate-200 text-xs px-2.5 py-1.5">
-                            <option value="">Selecciona...</option>
-                            @foreach($roles as $rol)
-                                <option value="{{ $rol->id }}" @selected(old('rol_id') == $rol->id)>
-                                    {{ $rol->nombre }}
-                                </option>
-                            @endforeach
-                        </select>
-
-                        @error('rol_id')
-                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    {{-- Fecha de alta --}}
-                    <div class="min-w-0">
-                        <label class="block text-[10px] font-semibold text-slate-600 mb-1">
-                            Fecha alta
-                        </label>
-                        <input type="date"
-                               name="fecha_alta"
-                               value="{{ old('fecha_alta', now()->toDateString()) }}"
-                               class="w-full rounded-xl border-slate-200 text-xs px-2.5 py-1.5">
-
-                        @error('fecha_alta')
-                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    {{-- Notas --}}
-                    <div class="min-w-0">
-                        <label class="block text-[10px] font-semibold text-slate-600 mb-1">
-                            Notas
-                        </label>
-                        <input type="text"
-                               name="notas"
-                               value="{{ old('notas') }}"
-                               class="w-full rounded-xl border-slate-200 text-xs px-2.5 py-1.5">
-
-                        @error('notas')
-                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    {{-- Botón --}}
-                    <div class="flex md:justify-end min-w-0">
-                        <button type="submit"
-                                class="w-full md:w-auto px-3 py-1.5 bg-teal-600 text-white text-xs rounded-xl hover:bg-teal-700 whitespace-nowrap">
-                            Asignar empleado
-                        </button>
-                    </div>
-                </div>
-            </form>
-        @endif
-    </div>
-
-    {{-- LISTA DE ASIGNACIONES ACTIVAS --}}
-    <div>
-        <h3 class="text-sm font-semibold text-slate-700 mb-3">Empleados actualmente en la obra</h3>
-
-        <div class="border rounded-xl overflow-hidden bg-white">
-            <table class="w-full text-sm">
-                <thead class="bg-slate-50">
-                    <tr class="border-b text-slate-500">
-                        <th class="py-2 px-3 text-left">Empleado</th>
-                        <th class="py-2 px-3 text-left">Puesto</th>
-                        <th class="py-2 px-3 text-left">Alta</th>
-                        <th class="py-2 px-3 text-left">Días</th>
-                        <th class="py-2 px-3 text-right">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($asignacionesActivas as $asig)
-                        <tr class="border-b hover:bg-slate-50">
-                            <td class="py-2 px-3">
-                                {{ $asig->empleado->Nombre }} {{ $asig->empleado->Apellidos }}<br>
-                                <span class="text-[11px] text-slate-400">
-                                    {{ $asig->empleado->Area }} | {{ $asig->empleado->Puesto }}
-                                </span>
-                            </td>
-                            <td class="py-2 px-3">
-                                @can('obras.empleados.rol.edit.access')
-                                    <form action="{{ route('obras.empleados.rol.update', [$obra->id, $asig->id]) }}"
-                                          method="POST"
-                                          class="flex flex-wrap items-center gap-2">
-                                        @csrf
-                                        @method('PATCH')
-                                        <select name="rol_id"
-                                                class="w-44 rounded-lg border-slate-200 text-xs px-2 py-1">
-                                            @foreach($roles as $rol)
-                                                <option value="{{ $rol->id }}" @selected((int) old('rol_id', $asig->rol_id) === (int) $rol->id)>
-                                                    {{ $rol->nombre }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        <button type="submit"
-                                                class="text-xs text-teal-700 hover:text-teal-900 font-medium">
-                                            Guardar
-                                        </button>
-                                    </form>
-                                    @error('rol_id')
-                                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                                    @enderror
-                                @else
-                                    {{ $asig->puesto_en_obra ?? $asig->rol?->nombre ?? $asig->empleado->Puesto }}
-                                @endcan
-                            </td>
-                            <td class="py-2 px-3">
-                                @can('obras.empleados.fecha_alta.edit.access')
-                                    <form action="{{ route('obras.empleados.fecha-alta.update', [$obra->id, $asig->id]) }}"
-                                          method="POST"
-                                          class="flex flex-wrap items-center gap-2">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="date"
-                                               name="fecha_alta"
-                                               value="{{ old('fecha_alta', $asig->fecha_alta?->toDateString()) }}"
-                                               class="w-36 rounded-lg border-slate-200 text-xs px-2 py-1">
-                                        <button type="submit"
-                                                class="text-xs text-teal-700 hover:text-teal-900 font-medium">
-                                            Guardar
-                                        </button>
-                                    </form>
-                                    @error('fecha_alta')
-                                        <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                                    @enderror
-                                @else
-                                    {{ $asig->fecha_alta?->format('d/m/Y') }}
-                                @endcan
-                            </td>
-                            <td class="py-2 px-3">
-                                {{ $asig->dias_trabajados ?? $asig->fecha_alta?->diffInDays(now())+1 }}
-                            </td>
-                            <td class="py-2 px-3 text-right">
-                                <form action="{{ route('obras.empleados.baja', [$obra->id, $asig->id]) }}"
-                                      method="POST"
-                                      onsubmit="return confirm('¿Dar de baja a este empleado en la obra?')">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button class="text-xs text-red-600 hover:text-red-800 font-medium">
-                                        Dar de baja
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="py-4 text-center text-slate-500">
-                                No hay empleados asignados actualmente a esta obra.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        {{-- HISTÓRICO --}}
-        @if($asignacionesHistoricas->count() > 0)
-            <h3 class="text-sm font-semibold text-slate-700 mt-6 mb-2">Historial de asignaciones</h3>
-            <div class="border rounded-xl overflow-hidden max-h-64 overflow-y-auto bg-white">
-                <table class="w-full text-xs">
-                    <thead class="bg-slate-50">
-                        <tr class="border-b text-slate-500">
-                            <th class="py-2 px-3 text-left">Empleado</th>
-                            <th class="py-2 px-3 text-left">Alta</th>
-                            <th class="py-2 px-3 text-left">Baja</th>
-                            <th class="py-2 px-3 text-left">Días</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($asignacionesHistoricas as $asig)
-                            <tr class="border-b">
-                                <td class="py-1 px-3">
-                                    {{ $asig->empleado->Nombre }} {{ $asig->empleado->Apellidos }}
-                                </td>
-                                <td class="py-1 px-3">{{ $asig->fecha_alta?->format('d/m/Y') }}</td>
-                                <td class="py-1 px-3">{{ $asig->fecha_baja?->format('d/m/Y') }}</td>
-                                <td class="py-1 px-3">
-                                    {{ $asig->dias_trabajados }}
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
-    </div>
+    @include('obras.partials.empleados.tab')
 @endif
+{{-- TAB CAJA CHICA --}}
+@if($tab === 'caja-chica')
+    @include('obras.partials.caja_chica.tab')
+@endif
+
 {{-- TAB ASISTENCIAS --}}
 @if($tab === 'asistencias')
     @include('obras.partials.asistencias.tab')
@@ -3335,35 +3092,52 @@
     @endif
 
     <div class="bg-white border rounded-xl p-4 shadow-sm">
-        <div class="flex justify-between items-center mb-4">
+        @php
+            $perforacionesResumen = $pilasAsignadasActivas->merge($pilasAsignadasHistoricas);
+            $totalPerforacionesObra = (float) $perforacionesResumen->sum('cantidad_programada');
+            $totalPerforacionesEjecutadas = (float) $perforacionesResumen->sum('cantidad_ejecutada');
+        @endphp
+        <div class="grid grid-cols-1 xl:grid-cols-[1fr_auto_1fr] gap-3 items-center mb-4">
             <h3 class="text-sm font-semibold text-slate-700">
                 Formatos de comisiones registrados
             </h3>
-            {{-- Filtro por fecha --}}
-            <form method="GET" action="{{ route('obras.edit', $obra) }}" class="flex items-center gap-2">
-                <input type="hidden" name="tab" value="comisiones">
 
-                <select name="fecha"
-                        onchange="this.form.submit()"
-                        class="px-3 py-2 border rounded-lg text-sm text-slate-700">
-                    <option value="">-- Todas las fechas --</option>
+            <div class="flex flex-wrap items-center justify-start xl:justify-center gap-2 text-xs">
+                <span class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-600">
+                    <span>Total perforaciones</span>
+                    <span class="font-semibold text-slate-900">{{ number_format($totalPerforacionesObra, 0) }}</span>
+                </span>
+                <span class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-700">
+                    <span>Ejecutadas</span>
+                    <span class="font-semibold">{{ number_format($totalPerforacionesEjecutadas, 0) }}</span>
+                </span>
+            </div>
 
-                    @foreach($fechasDisponibles as $fecha)
-                        <option value="{{ $fecha }}"
-                            {{ $selectedFecha == $fecha ? 'selected' : '' }}>
-                            {{ \Carbon\Carbon::parse($fecha)->format('d/m/Y') }}
-                        </option>
-                    @endforeach
-                </select>
-            </form>
+            <div class="flex flex-wrap items-center justify-start xl:justify-end gap-2">
+                {{-- Filtro por fecha --}}
+                <form method="GET" action="{{ route('obras.edit', $obra) }}" class="flex items-center gap-2">
+                    <input type="hidden" name="tab" value="comisiones">
 
+                    <input type="date"
+                           name="fecha"
+                           value="{{ $selectedFecha ? \Carbon\Carbon::parse($selectedFecha)->toDateString() : '' }}"
+                           onchange="this.form.submit()"
+                           class="rounded-xl border-slate-300 text-sm px-3 py-2 focus:border-teal-500 focus:ring-teal-100">
 
-            <a href="{{ route('obras.comisiones.create', $obra) }}"
-               class="inline-flex items-center px-4 py-2 rounded-xl bg-teal-600 text-white text-sm font-medium hover:bg-teal-700">
-                Nueva comisión
-            </a>
+                    @if($selectedFecha)
+                        <a href="{{ route('obras.edit', ['obra' => $obra->id, 'tab' => 'comisiones']) }}"
+                           class="text-xs font-semibold text-slate-500 hover:text-slate-800">
+                            Todas
+                        </a>
+                    @endif
+                </form>
+
+                <a href="{{ route('obras.comisiones.create', $obra) }}"
+                   class="inline-flex items-center px-4 py-2 rounded-xl bg-teal-600 text-white text-sm font-medium hover:bg-teal-700">
+                    Nueva comisión
+                </a>
+            </div>
         </div>
-
         @if($comisiones->isEmpty())
             <p class="text-sm text-slate-500">
                 Aún no hay comisiones registradas para esta obra.
@@ -3373,7 +3147,10 @@
     <thead class="bg-slate-50 border-b text-slate-500">
         <tr>
             <th class="py-2 px-3 text-left">Fecha</th>
-            <th class="py-2 px-3 text-left">Total pilas hechas</th>
+            <th class="py-2 px-3 text-left">Total perforaciones hechas</th>
+            <th class="py-2 px-3 text-left">Tipo de perforación</th>
+            <th class="py-2 px-3 text-right">Metros perforados</th>
+            <th class="py-2 px-3 text-right">Importe generado</th>
             <th class="py-2 px-3 text-left">Comisiones registradas</th>
             <th class="py-2 px-3 text-right">Acciones</th>
 
@@ -3389,6 +3166,24 @@
 
                 <td class="py-2 px-3 font-semibold">
                     {{ (int) $grupo->total_pilas }}
+                </td>
+
+                <td class="py-2 px-3">
+                    @forelse($grupo->tipos_pila as $tipoPila)
+                        <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 mr-1 mb-1">
+                            {{ $tipoPila }}
+                        </span>
+                    @empty
+                        <span class="text-slate-400">-</span>
+                    @endforelse
+                </td>
+
+                <td class="py-2 px-3 text-right font-semibold">
+                    {{ number_format((float) $grupo->metros_perforados, 2) }}
+                </td>
+
+                <td class="py-2 px-3 text-right font-semibold text-emerald-700">
+                    ${{ number_format((float) $grupo->importe_comisiones, 2) }}
                 </td>
 
                 <td class="py-2 px-3">
@@ -3949,9 +3744,9 @@
 
 @endif
 
-{{-- TAB: PILAS --}}
+{{-- TAB: PERFORACIONES --}}
 @if($tab === 'pilas')
-    <h2 class="text-lg font-semibold mb-4">Pilas de la obra</h2>
+    <h2 class="text-lg font-semibold mb-4">Perforaciones de la obra</h2>
 
     @if(session('success'))
         <div class="mb-4 p-3 bg-green-100 text-green-700 rounded-lg text-sm">
@@ -3967,10 +3762,10 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-[2fr_1.2fr] gap-6">
 
-        {{-- LISTA DE PILAS ACTIVAS --}}
+        {{-- LISTA DE PERFORACIONES ACTIVAS --}}
         <div>
             <h3 class="text-sm font-semibold text-slate-700 mb-3">
-                Pilas actualmente asignadas a la obra
+                Perforaciones actualmente asignadas a la obra
             </h3>
 
             <div class="border rounded-xl overflow-hidden">
@@ -4029,7 +3824,7 @@
                                 <td class="py-2 px-3 text-right">
                                     <form action="{{ route('obras.pilas.baja', [$obra->id, $pila->id]) }}"
                                           method="POST"
-                                          onsubmit="return confirm('¿Dar de baja esta pila en la obra?')">
+                                          onsubmit="return confirm('¿Dar de baja esta perforación en la obra?')">
                                         @csrf
                                         @method('PATCH')
                                         <button class="text-xs text-red-600 hover:text-red-800 font-medium">
@@ -4041,7 +3836,7 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="py-4 text-center text-slate-500">
-                                    No hay pilas asignadas actualmente a esta obra.
+                                    No hay perforaciones asignadas actualmente a esta obra.
                                 </td>
                             </tr>
                         @endforelse
@@ -4052,13 +3847,13 @@
             {{-- HISTÓRICO --}}
             @if($pilasAsignadasHistoricas->count() > 0)
                 <h3 class="text-sm font-semibold text-slate-700 mt-6 mb-2">
-                    Historial de pilas de la obra
+                    Historial de perforaciones de la obra
                 </h3>
                 <div class="border rounded-xl overflow-hidden max-h-64 overflow-y-auto">
                     <table class="w-full text-xs">
                         <thead class="bg-slate-50">
                             <tr class="border-b text-slate-500">
-                                <th class="py-2 px-3 text-left">No. pila</th>
+                                <th class="py-2 px-3 text-left">No.</th>
                                 <th class="py-2 px-3 text-left">Tipo</th>
                                 <th class="py-2 px-3 text-left">Diámetro</th>
                                 <th class="py-2 px-3 text-left">Profundidad</th>
@@ -4097,15 +3892,15 @@
             @endif
         </div>
 
-        {{-- FORM PARA ASIGNAR NUEVA PILA --}}
+        {{-- FORM PARA ASIGNAR NUEVA PERFORACION --}}
         <div>
             <h3 class="text-sm font-semibold text-slate-700 mb-3">
-                Asignar pila a esta obra
+                Asignar perforación a esta obra
             </h3>
 
             @if($pilasCatalogo->isEmpty())
                 <p class="text-sm text-slate-500">
-                    No hay pilas configuradas en el catálogo.
+                    No hay tipos de perforación configurados en el catálogo.
                 </p>
             @else
                 <form method="POST"
@@ -4113,40 +3908,43 @@
                     @csrf
 
                     <div class="space-y-3">
-                        {{-- Número de pila --}}
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">
-                                Cantidad de pilas de este tipo
-                            </label>
-                            <input type="text"
-                                   name="cantidad_programada"
-                                   value="{{ old('cantidad_programada') }}"
-                                   class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
-                            @error('cantidad_programada')
-                                <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                            @enderror
-                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_7rem] gap-3">
+                            {{-- Tipo de perforacion (catalogo) --}}
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">
+                                    Tipo de perforación
+                                </label>
+                                <select name="tipo"
+                                        class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:border-teal-500 focus:ring-teal-100">
+                                    <option value="">Selecciona un tipo de perforación</option>
+                                    @foreach($pilasCatalogo as $pilaCat)
+                                        <option value="{{ $pilaCat->codigo }}"
+                                            {{ old('tipo') == $pilaCat->codigo ? 'selected' : '' }}>
+                                            {{ $pilaCat->codigo }} – {{ $pilaCat->descripcion }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('tipo')
+                                    <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                                @enderror
+                            </div>
 
-                        {{-- Tipo de pila (catálogo) --}}
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">
-                                Tipo de pila (catálogo)
-                            </label>
-                            <select name="tipo"
-                                    class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
-                                <option value="">Selecciona un tipo</option>
-                                @foreach($pilasCatalogo as $pilaCat)
-                                    <option value="{{ $pilaCat->codigo }}"
-                                        {{ old('tipo') == $pilaCat->codigo ? 'selected' : '' }}>
-                                        {{ $pilaCat->codigo }} – {{ $pilaCat->descripcion }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('tipo')
-                                <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
-                            @enderror
+                            {{-- Cantidad --}}
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">
+                                    Cantidad
+                                </label>
+                                <input type="number"
+                                       min="1"
+                                       step="1"
+                                       name="cantidad_programada"
+                                       value="{{ old('cantidad_programada') }}"
+                                       class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 text-center focus:border-teal-500 focus:ring-teal-100">
+                                @error('cantidad_programada')
+                                    <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
-
                         {{-- Diámetro y profundidad de proyecto --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
@@ -4158,7 +3956,7 @@
                                        min="0"
                                        name="diametro_proyecto"
                                        value="{{ old('diametro_proyecto') }}"
-                                       class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
+                                       class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:border-teal-500 focus:ring-teal-100">
                                 @error('diametro_proyecto')
                                     <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                                 @enderror
@@ -4172,7 +3970,7 @@
                                        min="0"
                                        name="profundidad_proyecto"
                                        value="{{ old('profundidad_proyecto') }}"
-                                       class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
+                                       class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:border-teal-500 focus:ring-teal-100">
                                 @error('profundidad_proyecto')
                                     <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                                 @enderror
@@ -4187,7 +3985,7 @@
                             <input type="text"
                                    name="ubicacion"
                                    value="{{ old('ubicacion') }}"
-                                   class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">
+                                   class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:border-teal-500 focus:ring-teal-100">
                             @error('ubicacion')
                                 <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                             @enderror
@@ -4200,7 +3998,7 @@
                             </label>
                             <textarea name="notas"
                                       rows="3"
-                                      class="w-full rounded-xl border-slate-200 text-sm px-3 py-2">{{ old('notas') }}</textarea>
+                                      class="w-full rounded-xl border-slate-300 text-sm px-3 py-2 focus:border-teal-500 focus:ring-teal-100">{{ old('notas') }}</textarea>
                             @error('notas')
                                 <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                             @enderror
@@ -4210,7 +4008,7 @@
                     <div class="mt-4 flex justify-end">
                         <button type="submit"
                                 class="px-4 py-2 bg-teal-600 text-white text-sm rounded-xl hover:bg-teal-700">
-                            Asignar pila
+                            Asignar perforación
                         </button>
                     </div>
                 </form>
@@ -6633,5 +6431,3 @@ function calcularFila(idCampo) {
 //     });
 // });
 </script>
-
-

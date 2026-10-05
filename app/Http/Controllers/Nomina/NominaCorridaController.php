@@ -182,24 +182,61 @@ class NominaCorridaController extends Controller
             ->selectRaw('
                 cp.id as comision_personal_id,
                 cp.comision_id,
+                cp.rol_id,
                 oe.empleado_id as empleado_id,
                 oe.obra_id as obra_id,
                 c.fecha as fecha_comision,
+                c.tarifario_id,
+                c.trabajo_id,
                 COALESCE(cp.importe_comision,0) as importe_comision,
                 COALESCE(cp.tiempo_extra,0) as tiempo_extra,
                 cp.rol as rol
             ')
-            ->get()
-            ->groupBy('empleado_id');
+            ->get();
+
+        $tarifarioIds = $comisionesDetalle->pluck('tarifario_id')->filter()->unique()->values();
+        $rolIds = $comisionesDetalle->pluck('rol_id')->filter()->unique()->values();
+
+        $tarifasHoraExtra = collect();
+        if ($tarifarioIds->isNotEmpty() && $rolIds->isNotEmpty()) {
+            $tarifasHoraExtra = DB::table('comision_tarifario_detalles')
+                ->whereIn('tarifario_id', $tarifarioIds)
+                ->whereIn('rol_id', $rolIds)
+                ->where('concepto', 'hora_extra')
+                ->where('variable_origen', 'tiempo_extra')
+                ->where('activo', 1)
+                ->get(['tarifario_id', 'trabajo_id', 'rol_id', 'tarifa'])
+                ->groupBy(fn ($tarifa) => ((int) $tarifa->tarifario_id).'|'.((int) $tarifa->rol_id));
+        }
+
+        $comisionesDetalle = $comisionesDetalle->map(function ($comision) use ($tarifasHoraExtra) {
+            $tarifaKey = ((int) ($comision->tarifario_id ?? 0)).'|'.((int) ($comision->rol_id ?? 0));
+            $tarifasRol = $tarifasHoraExtra->get($tarifaKey, collect());
+            $trabajoId = (int) ($comision->trabajo_id ?? 0);
+            $tarifa = $tarifasRol->first(fn ($row) => (int) ($row->trabajo_id ?? 0) === $trabajoId)
+                ?? $tarifasRol->first();
+
+            $tarifaHoraExtra = (float) ($tarifa->tarifa ?? 0);
+            $horasExtraCantidad = (float) ($comision->tiempo_extra ?? 0);
+            $horasExtraMonto = round($horasExtraCantidad * $tarifaHoraExtra, 2);
+            $importeTotal = (float) ($comision->importe_comision ?? 0);
+            $produccionMonto = max(0, round($importeTotal - $horasExtraMonto, 2));
+
+            $comision->horas_extra_cantidad = $horasExtraCantidad;
+            $comision->tarifa_hora_extra_snapshot = $tarifaHoraExtra;
+            $comision->horas_extra_monto = $horasExtraMonto;
+            $comision->produccion_monto = $produccionMonto;
+
+            return $comision;
+        })->groupBy('empleado_id');
 
         $comisiones = $comisionesDetalle->map(function ($items) {
             return (object) [
                 'obra_id' => $items->pluck('obra_id')->filter()->last(),
-                'comisiones_monto' => $items->sum('importe_comision'),
-                'horas_extra' => $items->sum('tiempo_extra'),
+                'comisiones_monto' => $items->sum('produccion_monto'),
+                'horas_extra' => $items->sum('horas_extra_monto'),
             ];
         });
-
         $creados = 0;
         $actualizados = 0;
 
@@ -507,7 +544,11 @@ class NominaCorridaController extends Controller
                     'obra_id' => $comision->obra_id ?? $recibo->obra_id,
                     'fecha_comision' => $comision->fecha_comision ?? null,
                     'importe_comision' => (float) ($comision->importe_comision ?? 0),
+                    'produccion_monto' => (float) ($comision->produccion_monto ?? 0),
                     'tiempo_extra' => (float) ($comision->tiempo_extra ?? 0),
+                    'horas_extra_cantidad' => (float) ($comision->horas_extra_cantidad ?? $comision->tiempo_extra ?? 0),
+                    'tarifa_hora_extra_snapshot' => (float) ($comision->tarifa_hora_extra_snapshot ?? 0),
+                    'horas_extra_monto' => (float) ($comision->horas_extra_monto ?? 0),
                     'rol' => $comision->rol ?? null,
                 ]
             );

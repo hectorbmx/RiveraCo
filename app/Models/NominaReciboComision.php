@@ -17,14 +17,22 @@ class NominaReciboComision extends Model
         'obra_id',
         'fecha_comision',
         'importe_comision',
+        'produccion_monto',
         'tiempo_extra',
+        'horas_extra_cantidad',
+        'tarifa_hora_extra_snapshot',
+        'horas_extra_monto',
         'rol',
     ];
 
     protected $casts = [
         'fecha_comision' => 'date',
         'importe_comision' => 'decimal:2',
+        'produccion_monto' => 'decimal:2',
         'tiempo_extra' => 'decimal:2',
+        'horas_extra_cantidad' => 'decimal:2',
+        'tarifa_hora_extra_snapshot' => 'decimal:4',
+        'horas_extra_monto' => 'decimal:2',
     ];
 
     public function recibo()

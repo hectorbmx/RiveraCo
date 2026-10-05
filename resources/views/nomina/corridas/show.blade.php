@@ -235,7 +235,7 @@
             <th class="px-3 py-2 text-center font-semibold bg-red-50">Descuentos</th>
 
             {{-- Operativo --}}
-            <th class="px-3 py-2 text-center font-semibold bg-blue-50">Horas extra</th>
+            <th class="px-3 py-2 text-center font-semibold bg-blue-50">Horas extra ($)</th>
             <th class="px-3 py-2 text-center font-semibold bg-blue-50">M. lineales</th>
             <th class="px-3 py-2 text-center font-semibold bg-blue-50">Comisiones</th>
             <th class="px-3 py-2 text-center font-semibold bg-blue-50">Notas</th>
@@ -383,7 +383,7 @@
         <option value="">Sin obra</option>
         @foreach($obras as $o)
           <option value="{{ $o->id }}" @selected($r->obra_id == $o->id)>
-            {{ $o->folio ?? $o->nombre_obra ?? ('Obra #'.$o->id) }}
+            {{ trim(($o->clave_obra ? $o->clave_obra . ' - ' : '') . ($o->nombre ?? 'Obra #' . $o->id)) }}
           </option>
         @endforeach
       </select>

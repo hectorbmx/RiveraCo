@@ -22,6 +22,7 @@ use App\Models\ObraTipoConfiguracion;
 use App\Models\ObraEmpleado;
 use App\Models\ObraPlaneacionGasto;
 use App\Models\ObraReposicionGasto;
+use App\Models\ReposicionCajaChicaGasto;
 use App\Models\gastosPlaneados;
 use App\Models\Comision;
 use App\Models\ComisionDetalle;
@@ -588,7 +589,8 @@ $planeacion = \App\Models\ObraPlaneacionSemanal::query()
         'contratos',
         'planos',
         'presupuestos',
-        'empleadosAsignados.empleado',
+        'empleadosAsignados.empleado.tipoSueldo',
+        'empleadosAsignados.rol',
         'maquinasAsignadas.maquina',
         'presupuestos',
         'presupuestos_vinculados.resumenes',
@@ -607,8 +609,42 @@ $presupuestosDisponibles = Presupuesto::whereDoesntHave('obras', function($query
 
     // Asignaciones activas e historico (de esta obra)
     $asignaciones           = $obra->empleadosAsignados;
+
+    $asignaciones->each(function (ObraEmpleado $asignacion) {
+        $empleado = $asignacion->empleado;
+        $tipoSueldo = $empleado?->tipoSueldo;
+        $diasPeriodo = (int) ($tipoSueldo?->dias_periodo ?? 0);
+        $diasAsignados = (int) ($asignacion->dias_trabajados ?? 0);
+        $sueldoReal = (float) ($empleado?->Sueldo_real ?? 0);
+        $sueldoBase = $sueldoReal > 0
+            ? $sueldoReal
+            : (float) ($empleado?->Sueldo ?? 0) + (float) ($empleado?->Complemento ?? 0);
+        $faltaTipoSueldo = ! $tipoSueldo || $diasPeriodo <= 0;
+        $sueldoDiario = (! $faltaTipoSueldo && $sueldoBase > 0)
+            ? round($sueldoBase / $diasPeriodo, 2)
+            : null;
+
+        $asignacion->sueldo_base_calculo = $sueldoBase;
+        $asignacion->sueldo_tipo_nombre = $tipoSueldo?->nombre;
+        $asignacion->sueldo_dias_periodo = $diasPeriodo > 0 ? $diasPeriodo : null;
+        $asignacion->sueldo_dias_asignados = $diasAsignados;
+        $asignacion->falta_tipo_sueldo = $faltaTipoSueldo;
+        $asignacion->sueldo_diario_estimado = $sueldoDiario;
+        $asignacion->sueldo_generado_estimado = $sueldoDiario !== null
+            ? round($sueldoDiario * $diasAsignados, 2)
+            : null;
+    });
+
     $asignacionesActivas    = $asignaciones->where('activo', true);
     $asignacionesHistoricas = $asignaciones->where('activo', false);
+
+    $sueldoObraResumen = [
+        'activos' => $asignacionesActivas->sum(fn (ObraEmpleado $asignacion) => (float) ($asignacion->sueldo_generado_estimado ?? 0)),
+        'historico' => $asignacionesHistoricas->sum(fn (ObraEmpleado $asignacion) => (float) ($asignacion->sueldo_generado_estimado ?? 0)),
+        'total' => $asignaciones->sum(fn (ObraEmpleado $asignacion) => (float) ($asignacion->sueldo_generado_estimado ?? 0)),
+        'sin_tipo_sueldo' => $asignaciones->where('falta_tipo_sueldo', true)->count(),
+    ];
+
     $empleadosViaticosObra = $asignacionesActivas
         ->loadMissing(['empleado'])
         ->map(function (ObraEmpleado $asignacion) {
@@ -734,13 +770,23 @@ if ($tab === 'asistencias') {
     $daysCount = $start->diffInDays($end) + 1;
 
     $weekDays = collect();
+    $diasSemanaCortos = [
+        1 => 'LUN',
+        2 => 'MAR',
+        3 => 'MIE',
+        4 => 'JUE',
+        5 => 'VIE',
+        6 => 'SAB',
+        7 => 'DOM',
+    ];
+
     if ($daysCount === 7) {
         for ($i = 0; $i < 7; $i++) {
             $d = $start->copy()->addDays($i);
             $weekDays->push([
                 'date'  => $d->toDateString(),
                 'label' => $d->format('d/m'),
-                'dow'   => mb_strtoupper($d->isoFormat('ddd')),
+                'dow'   => $diasSemanaCortos[$d->dayOfWeekIso] ?? mb_strtoupper($d->format('D')),
             ]);
         }
     }
@@ -882,6 +928,39 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
     ->whereNotNull('partida_id')
     ->groupBy('partida_id')
     ->pluck('total_gastado', 'partida_id');
+$cajaChicaGastos = collect();
+$cajaChicaStats = [
+    'total' => 0,
+    'registrado' => 0,
+    'autorizado' => 0,
+    'pendientes' => 0,
+    'rechazados' => 0,
+];
+
+if ($tab === 'caja-chica') {
+    $cajaChicaGastos = ReposicionCajaChicaGasto::query()
+        ->with([
+            'categoria',
+            'subcategoria',
+            'maquina',
+            'vehiculo',
+                'proveedor',
+                'solicitadoPor',
+            'resueltoPor',
+        ])
+        ->where('obra_id', $obra->id)
+        ->latest('fecha_gasto')
+        ->latest('id')
+        ->get();
+
+    $cajaChicaStats = [
+        'total' => $cajaChicaGastos->count(),
+        'registrado' => $cajaChicaGastos->sum('importe_registrado'),
+        'autorizado' => $cajaChicaGastos->sum(fn ($gasto) => (float) ($gasto->importe_autorizado ?? 0)),
+        'pendientes' => $cajaChicaGastos->where('estado_autorizacion', 'pendiente')->count(),
+        'rechazados' => $cajaChicaGastos->where('estado_autorizacion', 'rechazado')->count(),
+    ];
+}
 
     $currentStatus = $obra->estatus_nuevo;
     if (!is_null($currentStatus) && !is_numeric($currentStatus)) {
@@ -1156,6 +1235,7 @@ if ($tab === 'vehiculos') {
             'pila',
             // para poder mostrar la máquina sin N+1
             'detalles.asignacionMaquina.maquina',
+            'personales',
         ])
         // suma de cantidad de TODAS las filas de detalle de esta comision
         ->withSum('detalles as total_pilas', 'cantidad')
@@ -1174,9 +1254,27 @@ if ($tab === 'vehiculos') {
         return $comision->fecha?->format('Y-m-d');
     })
     ->map(function ($items, $fecha) {
+        $detalles = $items->flatMap(fn ($comision) => $comision->detalles ?? collect());
+        $tiposPila = $items
+            ->flatMap(function ($comision) {
+                $desdePila = collect([$comision->pila?->tipo])->filter();
+                $desdeDetalles = ($comision->detalles ?? collect())
+                    ->pluck('diametro')
+                    ->filter();
+
+                return $desdePila->merge($desdeDetalles);
+            })
+            ->map(fn ($tipo) => trim((string) $tipo))
+            ->filter()
+            ->unique()
+            ->values();
+
         return (object) [
             'fecha' => \Carbon\Carbon::parse($fecha),
             'total_pilas' => $items->sum('total_pilas'),
+            'tipos_pila' => $tiposPila,
+            'metros_perforados' => $detalles->sum('metros_sujetos_comision'),
+            'importe_comisiones' => $items->sum(fn ($comision) => ($comision->personales ?? collect())->sum('importe_comision')),
             'comisiones' => $items,
         ];
     })
@@ -1364,6 +1462,8 @@ return view('obras.edit', [
     'reposicionesStats'           => $reposicionesStats,
     'reposicionesMontos'          => $reposicionesMontos,
     'gastadoReposicionPorPartida' => $gastadoReposicionPorPartida,
+    'cajaChicaGastos'             => $cajaChicaGastos,
+    'cajaChicaStats'              => $cajaChicaStats,
     
     'clientes'                    => $clientes,
     'responsables'                => $responsables,
@@ -1372,6 +1472,7 @@ return view('obras.edit', [
     'asignaciones'                => $asignaciones,
     'asignacionesActivas'         => $asignacionesActivas,
     'asignacionesHistoricas'      => $asignacionesHistoricas,
+    'sueldoObraResumen'          => $sueldoObraResumen,
     'empleadosAsignables'         => $empleadosAsignables,
     'empleadosViaticosObra'       => $empleadosViaticosObra,
     'tarifaViaticoActual'         => $tarifaViaticoActual,
@@ -1571,7 +1672,129 @@ public function reporteAsistencias(Request $request, Obra $obra)
 }
 
 
-public function guardarAsistenciaSemanal(Request $request, Obra $obra)
+public function guardarAsistenciaManual(Request $request, Obra $obra)
+    {
+        $this->abortarSiObraFueraDeArea($obra);
+
+        $data = $request->validate([
+            'empleado_id' => ['required', 'integer'],
+            'fecha' => ['required', 'date'],
+            'entrada_hora' => ['nullable', 'date_format:H:i'],
+            'salida_hora' => ['nullable', 'date_format:H:i'],
+            'motivo' => ['required', 'string', 'max:255'],
+        ]);
+
+        $empleadoId = (int) $data['empleado_id'];
+        $fecha = Carbon::parse($data['fecha'], 'America/Mexico_City')->startOfDay();
+        $semanaDesde = $request->input('semana_desde') ?: $request->query('asist_desde');
+        $semanaHasta = $request->input('semana_hasta') ?: $request->query('asist_hasta');
+
+        if ($semanaDesde && $semanaHasta) {
+            $inicioSemana = Carbon::parse($semanaDesde, 'America/Mexico_City')->startOfDay();
+            $finSemana = Carbon::parse($semanaHasta, 'America/Mexico_City')->startOfDay();
+        } else {
+            $hoy = Carbon::now('America/Mexico_City')->startOfDay();
+            $inicioSemana = $hoy->copy()->startOfWeek(Carbon::MONDAY);
+            $finSemana = $hoy->copy()->endOfWeek(Carbon::SUNDAY);
+        }
+
+        $esAsignado = $obra->empleadosAsignados()
+            ->where('empleado_id', $empleadoId)
+            ->where('activo', true)
+            ->exists();
+
+        if (! $esAsignado) {
+            throw ValidationException::withMessages([
+                'empleado_id' => 'El empleado no está asignado activo a esta obra.',
+            ]);
+        }
+
+        if ($fecha->isFuture()) {
+            throw ValidationException::withMessages([
+                'fecha' => 'No se permite capturar una fecha futura.',
+            ]);
+        }
+
+        if ($fecha->lt($inicioSemana) || $fecha->gt($finSemana)) {
+            throw ValidationException::withMessages([
+                'fecha' => 'La fecha debe estar dentro de la semana actual.',
+            ]);
+        }
+
+        $entradaHora = $data['entrada_hora'] ?? null;
+        $salidaHora = $data['salida_hora'] ?? null;
+
+        if (! $entradaHora && ! $salidaHora) {
+            throw ValidationException::withMessages([
+                'entrada_hora' => 'Debe registrar al menos una hora de entrada o salida.',
+            ]);
+        }
+
+        if ($entradaHora && $salidaHora) {
+            $entradaDt = Carbon::parse($fecha->toDateString() . ' ' . $entradaHora, 'America/Mexico_City');
+            $salidaDt = Carbon::parse($fecha->toDateString() . ' ' . $salidaHora, 'America/Mexico_City');
+
+            if ($salidaDt->lt($entradaDt)) {
+                throw ValidationException::withMessages([
+                    'salida_hora' => 'La salida no puede ser menor que la entrada.',
+                ]);
+            }
+        }
+
+        $meta = [
+            'origen' => 'web_manual',
+            'motivo' => $data['motivo'],
+            'capturado_desde' => 'laravel',
+            'capturado_por_user_id' => $request->user()?->id,
+        ];
+
+        DB::transaction(function () use ($obra, $empleadoId, $fecha, $entradaHora, $salidaHora, $meta, $request) {
+            $baseWhere = [
+                'obra_id' => $obra->id,
+                'empleado_id' => $empleadoId,
+                'checked_date' => $fecha->toDateString(),
+            ];
+
+            if ($entradaHora) {
+                ObraAsistencia::query()->updateOrCreate(
+                    array_merge($baseWhere, ['tipo' => 'entrada']),
+                    [
+                        'registrado_por_user_id' => $request->user()?->id,
+                        'checked_at' => Carbon::parse($fecha->toDateString() . ' ' . $entradaHora, 'America/Mexico_City')->toDateTimeString(),
+                        'photo_path' => null,
+                        'lat' => null,
+                        'lng' => null,
+                        'ubicacion_texto' => null,
+                        'meta' => $meta,
+                    ]
+                );
+            }
+
+            if ($salidaHora) {
+                ObraAsistencia::query()->updateOrCreate(
+                    array_merge($baseWhere, ['tipo' => 'salida']),
+                    [
+                        'registrado_por_user_id' => $request->user()?->id,
+                        'checked_at' => Carbon::parse($fecha->toDateString() . ' ' . $salidaHora, 'America/Mexico_City')->toDateTimeString(),
+                        'photo_path' => null,
+                        'lat' => null,
+                        'lng' => null,
+                        'ubicacion_texto' => null,
+                        'meta' => $meta,
+                    ]
+                );
+            }
+        });
+
+        return redirect()->route('obras.edit', [
+            'obra' => $obra->id,
+            'tab' => 'asistencias',
+            'asist_desde' => $inicioSemana->toDateString(),
+            'asist_hasta' => $finSemana->toDateString(),
+        ])->with('success', 'Asistencia manual guardada correctamente.');
+    }
+
+    public function guardarAsistenciaSemanal(Request $request, Obra $obra)
 {
     $this->abortarSiObraFueraDeArea($obra);
 
@@ -1724,12 +1947,21 @@ public function imprimirAsistenciaSemanal(Obra $obra, ObraAsistenciaSemanalRepor
 private function buildAsistenciaSemanalRows(Collection $asignaciones, Collection $weekDays, Collection $index, ?ObraAsistenciaSemanalReporte $reporte): Collection
 {
     $detalles = $reporte?->detalles?->keyBy(fn ($d) => $d->empleado_id . '|' . $d->fecha->toDateString()) ?? collect();
+        $modoSemana = $reporte && in_array($reporte->estatus, [
+            ObraAsistenciaSemanalReporte::ESTATUS_GENERADO,
+            ObraAsistenciaSemanalReporte::ESTATUS_REVISADO,
+            ObraAsistenciaSemanalReporte::ESTATUS_AUTORIZADO,
+            ObraAsistenciaSemanalReporte::ESTATUS_PAGADO,
+        ], true) ? 'comprobacion' : 'administrativa';
+        $hoy = Carbon::now('America/Mexico_City')->startOfDay();
+        $inicioSemana = Carbon::parse($weekDays->first()['date'], 'America/Mexico_City')->startOfDay();
+        $finSemana = Carbon::parse($weekDays->last()['date'], 'America/Mexico_City')->startOfDay();
 
-    return $asignaciones
+        return $asignaciones
         ->loadMissing(['empleado'])
         ->filter(fn (ObraEmpleado $asignacion) => $asignacion->empleado)
         ->sortBy(fn (ObraEmpleado $asignacion) => trim(($asignacion->empleado->Apellidos ?? '') . ' ' . ($asignacion->empleado->Nombre ?? '')))
-        ->map(function (ObraEmpleado $asignacion) use ($weekDays, $index, $detalles) {
+        ->map(function (ObraEmpleado $asignacion) use ($weekDays, $index, $detalles, $modoSemana, $hoy, $inicioSemana, $finSemana) {
             $empleado = $asignacion->empleado;
             $dias = [];
             $totales = [
@@ -1741,12 +1973,32 @@ private function buildAsistenciaSemanalRows(Collection $asignaciones, Collection
 
             foreach ($weekDays as $wd) {
                 $fecha = $wd['date'];
+                $dia = Carbon::parse($fecha, 'America/Mexico_City')->startOfDay();
                 $items = $index->get($empleado->id_Empleado . '|' . $fecha, collect());
                 $entrada = $items->firstWhere('tipo', 'entrada');
                 $salida = $items->firstWhere('tipo', 'salida');
                 $detalle = $detalles->get($empleado->id_Empleado . '|' . $fecha);
                 $planeado = $detalle ? (bool) $detalle->planeado_asistir : true;
                 $estadoCampo = $detalle?->estado_campo ?: $this->resolverEstadoCampoSemanal($planeado, $entrada, $salida, $detalle?->excepcion_tipo);
+                $modoCelda = $modoSemana;
+                $estadoVisual = $this->buildEstadoVisualSemanal(
+                    $dia,
+                    $planeado,
+                    $entrada,
+                    $salida,
+                    $detalle?->excepcion_tipo,
+                    $modoCelda,
+                    $hoy
+                );
+                $origenEvidencia = $detalle?->excepcion_tipo
+                    ? 'excepcion'
+                    : ($entrada?->meta['origen'] ?? $salida?->meta['origen'] ?? 'sin_evidencia');
+                $origenLabel = match ($origenEvidencia) {
+                    'web_manual' => 'Manual',
+                    'app' => 'App',
+                    'excepcion' => 'Excepcion',
+                    default => 'Sin evidencia',
+                };
                 $minutosTrabajados = ($entrada && $salida)
                     ? max(0, $entrada->checked_at->diffInMinutes($salida->checked_at, false))
                     : 0;
@@ -1769,6 +2021,16 @@ private function buildAsistenciaSemanalRows(Collection $asignaciones, Collection
                     'planeado' => $planeado,
                     'estado_admin' => $detalle?->estado_admin ?? 'planeado',
                     'estado_campo' => $estadoCampo,
+                    'estado_visual' => $estadoVisual['estado_visual'],
+                    'label_visual' => $estadoVisual['label_visual'],
+                    'capturable' => $estadoVisual['capturable'],
+                    'bloqueada' => $estadoVisual['bloqueada'],
+                    'origen_evidencia' => $origenEvidencia,
+                    'origen_label' => $origenLabel,
+                    'modo_celda' => $estadoVisual['modo_celda'],
+                    'es_hoy' => $estadoVisual['es_hoy'],
+                    'es_futuro' => $estadoVisual['es_futuro'],
+                    'es_pasado' => $estadoVisual['es_pasado'],
                     'entrada' => $entrada?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
                     'salida' => $salida?->checked_at?->timezone('America/Mexico_City')->format('H:i'),
                     'entrada_foto' => $entrada?->photo_path,
@@ -1803,24 +2065,135 @@ private function formatMinutesAsHours(int $minutes): string
 
     return $hours . ' h ' . $remainingMinutes . ' min';
 }
-private function resolverEstadoCampoSemanal(bool $planeado, $entrada, $salida, ?string $excepcionTipo): string
-{
-    if ($excepcionTipo) {
-        return 'excepcion';
+
+    private function buildEstadoVisualSemanal(
+        Carbon $dia,
+        bool $planeado,
+        $entrada,
+        $salida,
+        ?string $excepcionTipo,
+        ?string $modoCelda = null,
+        ?Carbon $hoy = null
+    ): array {
+        $hoy ??= Carbon::now('America/Mexico_City')->startOfDay();
+        $esHoy = $dia->isSameDay($hoy);
+        $esFuturo = $dia->isAfter($hoy);
+        $esPasado = $dia->lt($hoy);
+        $tieneEvidencia = (bool) ($entrada || $salida);
+        $origenEvidencia = $entrada?->meta['origen'] ?? $salida?->meta['origen'] ?? null;
+
+        if ($excepcionTipo) {
+            return [
+                'estado_visual' => 'excepcion',
+                'label_visual' => 'Excepcion',
+                'capturable' => false,
+                'bloqueada' => true,
+                'origen_evidencia' => 'excepcion',
+                'modo_celda' => $modoCelda ?? 'comprobacion',
+                'es_hoy' => $esHoy,
+                'es_futuro' => $esFuturo,
+                'es_pasado' => $esPasado,
+            ];
+        }
+
+        if ($esFuturo) {
+            return [
+                'estado_visual' => 'futuro',
+                'label_visual' => 'Futuro',
+                'capturable' => false,
+                'bloqueada' => true,
+                'origen_evidencia' => 'sin_evidencia',
+                'modo_celda' => $modoCelda ?? 'administrativa',
+                'es_hoy' => false,
+                'es_futuro' => true,
+                'es_pasado' => false,
+            ];
+        }
+
+        if ($entrada && $salida) {
+            return [
+                'estado_visual' => 'confirmado',
+                'label_visual' => 'Comprobado',
+                'capturable' => false,
+                'bloqueada' => false,
+                'origen_evidencia' => $origenEvidencia ?: 'app',
+                'modo_celda' => $modoCelda ?? 'comprobacion',
+                'es_hoy' => $esHoy,
+                'es_futuro' => false,
+                'es_pasado' => $esPasado,
+            ];
+        }
+
+        if ($entrada || $salida) {
+            return [
+                'estado_visual' => 'confirmado_parcial',
+                'label_visual' => 'Parcial',
+                'capturable' => false,
+                'bloqueada' => false,
+                'origen_evidencia' => $origenEvidencia ?: 'app',
+                'modo_celda' => $modoCelda ?? 'comprobacion',
+                'es_hoy' => $esHoy,
+                'es_futuro' => false,
+                'es_pasado' => $esPasado,
+            ];
+        }
+
+        if ($esHoy) {
+            return [
+                'estado_visual' => 'hoy_capturable',
+                'label_visual' => 'Hoy',
+                'capturable' => true,
+                'bloqueada' => false,
+                'origen_evidencia' => 'sin_evidencia',
+                'modo_celda' => $modoCelda ?? 'comprobacion',
+                'es_hoy' => true,
+                'es_futuro' => false,
+                'es_pasado' => false,
+            ];
+        }
+
+        if ($esPasado && $planeado) {
+            return [
+                'estado_visual' => 'pendiente_vencido',
+                'label_visual' => 'Pendiente',
+                'capturable' => true,
+                'bloqueada' => false,
+                'origen_evidencia' => 'sin_evidencia',
+                'modo_celda' => $modoCelda ?? 'comprobacion',
+                'es_hoy' => false,
+                'es_futuro' => false,
+                'es_pasado' => true,
+            ];
+        }
+
+        if (! $planeado) {
+            return [
+                'estado_visual' => 'no_planeado',
+                'label_visual' => 'No planeado',
+                'capturable' => false,
+                'bloqueada' => true,
+                'origen_evidencia' => 'sin_evidencia',
+                'modo_celda' => $modoCelda ?? 'administrativa',
+                'es_hoy' => false,
+                'es_futuro' => false,
+                'es_pasado' => $esPasado,
+            ];
+        }
+
+        return [
+            'estado_visual' => 'sin_evidencia',
+            'label_visual' => 'Sin evidencia',
+            'capturable' => false,
+            'bloqueada' => false,
+            'origen_evidencia' => 'sin_evidencia',
+            'modo_celda' => $modoCelda ?? 'administrativa',
+            'es_hoy' => $esHoy,
+            'es_futuro' => $esFuturo,
+            'es_pasado' => $esPasado,
+        ];
     }
 
-    if ($entrada && $salida) {
-        return 'confirmado';
-    }
-
-    if ($entrada || $salida) {
-        return 'confirmado_parcial';
-    }
-
-    return $planeado ? 'sin_evidencia' : 'no_planeado';
-}
-
-public function updateBentonita(Request $request, Obra $obra)
+    public function updateBentonita(Request $request, Obra $obra)
 {
     $this->abortarSiObraFueraDeArea($obra);
 
@@ -2700,5 +3073,3 @@ public function relacionarCfdis(Request $request, Obra $obra)
     ]);
 }
 }
-
-
