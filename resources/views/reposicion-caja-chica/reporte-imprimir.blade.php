@@ -70,8 +70,20 @@
         </div>
     </div>
 
+    @php
+        $grupoLabelMap = [
+            'Con efectivo y factura' => 'Reposición de caja chica',
+            'Con tarjeta y factura' => 'Reposición de caja chica 1',
+            'Sin factura (reembolso)' => 'Reembolso',
+            'Sin factura (viaticos)' => 'Viaticos',
+        ];
+    @endphp
+
     @forelse($grupos as $grupo)
-        <h2>{{ $grupo['nombre'] }}</h2>
+        @php
+            $grupoLabel = $grupoLabelMap[trim((string) $grupo['nombre'])] ?? $grupo['nombre'];
+        @endphp
+        <h2>{{ $grupoLabel }}</h2>
         <table>
             <thead>
                 <tr>
@@ -113,7 +125,7 @@
                     </tr>
                 @endforeach
                 <tr>
-                    <td colspan="8"><strong>Total {{ $grupo['nombre'] }}</strong></td>
+                    <td colspan="8"><strong>Total {{ $grupoLabel }}</strong></td>
                     <td class="right"><strong>${{ number_format((float) $grupo['total_registrado'], 2) }}</strong></td>
                     <td class="right"><strong>${{ number_format((float) $grupo['total_autorizado'], 2) }}</strong></td>
                     <td></td>
