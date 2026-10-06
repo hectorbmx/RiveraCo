@@ -2066,6 +2066,27 @@ private function formatMinutesAsHours(int $minutes): string
     return $hours . ' h ' . $remainingMinutes . ' min';
 }
 
+private function resolverEstadoCampoSemanal(bool $planeado, $entrada, $salida, ?string $excepcionTipo = null): string
+{
+    if ($excepcionTipo) {
+        return 'excepcion';
+    }
+
+    if (! $planeado) {
+        return 'no_planeado';
+    }
+
+    if ($entrada && $salida) {
+        return 'confirmado';
+    }
+
+    if ($entrada || $salida) {
+        return 'confirmado_parcial';
+    }
+
+    return 'sin_evidencia';
+}
+
     private function buildEstadoVisualSemanal(
         Carbon $dia,
         bool $planeado,
