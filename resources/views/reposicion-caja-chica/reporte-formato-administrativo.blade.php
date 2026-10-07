@@ -79,7 +79,7 @@
                     <span class="construcciones">CONSTRUCCIONES</span>
                 </div>
             </div>
-            <div class="title">REPOSICION DE CAJA CHICA</div>
+            <div class="title">{{ strtoupper($grupoLabel) }}</div>
             <div class="rule"></div>
 
             <table class="meta">
@@ -179,6 +179,7 @@
     @endforelse
 </body>
 </html>
+
 
 
 
