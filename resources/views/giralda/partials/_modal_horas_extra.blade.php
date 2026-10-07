@@ -6,6 +6,7 @@
     $fechaHorasExtraDefault = $semanaHorasExtraInicio->isSameWeek(now()) ? now()->toDateString() : $semanaHorasExtraInicio->toDateString();
     $fechaHorasExtraMin = now()->startOfWeek(\Carbon\Carbon::MONDAY)->subWeek()->toDateString();
     $fechaHorasExtraMax = now()->endOfWeek(\Carbon\Carbon::SUNDAY)->toDateString();
+    $autorizadoresHorasExtras = \App\Models\User::role('gerente-almacen')->orderBy('name')->get();
 @endphp
 
 <div x-data="horasExtraModal({ inicio: @js(old('hora_inicio', $horaSalidaBase)), fin: @js(old('hora_fin', $horaSalidaBase)), total: @js(old('total_horas')) })" x-init="recalcular()" class="inline-block text-left">
@@ -32,16 +33,23 @@
                 <input type="hidden" name="empleado_id" value="{{ $empleado->id_Empleado }}">
                 <input type="hidden" name="semana" value="{{ $semana ?? now()->startOfWeek()->toDateString() }}">
 
-                @if($horarioBase)
-                    <div class="rounded bg-blue-50 px-3 py-2 text-xs text-blue-800">
-                        Horario base: {{ $horaEntradaBase ?? '--:--' }} - {{ $horaSalidaBase ?? '--:--' }}
-                    </div>
-                @endif
+                @php
+                    $puestoEmpleado = $empleado->Puesto ?? $empleado->puesto_base ?? 'Sin puesto';
+                    $totalHorasSemana = (float) ($empleado->giralda_horas_extras_semana_horas ?? 0);
+                @endphp
+
+                <div class="rounded bg-blue-50 px-3 py-2 text-xs text-blue-800 space-y-1">
+                    @if($horarioBase)
+                        <div><span class="font-semibold">Horario:</span> {{ $horaEntradaBase ?? '--:--' }} - {{ $horaSalidaBase ?? '--:--' }}</div>
+                    @endif
+                    <div><span class="font-semibold">Puesto:</span> {{ $puestoEmpleado }}</div>
+                    <div class="text-red-700"><span class="font-semibold">Horas extra acumuladas:</span> {{ number_format($totalHorasSemana, 2) }} hrs</div>
+                </div>
 
                 <div class="grid grid-cols-3 gap-2">
                     <div>
                         <label class="block text-sm font-medium mb-1">Fecha</label>
-                        <input type="date" name="fecha" value="{{ old('fecha', $fechaHorasExtraDefault) }}" min="{{ $fechaHorasExtraMin }}" max="{{ $fechaHorasExtraMax }}" class="w-full border rounded p-2" required>
+                        <input type="date" name="fecha" value="{{ old('fecha', $fechaHorasExtraDefault) }}" @unless($puedeIgnorarCandadoHorasExtras) min="{{ $fechaHorasExtraMin }}" max="{{ $fechaHorasExtraMax }}" @endunless class="w-full border rounded p-2" required>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Inicio</label>
@@ -75,7 +83,14 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Autoriza</label>
-                        <input name="responsable_autoriza" class="w-full border rounded p-2">
+                        <select name="responsable_autoriza" class="w-full border rounded p-2">
+                            <option value="">Selecciona un autoriza</option>
+                            @foreach($autorizadoresHorasExtras as $usuario)
+                                <option value="{{ $usuario->name }}" @selected((string) old('responsable_autoriza', '') === (string) $usuario->name)>
+                                    {{ $usuario->name }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
                 </div>
 

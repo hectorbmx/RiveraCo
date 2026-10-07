@@ -975,6 +975,7 @@ public function print(OrdenCompra $orden_compra)
     }
 
     $proveedorNombre = $oc->proveedor->nombre ?? '-';
+    $proveedorRazonSocial = trim((string) ($oc->proveedor->razon_social ?? ''));
     $area = $oc->areaCatalogo->nombre ?? ($oc->area ?? '-');
 
     $centroCostoNombre = $oc->centroCosto
@@ -1161,9 +1162,10 @@ public function print(OrdenCompra $orden_compra)
     $pdf->SetFont('Arial', 'B', 9);
 
     $pdf->SetXY($X0 + 2, $Y + 2);
+    $pdf->SetFont('Arial', 'B', 8.5);
     $pdf->Cell(
         0,
-        6,
+        5,
         $utf8('NOMBRE: ')
         . $utf8($proveedorNombre),
         0,
@@ -1171,10 +1173,25 @@ public function print(OrdenCompra $orden_compra)
         'L'
     );
 
-    $pdf->SetXY($X0 + 2, $Y + 10);
+    if ($proveedorRazonSocial !== '') {
+        $pdf->SetXY($X0 + 2, $Y + 8);
+        $pdf->SetFont('Arial', '', 7.5);
+        $pdf->Cell(
+            0,
+            5,
+            $utf8('RAZON SOCIAL: ')
+            . $utf8($proveedorRazonSocial),
+            0,
+            0,
+            'L'
+        );
+    }
+
+    $pdf->SetXY($X0 + 2, $proveedorRazonSocial !== '' ? $Y + 15 : $Y + 10);
+    $pdf->SetFont('Arial', 'B', 8.5);
     $pdf->Cell(
         0,
-        6,
+        5,
         $utf8('ATENCION: ')
         . $utf8(
             $oc->atencion
@@ -1185,10 +1202,10 @@ public function print(OrdenCompra $orden_compra)
         'L'
     );
 
-    $pdf->SetXY($X0 + 2, $Y + 18);
+    $pdf->SetXY($X0 + 2, $proveedorRazonSocial !== '' ? $Y + 21 : $Y + 16);
     $pdf->Cell(
         0,
-        6,
+        5,
         $utf8('DOMICILIO: ')
         . $utf8($oc->proveedor->domicilio ?? ''),
         0,
@@ -1196,8 +1213,8 @@ public function print(OrdenCompra $orden_compra)
         'L'
     );
 
-    $pdf->SetXY($X0 + 2, $Y + 26);
-    $pdf->SetFont('Arial', '', 8);
+    $pdf->SetXY($X0 + 2, $proveedorRazonSocial !== '' ? $Y + 27 : $Y + 22);
+    $pdf->SetFont('Arial', '', 7.5);
 
     $pdf->Cell(
         $midX - $X0 - 4,
@@ -1210,12 +1227,12 @@ public function print(OrdenCompra $orden_compra)
     );
 
     // Columna derecha
-    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->SetFont('Arial', 'B', 8.5);
 
     $pdf->SetXY($midX + 2, $Y + 2);
     $pdf->Cell(
         0,
-        6,
+        5,
         $utf8('FECHA: ') . $utf8($fecha),
         0,
         0,

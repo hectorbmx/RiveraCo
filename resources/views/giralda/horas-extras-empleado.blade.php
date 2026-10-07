@@ -9,6 +9,7 @@
     $mostrarAccionesHe = $puedeEditarHe || $puedeEliminarHe;
     $fechaHorasExtraMin = now()->startOfWeek(\Carbon\Carbon::MONDAY)->subWeek()->toDateString();
     $fechaHorasExtraMax = now()->endOfWeek(\Carbon\Carbon::SUNDAY)->toDateString();
+    $autorizadoresHorasExtras = \App\Models\User::role('gerente-almacen')->orderBy('name')->get();
 @endphp
 
 <div class="max-w-7xl mx-auto space-y-6">
@@ -116,7 +117,7 @@
                                                             <div class="grid grid-cols-3 gap-2">
                                                                 <div>
                                                                     <label class="mb-1 block text-sm font-medium">Fecha</label>
-                                                                    <input type="date" name="fecha" value="{{ optional($registro->fecha)->toDateString() }}" min="{{ $fechaHorasExtraMin }}" max="{{ $fechaHorasExtraMax }}" class="w-full rounded border p-2" required>
+                                                                    <input type="date" name="fecha" value="{{ optional($registro->fecha)->toDateString() }}" @unless($puedeIgnorarCandadoHorasExtras) min="{{ $fechaHorasExtraMin }}" max="{{ $fechaHorasExtraMax }}" @endunless class="w-full rounded border p-2" required>
                                                                 </div>
                                                                 <div>
                                                                     <label class="mb-1 block text-sm font-medium">Inicio</label>
@@ -147,7 +148,19 @@
                                                                 </div>
                                                                 <div>
                                                                     <label class="mb-1 block text-sm font-medium">Autoriza</label>
-                                                                    <input name="responsable_autoriza" value="{{ $registro->responsable_autoriza }}" class="w-full rounded border p-2">
+                                                                    <select name="responsable_autoriza" class="w-full rounded border p-2">
+                                                                        <option value="">Selecciona un autoriza</option>
+                                                                        @foreach($autorizadoresHorasExtras as $usuario)
+                                                                            <option value="{{ $usuario->name }}" @selected((string) ($registro->responsable_autoriza ?? '') === (string) $usuario->name)>
+                                                                                {{ $usuario->name }}
+                                                                            </option>
+                                                                        @endforeach
+                                                                        @if(!empty($registro->responsable_autoriza) && !$autorizadoresHorasExtras->contains(fn($usuario) => $usuario->name === $registro->responsable_autoriza))
+                                                                            <option value="{{ $registro->responsable_autoriza }}" selected>
+                                                                                {{ $registro->responsable_autoriza }}
+                                                                            </option>
+                                                                        @endif
+                                                                    </select>
                                                                 </div>
                                                             </div>
 

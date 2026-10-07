@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Area;
+use App\Models\DocumentoFirmante;
 use App\Models\Empleado;
 use App\Models\EmpleadoEppEntrega;
 use App\Models\GiraldaAsistencia;
@@ -116,6 +117,7 @@ class GiraldaController extends Controller
             ->values();
         $asistenciaEditableFecha = $asistenciaEditableFechas->first();
         $esSemanaActual = $semana === $semanaActual;
+        $puedeIgnorarCandadoHorasExtras = $this->puedeIgnorarCandadoHorasExtras();
         $esSemanaHorasExtrasEditable = $this->isHoraExtraSemanaEditable($semanaInicio);
         $desde = in_array($tab, ['horas_extras', 'asistencia'], true)
             ? $semanaInicio->toDateString()
@@ -155,8 +157,8 @@ class GiraldaController extends Controller
                         ->orWhere('id_Empleado', 'like', "%{$busqueda}%");
                 });
             })
-            ->orderBy('Nombre')
             ->orderBy('Apellidos')
+            ->orderBy('Nombre')
             ->get();
 
         $horasExtras = GiraldaHoraExtra::with(['empleado', 'autorizadoPor'])
@@ -218,6 +220,7 @@ class GiraldaController extends Controller
             'asistenciaEditableFecha',
             'asistenciaEditableFechas',
             'puedeOverrideAsistencia',
+            'puedeIgnorarCandadoHorasExtras',
             'esSemanaActual',
             'esSemanaHorasExtrasEditable',
             'asistencias',
@@ -393,6 +396,7 @@ class GiraldaController extends Controller
         $semanaActual = $semanaData['actual'];
         $semanaTitulo = $semanaData['titulo'];
         $esSemanaActual = $semana === $semanaActual;
+        $puedeIgnorarCandadoHorasExtras = $this->puedeIgnorarCandadoHorasExtras();
         $esSemanaHorasExtrasEditable = $this->isHoraExtraSemanaEditable($semanaInicio);
 
         return view('giralda.horas-extras-empleado', compact(
@@ -406,6 +410,7 @@ class GiraldaController extends Controller
             'semanaActual',
             'semanaTitulo',
             'esSemanaActual',
+            'puedeIgnorarCandadoHorasExtras',
             'esSemanaHorasExtrasEditable'
         ));
     }
@@ -566,13 +571,35 @@ class GiraldaController extends Controller
         return now()->endOfWeek(Carbon::SUNDAY)->endOfDay();
     }
 
+    private function puedeIgnorarCandadoHorasExtras(): bool
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        return $user->can('giralda.horas_extras.override_week_lock.access')
+            || $user->hasAnyRole(['super-admin', 'Super Admin'])
+            || $user->hasRole('super-admin')
+            || $user->hasRole('Super Admin');
+    }
+
     private function isHoraExtraFechaEditable(?Carbon $fecha): bool
     {
+        if ($this->puedeIgnorarCandadoHorasExtras()) {
+            return true;
+        }
+
         return $fecha?->betweenIncluded($this->horaExtraEditableDesde(), $this->horaExtraEditableHasta()) ?? false;
     }
 
     private function isHoraExtraSemanaEditable(Carbon $semanaInicio): bool
     {
+        if ($this->puedeIgnorarCandadoHorasExtras()) {
+            return true;
+        }
+
         return $semanaInicio->betweenIncluded(
             now()->startOfWeek(Carbon::MONDAY)->subWeek(),
             now()->startOfWeek(Carbon::MONDAY)
@@ -615,9 +642,106 @@ class GiraldaController extends Controller
             $request->query('empleado_id'),
         ];
 
+        $inicioPeriodo = $desde ? Carbon::parse($desde)->startOfDay() : now()->startOfWeek(Carbon::MONDAY);
+        $finPeriodo = $hasta ? Carbon::parse($hasta)->endOfDay() : $inicioPeriodo->copy()->addDays(6);
+
+        $dias = collect();
+        $cursor = $inicioPeriodo->copy();
+        while ($cursor->lte($finPeriodo)) {
+            $dias->push([
+                'date' => $cursor->toDateString(),
+                'label' => $cursor->format('d/m'),
+                'weekday' => $cursor->locale('es')->isoFormat('ddd'),
+                'full' => $cursor->locale('es')->isoFormat('dddd D MMMM'),
+            ]);
+            $cursor->addDay();
+        }
+
         $registros = $this->horasExtrasFiltradas($desde, $hasta, $empleadoId)->get();
 
-        return view('giralda.horas-extras-print', compact('registros', 'desde', 'hasta'));
+        $filas = $registros
+            ->groupBy(fn ($registro) => $registro->empleado_id ?? 'sin-empleado')
+            ->map(function ($items, $empleadoIdKey) use ($dias) {
+                $empleadoNombre = $items->first()?->empleado?->nombre_completo ?? 'Sin empleado';
+                $diasPorEmpleado = [];
+                $motivosPorEmpleado = [];
+                $horariosPorEmpleado = [];
+                $totalEmpleado = 0;
+
+                foreach ($dias as $dia) {
+                    $registrosDia = $items->filter(fn ($registro) => $registro->fecha && $registro->fecha->toDateString() === $dia['date']);
+                    $valorDia = (float) $registrosDia->sum('total_horas');
+
+                    $diasPorEmpleado[$dia['date']] = round($valorDia, 2);
+                    $motivosPorEmpleado[$dia['date']] = $registrosDia
+                        ->map(fn ($registro) => trim((string) ($registro->motivo ?? '')))
+                        ->filter()
+                        ->unique()
+                        ->values()
+                        ->all();
+                    $horariosPorEmpleado[$dia['date']] = $registrosDia
+                        ->map(function ($registro) {
+                            $inicio = trim((string) ($registro->hora_inicio ?? ''));
+                            $fin = trim((string) ($registro->hora_fin ?? ''));
+
+                            if ($inicio === '' && $fin === '') {
+                                return null;
+                            }
+
+                            if ($inicio === '') {
+                                return $fin;
+                            }
+
+                            if ($fin === '') {
+                                return $inicio;
+                            }
+
+                            return $inicio . ' - ' . $fin;
+                        })
+                        ->filter()
+                        ->unique()
+                        ->values()
+                        ->all();
+                    $totalEmpleado += $valorDia;
+                }
+
+                $puestoEmpleado = $items->first()?->empleado?->Puesto ?? $items->first()?->empleado?->puesto_base ?? null;
+
+                return [
+                    'empleado' => $empleadoNombre,
+                    'puesto' => $puestoEmpleado,
+                    'dias' => $diasPorEmpleado,
+                    'motivos' => $motivosPorEmpleado,
+                    'horarios' => $horariosPorEmpleado,
+                    'total' => round($totalEmpleado, 2),
+                ];
+            })
+            ->values();
+
+        $totalesPorDia = [];
+        foreach ($dias as $dia) {
+            $totalesPorDia[$dia['date']] = round($filas->sum(fn ($fila) => $fila['dias'][$dia['date']] ?? 0), 2);
+        }
+
+        $totalPeriodo = round($filas->sum(fn ($fila) => $fila['total']), 2);
+
+        $firmasImpresas = DocumentoFirmante::query()
+            ->with('user:id,name')
+            ->where('documento', 'reporte_horas_extra')
+            ->where('activo', true)
+            ->get()
+            ->keyBy(fn ($firma) => $firma->documento.'|'.$firma->ambito.'|'.$firma->campo);
+
+        return view('giralda.horas-extras-print', compact(
+            'registros',
+            'desde',
+            'hasta',
+            'dias',
+            'filas',
+            'totalesPorDia',
+            'totalPeriodo',
+            'firmasImpresas'
+        ));
     }
 
     public function exportHorasExtras(Request $request): StreamedResponse

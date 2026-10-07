@@ -180,7 +180,7 @@
                                 <div class="font-medium text-slate-900">{{ $empleado->nombre_completo }}</div>
                                 <div class="text-xs text-slate-500">ID {{ $empleado->id_Empleado }} - {{ $empleado->areaRef?->nombre ?? 'Giralda' }}</div>
                             </td>
-                            <td class="p-3">{{ $empleado->Puesto ?? '-' }}</td>
+                            <td class="p-3">{{ $empleado->Puesto ?? $empleado->puesto_base ?? '-' }}</td>
                             <td class="p-3">
                                 <span class="px-2 py-1 rounded text-xs {{ (int)$empleado->Estatus === 2 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}">
                                     {{ (int)$empleado->Estatus === 2 ? 'Baja' : 'Activo' }}
