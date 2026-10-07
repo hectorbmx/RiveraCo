@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Almacen;
+use App\Models\DocumentoFirmaDefinicion;
 use App\Models\DocumentoFirmante;
 use App\Models\Maquina;
 use App\Models\Obra;
@@ -38,6 +39,7 @@ class ReposicionCajaChicaController extends Controller
         $destinosImpresion = $this->destinosImpresionReposicion($request, $fechaInicio, $fechaFin);
         $ambitoFirma = $this->resolverAmbitoFirmaReposicionDisponible($request, $gastos->getCollection());
         $puedeElegirAmbitoFirma = $this->puedeElegirAmbitoFirmaReposicion($request);
+        $firmaImprimibleOpciones = $this->opcionesFirmaReposicion();
 
         $semanaAnteriorInicio = $fechaInicio->copy()->subWeek()->toDateString();
         $semanaAnteriorFin = $fechaFin->copy()->subWeek()->toDateString();
@@ -56,6 +58,7 @@ class ReposicionCajaChicaController extends Controller
             'semanaSiguienteFin',
             'ambitoFirma',
             'puedeElegirAmbitoFirma',
+            'firmaImprimibleOpciones',
             'destinosImpresion'
         ));
     }
@@ -455,6 +458,33 @@ class ReposicionCajaChicaController extends Controller
         return view('reposicion-caja-chica.reporte-imprimir', compact('gastos', 'grupos', 'stats', 'fechaInicio', 'fechaFin', 'ambitoFirma', 'firmasImpresas', 'elaboroNombre', 'autorizoNombre', 'reporteContexto'));
     }
 
+    public function imprimirFormatoAdministrativo(Request $request)
+    {
+        [$fechaInicio, $fechaFin] = $this->resolverRangoSemana($request);
+        $gastos = $this->gastosReporteQuery($request, $fechaInicio, $fechaFin)
+            ->orderBy('categoria_id')
+            ->orderBy('fecha_gasto')
+            ->orderBy('id')
+            ->get();
+
+        $grupos = $this->agruparGastosPorCategoria($gastos);
+        $stats = $this->stats($request, $fechaInicio, $fechaFin);
+        $reporteContexto = $this->contextoImpresionReposicion($request);
+        $ambitoFirma = 'formato_administrativo';
+        $firmasImpresas = $this->firmasImpresasReposicion($ambitoFirma);
+
+        return view('reposicion-caja-chica.reporte-formato-administrativo', compact(
+            'gastos',
+            'grupos',
+            'stats',
+            'fechaInicio',
+            'fechaFin',
+            'ambitoFirma',
+            'firmasImpresas',
+            'reporteContexto'
+        ));
+    }
+
     public function exportarExcel(Request $request)
     {
         [$fechaInicio, $fechaFin] = $this->resolverRangoSemana($request);
@@ -663,10 +693,7 @@ class ReposicionCajaChicaController extends Controller
     }
     private function resolverAmbitoFirmaReposicion(?Request $request = null, $gastos = null, ?string $almacenNombre = null): string
     {
-        $ambitosValidos = [
-            DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN,
-            DocumentoFirmante::AMBITO_GIRALDA,
-        ];
+        $ambitosValidos = array_keys($this->opcionesFirmaReposicion());
 
         $ambitoSolicitado = $request?->input('ambito');
         if ($this->puedeElegirAmbitoFirmaReposicion($request) && in_array($ambitoSolicitado, $ambitosValidos, true)) {
@@ -697,7 +724,7 @@ class ReposicionCajaChicaController extends Controller
             return $ambito;
         }
 
-        foreach ([DocumentoFirmante::AMBITO_GIRALDA, DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN] as $fallbackAmbito) {
+        foreach (array_keys($this->opcionesFirmaReposicion()) as $fallbackAmbito) {
             if ($fallbackAmbito !== $ambito && $this->existenFirmasImpresasReposicion($fallbackAmbito)) {
                 return $fallbackAmbito;
             }
@@ -706,6 +733,22 @@ class ReposicionCajaChicaController extends Controller
         return $ambito;
     }
 
+    private function opcionesFirmaReposicion(): array
+    {
+        $opciones = DocumentoFirmaDefinicion::query()
+            ->where('documento', DocumentoFirmante::DOCUMENTO_REPOSICION_CAJA_CHICA)
+            ->activas()
+            ->ordenadas()
+            ->get(['ambito', 'ambito_label'])
+            ->unique('ambito')
+            ->mapWithKeys(fn ($definicion) => [$definicion->ambito => $definicion->ambito_label])
+            ->all();
+
+        return $opciones ?: [
+            DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN => 'Reposicion gastos almacen',
+            DocumentoFirmante::AMBITO_GIRALDA => 'Giralda',
+        ];
+    }
     private function existenFirmasImpresasReposicion(string $ambito): bool
     {
         return DocumentoFirmante::query()
@@ -717,16 +760,19 @@ class ReposicionCajaChicaController extends Controller
 
     private function firmasImpresasReposicion(string $ambito)
     {
+        return $this->firmasImpresasDocumento(
+            DocumentoFirmante::DOCUMENTO_REPOSICION_CAJA_CHICA,
+            $ambito
+        );
+    }
+
+    private function firmasImpresasDocumento(string $documento, string $ambito)
+    {
         return DocumentoFirmante::query()
             ->with('user:id,name')
-            ->where('documento', DocumentoFirmante::DOCUMENTO_REPOSICION_CAJA_CHICA)
+            ->where('documento', $documento)
             ->where('ambito', $ambito)
             ->where('activo', true)
-            ->whereIn('campo', [
-                DocumentoFirmante::CAMPO_ELABORO,
-                DocumentoFirmante::CAMPO_VOBO,
-                DocumentoFirmante::CAMPO_AUTORIZO,
-            ])
             ->get()
             ->keyBy('campo');
     }
@@ -921,6 +967,7 @@ class ReposicionCajaChicaController extends Controller
         ];
     }
 }
+
 
 
 

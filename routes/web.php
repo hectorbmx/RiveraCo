@@ -1035,6 +1035,7 @@ Route::prefix('pagos-proveedores')
                 Route::post('/', [ReposicionCajaChicaController::class, 'store'])->name('store');
                 Route::get('/revision', [ReposicionCajaChicaController::class, 'revision'])->name('revision');
                 Route::get('/imprimir', [ReposicionCajaChicaController::class, 'imprimirReporte'])->name('imprimir');
+                Route::get('/imprimir-formato-administrativo', [ReposicionCajaChicaController::class, 'imprimirFormatoAdministrativo'])->name('imprimir-formato-administrativo');
                 Route::get('/exportar-excel', [ReposicionCajaChicaController::class, 'exportarExcel'])->name('exportar-excel');
                 Route::get('/relaciones', [ReposicionCajaChicaController::class, 'relaciones'])->name('relaciones.index');
                 Route::get('/relaciones/{relacion}/imprimir', [ReposicionCajaChicaController::class, 'imprimirRelacion'])->name('relaciones.imprimir');
@@ -1059,6 +1060,7 @@ Route::prefix('pagos-proveedores')
 });
 
 require __DIR__.'/auth.php';
+
 
 
 

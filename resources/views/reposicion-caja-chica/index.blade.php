@@ -20,9 +20,13 @@
             <p class="text-sm text-slate-500">Gastos capturados por ingenieria con autorizacion individual.</p>
         </div>
         <div class="flex flex-wrap gap-2">
-            @if($hayObrasParaImprimir)
-                <div class="flex overflow-hidden rounded-lg border border-slate-300 bg-white">
-                    <select id="reposicion-print-scope" class="min-w-[220px] border-0 bg-white px-3 py-2 text-sm font-semibold text-slate-700 focus:ring-0">
+            <div class="flex flex-wrap overflow-hidden rounded-lg border border-slate-300 bg-white">
+                <select id="reposicion-print-format" class="min-w-[190px] border-0 bg-white px-3 py-2 text-sm font-semibold text-slate-700 focus:ring-0">
+                    <option value="actual" data-print-base="{{ route('reposicion-caja-chica.imprimir') }}">Reporte actual</option>
+                    <option value="administrativo" data-print-base="{{ route('reposicion-caja-chica.imprimir-formato-administrativo') }}">Formato administrativo</option>
+                </select>
+                @if($hayObrasParaImprimir)
+                    <select id="reposicion-print-scope" class="min-w-[220px] border-0 border-l border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 focus:ring-0">
                         <option value="general">Reporte general</option>
                         @foreach($destinosImpresion as $destinoImpresion)
                             <option value="{{ $destinoImpresion['tipo'] }}:{{ $destinoImpresion['id'] }}">
@@ -30,11 +34,9 @@
                             </option>
                         @endforeach
                     </select>
-                    <a id="reposicion-print-link" href="{{ route('reposicion-caja-chica.imprimir', $printQuery) }}" data-print-base="{{ route('reposicion-caja-chica.imprimir') }}" target="_blank" class="border-l border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Imprimir</a>
-                </div>
-            @else
-                <a id="reposicion-print-link" href="{{ route('reposicion-caja-chica.imprimir', $printQuery) }}" data-print-base="{{ route('reposicion-caja-chica.imprimir') }}" target="_blank" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Imprimir</a>
-            @endif
+                @endif
+                <a id="reposicion-print-link" href="{{ route('reposicion-caja-chica.imprimir', $printQuery) }}" data-print-base="{{ route('reposicion-caja-chica.imprimir') }}" target="_blank" class="border-l border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Imprimir</a>
+            </div>
             <a href="{{ route('reposicion-caja-chica.exportar-excel', request()->query()) }}" class="rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100">Exportar Excel</a>
             <a href="{{ route('reposicion-caja-chica.revision') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Revision oficina</a>
             <a href="{{ route('reposicion-caja-chica.relaciones.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Relaciones</a>
@@ -105,10 +107,7 @@
                 name="ambito"
                 label="Firma impresa"
                 :value="$ambitoFirmaSeleccionado"
-                :options="[
-                    \App\Models\DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN => 'Reposicion gastos almacen',
-                    \App\Models\DocumentoFirmante::AMBITO_GIRALDA => 'Giralda',
-                ]"
+                :options="$firmaImprimibleOpciones"
                 span="md:col-span-2" />
         @else
             <input type="hidden" name="ambito" value="{{ $ambitoFirmaSeleccionado }}">
@@ -269,6 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('reposicion-filtros');
     const printLink = document.getElementById('reposicion-print-link');
     const printScope = document.getElementById('reposicion-print-scope');
+    const printFormat = document.getElementById('reposicion-print-format');
 
     if (!form || !printLink) {
         return;
@@ -301,19 +301,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        const selectedFormat = printFormat?.selectedOptions?.[0];
+        const printBase = selectedFormat?.dataset?.printBase || printLink.dataset.printBase;
         const queryString = params.toString();
         printLink.href = queryString
-            ? `${printLink.dataset.printBase}?${queryString}`
-            : printLink.dataset.printBase;
+            ? `${printBase}?${queryString}`
+            : printBase;
     };
 
     form.addEventListener('change', updatePrintLink);
     form.addEventListener('input', updatePrintLink);
     printScope?.addEventListener('change', updatePrintLink);
+    printFormat?.addEventListener('change', updatePrintLink);
     updatePrintLink();
 });
 </script>
 @endpush
+
+
 
 
 

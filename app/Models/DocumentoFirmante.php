@@ -15,6 +15,7 @@ class DocumentoFirmante extends Model
 
     public const CAMPO_ELABORO = 'elaboro';
     public const CAMPO_VOBO = 'vobo';
+    public const CAMPO_REVISO = 'reviso';
     public const CAMPO_AUTORIZO = 'autorizo';
     public const CAMPO_VOBO_1 = 'vobo_1';
     public const CAMPO_VOBO_2 = 'vobo_2';

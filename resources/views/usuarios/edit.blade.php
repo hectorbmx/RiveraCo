@@ -407,7 +407,7 @@
                         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
                             <div>
                                 <h3 class="font-semibold text-gray-800">Firmas impresas</h3>
-                                <p class="text-sm text-gray-500 mt-1">Asigna este usuario como firmante para los documentos y ambitos configurados por empresa.</p>
+                                <p class="text-sm text-gray-500 mt-1">Asigna este usuario como firmante para los documentos y areas/formato configurados por empresa.</p>
                             </div>
                         </div>
                         <form method="POST" action="{{ route('usuarios.firmas-impresas.sync', $usuario->id) }}" class="space-y-4" @submit="saving = true">
@@ -418,7 +418,7 @@
                                     <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
                                         <tr>
                                             <th class="px-4 py-3 border-b">Documento</th>
-                                            <th class="px-4 py-3 border-b">Ambito</th>
+                                            <th class="px-4 py-3 border-b">Area / formato</th>
                                             <th class="px-4 py-3 border-b">Campo</th>
                                             <th class="px-4 py-3 border-b">Asignado actual</th>
                                             <th class="px-4 py-3 border-b text-center">Usar este usuario</th>

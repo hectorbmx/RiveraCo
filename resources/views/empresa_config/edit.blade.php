@@ -1394,7 +1394,7 @@ function cuentasBancoTab() {
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-6 py-5 border-b border-slate-200">
             <h2 class="text-lg font-semibold text-slate-900">Firmas imprimibles</h2>
-            <p class="text-sm text-slate-500 mt-1">Administra que documentos, ambitos y campos pueden recibir firmantes impresos.</p>
+            <p class="text-sm text-slate-500 mt-1">Administra que documentos, areas/formato y campos pueden recibir firmantes impresos.</p>
         </div>
 
         <div class="p-6 border-b border-slate-200 bg-slate-50">
@@ -1409,12 +1409,12 @@ function cuentasBancoTab() {
                     <input type="text" name="documento_label" value="{{ old('documento_label') }}" required class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500" placeholder="Reposicion caja chica">
                 </div>
                 <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Ambito</label>
-                    <input type="text" name="ambito" value="{{ old('ambito') }}" required class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500" placeholder="giralda">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Area / formato</label>
+                    <input type="text" name="ambito" value="{{ old('ambito') }}" required class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500" placeholder="formato_administrativo">
                 </div>
                 <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Etiqueta ambito</label>
-                    <input type="text" name="ambito_label" value="{{ old('ambito_label') }}" required class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500" placeholder="Giralda">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Etiqueta area/formato</label>
+                    <input type="text" name="ambito_label" value="{{ old('ambito_label') }}" required class="w-full rounded-xl border-slate-300 focus:border-slate-500 focus:ring-slate-500" placeholder="Formato administrativo">
                 </div>
                 <div class="md:col-span-1">
                     <label class="block text-sm font-medium text-slate-700 mb-1">Campo</label>
@@ -1435,6 +1435,7 @@ function cuentasBancoTab() {
                     </label>
                 </div>
                 <div class="md:col-span-12 flex justify-end">
+                    <div class="mr-auto text-xs text-slate-500">Documento = reporte impreso. Area/formato = variante del reporte. Campo = firma que aparecera en el papel.</div>
                     <button type="submit" class="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 transition">Agregar definicion</button>
                 </div>
             </form>
@@ -1445,7 +1446,7 @@ function cuentasBancoTab() {
                 <thead class="bg-slate-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Documento</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Ambito</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Area / formato</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Campo</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Orden</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Estado</th>
