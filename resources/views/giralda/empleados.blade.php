@@ -144,29 +144,29 @@
         @endif
 
         <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-                <thead class="bg-slate-50 text-slate-500">
+            <table class="min-w-full text-sm border border-[#0B265A]">
+                <thead class="bg-[#0B265A] text-white">
                     <tr>
-                        <th class="text-left p-3">Empleado</th>
-                        <th class="text-left p-3">Puesto</th>
-                        <th class="text-left p-3">Estatus</th>
+                        <th class="text-left p-3 border-b border-white/20 text-white">Empleado</th>
+                        <th class="text-left p-3 border-b border-white/20 text-white">Puesto</th>
+                        <th class="text-left p-3 border-b border-white/20 text-white">Estatus</th>
                         @if($tab === 'asistencia')
                             @foreach($weekDays as $day)
-                                <th class="text-center p-3 min-w-24">
+                                <th class="text-center p-3 min-w-24 border-b border-white/20 text-white">
                                     <div class="font-semibold uppercase">{{ $day->locale('es')->translatedFormat('D') }}</div>
-                                    <div class="text-[11px] text-slate-400">{{ $day->format('d/m') }}</div>
+                                    <div class="text-[11px] text-white/75">{{ $day->format('d/m') }}</div>
                                 </th>
                             @endforeach
                         @elseif($tab === 'horas_extras')
-                            <th class="text-right p-3">Horas semana</th>
-                            <th class="text-right p-3">Accion</th>
+                            <th class="text-right p-3 border-b border-white/20 text-white">Horas semana</th>
+                            <th class="text-right p-3 border-b border-white/20 text-white">Accion</th>
                         @elseif($tab === 'epp')
-                            <th class="text-right p-3">Entregas EPP</th>
-                            <th class="text-right p-3">Accion</th>
+                            <th class="text-right p-3 border-b border-white/20 text-white">Entregas EPP</th>
+                            <th class="text-right p-3 border-b border-white/20 text-white">Accion</th>
                         @else
-                            <th class="text-right p-3">EPP</th>
-                            <th class="text-right p-3">HE</th>
-                            <th class="text-right p-3">Acciones</th>
+                            <th class="text-right p-3 border-b border-white/20 text-white">EPP</th>
+                            <th class="text-right p-3 border-b border-white/20 text-white">HE</th>
+                            <th class="text-right p-3 border-b border-white/20 text-white">Acciones</th>
                         @endif
                     </tr>
                 </thead>
