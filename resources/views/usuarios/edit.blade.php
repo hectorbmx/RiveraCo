@@ -237,13 +237,13 @@
                     <div x-show="tab === 'autorizaciones'" x-transition>
                         <h3 class="font-semibold text-gray-800 mb-4">Últimas autorizaciones registradas</h3>
                         <div class="overflow-x-auto">
-                            <table class="w-full text-sm text-left border">
-                                <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                            <table class="w-full text-sm text-left border border-[#0B265A]">
+                                <thead class="bg-[#0B265A] text-white uppercase text-xs">
                                     <tr>
-                                        <th class="px-4 py-2 border-b">Tipo</th>
-                                        <th class="px-4 py-2 border-b">Referencia</th>
-                                        <th class="px-4 py-2 border-b text-right">Monto</th>
-                                        <th class="px-4 py-2 border-b text-center">Fecha</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white">Tipo</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white">Referencia</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white text-right">Monto</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white text-center">Fecha</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -276,13 +276,13 @@
                     <div x-show="tab === 'compras'" x-transition>
                         <h3 class="font-semibold text-gray-800 mb-4">Compras y solicitudes creadas</h3>
                         <div class="overflow-x-auto">
-                            <table class="w-full text-sm text-left border">
-                                <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                            <table class="w-full text-sm text-left border border-[#0B265A]">
+                                <thead class="bg-[#0B265A] text-white uppercase text-xs">
                                     <tr>
-                                        <th class="px-4 py-2 border-b">Tipo</th>
-                                        <th class="px-4 py-2 border-b">Referencia</th>
-                                        <th class="px-4 py-2 border-b text-right">Monto</th>
-                                        <th class="px-4 py-2 border-b text-center">Estatus</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white">Tipo</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white">Referencia</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white text-right">Monto</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white text-center">Estatus</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -359,16 +359,16 @@
                     <div x-show="tab === 'asignaciones'" x-transition>
                         <h3 class="font-semibold text-gray-800 mb-4">Historial de asignaciones a obra</h3>
                         <div class="overflow-x-auto">
-                            <table class="w-full text-sm text-left border">
-                                <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                            <table class="w-full text-sm text-left border border-[#0B265A]">
+                                <thead class="bg-[#0B265A] text-white uppercase text-xs">
                                     <tr>
-                                        <th class="px-4 py-2 border-b">Obra</th>
-                                        <th class="px-4 py-2 border-b">Clave</th>
-                                        <th class="px-4 py-2 border-b">Rol / Puesto</th>
-                                        <th class="px-4 py-2 border-b text-center">Alta</th>
-                                        <th class="px-4 py-2 border-b text-center">Baja</th>
-                                        <th class="px-4 py-2 border-b text-center">Días</th>
-                                        <th class="px-4 py-2 border-b text-center">Estado</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white">Obra</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white">Clave</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white">Rol / Puesto</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white text-center">Alta</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white text-center">Baja</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white text-center">Días</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white text-center">Estado</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -414,14 +414,14 @@
                             @csrf
                             @method('PUT')
                             <div class="border rounded overflow-hidden">
-                                <table class="w-full text-sm text-left">
-                                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                                <table class="w-full text-sm text-left border border-[#0B265A]">
+                                    <thead class="bg-[#0B265A] text-white uppercase text-xs">
                                         <tr>
-                                            <th class="px-4 py-3 border-b">Documento</th>
-                                            <th class="px-4 py-3 border-b">Area / formato</th>
-                                            <th class="px-4 py-3 border-b">Campo</th>
-                                            <th class="px-4 py-3 border-b">Asignado actual</th>
-                                            <th class="px-4 py-3 border-b text-center">Usar este usuario</th>
+                                            <th class="px-4 py-3 border-b border-white/20 text-white">Documento</th>
+                                            <th class="px-4 py-3 border-b border-white/20 text-white">Area / formato</th>
+                                            <th class="px-4 py-3 border-b border-white/20 text-white">Campo</th>
+                                            <th class="px-4 py-3 border-b border-white/20 text-white">Asignado actual</th>
+                                            <th class="px-4 py-3 border-b border-white/20 text-white text-center">Usar este usuario</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -496,14 +496,14 @@
                             @method('PUT')
 
                             <div class="overflow-x-auto border rounded">
-                                <table class="w-full text-sm text-left">
-                                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                                <table class="w-full text-sm text-left border border-[#0B265A]">
+                                    <thead class="bg-[#0B265A] text-white uppercase text-xs">
                                         <tr>
-                                            <th class="px-4 py-3 border-b">Permiso</th>
-                                            <th class="px-4 py-3 border-b text-center">Estado efectivo</th>
-                                            <th class="px-4 py-3 border-b text-center">Heredar</th>
-                                            <th class="px-4 py-3 border-b text-center">Agregar</th>
-                                            <th class="px-4 py-3 border-b text-center">Quitar</th>
+                                            <th class="px-4 py-3 border-b border-white/20 text-white">Permiso</th>
+                                            <th class="px-4 py-3 border-b border-white/20 text-white text-center">Estado efectivo</th>
+                                            <th class="px-4 py-3 border-b border-white/20 text-white text-center">Heredar</th>
+                                            <th class="px-4 py-3 border-b border-white/20 text-white text-center">Agregar</th>
+                                            <th class="px-4 py-3 border-b border-white/20 text-white text-center">Quitar</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -584,14 +584,14 @@
                     <div x-show="tab === 'pilas'" x-transition>
                         <h3 class="font-semibold text-gray-800 mb-4">Registro de Pilas Culminadas (Comisiones)</h3>
                         <div class="overflow-x-auto">
-                            <table class="w-full text-sm text-left border">
-                                <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                            <table class="w-full text-sm text-left border border-[#0B265A]">
+                                <thead class="bg-[#0B265A] text-white uppercase text-xs">
                                     <tr>
-                                        <th class="px-4 py-2 border-b">Obra</th>
-                                        <th class="px-4 py-2 border-b">Pila</th>
-                                        <th class="px-4 py-2 border-b">Folio / Formato</th>
-                                        <th class="px-4 py-2 border-b text-center">Fecha</th>
-                                        <th class="px-4 py-2 border-b text-center">Estado</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white">Obra</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white">Pila</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white">Folio / Formato</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white text-center">Fecha</th>
+                                        <th class="px-4 py-2 border-b border-white/20 text-white text-center">Estado</th>
                                     </tr>
                                 </thead>
                                 <tbody>

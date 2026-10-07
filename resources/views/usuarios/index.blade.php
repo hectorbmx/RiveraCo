@@ -47,16 +47,16 @@
         </form>
     </div>
 
-    <div class="bg-white rounded shadow overflow-x-auto">
+    <div class="bg-white rounded-xl border border-[#0B265A] shadow-sm overflow-x-auto">
         <table class="min-w-full text-sm">
-            <thead class="bg-gray-100">
+            <thead class="bg-[#0B265A] text-white">
                 <tr>
-                    <th class="p-3 text-left">ID</th>
-                    <th class="p-3 text-left">Nombre</th>
-                    <th class="p-3 text-left">Email</th>
-                    <th class="p-3 text-left">Rol</th>
-                    <th class="p-3 text-left">Estado</th>
-                    <th class="p-3 text-right">Acciones</th>
+                    <th class="p-3 text-left font-semibold text-white">ID</th>
+                    <th class="p-3 text-left font-semibold text-white">Nombre</th>
+                    <th class="p-3 text-left font-semibold text-white">Email</th>
+                    <th class="p-3 text-left font-semibold text-white">Rol</th>
+                    <th class="p-3 text-left font-semibold text-white">Estado</th>
+                    <th class="p-3 text-right font-semibold text-white">Acciones</th>
                 </tr>
             </thead>
             <tbody>

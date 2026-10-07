@@ -22,8 +22,10 @@
         <div class="flex flex-wrap gap-2">
             <div class="flex flex-wrap overflow-hidden rounded-lg border border-slate-300 bg-white">
                 <select id="reposicion-print-format" class="min-w-[190px] border-0 bg-white px-3 py-2 text-sm font-semibold text-slate-700 focus:ring-0">
-                    <option value="actual" data-print-base="{{ route('reposicion-caja-chica.imprimir') }}">Reporte actual</option>
                     <option value="administrativo" data-print-base="{{ route('reposicion-caja-chica.imprimir-formato-administrativo') }}">Formato administrativo</option>
+                    @can('caja_chica.print_legacy_report.access')
+                        <option value="actual" data-print-base="{{ route('reposicion-caja-chica.imprimir') }}">Reporte actual</option>
+                    @endcan
                 </select>
                 @if($hayObrasParaImprimir)
                     <select id="reposicion-print-scope" class="min-w-[220px] border-0 border-l border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 focus:ring-0">
@@ -35,7 +37,7 @@
                         @endforeach
                     </select>
                 @endif
-                <a id="reposicion-print-link" href="{{ route('reposicion-caja-chica.imprimir', $printQuery) }}" data-print-base="{{ route('reposicion-caja-chica.imprimir') }}" target="_blank" class="border-l border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Imprimir</a>
+                <a id="reposicion-print-link" href="{{ route('reposicion-caja-chica.imprimir-formato-administrativo', $printQuery) }}" data-print-base="{{ route('reposicion-caja-chica.imprimir-formato-administrativo') }}" target="_blank" class="border-l border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Imprimir</a>
             </div>
             <a href="{{ route('reposicion-caja-chica.exportar-excel', request()->query()) }}" class="rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100">Exportar Excel</a>
             <a href="{{ route('reposicion-caja-chica.revision') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Revision oficina</a>
@@ -317,6 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 @endpush
+
 
 
 
