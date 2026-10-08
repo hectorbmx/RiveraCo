@@ -95,6 +95,41 @@ public function index(Request $request)
         ) {$documentosSort}");
     }
 
+    $empleadosResumen = (clone $empleadosQuery)
+        ->with('documentos')
+        ->get();
+
+    $resumenCaptura = $empleadosResumen->reduce(function ($carry, $emp) use ($documentosObligatoriosIds) {
+        $documentosUltimosPorTipo = $emp->documentos
+            ->filter(fn ($doc) => !empty($doc->documento_tipo_id))
+            ->sortByDesc('created_at')
+            ->unique('documento_tipo_id');
+
+        $documentosCargadosIds = $documentosUltimosPorTipo
+            ->pluck('documento_tipo_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->toArray();
+
+        $totalObligatorios = count($documentosObligatoriosIds);
+        $totalCargados = collect($documentosObligatoriosIds)
+            ->filter(fn ($id) => in_array($id, $documentosCargadosIds, true))
+            ->count();
+
+        $carry['documentos_cargados'] += $totalCargados;
+        $carry['documentos_posibles'] += $totalObligatorios;
+        $carry['empleados_totales'] += 1;
+        $carry['empleados_completos'] += ($totalObligatorios > 0 && $totalCargados >= $totalObligatorios) ? 1 : 0;
+
+        return $carry;
+    }, [
+        'documentos_cargados' => 0,
+        'documentos_posibles' => 0,
+        'empleados_totales' => 0,
+        'empleados_completos' => 0,
+    ]);
+
     $empleados = $empleadosQuery
         ->orderByRaw('LOWER(TRIM(COALESCE(Apellidos, ""))) ASC')
         ->orderByRaw('LOWER(TRIM(COALESCE(Nombre, ""))) ASC')
@@ -116,6 +151,7 @@ public function index(Request $request)
         'documentosObligatorios',
         'documentosSort',
         'perPage',
+        'resumenCaptura',
         ));
 }
 

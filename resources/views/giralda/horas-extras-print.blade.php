@@ -155,7 +155,15 @@
                 @foreach($dias as $dia)
                     <td class="right">{{ number_format((float)($totalesPorDia[$dia['date']] ?? 0), 2) }}</td>
                 @endforeach
-                <td class="right">{{ number_format((float) $totalPeriodo, 2) }}</td>
+                <td class="center">{{ number_format((float) $totalPeriodo, 2) }}</td>
+            </tr>
+            <tr class="total-row">
+                <td class="left">Total pagado H. Extra</td>
+                <td class="left">-</td>
+                @foreach($dias as $dia)
+                    <td></td>
+                @endforeach
+                <td class="center employee-total-amount">$ {{ number_format((float) $totalPesosPeriodo, 2) }}</td>
             </tr>
         </tfoot>
     </table>

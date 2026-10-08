@@ -798,9 +798,9 @@ class GiraldaController extends Controller
                 ];
             })
             ->sortBy([
-                fn ($a, $b) => ($a['puesto_orden'] ?? '') <=> ($b['puesto_orden'] ?? ''),
                 fn ($a, $b) => ($a['apellido_orden'] ?? '') <=> ($b['apellido_orden'] ?? ''),
                 fn ($a, $b) => ($a['nombre_orden'] ?? '') <=> ($b['nombre_orden'] ?? ''),
+                fn ($a, $b) => ($a['puesto_orden'] ?? '') <=> ($b['puesto_orden'] ?? ''),
             ])
             ->values();
 
@@ -810,6 +810,7 @@ class GiraldaController extends Controller
         }
 
         $totalPeriodo = round($filas->sum(fn ($fila) => $fila['total']), 2);
+        $totalPesosPeriodo = round($filas->sum(fn ($fila) => $fila['total_pesos_horas_extra'] ?? 0), 2);
 
         $firmasImpresas = DocumentoFirmante::query()
             ->with('user:id,name')
@@ -826,6 +827,7 @@ class GiraldaController extends Controller
             'filas',
             'totalesPorDia',
             'totalPeriodo',
+            'totalPesosPeriodo',
             'firmasImpresas'
         ));
     }

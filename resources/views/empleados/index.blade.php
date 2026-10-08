@@ -77,6 +77,48 @@
         </div>
     @endif
 
+    @php
+        $avanceGeneral = $resumenCaptura['documentos_posibles'] > 0
+            ? round(($resumenCaptura['documentos_cargados'] / $resumenCaptura['documentos_posibles']) * 100)
+            : 0;
+
+        $avanceGeneralBar = match (true) {
+            $avanceGeneral >= 100 => 'bg-emerald-500',
+            $avanceGeneral >= 70 => 'bg-yellow-500',
+            $avanceGeneral >= 40 => 'bg-orange-500',
+            default => 'bg-red-500',
+        };
+    @endphp
+
+    <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Avance general de captura de documentos
+                </p>
+                <div class="mt-2 flex items-end gap-3">
+                    <span class="text-3xl font-bold text-[#0B265A]">{{ $avanceGeneral }}%</span>
+                    <span class="pb-1 text-sm text-slate-500">
+                        {{ $resumenCaptura['documentos_cargados'] }} / {{ $resumenCaptura['documentos_posibles'] }} documentos
+                    </span>
+                </div>
+            </div>
+
+            <div class="text-left md:text-right">
+                <div class="text-sm font-medium text-slate-700">
+                    {{ $resumenCaptura['empleados_completos'] }} / {{ $resumenCaptura['empleados_totales'] }} empleados completos
+                </div>
+                <div class="text-xs text-slate-500">
+                    Relación según documentos obligatorios configurados
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+            <div class="h-full rounded-full {{ $avanceGeneralBar }}" style="width: {{ $avanceGeneral }}%"></div>
+        </div>
+    </div>
+
     {{-- Tabla --}}
     <div class="bg-white rounded-2xl shadow overflow-hidden">
         <table class="min-w-full text-sm">
