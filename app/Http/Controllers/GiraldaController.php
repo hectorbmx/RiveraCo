@@ -727,7 +727,9 @@ class GiraldaController extends Controller
             ->groupBy(fn ($registro) => $registro->empleado_id ?? 'sin-empleado')
             ->map(function ($items, $empleadoIdKey) use ($dias) {
                 $empleado = $items->first()?->empleado;
-                $empleadoNombre = $empleado?->nombre_completo ?? 'Sin empleado';
+                $empleadoNombre = $empleado
+                    ? trim(trim((string) ($empleado->Apellidos ?? '')) . ' ' . trim((string) ($empleado->Nombre ?? '')))
+                    : 'Sin empleado';
                 $diasPorEmpleado = [];
                 $motivosPorEmpleado = [];
                 $horariosPorEmpleado = [];
@@ -783,6 +785,9 @@ class GiraldaController extends Controller
                 return [
                     'empleado' => $empleadoNombre,
                     'puesto' => $puestoEmpleado,
+                    'puesto_orden' => mb_strtoupper(trim((string) ($puestoEmpleado ?? '')), 'UTF-8'),
+                    'apellido_orden' => mb_strtoupper(trim((string) ($empleado?->Apellidos ?? '')), 'UTF-8'),
+                    'nombre_orden' => mb_strtoupper(trim((string) ($empleado?->Nombre ?? '')), 'UTF-8'),
                     'dias' => $diasPorEmpleado,
                     'motivos' => $motivosPorEmpleado,
                     'horarios' => $horariosPorEmpleado,
@@ -792,6 +797,11 @@ class GiraldaController extends Controller
                     'total_pesos_horas_extra' => $totalPesosHorasExtra !== null ? round($totalPesosHorasExtra, 2) : null,
                 ];
             })
+            ->sortBy([
+                fn ($a, $b) => ($a['puesto_orden'] ?? '') <=> ($b['puesto_orden'] ?? ''),
+                fn ($a, $b) => ($a['apellido_orden'] ?? '') <=> ($b['apellido_orden'] ?? ''),
+                fn ($a, $b) => ($a['nombre_orden'] ?? '') <=> ($b['nombre_orden'] ?? ''),
+            ])
             ->values();
 
         $totalesPorDia = [];

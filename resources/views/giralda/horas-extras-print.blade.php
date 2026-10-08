@@ -15,7 +15,7 @@
         .brand-text .construcciones { margin-top: 4px; font-size: 14px; font-weight: 900; letter-spacing: 1.4px; }
         .title { color: #0B265A; text-align: center; font-size: 24px; font-weight: 800; margin: 10px 0 8px; letter-spacing: 1px; }
         .rule { border-top: 7px solid #d9d8f0; border-bottom: 4px double #0B265A; height: 12px; margin-bottom: 10px; }
-        .period { margin-bottom: 12px; font-size: 12px; font-weight: 700; color: #0B265A; }
+        .period { margin-bottom: 12px; font-size: 16px; font-weight: 800; color: #0B265A; }
         table { width: 100%; border-collapse: collapse; margin-top: 18px; }
         th, td { border: 1px solid #cbd5e1; padding: 6px; vertical-align: top; }
         th { background: #c8d8f2 !important; text-align: center; color: #111827; text-transform: uppercase; font-size: 10px; }
@@ -82,7 +82,7 @@
                         <small>{{ $dia['weekday'] }}</small>
                     </th>
                 @endforeach
-                <th style="min-width: 90px;">Total</th>
+                <th style="min-width: 90px;">TOTAL H.EXTRA</th>
             </tr>
         </thead>
         <tbody>
@@ -93,7 +93,7 @@
                 @endphp
                 <tr>
                     <td class="employee-name left">{{ $empleadoNombre }}</td>
-                    <td class="left">{{ $empleadoPuesto ?: '-' }}</td>
+                    <td class="left">{{ $empleadoPuesto ? mb_strtoupper($empleadoPuesto, 'UTF-8') : '-' }}</td>
                     @foreach($dias as $dia)
                         @php
                             $valorDia = (float) ($fila['dias'][$dia['date']] ?? 0);
