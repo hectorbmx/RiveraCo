@@ -765,6 +765,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::prefix('giralda')->name('giralda.')->group(function () {
         Route::get('/', [GiraldaController::class, 'index'])->name('index');
         Route::get('/empleados', [GiraldaController::class, 'empleados'])->name('empleados');
+        Route::get('/empleados/exportar', [GiraldaController::class, 'exportEmpleados'])->name('empleados.export');
         Route::get('/asistencia', fn () => redirect()->route('giralda.empleados', ['tab' => 'asistencia']))->name('asistencia.index');
         Route::post('/asistencia', [GiraldaController::class, 'storeAsistencia'])->name('asistencia.store');
         Route::get('/asistencia/imprimir', [GiraldaController::class, 'printAsistencia'])->name('asistencia.print');

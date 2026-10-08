@@ -130,7 +130,7 @@ class GiraldaController extends Controller
         $estatus = in_array($estatus, ['activo', 'baja', 'todos'], true) ? $estatus : 'activo';
         $busqueda = trim((string) $request->query('q', ''));
 
-        $empleados = Empleado::with(['areaRef', 'eppEntregas.entregadoPor', 'eppEntregas.obra', 'eppEntregas.area'])
+        $empleados = Empleado::with(['areaRef', 'asignacionActiva.obra', 'eppEntregas.entregadoPor', 'eppEntregas.obra', 'eppEntregas.area'])
             ->withCount([
                 'eppEntregas',
                 'giraldaHorasExtras' => function ($query) use ($tab, $desde, $hasta) {
@@ -310,6 +310,70 @@ class GiraldaController extends Controller
             ])
             ->with('success', $fechas->count() > 1 ? 'Asistencia semanal guardada.' : 'Asistencia del dia guardada.');
     }
+    public function exportEmpleados(Request $request): StreamedResponse
+    {
+        $this->authorizeAny(['giralda.access']);
+
+        $areaGiralda = $this->areaGiralda();
+        $tab = $request->query('tab', 'listado');
+        $tab = in_array($tab, ['listado', 'asistencia', 'epp', 'horas_extras'], true) ? $tab : 'listado';
+        try {
+            $semanaInicio = $request->query('semana')
+                ? Carbon::parse($request->query('semana'))->startOfWeek(Carbon::MONDAY)
+                : now()->startOfWeek(Carbon::MONDAY);
+        } catch (\Throwable $exception) {
+            $semanaInicio = now()->startOfWeek(Carbon::MONDAY);
+        }
+
+        $estatus = $request->query('estatus', 'activo');
+        $estatus = in_array($estatus, ['activo', 'baja', 'todos'], true) ? $estatus : 'activo';
+        $busqueda = trim((string) $request->query('q', ''));
+        $semanaFin = $semanaInicio->copy()->endOfWeek(Carbon::SUNDAY);
+        $desde = in_array($tab, ['horas_extras', 'asistencia'], true)
+            ? $semanaInicio->toDateString()
+            : $request->query('desde', now()->startOfMonth()->toDateString());
+        $hasta = in_array($tab, ['horas_extras', 'asistencia'], true)
+            ? $semanaFin->toDateString()
+            : $request->query('hasta', now()->endOfMonth()->toDateString());
+
+        $empleados = Empleado::with('areaRef')
+            ->where('Area', $areaGiralda?->id)
+            ->when($estatus === 'activo', fn ($q) => $q->where('Estatus', 1))
+            ->when($estatus === 'baja', fn ($q) => $q->where('Estatus', 2))
+            ->when($busqueda !== '', function ($query) use ($busqueda) {
+                $query->where(function ($empleado) use ($busqueda) {
+                    $empleado->where('Nombre', 'like', "%{$busqueda}%")
+                        ->orWhere('Apellidos', 'like', "%{$busqueda}%")
+                        ->orWhere('Puesto', 'like', "%{$busqueda}%")
+                        ->orWhere('id_Empleado', 'like', "%{$busqueda}%");
+                });
+            })
+            ->orderBy('Apellidos')
+            ->orderBy('Nombre')
+            ->get();
+
+        $filename = 'empleados_giralda_' . now()->format('Ymd_His') . '.csv';
+
+        return response()->streamDownload(function () use ($empleados) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['ID', 'Nombre', 'Apellidos', 'Puesto', 'Area', 'Estatus', 'Nombre completo']);
+
+            foreach ($empleados as $empleado) {
+                fputcsv($out, [
+                    $empleado->id_Empleado,
+                    $empleado->Nombre,
+                    $empleado->Apellidos,
+                    $empleado->Puesto ?? $empleado->puesto_base ?? '-',
+                    $empleado->areaRef?->nombre ?? 'Giralda',
+                    (int) $empleado->Estatus === 2 ? 'Baja' : 'Activo',
+                    $empleado->nombre_completo,
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     public function printAsistencia(Request $request)
     {
         $this->authorizeAny(['giralda.access']);
@@ -662,7 +726,8 @@ class GiraldaController extends Controller
         $filas = $registros
             ->groupBy(fn ($registro) => $registro->empleado_id ?? 'sin-empleado')
             ->map(function ($items, $empleadoIdKey) use ($dias) {
-                $empleadoNombre = $items->first()?->empleado?->nombre_completo ?? 'Sin empleado';
+                $empleado = $items->first()?->empleado;
+                $empleadoNombre = $empleado?->nombre_completo ?? 'Sin empleado';
                 $diasPorEmpleado = [];
                 $motivosPorEmpleado = [];
                 $horariosPorEmpleado = [];
@@ -705,7 +770,15 @@ class GiraldaController extends Controller
                     $totalEmpleado += $valorDia;
                 }
 
-                $puestoEmpleado = $items->first()?->empleado?->Puesto ?? $items->first()?->empleado?->puesto_base ?? null;
+                $puestoEmpleado = $empleado?->Puesto ?? $empleado?->puesto_base ?? null;
+                $sueldoBaseHoraExtra = (float) ($empleado?->Sueldo_real ?? 0);
+
+                if ($sueldoBaseHoraExtra <= 0) {
+                    $sueldoBaseHoraExtra = (float) ($empleado?->Sueldo ?? 0) + (float) ($empleado?->Complemento ?? 0);
+                }
+
+                $tarifaHoraExtra = $sueldoBaseHoraExtra > 0 ? (($sueldoBaseHoraExtra / 7) / 8) * 2 : null;
+                $totalPesosHorasExtra = $tarifaHoraExtra !== null ? $tarifaHoraExtra * $totalEmpleado : null;
 
                 return [
                     'empleado' => $empleadoNombre,
@@ -714,6 +787,9 @@ class GiraldaController extends Controller
                     'motivos' => $motivosPorEmpleado,
                     'horarios' => $horariosPorEmpleado,
                     'total' => round($totalEmpleado, 2),
+                    'sueldo_base_hora_extra' => $sueldoBaseHoraExtra > 0 ? round($sueldoBaseHoraExtra, 2) : null,
+                    'tarifa_hora_extra' => $tarifaHoraExtra !== null ? round($tarifaHoraExtra, 2) : null,
+                    'total_pesos_horas_extra' => $totalPesosHorasExtra !== null ? round($totalPesosHorasExtra, 2) : null,
                 ];
             })
             ->values();

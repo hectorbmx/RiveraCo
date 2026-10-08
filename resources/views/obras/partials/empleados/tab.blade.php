@@ -150,16 +150,16 @@
 
         <div class="border rounded-xl overflow-x-auto bg-white">
             <table class="w-full text-sm">
-                <thead class="bg-slate-50">
-                    <tr class="border-b text-slate-500">
-                        <th class="py-2 px-3 text-left">Empleado</th>
-                        <th class="py-2 px-3 text-left">Puesto</th>
-                        <th class="py-2 px-3 text-left">Alta</th>
-                        <th class="py-2 px-3 text-left">Dias</th>
-                        <th class="py-2 px-3 text-left">Tipo sueldo</th>
-                        <th class="py-2 px-3 text-right">Sueldo diario</th>
-                        <th class="py-2 px-3 text-right">Sueldo generado</th>
-                        <th class="py-2 px-3 text-right">Acciones</th>
+                <thead class="bg-[#0B265A] text-white">
+                    <tr class="border-b border-white/20">
+                        <th class="py-2 px-3 text-left text-white">Empleado</th>
+                        <th class="py-2 px-3 text-left text-white">Puesto</th>
+                        <th class="py-2 px-3 text-left text-white">Alta</th>
+                        <th class="py-2 px-3 text-left text-white">Dias</th>
+                        <th class="py-2 px-3 text-left text-white">Tipo sueldo</th>
+                        <th class="py-2 px-3 text-right text-white">Sueldo diario</th>
+                        <th class="py-2 px-3 text-right text-white">Sueldo generado</th>
+                        <th class="py-2 px-3 text-right text-white">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>

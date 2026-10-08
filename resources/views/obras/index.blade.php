@@ -32,7 +32,7 @@
             name="search"
             label="Buscar"
             :value="$search ?? ''"
-            placeholder="Nombre, clave o cliente..."
+            placeholder="Nombre, clave, cliente o empleado..."
             type="search"
             glow />
     </div>

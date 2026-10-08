@@ -3231,14 +3231,14 @@
 
             <div class="border rounded-xl overflow-hidden">
                 <table class="w-full text-sm">
-                    <thead class="bg-slate-50">
-                        <tr class="border-b text-slate-500">
-                            <th class="py-2 px-3 text-left">Máquina</th>
-                            <th class="py-2 px-3 text-left">Tipo</th>
-                            <th class="py-2 px-3 text-left">Inicio</th>
-                            <th class="py-2 px-3 text-left">Estado</th>
-                            <th class="py-2 px-3 text-left">HorometroInicial</th>
-                            <th class="py-2 px-3 text-right">Acciones</th>
+                    <thead class="bg-[#0B265A] text-white">
+                        <tr class="border-b border-white/20">
+                            <th class="py-2 px-3 text-left text-white">Máquina</th>
+                            <th class="py-2 px-3 text-left text-white">Tipo</th>
+                            <th class="py-2 px-3 text-left text-white">Inicio</th>
+                            <th class="py-2 px-3 text-left text-white">Estado</th>
+                            <th class="py-2 px-3 text-left text-white">HorometroInicial</th>
+                            <th class="py-2 px-3 text-right text-white">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -3294,12 +3294,12 @@
                 </h3>
                 <div class="border rounded-xl overflow-hidden max-h-64 overflow-y-auto">
                     <table class="w-full text-xs">
-                        <thead class="bg-slate-50">
-                            <tr class="border-b text-slate-500">
-                                <th class="py-2 px-3 text-left">Máquina</th>
-                                <th class="py-2 px-3 text-left">Inicio</th>
-                                <th class="py-2 px-3 text-left">Fin</th>
-                                <th class="py-2 px-3 text-left">Estado</th>
+                        <thead class="bg-[#0B265A] text-white">
+                            <tr class="border-b border-white/20">
+                                <th class="py-2 px-3 text-left text-white">Máquina</th>
+                                <th class="py-2 px-3 text-left text-white">Inicio</th>
+                                <th class="py-2 px-3 text-left text-white">Fin</th>
+                                <th class="py-2 px-3 text-left text-white">Estado</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -3770,16 +3770,16 @@
 
             <div class="border rounded-xl overflow-hidden">
                 <table class="w-full text-sm">
-                    <thead class="bg-slate-50">
-                        <tr class="border-b text-slate-500">
-                            <th class="py-2 px-3 text-left">Tipo</th>    
-                            <th class="py-2 px-3 text-center">Cantidad(proyecto)</th>
-                            <th class="py-2 px-3 text-center">Hechas</th>
-                            <th class="py-2 px-3 text-center">Faltan</th>
-                            <th class="py-2 px-3 text-left">Diámetro (proyecto)</th>
-                            <th class="py-2 px-3 text-left">Profundidad (proyecto)</th>
-                            <th class="py-2 px-3 text-left">Ubicación</th>
-                            <th class="py-2 px-3 text-right">Acciones</th>
+                    <thead class="bg-[#0B265A] text-white">
+                        <tr class="border-b border-white/20">
+                            <th class="py-2 px-3 text-left text-white">Tipo</th>    
+                            <th class="py-2 px-3 text-center text-white">Cantidad(proyecto)</th>
+                            <th class="py-2 px-3 text-center text-white">Hechas</th>
+                            <th class="py-2 px-3 text-center text-white">Faltan</th>
+                            <th class="py-2 px-3 text-left text-white">Diámetro (proyecto)</th>
+                            <th class="py-2 px-3 text-left text-white">Profundidad (proyecto)</th>
+                            <th class="py-2 px-3 text-left text-white">Ubicación</th>
+                            <th class="py-2 px-3 text-right text-white">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -3851,14 +3851,14 @@
                 </h3>
                 <div class="border rounded-xl overflow-hidden max-h-64 overflow-y-auto">
                     <table class="w-full text-xs">
-                        <thead class="bg-slate-50">
-                            <tr class="border-b text-slate-500">
-                                <th class="py-2 px-3 text-left">No.</th>
-                                <th class="py-2 px-3 text-left">Tipo</th>
-                                <th class="py-2 px-3 text-left">Diámetro</th>
-                                <th class="py-2 px-3 text-left">Profundidad</th>
-                                <th class="py-2 px-3 text-left">Ubicación</th>
-                                <th class="py-2 px-3 text-left">Estado</th>
+                        <thead class="bg-[#0B265A] text-white">
+                            <tr class="border-b border-white/20">
+                                <th class="py-2 px-3 text-left text-white">No.</th>
+                                <th class="py-2 px-3 text-left text-white">Tipo</th>
+                                <th class="py-2 px-3 text-left text-white">Diámetro</th>
+                                <th class="py-2 px-3 text-left text-white">Profundidad</th>
+                                <th class="py-2 px-3 text-left text-white">Ubicación</th>
+                                <th class="py-2 px-3 text-left text-white">Estado</th>
                             </tr>
                         </thead>
                         <tbody>

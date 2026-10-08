@@ -24,6 +24,9 @@
         .right { text-align: right; }
         .employee-name { text-align: left; font-weight: 600; }
         .total-row { font-weight: 700; background: #f8fafc; }
+        .employee-total { text-align: center; vertical-align: middle; }
+        .employee-total-hours { font-size: 21px; font-weight: 900; line-height: 1.05; color: #0B265A; }
+        .employee-total-amount { margin-top: 4px; font-size: 10.5px; font-weight: 700; color: #166534; white-space: nowrap; }
         .signatures { display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px; margin-top: 54px; }
         .signature { text-align: center; }
         .line { border-top: 1px solid #111827; min-height: 18px; padding-top: 6px; text-align: center; font-weight: 700; }
@@ -120,7 +123,16 @@
                             @endif
                         </td>
                     @endforeach
-                    <td class="right">{{ number_format((float) $fila['total'], 2) }}</td>
+                    <td class="employee-total">
+                        <div class="employee-total-hours">{{ number_format((float) $fila['total'], 2) }}</div>
+                        <div class="employee-total-amount">
+                            @if($fila['total_pesos_horas_extra'] !== null)
+                                $ {{ number_format((float) $fila['total_pesos_horas_extra'], 2) }}
+                            @else
+                                -
+                            @endif
+                        </div>
+                    </td>
                 </tr>
             @empty
                 <tr>

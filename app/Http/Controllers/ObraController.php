@@ -99,6 +99,22 @@ class ObraController extends Controller
                       ->orWhereHas('cliente', function ($q2) use ($search) {
                           $q2->where('nombre_comercial', 'like', "%{$search}%")
                              ->orWhere('razon_social', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('responsable', function ($q2) use ($search) {
+                          $q2->where('Nombre', 'like', "%{$search}%")
+                             ->orWhere('Apellidos', 'like', "%{$search}%")
+                             ->orWhere('id_Empleado', 'like', "%{$search}%")
+                             ->orWhereRaw("CONCAT(COALESCE(Nombre, ''), ' ', COALESCE(Apellidos, '')) LIKE ?", ["%{$search}%"]);
+                      })
+                      ->orWhereHas('empleados', function ($q2) use ($search) {
+                          $q2->where('obra_empleado.activo', true)
+                             ->whereNull('obra_empleado.fecha_baja')
+                             ->where(function ($empleadoQuery) use ($search) {
+                                 $empleadoQuery->where('Nombre', 'like', "%{$search}%")
+                                     ->orWhere('Apellidos', 'like', "%{$search}%")
+                                     ->orWhere('id_Empleado', 'like', "%{$search}%")
+                                     ->orWhereRaw("CONCAT(COALESCE(Nombre, ''), ' ', COALESCE(Apellidos, '')) LIKE ?", ["%{$search}%"]);
+                             });
                       });
                 });
             })

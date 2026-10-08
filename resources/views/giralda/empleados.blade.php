@@ -66,6 +66,15 @@
                 </div>
             @endif
 
+            @php
+                $exportParams = array_filter([
+                    'tab' => $tab,
+                    'estatus' => $estatus,
+                    'q' => $busqueda !== '' ? $busqueda : null,
+                    'semana' => in_array($tab, ['horas_extras', 'asistencia'], true) ? $semana : null,
+                ], fn ($value) => $value !== null && $value !== '');
+            @endphp
+
             <div class="{{ in_array($tab, ['horas_extras', 'asistencia'], true) ? 'md:col-span-3' : 'md:col-span-5' }} flex justify-start md:justify-end gap-2">
                 <button class="bg-[#FFC107] text-[#0B265A] font-semibold px-4 py-2 rounded-xl text-sm hover:opacity-90 shadow-sm">
                     Filtrar
@@ -73,6 +82,10 @@
                 <a href="{{ route('giralda.empleados', ['tab' => $tab]) }}"
                    class="px-4 py-2 rounded-xl text-sm border border-white/25 bg-white/10 text-white hover:bg-white/20 shadow-sm">
                     Limpiar
+                </a>
+                <a href="{{ route('giralda.empleados.export', $exportParams) }}"
+                   class="px-4 py-2 rounded-xl text-sm border border-emerald-300 bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm">
+                    Exportar CSV
                 </a>
             </div>
         </form>
@@ -177,7 +190,13 @@
                                 @if($tab === 'asistencia' && $asistenciaEditableFechas->isNotEmpty())
                                     <input type="hidden" name="empleados[]" value="{{ $empleado->id_Empleado }}">
                                 @endif
-                                <div class="font-medium text-slate-900">{{ $empleado->nombre_completo }}</div>
+                                <?php $obraAsignada = $empleado->asignacionActiva?->obra; ?>
+                                <div class="font-medium {{ $obraAsignada ? 'text-[#0B265A]' : 'text-slate-900' }}">{{ $empleado->nombre_completo }}</div>
+                                @if($obraAsignada)
+                                    <span class="mt-1 inline-flex w-fit items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
+                                        En obra: {{ $obraAsignada->nombre ?? $obraAsignada->clave_obra ?? 'Obra' }}
+                                    </span>
+                                @endif
                                 <div class="text-xs text-slate-500">ID {{ $empleado->id_Empleado }} - {{ $empleado->areaRef?->nombre ?? 'Giralda' }}</div>
                             </td>
                             <td class="p-3">{{ $empleado->Puesto ?? $empleado->puesto_base ?? '-' }}</td>
