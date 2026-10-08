@@ -416,7 +416,7 @@
         </aside>
 
         {{-- CONTENIDO PRINCIPAL --}}
-        <main class="flex-1 min-w-0 h-screen overflow-y-auto flex flex-col">
+        <main class="flex-1 min-w-0 h-screen overflow-auto flex flex-col">
 
             {{-- TOPBAR --}}
             <header class="sticky top-0 z-40 h-16 flex-shrink-0 bg-white shadow flex items-center justify-between px-6">

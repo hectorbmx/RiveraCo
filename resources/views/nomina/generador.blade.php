@@ -4,9 +4,67 @@
 
 @section('content')
 
-<div class="flex flex-col gap-1 mb-4">
-    <h1 class="text-2xl font-bold text-[#0B265A]">Generador de Nómina</h1>
-    <p class="text-sm text-slate-500">Consulta corridas y genera nuevos periodos de pago.</p>
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4" x-data="{ modalOpen: false }">
+    <div>
+        <h1 class="text-2xl font-bold text-[#0B265A]">Generador de Nómina</h1>
+        <p class="text-sm text-slate-500">Consulta corridas y genera nuevos periodos de pago.</p>
+    </div>
+
+    <div>
+        <button type="button"
+                @click="modalOpen = true"
+                class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Nueva corrida
+        </button>
+
+        {{-- Modal para generar nueva corrida con selección explícita de periodo --}}
+        <div x-show="modalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+            <div @click.away="modalOpen = false" class="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                    <div>
+                        <h3 class="font-bold text-[#0B265A] text-lg">Nueva Corrida de Nómina</h3>
+                        <p class="text-xs text-slate-500">Define el tipo de pago y el rango del periodo a generar.</p>
+                    </div>
+                    <button type="button" @click="modalOpen = false" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+                </div>
+
+                <form method="POST" action="{{ route('nomina.corridas.store') }}" class="p-6 space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de pago</label>
+                        <select name="tipo" required class="w-full rounded-xl border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                            <option value="semanal" selected>Semanal</option>
+                            <option value="quincenal">Quincenal</option>
+                            <option value="mensual">Mensual</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Desde (Inicio)</label>
+                            <input type="date" name="desde" required value="{{ now()->startOfWeek()->toDateString() }}" class="w-full rounded-xl border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Hasta (Fin)</label>
+                            <input type="date" name="hasta" required value="{{ now()->endOfWeek()->toDateString() }}" class="w-full rounded-xl border-slate-200 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 flex justify-end gap-2">
+                        <button type="button" @click="modalOpen = false" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm hover:bg-slate-50">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 shadow-sm transition">
+                            Generar corrida
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 {{-- FILTROS --}}
@@ -51,69 +109,24 @@
     <x-filters.actions
         submit-label="Filtrar"
         clear-url="{{ route('nomina.generador.index') }}"
-        span="md:col-span-2">
-        <button type="submit"
-                form="formGenerarCorrida"
-                onclick="
-                    const sel = document.querySelector('[name=&quot;tipo&quot;]');
-                    const hidden = document.getElementById('tipoHidden');
-                    const desdeVisible = document.querySelector('[name=&quot;desde&quot;]');
-                    const hastaVisible = document.querySelector('[name=&quot;hasta&quot;]');
-                    const desdeHidden = document.getElementById('desdeHidden');
-                    const hastaHidden = document.getElementById('hastaHidden');
-                    if (!sel) { alert('No se encontró el selector de tipo'); return false; }
-                    hidden.value = sel.value;
-                    if (desdeVisible && desdeHidden) desdeHidden.value = desdeVisible.value;
-                    if (hastaVisible && hastaHidden) hastaHidden.value = hastaVisible.value;
-                    if (!hidden.value) { alert('Selecciona un tipo de pago'); return false; }
-                    return confirm('¿Estás seguro de generar la corrida con los filtros actuales?');
-                "
-                class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">
-            Generar corrida
-        </button>
-    </x-filters.actions>
+        span="md:col-span-2" />
 </x-filters.card>
-                
-<form id="formGenerarCorrida"
-      method="POST"
-      action="{{ route('nomina.corridas.store') }}">
-    @csrf
-
-    <input type="hidden" name="desde" id="desdeHidden" value="{{ $desde }}">
-    <input type="hidden" name="hasta" id="hastaHidden" value="{{ $hasta }}">
-    <!-- <input type="hidden" name="tipo" value="{{ $tipo }}"> -->
-      <input type="hidden" name="tipo" id="tipoHidden">
-    
-</form>
 
 {{-- RESUMEN --}}
 <div class="flex justify-between items-center mb-3 text-sm text-slate-600">
-   
-    <div class="text-xs">
-        Periodo:
-        <span class="font-semibold">
-            {{ \Carbon\Carbon::parse($desde)->format('d/m/Y') }}
-            –
-            {{ \Carbon\Carbon::parse($hasta)->format('d/m/Y') }}
-        </span>
-        · Tipo:
-        <span class="font-semibold capitalize">{{ $tipo }}</span>
-    </div>
-</div>
-
-{{-- TABLA PRINCIPAL --}}
-<div class="bg-white rounded-2xl shadow overflow-x-auto">
-  {{-- RESUMEN --}}
-<div class="flex justify-between items-center mb-3 text-sm text-slate-600">
   <div>
-    Corridas:
-    <span class="font-semibold">{{ $corridas->total() }}</span>
+    Corridas registradas:
+    <span class="font-semibold text-slate-900">{{ $corridas->total() }}</span>
   </div>
   <div class="text-xs">
-    Rango:
-    <span class="font-semibold">
-      {{ \Carbon\Carbon::parse($desde)->format('d/m/Y') }} – {{ \Carbon\Carbon::parse($hasta)->format('d/m/Y') }}
-    </span>
+    @if($desde && $hasta)
+      Rango filtrado:
+      <span class="font-semibold">
+        {{ \Carbon\Carbon::parse($desde)->format('d/m/Y') }} – {{ \Carbon\Carbon::parse($hasta)->format('d/m/Y') }}
+      </span>
+    @else
+      <span class="text-slate-400">Mostrando todos los periodos</span>
+    @endif
     @if($tipo)
       · Tipo: <span class="font-semibold capitalize">{{ $tipo }}</span>
     @endif
@@ -124,17 +137,17 @@
 </div>
 
 {{-- TABLA CORRIDAS --}}
-<div class="bg-white rounded-2xl shadow overflow-x-auto">
+<div class="bg-white rounded-2xl shadow overflow-x-auto border border-slate-100">
   <table class="min-w-full text-xs md:text-sm">
-    <thead class="bg-slate-50">
-      <tr class="text-left text-slate-500 border-b">
-        <th class="py-2 px-3">Corrida</th>
-        <th class="py-2 px-3">Periodo</th>
-        <th class="py-2 px-3">Tipo</th>
-        <th class="py-2 px-3">Pago</th>
-        <th class="py-2 px-3 text-center">Recibos</th>
-        <th class="py-2 px-3 text-center">Status</th>
-        <th class="py-2 px-3 text-right">Acciones</th>
+    <thead class="bg-[#0B265A] text-white">
+      <tr class="text-left border-b border-white/20">
+        <th class="py-2.5 px-3 font-semibold text-white">Corrida</th>
+        <th class="py-2.5 px-3 font-semibold text-white">Periodo</th>
+        <th class="py-2.5 px-3 font-semibold text-white">Tipo</th>
+        <th class="py-2.5 px-3 font-semibold text-white">Pago</th>
+        <th class="py-2.5 px-3 font-semibold text-white text-center">Recibos</th>
+        <th class="py-2.5 px-3 font-semibold text-white text-center">Status</th>
+        <th class="py-2.5 px-3 font-semibold text-white text-right">Acciones</th>
       </tr>
     </thead>
 
@@ -265,8 +278,6 @@
 
 <div class="mt-4">
   {{ $corridas->links() }}
-</div>
-
 </div>
 @endsection
 

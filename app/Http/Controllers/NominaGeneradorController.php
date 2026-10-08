@@ -96,59 +96,51 @@ class NominaGeneradorController extends Controller
     //     ]);
     // }
     public function index(Request $request)
-{
-    $tipo   = $request->input('tipo');     // semanal|quincenal|mensual|null
-    $desde  = $request->input('desde');
-    $hasta  = $request->input('hasta');
-    $status = $request->input('status');   // abierta|cerrada|pagada|cancelada|null
-    $q      = $request->input('q');        // texto libre (periodo_label o id)
+    {
+        $tipo   = $request->input('tipo');     // semanal|quincenal|mensual|null
+        $desde  = $request->input('desde');
+        $hasta  = $request->input('hasta');
+        $status = $request->input('status');   // abierta|cerrada|pagada|cancelada|null
+        $q      = $request->input('q');        // texto libre (periodo_label o id)
 
-    // Defaults: semana actual (igual que antes)
-    if (!$desde || !$hasta) {
-        $startOfWeek = Carbon::now()->startOfWeek();
-        $endOfWeek   = Carbon::now()->endOfWeek();
-        $desde = $desde ?: $startOfWeek->format('Y-m-d');
-        $hasta = $hasta ?: $endOfWeek->format('Y-m-d');
+        $query = NominaCorrida::query()
+            ->withCount('recibos')
+            ->orderByDesc('id');
+
+        if ($tipo) {
+            $query->where('tipo_pago', $tipo);
+        }
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        // Filtrar por rango solo si el usuario especificó fechas en el filtro
+        if ($desde) {
+            $query->whereDate('fecha_fin', '>=', $desde);
+        }
+        if ($hasta) {
+            $query->whereDate('fecha_inicio', '<=', $hasta);
+        }
+
+        if ($q) {
+            $query->where(function ($w) use ($q) {
+                $w->where('periodo_label', 'like', "%{$q}%")
+                  ->orWhere('id', $q);
+            });
+        }
+
+        $corridas = $query->paginate(15)->withQueryString();
+
+        return view('nomina.generador', [
+            'corridas' => $corridas,
+            'tipo'     => $tipo,
+            'desde'    => $desde,
+            'hasta'    => $hasta,
+            'status'   => $status,
+            'q'        => $q,
+        ]);
     }
-
-    $query = NominaCorrida::query()
-        ->withCount('recibos')
-        ->orderByDesc('id');
-
-    if ($tipo) {
-        $query->where('tipo_pago', $tipo);
-    }
-
-    if ($status) {
-        $query->where('status', $status);
-    }
-
-    // Filtrar por rango (intersecta periodos)
-    if ($desde) {
-        $query->whereDate('fecha_fin', '>=', $desde);
-    }
-    if ($hasta) {
-        $query->whereDate('fecha_inicio', '<=', $hasta);
-    }
-
-    if ($q) {
-        $query->where(function ($w) use ($q) {
-            $w->where('periodo_label', 'like', "%{$q}%")
-              ->orWhere('id', $q);
-        });
-    }
-
-    $corridas = $query->paginate(15)->withQueryString();
-
-    return view('nomina.generador', [
-        'corridas' => $corridas,
-        'tipo'     => $tipo,
-        'desde'    => $desde,
-        'hasta'    => $hasta,
-        'status'   => $status,
-        'q'        => $q,
-    ]);
-}
     // public function storeEmpleado(Request $request, Empleado $empleado)
     // {
     //     $validated = $request->validate([

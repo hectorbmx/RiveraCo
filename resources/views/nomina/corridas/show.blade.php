@@ -161,6 +161,22 @@
                 </button>
             </form>
 
+            @if(($corrida->status ?? '') === 'abierta')
+            <form method="POST"
+                  action="{{ route('nomina.corridas.horas-extra-giralda.sincronizar', $corrida) }}"
+                  onsubmit="return confirm('Sincronizar horas extra Giralda para esta corrida? Se actualizara la columna Horas extra ($).')">
+                @csrf
+
+                <button type="submit"
+                        @disabled($corrida->recibos->isEmpty())
+                        class="px-4 py-2 text-sm rounded-xl shadow
+                            {{ $corrida->recibos->isNotEmpty()
+                                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                    : 'bg-slate-200 text-slate-500 cursor-not-allowed' }}">
+                    Sync HE Giralda
+                </button>
+            </form>
+            @endif
 
         </div>
     </div>
@@ -171,36 +187,50 @@
         </div>
     @endunless
 
-    {{-- KPIs --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="bg-white rounded-2xl shadow p-4 border border-slate-100">
-            <div class="text-xs font-semibold text-slate-500">Total bruto</div>
-            <div class="mt-2 text-2xl font-bold text-slate-900">
+    {{-- KPIs (5 tarjetas ajustadas en 1 sola fila) --}}
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+        <div class="bg-white rounded-xl shadow-sm p-3.5 border border-slate-100 flex flex-col justify-between">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Total bruto</div>
+            <div class="mt-1.5 text-xl font-bold text-slate-900 truncate">
                 $<span id="kpi-bruto">{{ number_format($totalBruto ?? 0, 2) }}</span>
             </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow p-4 border border-slate-100">
-            <div class="text-xs font-semibold text-slate-500">Deducciones</div>
-            <div class="mt-2 text-2xl font-bold text-slate-900">
+        <div class="bg-white rounded-xl shadow-sm p-3.5 border border-slate-100 flex flex-col justify-between">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Horas extra</div>
+            <div class="mt-1.5 text-xl font-bold text-indigo-600 truncate">
+                $<span id="kpi-horas-extra">{{ number_format($totalHorasExtra ?? 0, 2) }}</span>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-3.5 border border-slate-100 flex flex-col justify-between">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Deducciones</div>
+            <div class="mt-1.5 text-xl font-bold text-rose-600 truncate">
                 $<span id="kpi-deducciones">{{ number_format($totalDeducciones ?? 0, 2) }}</span>
             </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow p-4 border border-slate-100">
-            <div class="text-xs font-semibold text-slate-500">Total neto</div>
-            <div class="mt-2 text-2xl font-bold text-slate-900">
+        <div class="bg-white rounded-xl shadow-sm p-3.5 border border-slate-100 flex flex-col justify-between">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Total neto</div>
+            <div class="mt-1.5 text-xl font-bold text-emerald-600 truncate">
                 $<span id="kpi-neto">{{ number_format($totalNeto ?? 0, 2) }}</span>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-3.5 border border-slate-100 flex flex-col justify-between">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Empleados pagados</div>
+            <div class="mt-1.5 text-xl font-bold text-slate-900 truncate">
+                <span id="kpi-empleados">{{ $totalEmpleados ?? $corrida->recibos->count() }}</span> <span class="text-xs font-normal text-slate-400">empleados</span>
             </div>
         </div>
     </div>
 
     {{-- Tabla Recibos --}}
-    <div class="bg-white rounded-2xl shadow border border-slate-100 overflow-hidden">
+    <div class="bg-white rounded-2xl shadow border border-slate-100">
         <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
             <div>
                 <div class="text-sm font-semibold text-slate-900">Recibos</div>
-                <div class="text-xs text-slate-500">Listado de recibos generados para esta corrida</div>
+                <div class="text-xs text-slate-500">Listado de recibos generados para esta corrida. <span class="text-slate-400">Horas extra ($) puede venir de Giralda/comisiones y sigue editable.</span></div>
             </div>
 
             <div class="text-xs text-slate-500">
@@ -216,39 +246,42 @@
                 </div>
             </div>
         @else
-            <div class="overflow-x-auto">
-                <form method="POST" action="{{ route('nomina.corridas.recibos.guardar', $corrida) }}">
-  @csrf
-                <table class="min-w-full text-xs border-collapse">
-    <thead class="bg-slate-50 text-slate-600">
-        <tr>
-            <th class="px-3 py-2 text-left font-semibold">Empleado</th>
+            <form method="POST" action="{{ route('nomina.corridas.recibos.guardar', $corrida) }}">
+                @csrf
+                <div class="border-b border-slate-100">
+                    <table class="min-w-full text-xs border-collapse">
+                        <thead class="sticky top-16 z-30 bg-[#0B265A] text-white shadow-md">
+                            <tr class="border-b border-white/20">
+                                <th class="sticky top-16 z-30 bg-[#0B265A] text-white px-3 py-2.5 text-left font-semibold border-b border-white/20">Empleado</th>
 
-            {{-- Informativo --}}
-            <th class="px-3 py-2 text-right font-semibold bg-green-50">IMSS</th>
-            <th class="px-3 py-2 text-right font-semibold bg-green-50">Complemento</th>
-            <th class="px-3 py-2 text-right font-semibold bg-green-100">Sueldo real</th>
+                                {{-- Informativo --}}
+                                <th class="sticky top-16 z-30 bg-[#0B265A] text-white px-3 py-2.5 text-right font-semibold border-b border-white/20">IMSS</th>
+                                <th class="sticky top-16 z-30 bg-[#0B265A] text-white px-3 py-2.5 text-right font-semibold border-b border-white/20">Complemento</th>
+                                <th class="sticky top-16 z-30 bg-[#0B265A] text-white px-3 py-2.5 text-right font-semibold border-b border-white/20">Sueldo real</th>
 
-            {{-- Deducciones --}}
-            <th class="px-3 py-2 text-center font-semibold bg-red-50">Infonavit</th>
-            <th class="px-3 py-2 text-center font-semibold bg-red-50">Faltas</th>
-            <th class="px-3 py-2 text-center font-semibold bg-red-50">Descuentos</th>
+                                {{-- Deducciones --}}
+                                <th class="sticky top-16 z-30 bg-[#0B265A] text-white px-3 py-2.5 text-center font-semibold border-b border-white/20">Infonavit</th>
+                                <th class="sticky top-16 z-30 bg-[#0B265A] text-white px-3 py-2.5 text-center font-semibold border-b border-white/20">Faltas</th>
+                                <th class="sticky top-16 z-30 bg-[#0B265A] text-white px-3 py-2.5 text-center font-semibold border-b border-white/20">Descuentos</th>
 
-            {{-- Operativo --}}
-            <th class="px-3 py-2 text-center font-semibold bg-blue-50">Horas extra ($)</th>
-            <th class="px-3 py-2 text-center font-semibold bg-blue-50">M. lineales</th>
-            <th class="px-3 py-2 text-center font-semibold bg-blue-50">Comisiones</th>
-            <th class="px-3 py-2 text-center font-semibold bg-blue-50">Notas</th>
-            <th class="px-3 py-2 text-center font-semibold bg-blue-50">Extras</th>
+                                {{-- Operativo --}}
+                                <th class="sticky top-16 z-30 bg-[#0B265A] text-white px-3 py-2.5 text-center font-semibold border-b border-white/20">
+                                    Horas extra ($)
+                                    <div class="text-[10px] font-normal text-white/75">Giralda / Editable</div>
+                                </th>
+                                <th class="sticky top-16 z-30 bg-[#0B265A] text-white px-3 py-2.5 text-center font-semibold border-b border-white/20">M. lineales</th>
+                                <th class="sticky top-16 z-30 bg-[#0B265A] text-white px-3 py-2.5 text-center font-semibold border-b border-white/20">Comisiones</th>
+                                <th class="sticky top-16 z-30 bg-[#0B265A] text-white px-3 py-2.5 text-center font-semibold border-b border-white/20">Notas</th>
+                                <th class="sticky top-16 z-30 bg-[#0B265A] text-white px-3 py-2.5 text-center font-semibold border-b border-white/20">Extras</th>
 
-            <th class="px-3 py-2 text-center font-semibold">Obra</th>
+                                <th class="sticky top-16 z-30 bg-[#0B265A] text-white px-3 py-2.5 text-center font-semibold border-b border-white/20">Obra</th>
 
-            {{-- Totales --}}
-            <th class="px-3 py-2 text-right font-semibold">Bruto</th>
-            <th class="px-3 py-2 text-right font-semibold">Deducciones</th>
-            <th class="px-3 py-2 text-right font-semibold">Neto</th>
-        </tr>
-    </thead>
+                                {{-- Totales --}}
+                                <th class="sticky top-16 z-30 bg-[#0B265A] text-white px-3 py-2.5 text-right font-semibold border-b border-white/20">Bruto</th>
+                                <th class="sticky top-16 z-30 bg-[#0B265A] text-white px-3 py-2.5 text-right font-semibold border-b border-white/20">Deducciones</th>
+                                <th class="sticky top-16 z-30 bg-[#0B265A] text-white px-3 py-2.5 text-right font-semibold border-b border-white/20">Neto</th>
+                            </tr>
+                        </thead>
 <tbody class="divide-y divide-slate-100 bg-white">
 @php
   $recibosAgrupados = $corrida->recibos
@@ -452,16 +485,17 @@
 @endforeach
 </tbody>
 
-</table>
-  <div class="p-4 border-t flex justify-end">
-    <button type="submit"
-      @disabled(($corrida->status ?? '') !== 'abierta')
-      class="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm hover:bg-emerald-700">
-      Guardar cambios
-    </button>
-  </div>
-</form>
-            </div>
+                    </table>
+                </div>
+
+                <div class="p-4 border-t border-slate-100 flex justify-end bg-slate-50/50">
+                    <button type="submit"
+                        @disabled(($corrida->status ?? '') !== 'abierta')
+                        class="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm hover:bg-emerald-700 shadow-sm transition">
+                        Guardar cambios
+                    </button>
+                </div>
+            </form>
         @endif
     </div>
 
@@ -615,9 +649,11 @@ document.addEventListener('DOMContentLoaded', () => {
     return isNaN(v) ? 0 : v;
   };
 
-  const kpiBruto = document.getElementById('kpi-bruto');
-  const kpiDeds  = document.getElementById('kpi-deducciones');
-  const kpiNeto  = document.getElementById('kpi-neto');
+  const kpiBruto      = document.getElementById('kpi-bruto');
+  const kpiDeds       = document.getElementById('kpi-deducciones');
+  const kpiNeto       = document.getElementById('kpi-neto');
+  const kpiHorasExtra = document.getElementById('kpi-horas-extra');
+  const kpiEmpleados  = document.getElementById('kpi-empleados');
 
   const filas = Array.from(document.querySelectorAll('tr.fila-recibo'));
 
@@ -739,9 +775,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Update KPIs
       if (resData.kpis) {
-        if (kpiBruto) kpiBruto.textContent = money(parseFloat(resData.kpis.total_bruto));
-        if (kpiDeds)  kpiDeds.textContent  = money(parseFloat(resData.kpis.total_deducciones));
-        if (kpiNeto)  kpiNeto.textContent  = money(parseFloat(resData.kpis.total_neto));
+        if (kpiBruto)      kpiBruto.textContent      = money(parseFloat(resData.kpis.total_bruto));
+        if (kpiDeds)       kpiDeds.textContent       = money(parseFloat(resData.kpis.total_deducciones));
+        if (kpiNeto)       kpiNeto.textContent       = money(parseFloat(resData.kpis.total_neto));
+        if (kpiHorasExtra) kpiHorasExtra.textContent = money(parseFloat(resData.kpis.total_horas_extra || 0));
+        if (kpiEmpleados)  kpiEmpleados.textContent  = resData.kpis.total_empleados;
       }
 
     } catch (err) {
@@ -768,16 +806,20 @@ document.addEventListener('DOMContentLoaded', () => {
   window.queueAutosave = queueAutosave;
 
   const recalcularKpis = () => {
-    let sumBruto = 0, sumDeds = 0, sumNeto = 0;
+    let sumBruto = 0, sumDeds = 0, sumNeto = 0, sumHE = 0, countPagados = 0;
     filas.forEach(f => {
       const b = parseFloat(f.querySelector('.js-bruto')?.textContent || '0') || 0;
       const d = parseFloat(f.querySelector('.js-deducciones')?.textContent || '0') || 0;
       const n = parseFloat(f.querySelector('.js-neto')?.textContent || '0') || 0;
-      sumBruto += b; sumDeds += d; sumNeto += n;
+      const he = parseFloat(f.querySelector('[name*="[horas_extra]"]')?.value || '0') || 0;
+      sumBruto += b; sumDeds += d; sumNeto += n; sumHE += he;
+      if (n > 0) countPagados++;
     });
-    if (kpiBruto) kpiBruto.textContent = money(sumBruto);
-    if (kpiDeds)  kpiDeds.textContent  = money(sumDeds);
-    if (kpiNeto)  kpiNeto.textContent  = money(sumNeto);
+    if (kpiBruto)      kpiBruto.textContent      = money(sumBruto);
+    if (kpiDeds)       kpiDeds.textContent       = money(sumDeds);
+    if (kpiNeto)       kpiNeto.textContent       = money(sumNeto);
+    if (kpiHorasExtra) kpiHorasExtra.textContent = money(sumHE);
+    if (kpiEmpleados)  kpiEmpleados.textContent  = countPagados || filas.length;
   };
 
   // Recalcular fila with multi-extras support

@@ -10,6 +10,7 @@ use App\Models\NominaCorrida;
 use App\Models\NominaRecibo;
 use App\Models\NominaReciboComision;
 use App\Models\Empleado;
+use App\Models\GiraldaHoraExtra;
 use Carbon\Carbon;
 use App\Services\Nomina\ListaRayaResolver;
 
@@ -119,6 +120,8 @@ class NominaCorridaController extends Controller
         });
         $totalDeducciones = $corrida->recibos->sum('total_deducciones');
         $totalNeto = $corrida->recibos->sum('sueldo_neto');
+        $totalHorasExtra = (float) $corrida->recibos->sum('horas_extra');
+        $totalEmpleados = $corrida->recibos->where('sueldo_neto', '>', 0)->count() ?: $corrida->recibos->count();
 
         $obras = \App\Models\Obra::query()
             ->where('estatus_nuevo', '!=', \App\Models\Obra::ESTATUS_CANCELADA)
@@ -126,7 +129,7 @@ class NominaCorridaController extends Controller
             ->get(['id','clave_obra','nombre']);
 
         return view('nomina.corridas.show', compact(
-            'corrida','totalBruto','totalDeducciones','totalNeto','obras'
+            'corrida','totalBruto','totalDeducciones','totalNeto','totalHorasExtra','totalEmpleados','obras'
         ));
     }
 
@@ -237,10 +240,12 @@ class NominaCorridaController extends Controller
                 'horas_extra' => $items->sum('horas_extra_monto'),
             ];
         });
+        $horasExtraGiralda = $this->calcularHorasExtraGiraldaPorEmpleado($fechaInicio, $fechaFin, $empleados);
+
         $creados = 0;
         $actualizados = 0;
 
-        DB::transaction(function () use ($corrida, $empleados, $comisiones, $comisionesDetalle, $listaRayaResolver, &$creados, &$actualizados) {
+        DB::transaction(function () use ($corrida, $empleados, $comisiones, $comisionesDetalle, $horasExtraGiralda, $listaRayaResolver, &$creados, &$actualizados) {
             $corrida = NominaCorrida::whereKey($corrida->id)->lockForUpdate()->first();
 
             foreach ($empleados as $emp) {
@@ -256,8 +261,11 @@ class NominaCorridaController extends Controller
                 $infonavitEmpleado = (float)($emp->Infonavit ?? $emp->infonavit ?? 0);
 
                 $cx = $comisiones->get($emp->id_Empleado);
+                $heGiralda = $horasExtraGiralda->get($emp->id_Empleado);
                 $comisionesMonto = (float)($cx->comisiones_monto ?? 0);
-                $horasExtra      = (float)($cx->horas_extra ?? 0);
+                $horasExtraComisiones = (float)($cx->horas_extra ?? 0);
+                $horasExtraGiraldaMonto = (float)($heGiralda->monto ?? 0);
+                $horasExtra = $horasExtraComisiones + $horasExtraGiraldaMonto;
                 $obraPorComision = $cx->obra_id ?? null;
 
                 $obraActiva = null;
@@ -327,6 +335,62 @@ class NominaCorridaController extends Controller
         return back()->with('success', "Recibos generados. Nuevos: {$creados}, actualizados: {$actualizados}.");
     }
 
+    public function sincronizarHorasExtraGiralda(NominaCorrida $corrida)
+    {
+        if (($corrida->status ?? null) !== 'abierta') {
+            return back()->with('error', 'Solo puedes sincronizar horas extra Giralda cuando la corrida esta ABIERTA.');
+        }
+
+        $recibos = $corrida->recibos()->with('empleado', 'pagosExtra')->get();
+        if ($recibos->isEmpty()) {
+            return back()->with('error', 'Primero genera recibos para poder sincronizar horas extra Giralda.');
+        }
+
+        $empleados = $recibos->pluck('empleado')->filter()->values();
+        $horasExtraGiralda = $this->calcularHorasExtraGiraldaPorEmpleado(
+            $corrida->fecha_inicio,
+            $corrida->fecha_fin,
+            $empleados
+        );
+
+        $actualizados = 0;
+        $totalGiralda = 0.0;
+
+        DB::transaction(function () use ($corrida, $recibos, $horasExtraGiralda, &$actualizados, &$totalGiralda) {
+            $recibosLocked = NominaRecibo::with('pagosExtra', 'comisionesTrazadas')
+                ->where('corrida_id', $corrida->id)
+                ->whereIn('id', $recibos->pluck('id'))
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($recibosLocked as $recibo) {
+                $heGiralda = $horasExtraGiralda->get((int) $recibo->empleado_id);
+                $montoGiralda = (float) ($heGiralda->monto ?? 0);
+                $montoComisiones = (float) $recibo->comisionesTrazadas->sum('horas_extra_monto');
+                $recibo->horas_extra = $montoComisiones + $montoGiralda;
+
+                $extraMontoTotal = (float) $recibo->pagosExtra->sum('monto');
+                $bruto = (float) ($recibo->total_percepciones ?? 0)
+                    + (float) ($recibo->horas_extra ?? 0)
+                    + (float) ($recibo->metros_lin_monto ?? 0)
+                    + (float) ($recibo->comisiones_monto ?? 0)
+                    + $extraMontoTotal;
+
+                $deducciones = (float) ($recibo->infonavit_legacy ?? 0)
+                    + (float) ($recibo->faltas ?? 0)
+                    + (float) ($recibo->descuentos ?? 0);
+
+                $recibo->total_deducciones = $deducciones;
+                $recibo->sueldo_neto = max(0, $bruto - $deducciones);
+                $recibo->save();
+
+                $totalGiralda += $montoGiralda;
+                $actualizados++;
+            }
+        });
+
+        return back()->with('success', 'Horas extra Giralda sincronizadas. Recibos actualizados: '.$actualizados.'. Total Giralda: $'.number_format($totalGiralda, 2));
+    }
     // Guardar todos los recibos de la corrida (submit general)
     public function guardarRecibos(Request $request, NominaCorrida $corrida, ListaRayaResolver $listaRayaResolver)
     {
@@ -482,6 +546,8 @@ class NominaCorridaController extends Controller
             });
             $totalDeducciones = $corrida->recibos->sum('total_deducciones');
             $totalNeto        = $corrida->recibos->sum('sueldo_neto');
+            $totalHorasExtra  = (float) $corrida->recibos->sum('horas_extra');
+            $totalEmpleados   = $corrida->recibos->where('sueldo_neto', '>', 0)->count() ?: $corrida->recibos->count();
 
             $recibo->refresh();
             $currentExtras = DB::table('nomina_pagos_extra')->where('recibo_id', $recibo->id)->get();
@@ -507,6 +573,8 @@ class NominaCorridaController extends Controller
                     'total_bruto'       => $totalBruto,
                     'total_deducciones' => $totalDeducciones,
                     'total_neto'        => $totalNeto,
+                    'total_horas_extra' => $totalHorasExtra,
+                    'total_empleados'   => $totalEmpleados,
                 ]
             ]);
 
@@ -519,9 +587,45 @@ class NominaCorridaController extends Controller
     }
 
     /**
-     * Sincroniza extras multiples para un recibo.
-     * Devuelve el monto acumulado de todos los extras vigentes.
+     * Calcula las horas extra de Giralda en pesos por empleado para un periodo.
+     * Devuelve una coleccion keyed por empleado_id con total_horas, tarifa_hora_extra y monto.
      */
+    private function calcularHorasExtraGiraldaPorEmpleado($fechaInicio, $fechaFin, $empleados)
+    {
+        $empleados = collect($empleados)->keyBy('id_Empleado');
+
+        if ($empleados->isEmpty()) {
+            return collect();
+        }
+
+        return GiraldaHoraExtra::query()
+            ->whereIn('empleado_id', $empleados->keys())
+            ->whereDate('fecha', '>=', Carbon::parse($fechaInicio)->toDateString())
+            ->whereDate('fecha', '<=', Carbon::parse($fechaFin)->toDateString())
+            ->select('empleado_id', DB::raw('SUM(total_horas) as total_horas'))
+            ->groupBy('empleado_id')
+            ->get()
+            ->mapWithKeys(function ($row) use ($empleados) {
+                $empleado = $empleados->get((int) $row->empleado_id);
+                $totalHoras = (float) ($row->total_horas ?? 0);
+
+                $sueldoReal = (float) ($empleado?->Sueldo_real ?? 0);
+                $sueldoImss = (float) ($empleado?->Sueldo ?? 0);
+                $complemento = (float) ($empleado?->Complemento ?? 0);
+                $base = $sueldoReal > 0 ? $sueldoReal : ($sueldoImss + $complemento);
+                $tarifaHoraExtra = $base > 0 ? (($base / 7) / 8) * 2 : 0;
+                $monto = round($totalHoras * $tarifaHoraExtra, 2);
+
+                return [
+                    (int) $row->empleado_id => (object) [
+                        'empleado_id' => (int) $row->empleado_id,
+                        'total_horas' => round($totalHoras, 2),
+                        'tarifa_hora_extra' => round($tarifaHoraExtra, 2),
+                        'monto' => $monto,
+                    ],
+                ];
+            });
+    }
     private function syncComisionesTrazadas(NominaRecibo $recibo, $comisionesEmpleado): void
     {
         $idsProcesados = [];

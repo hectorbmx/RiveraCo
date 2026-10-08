@@ -351,6 +351,7 @@ Route::middleware(['auth','verified'])
 
         Route::get('corridas/{corrida}',[NominaCorridaController::class, 'show'])->name('corridas.show');
         Route::post('corridas/{corrida}/recibos/generar',[NominaCorridaController::class, 'generarRecibos'])->name('corridas.recibos.generar');
+        Route::post('corridas/{corrida}/horas-extra-giralda/sincronizar',[NominaCorridaController::class, 'sincronizarHorasExtraGiralda'])->name('corridas.horas-extra-giralda.sincronizar');
         Route::post('corridas/{corrida}/recibos/guardar',[NominaCorridaController::class, 'guardarRecibos'])->name('corridas.recibos.guardar');
         Route::post('corridas/{corrida}/recibos/{recibo}/autosave',[NominaCorridaController::class, 'autosave'])->name('corridas.recibos.autosave');
         Route::delete('corridas/{corrida}/recibos',[NominaCorridaController::class, 'destroyRecibos'])->name('corridas.recibos.destroy');
