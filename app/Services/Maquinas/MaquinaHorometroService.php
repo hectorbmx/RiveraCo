@@ -3,6 +3,7 @@
 namespace App\Services\Maquinas;
 
 use App\Models\Maquina;
+use App\Models\MaquinaHorometroAjuste;
 use App\Models\Mantenimiento;
 use App\Models\ObraMaquina;
 use App\Models\ObraMaquinaRegistro;
@@ -31,12 +32,17 @@ class MaquinaHorometroService
             ->whereNotNull('horometro')
             ->max('horometro');
 
+        $maxAjuste = MaquinaHorometroAjuste::query()
+            ->where('maquina_id', $maquina->id)
+            ->max('horometro_nuevo');
+
         return $this->mayorNumero([
             $maquina->horometro_base,
             $maxAsignacionInicio,
             $maxAsignacionFin,
             $maxRegistro,
             $maxMantenimiento,
+            $maxAjuste,
         ]);
     }
 
@@ -60,6 +66,32 @@ class MaquinaHorometroService
             $asignacion->maquina?->horometro_base,
             $asignacion->maquina ? $this->horometroActual($asignacion->maquina) : null,
         ]) ?? 0.0;
+    }
+
+    public function crearAjuste(Maquina $maquina, array $data, ?User $user = null, string $origen = 'web_maquinas'): MaquinaHorometroAjuste
+    {
+        return DB::transaction(function () use ($maquina, $data, $user, $origen) {
+            $horometroAnterior = $this->horometroActual($maquina) ?? 0.0;
+            $horometroNuevo = (float) $data['horometro_nuevo'];
+
+            if ($horometroNuevo < $horometroAnterior) {
+                throw new RuntimeException("El horómetro nuevo no puede ser menor al último registrado ({$horometroAnterior}).");
+            }
+
+            return MaquinaHorometroAjuste::create([
+                'maquina_id' => $maquina->id,
+                'obra_id' => $data['obra_id'] ?? null,
+                'obra_maquina_id' => $data['obra_maquina_id'] ?? null,
+                'horometro_anterior' => $horometroAnterior,
+                'horometro_nuevo' => $horometroNuevo,
+                'diferencia' => round($horometroNuevo - $horometroAnterior, 2),
+                'tipo' => $data['tipo'] ?? 'ajuste',
+                'notas' => $data['notas'] ?? null,
+                'origen' => $origen,
+                'created_by' => $user?->id,
+                'updated_by' => $user?->id,
+            ]);
+        });
     }
 
     public function crearRegistro(ObraMaquina $asignacion, array $data, ?User $user = null, string $origen = 'web'): ObraMaquinaRegistro

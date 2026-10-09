@@ -132,12 +132,12 @@
                         @php
                             $seguroSeleccionado = null;
                             $preventivoMaquina = $preventivos[$m->id] ?? null;
-                            $horometroActual = $horometrosActuales[$m->id] ?? ($preventivoMaquina['horometro_actual'] ?? null);
+                            $horometroActual = $horometrosActuales[$m->id] ?? ($preventivoMaquina['horometro_actual'] ?? 0);
                             $asignacionActiva = $m->asignacionActiva;
                             $nombreMaquina = trim(($m->codigo ?? '') . ' ' . ($m->nombre ?? '')) ?: 'Maquina';
                             $canRegistrarHoras = auth()->user()?->can('maquinas.horas.create.access') ?? false;
                             $canAsignarObra = auth()->user()?->can('maquinas.asignar_obra.access') ?? false;
-                            $puedeRegistrarHoras = $canRegistrarHoras && $asignacionActiva && $horometroActual !== null;
+                            $puedeRegistrarHoras = $canRegistrarHoras && $horometroActual !== null;
                             $tienePilasActivasEnObra = false;
                             $puedeAsignarObra = $canAsignarObra
                                 && !$asignacionActiva
@@ -146,7 +146,9 @@
                             $horasModalPayload = $puedeRegistrarHoras ? json_encode([
                                 'action' => route('maquinas.horas.store', $m),
                                 'maquina' => $nombreMaquina,
-                                'obra' => $asignacionActiva?->obra?->nombre ?? 'Obra',
+                                'obra' => $asignacionActiva?->obra?->nombre ?? 'Sin obra activa',
+                                'obraId' => $asignacionActiva?->obra_id,
+                                'tieneAsignacion' => (bool) $asignacionActiva,
                                 'horometroActual' => (float) $horometroActual,
                             ], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) : '{}';
                             $asignarObraPayload = $puedeAsignarObra ? json_encode([
@@ -249,7 +251,7 @@
                                         <button
                                             type="button"
                                             class="font-semibold text-[#0B265A] hover:text-blue-700 hover:underline underline-offset-4"
-                                            title="Registrar horas"
+                                            title="{{ $asignacionActiva ? 'Registrar horas' : 'Ajustar horometro' }}"
                                             @click.stop='openHorasModal({!! $horasModalPayload !!})'>
                                             {{ number_format($horometroActual, 1) }} h
                                         </button>
@@ -1086,7 +1088,7 @@
             <div class="w-full max-w-lg rounded-xl bg-white shadow-xl border border-slate-200" @click.outside="closeHorasModal()">
                 <div class="flex items-start justify-between border-b border-slate-100 px-5 py-4">
                     <div>
-                        <h2 class="text-base font-semibold text-[#0B265A]">Registrar horas de maquina</h2>
+                        <h2 class="text-base font-semibold text-[#0B265A]" x-text="form.tieneAsignacion ? 'Registrar horas de maquina' : 'Ajustar horometro de maquina'"></h2>
                         <p class="text-xs text-slate-500" x-text="form.maquina"></p>
                     </div>
                     <button type="button" class="text-slate-400 hover:text-slate-600" @click="closeHorasModal()">&times;</button>
@@ -1097,13 +1099,25 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                         <div>
-                            <div class="text-xs font-semibold text-slate-500">Obra actual</div>
+                            <div class="text-xs font-semibold text-slate-500" x-text="form.tieneAsignacion ? 'Obra actual' : 'Obra activa'"></div>
                             <div class="font-medium text-slate-800" x-text="form.obra"></div>
                         </div>
                         <div>
                             <div class="text-xs font-semibold text-slate-500">Horometro actual</div>
                             <div class="font-medium text-slate-800"><span x-text="formatHoras(form.horometroActual)"></span> h</div>
                         </div>
+                    </div>
+
+                    <div x-show="!form.tieneAsignacion" x-cloak>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Obra relacionada (opcional)</label>
+                        <select name="obra_id" x-model="form.obraId" :disabled="form.tieneAsignacion" class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Sin obra relacionada</option>
+                            @foreach($obrasParaAjusteHorometro as $obra)
+                                <option value="{{ $obra->id }}">
+                                    {{ trim(($obra->clave_obra ? $obra->clave_obra . ' - ' : '') . $obra->nombre) }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div>
@@ -1129,7 +1143,7 @@
 
                     <div class="flex justify-end gap-3 border-t border-slate-100 pt-4">
                         <button type="button" class="px-4 py-2 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="closeHorasModal()">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 rounded-lg bg-[#0B265A] text-sm font-semibold text-white hover:bg-blue-900">Guardar horas</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg bg-[#0B265A] text-sm font-semibold text-white hover:bg-blue-900" x-text="form.tieneAsignacion ? 'Guardar horas' : 'Guardar ajuste'"></button>
                     </div>
                 </form>
             </div>
@@ -1147,6 +1161,8 @@
                 action: '',
                 maquina: '',
                 obra: '',
+                obraId: '',
+                tieneAsignacion: false,
                 horometroActual: 0,
                 inicio: '',
                 fin: '',
@@ -1164,7 +1180,9 @@
                 this.form = {
                     action: data.action,
                     maquina: data.maquina || 'Maquina',
-                    obra: data.obra || 'Obra',
+                    obra: data.obra || 'Sin obra activa',
+                    obraId: data.obraId || '',
+                    tieneAsignacion: Boolean(data.tieneAsignacion),
                     horometroActual: Number(data.horometroActual || 0),
                     inicio: localNow,
                     fin: localNow,

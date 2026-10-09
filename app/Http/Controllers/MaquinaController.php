@@ -84,6 +84,11 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
         ->orderBy('nombre')
         ->get(['id', 'nombre', 'clave_obra']);
 
+    $obrasParaAjusteHorometro = Obra::query()
+        ->where('estatus_nuevo', '!=', Obra::ESTATUS_CANCELADA)
+        ->orderBy('nombre')
+        ->get(['id', 'nombre', 'clave_obra']);
+
     return view('maquinas.index', compact(
         'maquinas',
         'total',
@@ -94,7 +99,8 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
         'search',
         'sort',
         'direction',
-        'obrasDisponibles'
+        'obrasDisponibles',
+        'obrasParaAjusteHorometro'
     ));
 }
 public function show(Request $request, Maquina $maquina)
@@ -229,26 +235,32 @@ public function guardarHoras(Request $request, Maquina $maquina, MaquinaHorometr
         'horometro_fin' => ['required', 'numeric', 'min:0'],
         'inicio'        => ['nullable', 'date'],
         'fin'           => ['nullable', 'date', 'after_or_equal:inicio'],
+        'obra_id'       => ['nullable', 'exists:obras,id'],
         'notas'         => ['nullable', 'string', 'max:500'],
     ]);
 
     $asignacion = $maquina->asignacionActiva()->with('obra')->first();
 
-    if (! $asignacion) {
-        return back()
-            ->withErrors(['horometro_fin' => 'La maquina no tiene una asignacion activa para registrar horas.'])
-            ->withInput();
-    }
-
     try {
-        $horometroService->crearRegistro($asignacion, $data, $request->user(), 'web_maquinas');
+        if ($asignacion) {
+            $horometroService->crearRegistro($asignacion, $data, $request->user(), 'web_maquinas');
+
+            return back()->with('success', 'Horas registradas correctamente.');
+        }
+
+        $horometroService->crearAjuste($maquina, [
+            'horometro_nuevo' => $data['horometro_fin'],
+            'obra_id' => $data['obra_id'] ?? null,
+            'tipo' => 'ajuste',
+            'notas' => $data['notas'] ?? null,
+        ], $request->user(), 'web_maquinas');
     } catch (\Throwable $e) {
         return back()
             ->withErrors(['horometro_fin' => $e->getMessage()])
             ->withInput();
     }
 
-    return back()->with('success', 'Horas registradas correctamente.');
+    return back()->with('success', 'Horometro ajustado correctamente.');
 }
 
 public function asignarObra(Request $request, Maquina $maquina, MaquinaService $maquinaService)

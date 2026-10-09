@@ -47,6 +47,11 @@ class Maquina extends Model
         return $this->hasMany(ObraMaquina::class, 'maquina_id');
     }
 
+    public function horometroAjustes()
+    {
+        return $this->hasMany(MaquinaHorometroAjuste::class, 'maquina_id');
+    }
+
     // Máquinas actualmente asignadas a alguna obra
     public function scopeOperativas($query)
     {
