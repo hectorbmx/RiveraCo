@@ -322,6 +322,7 @@
                                             class="w-full rounded border-slate-300 text-xs py-1 px-1.5">
                                         <option value="efectivo">Efectivo</option>
                                         <option value="tarjeta">Tarjeta</option>
+                                        <option value="transferencia">Transferencia</option>
                                     </select>
                                 </td>
 
@@ -756,16 +757,13 @@ function reposicionCajaChicaExcel() {
                         const categoriasPorFormaPago = {
                             efectivo: 'efectivo_factura',
                             tarjeta: 'tarjeta_factura',
+                            transferencia: 'transferencia_factura',
                         };
 
-                        if (cfdi.forma_pago === 'transferencia' || formaPagoSat === '03') {
-                            this.xmlErrores.push((cfdi.filename || sourceFile?.name || 'XML') + ': Forma de pago SAT 03 transferencia. Este comprobante corresponde a orden de compra / pago a proveedores, no a caja chica.');
-                            return;
-                        }
 
                         const codigoCat = categoriasPorFormaPago[cfdi.forma_pago];
                         if (!codigoCat) {
-                            this.xmlErrores.push((cfdi.filename || sourceFile?.name || 'XML') + ': Forma de pago SAT no permitida o no reconocida para caja chica. Solo se aceptan efectivo y tarjeta.');
+                            this.xmlErrores.push((cfdi.filename || sourceFile?.name || 'XML') + ': Forma de pago SAT no permitida o no reconocida para caja chica. Solo se aceptan efectivo, tarjeta y transferencia.');
                             return;
                         }
 

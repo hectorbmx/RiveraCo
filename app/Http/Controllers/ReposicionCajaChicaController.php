@@ -335,9 +335,9 @@ class ReposicionCajaChicaController extends Controller
                 $almacenId = $targetDestino === 'almacen' ? $targetAlmacenId : null;
                 $formaPago = $item['forma_pago'] ?: $categoria->forma_pago_base;
 
-                if (!in_array($formaPago, ['efectivo', 'tarjeta'], true)) {
+                if (!in_array($formaPago, ['efectivo', 'tarjeta', 'transferencia'], true)) {
                     throw ValidationException::withMessages([
-                        "gastos.{$idx}.forma_pago" => "Solo se permiten pagos en efectivo o tarjeta en la fila #" . ($idx + 1),
+                        "gastos.{$idx}.forma_pago" => "Solo se permiten pagos en efectivo, tarjeta o transferencia en la fila #" . ($idx + 1),
                     ]);
                 }
 
