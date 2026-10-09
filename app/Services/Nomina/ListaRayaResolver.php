@@ -10,8 +10,19 @@ class ListaRayaResolver
 {
     public function syncObrasVivas(): void
     {
+        NominaListaRaya::query()
+            ->where('tipo', NominaListaRaya::TIPO_OBRA)
+            ->where('es_automatica', true)
+            ->where(function ($query) {
+                $query->whereDoesntHave('obra')
+                    ->orWhereHas('obra', function ($obraQuery) {
+                        $obraQuery->where('estatus_nuevo', '!=', Obra::ESTATUS_EJECUCION);
+                    });
+            })
+            ->update(['activo' => false]);
+
         Obra::query()
-            ->where('estatus_nuevo', '!=', Obra::ESTATUS_CANCELADA)
+            ->where('estatus_nuevo', Obra::ESTATUS_EJECUCION)
             ->orderBy('clave_obra')
             ->chunkById(100, function ($obras) {
                 foreach ($obras as $obra) {
@@ -67,9 +78,10 @@ class ListaRayaResolver
 
         if ($empleado->Area) {
             $porArea = NominaListaRaya::query()
-                ->where('tipo', NominaListaRaya::TIPO_AREA)
                 ->where('area_id', $empleado->Area)
                 ->where('activo', true)
+                ->orderBy('orden')
+                ->orderBy('nombre')
                 ->first();
 
             if ($porArea) {
@@ -91,7 +103,7 @@ class ListaRayaResolver
 
         $obra = Obra::query()
             ->whereKey($obraId)
-            ->where('estatus_nuevo', '!=', Obra::ESTATUS_CANCELADA)
+            ->where('estatus_nuevo', Obra::ESTATUS_EJECUCION)
             ->first();
 
         if (!$obra) {
@@ -118,7 +130,7 @@ class ListaRayaResolver
         return $empleado->obras()
             ->wherePivot('activo', 1)
             ->wherePivotNull('fecha_baja')
-            ->where('obras.estatus_nuevo', '!=', Obra::ESTATUS_CANCELADA)
+            ->where('obras.estatus_nuevo', Obra::ESTATUS_EJECUCION)
             ->orderByDesc('obra_empleado.fecha_alta')
             ->orderByDesc('obra_empleado.id')
             ->first();

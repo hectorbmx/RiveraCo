@@ -74,6 +74,13 @@
                 Volver al generador
             </a>
 
+            <a href="{{ route('nomina.corridas.imprimir', $corrida) }}"
+               target="_blank"
+               rel="noopener"
+               class="px-4 py-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl shadow-sm hover:bg-slate-50">
+                Imprimir nomina
+            </a>
+
             @can('nomina.corridas.close.access')
             @if($isEditable)
                 <form method="POST" action="{{ route('nomina.corridas.cerrar', $corrida) }}"

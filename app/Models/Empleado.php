@@ -156,10 +156,7 @@ public function getAreaIdAttribute()
             ->withPivot(['fecha_alta', 'fecha_baja', 'puesto_en_obra', 'activo'])
             ->wherePivot('activo', 1)
             ->wherePivotNull('fecha_baja')
-            ->whereNotIn('obras.estatus_nuevo', [
-                Obra::ESTATUS_TERMINADA,
-                Obra::ESTATUS_CANCELADA,
-            ])
+            ->where('obras.estatus_nuevo', Obra::ESTATUS_EJECUCION)
             ->orderByDesc('obra_empleado.fecha_alta')
             ->orderByDesc('obra_empleado.id');
     }

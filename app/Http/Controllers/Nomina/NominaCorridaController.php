@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\NominaCorrida;
 use App\Models\NominaRecibo;
 use App\Models\NominaReciboComision;
+use App\Models\NominaListaRaya;
 use App\Models\Empleado;
 use App\Models\GiraldaHoraExtra;
 use Carbon\Carbon;
@@ -131,6 +132,88 @@ class NominaCorridaController extends Controller
         return view('nomina.corridas.show', compact(
             'corrida','totalBruto','totalDeducciones','totalNeto','totalHorasExtra','totalEmpleados','obras'
         ));
+    }
+
+    public function imprimir(NominaCorrida $corrida)
+    {
+        $corrida->load([
+            'recibos.empleado',
+            'recibos.obra',
+            'recibos.listaRaya',
+            'recibos.pagosExtra',
+        ]);
+
+        $listasRaya = $this->buildListasRayaParaImpresion($corrida);
+
+        return view('nomina.corridas.print', compact('corrida', 'listasRaya'));
+    }
+
+    private function resolveListaRayaParaRecibo(?int $obraId, ?Empleado $empleado, ListaRayaResolver $listaRayaResolver)
+    {
+        if ($obraId) {
+            $listaPorObra = $listaRayaResolver->resolverParaObra($obraId);
+
+            if ($listaPorObra) {
+                return $listaPorObra;
+            }
+        }
+
+        return $empleado ? $listaRayaResolver->resolverParaEmpleado($empleado) : null;
+    }
+    private function buildListasRayaParaImpresion(NominaCorrida $corrida)
+    {
+        $tipoOrden = [
+            NominaListaRaya::TIPO_OBRA => 10,
+            NominaListaRaya::TIPO_ALMACEN => 20,
+            NominaListaRaya::TIPO_OFICINA => 30,
+            NominaListaRaya::TIPO_OPERATIVA => 40,
+            NominaListaRaya::TIPO_AREA => 50,
+        ];
+
+        return $corrida->recibos
+            ->map(function ($recibo) {
+                $extraMonto = (float) $recibo->pagosExtra->sum('monto');
+                $bruto = (float) ($recibo->total_percepciones ?? 0)
+                    + (float) ($recibo->horas_extra ?? 0)
+                    + (float) ($recibo->metros_lin_monto ?? 0)
+                    + (float) ($recibo->comisiones_monto ?? 0)
+                    + $extraMonto;
+
+                $deducciones = (float) ($recibo->infonavit_legacy ?? 0)
+                    + (float) ($recibo->faltas ?? 0)
+                    + (float) ($recibo->descuentos ?? 0);
+
+                $recibo->print_bruto = $bruto;
+                $recibo->print_deducciones = $deducciones;
+                $recibo->print_neto = max(0, $bruto - $deducciones);
+
+                return $recibo;
+            })
+            ->groupBy(function ($recibo) {
+                return ($recibo->lista_raya_id ?: 'sin-id') . '|' . ($recibo->lista_raya_nombre ?: 'Sin clasificar');
+            })
+            ->map(function ($recibos) use ($tipoOrden) {
+                $primero = $recibos->first();
+                $tipo = $primero->lista_raya_tipo ?: NominaListaRaya::TIPO_OPERATIVA;
+                $nombre = $primero->lista_raya_nombre ?: 'Sin clasificar';
+
+                return (object) [
+                    'lista_raya_id' => $primero->lista_raya_id,
+                    'nombre' => $nombre,
+                    'tipo' => $tipo,
+                    'orden_tipo' => $nombre === 'Sin clasificar' ? 999 : ($tipoOrden[$tipo] ?? 900),
+                    'recibos' => $recibos->sortBy(fn ($recibo) => trim(($recibo->empleado?->Nombre ?? '') . ' ' . ($recibo->empleado?->Apellidos ?? '')))->values(),
+                    'total_empleados' => $recibos->count(),
+                    'total_bruto' => $recibos->sum('print_bruto'),
+                    'total_deducciones' => $recibos->sum('print_deducciones'),
+                    'total_neto' => $recibos->sum('print_neto'),
+                ];
+            })
+            ->sortBy([
+                ['orden_tipo', 'asc'],
+                ['nombre', 'asc'],
+            ])
+            ->values();
     }
 
     // Generar recibos base para la corrida
@@ -273,7 +356,7 @@ class NominaCorridaController extends Controller
                     $obraActiva = $emp->obraActiva->first();
                 }
                 $obraIdFinal = $obraPorComision ?: ($obraActiva?->id);
-                $listaRaya = $listaRayaResolver->resolverParaEmpleado($emp);
+                $listaRaya = $this->resolveListaRayaParaRecibo($obraIdFinal, $emp, $listaRayaResolver);
 
                 $metrosLinMonto = 0;
                 $faltas     = 0;
@@ -428,9 +511,11 @@ class NominaCorridaController extends Controller
                 $recibo->comisiones_monto = (float)($row['comisiones_monto'] ?? $recibo->comisiones_monto);
 
                 $recibo->obra_id = (($row['obra_id'] ?? '') !== '') ? (int)$row['obra_id'] : null;
-                $listaRaya = $recibo->obra_id
-                    ? $listaRayaResolver->resolverParaObra($recibo->obra_id)
-                    : ($recibo->empleado ? $listaRayaResolver->resolverParaEmpleado($recibo->empleado) : null);
+                $listaRaya = $this->resolveListaRayaParaRecibo(
+                    $recibo->obra_id,
+                    $recibo->empleado,
+                    $listaRayaResolver
+                );
 
                 $recibo->lista_raya_id = $listaRaya?->id;
                 $recibo->lista_raya_nombre = $listaRaya?->nombre;
@@ -503,9 +588,11 @@ class NominaCorridaController extends Controller
                     $obraId = $request->input('obra_id');
                     $recibo->obra_id = (($obraId ?? '') !== '') ? (int)$obraId : null;
 
-                    $listaRaya = $recibo->obra_id
-                        ? $listaRayaResolver->resolverParaObra($recibo->obra_id)
-                        : ($recibo->empleado ? $listaRayaResolver->resolverParaEmpleado($recibo->empleado) : null);
+                    $listaRaya = $this->resolveListaRayaParaRecibo(
+                        $recibo->obra_id,
+                        $recibo->empleado,
+                        $listaRayaResolver
+                    );
 
                     $recibo->lista_raya_id     = $listaRaya?->id;
                     $recibo->lista_raya_nombre = $listaRaya?->nombre;
