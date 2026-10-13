@@ -11,36 +11,100 @@ use Illuminate\Http\Request;
 
 class PagoProveedorController extends Controller
 {
+    // public function index(Request $request)
+    // {
+    //     $this->authorizePermission('pagos_proveedores.view.access');
+    //     $fechaInicio = $request->fecha_inicio
+    //         ? now()->parse($request->fecha_inicio)->startOfDay()
+    //         : now()->startOfWeek()->startOfDay();
+
+    //     $fechaFin = $request->fecha_fin
+    //         ? now()->parse($request->fecha_fin)->endOfDay()
+    //         : now()->endOfWeek()->endOfDay();
+
+    //     $pagos = PagoProveedor::query()
+    //         ->with(['ordenCompra.obra', 'ordenCompra.centroCosto', 'proveedor', 'cuentaBancoEmpresa', 'programadoPor'])
+    //         ->whereBetween('fecha_programada', [$fechaInicio->toDateString(), $fechaFin->toDateString()])
+    //         ->when($request->estatus, fn ($q, $estatus) => $q->where('estatus', $estatus))
+    //         ->orderBy('fecha_programada')
+    //         ->orderBy('id')
+    //         ->paginate(25)
+    //         ->withQueryString();
+
+    //     return view('pagos_proveedores.index', [
+    //         'pagos' => $pagos,
+    //         'fechaInicio' => $fechaInicio,
+    //         'fechaFin' => $fechaFin,
+    //         'semanaAnteriorInicio' => $fechaInicio->copy()->subWeek()->toDateString(),
+    //         'semanaAnteriorFin' => $fechaFin->copy()->subWeek()->toDateString(),
+    //         'semanaSiguienteInicio' => $fechaInicio->copy()->addWeek()->toDateString(),
+    //         'semanaSiguienteFin' => $fechaFin->copy()->addWeek()->toDateString(),
+    //     ]);
+    // }
     public function index(Request $request)
-    {
-        $this->authorizePermission('pagos_proveedores.view.access');
-        $fechaInicio = $request->fecha_inicio
-            ? now()->parse($request->fecha_inicio)->startOfDay()
-            : now()->startOfWeek()->startOfDay();
+{
+    $this->authorizePermission('pagos_proveedores.view.access');
 
-        $fechaFin = $request->fecha_fin
-            ? now()->parse($request->fecha_fin)->endOfDay()
-            : now()->endOfWeek()->endOfDay();
+    $request->validate([
+        'fecha_inicio' => ['nullable', 'date'],
+        'fecha_fin' => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
+    ]);
 
-        $pagos = PagoProveedor::query()
-            ->with(['ordenCompra.obra', 'ordenCompra.centroCosto', 'proveedor', 'cuentaBancoEmpresa', 'programadoPor'])
-            ->whereBetween('fecha_programada', [$fechaInicio->toDateString(), $fechaFin->toDateString()])
-            ->when($request->estatus, fn ($q, $estatus) => $q->where('estatus', $estatus))
-            ->orderBy('fecha_programada')
-            ->orderBy('id')
-            ->paginate(25)
-            ->withQueryString();
+    $fechaInicio = $request->filled('fecha_inicio')
+        ? \Carbon\Carbon::parse($request->fecha_inicio)->startOfDay()
+        : null;
 
-        return view('pagos_proveedores.index', [
-            'pagos' => $pagos,
-            'fechaInicio' => $fechaInicio,
-            'fechaFin' => $fechaFin,
-            'semanaAnteriorInicio' => $fechaInicio->copy()->subWeek()->toDateString(),
-            'semanaAnteriorFin' => $fechaFin->copy()->subWeek()->toDateString(),
-            'semanaSiguienteInicio' => $fechaInicio->copy()->addWeek()->toDateString(),
-            'semanaSiguienteFin' => $fechaFin->copy()->addWeek()->toDateString(),
-        ]);
-    }
+    $fechaFin = $request->filled('fecha_fin')
+        ? \Carbon\Carbon::parse($request->fecha_fin)->endOfDay()
+        : null;
+
+    $pagos = PagoProveedor::query()
+        ->with([
+            'ordenCompra.obra',
+            'ordenCompra.centroCosto',
+            'proveedor',
+            'cuentaBancoEmpresa',
+            'programadoPor',
+        ])
+        ->when($fechaInicio, fn ($q) =>
+            $q->whereDate('fecha_programada', '>=', $fechaInicio->toDateString())
+        )
+        ->when($fechaFin, fn ($q) =>
+            $q->whereDate('fecha_programada', '<=', $fechaFin->toDateString())
+        )
+        ->when($request->estatus, fn ($q, $estatus) =>
+            $q->where('estatus', $estatus)
+        )
+        ->when($request->filled('proveedor'), function ($q) use ($request) {
+                $busqueda = trim($request->input('proveedor'));
+
+                $q->whereHas('proveedor', function ($proveedor) use ($busqueda) {
+                    $proveedor->where(function ($consulta) use ($busqueda) {
+                        $consulta->where('nombre', 'like', "%{$busqueda}%")
+                            ->orWhere('rfc', 'like', "%{$busqueda}%");
+                    });
+                });
+            })
+        ->orderBy('fecha_programada')
+        ->orderBy('id')
+        ->paginate(25)
+        ->withQueryString();
+
+    // Referencia para los botones semanales; no aplica ningún filtro.
+    $semanaBase = ($fechaInicio ?? $fechaFin ?? now())
+        ->copy()
+        ->startOfWeek();
+
+    return view('pagos_proveedores.index', [
+        'pagos' => $pagos,
+        'fechaInicio' => $fechaInicio,
+        'fechaFin' => $fechaFin,
+        'semanaAnteriorInicio' => $semanaBase->copy()->subWeek()->toDateString(),
+        'semanaAnteriorFin' => $semanaBase->copy()->subWeek()->endOfWeek()->toDateString(),
+        'semanaSiguienteInicio' => $semanaBase->copy()->addWeek()->toDateString(),
+        'semanaSiguienteFin' => $semanaBase->copy()->addWeek()->endOfWeek()->toDateString(),
+    ]);
+}
 
     public function create(Request $request)
     {

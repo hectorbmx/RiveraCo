@@ -55,7 +55,7 @@
             <div class="flex flex-wrap items-center gap-3">
                 <div>
                     <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Destino</label>
-                    <select x-model="targetDestino" @change="onTargetDestinoChange()" class="rounded-lg border-slate-300 text-sm font-semibold text-slate-800">
+                    <select x-model="targetDestino" @change="onTargetDestinoChange()" @disabled($contextoObraResidente ?? false) class="rounded-lg border-slate-300 text-sm font-semibold text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500">
                         <option value="obra">Obra</option>
                         <option value="almacen">Almacén</option>
                     </select>
@@ -63,7 +63,7 @@
 
                 <div x-show="targetDestino === 'obra'" class="min-w-[260px]">
                     <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Obra destino (activas) <span class="text-red-500">*</span></label>
-                    <select x-model="targetObraId" @change="syncTargetToAllRows()" class="w-full rounded-lg border-blue-300 bg-blue-50/50 text-sm font-bold text-slate-900 focus:border-blue-500 focus:ring-blue-500">
+                    <select x-model="targetObraId" @change="syncTargetToAllRows()" @disabled($contextoObraResidente ?? false) class="w-full rounded-lg border-blue-300 bg-blue-50/50 text-sm font-bold text-slate-900 focus:border-blue-500 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-600">
                         <option value="">-- Selecciona una Obra activa --</option>
                         <template x-for="obra in obras" :key="obra.id">
                             <option :value="obra.id" x-text="obra.nombre + (obra.estatus_nuevo == 2 ? ' (En ejecución)' : ' (Planeación)')"></option>
@@ -142,6 +142,7 @@
         <input type="hidden" name="target_destino" x-model="targetDestino">
         <input type="hidden" name="target_obra_id" x-model="targetObraId">
         <input type="hidden" name="target_almacen_id" x-model="targetAlmacenId">
+        <input type="hidden" name="origen_captura" value="{{ old('origen_captura', $origenCapturaInicial ?? 'almacen') }}">
 
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             
@@ -470,9 +471,9 @@ function reposicionCajaChicaExcel() {
         dragover: false,
         loadingXml: false,
         xmlErrores: [],
-        targetDestino: @json(old('target_destino', 'obra')),
-        targetObraId: @json(old('target_obra_id', '')),
-        targetAlmacenId: @json(old('target_almacen_id', '')),
+        targetDestino: @json(old('target_destino', $destinoInicial ?? 'obra')),
+        targetObraId: @json(old('target_obra_id', $obraInicialId ?? '')),
+        targetAlmacenId: @json(old('target_almacen_id', $almacenInicialId ?? '')),
         formAction: 'borrador',
         isSubmitting: false,
 

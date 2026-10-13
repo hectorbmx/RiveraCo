@@ -104,6 +104,16 @@
             placeholder="Todos"
             span="md:col-span-1" />
 
+        <x-filters.select
+            name="obra_id"
+            label="Obra"
+            :value="request('obra_id')"
+            :options="$obras->mapWithKeys(fn ($obra) => [$obra->id => trim(($obra->clave_obra ? $obra->clave_obra . ' - ' : '') . $obra->nombre)])->all()"
+            placeholder="Todas"
+            span="md:col-span-2" />
+
+        <input type="hidden" name="origen_captura" value="{{ request('origen_captura') }}">
+
         @if($puedeElegirAmbitoFirma)
             <x-filters.select
                 name="ambito"
@@ -117,7 +127,7 @@
 
         <x-filters.actions
             submit-label="Filtrar"
-            clear-url="{{ route('reposicion-caja-chica.index', ['ambito' => $ambitoFirmaSeleccionado]) }}"
+            clear-url="{{ route('reposicion-caja-chica.index', array_filter(['ambito' => $ambitoFirmaSeleccionado, 'origen_captura' => request('origen_captura')])) }}"
             span="md:col-span-1" />
 
         <div class="md:col-span-12 flex flex-wrap justify-end gap-2 border-t border-white/10 pt-3">
@@ -127,6 +137,8 @@
                 'estado' => request('estado'),
                 'categoria_id' => request('categoria_id'),
                 'destino' => request('destino'),
+                'obra_id' => request('obra_id'),
+                'origen_captura' => request('origen_captura'),
                 'ambito' => $ambitoFirmaSeleccionado,
                 'q' => request('q'),
             ]) }}" class="rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20">
@@ -136,6 +148,8 @@
                 'estado' => request('estado'),
                 'categoria_id' => request('categoria_id'),
                 'destino' => request('destino'),
+                'obra_id' => request('obra_id'),
+                'origen_captura' => request('origen_captura'),
                 'ambito' => $ambitoFirmaSeleccionado,
                 'q' => request('q'),
             ]) }}" class="rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20">
@@ -147,6 +161,8 @@
                 'estado' => request('estado'),
                 'categoria_id' => request('categoria_id'),
                 'destino' => request('destino'),
+                'obra_id' => request('obra_id'),
+                'origen_captura' => request('origen_captura'),
                 'ambito' => $ambitoFirmaSeleccionado,
                 'q' => request('q'),
             ]) }}" class="rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20">

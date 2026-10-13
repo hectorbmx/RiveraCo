@@ -944,6 +944,31 @@ $gastadoReposicionPorPartida = \App\Models\ObraReposicionGastoDetalle::query()
     ->whereNotNull('partida_id')
     ->groupBy('partida_id')
     ->pluck('total_gastado', 'partida_id');
+$requisicionesObra = collect();
+$requisicionesStats = [
+    'total' => 0,
+    'pendientes' => 0,
+    'autorizadas' => 0,
+    'en_surtido' => 0,
+];
+
+if ($tab === 'requisiciones') {
+    $requisicionesObra = \App\Models\ObraRequisicion::query()
+        ->with(['tipo', 'solicitadoPor'])
+        ->where('obra_id', $obra->id)
+        ->latest('id')
+        ->get();
+
+    $requisicionesStats = [
+        'total' => $requisicionesObra->count(),
+        'pendientes' => $requisicionesObra->where('estado', \App\Models\ObraRequisicion::ESTADO_PENDIENTE_REVISION)->count(),
+        'autorizadas' => $requisicionesObra->where('estado', \App\Models\ObraRequisicion::ESTADO_AUTORIZADA)->count(),
+        'en_surtido' => $requisicionesObra->whereIn('estado', [
+            \App\Models\ObraRequisicion::ESTADO_EN_SURTIDO,
+            \App\Models\ObraRequisicion::ESTADO_SURTIDA_PARCIAL,
+        ])->count(),
+    ];
+}
 $cajaChicaGastos = collect();
 $cajaChicaStats = [
     'total' => 0,
@@ -965,6 +990,7 @@ if ($tab === 'caja-chica') {
             'resueltoPor',
         ])
         ->where('obra_id', $obra->id)
+        ->where('origen_captura', 'obra_residente')
         ->latest('fecha_gasto')
         ->latest('id')
         ->get();
@@ -1480,6 +1506,8 @@ return view('obras.edit', [
     'gastadoReposicionPorPartida' => $gastadoReposicionPorPartida,
     'cajaChicaGastos'             => $cajaChicaGastos,
     'cajaChicaStats'              => $cajaChicaStats,
+      'requisicionesObra'           => $requisicionesObra,
+      'requisicionesStats'          => $requisicionesStats,
     
     'clientes'                    => $clientes,
     'responsables'                => $responsables,
@@ -3110,3 +3138,8 @@ public function relacionarCfdis(Request $request, Obra $obra)
     ]);
 }
 }
+
+
+
+
+

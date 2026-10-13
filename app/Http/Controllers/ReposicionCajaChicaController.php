@@ -35,6 +35,9 @@ class ReposicionCajaChicaController extends Controller
             ->withQueryString();
 
         $categorias = $this->categoriasActivas();
+        $obras = Obra::query()
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'clave_obra']);
         $stats = $this->stats($request, $fechaInicio, $fechaFin);
         $destinosImpresion = $this->destinosImpresionReposicion($request, $fechaInicio, $fechaFin);
         $ambitoFirma = $this->resolverAmbitoFirmaReposicionDisponible($request, $gastos->getCollection());
@@ -49,6 +52,7 @@ class ReposicionCajaChicaController extends Controller
         return view('reposicion-caja-chica.index', compact(
             'gastos',
             'categorias',
+            'obras',
             'stats',
             'fechaInicio',
             'fechaFin',
@@ -63,7 +67,7 @@ class ReposicionCajaChicaController extends Controller
         ));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $categorias = $this->categoriasActivas();
         $subcategorias = ReposicionCajaChicaSubcategoria::query()
@@ -88,7 +92,35 @@ class ReposicionCajaChicaController extends Controller
             ->orderBy('placas')
             ->get(['id', 'marca', 'modelo', 'placas', 'tipo', 'estatus']);
 
-        return view('reposicion-caja-chica.create', compact('categorias', 'subcategorias', 'obras', 'almacenes', 'maquinas', 'vehiculos'));
+        $destinoInicial = in_array($request->query('destino'), ['obra', 'almacen'], true)
+            ? $request->query('destino')
+            : 'obra';
+        $obraInicialId = $destinoInicial === 'obra' && $request->filled('obra_id')
+            ? (string) $request->query('obra_id')
+            : '';
+        $almacenInicialId = $destinoInicial === 'almacen' && $request->filled('almacen_id')
+            ? (string) $request->query('almacen_id')
+            : '';
+        $origenCapturaInicial = $request->query('origen_captura') === 'obra_residente'
+            ? 'obra_residente'
+            : 'almacen';
+        $contextoObraResidente = $origenCapturaInicial === 'obra_residente'
+            && $destinoInicial === 'obra'
+            && $obraInicialId !== '';
+
+        return view('reposicion-caja-chica.create', compact(
+            'categorias',
+            'subcategorias',
+            'obras',
+            'almacenes',
+            'maquinas',
+            'vehiculos',
+            'destinoInicial',
+            'obraInicialId',
+            'almacenInicialId',
+            'origenCapturaInicial',
+            'contextoObraResidente'
+        ));
     }
 
     /**
@@ -167,6 +199,10 @@ class ReposicionCajaChicaController extends Controller
         $targetAlmacenId = $targetDestino === 'almacen'
             ? $request->input('target_almacen_id', $request->input('almacen_id'))
             : null;
+
+        $origenCaptura = $targetDestino === 'obra' && $request->input('origen_captura') === 'obra_residente'
+            ? 'obra_residente'
+            : 'almacen';
 
         if ($targetDestino === 'obra') {
             if (empty($targetObraId)) {
@@ -349,6 +385,7 @@ class ReposicionCajaChicaController extends Controller
                     'destino' => $destino,
                     'obra_id' => $obraId,
                     'almacen_id' => $almacenId,
+                    'origen_captura' => $origenCaptura,
                     'es_para_maquina' => $esParaMaquina,
                     'maquina_id' => $maquinaId,
                     'vehiculo_id' => $vehiculoId,
@@ -927,6 +964,7 @@ class ReposicionCajaChicaController extends Controller
             ->when($request->filled('estado'), fn ($query) => $query->where('estado_autorizacion', $request->estado))
             ->when($request->filled('categoria_id'), fn ($query) => $query->where('categoria_id', $request->categoria_id))
             ->when($request->filled('destino'), fn ($query) => $query->where('destino', $request->destino))
+            ->when($request->filled('origen_captura'), fn ($query) => $query->where('origen_captura', $request->input('origen_captura')))
             ->when($request->filled('obra_id'), fn ($query) => $query->where('obra_id', $request->integer('obra_id')))
             ->when($request->filled('almacen_id'), fn ($query) => $query->where('almacen_id', $request->integer('almacen_id')));
     }

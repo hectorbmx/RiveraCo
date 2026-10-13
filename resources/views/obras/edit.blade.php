@@ -29,15 +29,19 @@
     {{-- TABS --}}
     @php
         $tabs = [
+            // Datos base de la obra
             'general'      => 'Información general',
             'contratos'    => 'Contratos',
             'planos'       => 'Planos',
             'presupuestos' => 'Presupuestos',
+
+            // Planeacion, solicitudes y reposicion ligados a presupuesto/partidas
             'planeacion'   => 'Planeacion',
             'solicitudes-gastos' => 'Solicitudes',
             // 'gastos'       => 'Gastos',
             'reposicion-gastos' => 'Reposición gastos',
-            'caja-chica' => 'Caja chica',
+
+            // Operacion de obra
             'pilas'        => 'Perforaciones',
             'empleados'    => 'Empleados',
             'maquinaria'   => 'Maquinaria',
@@ -49,6 +53,10 @@
             'asistencias'  => 'Asistencias',
             'ordenes-compra' => 'Ordenes de compra',
             'reportes'     => 'Reportes',
+
+            // Requisiciones y caja chica por obra: flujos separados de planeacion/partidas
+            'requisiciones' => 'Requisiciones',
+            'caja-chica' => 'Caja chica obra',
         ];
 
         if ((bool) $obra->usa_bentonita) {
@@ -2706,9 +2714,14 @@
 @if($tab === 'empleados')
     @include('obras.partials.empleados.tab')
 @endif
-{{-- TAB CAJA CHICA --}}
+{{-- TAB: REQUISICIONES (flujo separado de planeacion/partidas) --}}
+@if($tab === 'requisiciones')
+    @include('obras.partials.requisiciones.tab')
+@endif
+
+{{-- TAB: CAJA CHICA OBRA (flujo separado de planeacion/partidas) --}}
 @if($tab === 'caja-chica')
-    @include('obras.partials.caja_chica.tab')
+    @include('obras.partials.caja_chica_obra.tab')
 @endif
 
 {{-- TAB ASISTENCIAS --}}
@@ -6431,3 +6444,6 @@ function calcularFila(idCampo) {
 //     });
 // });
 </script>
+
+
+

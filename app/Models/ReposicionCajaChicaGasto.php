@@ -20,6 +20,7 @@ class ReposicionCajaChicaGasto extends Model
         'destino',
         'obra_id',
         'almacen_id',
+        'origen_captura',
         'es_para_maquina',
         'maquina_id',
         'vehiculo_id',

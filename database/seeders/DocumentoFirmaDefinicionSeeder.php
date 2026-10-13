@@ -20,6 +20,11 @@ class DocumentoFirmaDefinicionSeeder extends Seeder
             ['reporte_horas_extra', 'Reporte horas extra', DocumentoFirmante::AMBITO_GIRALDA, 'Giralda', 'autoriza', 'Autoriza', 30],
             ['reporte_horas_extra', 'Reporte horas extra', 'recibe', 'Recibe', 'recibe', 'Recibe', 40],
 
+            ['obra_requisicion', 'Requisicion de obra', DocumentoFirmante::AMBITO_GENERAL, 'General', DocumentoFirmante::CAMPO_ELABORO, 'Elabora', 10],
+            ['obra_requisicion', 'Requisicion de obra', DocumentoFirmante::AMBITO_GENERAL, 'General', DocumentoFirmante::CAMPO_AUTORIZO, 'Autoriza', 20],
+            ['obra_requisicion', 'Requisicion de obra', DocumentoFirmante::AMBITO_GENERAL, 'General', DocumentoFirmante::CAMPO_VOBO, 'VoBo', 30],
+            ['obra_requisicion', 'Requisicion de obra', DocumentoFirmante::AMBITO_GENERAL, 'General', 'recibe', 'Recibe', 40],
+
             [DocumentoFirmante::DOCUMENTO_REPOSICION_CAJA_CHICA, 'Reposicion caja chica', 'formato_administrativo', 'Formato administrativo', 'realizo', 'Realizo', 10],
             [DocumentoFirmante::DOCUMENTO_REPOSICION_CAJA_CHICA, 'Reposicion caja chica', 'formato_administrativo', 'Formato administrativo', DocumentoFirmante::CAMPO_VOBO, 'VoBo', 20],
             [DocumentoFirmante::DOCUMENTO_REPOSICION_CAJA_CHICA, 'Reposicion caja chica', 'formato_administrativo', 'Formato administrativo', DocumentoFirmante::CAMPO_REVISO, 'Reviso', 30],

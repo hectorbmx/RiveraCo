@@ -15,6 +15,7 @@ use App\Http\Controllers\ObraCivilWorkReportController;
 use App\Http\Controllers\ObraContratoController;
 use App\Http\Controllers\ObraPlanoController;
 use App\Http\Controllers\ObraPresupuestoController;
+use App\Http\Controllers\ObraRequisicionController;
 use App\Http\Controllers\ObraEmpleadoController;
 use App\Http\Controllers\EmpleadoController;
 use App\Http\Controllers\EmpleadoNotaController;
@@ -1019,6 +1020,18 @@ Route::prefix('pagos-proveedores')
         Route::patch('/{obra}/reposicion-gastos/{reposicion}/autorizar',[ObraReposicionGastoController::class, 'autorizar'])->name('reposicion-gastos.autorizar');
         Route::patch('/{obra}/reposicion-gastos/{reposicion}/rechazar',[ObraReposicionGastoController::class, 'rechazar'])->name('reposicion-gastos.rechazar');
 
+        // REQUISICIONES DE OBRA
+        Route::get('/{obra}/requisiciones', [ObraRequisicionController::class, 'index'])->name('requisiciones.index');
+        Route::get('/{obra}/requisiciones/create', [ObraRequisicionController::class, 'create'])->name('requisiciones.create');
+        Route::get('/{obra}/requisiciones/catalogo', [ObraRequisicionController::class, 'catalogo'])->name('requisiciones.catalogo');
+        Route::post('/{obra}/requisiciones', [ObraRequisicionController::class, 'store'])->name('requisiciones.store');
+        Route::get('/{obra}/requisiciones/{requisicion}/imprimir', [ObraRequisicionController::class, 'imprimir'])->name('requisiciones.imprimir');
+        Route::get('/{obra}/requisiciones/{requisicion}', [ObraRequisicionController::class, 'show'])->name('requisiciones.show');
+        Route::get('/{obra}/requisiciones/{requisicion}/edit', [ObraRequisicionController::class, 'edit'])->name('requisiciones.edit');
+        Route::patch('/{obra}/requisiciones/{requisicion}', [ObraRequisicionController::class, 'update'])->name('requisiciones.update');
+        Route::post('/{obra}/requisiciones/{requisicion}/detalles', [ObraRequisicionController::class, 'storeDetalle'])->name('requisiciones.detalles.store');
+        Route::delete('/{obra}/requisiciones/{requisicion}/detalles/{detalle}', [ObraRequisicionController::class, 'destroyDetalle'])->name('requisiciones.detalles.destroy');
+
         // SOLICITUDES DE GASTO
         Route::get('/{obra}/solicitudes-gastos/create', [\App\Http\Controllers\ObraSolicitudGastoController::class, 'create'])->name('solicitudes-gastos.create');
         Route::post('/{obra}/solicitudes-gastos', [\App\Http\Controllers\ObraSolicitudGastoController::class, 'store'])->name('solicitudes-gastos.store');
@@ -1063,6 +1076,14 @@ Route::prefix('pagos-proveedores')
 });
 
 require __DIR__.'/auth.php';
+
+
+
+
+
+
+
+
 
 
 
