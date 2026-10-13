@@ -155,6 +155,8 @@
         const buscadorWrap = document.getElementById('catalogo-buscador-wrap');
         const buscador = document.getElementById('catalogo-buscador');
         const selectedItemsHidden = document.getElementById('selected-items-hidden');
+        const selectedItemsCart = document.getElementById('selected-items-cart');
+        const selectedItemsCartBody = document.getElementById('selected-items-cart-body');
 
         if (!form || !tipoSelect || !resumen || !contador || !estado || !lista) {
             return;
@@ -215,15 +217,169 @@
             contador.textContent = '0 items';
         };
 
+        const normalizeQuantity = function (value) {
+            const quantity = Number.parseFloat(value);
+
+            if (!Number.isFinite(quantity) || quantity < 0.001) {
+                return 0.001;
+            }
+
+            return quantity;
+        };
+
+        const formatQuantity = function (value) {
+            return normalizeQuantity(value).toString();
+        };
+
         const syncSelectedInputs = function () {
             if (!selectedItemsHidden) {
                 return;
             }
 
-            selectedItemsHidden.innerHTML = Array.from(selectedItems.keys()).map(function (id) {
-                return `<input type="hidden" name="selected_items[]" value="${escapeHtml(id)}">`;
+            selectedItemsHidden.innerHTML = Array.from(selectedItems.values()).map(function (item) {
+                const id = String(item.id);
+                const quantity = formatQuantity(item.quantity);
+
+                return `
+                    <input type="hidden" name="selected_items[]" value="${escapeHtml(id)}">
+                    <input type="hidden" name="selected_quantities[${escapeHtml(id)}]" value="${escapeHtml(quantity)}">
+                `;
             }).join('');
         };
+
+        const renderSelectedCart = function () {
+            if (!selectedItemsCart || !selectedItemsCartBody) {
+                return;
+            }
+
+            if (!currentTipo && selectedItems.size === 0) {
+                selectedItemsCart.classList.add('hidden');
+                selectedItemsCartBody.innerHTML = '';
+                return;
+            }
+
+            selectedItemsCart.classList.remove('hidden');
+
+            if (selectedItems.size === 0) {
+                selectedItemsCartBody.innerHTML = `
+                    <div class="px-4 py-6 text-center text-sm text-slate-500">
+                        Aun no hay partidas seleccionadas.
+                    </div>
+                `;
+                return;
+            }
+
+            const rows = Array.from(selectedItems.values()).map(function (item) {
+                const id = String(item.id);
+                const subtitle = item.subtitle || 'Sin SKU / unidad';
+                const unidad = item.unidad || 'unidad';
+                const stock = item.badge || (
+                    item.stock_disponible !== null && item.stock_disponible !== undefined
+                        ? `Disponible: ${Number(item.stock_disponible).toLocaleString('es-MX', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`
+                        : 'Sin existencia'
+                );
+
+                return `
+                    <tr class="border-t border-slate-200">
+                        <td class="px-4 py-3">
+                            <div class="font-semibold text-slate-800">${escapeHtml(item.label || id)}</div>
+                        </td>
+                        <td class="px-4 py-3 text-slate-600">
+                            <span class="block">${escapeHtml(subtitle)}</span>
+                            <span class="text-xs text-slate-400">${escapeHtml(unidad)}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${badgeClass(item.badge_key)}">${escapeHtml(stock)}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <input type="number"
+                                   min="0.001"
+                                   step="0.001"
+                                   value="${escapeHtml(formatQuantity(item.quantity))}"
+                                   data-cart-quantity-id="${escapeHtml(id)}"
+                                   class="w-28 rounded-xl border-slate-300 text-sm shadow-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <button type="button"
+                                    data-remove-item-id="${escapeHtml(id)}"
+                                    class="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100">
+                                Quitar
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            selectedItemsCartBody.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <tr>
+                                <th class="px-4 py-3">Producto</th>
+                                <th class="px-4 py-3">SKU / unidad</th>
+                                <th class="px-4 py-3">Existencia</th>
+                                <th class="px-4 py-3">Cantidad</th>
+                                <th class="px-4 py-3 text-right">Accion</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `;
+
+            selectedItemsCartBody.querySelectorAll('[data-remove-item-id]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const id = String(button.dataset.removeItemId);
+                    selectedItems.delete(id);
+
+                    const checkbox = Array.from(lista.querySelectorAll('.catalogo-item-checkbox'))
+                        .find(function (catalogoCheckbox) {
+                            return String(catalogoCheckbox.dataset.itemId || catalogoCheckbox.value) === id;
+                        });
+                    if (checkbox) {
+                        checkbox.checked = false;
+                    }
+
+                    syncSelectedInputs();
+                    renderSelectedCart();
+                });
+            });
+
+            selectedItemsCartBody.querySelectorAll('[data-cart-quantity-id]').forEach(function (input) {
+                const updateQuantity = function (forceNormalize = false) {
+                    const id = String(input.dataset.cartQuantityId);
+                    const item = selectedItems.get(id);
+
+                    if (!item) {
+                        return;
+                    }
+
+                    const quantity = Number.parseFloat(input.value);
+
+                    if (!Number.isFinite(quantity) || quantity < 0.001) {
+                        if (!forceNormalize) {
+                            return;
+                        }
+
+                        item.quantity = 0.001;
+                        input.value = formatQuantity(item.quantity);
+                    } else {
+                        item.quantity = quantity;
+                    }
+
+                    selectedItems.set(id, item);
+                    syncSelectedInputs();
+                };
+
+                input.addEventListener('input', function () {
+                    updateQuantity(false);
+                });
+                input.addEventListener('change', function () {
+                    updateQuantity(true);
+                });
+            });
+        };
+
         const renderItems = function (items, tipo, options = {}) {
             const itemType = tipo?.item_type || items[0]?.item_type || 'item';
             const isProducto = itemType === 'producto';
@@ -231,6 +387,7 @@
             if (!items.length) {
                 setEmpty(isProducto && options.q ? 'Sin coincidencias para la busqueda.' : 'No hay elementos disponibles para este tipo de requisicion.');
                 contador.textContent = isProducto ? '0 resultados' : '0 items';
+                renderSelectedCart();
                 return;
             }
 
@@ -259,7 +416,17 @@
                 return `
                     <label class="cursor-pointer px-3 py-3 hover:bg-white" style="${gridStyle}">
                         <span class="flex justify-center">
-                            <input type="checkbox" value="${escapeHtml(item.id)}" data-item-id="${escapeHtml(item.id)}" data-item-label="${escapeHtml(item.label)}" ${selectedItems.has(String(item.id)) ? 'checked' : ''} class="catalogo-item-checkbox rounded border-slate-300 text-[#0B265A] focus:ring-[#0B265A]">
+                            <input type="checkbox"
+                                   value="${escapeHtml(item.id)}"
+                                   data-item-id="${escapeHtml(item.id)}"
+                                   data-item-label="${escapeHtml(item.label)}"
+                                   data-item-subtitle="${escapeHtml(secondary)}"
+                                   data-item-badge="${escapeHtml(badgeText)}"
+                                   data-item-badge-key="${escapeHtml(item.badge_key)}"
+                                   data-item-unidad="${escapeHtml(item.unidad || '')}"
+                                   data-stock-disponible="${escapeHtml(item.stock_disponible ?? '')}"
+                                   ${selectedItems.has(String(item.id)) ? 'checked' : ''}
+                                   class="catalogo-item-checkbox rounded border-slate-300 text-[#0B265A] focus:ring-[#0B265A]">
                         </span>
                         <span class="min-w-0 text-sm font-semibold text-slate-800">
                             ${escapeHtml(item.label)}
@@ -293,14 +460,27 @@
                     const id = String(checkbox.dataset.itemId || checkbox.value);
 
                     if (checkbox.checked) {
-                        selectedItems.set(id, checkbox.dataset.itemLabel || id);
+                        const current = selectedItems.get(id);
+                        selectedItems.set(id, {
+                            id: id,
+                            label: checkbox.dataset.itemLabel || id,
+                            subtitle: checkbox.dataset.itemSubtitle || '',
+                            badge: checkbox.dataset.itemBadge || '',
+                            badge_key: checkbox.dataset.itemBadgeKey || '',
+                            unidad: checkbox.dataset.itemUnidad || '',
+                            stock_disponible: checkbox.dataset.stockDisponible || '',
+                            quantity: current?.quantity || 1
+                        });
                     } else {
                         selectedItems.delete(id);
                     }
 
                     syncSelectedInputs();
+                    renderSelectedCart();
                 });
             });
+
+            renderSelectedCart();
         };
 
         const loadCatalogo = async function (options = {}) {
@@ -310,6 +490,10 @@
             const requestId = activeRequest;
 
             if (!tipoId) {
+                currentTipo = null;
+                selectedItems.clear();
+                syncSelectedInputs();
+                renderSelectedCart();
                 resumen.textContent = 'Selecciona un tipo de requisicion para cargar opciones.';
                 setEmpty('Sin catalogo cargado.');
                 return;
@@ -378,6 +562,9 @@
                 buscador.value = '';
             }
 
+            selectedItems.clear();
+            syncSelectedInputs();
+            renderSelectedCart();
             loadCatalogo();
         });
 
