@@ -113,6 +113,13 @@
             <div id="selected-items-hidden"></div>
         </div>
 
+        <div id="selected-items-cart" class="mb-6 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div class="border-b border-[#0B265A]/20 bg-[#0B265A] px-4 py-3 text-sm font-semibold text-white">
+                Partidas seleccionadas
+            </div>
+            <div id="selected-items-cart-body" class="divide-y divide-slate-100"></div>
+        </div>
+
         <div class="pb-6">
             <label for="observaciones" class="block text-sm font-semibold text-slate-700">Observaciones</label>
             <textarea id="observaciones"
@@ -317,7 +324,7 @@
                 if (query) {
                     url.searchParams.set('q', query);
                 }
-                url.searchParams.set('limit', options.limit ?? 50);
+                url.searchParams.set('limit', options.limit ?? 100);
                 url.searchParams.set('page', options.page ?? 1);
 
                 const response = await fetch(url.toString(), {
@@ -350,12 +357,6 @@
                 const almacen = tipo.almacen?.nombre ? ` · Almacen: ${tipo.almacen.nombre}` : '';
 
                 resumen.textContent = `${tipo.nombre || 'Tipo seleccionado'} · ${origen}${almacen}`;
-
-                if (isProducto && !query) {
-                    setEmpty('Escribe al menos 2 caracteres para buscar materiales.');
-                    contador.textContent = '0 resultados';
-                    return;
-                }
 
                 renderItems(items, tipo, { q: query });
             } catch (error) {
@@ -393,14 +394,7 @@
                 const query = buscador.value.trim();
 
                 searchTimer = setTimeout(function () {
-                    if (query.length < 2) {
-                        activeRequest += 1;
-                        setEmpty('Escribe al menos 2 caracteres para buscar materiales.');
-                        contador.textContent = '0 resultados';
-                        return;
-                    }
-
-                    loadCatalogo({ q: query, limit: 50, page: 1 });
+                    loadCatalogo({ q: query, limit: 100, page: 1 });
                 }, 300);
             });
         }

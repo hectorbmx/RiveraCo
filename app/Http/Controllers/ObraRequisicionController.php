@@ -40,6 +40,9 @@ class ObraRequisicionController extends Controller
     {
         $data = $request->validate([
             'tipo_id' => ['nullable', 'integer', 'exists:empresa_requisicion_tipos,id'],
+            'q' => ['nullable', 'string', 'max:120'],
+            'limit' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
         if (empty($data['tipo_id'])) {
@@ -57,7 +60,7 @@ class ObraRequisicionController extends Controller
 
         $catalogoOptions = [
             'q' => trim((string) ($data['q'] ?? '')),
-            'limit' => (int) ($data['limit'] ?? 50),
+            'limit' => (int) ($data['limit'] ?? 100),
             'page' => (int) ($data['page'] ?? 1),
         ];
 
@@ -92,6 +95,8 @@ class ObraRequisicionController extends Controller
             'observaciones' => ['nullable', 'string', 'max:5000'],
             'selected_items' => ['nullable', 'array'],
             'selected_items.*' => ['integer'],
+            'selected_quantities' => ['nullable', 'array'],
+            'selected_quantities.*' => ['nullable', 'numeric', 'min:0.001', 'max:999999.999'],
         ], [
             'tipo_requisicion_id.required' => 'Selecciona el tipo de requisicion.',
             'selected_items.array' => 'La seleccion de partidas no es valida.',
@@ -114,13 +119,21 @@ class ObraRequisicionController extends Controller
             ->unique()
             ->values();
 
+        $selectedQuantities = collect($data['selected_quantities'] ?? [])
+            ->mapWithKeys(fn ($cantidad, $itemId) => [(int) $itemId => (float) $cantidad]);
+
         $catalogoItems = $this->itemsCatalogo($tipoSeleccionado, $obra)->keyBy('id');
         $detallesSeleccionados = collect();
 
         if ($tipoSeleccionado->requiere_catalogo) {
             $detallesSeleccionados = $selectedIds
                 ->filter(fn ($itemId) => $catalogoItems->has($itemId))
-                ->map(fn ($itemId) => $catalogoItems->get($itemId))
+                ->map(function ($itemId) use ($catalogoItems, $selectedQuantities) {
+                    $item = $catalogoItems->get($itemId);
+                    $item['cantidad_solicitada'] = max(0.001, (float) ($selectedQuantities->get($itemId) ?: 1));
+
+                    return $item;
+                })
                 ->values();
 
             if ($selectedIds->count() !== $detallesSeleccionados->count()) {
@@ -194,7 +207,7 @@ class ObraRequisicionController extends Controller
             ]);
 
             foreach ($detallesSeleccionados as $item) {
-                $this->crearDetalleDesdeCatalogo($requisicion, $item);
+                $this->crearDetalleDesdeCatalogo($requisicion, $item, (float) ($item['cantidad_solicitada'] ?? 1));
             }
 
             return $requisicion;
@@ -328,6 +341,9 @@ class ObraRequisicionController extends Controller
             ->unique()
             ->values();
 
+        $selectedQuantities = collect($data['selected_quantities'] ?? [])
+            ->mapWithKeys(fn ($cantidad, $itemId) => [(int) $itemId => (float) $cantidad]);
+
         $catalogoItems = $this->itemsCatalogo($requisicion->tipo, $obra)->keyBy('id');
         $itemsExistentes = $requisicion->detalles()
             ->where('item_type', $requisicion->tipo->item_type)
@@ -337,7 +353,12 @@ class ObraRequisicionController extends Controller
         $detallesSeleccionados = $selectedIds
             ->reject(fn ($itemId) => $itemsExistentes->contains($itemId))
             ->filter(fn ($itemId) => $catalogoItems->has($itemId))
-            ->map(fn ($itemId) => $catalogoItems->get($itemId))
+            ->map(function ($itemId) use ($catalogoItems, $selectedQuantities) {
+                $item = $catalogoItems->get($itemId);
+                $item['cantidad_solicitada'] = max(0.001, (float) ($selectedQuantities->get($itemId) ?: 1));
+
+                return $item;
+            })
             ->values();
 
         if ($selectedIds->contains(fn ($itemId) => ! $catalogoItems->has($itemId))) {
@@ -354,7 +375,7 @@ class ObraRequisicionController extends Controller
 
         DB::transaction(function () use ($requisicion, $detallesSeleccionados) {
             foreach ($detallesSeleccionados as $item) {
-                $this->crearDetalleDesdeCatalogo($requisicion, $item);
+                $this->crearDetalleDesdeCatalogo($requisicion, $item, (float) ($item['cantidad_solicitada'] ?? 1));
             }
         });
 
@@ -393,15 +414,17 @@ class ObraRequisicionController extends Controller
             ->route('obras.requisiciones.edit', [$obra, $requisicion])
             ->with('success', 'Partida eliminada correctamente.');
     }
-    private function crearDetalleDesdeCatalogo(ObraRequisicion $requisicion, array $item): void
+    private function crearDetalleDesdeCatalogo(ObraRequisicion $requisicion, array $item, ?float $cantidad = null): void
     {
+        $cantidadSolicitada = max(0.001, (float) ($cantidad ?? $item['cantidad_solicitada'] ?? 1));
+
         $requisicion->detalles()->create([
             'item_type' => $item['item_type'],
             'item_id' => $item['id'],
             'descripcion' => $item['label'],
             'descripcion_snapshot' => $item['descripcion_snapshot'],
             'unidad' => $item['unidad'] ?? $this->unidadCatalogo($item['item_type'] ?? null),
-            'cantidad_solicitada' => 1,
+            'cantidad_solicitada' => $cantidadSolicitada,
             'cantidad_surtida' => 0,
             'estado' => 'pendiente',
         ]);
