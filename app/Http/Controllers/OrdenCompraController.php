@@ -1367,6 +1367,7 @@ foreach ($oc->detalles as $detalle) {
     $cant = (float) ($detalle->cantidad ?? 0);
     $uni  = (string) ($detalle->unidad ?? '');
     $desc = (string) ($detalle->descripcion ?? '');
+    $notaDetalle = trim((string) ($detalle->notas ?? ''));
     $pu   = (float) ($detalle->precio_unitario ?? 0);
     $brutoLinea = round($cant * $pu, 2);
     $descuentoPctLinea = (float) ($detalle->descuento_porcentaje ?? 0);
@@ -1433,11 +1434,18 @@ foreach ($oc->detalles as $detalle) {
      * Todas las celdas usarán exactamente esta misma altura.
      */
     $lineHeight = 6;
-    $lineasDescripcion = $calcularLineas(
-        $pdf,
-        $utf8($desc),
-        $wDesc
-    );
+    $descripcionImpresion = $notaDetalle !== ''
+        ? $desc . "\nNota: " . $notaDetalle
+        : $desc;
+
+    $lineasDescripcion = collect(explode("\n", $descripcionImpresion))
+        ->sum(fn ($linea) => $calcularLineas(
+            $pdf,
+            $utf8($linea),
+            $wDesc
+        ));
+
+    $lineasDescripcion = max(1, (int) $lineasDescripcion);
 
     $rowH = max(
         7,
@@ -1446,6 +1454,17 @@ foreach ($oc->detalles as $detalle) {
 
     $x = $pdf->GetX();
     $y = $pdf->GetY();
+
+    /*
+     * FPDF no parte los rectángulos que dibujamos manualmente; si la fila
+     * completa no cabe, movemos la partida a la siguiente hoja.
+     */
+    if (($y + $rowH) > 255) {
+        $pdf->AddPage();
+        $pdf->SetXY($X0, $M);
+        $x = $pdf->GetX();
+        $y = $pdf->GetY();
+    }
 
     /*
      * Dibujamos primero todos los bordes con la misma altura.
@@ -1506,7 +1525,7 @@ foreach ($oc->detalles as $detalle) {
     );
 
     /*
-     * Descripción. El borde ya fue dibujado con Rect(),
+     * Descripción y nota del detalle. El borde ya fue dibujado con Rect(),
      * por eso MultiCell no lleva borde.
      */
     $pdf->SetXY(
@@ -1517,7 +1536,7 @@ foreach ($oc->detalles as $detalle) {
     $pdf->MultiCell(
         $wDesc - 2,
         $lineHeight,
-        $utf8($desc),
+        $utf8($descripcionImpresion),
         0,
         'L'
     );
@@ -1657,7 +1676,7 @@ foreach ($oc->detalles as $detalle) {
      */
     $totW = 54;
     $totX = $X0 + $W - $totW;
-    $notasLabelW = 15;
+    $notasLabelW = 25;
     $notasGap = 4;
     $notasX = $X0 + $notasLabelW + 1;
     $notasW = $totX - $notasX - $notasGap;
@@ -1701,7 +1720,7 @@ foreach ($oc->detalles as $detalle) {
     $pdf->Cell(
         $notasLabelW,
         6,
-        $utf8('NOTAS:'),
+        $utf8('COMENTARIOS:'),
         0,
         0,
         'L'

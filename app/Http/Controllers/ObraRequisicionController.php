@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Almacen;
 use App\Models\Area;
 use App\Models\DocumentoFirmante;
 use App\Models\Empleado;
 use App\Models\EmpresaRequisicionTipo;
+use App\Models\InventarioStock;
 use App\Models\Maquina;
 use App\Models\Obra;
 use App\Models\ObraRequisicion;
@@ -53,7 +55,13 @@ class ObraRequisicionController extends Controller
             ->where('activo', true)
             ->firstOrFail();
 
-        $items = $this->itemsCatalogo($tipo, $obra);
+        $catalogoOptions = [
+            'q' => trim((string) ($data['q'] ?? '')),
+            'limit' => (int) ($data['limit'] ?? 50),
+            'page' => (int) ($data['page'] ?? 1),
+        ];
+
+        $items = $this->itemsCatalogo($tipo, $obra, $catalogoOptions);
 
         return response()->json([
             'tipo' => [
@@ -392,7 +400,7 @@ class ObraRequisicionController extends Controller
             'item_id' => $item['id'],
             'descripcion' => $item['label'],
             'descripcion_snapshot' => $item['descripcion_snapshot'],
-            'unidad' => $this->unidadCatalogo($item['item_type'] ?? null),
+            'unidad' => $item['unidad'] ?? $this->unidadCatalogo($item['item_type'] ?? null),
             'cantidad_solicitada' => 1,
             'cantidad_surtida' => 0,
             'estado' => 'pendiente',
@@ -414,7 +422,7 @@ class ObraRequisicionController extends Controller
             ->reject(fn ($item) => $itemsExistentes->contains((int) $item['id']))
             ->values();
     }
-    private function itemsCatalogo(EmpresaRequisicionTipo $tipo, Obra $obra)
+    private function itemsCatalogo(EmpresaRequisicionTipo $tipo, Obra $obra, array $options = [])
     {
         if ($this->esCatalogoEmpleadosGiralda($tipo)) {
             return $this->catalogoEmpleadosGiralda($obra);
@@ -422,6 +430,10 @@ class ObraRequisicionController extends Controller
 
         if ($this->esCatalogoMaquinaria($tipo)) {
             return $this->catalogoMaquinaria($obra);
+        }
+
+        if ($this->esCatalogoMaterialesGiralda($tipo)) {
+            return $this->catalogoMaterialesGiralda($tipo, $options);
         }
 
         return collect();
@@ -435,6 +447,11 @@ class ObraRequisicionController extends Controller
     private function esCatalogoMaquinaria(EmpresaRequisicionTipo $tipo): bool
     {
         return $tipo->origen_catalogo === 'maquinaria' && $tipo->item_type === 'maquina';
+    }
+
+    private function esCatalogoMaterialesGiralda(EmpresaRequisicionTipo $tipo): bool
+    {
+        return $tipo->origen_catalogo === 'giralda' && $tipo->item_type === 'producto';
     }
 
     private function unidadCatalogo(?string $itemType): ?string
@@ -577,6 +594,118 @@ class ObraRequisicionController extends Controller
                 ];
             });
     }
+    private function catalogoMaterialesGiralda(EmpresaRequisicionTipo $tipo, array $options = [])
+    {
+        $almacen = $tipo->almacen ?: $this->almacenGiralda();
+
+        if (! $almacen) {
+            return collect();
+        }
+
+        $q = trim((string) ($options['q'] ?? ''));
+        $limit = isset($options['limit']) ? max(1, min(100, (int) $options['limit'])) : null;
+        $page = max(1, (int) ($options['page'] ?? 1));
+
+        if (($options['remote'] ?? false) && $q === '') {
+            return collect();
+        }
+
+        $query = InventarioStock::query()
+            ->with(['producto:id,nombre,descripcion,sku,unidad,tipo_inventario,stock_minimo,punto_reorden,activo', 'almacen:id,nombre,codigo'])
+            ->where('almacen_id', $almacen->id)
+            ->whereHas('producto', function ($producto) use ($q) {
+                $producto->where('activo', true);
+
+                if ($q !== '') {
+                    $producto->where(function ($query) use ($q) {
+                        $query->where('nombre', 'like', "%{$q}%")
+                            ->orWhere('sku', 'like', "%{$q}%")
+                            ->orWhere('unidad', 'like', "%{$q}%")
+                            ->orWhere('legacy_prod_id', 'like', "%{$q}%");
+                    });
+                }
+            })
+            ->orderBy(
+                DB::raw('(select nombre from productos where productos.id = inventario_stock.producto_id)')
+            );
+
+        if ($limit !== null) {
+            $query->forPage($page, $limit);
+        }
+
+        return $query
+            ->get()
+            ->map(function (InventarioStock $stock) use ($almacen) {
+                $producto = $stock->producto;
+
+                if (! $producto) {
+                    return null;
+                }
+
+                $stockActual = (float) ($stock->stock_actual ?? 0);
+                $stockReservado = (float) ($stock->stock_reservado ?? 0);
+                $stockDisponible = max(0, $stockActual - $stockReservado);
+                $stockMinimo = $producto->stock_minimo !== null ? (float) $producto->stock_minimo : null;
+
+                $badge = 'Disponible: ' . number_format($stockDisponible, 3);
+                $badgeKey = 'stock_disponible';
+
+                if ($stockDisponible <= 0) {
+                    $badge = 'Sin existencia';
+                    $badgeKey = 'stock_cero';
+                } elseif ($stockMinimo !== null && $stockDisponible <= $stockMinimo) {
+                    $badge = 'Bajo minimo: ' . number_format($stockDisponible, 3);
+                    $badgeKey = 'stock_bajo';
+                }
+
+                $sku = $producto->sku ?: $producto->codigo;
+                $unidad = $producto->unidad ?: 'unidad';
+                $subtitle = trim(($sku ?: 'Sin SKU') . ' / ' . $unidad);
+                $snapshotPartes = array_filter([
+                    $producto->nombre,
+                    $sku ? 'SKU: ' . $sku : null,
+                    'Unidad: ' . $unidad,
+                    'Almacen: ' . $almacen->nombre,
+                    'Existencia: ' . number_format($stockDisponible, 3),
+                ]);
+
+                return [
+                    'id' => $producto->id,
+                    'item_type' => 'producto',
+                    'label' => $producto->nombre,
+                    'subtitle' => $subtitle,
+                    'descripcion_snapshot' => implode(' | ', $snapshotPartes),
+                    'badge' => $badge,
+                    'badge_key' => $badgeKey,
+                    'sku' => $sku,
+                    'unidad' => $unidad,
+                    'stock_actual' => $stockActual,
+                    'stock_reservado' => $stockReservado,
+                    'stock_disponible' => $stockDisponible,
+                    'stock_minimo' => $stockMinimo,
+                    'almacen' => [
+                        'id' => $almacen->id,
+                        'codigo' => $almacen->codigo,
+                        'nombre' => $almacen->nombre,
+                    ],
+                    'asignacion' => null,
+                ];
+            })
+            ->filter()
+            ->values();
+    }
+
+    private function almacenGiralda(): ?Almacen
+    {
+        return Almacen::query()
+            ->where('activo', true)
+            ->where(function ($query) {
+                $query->where('codigo', 'like', '%GIRALDA%')
+                    ->orWhere('nombre', 'like', '%Giralda%');
+            })
+            ->orderBy('id')
+            ->first();
+    }
     private function areaGiralda(): ?Area
     {
         return Area::query()
@@ -614,6 +743,11 @@ class ObraRequisicionController extends Controller
         ];
     }
 }
+
+
+
+
+
 
 
 

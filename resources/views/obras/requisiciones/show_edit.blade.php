@@ -21,10 +21,14 @@
     $catalogoItems = $catalogoItems ?? collect();
     $tipoItem = $requisicion->tipo?->item_type;
     $esMaquina = $tipoItem === 'maquina';
-    $agregarLabel = $esMaquina ? 'Agregar maquina' : 'Agregar empleado';
-    $buscarPlaceholder = $esMaquina ? 'Buscar por maquina, numero economico, tipo u obra' : 'Buscar por nombre, puesto u obra';
-    $columnaPrincipalLabel = $esMaquina ? 'Maquina' : 'Nombre';
-    $columnaSecundariaLabel = $esMaquina ? 'Num. eco / tipo' : 'Puesto';
+    $esProducto = $tipoItem === 'producto';
+    $agregarLabel = $esMaquina ? 'Agregar maquina' : ($esProducto ? 'Agregar material' : 'Agregar empleado');
+    $buscarPlaceholder = $esMaquina
+        ? 'Buscar por maquina, numero economico, tipo u obra'
+        : ($esProducto ? 'Buscar por producto, SKU o unidad' : 'Buscar por nombre, puesto u obra');
+    $columnaPrincipalLabel = $esMaquina ? 'Maquina' : ($esProducto ? 'Producto' : 'Nombre');
+    $columnaSecundariaLabel = $esMaquina ? 'Num. eco / tipo' : ($esProducto ? 'SKU / unidad' : 'Puesto');
+    $columnaDisponibilidadLabel = $esProducto ? 'Existencia' : 'Disponibilidad';
 @endphp
 
 <div class="max-w-7xl mx-auto space-y-6">
@@ -141,7 +145,7 @@
                     <div class="grid items-center gap-3 bg-[#0B265A] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white" style="grid-template-columns: minmax(0, 1.1fr) minmax(150px, 0.85fr) minmax(170px, 0.9fr);">
                         <span>{{ $columnaPrincipalLabel }}</span>
                         <span>{{ $columnaSecundariaLabel }}</span>
-                        <span class="text-right">Disponibilidad</span>
+                        <span class="text-right">{{ $columnaDisponibilidadLabel }}</span>
                     </div>
                     <div id="catalogo-empleados-edit" class="max-h-80 divide-y divide-slate-200 overflow-y-auto">
                         @forelse($catalogoItems as $item)
@@ -149,7 +153,8 @@
                                 $obraAsignada = $item['asignacion'] ?? null;
                                 $badgeClass = match ($item['badge_key'] ?? 'disponible') {
                                     'asignado_esta_obra' => 'bg-blue-50 text-blue-700 ring-blue-200',
-                                    'asignado_otra_obra' => 'bg-amber-50 text-amber-700 ring-amber-200',
+                                    'asignado_otra_obra', 'stock_bajo' => 'bg-amber-50 text-amber-700 ring-amber-200',
+                                    'stock_cero' => 'bg-rose-50 text-rose-700 ring-rose-200',
                                     default => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
                                 };
                                 $estadoClass = match ($item['estado'] ?? null) {
@@ -169,7 +174,7 @@
                                     title="Doble click para agregar">
                                 <span class="min-w-0 text-sm font-semibold text-slate-800">{{ $item['label'] }}</span>
                                                                 <span class="min-w-0 text-sm font-medium text-slate-500">
-                                    <span class="block">{{ $item['subtitle'] ?: ($esMaquina ? 'Sin tipo' : 'Sin puesto') }}</span>
+                                    <span class="block">{{ $item['subtitle'] ?: ($esMaquina ? 'Sin tipo' : ($esProducto ? 'Sin SKU / unidad' : 'Sin puesto')) }}</span>
                                     @if($esMaquina && ! empty($item['estado_label']))
                                         <span class="mt-1 inline-flex w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 {{ $estadoClass }}">{{ $item['estado_label'] }}</span>
                                     @endif
@@ -351,6 +356,10 @@
     });
 </script>
 @endpush
+
+
+
+
 
 
 

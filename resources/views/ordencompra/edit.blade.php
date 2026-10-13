@@ -503,7 +503,7 @@
 
     {{-- Detalles --}}
     <table class="w-full text-sm border">
-        <thead class="bg-gray-100">
+        <thead class="bg-[#0b2f6b] text-white">
         <tr>
             <th class="p-2 border">Descripción</th>
             <th class="p-2 border">Cant</th>

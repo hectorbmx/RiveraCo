@@ -87,12 +87,22 @@
         </div>
 
         <div id="catalogo-panel" class="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div class="flex flex-col gap-2 border-b border-slate-200 pb-3 md:flex-row md:items-center md:justify-between">
+            <div class="flex flex-col gap-3 border-b border-slate-200 pb-3 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <p class="text-sm font-semibold text-slate-800">Catalogo disponible</p>
                     <p id="catalogo-resumen" class="text-xs text-slate-500">Selecciona un tipo de requisicion para cargar opciones.</p>
                 </div>
-                <span id="catalogo-contador" class="inline-flex w-fit items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">0 items</span>
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <div id="catalogo-buscador-wrap" class="hidden min-w-0 sm:w-80">
+                        <label for="catalogo-buscador" class="sr-only">Buscar en catalogo</label>
+                        <input id="catalogo-buscador"
+                               type="search"
+                               autocomplete="off"
+                               placeholder="Buscar producto, SKU o unidad"
+                               class="w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                    </div>
+                    <span id="catalogo-contador" class="inline-flex w-fit items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">0 items</span>
+                </div>
             </div>
 
             <div id="catalogo-estado" class="py-8 text-center text-sm text-slate-500">
@@ -100,6 +110,7 @@
             </div>
 
             <div id="catalogo-lista" class="hidden max-h-96 divide-y divide-slate-200 overflow-y-auto"></div>
+            <div id="selected-items-hidden"></div>
         </div>
 
         <div class="pb-6">
@@ -134,6 +145,9 @@
         const contador = document.getElementById('catalogo-contador');
         const estado = document.getElementById('catalogo-estado');
         const lista = document.getElementById('catalogo-lista');
+        const buscadorWrap = document.getElementById('catalogo-buscador-wrap');
+        const buscador = document.getElementById('catalogo-buscador');
+        const selectedItemsHidden = document.getElementById('selected-items-hidden');
 
         if (!form || !tipoSelect || !resumen || !contador || !estado || !lista) {
             return;
@@ -141,14 +155,21 @@
 
         const catalogoUrl = form.dataset.catalogoUrl;
         let activeRequest = 0;
+        let currentTipo = null;
+        let searchTimer = null;
+        const selectedItems = new Map();
 
         const badgeClass = function (key) {
             if (key === 'asignado_esta_obra') {
                 return 'bg-blue-50 text-blue-700 ring-blue-200';
             }
 
-            if (key === 'asignado_otra_obra') {
+            if (key === 'asignado_otra_obra' || key === 'stock_bajo') {
                 return 'bg-amber-50 text-amber-700 ring-amber-200';
+            }
+
+            if (key === 'stock_cero') {
+                return 'bg-rose-50 text-rose-700 ring-rose-200';
             }
 
             return 'bg-emerald-50 text-emerald-700 ring-emerald-200';
@@ -187,25 +208,39 @@
             contador.textContent = '0 items';
         };
 
-        const renderItems = function (items, tipo) {
+        const syncSelectedInputs = function () {
+            if (!selectedItemsHidden) {
+                return;
+            }
+
+            selectedItemsHidden.innerHTML = Array.from(selectedItems.keys()).map(function (id) {
+                return `<input type="hidden" name="selected_items[]" value="${escapeHtml(id)}">`;
+            }).join('');
+        };
+        const renderItems = function (items, tipo, options = {}) {
+            const itemType = tipo?.item_type || items[0]?.item_type || 'item';
+            const isProducto = itemType === 'producto';
+
             if (!items.length) {
-                setEmpty('No hay elementos disponibles para este tipo de requisicion.');
+                setEmpty(isProducto && options.q ? 'Sin coincidencias para la busqueda.' : 'No hay elementos disponibles para este tipo de requisicion.');
+                contador.textContent = isProducto ? '0 resultados' : '0 items';
                 return;
             }
 
             estado.classList.add('hidden');
             lista.classList.remove('hidden');
-            contador.textContent = `${items.length} ${items.length === 1 ? 'item' : 'items'}`;
+            contador.textContent = isProducto
+                ? `${items.length} ${items.length === 1 ? 'resultado' : 'resultados'}`
+                : `${items.length} ${items.length === 1 ? 'item' : 'items'}`;
 
-            const itemType = tipo?.item_type || items[0]?.item_type || 'item';
             const isMaquina = itemType === 'maquina';
-            const headerMain = isMaquina ? 'Maquina' : 'Nombre';
-            const headerSecondary = isMaquina ? 'Num. eco / tipo' : 'Puesto';
-            const headerAvailability = 'Disponibilidad';
+            const headerMain = isMaquina ? 'Maquina' : (isProducto ? 'Producto' : 'Nombre');
+            const headerSecondary = isMaquina ? 'Num. eco / tipo' : (isProducto ? 'SKU / unidad' : 'Puesto');
+            const headerAvailability = isProducto ? 'Existencia' : 'Disponibilidad';
             const gridStyle = 'display: grid; grid-template-columns: 32px minmax(0, 1.15fr) minmax(190px, 0.9fr) minmax(210px, 0.95fr); align-items: center; column-gap: 12px;';
 
             const rows = items.map(function (item) {
-                const secondary = item.subtitle || (isMaquina ? 'Sin tipo' : 'Sin puesto');
+                const secondary = item.subtitle || (isMaquina ? 'Sin tipo' : (isProducto ? 'Sin SKU / unidad' : 'Sin puesto'));
                 const badgeText = item.asignacion?.obra_nombre || item.badge || 'Disponible';
                 const obraClave = item.asignacion?.obra_clave
                     ? `<span class="block text-[11px] font-normal text-slate-500">${escapeHtml(item.asignacion.obra_clave)}</span>`
@@ -217,7 +252,7 @@
                 return `
                     <label class="cursor-pointer px-3 py-3 hover:bg-white" style="${gridStyle}">
                         <span class="flex justify-center">
-                            <input type="checkbox" name="selected_items[]" value="${escapeHtml(item.id)}" class="rounded border-slate-300 text-[#0B265A] focus:ring-[#0B265A]">
+                            <input type="checkbox" value="${escapeHtml(item.id)}" data-item-id="${escapeHtml(item.id)}" data-item-label="${escapeHtml(item.label)}" ${selectedItems.has(String(item.id)) ? 'checked' : ''} class="catalogo-item-checkbox rounded border-slate-300 text-[#0B265A] focus:ring-[#0B265A]">
                         </span>
                         <span class="min-w-0 text-sm font-semibold text-slate-800">
                             ${escapeHtml(item.label)}
@@ -245,10 +280,25 @@
                 </div>
                 ${rows}
             `;
+
+            lista.querySelectorAll('.catalogo-item-checkbox').forEach(function (checkbox) {
+                checkbox.addEventListener('change', function () {
+                    const id = String(checkbox.dataset.itemId || checkbox.value);
+
+                    if (checkbox.checked) {
+                        selectedItems.set(id, checkbox.dataset.itemLabel || id);
+                    } else {
+                        selectedItems.delete(id);
+                    }
+
+                    syncSelectedInputs();
+                });
+            });
         };
 
-        const loadCatalogo = async function () {
+        const loadCatalogo = async function (options = {}) {
             const tipoId = tipoSelect.value;
+            const query = String(options.q ?? '').trim();
             activeRequest += 1;
             const requestId = activeRequest;
 
@@ -264,6 +314,11 @@
             try {
                 const url = new URL(catalogoUrl, window.location.origin);
                 url.searchParams.set('tipo_id', tipoId);
+                if (query) {
+                    url.searchParams.set('q', query);
+                }
+                url.searchParams.set('limit', options.limit ?? 50);
+                url.searchParams.set('page', options.page ?? 1);
 
                 const response = await fetch(url.toString(), {
                     headers: {
@@ -284,11 +339,25 @@
 
                 const tipo = payload.tipo || {};
                 const items = Array.isArray(payload.items) ? payload.items : [];
+                currentTipo = tipo;
+                const isProducto = tipo.item_type === 'producto';
+
+                if (buscadorWrap) {
+                    buscadorWrap.classList.toggle('hidden', !isProducto);
+                }
+
                 const origen = tipo.origen_catalogo ? `Origen: ${tipo.origen_catalogo}` : 'Origen no definido';
                 const almacen = tipo.almacen?.nombre ? ` · Almacen: ${tipo.almacen.nombre}` : '';
 
                 resumen.textContent = `${tipo.nombre || 'Tipo seleccionado'} · ${origen}${almacen}`;
-                renderItems(items, tipo);
+
+                if (isProducto && !query) {
+                    setEmpty('Escribe al menos 2 caracteres para buscar materiales.');
+                    contador.textContent = '0 resultados';
+                    return;
+                }
+
+                renderItems(items, tipo, { q: query });
             } catch (error) {
                 if (requestId !== activeRequest) {
                     return;
@@ -299,7 +368,42 @@
             }
         };
 
-        tipoSelect.addEventListener('change', loadCatalogo);
+        tipoSelect.addEventListener('change', function () {
+            if (searchTimer) {
+                clearTimeout(searchTimer);
+            }
+
+            if (buscador) {
+                buscador.value = '';
+            }
+
+            loadCatalogo();
+        });
+
+        if (buscador) {
+            buscador.addEventListener('input', function () {
+                if (!currentTipo || currentTipo.item_type !== 'producto') {
+                    return;
+                }
+
+                if (searchTimer) {
+                    clearTimeout(searchTimer);
+                }
+
+                const query = buscador.value.trim();
+
+                searchTimer = setTimeout(function () {
+                    if (query.length < 2) {
+                        activeRequest += 1;
+                        setEmpty('Escribe al menos 2 caracteres para buscar materiales.');
+                        contador.textContent = '0 resultados';
+                        return;
+                    }
+
+                    loadCatalogo({ q: query, limit: 50, page: 1 });
+                }, 300);
+            });
+        }
 
         if (tipoSelect.value) {
             loadCatalogo();
@@ -307,6 +411,16 @@
     });
 </script>
 @endpush
+
+
+
+
+
+
+
+
+
+
 
 
 
