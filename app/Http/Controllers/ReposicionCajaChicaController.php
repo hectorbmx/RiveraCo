@@ -159,7 +159,7 @@ class ReposicionCajaChicaController extends Controller
     /**
      * Guarda uno o un lote de gastos (captura tipo Excel).
      */
-    public function store(Request $request)
+    public function store(Request $request, CfdiXmlParserService $parser)
     {
         // Determinar si viene como lote (array 'gastos') o como gasto único
         $items = $request->input('gastos');
@@ -176,6 +176,7 @@ class ReposicionCajaChicaController extends Controller
                     'fecha_gasto' => $request->input('fecha_gasto'),
                     'proveedor_nombre' => $request->input('proveedor_nombre'),
                     'proveedor_rfc' => $request->input('proveedor_rfc'),
+                    'factura_folio' => $request->input('factura_folio'),
                     'concepto' => $request->input('concepto'),
                     'forma_pago' => $request->input('forma_pago'),
                     'importe_registrado' => $request->input('importe_registrado'),
@@ -378,6 +379,10 @@ class ReposicionCajaChicaController extends Controller
                 }
 
                 // Motivo sin factura temporalmente no obligatorio; reactivar junto con el input de la vista cuando se requiera operativamente.
+                $facturaFolio = trim((string) ($item['factura_folio'] ?? ''));
+                if ($facturaFolio === '') {
+                    $facturaFolio = $this->facturaFolioDesdeXml($request->file("xml_files.{$idx}"), $parser);
+                }
 
                 $gasto = ReposicionCajaChicaGasto::create([
                     'categoria_id' => $categoria->id,
@@ -393,6 +398,7 @@ class ReposicionCajaChicaController extends Controller
                     'proveedor_nombre' => $item['proveedor_nombre'],
                     'proveedor_id' => $proveedorId,
                     'proveedor_rfc' => $item['proveedor_rfc'] ?? null,
+                    'factura_folio' => $facturaFolio ?: null,
                     'concepto' => $item['concepto'],
                     'forma_pago' => $formaPago,
                     'importe_registrado' => (float) $item['importe_registrado'],
@@ -728,6 +734,25 @@ class ReposicionCajaChicaController extends Controller
     {
         return (bool) $request?->user()?->hasAnyRole(['admin-rivera', 'super-admin']);
     }
+
+    private function facturaFolioDesdeXml($xmlFile, CfdiXmlParserService $parser): string
+    {
+        if (!$xmlFile || !$xmlFile->isValid()) {
+            return '';
+        }
+
+        try {
+            $data = $parser->parse(file_get_contents($xmlFile->getRealPath()));
+        } catch (\Throwable $e) {
+            return '';
+        }
+
+        return trim(implode('-', array_filter([
+            $data['serie'] ?? null,
+            $data['folio'] ?? null,
+        ])));
+    }
+
     private function resolverAmbitoFirmaReposicion(?Request $request = null, $gastos = null, ?string $almacenNombre = null): string
     {
         $ambitosValidos = array_keys($this->opcionesFirmaReposicion());

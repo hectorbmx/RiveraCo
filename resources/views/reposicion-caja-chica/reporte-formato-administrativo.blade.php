@@ -22,12 +22,13 @@
         .meta td { border: 1px solid #1f2937; padding: 5px 7px; height: 23px; }
         .meta .label { width: 90px; background: #e5e7eb; font-weight: 700; }
         .table { width: 100%; border-collapse: collapse; }
-        .table th, .table td { border: 1px solid #1f2937; padding: 2px 5px; height: 18px; line-height: 1.12; vertical-align: top; }
+        .table th, .table td { border: 1px solid #1f2937; padding: 2px 5px; min-height: 18px; line-height: 1.12; vertical-align: top; }
         .table th { background: #c8d8f2 !important; color: #111827; text-transform: uppercase; font-size: 10px; text-align: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .table .small-col { width: 58px; }
         .table .date-col { width: 78px; }
         .table .invoice-col { width: 74px; }
         .table .money-col { width: 82px; text-align: right; }
+        .concept-col { white-space: normal; overflow-wrap: anywhere; word-break: normal; }
         .right { text-align: right; }
         .center { text-align: center; }
         .sum-label { background: #e5e7eb !important; font-weight: 700; text-align: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -112,15 +113,15 @@
 
                             $conceptoOriginal = trim((string) $gasto->concepto);
                             preg_match('/Folio:\s*([A-Za-z0-9\-]+)/i', $conceptoOriginal, $folioMatch);
-                            $factura = $folioMatch[1] ?? (($gasto->categoria?->requiere_factura ?? false) ? 'C/F' : 'S/F');
+                            $factura = $gasto->factura_folio ?: ($folioMatch[1] ?? (($gasto->categoria?->requiere_factura ?? false) ? 'C/F' : 'S/F'));
                             $conceptoImpreso = trim(preg_replace('/Folio:\s*[A-Za-z0-9\-]+\s*/i', '', $conceptoOriginal));
-                            $conceptoImpreso = \Illuminate\Support\Str::limit($conceptoImpreso ?: $conceptoOriginal, 90);
+                            $conceptoImpreso = $conceptoImpreso ?: $conceptoOriginal;
                         @endphp
                         <tr>
                             <td>{{ \Illuminate\Support\Str::limit($gasto->subcategoria->nombre ?? $gasto->categoria->nombre ?? '-', 18) }}</td>
                             <td class="center">{{ optional($gasto->fecha_gasto)->format('d/m/y') }}</td>
                             <td class="center">{{ \Illuminate\Support\Str::limit($factura, 14, '') }}</td>
-                            <td>{{ $conceptoImpreso }}</td>
+                            <td class="concept-col">{{ $conceptoImpreso }}</td>
                             <td class="right">${{ number_format($importe, 2) }}</td>
                         </tr>
                     @endforeach

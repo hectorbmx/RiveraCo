@@ -169,7 +169,8 @@
                             <th class="w-32 px-3 py-2.5 text-left">Fecha</th>
                             <th class="w-56 px-3 py-2.5 text-left">Proveedor</th>
                             <th class="w-36 px-3 py-2.5 text-left">RFC</th>
-                            <th class="min-w-[340px] px-3 py-2.5 text-left">Concepto</th>
+                            <th class="w-36 px-3 py-2.5 text-left">Factura/Folio</th>
+                            <th class="min-w-[320px] px-3 py-2.5 text-left">Concepto</th>
                             <th x-show="isGiraldaSelected" class="w-28 px-3 py-2.5 text-center">¿Activo?</th>
                             <th x-show="isGiraldaSelected" class="w-72 px-3 py-2.5 text-left">Activo</th>
                             <th class="w-44 px-3 py-2.5 text-left">Categoría</th>
@@ -256,6 +257,14 @@
                                             </template>
                                         </div>
                                     </div>
+                                </td>
+
+                                {{-- FACTURA / FOLIO --}}
+                                <td class="px-2 py-2">
+                                    <input type="text" :name="'gastos[' + index + '][factura_folio]'"
+                                           x-model="row.factura_folio"
+                                           placeholder="Folio"
+                                           class="w-full rounded border-slate-300 text-xs py-1 px-1.5 uppercase text-slate-700 focus:ring-1 focus:ring-blue-500">
                                 </td>
 
                                 {{-- CONCEPTO Y MOTIVO --}}
@@ -509,6 +518,7 @@ function reposicionCajaChicaExcel() {
                             proveedor_search_token: '',
                             proveedor_result_source: '',
                             proveedor_dropdown_style: '',
+                            factura_folio: g.factura_folio || '',
                             concepto: g.concepto || '',
                             forma_pago: g.forma_pago || (cat ? cat.forma_pago_base : 'efectivo'),
                             importe_registrado: parseFloat(g.importe_registrado) || 0,
@@ -682,6 +692,7 @@ function reposicionCajaChicaExcel() {
                 proveedor_search_token: '',
                 proveedor_result_source: '',
                             proveedor_dropdown_style: '',
+                factura_folio: '',
                 concepto: '',
                 forma_pago: cat ? cat.forma_pago_base : 'efectivo',
                 importe_registrado: 0,
@@ -775,6 +786,7 @@ function reposicionCajaChicaExcel() {
                         }
 
                         const subs = this.getSubcategorias(cat.id);
+                        const folioFactura = [cfdi.serie, cfdi.folio].filter(Boolean).join('-');
 
                         const newRowIndex = this.rows.length;
 
@@ -796,6 +808,7 @@ function reposicionCajaChicaExcel() {
                             proveedor_search_token: '',
                             proveedor_result_source: '',
                             proveedor_dropdown_style: '',
+                            factura_folio: folioFactura,
                             concepto: cfdi.concepto || 'Gasto con factura',
                             forma_pago: cfdi.forma_pago || 'efectivo',
                             importe_registrado: parseFloat(cfdi.total) || 0,

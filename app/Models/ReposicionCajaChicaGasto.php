@@ -28,6 +28,7 @@ class ReposicionCajaChicaGasto extends Model
         'proveedor_nombre',
         'proveedor_id',
         'proveedor_rfc',
+        'factura_folio',
         'concepto',
         'forma_pago',
         'importe_registrado',
