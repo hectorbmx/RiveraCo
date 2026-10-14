@@ -66,7 +66,7 @@
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm">
-                    <thead class="bg-slate-50 text-left text-slate-600">
+                    <thead class="bg-[#0B265A] text-left text-white">
                         <tr>
                             <th class="px-4 py-3 font-semibold">Folio</th>
                             <th class="px-4 py-3 font-semibold">Proveedor</th>
@@ -94,7 +94,7 @@
                                 </td>
                                 <td class="px-4 py-3 align-top">
                                     @if($orden->proveedor)
-                                        <div class="font-medium text-slate-800">{{ $orden->proveedor->nombre }}</div>
+                                        <a href="{{ route('proveedores.show', $orden->proveedor) }}" class="font-medium text-[#0B265A] hover:underline">{{ $orden->proveedor->nombre }}</a>
                                         @if($orden->proveedor->rfc)
                                             <div class="text-xs text-slate-500">{{ $orden->proveedor->rfc }}</div>
                                         @endif

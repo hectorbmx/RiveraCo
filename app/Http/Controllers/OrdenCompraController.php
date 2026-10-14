@@ -1175,7 +1175,7 @@ public function print(OrdenCompra $orden_compra)
         'L'
     );
 
-    $pdf->SetFont('Arial', '', 7.5);
+    $pdf->SetFont('Arial', 'B', 7.5);
     $pdf->Cell(
         $leftWidth - 88,
         5,
@@ -1186,7 +1186,7 @@ public function print(OrdenCompra $orden_compra)
     );
 
     $pdf->SetXY($X0 + 2, $Y + 10);
-    $pdf->SetFont('Arial', '', 7.5);
+    $pdf->SetFont('Arial', 'B', 7.5);
     $pdf->Cell(
         $leftWidth,
         5,
