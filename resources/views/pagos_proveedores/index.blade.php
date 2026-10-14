@@ -224,6 +224,10 @@
                                     : '') . $oc->centroCosto->nombre)
                                 : 'Compra general');
 
+                        $ocAutorizada = (bool) ($oc?->fecha_autorizacion || $oc?->autorizado_por || $oc?->usuario_autoriza);
+                        $pagoAutorizado = (bool) ($pago->autorizado_at || $pago->autorizado_by || in_array($pago->estatus, ['autorizado', 'pagado'], true));
+                        $pagoEjecutado = $pago->estatus === 'pagado';
+
                         $detallePago = [
                             'folio' => $oc?->folio,
                             'proveedor' => $pago->proveedor?->nombre,
@@ -241,6 +245,43 @@
                             'observaciones' => $pago->observaciones,
                             'programado_por' => $pago->programadoPor?->name,
                             'created_at' => optional($pago->created_at)->format('d/m/Y H:i'),
+                            'historial' => [
+                                [
+                                    'titulo' => 'Orden de compra creada',
+                                    'fecha' => optional($oc?->created_at)->format('d/m/Y H:i') ?: optional($oc?->fecha)->format('d/m/Y'),
+                                    'usuario' => $oc?->registradoPor?->name ?? $oc?->usuario_registro,
+                                    'estado' => $oc ? 'Completado' : 'Sin OC',
+                                    'completado' => (bool) $oc,
+                                ],
+                                [
+                                    'titulo' => 'Orden de compra autorizada',
+                                    'fecha' => optional($oc?->fecha_autorizacion)->format('d/m/Y'),
+                                    'usuario' => $oc?->autorizadoPor?->name ?? $oc?->usuario_autoriza,
+                                    'estado' => $ocAutorizada ? 'Completado' : 'Pendiente',
+                                    'completado' => $ocAutorizada,
+                                ],
+                                [
+                                    'titulo' => 'Pago programado',
+                                    'fecha' => optional($pago->created_at)->format('d/m/Y H:i'),
+                                    'usuario' => $pago->programadoPor?->name,
+                                    'estado' => 'Completado',
+                                    'completado' => true,
+                                ],
+                                [
+                                    'titulo' => 'Pago autorizado',
+                                    'fecha' => optional($pago->autorizado_at)->format('d/m/Y H:i'),
+                                    'usuario' => $pago->autorizadoPor?->name,
+                                    'estado' => $pagoAutorizado ? 'Completado' : 'Pendiente',
+                                    'completado' => $pagoAutorizado,
+                                ],
+                                [
+                                    'titulo' => 'Pago ejecutado',
+                                    'fecha' => optional($pago->pagado_at)->format('d/m/Y H:i') ?: optional($pago->fecha_pago)->format('d/m/Y'),
+                                    'usuario' => $pago->pagadoPor?->name,
+                                    'estado' => $pagoEjecutado ? 'Completado' : 'Pendiente',
+                                    'completado' => $pagoEjecutado,
+                                ],
+                            ],
                         ];
                     @endphp
 
@@ -466,6 +507,36 @@
                     <p class="text-xs font-semibold text-slate-500">Observaciones</p>
                     <p class="whitespace-pre-line text-slate-900"
                        x-text="pago?.observaciones || '-'"></p>
+                </div>
+
+                <div class="md:col-span-2 border-t border-slate-200 pt-4">
+                    <p class="mb-3 text-xs font-semibold text-slate-500">Historial</p>
+
+                    <ol class="space-y-3">
+                        <template x-for="item in (pago?.historial || [])" :key="item.titulo">
+                            <li class="flex gap-3">
+                                <span class="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
+                                      :class="item.completado ? 'bg-green-500' : 'bg-slate-300'"></span>
+
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <p class="font-semibold text-slate-900"
+                                           x-text="item.titulo"></p>
+
+                                        <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                                              :class="item.completado ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'"
+                                              x-text="item.estado"></span>
+                                    </div>
+
+                                    <p class="text-xs text-slate-500">
+                                        <span x-text="item.fecha || 'Sin fecha'"></span>
+                                        <span class="text-slate-300"> | </span>
+                                        <span x-text="item.usuario || 'Sin usuario registrado'"></span>
+                                    </p>
+                                </div>
+                            </li>
+                        </template>
+                    </ol>
                 </div>
             </div>
         </div>

@@ -56,7 +56,7 @@ class ProveedorController extends Controller
     {
         $data = $request->validate($this->rulesProveedor(), $this->messagesProveedor());
 
-        // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Bloquear RFC + domicilio duplicado
+        // Bloquear RFC + domicilio duplicado
         $rfc = $data['rfc'] ?? null;
         $dom = $data['domicilio'] ?? null;
 
@@ -107,6 +107,7 @@ class ProveedorController extends Controller
             'banco'      => ['nullable','string','max:100'],
             'clabe'      => ['nullable','regex:/^[0-9]{18}$/'],
             'cuenta'     => ['nullable','string','max:50'],
+            'dias_credito' => ['nullable','integer','min:0','max:3650'],
             'activo'     => ['nullable','boolean'],
             'fecha_registro' => ['nullable','date'],
         ];
@@ -125,7 +126,7 @@ class ProveedorController extends Controller
 {
     $tab = $request->get('tab', 'general');
 
-    // Cargas por tab (evita cargar de mÃƒÆ’Ã‚Â¡s)
+    // Cargas por tab (evita cargar de mas)
     if ($tab === 'productos') {
         $proveedor->load(['productos' => function ($q) {
             $q->orderBy('productos.nombre');
@@ -230,7 +231,7 @@ class ProveedorController extends Controller
     {
         $data = $request->validate($this->rulesProveedor(), $this->messagesProveedor());
 
-        // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Bloquear RFC + domicilio duplicado (ignorando el mismo registro)
+        // Bloquear RFC + domicilio duplicado (ignorando el mismo registro)
         $rfc = $data['rfc'] ?? null;
         $dom = $data['domicilio'] ?? null;
 
@@ -284,7 +285,7 @@ class ProveedorController extends Controller
             })
             ->orderBy('nombre')
             ->limit(15)
-            ->get(['id','nombre','descripcion','rfc']);
+            ->get(['id','nombre','descripcion','rfc','dias_credito']);
 
         $payload = $proveedores->map(function ($p) {
             $label = $p->nombre
@@ -296,6 +297,7 @@ class ProveedorController extends Controller
                 'id'    => $p->id,
                 'nombre' => $label,
                 'rfc'   => $p->rfc,
+                'dias_credito' => (int) ($p->dias_credito ?? 0),
             ];
         });
 

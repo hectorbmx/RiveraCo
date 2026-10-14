@@ -21,6 +21,10 @@
 
         <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">Orden de compra</label>
+            <input type="search"
+                   id="orden_compra_search"
+                   class="mb-2 w-full rounded-xl border-slate-300 text-sm"
+                   placeholder="Buscar por folio, proveedor, destino o monto...">
             <select name="orden_compra_id" id="orden_compra_id" class="w-full rounded-xl border-slate-300" required>
                 <option value="">Selecciona orden</option>
                 @foreach($ordenes as $oc)
@@ -31,6 +35,8 @@
                     <option value="{{ $oc->id }}"
                             data-monto="{{ $oc->total }}"
                             data-moneda="{{ $oc->moneda ?? 'MXN' }}"
+                            data-fecha-oc="{{ optional($oc->fecha)->format('Y-m-d') }}"
+                            data-dias-credito="{{ (int) ($oc->proveedor?->dias_credito ?? 0) }}"
                             @selected(old('orden_compra_id', $ordenSeleccionada?->id) == $oc->id)>
                         {{ $oc->folio }} | {{ $oc->proveedor->nombre ?? '-' }} | {{ $destino }} | ${{ number_format($oc->total, 2) }}
                     </option>
@@ -42,8 +48,18 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Fecha probable de pago</label>
-                <input type="date" name="fecha_programada" value="{{ old('fecha_programada', now()->toDateString()) }}"
+                @php
+                    $fechaSugeridaInicial = $ordenSeleccionada?->fecha
+                        ? $ordenSeleccionada->fecha->copy()->addDays((int) ($ordenSeleccionada->proveedor?->dias_credito ?? 0))->toDateString()
+                        : now()->toDateString();
+                @endphp
+                <input type="date" name="fecha_programada" id="fecha_programada"
+                       data-has-old-value="{{ old('fecha_programada') ? '1' : '0' }}"
+                       value="{{ old('fecha_programada', $fechaSugeridaInicial) }}"
                        class="w-full rounded-xl border-slate-300" required>
+                <p id="fecha_sugerida_hint" class="mt-1 text-xs text-slate-500">
+                    Selecciona una orden para calcular la fecha sugerida con los dias de credito del proveedor.
+                </p>
                 @error('fecha_programada')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
             </div>
 
@@ -100,13 +116,85 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const select = document.getElementById('orden_compra_id');
+    const search = document.getElementById('orden_compra_search');
     const monto = document.getElementById('monto');
-    select?.addEventListener('change', () => {
+    const fechaProgramada = document.getElementById('fecha_programada');
+    const fechaHint = document.getElementById('fecha_sugerida_hint');
+    const originalOptions = Array.from(select?.options || []);
+
+    function formatDateMx(date) {
+        return date.toLocaleDateString('es-MX', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    }
+
+    function syncOrdenSeleccionada() {
         const option = select.selectedOptions[0];
+        if (!option?.value) {
+            if (monto) monto.value = '';
+            if (fechaHint) {
+                fechaHint.textContent = 'Selecciona una orden para calcular la fecha sugerida con los dias de credito del proveedor.';
+            }
+            return;
+        }
+
         if (option?.dataset?.monto) {
             monto.value = Number(option.dataset.monto).toFixed(2);
         }
+
+        if (!fechaProgramada || !fechaHint) return;
+
+        const fechaOc = option?.dataset?.fechaOc;
+        const diasCredito = Number(option?.dataset?.diasCredito || 0);
+
+        if (!fechaOc) {
+            fechaHint.textContent = 'Selecciona una orden para calcular la fecha sugerida con los dias de credito del proveedor.';
+            return;
+        }
+
+        const fechaSugerida = new Date(`${fechaOc}T00:00:00`);
+        if (Number.isNaN(fechaSugerida.getTime())) {
+            fechaHint.textContent = 'No se pudo calcular la fecha sugerida para esta orden.';
+            return;
+        }
+
+        fechaSugerida.setDate(fechaSugerida.getDate() + diasCredito);
+        const fechaIso = fechaSugerida.toISOString().slice(0, 10);
+        if (fechaProgramada.dataset.hasOldValue !== '1') {
+            fechaProgramada.value = fechaIso;
+        }
+        fechaProgramada.dataset.hasOldValue = '0';
+        fechaHint.textContent = `Sugerido: ${formatDateMx(fechaSugerida)} (${diasCredito} dia${diasCredito === 1 ? '' : 's'} de credito desde la fecha de la OC).`;
+    }
+
+    select?.addEventListener('change', syncOrdenSeleccionada);
+    search?.addEventListener('input', () => {
+        const term = search.value.trim().toLowerCase();
+        const currentValue = select.value;
+
+        select.innerHTML = '';
+        originalOptions.forEach((option) => {
+            const isPlaceholder = option.value === '';
+            const matches = isPlaceholder || option.textContent.toLowerCase().includes(term);
+
+            if (matches) {
+                select.appendChild(option);
+            }
+        });
+
+        if (currentValue && Array.from(select.options).some((option) => option.value === currentValue)) {
+            select.value = currentValue;
+        } else {
+            select.value = '';
+        }
+        syncOrdenSeleccionada();
     });
+
+    if (select?.value) {
+        syncOrdenSeleccionada();
+    }
 });
 </script>
 @endsection

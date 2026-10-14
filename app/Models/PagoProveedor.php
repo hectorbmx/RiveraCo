@@ -54,4 +54,14 @@ class PagoProveedor extends Model
     {
         return $this->belongsTo(User::class, 'programado_by');
     }
+
+    public function autorizadoPor()
+    {
+        return $this->belongsTo(User::class, 'autorizado_by');
+    }
+
+    public function pagadoPor()
+    {
+        return $this->belongsTo(User::class, 'pagado_by');
+    }
 }

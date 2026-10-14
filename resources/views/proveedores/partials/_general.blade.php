@@ -64,6 +64,11 @@
     </div>
 
     <div>
+        <p class="text-xs font-semibold text-slate-500">Dias de credito</p>
+        <p class="text-slate-900">{{ (int) ($proveedor->dias_credito ?? 0) }} dias</p>
+    </div>
+
+    <div>
         <p class="text-xs font-semibold text-slate-500">Banco</p>
         <p class="text-slate-900">{{ $proveedor->banco ?? '-' }}</p>
     </div>

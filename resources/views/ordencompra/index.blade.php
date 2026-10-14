@@ -330,12 +330,13 @@
     <div class="bg-white rounded-2xl shadow overflow-x-auto">
         <table class="w-full text-sm">
             <thead>
-                <tr class="bg-slate-50 border-b text-slate-500 font-medium">
+                <tr class="bg-[#0B265A] border-b border-[#0B265A] text-white font-medium">
                     <th class="py-3 px-4 text-center">Folio</th>
                     <th class="py-3 px-4 text-left">Proveedor</th>
                     <th class="py-3 px-4 text-left">Área</th>
                     <th class="py-3 px-4 text-left">Destino</th>
                     <th class="py-3 px-4 text-center">Fecha</th>
+                    <th class="py-3 px-4 text-center">Pago sugerido</th>
                     <th class="py-3 px-4 text-center">Estado</th>
                     <th class="py-3 px-4 text-center">F.Pago</th>
                     <th class="py-3 px-4 text-right">Total</th>
@@ -379,7 +380,10 @@
                     <td class="py-3 px-4">{{ $oc->areaCatalogo->nombre ?? $oc->area }}</td>
                     <td class="py-3 px-4">
                         @if($oc->obra)
-                            <span class="text-slate-700">{{ $oc->obra->nombre }}</span>
+                            <a href="{{ route('obras.edit', $oc->obra) }}"
+                               class="font-semibold text-blue-700 hover:text-blue-900 hover:underline">
+                                {{ $oc->obra->nombre }}
+                            </a>
                         @elseif($oc->centroCosto)
                             <span class="text-slate-700">{{ $oc->centroCosto->codigo ? $oc->centroCosto->codigo . ' - ' : '' }}{{ $oc->centroCosto->nombre }}</span>
                         @else
@@ -387,6 +391,18 @@
                         @endif
                     </td>
                     <td class="py-3 px-4 text-center text-slate-600">{{ $oc->fecha->format('d/m/Y') }}</td>
+                    <td class="py-3 px-4 text-center text-slate-600">
+                        @if($oc->proveedor && $oc->fecha)
+                            @php
+                                $diasCredito = (int) ($oc->proveedor->dias_credito ?? 0);
+                                $fechaPagoSugerida = $oc->fecha->copy()->addDays($diasCredito);
+                            @endphp
+                            <div class="font-semibold text-slate-800">{{ $fechaPagoSugerida->format('d/m/Y') }}</div>
+                            <div class="text-[11px] text-slate-400">{{ $diasCredito }} dias credito</div>
+                        @else
+                            <span class="text-slate-400">-</span>
+                        @endif
+                    </td>
                     <td class="py-3 px-4 text-center">
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border {{ $estadoBadge($oc->estado_normalizado) }}">
                             {{ ucfirst($oc->estado) }}

@@ -2,7 +2,13 @@
 
 @section('content')
 <div class="w-full px-5 py-5">
-    <h1 class="mb-4 text-xl font-semibold text-slate-900">Nueva orden de compra</h1>
+    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 class="text-xl font-semibold text-slate-900">Nueva orden de compra</h1>
+        <a href="{{ route('ordenes_compra.index', request('area_codigo') ? ['area_codigo' => request('area_codigo')] : []) }}"
+           class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+            Regresar a ordenes
+        </a>
+    </div>
 
     <form method="POST" action="{{ route('ordenes_compra.store') }}" class="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm" data-loading-form data-loading-message="Creando orden de compra...">
         @csrf
@@ -928,7 +934,7 @@
 
             <div>
                 <label>Fecha</label>
-                <input type="date" name="fecha" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value="{{ date('Y-m-d') }}">
+                <input type="date" name="fecha" id="fecha_oc" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value="{{ date('Y-m-d') }}">
             </div>
 
             <div>
@@ -983,6 +989,20 @@
                     <option value="28">28 - Tarjeta de debito</option>
                     <option value="99">99 - Por definir</option>
                 </select>
+            </div>
+
+            <div id="proveedor_credito_field" class="xl:col-span-2">
+                <label class="block text-sm font-medium mb-1">Fecha sugerida de pago</label>
+                <input
+                    type="text"
+                    id="proveedor_fecha_pago_input"
+                    value="Selecciona un proveedor"
+                    readonly
+                    class="w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+                >
+                <p id="proveedor_credito_note" class="mt-1 text-xs text-slate-500">
+                    Se calcula con la fecha de la OC y los dias de credito del proveedor.
+                </p>
             </div>
         </div>
 
@@ -1074,6 +1094,9 @@
     const hiddenId = document.getElementById('proveedor_id');
     const hiddenTxt = document.getElementById('proveedor_texto');
     const box = document.getElementById('proveedor_resultados');
+    const fechaOc = document.getElementById('fecha_oc');
+    const fechaPagoInput = document.getElementById('proveedor_fecha_pago_input');
+    const creditoNote = document.getElementById('proveedor_credito_note');
 
     console.log('Elementos encontrados:', {
         input: !!input,
@@ -1091,6 +1114,44 @@
 
     let timer = null;
     let lastFetchController = null;
+    let selectedDiasCredito = null;
+
+    function formatDateMx(date) {
+        return date.toLocaleDateString('es-MX', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    }
+
+    function syncCreditoHint() {
+        if (!fechaPagoInput || !creditoNote) return;
+
+        if (selectedDiasCredito === null || !hiddenId.value) {
+            fechaPagoInput.value = 'Selecciona un proveedor';
+            creditoNote.textContent = 'Se calcula con la fecha de la OC y los dias de credito del proveedor.';
+            fechaPagoInput.classList.remove('border-blue-200', 'bg-blue-50', 'text-blue-900');
+            fechaPagoInput.classList.add('border-slate-300', 'bg-slate-50', 'text-slate-700');
+            return;
+        }
+
+        const dias = Number(selectedDiasCredito || 0);
+        creditoNote.textContent = `Credito del proveedor: ${dias} dia${dias === 1 ? '' : 's'}. Puedes usar esta fecha como referencia al programar el pago.`;
+        fechaPagoInput.classList.remove('border-slate-300', 'bg-slate-50', 'text-slate-700');
+        fechaPagoInput.classList.add('border-blue-200', 'bg-blue-50', 'text-blue-900');
+
+        if (fechaOc?.value) {
+            const baseDate = new Date(`${fechaOc.value}T00:00:00`);
+            if (!Number.isNaN(baseDate.getTime())) {
+                baseDate.setDate(baseDate.getDate() + dias);
+                fechaPagoInput.value = formatDateMx(baseDate);
+            } else {
+                fechaPagoInput.value = 'Fecha de OC no valida';
+            }
+        } else {
+            fechaPagoInput.value = 'Captura la fecha de la OC';
+        }
+    }
 
     function closeBox() {
         console.log('🔒 Cerrando dropdown');
@@ -1103,11 +1164,13 @@
         box.classList.remove('hidden');
     }
 
-    function setSelected(id, nombre) {
-        console.log('✅ Proveedor seleccionado:', { id, nombre });
+    function setSelected(id, nombre, diasCredito) {
+        console.log('✅ Proveedor seleccionado:', { id, nombre, diasCredito });
         hiddenId.value = id;
         input.value = nombre;
         if (hiddenTxt) hiddenTxt.value = nombre;
+        selectedDiasCredito = Number(diasCredito || 0);
+        syncCreditoHint();
         closeBox();
     }
 
@@ -1125,9 +1188,11 @@
                 class="w-full text-left px-3 py-2 hover:bg-slate-50 border-b last:border-b-0"
                 data-id="${i.id}"
                 data-nombre="${String(i.nombre || '').replace(/"/g, '&quot;')}"
+                data-dias-credito="${Number(i.dias_credito || 0)}"
             >
                 <div class="font-medium">${i.nombre ?? ''}</div>
                 ${i.rfc ? `<div class="text-xs text-slate-500">RFC: ${i.rfc}</div>` : ``}
+                <div class="text-xs text-blue-700">${Number(i.dias_credito || 0)} dias credito</div>
             </button>
         `).join('');
 
@@ -1135,7 +1200,7 @@
 
         box.querySelectorAll('button[data-id]').forEach(btn => {
             btn.addEventListener('click', () => {
-                setSelected(btn.dataset.id, btn.dataset.nombre);
+                setSelected(btn.dataset.id, btn.dataset.nombre, btn.dataset.diasCredito);
             });
         });
     }
@@ -1193,6 +1258,8 @@
         console.log('⌨️ Input evento:', q, '(length:', q.length, ')');
 
         hiddenId.value = '';
+        selectedDiasCredito = null;
+        syncCreditoHint();
         if (hiddenTxt) hiddenTxt.value = q;
 
         clearTimeout(timer);
@@ -1202,6 +1269,8 @@
             search(q);
         }, 250);
     });
+
+    fechaOc?.addEventListener('change', syncCreditoHint);
 
     document.addEventListener('click', (e) => {
         if (!box.contains(e.target) && e.target !== input) {

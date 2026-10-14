@@ -29,6 +29,7 @@ class Proveedor extends Model
         'banco',
         'clabe',
         'cuenta',
+        'dias_credito',
         'activo',
         'fecha_registro',
     ];
@@ -37,6 +38,7 @@ class Proveedor extends Model
         'activo' => 'boolean',
         'fecha_registro' => 'date',
         'legacy_id' => 'integer',
+        'dias_credito' => 'integer',
     ];
 
     /**
@@ -48,7 +50,6 @@ class Proveedor extends Model
         'codigo',
         'razon_social',
         'contacto_nombre',
-        'dias_credito',
         'moneda_preferida',
         'notas',
     ];
@@ -137,9 +138,6 @@ class Proveedor extends Model
     {
         $this->attributes['nombre_contacto'] = $value;
     }
-
-    public function getDiasCreditoAttribute(): int { return 0; }
-    public function setDiasCreditoAttribute($value): void { /* noop */ }
 
     public function getMonedaPreferidaAttribute(): string { return 'MXN'; }
     public function setMonedaPreferidaAttribute($value): void { /* noop */ }

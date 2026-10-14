@@ -450,8 +450,8 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/PagoProveedorController.php": {
-    "mtime": 1791862256.7415504,
-    "ast_hash": "1841689c1319e6545777feb535f9a0d0",
+    "mtime": 1791954889.309659,
+    "ast_hash": "d1e6d0d6b2d69cd396fc99f711d9481b",
     "semantic_hash": ""
   },
   "app/Http/Controllers/PresupuestoController.php": {
@@ -475,8 +475,8 @@
     "semantic_hash": "22a94a3559616b0a5db4f2548c59dcd4"
   },
   "app/Http/Controllers/ProveedorController.php": {
-    "mtime": 1791862256.7425513,
-    "ast_hash": "8c42e384a20aadb83e02a81cddfaee84",
+    "mtime": 1791953947.4357474,
+    "ast_hash": "0deb78a90381a26136b172cbcfdba660",
     "semantic_hash": ""
   },
   "app/Http/Controllers/ReportesController.php": {
@@ -1035,9 +1035,9 @@
     "semantic_hash": ""
   },
   "app/Models/PagoProveedor.php": {
-    "mtime": 1791862256.8032198,
-    "ast_hash": "36cd24bfa602b3091f925c136a3ca39f",
-    "semantic_hash": "36cd24bfa602b3091f925c136a3ca39f"
+    "mtime": 1791954888.427671,
+    "ast_hash": "0fe5ac0ae2eacf3ba6f39dbdc4c4c438",
+    "semantic_hash": ""
   },
   "app/Models/PlaneacionGasto.php": {
     "mtime": 1791862256.8043904,
@@ -1080,8 +1080,8 @@
     "semantic_hash": "d208fd9a26b055543004466f5bc7ecee"
   },
   "app/Models/Proveedor.php": {
-    "mtime": 1791862256.807443,
-    "ast_hash": "38d7a5756ae0e6d8152be3ca2bfa7ffc",
+    "mtime": 1791952891.9892197,
+    "ast_hash": "ecc7dc0387ab56968b97a862f1524d28",
     "semantic_hash": ""
   },
   "app/Models/SatCaptchaSession.php": {
@@ -3010,8 +3010,8 @@
     "semantic_hash": ""
   },
   "resources/views/ordencompra/create.blade.php": {
-    "mtime": 1791862257.4574304,
-    "ast_hash": "9bc11be3d2f8426ace288978cd0b6ab5",
+    "mtime": 1791954094.7191665,
+    "ast_hash": "5269f505bae46a855ef658ca6d3c2cb6",
     "semantic_hash": ""
   },
   "resources/views/ordencompra/edit.blade.php": {
@@ -3020,8 +3020,8 @@
     "semantic_hash": ""
   },
   "resources/views/ordencompra/index.blade.php": {
-    "mtime": 1791862257.4594882,
-    "ast_hash": "99bd32397e5660615e3092250480c0c3",
+    "mtime": 1791953761.1091325,
+    "ast_hash": "62ff2b00d30a2c8f084fb1b6d9c2ef15",
     "semantic_hash": ""
   },
   "resources/views/ordencompra/show.blade.php": {
@@ -3030,13 +3030,13 @@
     "semantic_hash": "afa0c6675780276dda61552cfd1570d7"
   },
   "resources/views/pagos_proveedores/create.blade.php": {
-    "mtime": 1791862257.4605224,
-    "ast_hash": "bcded77a9bbca7c908576c21f677965a",
-    "semantic_hash": "bcded77a9bbca7c908576c21f677965a"
+    "mtime": 1791954463.8267682,
+    "ast_hash": "7208bcb01d6582672bd5a12e822520fa",
+    "semantic_hash": ""
   },
   "resources/views/pagos_proveedores/index.blade.php": {
-    "mtime": 1791862257.4605224,
-    "ast_hash": "4e9dfb8a5c03159c908f06d5088cb45e",
+    "mtime": 1791954890.2017226,
+    "ast_hash": "ca764575407040883f07f9c22445d67e",
     "semantic_hash": ""
   },
   "resources/views/presupuesto/index.blade.php": {
@@ -3115,14 +3115,14 @@
     "semantic_hash": "c9156f32835748d4363915972a190cfd"
   },
   "resources/views/proveedores/create.blade.php": {
-    "mtime": 1791862257.4703488,
-    "ast_hash": "cef5157065f1d91dbc10dd4dfcb25f85",
-    "semantic_hash": "cef5157065f1d91dbc10dd4dfcb25f85"
+    "mtime": 1791953314.0818584,
+    "ast_hash": "f24a7080393def45d25c72b87ab6bde4",
+    "semantic_hash": ""
   },
   "resources/views/proveedores/edit.blade.php": {
-    "mtime": 1791862257.4713483,
-    "ast_hash": "72f8d33b7207a08b74078cc17ede53d2",
-    "semantic_hash": "72f8d33b7207a08b74078cc17ede53d2"
+    "mtime": 1791953313.2310808,
+    "ast_hash": "97c9256582e8317bfeb4cfd797c99149",
+    "semantic_hash": ""
   },
   "resources/views/proveedores/facturas/show.blade.php": {
     "mtime": 1791862257.4713483,
@@ -3130,8 +3130,8 @@
     "semantic_hash": "6e09dd43b43c94a240b78bd6505cd9c7"
   },
   "resources/views/proveedores/index.blade.php": {
-    "mtime": 1791862257.472338,
-    "ast_hash": "cf5823f9bb0134b648c3403a3662f209",
+    "mtime": 1791953311.5621586,
+    "ast_hash": "f2364a27211e6b12b9f44029a8249c94",
     "semantic_hash": ""
   },
   "resources/views/proveedores/pagos-programados/index.blade.php": {
@@ -3145,9 +3145,9 @@
     "semantic_hash": "75bc69787b717919ac9f8374790aa202"
   },
   "resources/views/proveedores/partials/_general.blade.php": {
-    "mtime": 1791862257.4733331,
-    "ast_hash": "0c04fe443426167c66f3a0218ea3e110",
-    "semantic_hash": "0c04fe443426167c66f3a0218ea3e110"
+    "mtime": 1791953312.430638,
+    "ast_hash": "3bbec670bea3144a409c2f590efaf21c",
+    "semantic_hash": ""
   },
   "resources/views/proveedores/partials/_ordenes.blade.php": {
     "mtime": 1791862257.4748416,
@@ -5762,6 +5762,11 @@
   "public/images/logoAzul1.png": {
     "mtime": 1791862257.295269,
     "ast_hash": "d8d96b10530292205d4bff31254be000",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_10_13_000002_add_dias_credito_to_proveedores_table.php": {
+    "mtime": 1791952891.1354496,
+    "ast_hash": "ad56c019fbf13a2e6da16f17cd88fd1b",
     "semantic_hash": ""
   }
 }

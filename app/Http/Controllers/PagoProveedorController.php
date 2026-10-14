@@ -62,9 +62,13 @@ class PagoProveedorController extends Controller
         ->with([
             'ordenCompra.obra',
             'ordenCompra.centroCosto',
+            'ordenCompra.registradoPor',
+            'ordenCompra.autorizadoPor',
             'proveedor',
             'cuentaBancoEmpresa',
             'programadoPor',
+            'autorizadoPor',
+            'pagadoPor',
         ])
         ->when($fechaInicio, fn ($q) =>
             $q->whereDate('fecha_programada', '>=', $fechaInicio->toDateString())

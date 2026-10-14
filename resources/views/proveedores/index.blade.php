@@ -110,6 +110,7 @@
                     <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500">Proveedor</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500">RFC</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500">Teléfono</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500">Credito</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500">Estatus</th>
                     <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500">Acciones</th>
                 </tr>
@@ -132,6 +133,9 @@
 
                         <td class="px-4 py-3">{{ $p->rfc ?? '-' }}</td>
                         <td class="px-4 py-3">{{ $p->telefono ?? '-' }}</td>
+                        <td class="px-4 py-3 text-center whitespace-nowrap">
+                            {{ (int) ($p->dias_credito ?? 0) }} dias
+                        </td>
 
                         <td class="px-4 py-3">
                             @if($p->activo)
@@ -171,7 +175,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-6 text-center text-slate-500">
+                        <td colspan="7" class="px-4 py-6 text-center text-slate-500">
                             No hay proveedores con los filtros seleccionados.
                         </td>
                     </tr>

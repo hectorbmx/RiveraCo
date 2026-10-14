@@ -139,6 +139,29 @@
                 @enderror
             </div>
 
+            <div class="max-w-xs">
+                <label class="block text-sm font-medium text-slate-700">
+                    Dias de credito
+                </label>
+
+                <input type="number"
+                       name="dias_credito"
+                       min="0"
+                       max="3650"
+                       step="1"
+                       value="{{ old('dias_credito', 0) }}"
+                       class="mt-1 block w-full rounded-xl border-slate-200 shadow-sm
+                              focus:border-[#FFC107] focus:ring-[#FFC107]">
+
+                <p class="mt-1 text-xs text-slate-500">
+                    Se usara para sugerir la fecha esperada de pago.
+                </p>
+
+                @error('dias_credito')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
             {{-- Datos fiscales --}}
             <div class="border-t pt-5">
                 <h2 class="text-sm font-semibold text-slate-700 mb-4 uppercase tracking-wide">
