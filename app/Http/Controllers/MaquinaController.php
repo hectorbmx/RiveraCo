@@ -263,6 +263,39 @@ public function guardarHoras(Request $request, Maquina $maquina, MaquinaHorometr
     return back()->with('success', 'Horometro ajustado correctamente.');
 }
 
+public function bajaDeObra(Request $request, Maquina $maquina, MaquinaService $maquinaService)
+{
+    abort_unless($request->user()?->can('baja_maquinas.access'), 403);
+
+    $data = $request->validate([
+        'fecha_fin' => ['nullable', 'date'],
+    ]);
+
+    $asignacion = $maquina->asignacionActiva()->with('obra')->first();
+
+    if (! $asignacion) {
+        return back()->withErrors([
+            'general' => 'La máquina no tiene una asignación activa a una obra.',
+        ]);
+    }
+
+    $obraNombre = $asignacion->obra?->nombre ?? 'la obra actual';
+
+    try {
+        $maquinaService->finalizarAsignacion($asignacion, [
+            'fecha_fin' => $data['fecha_fin'] ?? now()->toDateString(),
+        ]);
+
+        return back()->with(
+            'success',
+            "La máquina fue dada de baja de {$obraNombre} y quedó en patio."
+        );
+    } catch (\Throwable $e) {
+        return back()->withErrors([
+            'general' => $e->getMessage(),
+        ]);
+    }
+}
 public function asignarObra(Request $request, Maquina $maquina, MaquinaService $maquinaService)
 {
     $data = $request->validate([

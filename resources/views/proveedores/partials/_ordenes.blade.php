@@ -37,25 +37,34 @@
 
 <div class="overflow-hidden rounded-xl border border-slate-200">
     <table class="min-w-full text-sm">
-        <thead class="bg-slate-50 border-b border-slate-200">
+        <thead class="bg-[#0B265A] border-b border-[#0B265A]">
             <tr>
-                <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Folio</th>
-                <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Obra</th>
-                <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Área</th>
-                <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Fecha</th>
-                <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Estado</th>
-                <th class="px-4 py-2 text-right text-xs font-semibold text-slate-500">Total</th>
-                <th class="px-4 py-2 text-right text-xs font-semibold text-slate-500">Acción</th>
+                <th class="px-4 py-2 text-left text-xs font-semibold text-white">Folio</th>
+                <th class="px-4 py-2 text-left text-xs font-semibold text-white">Obra</th>
+                <th class="px-4 py-2 text-left text-xs font-semibold text-white">Área</th>
+                <th class="px-4 py-2 text-center text-xs font-semibold text-white">Fecha</th>
+                <th class="px-4 py-2 text-center text-xs font-semibold text-white">Estado</th>
+                <th class="px-4 py-2 text-center text-xs font-semibold text-white">Pago programado</th>
+                <th class="px-4 py-2 text-center text-xs font-semibold text-white">Pago ejecutado</th>
+                <th class="px-4 py-2 text-right text-xs font-semibold text-white">Total</th>
+                <th class="px-4 py-2 text-right text-xs font-semibold text-white">Acción</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
             @forelse($ordenes as $oc)
+                @php($pagoActivo = $oc->pagosProveedor->first())
                 <tr class="hover:bg-slate-50/60">
                     <td class="px-4 py-2 font-semibold">{{ $oc->folio ?? ('OC-' . $oc->id) }}</td>
                     <td class="px-4 py-2">{{ $oc->obra->nombre ?? '-' }}</td>
                     <td class="px-4 py-2">{{ $oc->areaCatalogo->nombre ?? ($oc->area ?? '-') }}</td>
                     <td class="px-4 py-2 text-center">{{ $oc->fecha }}</td>
                     <td class="px-4 py-2 text-center capitalize">{{ $oc->estado_normalizado ?? $oc->estado }}</td>
+                    <td class="px-4 py-2 text-center">
+                        {{ $pagoActivo?->fecha_programada?->format('d/m/Y') ?? 'Sin programar' }}
+                    </td>
+                    <td class="px-4 py-2 text-center">
+                        {{ $pagoActivo?->fecha_pago?->format('d/m/Y') ?? 'No ejecutado' }}
+                    </td>
                     <td class="px-4 py-2 text-right">${{ number_format((float)$oc->total, 2) }}</td>
                     <td class="px-4 py-2 text-right">
                         <a class="text-blue-600 hover:underline"
@@ -66,7 +75,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="px-4 py-6 text-center text-slate-500">
+                    <td colspan="9" class="px-4 py-6 text-center text-slate-500">
                         No hay órdenes para este proveedor con los filtros actuales.
                     </td>
                 </tr>

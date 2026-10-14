@@ -137,6 +137,7 @@
                             $nombreMaquina = trim(($m->codigo ?? '') . ' ' . ($m->nombre ?? '')) ?: 'Maquina';
                             $canRegistrarHoras = auth()->user()?->can('maquinas.horas.create.access') ?? false;
                             $canAsignarObra = auth()->user()?->can('maquinas.asignar_obra.access') ?? false;
+                            $puedeDarBaja = auth()->user()?->can('baja_maquinas.access') ?? false;
                             $puedeRegistrarHoras = $canRegistrarHoras && $horometroActual !== null;
                             $tienePilasActivasEnObra = false;
                             $puedeAsignarObra = $canAsignarObra
@@ -155,6 +156,11 @@
                                 'action' => route('maquinas.asignarObra', $m),
                                 'maquina' => $nombreMaquina,
                                 'horometroInicio' => (float) ($horometroActual ?? $m->horometro_base ?? 0),
+                            ], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) : '{}';
+                            $bajaObraPayload = ($puedeDarBaja && $asignacionActiva) ? json_encode([
+                                'action' => route('maquinas.bajaObra', $m),
+                                'maquina' => $nombreMaquina,
+                                'obra' => $asignacionActiva->obra?->nombre ?? 'Obra actual',
                             ], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) : '{}';
 
                             if ($m->seguros && $m->seguros->isNotEmpty()) {
@@ -224,11 +230,18 @@
                                         : 'bg-emerald-50 text-emerald-700 border-emerald-200';
                                 @endphp
 
-                                @if($obraActual)
-                                    <a href="{{ route('obras.edit', ['obra' => $obraActual->id]) }}"
-                                       class="font-medium text-[#0B265A] hover:text-blue-700 hover:underline underline-offset-4">
+                                @if($obraActual && $puedeDarBaja)
+                                    <button type="button"
+                                            class="inline-flex w-fit items-center gap-1.5 rounded-lg border px-2 py-1 text-left text-xs font-medium {{ $ubicClass }} hover:bg-blue-100 hover:border-blue-300 transition"
+                                            title="Administrar ubicación de la máquina"
+                                            @click.stop='openBajaModal({!! $bajaObraPayload !!})'>
+                                        <span>{{ $obraActual->nombre ?? 'Obra' }}</span>
+                                        <span aria-hidden="true">↗</span>
+                                    </button>
+                                @elseif($obraActual)
+                                    <span class="inline-flex w-fit items-center rounded-lg border px-2 py-1 text-xs font-medium {{ $ubicClass }}">
                                         {{ $obraActual->nombre ?? 'Obra' }}
-                                    </a>
+                                    </span>
                                 @elseif($puedeAsignarObra)
                                     <button type="button"
                                             class="inline-flex w-fit items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-medium {{ $ubicClass }} hover:bg-emerald-100 hover:border-emerald-300 transition"
@@ -1078,6 +1091,71 @@
         </div>
     </div>
 @endcan
+
+    @can('baja_maquinas.access')
+        <div
+            x-cloak
+            x-show="bajaModalOpen"
+            x-transition.opacity
+            class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6"
+            @keydown.escape.window="closeBajaModal()"
+        >
+            <div
+                class="w-full max-w-lg overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
+                @click.outside="closeBajaModal()"
+            >
+                <div class="flex items-start justify-between border-b border-slate-100 px-5 py-4">
+                    <div>
+                        <h2 class="text-base font-semibold text-[#0B265A]">Dar de baja máquina de la obra</h2>
+                        <p class="text-xs text-slate-500" x-text="bajaForm.maquina"></p>
+                    </div>
+                    <button type="button"
+                            class="text-2xl leading-none text-slate-400 hover:text-slate-600"
+                            @click="closeBajaModal()">
+                        &times;
+                    </button>
+                </div>
+
+                <form method="POST" :action="bajaForm.action" class="space-y-5 px-5 py-5">
+                    @csrf
+
+                    <div class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                        <div class="text-xs font-semibold uppercase tracking-wide text-blue-700">Obra actual</div>
+                        <div class="mt-1 font-semibold" x-text="bajaForm.obra"></div>
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold text-slate-600">
+                            Fecha de baja
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date"
+                               name="fecha_fin"
+                               x-model="bajaForm.fechaFin"
+                               required
+                               class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+
+                    <p class="text-sm text-slate-600">
+                        La asignación se finalizará y la máquina quedará registrada en patio.
+                    </p>
+
+                    <div class="flex justify-end gap-3 border-t border-slate-100 pt-4">
+                        <button type="button"
+                                class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                @click="closeBajaModal()">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white hover:bg-blue-900">
+                            Confirmar baja
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endcan
+
     @can('maquinas.horas.create.access')
         <div
             x-cloak
@@ -1157,6 +1235,13 @@
         return {
             horasModalOpen: false,
             asignarModalOpen: false,
+            bajaModalOpen: false,
+            bajaForm: {
+                action: '',
+                maquina: '',
+                obra: '',
+                fechaFin: '',
+            },
             form: {
                 action: '',
                 maquina: '',
@@ -1206,6 +1291,23 @@
             },
             closeAsignarModal() {
                 this.asignarModalOpen = false;
+            },
+            openBajaModal(data) {
+                const now = new Date();
+                const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+                    .toISOString()
+                    .slice(0, 10);
+
+                this.bajaForm = {
+                    action: data.action || '',
+                    maquina: data.maquina || 'Maquina',
+                    obra: data.obra || 'Obra actual',
+                    fechaFin: today,
+                };
+                this.bajaModalOpen = true;
+            },
+            closeBajaModal() {
+                this.bajaModalOpen = false;
             },
             formatHoras(value) {
                 return Number(value || 0).toLocaleString('en-US', {

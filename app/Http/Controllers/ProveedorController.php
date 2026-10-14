@@ -6,6 +6,7 @@ use App\Models\Proveedor;
 use App\Models\PhoneCall;
 use Illuminate\Http\Request;
 use App\Models\OrdenCompra;
+use App\Models\PagoProveedor;
 use App\Models\SatCfdi;
 use App\Models\Obra;
 use App\Models\SatCfdiPago;
@@ -134,6 +135,7 @@ class ProveedorController extends Controller
     }
 
     $ordenes = null;
+    $pagosProveedor = null;
     $facturas = null;
     $llamadasSeguimiento = null;
     $telefonosSeguimiento = collect();
@@ -141,7 +143,14 @@ class ProveedorController extends Controller
 
     if ($tab === 'ordenes') {
         $q = OrdenCompra::query()
-            ->with(['obra', 'areaCatalogo'])
+            ->with([
+                'obra',
+                'areaCatalogo',
+                'pagosProveedor' => function ($query) {
+                    $query->whereIn('estatus', ['programado', 'autorizado', 'pagado'])
+                        ->orderByDesc('id');
+                },
+            ])
             ->where('proveedor_id', $proveedor->id)
             ->orderByDesc('fecha')
             ->orderByDesc('id');
@@ -159,6 +168,28 @@ class ProveedorController extends Controller
         }
 
         $ordenes = $q->paginate(15)->withQueryString();
+    }
+
+    if ($tab === 'pagado') {
+        $q = PagoProveedor::query()
+            ->with(['ordenCompra', 'programadoPor', 'autorizadoPor', 'pagadoPor'])
+            ->where('proveedor_id', $proveedor->id)
+            ->orderByDesc('fecha_programada')
+            ->orderByDesc('id');
+
+        if ($request->filled('estatus')) {
+            $q->where('estatus', $request->estatus);
+        }
+
+        if ($request->filled('desde')) {
+            $q->whereDate('fecha_programada', '>=', $request->desde);
+        }
+
+        if ($request->filled('hasta')) {
+            $q->whereDate('fecha_programada', '<=', $request->hasta);
+        }
+
+        $pagosProveedor = $q->paginate(15, ['*'], 'pagos_page')->withQueryString();
     }
 
     if ($tab === 'facturas') {
@@ -213,6 +244,7 @@ class ProveedorController extends Controller
         'proveedor',
         'tab',
         'ordenes',
+        'pagosProveedor',
         'facturas',
         'llamadasSeguimiento',
         'telefonosSeguimiento',

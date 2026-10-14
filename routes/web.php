@@ -865,6 +865,9 @@ Route::middleware('auth','verified')->group(function () {
         Route::post('maquinas/{maquina}/asignar-obra', [MaquinaController::class, 'asignarObra'])
             ->middleware('permission:maquinas.asignar_obra.access')
             ->name('asignarObra');
+        Route::post('maquinas/{maquina}/baja-obra', [MaquinaController::class, 'bajaDeObra'])
+            ->middleware('permission:baja_maquinas.access')
+            ->name('bajaObra');
             
 
     });
