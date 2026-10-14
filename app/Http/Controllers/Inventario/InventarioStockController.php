@@ -91,10 +91,13 @@ class InventarioStockController extends Controller
         ->get()
         ->keyBy('almacen_id');
 
-    $stocks = $query->paginate(25)->withQueryString();
+    $perPage = (int) $request->get('per_page', 25);
+    $perPage = in_array($perPage, [20, 50, 100, 200], true) ? $perPage : 25;
+
+    $stocks = $query->paginate($perPage)->withQueryString();
     $almacenes = Almacen::query()->orderBy('nombre')->get(['id','nombre']);
 
-    return view('inventario.stock.index', compact('stocks','almacenes','almacenId','q','minimos','totalesPorAlmacen'));
+    return view('inventario.stock.index', compact('stocks','almacenes','almacenId','q','minimos','totalesPorAlmacen','perPage'));
 }
 
 }

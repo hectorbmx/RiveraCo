@@ -37,9 +37,12 @@ class ProductoController extends Controller
         });
     }
 
-    $productos = $q->paginate(20)->withQueryString();
+    $perPage = $request->integer('per_page', 20);
+    $perPage = in_array($perPage, [20, 50, 100, 200], true) ? $perPage : 20;
 
-    return view('productos.index', compact('productos'));
+    $productos = $q->paginate($perPage)->withQueryString();
+
+    return view('productos.index', compact('productos', 'perPage'));
 }
 
 

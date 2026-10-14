@@ -110,6 +110,61 @@ class PagoProveedorController extends Controller
     ]);
 }
 
+    public function imprimirProgramados(Request $request)
+    {
+        $this->authorizePermission('pagos_proveedores.view.access');
+
+        $request->validate([
+            'fecha_inicio' => ['nullable', 'date'],
+            'fecha_fin' => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
+            'proveedor' => ['nullable', 'string', 'max:150'],
+        ]);
+
+        $fechaInicio = $request->filled('fecha_inicio')
+            ? \Carbon\Carbon::parse($request->fecha_inicio)->startOfDay()
+            : null;
+
+        $fechaFin = $request->filled('fecha_fin')
+            ? \Carbon\Carbon::parse($request->fecha_fin)->endOfDay()
+            : null;
+
+        $pagos = PagoProveedor::query()
+            ->with([
+                'ordenCompra.obra',
+                'ordenCompra.centroCosto',
+                'proveedor',
+                'cuentaBancoEmpresa',
+                'programadoPor',
+            ])
+            ->where('estatus', 'programado')
+            ->when($fechaInicio, fn ($q) =>
+                $q->whereDate('fecha_programada', '>=', $fechaInicio->toDateString())
+            )
+            ->when($fechaFin, fn ($q) =>
+                $q->whereDate('fecha_programada', '<=', $fechaFin->toDateString())
+            )
+            ->when($request->filled('proveedor'), function ($q) use ($request) {
+                $busqueda = trim($request->input('proveedor'));
+
+                $q->whereHas('proveedor', function ($proveedor) use ($busqueda) {
+                    $proveedor->where(function ($consulta) use ($busqueda) {
+                        $consulta->where('nombre', 'like', "%{$busqueda}%")
+                            ->orWhere('rfc', 'like', "%{$busqueda}%");
+                    });
+                });
+            })
+            ->orderBy('fecha_programada')
+            ->orderBy('id')
+            ->get();
+
+        return view('pagos_proveedores.imprimir_programados', [
+            'pagos' => $pagos,
+            'fechaInicio' => $fechaInicio,
+            'fechaFin' => $fechaFin,
+            'proveedorFiltro' => $request->input('proveedor'),
+            'total' => $pagos->sum('monto'),
+        ]);
+    }
     public function create(Request $request)
     {
         $this->authorizePermission('pagos_proveedores.schedule.access');
@@ -139,9 +194,15 @@ class PagoProveedorController extends Controller
             'observaciones' => ['nullable', 'string'],
         ]);
 
-        $oc = OrdenCompra::with('proveedor')
-            ->where('estado', 'AUTORIZADA')
-            ->findOrFail($data['orden_compra_id']);
+        $oc = $this->ordenesProgramables()
+            ->whereKey($data['orden_compra_id'])
+            ->first();
+
+        if (! $oc || ! $oc->proveedor_id || ! $oc->proveedor) {
+            return back()
+                ->withInput()
+                ->with('error', 'La orden seleccionada no tiene un proveedor válido. No se puede programar el pago.');
+        }
 
         $existe = PagoProveedor::where('orden_compra_id', $oc->id)
             ->whereIn('estatus', ['programado', 'autorizado', 'pagado'])
@@ -236,6 +297,16 @@ class PagoProveedorController extends Controller
         return OrdenCompra::query()
             ->with(['proveedor', 'obra', 'centroCosto'])
             ->where('estado', 'AUTORIZADA')
+            ->where(function ($q) {
+                $q->whereNull('es_caja_chica')
+                    ->orWhere('es_caja_chica', false);
+            })
+            ->where(function ($q) {
+                $q->whereNull('gastos_sin_factura')
+                    ->orWhere('gastos_sin_factura', false);
+            })
+            ->whereNotNull('proveedor_id')
+            ->whereHas('proveedor')
             ->whereDoesntHave('pagosProveedor', function ($q) {
                 $q->whereIn('estatus', ['programado', 'autorizado', 'pagado']);
             })

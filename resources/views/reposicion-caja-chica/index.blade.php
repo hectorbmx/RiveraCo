@@ -72,13 +72,13 @@
             name="fecha_inicio"
             label="Fecha inicio"
             :value="$fechaInicio->format('Y-m-d')"
-            span="md:col-span-2" />
+            span="md:col-span-1" />
 
         <x-filters.date
             name="fecha_fin"
             label="Fecha fin"
             :value="$fechaFin->format('Y-m-d')"
-            span="md:col-span-2" />
+            span="md:col-span-1" />
 
         <x-filters.select
             name="estado"
@@ -192,7 +192,7 @@
             </div>
         </div>
         <table class="min-w-full text-sm">
-            <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+            <thead class="bg-[#0B265A] text-xs uppercase text-white">
                 <tr>
                     <th class="px-4 py-3 text-left">Folio</th>
                     <th class="px-4 py-3 text-left">Fecha</th>

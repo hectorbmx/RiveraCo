@@ -8,6 +8,16 @@
             <h1 class="text-2xl font-semibold text-slate-900">Inventario — Stock</h1>
             <p class="text-sm text-slate-500">Existencias, costo promedio y valor total (promedio ponderado).</p>
         </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('inventario.documentos.create', array_filter(['tipo' => 'entrada', 'almacen_id' => request('almacen_id')])) }}"
+               class="inline-flex items-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
+                + Entrada
+            </a>
+            <a href="{{ route('inventario.documentos.create', array_filter(['tipo' => 'salida', 'almacen_id' => request('almacen_id')])) }}"
+               class="inline-flex items-center rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700">
+                + Salida
+            </a>
+        </div>
     </div>
 
     {{-- Filtros --}}
@@ -71,9 +81,10 @@
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
-                <thead class="bg-slate-50 text-slate-600">
+                <thead class="bg-[#0B265A] text-white">
                     <tr>
-                        <th class="text-left font-medium px-4 py-3">Almacén</th>
+                        {{-- Columna reservada para mostrar el almacén cuando se reactive esta vista. --}}
+                        {{-- <th class="text-left font-medium px-4 py-3">Almacén</th> --}}
                         <th class="text-left font-medium px-4 py-3">SKU</th>
                         <th class="text-left font-medium px-4 py-3">Descripción</th>
                         <th class="text-right font-medium px-4 py-3">Existencia</th>
@@ -88,7 +99,7 @@
                              $isMin = $s->stock_minimo !== null && $s->stock_actual <= $s->stock_minimo;
                         @endphp
                         <tr class="{{ $isMin ? 'bg-amber-50/60' : '' }}">
-                            <td class="px-4 py-3 text-slate-700">{{ $s->almacen?->nombre ?? '—' }}</td>
+                            {{-- <td class="px-4 py-3 text-slate-700">{{ $s->almacen?->nombre ?? '—' }}</td> --}}
                             <td class="px-4 py-3 text-slate-700 font-mono">{{ $s->producto?->sku?? '-' }}</td>
                             <td class="px-4 py-3 text-slate-900">{{ $s->producto?->nombre?? '-' }}</td>
                             <td class="px-4 py-3 text-right font-medium text-slate-900">{{ number_format((float)$s->stock_actual, 2) }}</td>
@@ -98,14 +109,29 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-10 text-center text-slate-500">Sin resultados</td>
+                            <td colspan="6" class="px-4 py-10 text-center text-slate-500">Sin resultados</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
-        <div class="px-4 py-3 border-t border-slate-200">
+        <div class="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <form method="GET" class="flex items-center gap-2 text-sm text-slate-600">
+                @foreach(request()->except(['page', 'per_page']) as $name => $value)
+                    @if(!is_array($value))
+                        <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                    @endif
+                @endforeach
+                <label for="stock-per-page" class="whitespace-nowrap">Mostrar</label>
+                <select id="stock-per-page" name="per_page" onchange="this.form.submit()"
+                        class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm focus:border-[#0B265A] focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    @foreach([20, 50, 100, 200] as $option)
+                        <option value="{{ $option }}" @selected((int) $perPage === $option)>{{ $option }}</option>
+                    @endforeach
+                </select>
+                <span class="whitespace-nowrap">registros</span>
+            </form>
             {{ $stocks->links() }}
         </div>
     </div>

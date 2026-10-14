@@ -1161,39 +1161,47 @@ public function print(OrdenCompra $orden_compra)
     $pdf->SetTextColor(0, 0, 0);
     $pdf->SetFont('Arial', 'B', 9);
 
+    // Columna izquierda: cuatro filas fijas para evitar que el RFC quede separado.
+    $leftWidth = $midX - $X0 - 4;
+
     $pdf->SetXY($X0 + 2, $Y + 2);
-    $pdf->SetFont('Arial', 'B', 8.5);
+    $pdf->SetFont('Arial', 'B', 8.2);
     $pdf->Cell(
-        0,
+        88,
         5,
-        $utf8('NOMBRE: ')
-        . $utf8($proveedorNombre),
+        $utf8('NOMBRE COMERCIAL: ') . $utf8($proveedorNombre ?: '-'),
         0,
         0,
         'L'
     );
 
-    if ($proveedorRazonSocial !== '') {
-        $pdf->SetXY($X0 + 2, $Y + 8);
-        $pdf->SetFont('Arial', '', 7.5);
-        $pdf->Cell(
-            0,
-            5,
-            $utf8('RAZON SOCIAL: ')
-            . $utf8($proveedorRazonSocial),
-            0,
-            0,
-            'L'
-        );
-    }
+    $pdf->SetFont('Arial', '', 7.5);
+    $pdf->Cell(
+        $leftWidth - 88,
+        5,
+        $utf8('RFC: ') . $utf8($oc->proveedor->rfc ?? '-'),
+        0,
+        0,
+        'L'
+    );
 
-    $pdf->SetXY($X0 + 2, $proveedorRazonSocial !== '' ? $Y + 15 : $Y + 10);
+    $pdf->SetXY($X0 + 2, $Y + 10);
+    $pdf->SetFont('Arial', '', 7.5);
+    $pdf->Cell(
+        $leftWidth,
+        5,
+        $utf8('RAZON SOCIAL: ') . $utf8($proveedorRazonSocial ?: '-'),
+        0,
+        0,
+        'L'
+    );
+
+    $pdf->SetXY($X0 + 2, $Y + 18);
     $pdf->SetFont('Arial', 'B', 8.5);
     $pdf->Cell(
-        0,
+        $leftWidth,
         5,
-        $utf8('ATENCION: ')
-        . $utf8(
+        $utf8('ATENCION: ') . $utf8(
             $oc->atencion
             ?? ($oc->proveedor->contacto ?? '')
         ),
@@ -1202,30 +1210,16 @@ public function print(OrdenCompra $orden_compra)
         'L'
     );
 
-    $pdf->SetXY($X0 + 2, $proveedorRazonSocial !== '' ? $Y + 21 : $Y + 16);
+    $pdf->SetXY($X0 + 2, $Y + 26);
+    $pdf->SetFont('Arial', 'B', 8.5);
     $pdf->Cell(
-        0,
+        $leftWidth,
         5,
-        $utf8('DOMICILIO: ')
-        . $utf8($oc->proveedor->domicilio ?? ''),
+        $utf8('DOMICILIO: ') . $utf8($oc->proveedor->domicilio ?? '-'),
         0,
         0,
         'L'
     );
-
-    $pdf->SetXY($X0 + 2, $proveedorRazonSocial !== '' ? $Y + 27 : $Y + 22);
-    $pdf->SetFont('Arial', '', 7.5);
-
-    $pdf->Cell(
-        $midX - $X0 - 4,
-        5,
-        $utf8('RFC: ')
-        . $utf8($oc->proveedor->rfc ?? ''),
-        0,
-        0,
-        'L'
-    );
-
     // Columna derecha
     $pdf->SetFont('Arial', 'B', 8.5);
 

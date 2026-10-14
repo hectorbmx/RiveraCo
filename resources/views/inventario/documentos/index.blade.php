@@ -111,7 +111,7 @@
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
-                <thead class="bg-slate-50 text-slate-600">
+                <thead class="bg-[#0B265A] text-white">
                     <tr>
                         <th class="text-left font-medium px-4 py-3">ID</th>
                         <th class="text-left font-medium px-4 py-3">Fecha</th>

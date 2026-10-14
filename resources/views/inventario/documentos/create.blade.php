@@ -250,7 +250,7 @@
 
   <div class="overflow-x-auto">
     <table class="min-w-full text-sm">
-      <thead class="text-slate-500">
+      <thead class="bg-[#0B265A] text-white">
         <tr class="border-b">
           <th class="text-left py-3 pr-3">Producto</th>
           <th class="text-left py-3 pr-3 w-32">Cantidad</th>
@@ -276,14 +276,14 @@
                 <input type="number" step="0.001" min="0.001" required
                        :name="`detalles[${index}][cantidad]`"
                        x-model="item.cantidad"
-                       class="w-full rounded-lg border-slate-200 text-sm">
+                       class="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#0B265A] focus:outline-none focus:ring-2 focus:ring-blue-100">
               </td>
               @if(in_array($tipo, ['entrada','ajuste'], true))
                 <td class="py-3 pr-3">
                   <input type="number" step="0.0001" min="0" required
                          :name="`detalles[${index}][costo_unitario]`"
                          x-model="item.costo_unitario"
-                         class="w-full rounded-lg border-slate-200 text-sm">
+                         class="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#0B265A] focus:outline-none focus:ring-2 focus:ring-blue-100">
                 </td>
               @else
                 <input type="hidden" :name="`detalles[${index}][costo_unitario]`" :value="item.costo_unitario || 0">
@@ -291,7 +291,7 @@
               <td class="py-3 pr-3">
                 <input type="text" :name="`detalles[${index}][notas]`"
                        x-model="item.notas"
-                       class="w-full rounded-lg border-slate-200 text-sm">
+                       class="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#0B265A] focus:outline-none focus:ring-2 focus:ring-blue-100">
               </td>
               <td class="py-3 text-right">
                 <button type="button" @click="removeRow(index)" class="text-red-400 hover:text-red-600">

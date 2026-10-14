@@ -17,7 +17,10 @@
                class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-emerald-700">
                 + Entrada
             </a>
-            <a href="{{ route('productos.create') }}"
+            <a href="{{ route('inventario.documentos.create', ['tipo' => 'salida']) }}"
+               class="bg-rose-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-rose-700">
+                + Salida
+            </a>            <a href="{{ route('productos.create') }}"
                class="bg-[#0B265A] text-white px-4 py-2 rounded-xl text-sm hover:opacity-90">
                 + Nuevo producto
             </a>
@@ -79,15 +82,15 @@
     {{-- Tabla --}}
     <div class="bg-white rounded-2xl shadow overflow-hidden">
         <table class="min-w-full text-sm">
-            <thead class="bg-slate-50 border-b border-slate-200">
+            <thead class="bg-[#0B265A] border-b border-[#0B265A]">
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500">ID</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500">Producto</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500">SKU</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500">Unidad</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500">Existencias</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500">Estatus</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500">Acciones</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-white">ID</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-white">Producto</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-white">SKU</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-white">Unidad</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-white">Existencias</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-white">Estatus</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-white">Acciones</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -140,7 +143,22 @@
             </tbody>
         </table>
 
-        <div class="p-4">
+        <div class="flex flex-col gap-3 border-t border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <form method="GET" class="flex items-center gap-2 text-sm text-slate-600">
+                @foreach(request()->except(['page', 'per_page']) as $name => $value)
+                    @if(!is_array($value))
+                        <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                    @endif
+                @endforeach
+                <label for="productos-per-page" class="whitespace-nowrap">Mostrar</label>
+                <select id="productos-per-page" name="per_page" onchange="this.form.submit()"
+                        class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm focus:border-[#0B265A] focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    @foreach([20, 50, 100, 200] as $option)
+                        <option value="{{ $option }}" @selected((int) $perPage === $option)>{{ $option }}</option>
+                    @endforeach
+                </select>
+                <span class="whitespace-nowrap">registros</span>
+            </form>
             {{ $productos->links() }}
         </div>
     </div>

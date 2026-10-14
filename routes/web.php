@@ -1001,6 +1001,7 @@ Route::prefix('pagos-proveedores')
     ->middleware(['auth'])
     ->group(function () {
         Route::get('/', [PagoProveedorController::class, 'index'])->name('index');
+        Route::get('/imprimir-programados', [PagoProveedorController::class, 'imprimirProgramados'])->name('imprimir-programados');
         Route::get('/create', [PagoProveedorController::class, 'create'])->name('create');
         Route::post('/', [PagoProveedorController::class, 'store'])->name('store');
         Route::patch('/{pago}/autorizar', [PagoProveedorController::class, 'autorizar'])->name('autorizar');

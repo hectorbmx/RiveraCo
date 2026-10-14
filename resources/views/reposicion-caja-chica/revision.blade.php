@@ -25,7 +25,7 @@
 
     <div class="overflow-hidden rounded-lg bg-white shadow-sm border border-slate-200">
         <table class="min-w-full text-sm">
-            <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+            <thead class="bg-[#0B265A] text-xs uppercase text-white">
                 <tr>
                     <th class="px-4 py-3 text-left">Gasto</th>
                     <th class="px-4 py-3 text-left">Categoria</th>

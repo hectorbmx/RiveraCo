@@ -15,12 +15,24 @@
             </p>
         </div>
 
-        @can('pagos_proveedores.schedule.access')
-            <a href="{{ route('pagos-proveedores.create') }}"
-               class="rounded-xl bg-[#0B265A] px-5 py-2 text-sm font-semibold text-white">
-                Programar pago
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{{ route('pagos-proveedores.imprimir-programados', [
+                    'fecha_inicio' => request('fecha_inicio'),
+                    'fecha_fin' => request('fecha_fin'),
+                    'proveedor' => request('proveedor'),
+                ]) }}"
+               target="_blank"
+               class="rounded-xl border border-[#0B265A] px-5 py-2 text-sm font-semibold text-[#0B265A] hover:bg-blue-50">
+                Imprimir programados
             </a>
-        @endcan
+
+            @can('pagos_proveedores.schedule.access')
+                <a href="{{ route('pagos-proveedores.create') }}"
+                   class="rounded-xl bg-[#0B265A] px-5 py-2 text-sm font-semibold text-white">
+                    Programar pago
+                </a>
+            @endcan
+        </div>
     </div>
 
     @if(session('success'))
