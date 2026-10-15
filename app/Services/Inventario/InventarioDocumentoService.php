@@ -3,6 +3,8 @@
 namespace App\Services\Inventario;
 
 use App\Models\InventarioDocumento;
+use App\Models\OrdenCompra;
+use App\Models\OrdenCompraDetalle;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -11,30 +13,69 @@ class InventarioDocumentoService
     public function aplicar(InventarioDocumento $doc): void
 {
     DB::transaction(function () use ($doc) {
-
         $doc->refresh();
 
         if ($doc->estado !== 'borrador') {
-            throw new RuntimeException("El documento no está en borrador.");
+            throw new RuntimeException('El documento no está en borrador.');
         }
 
         $doc->load('detalles');
 
         if ($doc->detalles->isEmpty()) {
-            throw new RuntimeException("El documento no tiene detalles.");
+            throw new RuntimeException('El documento no tiene detalles.');
+        }
+
+        // Bloqueamos las OCs relacionadas para evitar dos recepciones simultáneas.
+        $ordenCompraIds = $doc->detalles
+            ->filter(fn ($detalle) => $doc->tipo === 'entrada' && $detalle->orden_compra_detalle_id)
+            ->map(fn ($detalle) => (int) ($detalle->orden_compra_id ?: $doc->orden_compra_id))
+            ->filter()
+            ->when($doc->orden_compra_id, fn ($ids) => $ids->push((int) $doc->orden_compra_id))
+            ->unique()
+            ->sort()
+            ->values();
+
+        $ordenesCompra = collect();
+        foreach ($ordenCompraIds as $ordenCompraId) {
+            $ordenesCompra->put(
+                $ordenCompraId,
+                OrdenCompra::query()->whereKey($ordenCompraId)->lockForUpdate()->firstOrFail()
+            );
         }
 
         [$esEntrada, $esSalida, $tipoMovimiento] = $this->resolveDireccion($doc);
 
         foreach ($doc->detalles as $det) {
-
             $cantidad = (float) $det->cantidad;
 
             if ($cantidad <= 0) {
                 throw new RuntimeException("Cantidad inválida en detalle {$det->id}");
             }
 
-            // Lock del stock
+            $ocDetalle = null;
+            if ($doc->tipo === 'entrada' && $det->orden_compra_detalle_id) {
+                $ocDetalle = OrdenCompraDetalle::query()
+                    ->whereKey($det->orden_compra_detalle_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$ocDetalle) {
+                    throw new RuntimeException("El detalle {$det->id} no tiene una partida válida de orden de compra.");
+                }
+
+                $ordenCompraId = (int) ($det->orden_compra_id ?: $doc->orden_compra_id);
+                if (!$ordenCompraId || (int) $ocDetalle->orden_compra_id !== $ordenCompraId) {
+                    throw new RuntimeException("La partida {$det->id} no pertenece a la orden de compra seleccionada.");
+                }
+
+                $pendiente = max(0, (float) $ocDetalle->cantidad - (float) $ocDetalle->cantidad_recibida);
+                if ($cantidad > $pendiente + 0.0005) {
+                    $nombre = $det->producto?->nombre ?? $ocDetalle->descripcion ?? "partida {$det->id}";
+                    throw new RuntimeException("La cantidad a recibir de '{$nombre}' ({$cantidad}) excede el saldo pendiente de la OC ({$pendiente}).");
+                }
+            }
+
+            // Lock del stock.
             $stockRow = DB::table('inventario_stock')
                 ->where('almacen_id', $doc->almacen_id)
                 ->where('producto_id', $det->producto_id)
@@ -55,23 +96,16 @@ class InventarioDocumentoService
 
                 $actual = 0.0;
                 $valorTotal = 0.0;
-                $costoProm  = 0.0;
+                $costoProm = 0.0;
             } else {
-                $actual     = (float) $stockRow->stock_actual;
+                $actual = (float) $stockRow->stock_actual;
                 $valorTotal = (float) $stockRow->valor_total;
-                $costoProm  = (float) $stockRow->costo_promedio;
+                $costoProm = (float) $stockRow->costo_promedio;
             }
 
-            // -----------------------------
-            // Determinar costo a usar
-            // -----------------------------
             $costoUnitario = 0.0;
-
             if ($esEntrada) {
-                // En entradas/inicial: costo_unitario debe venir
-                // En devolucion/ajuste-in: puede venir, si no viene usamos costo_promedio actual
                 if ($det->costo_unitario === null) {
-                    // devolucion: si no viene costo, usa costoProm actual (práctico)
                     if (in_array($doc->tipo, ['devolucion'], true)) {
                         $costoUnitario = $costoProm;
                     } else {
@@ -81,73 +115,63 @@ class InventarioDocumentoService
                     $costoUnitario = (float) $det->costo_unitario;
                 }
             } else {
-                // Salida/Resguardo/Ajuste-out usa costo promedio del stock actual
                 $costoUnitario = $costoProm;
             }
 
-            // -----------------------------
-            // Validar stock si es salida
-            // -----------------------------
             if ($esSalida) {
                 $nuevoStock = $actual - $cantidad;
-
                 if ($nuevoStock < 0) {
-                    throw new RuntimeException(
-                        "Stock insuficiente (producto_id={$det->producto_id}). Disponible: {$actual}, requiere: {$cantidad}"
-                    );
+                    throw new RuntimeException("Stock insuficiente (producto_id={$det->producto_id}). Disponible: {$actual}, requiere: {$cantidad}");
                 }
 
-                // Valor: sale a costo promedio
-                $nuevoValor = $valorTotal - ($cantidad * $costoUnitario);
-                if ($nuevoValor < 0) $nuevoValor = 0; // protección por redondeos
-
+                $nuevoValor = max(0, $valorTotal - ($cantidad * $costoUnitario));
                 $nuevoCostoProm = $nuevoStock > 0 ? ($nuevoValor / $nuevoStock) : 0;
-
             } else {
-                // Entrada
                 $nuevoStock = $actual + $cantidad;
                 $nuevoValor = $valorTotal + ($cantidad * $costoUnitario);
                 $nuevoCostoProm = $nuevoStock > 0 ? ($nuevoValor / $nuevoStock) : 0;
             }
 
-            // -----------------------------
-            // Actualizar inventario_stock
-            // -----------------------------
             DB::table('inventario_stock')
                 ->where('almacen_id', $doc->almacen_id)
                 ->where('producto_id', $det->producto_id)
                 ->update([
-                    'stock_actual'   => $nuevoStock,
-                    'valor_total'    => $nuevoValor,
+                    'stock_actual' => $nuevoStock,
+                    'valor_total' => $nuevoValor,
                     'costo_promedio' => $nuevoCostoProm,
-                    'updated_at'     => now(),
+                    'updated_at' => now(),
                 ]);
 
-            // -----------------------------
-            // Insertar movimiento (Kardex)
-            // -----------------------------
             DB::table('inventario_movimientos')->insert([
-                'almacen_id'      => $doc->almacen_id,
-                'producto_id'     => $det->producto_id,
-                'documento_id'    => $doc->id,
-                'fecha'           => $doc->fecha,
+                'almacen_id' => $doc->almacen_id,
+                'producto_id' => $det->producto_id,
+                'documento_id' => $doc->id,
+                'fecha' => $doc->fecha,
                 'tipo_movimiento' => $tipoMovimiento,
-                'cantidad'        => $cantidad,
-                'costo_unitario'  => $costoUnitario,
-                'saldo_cantidad'  => $nuevoStock,
-                'obra_id'         => $doc->obra_id,
-                'residente_id'    => $doc->residente_id,
-                'creado_por'      => $doc->creado_por,
-                'created_at'      => now(),
-                'updated_at'      => now(),
+                'cantidad' => $cantidad,
+                'costo_unitario' => $costoUnitario,
+                'saldo_cantidad' => $nuevoStock,
+                'obra_id' => $doc->obra_id,
+                'residente_id' => $doc->residente_id,
+                'creado_por' => $doc->creado_por,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
+
+            if ($ocDetalle) {
+                $ocDetalle->cantidad_recibida = (float) $ocDetalle->cantidad_recibida + $cantidad;
+                $ocDetalle->save();
+            }
+        }
+
+        foreach ($ordenesCompra as $ordenCompra) {
+            $this->actualizarEstadoRecepcionOrdenCompra($ordenCompra);
         }
 
         $doc->estado = 'aplicado';
         $doc->save();
     });
 }
-
 // public function cancelar(InventarioDocumento $doc): void
 // {
 //     DB::transaction(function () use ($doc) {
@@ -253,7 +277,6 @@ class InventarioDocumentoService
 //             ]);
 //         }
 
-//         // Marcar documentos
 //         $docCancel->estado = 'aplicado';
 //         $docCancel->save();
 
@@ -312,10 +335,15 @@ public function cancelar(InventarioDocumento $doc): void
                 // Si tu modelo Detalle usa fillable, esto funciona.
                 // Si no, usa DB::table('inventario_documento_detalles')->insert(...)
                 $docCancel->detalles()->create([
-                    'producto_id'    => $d->producto_id,
-                    'cantidad'       => (float) $d->cantidad,
-                    'costo_unitario' => (float) $d->costo_unitario,
-                    'notas'          => $d->notas ?: ('Reversa de documento '.$doc->id),
+                    'producto_id'                  => $d->producto_id,
+                    'vehiculo_id'                  => $d->vehiculo_id,
+                    'maquina_id'                   => $d->maquina_id,
+                    'equipo_tipo'                  => $d->equipo_tipo,
+                    'equipo_nombre_snapshot'      => $d->equipo_nombre_snapshot,
+                    'equipo_identificador_snapshot'=> $d->equipo_identificador_snapshot,
+                    'cantidad'                     => (float) $d->cantidad,
+                    'costo_unitario'               => (float) $d->costo_unitario,
+                    'notas'                        => $d->notas ?: ('Reversa de documento '.$doc->id),
                 ]);
             }
 
@@ -413,6 +441,42 @@ public function cancelar(InventarioDocumento $doc): void
             ]);
         }
 
+        if ($doc->tipo === 'entrada') {
+            $ordenesCompraCanceladas = collect();
+
+            foreach ($doc->detalles as $detalleCancelado) {
+                if (!$detalleCancelado->orden_compra_detalle_id) {
+                    continue;
+                }
+
+                $ocDetalle = OrdenCompraDetalle::query()
+                    ->whereKey($detalleCancelado->orden_compra_detalle_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$ocDetalle) {
+                    continue;
+                }
+
+                $ocDetalle->cantidad_recibida = max(
+                    0,
+                    (float) $ocDetalle->cantidad_recibida - (float) $detalleCancelado->cantidad
+                );
+                $ocDetalle->save();
+                $ordenesCompraCanceladas->push((int) $ocDetalle->orden_compra_id);
+            }
+
+            foreach ($ordenesCompraCanceladas->unique() as $ordenCompraId) {
+                $ordenCompra = OrdenCompra::query()
+                    ->whereKey($ordenCompraId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($ordenCompra) {
+                    $this->actualizarEstadoRecepcionOrdenCompra($ordenCompra);
+                }
+            }
+        }
         // Marcar documentos
         $docCancel->estado = 'aplicado';
         $docCancel->save();
@@ -422,6 +486,18 @@ public function cancelar(InventarioDocumento $doc): void
     });
 }
 
+    private function actualizarEstadoRecepcionOrdenCompra(OrdenCompra $ordenCompra): void
+    {
+        $detalles = $ordenCompra->detalles()->lockForUpdate()->get();
+        $cantidadOrdenada = (float) $detalles->sum(fn (OrdenCompraDetalle $detalle) => (float) $detalle->cantidad);
+        $cantidadRecibida = (float) $detalles->sum(fn (OrdenCompraDetalle $detalle) => (float) $detalle->cantidad_recibida);
+
+        $estado = $cantidadRecibida <= 0
+            ? 'pendiente'
+            : ($cantidadRecibida + 0.0005 >= $cantidadOrdenada ? 'recibida' : 'parcial');
+
+        $ordenCompra->forceFill(['estado_recepcion' => $estado])->save();
+    }
     private function isEntrada(string $tipo): bool
     {
         return in_array($tipo, ['inicial','entrada','devolucion','ajuste'], true);

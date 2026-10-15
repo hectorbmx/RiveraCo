@@ -12,6 +12,11 @@ class InventarioDocumentoDetalle extends Model
     protected $fillable = [
         'documento_id',
         'producto_id',
+        'vehiculo_id',
+        'maquina_id',
+        'equipo_tipo',
+        'equipo_nombre_snapshot',
+        'equipo_identificador_snapshot',
         'orden_compra_id',
         'orden_compra_detalle_id',
         'cantidad',
@@ -29,6 +34,15 @@ class InventarioDocumentoDetalle extends Model
         return $this->belongsTo(InventarioDocumento::class, 'documento_id');
     }
 
+    public function vehiculo(): BelongsTo
+    {
+        return $this->belongsTo(Vehiculo::class, 'vehiculo_id');
+    }
+
+    public function maquina(): BelongsTo
+    {
+        return $this->belongsTo(Maquina::class, 'maquina_id');
+    }
     public function ordenCompra(): BelongsTo
     {
         return $this->belongsTo(OrdenCompra::class, 'orden_compra_id');

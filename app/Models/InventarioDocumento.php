@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class InventarioDocumento extends Model
 {
+    use SoftDeletes;
     protected $table = 'inventario_documentos';
 
     protected $fillable = [
@@ -60,11 +62,10 @@ class InventarioDocumento extends Model
         return $this->hasMany(self::class, 'documento_origen_id');
     }
 
-    // Opcionales (activar cuando confirmemos nombres)
-    // public function obra(): BelongsTo
-    // {
-    //     return $this->belongsTo(Obra::class, 'obra_id');
-    // }
+    public function obra(): BelongsTo
+    {
+        return $this->belongsTo(Obra::class, 'obra_id');
+    }
 
     // public function proveedor(): BelongsTo
     // {

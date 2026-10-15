@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Maquina;
+use App\Models\ReposicionCajaChicaGasto;
+use App\Models\InventarioDocumentoDetalle;
 use App\Models\ObraMaquinaRegistro;
 use App\Services\Maquinas\MaquinaService;
 use App\Models\EmpresaConfig;
@@ -106,6 +108,7 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
 public function show(Request $request, Maquina $maquina)
 {
     $tab = $request->query('tab', 'general');
+    $combustiblesMaquina = collect();
 
     // Siempre cargamos la asignación activa + obra (para mostrar contexto)
     $maquina->load(['asignacionActiva.obra']);
@@ -128,7 +131,18 @@ public function show(Request $request, Maquina $maquina)
         ]);
     }
 
-    if ($tab === 'kardex') {
+        if ($tab === 'combustible') {
+        $combustiblesMaquina = InventarioDocumentoDetalle::query()
+            ->with(['documento.obra', 'producto'])
+            ->where('maquina_id', $maquina->id)
+            ->whereHas('documento', fn($q) => $q
+                ->where('tipo', 'salida')
+                ->where('estado', 'aplicado'))
+            ->orderByDesc('documento_id')
+            ->orderByDesc('id')
+            ->get();
+    }
+if ($tab === 'kardex') {
         $maquina->load([
             'movimientos' => fn($q) => $q
                 ->with(['obra:id,nombre', 'user:id,name'])
@@ -136,7 +150,7 @@ public function show(Request $request, Maquina $maquina)
         ]);
     }
 
-    return view('maquinas.show', compact('maquina', 'tab'));
+    return view('maquinas.show', compact('maquina', 'tab', 'combustiblesMaquina'));
 }
 
 public function updateGeneral(Request $request, Maquina $maquina)

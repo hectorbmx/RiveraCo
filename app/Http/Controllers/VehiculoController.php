@@ -9,6 +9,8 @@ use App\Models\VehiculoEmpleadoKmLog;
 use App\Models\Empleado;
 use App\Models\SeguroVehiculo;
 use App\Models\Mantenimiento;
+use App\Models\ReposicionCajaChicaGasto;
+use App\Models\InventarioDocumentoDetalle;
 use App\Models\EmpresaConfig;
 use App\Services\Vehiculos\PreventivoVehiculoService;
 use Illuminate\Http\Request;
@@ -188,6 +190,8 @@ public function index(Request $request)
     $historialSeguros = collect();
     $mantenimientosVehiculo = collect();
     $preventivoVehiculo = null;
+    $combustiblesVehiculo = collect();
+    $cargasAppVehiculo = collect();
     $kmSugeridoAsignacion = 0;
 
     $statsMantenimientos = [
@@ -258,6 +262,32 @@ public function index(Request $request)
             ->get();
     }
 
+    if ($tab === 'combustible') {
+        $combustiblesVehiculo = InventarioDocumentoDetalle::query()
+            ->with(['documento.obra', 'producto'])
+            ->where('vehiculo_id', $vehiculo->id)
+            ->whereHas('documento', fn($q) => $q
+                ->where('tipo', 'salida')
+                ->where('estado', 'aplicado'))
+            ->orderByDesc('documento_id')
+            ->orderByDesc('id')
+            ->get();
+
+        $cargasAppVehiculo = VehiculoEmpleadoKmLog::query()
+            ->with(['asignacion.empleado', 'obra', 'capturadoPor'])
+            ->whereHas('asignacion', fn($q) => $q->where('vehiculo_id', $vehiculo->id))
+            ->orderByDesc('fecha')
+            ->orderByDesc('id')
+            ->get()
+            ->each(function (VehiculoEmpleadoKmLog $log) {
+                $log->foto_url = $log->foto
+                    ? Storage::disk('public')->url($log->foto)
+                    : null;
+                $log->foto_ticket_gasolina_url = $log->foto_ticket_gasolina
+                    ? Storage::disk('public')->url($log->foto_ticket_gasolina)
+                    : null;
+            });
+    }
     if ($tab === 'mantenimientos') {
         $mantenimientosVehiculo = $vehiculo->mantenimientos()
             ->with(['mecanico', 'obra'])
@@ -286,6 +316,8 @@ public function index(Request $request)
         'mantenimientosVehiculo',
         'statsMantenimientos',
         'preventivoVehiculo',
+        'combustiblesVehiculo',
+        'cargasAppVehiculo',
         'kmSugeridoAsignacion'
     ));
 }

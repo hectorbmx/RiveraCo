@@ -113,9 +113,21 @@
 
                             $conceptoOriginal = trim((string) $gasto->concepto);
                             preg_match('/Folio:\s*([A-Za-z0-9\-]+)/i', $conceptoOriginal, $folioMatch);
-                            $factura = $gasto->factura_folio ?: ($folioMatch[1] ?? (($gasto->categoria?->requiere_factura ?? false) ? '' : ''));
+                            $factura = $gasto->factura_folio ?: ($folioMatch[1] ?? (($gasto->categoria?->requiere_factura ?? false) ? '' : 'git'));
                             $conceptoImpreso = trim(preg_replace('/Folio:\s*[A-Za-z0-9\-]+\s*/i', '', $conceptoOriginal));
                             $conceptoImpreso = $conceptoImpreso ?: $conceptoOriginal;
+
+                            $activoOperativo = $gasto->activo_operativo_label;
+                            if ($activoOperativo !== '-') {
+                                $activoOperativo = match ($gasto->activo_operativo_tipo) {
+                                    'indirecto' => 'indirecto',
+                                    'maquina' => preg_replace('/^Maquina:\s*/i', 'maquina: ', $activoOperativo),
+                                    'vehiculo' => preg_replace('/^Vehiculo:\s*/i', 'vehiculo: ', $activoOperativo),
+                                    default => preg_replace('/^(Maquina|Vehiculo):\s*/i', fn ($m) => strtolower($m[1]) . ': ', $activoOperativo),
+                                };
+
+                                $conceptoImpreso = trim($conceptoImpreso . ' | ' . $activoOperativo);
+                            }
                         @endphp
                         <tr>
                             <td>{{ \Illuminate\Support\Str::limit($gasto->subcategoria->nombre ?? $gasto->categoria->nombre ?? '-', 18) }}</td>

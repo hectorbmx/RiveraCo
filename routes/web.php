@@ -491,6 +491,9 @@ Route::middleware('auth','verified')->group(function () {
         Route::get('documentos/{doc}/edit', [InventarioDocumentoController::class, 'edit'])->name('inventario.documentos.edit');
         // Actualizar (solo borrador)
         Route::put('documentos/{doc}', [InventarioDocumentoController::class, 'update'])->name('inventario.documentos.update');
+        Route::delete('documentos/{doc}', [InventarioDocumentoController::class, 'destroy'])
+            ->middleware('permission:borrar_documentos_entrada.access')
+            ->name('inventario.documentos.destroy');
         // Aplicar
         Route::post('documentos/{doc}/aplicar', [InventarioDocumentoController::class, 'aplicar'])->name('inventario.documentos.aplicar');
         // Cancelar (crea documento cancelacion)

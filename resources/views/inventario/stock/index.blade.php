@@ -13,6 +13,10 @@
                class="inline-flex items-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
                 + Entrada
             </a>
+            <a href="{{ route('inventario.documentos.index', array_filter(['tipo' => 'entrada', 'almacen_id' => request('almacen_id')])) }}"
+               class="inline-flex items-center rounded-xl bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white hover:opacity-95">
+                Movimientos
+            </a>
             <a href="{{ route('inventario.documentos.create', array_filter(['tipo' => 'salida', 'almacen_id' => request('almacen_id')])) }}"
                class="inline-flex items-center rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700">
                 + Salida

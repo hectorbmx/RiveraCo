@@ -24,6 +24,7 @@ class ReposicionCajaChicaGasto extends Model
         'es_para_maquina',
         'maquina_id',
         'vehiculo_id',
+        'activo_operativo_tipo',
         'fecha_gasto',
         'proveedor_nombre',
         'proveedor_id',
@@ -97,6 +98,10 @@ class ReposicionCajaChicaGasto extends Model
 
     public function getActivoOperativoLabelAttribute(): string
     {
+        if ($this->activo_operativo_tipo === 'indirecto') {
+            return 'Indirecto';
+        }
+
         if ($this->maquina_id) {
             $nombreMaquina = trim(($this->maquina?->codigo ? $this->maquina->codigo . ' - ' : '') . ($this->maquina?->nombre ?? 'Sin maquina'));
 

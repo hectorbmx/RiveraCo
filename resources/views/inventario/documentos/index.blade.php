@@ -113,12 +113,11 @@
             <table class="min-w-full text-sm">
                 <thead class="bg-[#0B265A] text-white">
                     <tr>
-                        <th class="text-left font-medium px-4 py-3">ID</th>
+                        <th class="text-left font-medium px-4 py-3">Folio/Ref</th>
                         <th class="text-left font-medium px-4 py-3">Fecha</th>
                         <th class="text-left font-medium px-4 py-3">Almacén</th>
                         <th class="text-left font-medium px-4 py-3">Tipo</th>
                         <th class="text-left font-medium px-4 py-3">Estado</th>
-                        <th class="text-left font-medium px-4 py-3">Folio/Ref</th>
                         <th class="text-right font-medium px-4 py-3">Acciones</th>
                     </tr>
                 </thead>
@@ -127,6 +126,7 @@
                         @php
                             $isAplicado = $d->estado === 'aplicado';
                             $isCancelado = $d->estado === 'cancelado';
+                            $isCancelacion = $d->tipo === 'cancelacion';
                             $isBorrador = $d->estado === 'borrador';
 
                             $badge = match($d->estado) {
@@ -136,7 +136,26 @@
                             };
                         @endphp
                         <tr>
-                            <td class="px-4 py-3 font-mono text-slate-800">#{{ $d->id }}</td>
+                            <td class="px-4 py-3 text-slate-700">
+                                @php
+                                    $ordenesCompra = $d->detalles
+                                        ->map(fn ($detalle) => $detalle->ordenCompra)
+                                        ->filter()
+                                        ->unique('id');
+                                    $folioMostrar = $d->folio
+                                        ?: ($d->tipo === 'salida'
+                                            ? 'SAL-' . str_pad((string) $d->id, 6, '0', STR_PAD_LEFT)
+                                            : '—');
+                                @endphp
+                                <div class="font-medium text-slate-900">{{ $folioMostrar }}</div>
+                                @forelse($ordenesCompra as $ordenCompra)
+                                    <div class="text-xs text-slate-500">OC: {{ $ordenCompra->folio ?: 'OC #'.$ordenCompra->id }}</div>
+                                @empty
+                                    @if($d->referencia)
+                                        <div class="text-xs text-slate-500">{{ $d->referencia }}</div>
+                                    @endif
+                                @endforelse
+                            </td>
                             <td class="px-4 py-3 text-slate-700">
                                 {{ optional($d->fecha)->format('Y-m-d') ?? ($d->created_at?->format('Y-m-d') ?? '—') }}
                             </td>
@@ -147,10 +166,6 @@
                                     {{ $estados[$d->estado] ?? $d->estado }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-slate-700">
-                                <div class="font-medium text-slate-900">{{ $d->folio ?? '—' }}</div>
-                                <div class="text-xs text-slate-500">{{ $d->referencia ?? '' }}</div>
-                            </td>
 
                             <td class="px-4 py-3">
                                 <div class="flex items-center justify-end gap-2">
@@ -158,6 +173,24 @@
                                        class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs">
                                         Ver
                                     </a>
+
+                                    @can('borrar_documentos_entrada.access')
+                                        @if($d->tipo === 'entrada' && $isBorrador)
+                                            <form method="POST" action="{{ route('inventario.documentos.destroy', $d) }}"
+                                                  onsubmit="return confirm('¿Borrar definitivamente este borrador de entrada?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        title="Borrar documento"
+                                                        aria-label="Borrar documento"
+                                                        class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-rose-600 hover:bg-rose-50">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m-6 5v6m4-6v6" />
+                                                    </svg>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @endcan
 
                                     {{-- Aplicar --}}
                                     @if($isBorrador)
@@ -171,7 +204,7 @@
                                     @endif
 
                                     {{-- Cancelar (solo si ya aplicado y no cancelado) --}}
-                                    @if($isAplicado && !$isCancelado)
+                                    @if($isAplicado && !$isCancelado && !$isCancelacion)
                                         <form method="POST" action="{{ route('inventario.documentos.cancelar', $d) }}"
                                               onsubmit="return confirm('¿Cancelar documento #{{ $d->id }}? Se generará reversa (cancelación).');">
                                             @csrf

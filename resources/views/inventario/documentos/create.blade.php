@@ -15,7 +15,7 @@
     'ajuste' => 'Ajuste',
   ][$tipo] ?? ucfirst($tipo);
 
-  $needsObra = in_array($tipo, ['salida','resguardo','devolucion'], true);
+  $needsObra = in_array($tipo, ['resguardo','devolucion'], true);
   $needsMotivo = in_array($tipo, ['entrada','ajuste'], true);
 @endphp
 
@@ -69,6 +69,22 @@
         </div>
 
       
+        @if($tipo === 'salida')
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Obra destino (opcional)</label>
+            <select name="obra_id"
+                    class="w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-200">
+              <option value="">Sin obra / consumo general</option>
+              @foreach(($obras ?? []) as $o)
+                <option value="{{ $o->id }}" @selected(old('obra_id') == $o->id)>
+                  {{ $o->clave_obra }}{{ $o->nombre ? ' - '.$o->nombre : '' }}
+                </option>
+              @endforeach
+            </select>
+            @error('obra_id')<div class="text-red-600 text-xs mt-1">{{ $message }}</div>@enderror
+          </div>
+        @endif
+
         @if($tipo === 'entrada')
   <div class="relative" x-data="buscadorProveedor()">
     <label class="block text-sm font-medium text-slate-700 mb-1">Proveedor (opcional)</label>
@@ -254,6 +270,9 @@
         <tr class="border-b">
           <th class="text-left py-3 pr-3">Producto</th>
           <th class="text-left py-3 pr-3 w-32">Cantidad</th>
+          @if($tipo === 'salida')
+            <th class="text-left py-3 pr-3 w-72">Equipo destino</th>
+          @endif
           @if(in_array($tipo, ['entrada','ajuste'], true))
             <th class="text-left py-3 pr-3 w-40">Costo unitario</th>
           @endif
@@ -278,6 +297,41 @@
                        x-model="item.cantidad"
                        class="w-full rounded-lg border border-slate-300 bg-white text-sm focus:border-[#0B265A] focus:outline-none focus:ring-2 focus:ring-blue-100">
               </td>
+              @if($tipo === 'salida')
+                <td class="py-3 pr-3">
+                  <label class="inline-flex items-center gap-2 text-xs text-slate-700">
+                    <input type="hidden" :name="`detalles[${index}][equipo_activo]`" value="0">
+                    <input type="checkbox" :name="`detalles[${index}][equipo_activo]`" value="1"
+                           x-model="item.equipo_activo"
+                           class="rounded border-slate-300 text-[#0B265A] focus:ring-[#0B265A]">
+                    Identificar equipo
+                  </label>
+                  <div x-show="item.equipo_activo" x-cloak class="mt-2 space-y-2">
+                    <select :name="`detalles[${index}][equipo_tipo]`" x-model="item.equipo_tipo" @change="cambiarTipoEquipo(item)"
+                            class="w-full rounded-lg border border-slate-300 bg-white text-xs focus:border-[#0B265A] focus:ring-[#0B265A]">
+                      <option value="">Tipo de equipo</option>
+                      <option value="vehiculo">Vehículo</option>
+                      <option value="maquina">Máquina</option>
+                    </select>
+                    <select x-show="item.equipo_tipo === 'vehiculo'" :name="`detalles[${index}][vehiculo_id]`"
+                            x-model="item.vehiculo_id"
+                            class="w-full rounded-lg border border-slate-300 bg-white text-xs focus:border-[#0B265A] focus:ring-[#0B265A]">
+                      <option value="">Selecciona vehículo</option>
+                      @foreach(($vehiculos ?? []) as $vehiculo)
+                        <option value="{{ $vehiculo->id }}">{{ trim(($vehiculo->marca ?? '').' '.($vehiculo->modelo ?? '').' '.($vehiculo->placas ?? '')) ?: 'Vehículo #'.$vehiculo->id }}</option>
+                      @endforeach
+                    </select>
+                    <select x-show="item.equipo_tipo === 'maquina'" :name="`detalles[${index}][maquina_id]`"
+                            x-model="item.maquina_id"
+                            class="w-full rounded-lg border border-slate-300 bg-white text-xs focus:border-[#0B265A] focus:ring-[#0B265A]">
+                      <option value="">Selecciona máquina</option>
+                      @foreach(($maquinas ?? []) as $maquina)
+                        <option value="{{ $maquina->id }}">{{ trim(($maquina->codigo ?? '').' - '.($maquina->nombre ?? '').' '.($maquina->tipo ?? '')) ?: 'Máquina #'.$maquina->id }}</option>
+                      @endforeach
+                    </select>
+                  </div>
+                </td>
+              @endif
               @if(in_array($tipo, ['entrada','ajuste'], true))
                 <td class="py-3 pr-3">
                   <input type="number" step="0.0001" min="0" required
@@ -301,7 +355,7 @@
             </tr>
         </template>
         <tr x-show="partidas.length === 0">
-            <td colspan="5" class="py-8 text-center text-slate-400 italic">
+            <td colspan="{{ $tipo === 'salida' ? 6 : 5 }}" class="py-8 text-center text-slate-400 italic">
                 No hay productos agregados. Utiliza el buscador de arriba.
             </td>
         </tr>
@@ -388,6 +442,15 @@ function documentoPartidas() {
         selectedOrders: [],
         ocLoading: false,
 
+        cambiarTipoEquipo(item) {
+            if (item.equipo_tipo === 'vehiculo') item.maquina_id = '';
+            if (item.equipo_tipo === 'maquina') item.vehiculo_id = '';
+            if (!item.equipo_tipo) {
+                item.vehiculo_id = '';
+                item.maquina_id = '';
+            }
+        },
+
         async buscarOrdenesCompra() {
             if (this.ocSearch.length < 2) {
                 this.ocResults = [];
@@ -453,6 +516,10 @@ function documentoPartidas() {
                         orden_compra_detalle_id: detalle.orden_compra_detalle_id,
                         costo_unitario: detalle.costo_unitario ?? 0,
                         notas: detalle.notas || '',
+                        equipo_activo: false,
+                        equipo_tipo: '',
+                        vehiculo_id: '',
+                        maquina_id: '',
                     });
                 });
             } catch (e) {
@@ -506,6 +573,10 @@ function documentoPartidas() {
                 cantidad: 1,
                 costo_unitario: this.defaultCostoUnitario(),
                 notas: '',
+                equipo_activo: false,
+                equipo_tipo: '',
+                vehiculo_id: '',
+                maquina_id: '',
                 refId: tempId
             });
 

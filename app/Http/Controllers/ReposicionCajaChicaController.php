@@ -308,6 +308,15 @@ class ReposicionCajaChicaController extends Controller
                 $activoOperativo = trim((string) ($item['activo_operativo'] ?? ''));
                 $maquinaId = null;
                 $vehiculoId = null;
+                $activoOperativoTipo = null;
+                $submittedMaquinaId = trim((string) ($item['maquina_id'] ?? ''));
+                $submittedVehiculoId = trim((string) ($item['vehiculo_id'] ?? ''));
+
+                if ($submittedMaquinaId !== '' && $submittedVehiculoId !== '') {
+                    throw ValidationException::withMessages([
+                        "gastos.{$idx}.activo_operativo" => "No puedes asignar maquina y vehiculo simultaneamente en la fila #" . ($idx + 1),
+                    ]);
+                }
 
                 if ($esParaActivo && !$esAlmacenGiralda) {
                     throw ValidationException::withMessages([
@@ -316,8 +325,10 @@ class ReposicionCajaChicaController extends Controller
                 }
 
                 if ($esParaActivo) {
-                    if ($activoOperativo === '' && !empty($item['maquina_id'])) {
-                        $activoOperativo = 'maquina:' . $item['maquina_id'];
+                    if ($activoOperativo === '' && $submittedMaquinaId !== '') {
+                        $activoOperativo = 'maquina:' . $submittedMaquinaId;
+                    } elseif ($activoOperativo === '' && $submittedVehiculoId !== '') {
+                        $activoOperativo = 'vehiculo:' . $submittedVehiculoId;
                     }
 
                     if ($activoOperativo === '') {
@@ -326,42 +337,54 @@ class ReposicionCajaChicaController extends Controller
                         ]);
                     }
 
-                    [$activoTipo, $activoId] = array_pad(explode(':', $activoOperativo, 2), 2, null);
-                    $activoId = (int) $activoId;
-
-                    if (!in_array($activoTipo, ['maquina', 'vehiculo'], true) || $activoId <= 0) {
-                        throw ValidationException::withMessages([
-                            "gastos.{$idx}.activo_operativo" => "El activo operativo seleccionado no es valido en la fila #" . ($idx + 1),
-                        ]);
-                    }
-
-                    if ($activoTipo === 'maquina') {
-                        $maquinaValida = Maquina::query()
-                            ->where('id', $activoId)
-                            ->where('estado', '!=', Maquina::ESTADO_BAJA_DEFINITIVA)
-                            ->exists();
-
-                        if (!$maquinaValida) {
+                    if ($activoOperativo === 'indirecto') {
+                        if ($submittedMaquinaId !== '' || $submittedVehiculoId !== '') {
                             throw ValidationException::withMessages([
-                                "gastos.{$idx}.activo_operativo" => "La maquina seleccionada no esta disponible en la fila #" . ($idx + 1),
+                                "gastos.{$idx}.activo_operativo" => "Indirecto no puede combinarse con maquina o vehiculo en la fila #" . ($idx + 1),
                             ]);
                         }
 
-                        $maquinaId = $activoId;
-                    }
+                        $activoOperativoTipo = 'indirecto';
+                    } else {
+                        [$activoTipo, $activoId] = array_pad(explode(':', $activoOperativo, 2), 2, null);
+                        $activoId = (int) $activoId;
 
-                    if ($activoTipo === 'vehiculo') {
-                        $vehiculoValido = Vehiculo::query()
-                            ->where('id', $activoId)
-                            ->exists();
-
-                        if (!$vehiculoValido) {
+                        if (!in_array($activoTipo, ['maquina', 'vehiculo'], true) || $activoId <= 0) {
                             throw ValidationException::withMessages([
-                                "gastos.{$idx}.activo_operativo" => "El vehiculo seleccionado no esta disponible en la fila #" . ($idx + 1),
+                                "gastos.{$idx}.activo_operativo" => "El activo operativo seleccionado no es valido en la fila #" . ($idx + 1),
                             ]);
                         }
 
-                        $vehiculoId = $activoId;
+                        if ($activoTipo === 'maquina') {
+                            $maquinaValida = Maquina::query()
+                                ->where('id', $activoId)
+                                ->where('estado', '!=', Maquina::ESTADO_BAJA_DEFINITIVA)
+                                ->exists();
+
+                            if (!$maquinaValida) {
+                                throw ValidationException::withMessages([
+                                    "gastos.{$idx}.activo_operativo" => "La maquina seleccionada no esta disponible en la fila #" . ($idx + 1),
+                                ]);
+                            }
+
+                            $maquinaId = $activoId;
+                            $activoOperativoTipo = 'maquina';
+                        }
+
+                        if ($activoTipo === 'vehiculo') {
+                            $vehiculoValido = Vehiculo::query()
+                                ->where('id', $activoId)
+                                ->exists();
+
+                            if (!$vehiculoValido) {
+                                throw ValidationException::withMessages([
+                                    "gastos.{$idx}.activo_operativo" => "El vehiculo seleccionado no esta disponible en la fila #" . ($idx + 1),
+                                ]);
+                            }
+
+                            $vehiculoId = $activoId;
+                            $activoOperativoTipo = 'vehiculo';
+                        }
                     }
                 }
 
@@ -394,6 +417,7 @@ class ReposicionCajaChicaController extends Controller
                     'es_para_maquina' => $esParaMaquina,
                     'maquina_id' => $maquinaId,
                     'vehiculo_id' => $vehiculoId,
+                    'activo_operativo_tipo' => $activoOperativoTipo,
                     'fecha_gasto' => $item['fecha_gasto'] ?: now()->toDateString(),
                     'proveedor_nombre' => $item['proveedor_nombre'],
                     'proveedor_id' => $proveedorId,

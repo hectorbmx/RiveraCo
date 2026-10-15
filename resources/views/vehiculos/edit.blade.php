@@ -12,12 +12,14 @@
         $historialAsignaciones = $historialAsignaciones ?? collect();
         $empleadosAsignables   = $empleadosAsignables   ?? collect();
         $preventivoVehiculo    = $preventivoVehiculo    ?? null;
+        $combustiblesVehiculo = $combustiblesVehiculo ?? collect();
 
         $tabs = [
             'general'        => 'General',
             'asignacion'     => 'Asignación',
             'seguro'         => 'Seguro',
             'mantenimientos' => 'Mantenimientos',
+            'combustible'    => 'Combustible',
             'documentos'     => 'Documentos',
         ];
     @endphp
@@ -956,6 +958,115 @@
             @endif
             {{-- FIN TAB: MANTENIMIENTOS --}}
 
+            {{-- TAB: COMBUSTIBLE --}}
+            @if($tab === 'combustible')
+                <div class="space-y-5">
+                    <div>
+                        <h2 class="text-lg font-semibold mb-1">Salidas asignadas</h2>
+                        <p class="text-sm text-slate-500">Historial de salidas de inventario vinculadas a este vehículo.</p>
+                    </div>
+                    <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-[#0B265A] text-white">
+                                <tr>
+                                    <th class="px-3 py-3 text-left font-semibold">Fecha</th>
+                                    <th class="px-3 py-3 text-left font-semibold">Producto</th>
+                                    <th class="px-3 py-3 text-right font-semibold">Cantidad</th>
+                                    <th class="px-3 py-3 text-left font-semibold">Obra</th>
+                                    <th class="px-3 py-3 text-left font-semibold">Documento</th>
+                                    <th class="px-3 py-3 text-left font-semibold">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @forelse($combustiblesVehiculo as $gasto)
+                                    <tr>
+                                        <td class="px-3 py-3 text-slate-700">{{ $gasto->documento?->fecha?->format('d/m/Y') ?? '—' }}</td>
+                                        <td class="px-3 py-3 text-slate-900">{{ $gasto->producto?->nombre ?? '—' }}</td>
+                                        <td class="px-3 py-3 text-right text-slate-700">{{ number_format((float) $gasto->cantidad, 3) }}</td>
+                                        <td class="px-3 py-3 text-slate-700">{{ $gasto->documento?->obra?->clave_obra ?? $gasto->documento?->obra?->nombre ?? 'Sin obra' }}</td>
+                                        <td class="px-3 py-3 text-slate-700">
+                                            @if($gasto->documento)
+                                                
+                                                <a href="{{ route('inventario.documentos.show', $gasto->documento) }}" class="text-blue-700 hover:underline font-medium">
+                                                    {{ $gasto->documento->folio ?: 'SAL-' . str_pad((string) $gasto->documento->id, 6, '0', STR_PAD_LEFT) }}
+                                                </a>
+                                            @else
+                                                —
+                                            @endif
+                                        </td>
+                                        <td class="px-3 py-3 text-slate-700">{{ $gasto->documento?->estado ?? '—' }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="px-3 py-8 text-center text-slate-500">No hay salidas de inventario vinculadas a este vehículo.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            <div class="space-y-3">
+                <div>
+                    <h2 class="text-lg font-semibold mb-1">Cargas registradas desde la app móvil</h2>
+                    <p class="text-sm text-slate-500">Historial de kilometraje y gasolina capturado por residentes para este vehículo.</p>
+                </div>
+                <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-[#0B265A] text-white">
+                            <tr>
+                                <th class="px-3 py-3 text-left font-semibold">Fecha</th>
+                                <th class="px-3 py-3 text-left font-semibold">Obra</th>
+                                <th class="px-3 py-3 text-left font-semibold">Empleado asignado</th>
+                                <th class="px-3 py-3 text-left font-semibold">Capturó</th>
+                                <th class="px-3 py-3 text-right font-semibold">Km</th>
+                                <th class="px-3 py-3 text-right font-semibold">Gasolina</th>
+                                <th class="px-3 py-3 text-left font-semibold">Odómetro</th>
+                                <th class="px-3 py-3 text-left font-semibold">Ticket</th>
+                                <th class="px-3 py-3 text-left font-semibold">Notas</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @forelse($cargasAppVehiculo as $log)
+                                @php
+                                    $empleadoLog = $log->asignacion?->empleado;
+                                @endphp
+                                <tr class="align-top hover:bg-slate-50">
+                                    <td class="px-3 py-3 whitespace-nowrap">{{ $log->fecha?->format('d/m/Y H:i') ?? '—' }}</td>
+                                    <td class="px-3 py-3">{{ $log->obra?->clave_obra ?? $log->obra?->nombre ?? 'Sin obra' }}</td>
+                                    <td class="px-3 py-3">{{ $empleadoLog ? trim(($empleadoLog->Nombre ?? '') . ' ' . ($empleadoLog->Apellidos ?? '')) : 'Sin empleado' }}</td>
+                                    <td class="px-3 py-3">{{ $log->capturadoPor?->name ?? '—' }}</td>
+                                    <td class="px-3 py-3 text-right font-semibold">{{ number_format((int) $log->km) }} km</td>
+                                    <td class="px-3 py-3 text-right">{{ $log->monto_gasolina !== null ? '$' . number_format((float) $log->monto_gasolina, 2) : '—' }}</td>
+                                    <td class="px-3 py-3">
+                                        @if($log->foto_url)
+                                            <a href="{{ $log->foto_url }}" target="_blank" class="inline-block rounded-lg border border-slate-200 overflow-hidden hover:ring-2 hover:ring-blue-300">
+                                                <img src="{{ $log->foto_url }}" alt="Odómetro {{ $log->km }}" class="h-16 w-20 object-cover bg-slate-100">
+                                            </a>
+                                        @else
+                                            <span class="text-slate-400">Sin imagen</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-3 py-3">
+                                        @if($log->foto_ticket_gasolina_url)
+                                            <a href="{{ $log->foto_ticket_gasolina_url }}" target="_blank" class="inline-block rounded-lg border border-slate-200 overflow-hidden hover:ring-2 hover:ring-blue-300">
+                                                <img src="{{ $log->foto_ticket_gasolina_url }}" alt="Ticket gasolina" class="h-16 w-20 object-cover bg-slate-100">
+                                            </a>
+                                        @else
+                                            <span class="text-slate-400">Sin ticket</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-3 py-3 max-w-xs text-slate-600">{{ $log->notas ?: '—' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="9" class="px-3 py-8 text-center text-slate-500">No hay cargas registradas desde la app móvil para este vehículo.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
             {{-- TAB: DOCUMENTOS --}}
             @if($tab === 'documentos')
                 <div class="space-y-6">

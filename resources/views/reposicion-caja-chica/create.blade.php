@@ -546,7 +546,12 @@ function reposicionCajaChicaExcel() {
                 label: 'Vehículo - ' + [vehiculo.marca, vehiculo.modelo, vehiculo.placas].filter(Boolean).join(' '),
             }));
 
-            return [...maquinas, ...vehiculos];
+            const indirecto = [{
+                value: 'indirecto',
+                label: 'Indirecto',
+            }];
+
+            return [...indirecto, ...maquinas, ...vehiculos];
         },
 
         get selectedAlmacen() {

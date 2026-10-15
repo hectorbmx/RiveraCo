@@ -3506,7 +3506,7 @@
 
             <div class="border rounded-xl overflow-hidden">
                 <table class="w-full text-sm">
-                    <thead class="bg-slate-50 text-slate-500">
+                    <thead class="bg-[#0B265A] text-white">
                         <tr class="border-b">
                             <th class="py-2 px-3 text-left">Fecha</th>
                             <th class="py-2 px-3 text-left">Vehiculo</th>
@@ -3629,14 +3629,14 @@
     {{-- Tabla de registros --}}
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <table class="min-w-full text-sm">
-            <thead class="bg-slate-50 border-b border-slate-200">
+            <thead class="bg-[#0B265A] border-b border-[#0B265A]">
                 <tr>
-                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Fecha</th>
-                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Máquina</th>
-                    <th class="px-4 py-2 text-right text-xs font-semibold text-slate-500">Horómetro inicio</th>
-                    <th class="px-4 py-2 text-right text-xs font-semibold text-slate-500">Horómetro fin</th>
-                    <th class="px-4 py-2 text-right text-xs font-semibold text-slate-500">Horas</th>
-                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Notas</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold text-white">Fecha</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold text-white">Máquina</th>
+                    <th class="px-4 py-2 text-right text-xs font-semibold text-white">Horómetro inicio</th>
+                    <th class="px-4 py-2 text-right text-xs font-semibold text-white">Horómetro fin</th>
+                    <th class="px-4 py-2 text-right text-xs font-semibold text-white">Horas</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold text-white">Notas</th>
                 </tr>
             </thead>
 

@@ -40,6 +40,7 @@
             'obras'    => 'Obras',
             'seguros'  => 'Seguros',
             'kardex'   =>  'Kardex',
+            'combustible' => 'Combustible',
         ];
     @endphp
 
@@ -299,7 +300,8 @@
                             <th class="text-left px-4 py-3">Obra</th>
                             <th class="text-left px-4 py-3">Inicio</th>
                             <th class="text-left px-4 py-3">Fin</th>
-                            <th class="text-left px-4 py-3">Estado</th>
+                            <th class="text-left px-4 py-3">Documento</th>
+                    <th class="text-left px-4 py-3">Estado</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y">
@@ -445,6 +447,51 @@
     </div>
 </div>
 @endif
+    @if($tab === 'combustible')
+<div class="rounded-xl border bg-white overflow-hidden">
+    <div class="px-4 py-3 border-b">
+        <div class="text-sm font-semibold text-slate-800">Salidas asignadas</div>
+        <div class="text-xs text-slate-500">Historial de salidas de inventario vinculadas a esta máquina.</div>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+            <thead class="bg-[#0B265A] text-white">
+                <tr>
+                    <th class="text-left px-4 py-3">Fecha</th>
+                    <th class="text-left px-4 py-3">Producto</th>
+                    <th class="text-right px-4 py-3">Cantidad</th>
+                    <th class="text-left px-4 py-3">Obra</th>
+                    <th class="text-left px-4 py-3">Documento</th>
+                    <th class="text-left px-4 py-3">Estado</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y">
+                @forelse($combustiblesMaquina as $gasto)
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3">{{ $gasto->documento?->fecha?->format('d/m/Y') ?? '—' }}</td>
+                        <td class="px-4 py-3">{{ $gasto->producto?->nombre ?? '—' }}</td>
+                        <td class="px-4 py-3 text-right">{{ number_format((float) $gasto->cantidad, 3) }}</td>
+                        <td class="px-4 py-3">{{ $gasto->documento?->obra?->clave_obra ?? $gasto->documento?->obra?->nombre ?? 'Sin obra' }}</td>
+                        <td class="px-4 py-3">
+                            @if($gasto->documento)
+                                
+                                <a href="{{ route('inventario.documentos.show', $gasto->documento) }}" class="text-blue-700 hover:underline font-medium">
+                                    {{ $gasto->documento->folio ?: 'SAL-' . str_pad((string) $gasto->documento->id, 6, '0', STR_PAD_LEFT) }}
+                                </a>
+                            @else
+                                —
+                            @endif
+                        </td>
+                        <td class="px-4 py-3">{{ $gasto->documento?->estado ?? '—' }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">Sin salidas de inventario vinculadas a esta máquina.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+    @endif
     @if($tab === 'kardex')
 <div class="rounded-xl border bg-white overflow-hidden">
     <div class="px-4 py-3 border-b">
@@ -461,6 +508,7 @@
                     <th class="text-left px-4 py-3">Fecha</th>
                     <th class="text-left px-4 py-3">Tipo</th>
                     <th class="text-left px-4 py-3">Ubicación</th>
+                    <th class="text-left px-4 py-3">Documento</th>
                     <th class="text-left px-4 py-3">Estado</th>
                     <th class="text-left px-4 py-3">Obra</th>
                     <th class="text-left px-4 py-3">Usuario</th>
