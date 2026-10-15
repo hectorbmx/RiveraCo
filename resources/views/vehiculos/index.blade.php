@@ -49,21 +49,21 @@
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm">
-                    <thead class="bg-slate-50 border-b border-slate-200">
+                    <thead class="bg-[#0B265A] text-white">
                         <tr>
-                            <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">ID</th>
-                            <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Vehiculo</th>
-                            <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Placas</th>
-                            <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Asignado a</th>
-                            <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Ano</th>
-                            <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Serie</th>
-                            <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Vence Seguro</th>
-                            <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">KM</th>
-                            <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Servicio</th>
-                            <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Tarjeta Circulación</th>
-                            <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Seguro</th>
-                            <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500">Estatus</th>
-                            <th class="px-4 py-2 text-right text-xs font-semibold text-slate-500">Acciones</th>
+                            <th class="px-4 py-2 text-center text-xs font-semibold text-white">ID</th>
+                            <th class="px-4 py-2 text-center text-xs font-semibold text-white">Vehiculo</th>
+                            <th class="px-4 py-2 text-center text-xs font-semibold text-white">Placas</th>
+                            <th class="px-4 py-2 text-center text-xs font-semibold text-white">Asignado a</th>
+                            <th class="px-4 py-2 text-center text-xs font-semibold text-white">Ano</th>
+                            <th class="px-4 py-2 text-center text-xs font-semibold text-white">Serie</th>
+                            <th class="px-4 py-2 text-center text-xs font-semibold text-white">Vence Seguro</th>
+                            <th class="px-4 py-2 text-center text-xs font-semibold text-white">KM</th>
+                            <th class="px-4 py-2 text-center text-xs font-semibold text-white">Servicio</th>
+                            <th class="px-4 py-2 text-center text-xs font-semibold text-white">Tarjeta Circulación</th>
+                            <th class="px-4 py-2 text-center text-xs font-semibold text-white">Seguro</th>
+                            <th class="px-4 py-2 text-center text-xs font-semibold text-white">Estatus</th>
+                            <th class="px-4 py-2 text-right text-xs font-semibold text-white">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -91,9 +91,9 @@
 
                                 <td class="px-4 py-2 text-center">
                                     <div class="flex flex-col">
-                                        <span class="font-medium text-slate-800">
+                                                                                <a href="{{ route('mantenimiento.vehiculos.edit', ['vehiculo' => $vehiculo, 'tab' => 'general']) }}" class="font-medium text-blue-700 hover:text-blue-900 hover:underline">
                                             {{ trim(($vehiculo->marca ?? '') . ' ' . ($vehiculo->modelo ?? '')) ?: 'Vehiculo' }}
-                                        </span>
+                                        </a>
                                     </div>
                                 </td>
 

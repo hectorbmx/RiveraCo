@@ -64,6 +64,11 @@
         $firmanteVobo = $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_VOBO)?->user?->name;
         $firmanteReviso = $firmasImpresas->get('reviso')?->user?->name
             ?? $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_AUTORIZO)?->user?->name;
+        $esAlmacenGiralda = $reporteContexto === 'Reporte general'
+            && request('ambito') === 'giralda'
+            && $gastos->whereNotNull('obra_id')->isEmpty();
+        $contextoEtiqueta = $esAlmacenGiralda ? 'ALMACÉN' : 'OBRA';
+        $contextoNombre = $esAlmacenGiralda ? 'Almacén Giralda' : $reporteContexto;
     @endphp
 
     @forelse($grupos as $grupo)
@@ -85,7 +90,7 @@
 
             <table class="meta">
                 <tr>
-                    <td style="width: 62%;"><strong>OBRA:</strong> {{ $reporteContexto }}</td>
+                    <td style="width: 62%;"><strong>{{ $contextoEtiqueta }}:</strong> {{ $contextoNombre }}</td>
                     <td rowspan="2" class="center"><strong>No. Obra:</strong></td>
                 </tr>
                 <tr>
@@ -123,7 +128,7 @@
                                     'indirecto' => 'indirecto',
                                     'maquina' => preg_replace('/^Maquina:\s*/i', 'maquina: ', $activoOperativo),
                                     'vehiculo' => preg_replace('/^Vehiculo:\s*/i', 'vehiculo: ', $activoOperativo),
-                                    default => preg_replace('/^(Maquina|Vehiculo):\s*/i', fn ($m) => strtolower($m[1]) . ': ', $activoOperativo),
+                                    default => preg_replace_callback('/^(Maquina|Vehiculo):\s*/i', fn ($m) => strtolower($m[1]) . ': ', $activoOperativo),
                                 };
 
                                 $conceptoImpreso = trim($conceptoImpreso . ' | ' . $activoOperativo);

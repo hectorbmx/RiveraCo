@@ -1065,6 +1065,8 @@ Route::prefix('pagos-proveedores')
                 Route::post('/{gasto}/autorizar', [ReposicionCajaChicaController::class, 'autorizar'])->name('autorizar');
                 Route::post('/{gasto}/autorizar-parcial', [ReposicionCajaChicaController::class, 'autorizarParcial'])->name('autorizar-parcial');
                 Route::post('/{gasto}/rechazar', [ReposicionCajaChicaController::class, 'rechazar'])->name('rechazar');
+                Route::get('/{gasto}/edit', [ReposicionCajaChicaController::class, 'edit'])->middleware('permission:caja_chica.edit.access')->name('edit');
+                Route::match(['put', 'patch'], '/{gasto}', [ReposicionCajaChicaController::class, 'update'])->middleware('permission:caja_chica.edit.access')->name('update');
                 Route::delete('/{gasto}', [ReposicionCajaChicaController::class, 'destroy'])
                     ->middleware('permission:caja_chica.delete.access')
                     ->name('destroy');

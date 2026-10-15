@@ -237,9 +237,19 @@
                             @php
                                 $puedeEliminarGasto = !in_array($gasto->estado_autorizacion, ['autorizado', 'autorizado_parcial'], true)
                                     && blank($gasto->relacion_id);
+                                $puedeEditarGasto = !in_array($gasto->estado_autorizacion, ['autorizado', 'autorizado_parcial'], true);
                             @endphp
                             <div class="flex items-center justify-end gap-2">
-                                <a href="{{ route('reposicion-caja-chica.show', $gasto) }}" class="font-semibold text-blue-700 hover:underline">Ver</a>
+                                @can('caja_chica.edit.access')
+                                @if($puedeEditarGasto)
+                                <a href="{{ route('reposicion-caja-chica.edit', $gasto) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-full text-blue-700 transition hover:bg-blue-50 hover:text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" title="Editar gasto" aria-label="Editar gasto">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M12 20h9" />
+                                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+                                    </svg>
+                                </a>
+                                @endif
+                                @endcan
 
                                 @can('caja_chica.delete.access')
                                     @if($puedeEliminarGasto)

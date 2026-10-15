@@ -614,9 +614,143 @@ class ReposicionCajaChicaController extends Controller
     {
         $gasto->load(['categoria', 'subcategoria', 'obra', 'almacen', 'maquina', 'vehiculo', 'archivos', 'solicitadoPor', 'resueltoPor']);
 
-        return view('reposicion-caja-chica.show', compact('gasto'));
+        return view('reposicion-caja-chica.show', [
+            'gasto' => $gasto,
+            'modoEdicion' => false,
+        ]);
     }
 
+    public function edit(ReposicionCajaChicaGasto $gasto)
+    {
+        $gasto->load(['categoria', 'subcategoria', 'obra', 'almacen', 'maquina', 'vehiculo', 'archivos', 'solicitadoPor', 'resueltoPor']);
+
+        $maquinas = Maquina::query()
+            ->where('estado', '!=', Maquina::ESTADO_BAJA_DEFINITIVA)
+            ->orderBy('codigo')
+            ->orderBy('nombre')
+            ->get(['id', 'codigo', 'nombre', 'tipo', 'estado', 'ubicacion']);
+        $vehiculos = Vehiculo::query()
+            ->orderBy('marca')
+            ->orderBy('modelo')
+            ->orderBy('placas')
+            ->get(['id', 'marca', 'modelo', 'placas', 'tipo', 'estatus']);
+
+        $subcategorias = ReposicionCajaChicaSubcategoria::query()
+            ->where('activo', true)
+            ->where('categoria_id', $gasto->categoria_id)
+            ->orderBy('orden')
+            ->orderBy('nombre')
+            ->get(['id', 'nombre']);
+
+        return view('reposicion-caja-chica.show', [
+            'gasto' => $gasto,
+            'maquinas' => $maquinas,
+            'vehiculos' => $vehiculos,
+            'subcategorias' => $subcategorias,
+            'modoEdicion' => true,
+        ]);
+    }
+
+    public function update(Request $request, ReposicionCajaChicaGasto $gasto)
+    {
+        $this->authorizeAny(['caja_chica.edit.access'], 'No tienes permiso para editar gastos de caja chica.');
+
+        if (in_array($gasto->estado_autorizacion, ['autorizado', 'autorizado_parcial'], true)) {
+            return back()->with('error', 'No se puede modificar un gasto autorizado.');
+        }
+
+        $validated = $request->validate([
+            'fecha_gasto' => ['required', 'date'],
+            'forma_pago' => ['required', 'in:efectivo,tarjeta,transferencia'],
+            'proveedor_nombre' => ['required', 'string', 'max:255'],
+            'proveedor_rfc' => ['nullable', 'string', 'max:20'],
+            'concepto' => ['required', 'string', 'max:2000'],
+            'motivo_sin_factura' => ['nullable', 'string', 'max:2000'],
+            'observaciones' => ['nullable', 'string', 'max:4000'],
+            'subcategoria_id' => ['nullable', 'integer', 'exists:reposicion_caja_chica_subcategorias,id'],
+            'activo_operativo' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $activoOperativo = trim((string) ($validated['activo_operativo'] ?? ''));
+        $maquinaId = null;
+        $vehiculoId = null;
+        $activoOperativoTipo = null;
+
+        if ($activoOperativo !== '') {
+            if ($activoOperativo === 'indirecto') {
+                $activoOperativoTipo = 'indirecto';
+            } else {
+                [$activoTipo, $activoId] = array_pad(explode(':', $activoOperativo, 2), 2, null);
+                $activoId = (int) $activoId;
+
+                if (!in_array($activoTipo, ['maquina', 'vehiculo'], true) || $activoId <= 0) {
+                    throw ValidationException::withMessages([
+                        'activo_operativo' => 'El activo operativo seleccionado no es valido.',
+                    ]);
+                }
+
+                if ($activoTipo === 'maquina') {
+                    $maquinaValida = Maquina::query()
+                        ->where('id', $activoId)
+                        ->where('estado', '!=', Maquina::ESTADO_BAJA_DEFINITIVA)
+                        ->exists();
+
+                    if (!$maquinaValida) {
+                        throw ValidationException::withMessages([
+                            'activo_operativo' => 'La maquina seleccionada no esta disponible.',
+                        ]);
+                    }
+
+                    $maquinaId = $activoId;
+                    $activoOperativoTipo = 'maquina';
+                } else {
+                    $vehiculoValido = Vehiculo::query()->where('id', $activoId)->exists();
+
+                    if (!$vehiculoValido) {
+                        throw ValidationException::withMessages([
+                            'activo_operativo' => 'El vehiculo seleccionado no esta disponible.',
+                        ]);
+                    }
+
+                    $vehiculoId = $activoId;
+                    $activoOperativoTipo = 'vehiculo';
+                }
+            }
+        }
+
+        $estado = $gasto->estado_autorizacion;
+        $cambios = [
+            'fecha_gasto' => $validated['fecha_gasto'],
+            'forma_pago' => $validated['forma_pago'],
+            'proveedor_nombre' => $validated['proveedor_nombre'],
+            'proveedor_rfc' => $validated['proveedor_rfc'] ?? null,
+            'concepto' => $validated['concepto'],
+            'motivo_sin_factura' => $validated['motivo_sin_factura'] ?? null,
+            'observaciones' => $validated['observaciones'] ?? null,
+            'subcategoria_id' => $validated['subcategoria_id'] ?? null,
+            'es_para_maquina' => $maquinaId !== null,
+            'maquina_id' => $maquinaId,
+            'vehiculo_id' => $vehiculoId,
+            'activo_operativo_tipo' => $activoOperativoTipo,
+            'updated_by' => $request->user()->id,
+        ];
+
+        if ($estado === 'rechazado') {
+            $cambios['estado_autorizacion'] = 'pendiente';
+            $cambios['importe_autorizado'] = null;
+            $cambios['motivo_rechazo'] = null;
+            $cambios['resuelto_por'] = null;
+            $cambios['resuelto_at'] = null;
+            $cambios['solicitado_por'] = $request->user()->id;
+            $cambios['solicitado_at'] = now();
+        }
+
+        $gasto->update($cambios);
+
+        return redirect()
+            ->route('reposicion-caja-chica.show', $gasto)
+            ->with('success', 'Gasto actualizado correctamente.');
+    }
     public function destroy(Request $request, ReposicionCajaChicaGasto $gasto)
     {
         $this->authorizeAny(['caja_chica.delete.access'], 'No tienes permiso para eliminar gastos de caja chica.');
