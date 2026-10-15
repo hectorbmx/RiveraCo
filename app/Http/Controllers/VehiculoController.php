@@ -287,6 +287,31 @@ public function index(Request $request)
                     ? Storage::disk('public')->url($log->foto_ticket_gasolina)
                     : null;
             });
+
+        // TODO: convertir el año en un filtro seleccionable cuando existan registros de varios años.
+        $anioActual = now()->year;
+        $nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        $resumenCombustibleMensual = collect(range(1, 12))->map(function (int $mes) use ($cargasAppVehiculo, $anioActual, $nombresMeses) {
+            $logsMes = $cargasAppVehiculo
+                ->filter(fn (VehiculoEmpleadoKmLog $log) => $log->fecha?->year === $anioActual && $log->fecha?->month === $mes)
+                ->sortBy('fecha')
+                ->values();
+
+            $kmRecorridos = 0;
+            $kmAnterior = null;
+            foreach ($logsMes as $log) {
+                if ($kmAnterior !== null) {
+                    $kmRecorridos += max(0, (int) $log->km - $kmAnterior);
+                }
+                $kmAnterior = (int) $log->km;
+            }
+
+            return [
+                'mes' => $nombresMeses[$mes - 1],
+                'monto' => round((float) $logsMes->sum(fn (VehiculoEmpleadoKmLog $log) => (float) ($log->monto_gasolina ?? 0)), 2),
+                'km' => $kmRecorridos,
+            ];
+        })->values();
     }
     if ($tab === 'mantenimientos') {
         $mantenimientosVehiculo = $vehiculo->mantenimientos()
@@ -318,6 +343,7 @@ public function index(Request $request)
         'preventivoVehiculo',
         'combustiblesVehiculo',
         'cargasAppVehiculo',
+        'resumenCombustibleMensual',
         'kmSugeridoAsignacion'
     ));
 }
@@ -560,7 +586,7 @@ protected function resolverKmInicialAsignacion(Vehiculo $vehiculo, ?VehiculoEmpl
                 'foto' => $path,
                 'notas' => $validated['notas'] ?? null,
                 'capturado_por_user_id' => $request->user()?->id,
-                'origen' => 'web',
+                'origen' => VehiculoEmpleadoKmLog::ORIGEN_WEB_MECANICO,
             ]);
 
             $asignacion->km_final = (int) $validated['km'];

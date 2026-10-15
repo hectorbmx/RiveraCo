@@ -50,6 +50,8 @@ use App\Notifications\FacturaBorradorCreado;
 use App\Notifications\FacturaBorradorListoParaFacturar;
 use App\Notifications\FacturaBorradorRechazado;
 use App\Services\Maquinas\MaquinaService;
+use App\Services\Mobile\AppMobileContextService;
+use App\Services\Image\InterventionImageOptimizer;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
@@ -1164,6 +1166,8 @@ if ($tab === 'horas-maquina') {
 }
 
 
+$asignacionesVehiculoActivas = collect();
+
 if ($tab === 'vehiculos') {
     $empleadosActivosObraIds = ObraEmpleado::query()
         ->where('obra_id', $obra->id)
@@ -1527,6 +1531,7 @@ return view('obras.edit', [
     'maquinasDisponibles'         => $maquinasDisponibles,
     'registrosHorasMaquina'       => $registrosHorasMaquina,
     'vehiculosObra'               => $vehiculosObra,
+    'asignacionesVehiculoActivas' => $asignacionesVehiculoActivas,
     'vehiculoKmLogs'              => $vehiculoKmLogs,
     'vehiculoKmResumen'           => $vehiculoKmResumen,
     
@@ -3112,6 +3117,221 @@ public function desvincularFacturaRelacionada(Obra $obra, string $source, int $f
         ->with('success', 'Factura desvinculada de la obra.');
 }
 
+private function validarContextoCapturaCombustible(Request $request, Obra $obra, VehiculoEmpleado $asignacion): VehiculoEmpleado
+{
+    $user = $request->user();
+    abort_unless($user, 403);
+
+    $contexto = app(AppMobileContextService::class);
+    $usuarioApp = $user->usuarioApp;
+
+    // Los administradores conservan acceso global; el residente debe tener la obra asignada.
+    if (! $contexto->puedeVerTodasLasObrasResidente($user)) {
+        abort_unless(
+            $usuarioApp
+            && $contexto->obrasDisponiblesResidente($user, $usuarioApp)
+                ->contains(fn (Obra $obraDisponible) => (int) $obraDisponible->id === (int) $obra->id),
+            403,
+            'No tienes acceso a esta obra.'
+        );
+    }
+
+    $asignacionActiva = VehiculoEmpleado::query()
+        ->whereKey($asignacion->id)
+        ->where('vehiculo_id', $asignacion->vehiculo_id)
+        ->whereDate('fecha_asignacion', '<=', now()->toDateString())
+        ->where(function ($query) {
+            $query->whereNull('fecha_fin')
+                ->orWhereDate('fecha_fin', '>=', now()->toDateString());
+        })
+        ->whereHas('empleado', function ($query) {
+            $query->whereNotNull('id_Empleado');
+        })
+        ->first();
+
+    abort_unless($asignacionActiva, 422, 'El vehículo no tiene una asignación activa.');
+
+    $empleadoActivoEnObra = ObraEmpleado::query()
+        ->where('obra_id', $obra->id)
+        ->where('empleado_id', $asignacionActiva->empleado_id)
+        ->where('activo', true)
+        ->where(function ($query) {
+            $query->whereNull('fecha_alta')
+                ->orWhereDate('fecha_alta', '<=', now()->toDateString());
+        })
+        ->where(function ($query) {
+            $query->whereNull('fecha_baja')
+                ->orWhereDate('fecha_baja', '>=', now()->toDateString());
+        })
+        ->exists();
+
+    abort_unless($empleadoActivoEnObra, 422, 'El vehículo no está asignado a esta obra.');
+
+    return $asignacionActiva->loadMissing(['vehiculo', 'empleado']);
+}
+public function storeVehiculoCombustible(Request $request, Obra $obra, VehiculoEmpleado $asignacion, InterventionImageOptimizer $imageOptimizer)
+{
+    $validado = $this->validarDatosCapturaCombustible($request, $obra, $asignacion);
+    $data = $validado['data'];
+    $asignacion = $validado['asignacion'];
+
+    DB::transaction(function () use ($request, $data, $obra, $asignacion, $imageOptimizer) {
+        $fotoPath = $imageOptimizer->optimizeAndStore($data['foto'], 'vehiculos/km-logs', 'public', ['max_width' => 1920, 'max_height' => 1920, 'quality' => 80]);
+        $ticketPath = $request->hasFile('foto_ticket_gasolina')
+            ? $imageOptimizer->optimizeAndStore($data['foto_ticket_gasolina'], 'vehiculos/gasolina-tickets', 'public', ['max_width' => 1920, 'max_height' => 1920, 'quality' => 80])
+            : null;
+
+        VehiculoEmpleadoKmLog::create([
+            'vehiculo_empleado_id' => $asignacion->id,
+            'obra_id' => $obra->id,
+            'fecha' => $data['fecha'],
+            'km' => (int) $data['km'],
+            'foto' => $fotoPath,
+            'foto_ticket_gasolina' => $ticketPath,
+            'monto_gasolina' => $data['monto_gasolina'] ?? null,
+            'notas' => $data['notas'] ?? null,
+            'capturado_por_user_id' => $request->user()->id,
+            'origen' => VehiculoEmpleadoKmLog::ORIGEN_WEB_RESIDENTE,
+        ]);
+
+        $asignacion->update([
+            'km_final' => (int) $data['km'],
+        ]);
+    });
+
+    return redirect()
+        ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'vehiculos'])
+        ->with('success', 'Kilometraje y gasolina registrados correctamente.');
+}
+public function updateVehiculoCombustible(Request $request, Obra $obra, VehiculoEmpleadoKmLog $log, InterventionImageOptimizer $imageOptimizer)
+{
+    abort_unless((int) $log->obra_id === (int) $obra->id, 404);
+
+    $data = $request->validate([
+        'km' => ['required', 'integer', 'min:0'],
+        'fecha' => ['required', 'date'],
+        'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
+        'foto_ticket_gasolina' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
+        'monto_gasolina' => ['required', 'numeric', 'min:0.01', 'max:99999999.99'],
+        'notas' => ['nullable', 'string', 'max:500'],
+    ]);
+
+    $ultimoKm = VehiculoEmpleadoKmLog::query()
+        ->where('vehiculo_empleado_id', $log->vehiculo_empleado_id)
+        ->whereKeyNot($log->id)
+        ->max('km');
+
+    $asignacion = $log->asignacion;
+    $minPermitido = max(
+        (int) ($asignacion?->km_inicial ?? 0),
+        (int) ($ultimoKm ?? 0)
+    );
+
+    if ((int) $data['km'] <= $minPermitido) {
+        throw ValidationException::withMessages([
+            'km' => "El kilometraje debe ser mayor a {$minPermitido}.",
+        ]);
+    }
+
+    DB::transaction(function () use ($request, $data, $log, $imageOptimizer) {
+        $updates = [
+            'fecha' => $data['fecha'],
+            'km' => (int) $data['km'],
+            'monto_gasolina' => $data['monto_gasolina'] ?? null,
+            'notas' => $data['notas'] ?? null,
+        ];
+
+        if ($request->hasFile('foto')) {
+            $updates['foto'] = $imageOptimizer->optimizeAndStore(
+                $data['foto'],
+                'vehiculos/km-logs',
+                'public',
+                ['max_width' => 1920, 'max_height' => 1920, 'quality' => 80]
+            );
+        }
+
+        if ($request->hasFile('foto_ticket_gasolina')) {
+            $updates['foto_ticket_gasolina'] = $imageOptimizer->optimizeAndStore(
+                $data['foto_ticket_gasolina'],
+                'vehiculos/gasolina-tickets',
+                'public',
+                ['max_width' => 1920, 'max_height' => 1920, 'quality' => 80]
+            );
+        }
+
+        $log->update($updates);
+
+        if ($log->asignacion) {
+            $ultimoKmAsignacion = VehiculoEmpleadoKmLog::query()
+                ->where('vehiculo_empleado_id', $log->vehiculo_empleado_id)
+                ->max('km');
+            $log->asignacion->update([
+                'km_final' => max((int) ($log->asignacion->km_inicial ?? 0), (int) ($ultimoKmAsignacion ?? 0)),
+            ]);
+        }
+    });
+
+    return redirect()
+        ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'vehiculos'])
+        ->with('success', 'Registro de kilometraje actualizado correctamente.');
+}
+
+public function destroyVehiculoCombustible(Obra $obra, VehiculoEmpleadoKmLog $log)
+{
+    abort_unless((int) $log->obra_id === (int) $obra->id, 404);
+
+    $asignacion = $log->asignacion;
+
+    DB::transaction(function () use ($log, $asignacion) {
+        $log->delete();
+
+        if ($asignacion) {
+            $ultimoKmAsignacion = VehiculoEmpleadoKmLog::query()
+                ->where('vehiculo_empleado_id', $asignacion->id)
+                ->max('km');
+            $asignacion->update([
+                'km_final' => max((int) ($asignacion->km_inicial ?? 0), (int) ($ultimoKmAsignacion ?? 0)),
+            ]);
+        }
+    });
+
+    return redirect()
+        ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'vehiculos'])
+        ->with('success', 'Registro de kilometraje eliminado correctamente.');
+}
+private function validarDatosCapturaCombustible(Request $request, Obra $obra, VehiculoEmpleado $asignacion): array
+{
+    $asignacion = $this->validarContextoCapturaCombustible($request, $obra, $asignacion);
+
+    $data = $request->validate([
+        'km' => ['required', 'integer', 'min:0'],
+        'fecha' => ['required', 'date'],
+        'foto' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
+        'foto_ticket_gasolina' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
+        'monto_gasolina' => ['required', 'numeric', 'min:0.01', 'max:99999999.99'],
+        'notas' => ['nullable', 'string', 'max:500'],
+    ]);
+
+    $ultimoKm = VehiculoEmpleadoKmLog::query()
+        ->where('vehiculo_empleado_id', $asignacion->id)
+        ->max('km');
+
+    $minPermitido = max(
+        (int) ($asignacion->km_inicial ?? 0),
+        (int) ($ultimoKm ?? 0)
+    );
+
+    if ((int) $data['km'] <= $minPermitido) {
+        throw ValidationException::withMessages([
+            'km' => "El kilometraje debe ser mayor a {$minPermitido}.",
+        ]);
+    }
+
+    return [
+        'data' => $data,
+        'asignacion' => $asignacion,
+    ];
+}
 public function relacionarCfdis(Request $request, Obra $obra)
 {
     $validated = $request->validate([

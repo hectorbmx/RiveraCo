@@ -104,8 +104,8 @@ class MaquinaHorometroService
             $horometroInicio = $this->horometroInicioParaRegistro($asignacion);
             $horometroFin = (float) $data['horometro_fin'];
 
-            if ($horometroFin < $horometroInicio) {
-                throw new RuntimeException("El horómetro final no puede ser menor al último registrado ({$horometroInicio}).");
+            if ($horometroFin <= $horometroInicio) {
+                throw new RuntimeException("El horómetro final debe ser mayor al último registrado ({$horometroInicio}).");
             }
 
             $inicio = $data['inicio'] ?? now();

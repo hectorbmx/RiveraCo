@@ -135,7 +135,7 @@ class VehiculoKmController extends Controller
                 'monto_gasolina' => $data['monto_gasolina'] ?? null,
                 'notas' => $data['notas'] ?? null,
                 'capturado_por_user_id' => $request->user()?->id,
-                'origen' => 'app',
+                'origen' => VehiculoEmpleadoKmLog::ORIGEN_APP,
             ]);
 
             $asignacion->km_final = (int) $data['km'];

@@ -3435,157 +3435,8 @@
 @endif
 
 {{-- TAB: VEHICULOS --}}
-@if($tab === 'vehiculos')
-    <div class="space-y-6">
-        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-            <div>
-                <h2 class="text-lg font-semibold text-slate-900">Vehiculos asignados a la obra</h2>
-                <p class="text-sm text-slate-500 mt-1">
-                    Vehiculos de empleados activos en esta obra y registros de kilometraje/gasolina capturados desde la app movil.
-                </p>
-            </div>
-            <div class="text-sm text-slate-500">
-                {{ $vehiculoKmLogs->count() }} lecturas encontradas
-            </div>
-        </div>
+@include('obras.partials.tabs.vehiculos')
 
-        @if($vehiculosObra->isEmpty())
-            <div class="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-                Todavia no hay vehiculos ligados a empleados activos de esta obra ni registros moviles de vehiculo.
-            </div>
-        @else
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                @foreach($vehiculoKmResumen as $resumen)
-                    @php
-                        $asig = $resumen->asignacion;
-                        $vehiculo = $asig->vehiculo;
-                    @endphp
-                    <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/60">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <div class="font-semibold text-slate-900">
-                                    {{ trim(($vehiculo->marca ?? '') . ' ' . ($vehiculo->modelo ?? '')) ?: 'Vehiculo' }}
-                                </div>
-                                <div class="text-xs text-slate-500 mt-0.5">
-                                    Placas: {{ $vehiculo->placas ?? 'Sin placas' }}
-                                </div>
-                            </div>
-                            <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">
-                                {{ $resumen->lecturas }} {{ $resumen->lecturas === 1 ? 'log' : 'logs' }}
-                            </span>
-                        </div>
-
-                        <dl class="grid grid-cols-2 gap-3 mt-4 text-xs md:grid-cols-4">
-                            <div>
-                                <dt class="text-slate-500">Km inicio</dt>
-                                <dd class="font-semibold text-slate-900">{{ $resumen->km_inicio !== null ? number_format($resumen->km_inicio) : '-' }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-slate-500">Km actual</dt>
-                                <dd class="font-semibold text-slate-900">{{ $resumen->km_actual !== null ? number_format($resumen->km_actual) : '-' }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-slate-500">Avance</dt>
-                                <dd class="font-semibold text-emerald-700">{{ $resumen->km_avanzados !== null ? number_format($resumen->km_avanzados) . ' km' : '-' }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-slate-500">Gasolina</dt>
-                                <dd class="font-semibold text-slate-900">{{ $resumen->monto_gasolina > 0 ? '$' . number_format($resumen->monto_gasolina, 2) : '-' }}</dd>
-                            </div>
-                        </dl>
-
-                        <div class="mt-4 text-xs text-slate-500">
-                            {{ $asig->fecha_asignacion?->format('d/m/Y') }} - {{ $asig->fecha_fin?->format('d/m/Y') ?? 'Actual' }}
-                            @if($asig->empleado)
-                                <br>Responsable: {{ $asig->empleado->Nombre }} {{ $asig->empleado->Apellidos }}
-                            @endif
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-
-            <div class="border rounded-xl overflow-hidden">
-                <table class="w-full text-sm">
-                    <thead class="bg-[#0B265A] text-white">
-                        <tr class="border-b">
-                            <th class="py-2 px-3 text-left">Fecha</th>
-                            <th class="py-2 px-3 text-left">Vehiculo</th>
-                            <th class="py-2 px-3 text-left">Empleado</th>
-                            <th class="py-2 px-3 text-right">Km</th>
-                            <th class="py-2 px-3 text-right">Km recorridos</th>
-                            <th class="py-2 px-3 text-right">Gasolina</th>
-                            <th class="py-2 px-3 text-left">Notas</th>
-                            <th class="py-2 px-3 text-left">Odometro</th>
-                            <th class="py-2 px-3 text-left">Ticket</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($vehiculoKmLogs as $log)
-                            @php
-                                $vehiculo = $log->asignacion?->vehiculo;
-                                $empleado = $log->asignacion?->empleado;
-                            @endphp
-                            <tr class="border-b hover:bg-slate-50 align-top">
-                                <td class="py-2 px-3 whitespace-nowrap">
-                                    {{ $log->fecha?->format('d/m/Y H:i') }}
-                                </td>
-                                <td class="py-2 px-3">
-                                    <div class="font-medium text-slate-800">
-                                        {{ trim(($vehiculo->marca ?? '') . ' ' . ($vehiculo->modelo ?? '')) ?: 'Vehiculo' }}
-                                    </div>
-                                    <div class="text-xs text-slate-400">{{ $vehiculo->placas ?? 'Sin placas' }}</div>
-                                </td>
-                                <td class="py-2 px-3">
-                                    @if($empleado)
-                                        {{ $empleado->Nombre }} {{ $empleado->Apellidos }}
-                                    @else
-                                        <span class="text-slate-400">Sin empleado</span>
-                                    @endif
-                                </td>
-                                <td class="py-2 px-3 text-right font-semibold text-slate-900 whitespace-nowrap">
-                                    {{ number_format((int) $log->km) }} km
-                                </td>
-                                <td class="py-2 px-3 text-right font-semibold text-emerald-700 whitespace-nowrap">
-                                    {{ $log->km_recorridos !== null ? number_format((int) $log->km_recorridos) . ' km' : '-' }}
-                                </td>
-                                <td class="py-2 px-3 text-right font-semibold text-slate-900 whitespace-nowrap">
-                                    {{ $log->monto_gasolina !== null ? '$' . number_format((float) $log->monto_gasolina, 2) : '-' }}
-                                </td>
-                                <td class="py-2 px-3 max-w-xs text-slate-600">
-                                    {{ $log->notas ?: '-' }}
-                                </td>
-                                <td class="py-2 px-3">
-                                    @if($log->foto_url)
-                                        <a href="{{ $log->foto_url }}" target="_blank" class="inline-block rounded-lg border border-slate-200 overflow-hidden hover:ring-2 hover:ring-blue-300">
-                                            <img src="{{ $log->foto_url }}" alt="Lectura km {{ $log->km }}" class="h-16 w-20 object-cover bg-slate-100">
-                                        </a>
-                                    @else
-                                        <span class="text-slate-400">Sin imagen</span>
-                                    @endif
-                                </td>
-                                <td class="py-2 px-3">
-                                    @if($log->foto_ticket_gasolina_url)
-                                        <a href="{{ $log->foto_ticket_gasolina_url }}" target="_blank" class="inline-block rounded-lg border border-slate-200 overflow-hidden hover:ring-2 hover:ring-blue-300">
-                                            <img src="{{ $log->foto_ticket_gasolina_url }}" alt="Ticket gasolina" class="h-16 w-20 object-cover bg-slate-100">
-                                        </a>
-                                    @else
-                                        <span class="text-slate-400">Sin ticket</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="9" class="py-6 text-center text-slate-500">
-                                    Todavia no hay lecturas moviles ligadas a esta obra.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        @endif
-    </div>
-@endif
   {{-- TAB:HORAS MAQUINA MAQUINARIA --}}
 
 @if($tab === 'horas-maquina')
@@ -3686,7 +3537,8 @@
         open: false,
         obraMaquinaId: null,
         maquinaNombre: '',
-        horometroSugerido: 0
+        horometroSugerido: 0,
+        fechaRegistro: '{{ now()->toDateString() }}'
     }"
     @open-horas-modal.window="
         open = true;
@@ -3701,12 +3553,12 @@
 
         <div class="absolute inset-0 flex items-center justify-center p-4">
             <div class="w-full max-w-md bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-                <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+                <div class="px-5 py-4 bg-[#0B265A] flex items-center justify-between">
                     <div>
-                        <div class="text-sm text-slate-500">Registrar horas</div>
-                        <div class="font-semibold text-slate-900" x-text="maquinaNombre"></div>
+                        <div class="text-sm text-white/80">Registrar horas</div>
+                        <div class="font-semibold text-white" x-text="maquinaNombre"></div>
                     </div>
-                    <button class="text-slate-400 hover:text-slate-700" @click="open=false">✕</button>
+                    <button class="text-white/80 hover:text-white" aria-label="Cerrar" @click="open=false">✕</button>
                 </div>
 
                 <form method="POST"
@@ -3720,11 +3572,19 @@
                     </div>
 
                     <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Fecha del registro</label>
+                        <input type="date" name="fecha" x-model="fechaRegistro"
+                               class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                               required>
+                    </div>
+
+                    <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Horómetro final</label>
-                        <input type="number" step="0.01" min="0"
+                        <input type="number" step="0.01" min="0.01"
                                name="horometro_fin"
                                x-ref="horometroFin"
-                               :value="Number(horometroSugerido).toFixed(2)"
+                               :min="(Number(horometroSugerido) + 0.01).toFixed(2)"
+                               :value="(Number(horometroSugerido) + 0.01).toFixed(2)"
                                class="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                                required>
                         <p class="text-xs text-slate-500 mt-1">

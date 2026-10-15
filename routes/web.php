@@ -932,6 +932,18 @@ Route::middleware('auth','verified')->group(function () {
             // Dar de baja una maquina de la obra
             Route::patch('maquinaria/{asignacion}/baja', [ObraMaquinaController::class, 'baja'])
                 ->name('maquinaria.baja');
+            // Captura de kilometraje y gasolina del residente; la autorizacion se definira en el paso siguiente.
+            Route::post('vehiculos/{asignacion}/combustible', [ObraController::class, 'storeVehiculoCombustible'])
+                ->middleware('permission:obras.vehiculos.combustible.create.access')
+                ->name('vehiculos.combustible.store');
+
+            // Edicion y eliminacion controlada de registros de combustible.
+            Route::patch('vehiculos/combustible/{log}', [ObraController::class, 'updateVehiculoCombustible'])
+                ->middleware('permission:obras.vehiculos.combustible.edit.access')
+                ->name('vehiculos.combustible.update');
+            Route::delete('vehiculos/combustible/{log}', [ObraController::class, 'destroyVehiculoCombustible'])
+                ->middleware('permission:obras.vehiculos.combustible.delete.access')
+                ->name('vehiculos.combustible.destroy');
         });
     // Rutas para gestion de empleados
      Route::resource('empleados', EmpleadoController::class)->except(['destroy']);

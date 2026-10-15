@@ -2,10 +2,17 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 use Illuminate\Database\Eloquent\Model;
 
 class VehiculoEmpleadoKmLog extends Model
 {
+    use SoftDeletes;
+    public const ORIGEN_APP = 'app';
+    public const ORIGEN_WEB_MECANICO = 'web';
+    public const ORIGEN_WEB_RESIDENTE = 'web_residente';
+
     protected $table = 'vehiculo_empleado_km_logs';
 
     protected $fillable = [

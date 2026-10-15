@@ -118,7 +118,7 @@
 
                             $conceptoOriginal = trim((string) $gasto->concepto);
                             preg_match('/Folio:\s*([A-Za-z0-9\-]+)/i', $conceptoOriginal, $folioMatch);
-                            $factura = $gasto->factura_folio ?: ($folioMatch[1] ?? (($gasto->categoria?->requiere_factura ?? false) ? '' : 'git'));
+                            $factura = $gasto->factura_folio ?: ($folioMatch[1] ?? (($gasto->categoria?->requiere_factura ?? false) ? '' : ''));
                             $conceptoImpreso = trim(preg_replace('/Folio:\s*[A-Za-z0-9\-]+\s*/i', '', $conceptoOriginal));
                             $conceptoImpreso = $conceptoImpreso ?: $conceptoOriginal;
 

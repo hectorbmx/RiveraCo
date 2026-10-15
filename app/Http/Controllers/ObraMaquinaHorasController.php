@@ -39,10 +39,12 @@ class ObraMaquinaHorasController extends Controller
 
         $data = $request->validate([
             'horometro_fin' => 'required|numeric|min:0',
-            'inicio' => 'nullable|date',
-            'fin' => 'nullable|date|after_or_equal:inicio',
+            'fecha' => 'required|date',
             'notas' => 'nullable|string|max:500',
         ]);
+
+        $data['inicio'] = $data['fecha'] . ' 00:00:00';
+        $data['fin'] = $data['fecha'] . ' 23:59:59';
 
         try {
             $horometroService->crearRegistro($obraMaquina, $data, $request->user(), 'web_obras');

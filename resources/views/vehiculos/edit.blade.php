@@ -961,6 +961,78 @@
             {{-- TAB: COMBUSTIBLE --}}
             @if($tab === 'combustible')
                 <div class="space-y-5">
+                    @php
+                        $maxMontoGrafica = max(1, (float) collect($resumenCombustibleMensual)->max('monto'));
+                        $maxKmGrafica = max(1, (int) collect($resumenCombustibleMensual)->max('km'));
+                        $totalMontoGrafica = (float) collect($resumenCombustibleMensual)->sum('monto');
+                        $totalKmGrafica = (int) collect($resumenCombustibleMensual)->sum('km');
+                    @endphp
+                    <div class="flex justify-end">
+                        <button type="button" data-open-combustible-chart
+                                title="Ver gráfica de consumo y recorrido"
+                                aria-label="Ver gráfica de consumo y recorrido"
+                                class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-[#0B265A] shadow-sm transition hover:border-[#0B265A] hover:bg-slate-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M4 19V5m0 14h16" stroke-linecap="round" />
+                                <path d="M7 16v-5h3v5H7Zm5 0V7h3v9h-3Zm5 0v-3h3v3h-3Z" stroke-linejoin="round" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div id="combustible-chart-modal" class="hidden fixed inset-0 z-50 items-center justify-center overflow-y-auto bg-slate-950/60 px-4 py-6" role="dialog" aria-modal="true" aria-labelledby="combustible-chart-title">
+                        <div class="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
+                            <div class="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+                                <div>
+                                    <h2 id="combustible-chart-title" class="text-lg font-semibold text-slate-900">Consumo y recorrido por mes</h2>
+                                    <p class="text-sm text-slate-500">Registros de gasolina capturados para este vehículo durante {{ now()->year }}.</p>
+                                </div>
+                                <button type="button" data-close-combustible-chart title="Cerrar gráfica" aria-label="Cerrar gráfica" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800">&times;</button>
+                            </div>
+                            <div class="mt-5 flex flex-wrap items-center gap-4 text-xs text-slate-600">
+                                <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-[#0B265A]"></span>Gasolina</span>
+                                <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-sky-400"></span>Km recorridos</span>
+                                <span class="border-l border-slate-300 pl-4 font-semibold text-slate-700">
+                                    Total {{ now()->year }}: ${{ number_format($totalMontoGrafica, 2) }} / {{ number_format($totalKmGrafica) }} km
+                                </span>
+                            </div>
+                            <div class="mt-4 space-y-3">
+                                @foreach($resumenCombustibleMensual as $resumenMes)
+                                    <div class="grid grid-cols-[5.5rem_1fr_8rem] items-center gap-3 text-xs">
+                                        <span class="font-medium text-slate-600">{{ $resumenMes['mes'] }}</span>
+                                        <div class="space-y-1">
+                                            <div class="h-3 overflow-hidden rounded-full bg-slate-200" title="${{ number_format($resumenMes['monto'], 2) }} de gasolina">
+                                                <div class="h-full rounded-full bg-[#0B265A]" style="width: {{ round(($resumenMes['monto'] / $maxMontoGrafica) * 100, 2) }}%"></div>
+                                            </div>
+                                            <div class="h-3 overflow-hidden rounded-full bg-slate-200" title="{{ number_format($resumenMes['km']) }} km recorridos">
+                                                <div class="h-full rounded-full bg-sky-400" style="width: {{ round(($resumenMes['km'] / $maxKmGrafica) * 100, 2) }}%"></div>
+                                            </div>
+                                        </div>
+                                        <span class="text-right text-slate-500">${{ number_format($resumenMes['monto'], 0) }} / {{ number_format($resumenMes['km']) }} km</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        (() => {
+                            const modal = document.getElementById('combustible-chart-modal');
+                            if (!modal) return;
+
+                            document.addEventListener('click', (event) => {
+                                if (event.target.closest('[data-open-combustible-chart]')) {
+                                    modal.classList.remove('hidden');
+                                    modal.classList.add('flex');
+                                }
+
+                                if (event.target.closest('[data-close-combustible-chart]') || event.target === modal) {
+                                    modal.classList.add('hidden');
+                                    modal.classList.remove('flex');
+                                }
+                            });
+                        })();
+                    </script>
+
                     <div>
                         <h2 class="text-lg font-semibold mb-1">Salidas asignadas</h2>
                         <p class="text-sm text-slate-500">Historial de salidas de inventario vinculadas a este vehículo.</p>
