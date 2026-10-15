@@ -518,7 +518,8 @@ protected function resolverKmInicialAsignacion(Vehiculo $vehiculo, ?VehiculoEmpl
         $validated = $request->validate([
             'km' => ['required', 'integer', 'min:0'],
             'fecha' => ['nullable', 'date'],
-            'foto' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
+            // Temporalmente opcional; reactivar `required` cuando la evidencia vuelva a ser obligatoria.
+            'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
             'notas' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -546,7 +547,10 @@ protected function resolverKmInicialAsignacion(Vehiculo $vehiculo, ?VehiculoEmpl
         }
 
         DB::transaction(function () use ($validated, $asignacion, $request) {
-            $path = $request->file('foto')->store('vehiculos/km-logs', 'public');
+            // La foto es opcional temporalmente; conservar este bloque para reactivar la evidencia obligatoria.
+            $path = $request->hasFile('foto')
+                ? $request->file('foto')->store('vehiculos/km-logs', 'public')
+                : null;
 
             VehiculoEmpleadoKmLog::create([
                 'vehiculo_empleado_id' => $asignacion->id,

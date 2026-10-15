@@ -289,8 +289,8 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Evidencia / odometro <span class="text-red-500">*</span></label>
-                            <input type="file" name="foto" accept="image/*" required class="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-[#0B265A] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-blue-900">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Evidencia / odometro</label>
+                            {{-- Temporalmente opcional; quitar este comentario y reactivar required cuando la evidencia vuelva a ser obligatoria. --}}`r`n                            <input type="file" name="foto" accept="image/*" class="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-[#0B265A] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-blue-900">
                         </div>
 
                         <div>
