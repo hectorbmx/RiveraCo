@@ -398,15 +398,15 @@
                         @else
                             <div class="overflow-x-auto">
                                 <table class="min-w-full text-xs">
-                                    <thead class="bg-slate-50 border-b border-slate-200">
+                                    <thead class="bg-[#0B265A] border-b border-[#0B265A] text-white">
                                         <tr>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Empleado</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Inicio</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Km Inicial</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Fin</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">KM final</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Notas</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Fotos</th> 
+                                            <th class="px-3 py-2 text-left font-semibold">Empleado</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Inicio</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Km Inicial</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Fin</th>
+                                            <th class="px-3 py-2 text-left font-semibold">KM final</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Notas</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Fotos</th> 
 
                                         </tr>
                                     </thead>
@@ -619,16 +619,16 @@
 
                         <table class="min-w-full text-xs">
 
-                            <thead class="bg-slate-50 border-b border-slate-200">
+                            <thead class="bg-[#0B265A] border-b border-[#0B265A] text-white">
                                 <tr>
                                     <th class="px-2 py-2"></th>
-                                    <th class="px-3 py-2 text-left font-semibold text-slate-500">Aseguradora</th>
-                                    <th class="px-3 py-2 text-left font-semibold text-slate-500">Póliza</th>
-                                    <th class="px-3 py-2 text-left font-semibold text-slate-500">Vigencia</th>
-                                    <th class="px-3 py-2 text-left font-semibold text-slate-500">Estatus</th>
-                                    <th class="px-3 py-2 text-left font-semibold text-slate-500">Costo anual</th>
-                                    <th class="px-3 py-2 text-left font-semibold text-slate-500">Archivo</th>
-                                    <th class="px-3 py-2 text-left font-semibold text-slate-500"></th>
+                                    <th class="px-3 py-2 text-left font-semibold">Aseguradora</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Póliza</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Vigencia</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Estatus</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Costo anual</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Archivo</th>
+                                    <th class="px-3 py-2 text-left font-semibold"></th>
                                 </tr>
                             </thead>
 
@@ -864,16 +864,16 @@
                         @else
                             <div class="overflow-x-auto">
                                 <table class="min-w-full text-xs">
-                                    <thead class="bg-slate-50 border-b border-slate-200">
+                                    <thead class="bg-[#0B265A] border-b border-[#0B265A] text-white">
                                         <tr>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Fecha prog.</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Tipo</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Categoría</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Obra</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Mecánico</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Estatus</th>
-                                            <th class="px-3 py-2 text-left font-semibold text-slate-500">Costo total</th>
-                                            <th class="px-3 py-2 text-right font-semibold text-slate-500">Acciones</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Fecha prog.</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Tipo</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Categoría</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Obra</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Mecánico</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Estatus</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Costo total</th>
+                                            <th class="px-3 py-2 text-right font-semibold">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1300,14 +1300,14 @@
                         @if($documentos->count())
                             <div class="overflow-x-auto">
                                 <table class="min-w-full text-sm">
-                                    <thead>
-                                        <tr class="border-b bg-slate-50 text-left">
-                                            <th class="px-4 py-3 font-semibold text-slate-700">Fecha carga</th>
-                                            <th class="px-4 py-3 font-semibold text-slate-700">Documento</th>
-                                            <th class="px-4 py-3 font-semibold text-slate-700">Fecha documento</th>
-                                            <th class="px-4 py-3 font-semibold text-slate-700">Vencimiento</th>
-                                            <th class="px-4 py-3 font-semibold text-slate-700">Vigente</th>
-                                            <th class="px-4 py-3 font-semibold text-slate-700 text-right">Acciones</th>
+                                    <thead class="bg-[#0B265A] text-white">
+                                        <tr class="border-b border-[#0B265A] text-left">
+                                            <th class="px-4 py-3 font-semibold">Fecha carga</th>
+                                            <th class="px-4 py-3 font-semibold">Documento</th>
+                                            <th class="px-4 py-3 font-semibold">Fecha documento</th>
+                                            <th class="px-4 py-3 font-semibold">Vencimiento</th>
+                                            <th class="px-4 py-3 font-semibold">Vigente</th>
+                                            <th class="px-4 py-3 font-semibold text-right">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>

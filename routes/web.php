@@ -752,6 +752,12 @@ Route::middleware('auth','verified')->group(function () {
     Route::patch('obras/{obra}/facturas/{factura}/cancelada', [ObraFacturaController::class, 'marcarCancelada'])->name('obras.facturas.cancelada');
     Route::get('obras/{obra}/maquinaria/{obraMaquina}/horas/create',[ObraMaquinaHorasController::class,'create'])->name('obras.horas_maquina.create');
     Route::post('obras/{obra}/maquinaria/{obraMaquina}/horas',[ObraMaquinaHorasController::class, 'store'])->name('obras.horas_maquina.store');
+    Route::put('obras/{obra}/maquinaria/{obraMaquina}/horas/{registro}', [ObraMaquinaHorasController::class, 'update'])
+        ->middleware('permission:editar_horas_maquina.access')
+        ->name('obras.horas_maquina.update');
+    Route::delete('obras/{obra}/maquinaria/{obraMaquina}/horas/{registro}', [ObraMaquinaHorasController::class, 'destroy'])
+        ->middleware('permission:borrar_horas_maquina.access')
+        ->name('obras.horas_maquina.destroy');
 // routes/web.php
     Route::post('obras/{id}/vincular-presupuesto', [ObraController::class, 'vincularPresupuesto'])->name('obras.vincularPresupuesto');
     // Rutas de Obras

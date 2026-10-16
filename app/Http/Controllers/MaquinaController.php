@@ -6,12 +6,14 @@ use Illuminate\Http\Request;
 use App\Models\Maquina;
 use App\Models\ReposicionCajaChicaGasto;
 use App\Models\InventarioDocumentoDetalle;
+use App\Models\Almacen;
 use App\Models\ObraMaquinaRegistro;
 use App\Services\Maquinas\MaquinaService;
 use App\Models\EmpresaConfig;
 use App\Models\Obra;
 use App\Services\Maquinas\PreventivoMaquinaService;
 use App\Services\Maquinas\MaquinaHorometroService;
+use App\Services\Maquinas\MaquinaHorometroConsolidacionService;
 
 
 class MaquinaController extends Controller
@@ -77,6 +79,13 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
     $horometrosActuales = $maquinas
         ->mapWithKeys(fn (Maquina $maquina) => [$maquina->id => $horometroService->horometroActual($maquina)])
         ->all();
+    $fechasUltimasLecturas = $maquinas
+        ->mapWithKeys(function (Maquina $maquina) use ($horometroService) {
+            $fecha = $horometroService->fechaUltimaLectura($maquina);
+
+            return [$maquina->id => $fecha?->toDateString()];
+        })
+        ->all();
 
     $obrasDisponibles = Obra::query()
         ->whereNotIn('estatus_nuevo', [
@@ -98,6 +107,7 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
         'asignadas',
         'preventivos',
         'horometrosActuales',
+        'fechasUltimasLecturas',
         'search',
         'sort',
         'direction',
@@ -105,10 +115,20 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
         'obrasParaAjusteHorometro'
     ));
 }
-public function show(Request $request, Maquina $maquina)
+public function show(Request $request, Maquina $maquina, MaquinaHorometroConsolidacionService $consolidacionService)
 {
     $tab = $request->query('tab', 'general');
     $combustiblesMaquina = collect();
+    $resumenCombustibleMensual = collect();
+    $lecturasHorometro = collect();
+    $resumenHorometro = [
+        'lecturas' => 0,
+        'validas' => 0,
+        'duplicadas' => 0,
+        'menores' => 0,
+        'avance_valido' => 0,
+        'fuentes' => [],
+    ];
 
     // Siempre cargamos la asignación activa + obra (para mostrar contexto)
     $maquina->load(['asignacionActiva.obra']);
@@ -131,16 +151,52 @@ public function show(Request $request, Maquina $maquina)
         ]);
     }
 
-        if ($tab === 'combustible') {
+        if (in_array($tab, ['combustible', 'horometro'], true)) {
         $combustiblesMaquina = InventarioDocumentoDetalle::query()
             ->with(['documento.obra', 'producto'])
             ->where('maquina_id', $maquina->id)
+            ->whereHas('producto', fn ($q) => $q->where('sku', 'OC-AUTO-000019'))
             ->whereHas('documento', fn($q) => $q
                 ->where('tipo', 'salida')
-                ->where('estado', 'aplicado'))
+                ->where('estado', 'aplicado')
+                ->where('almacen_id', Almacen::query()
+                    ->where(function ($almacenQuery) {
+                        $almacenQuery->where('nombre', 'like', '%Giralda%')
+                            ->orWhere('codigo', 'like', '%GIRALDA%')
+                            ->orWhere('codigo', 'like', 'GL%');
+                    })
+                    ->orderByDesc('activo')
+                    ->orderBy('id')
+                    ->value('id') ?? 0))
             ->orderByDesc('documento_id')
             ->orderByDesc('id')
             ->get();
+
+        $lecturasHorometro = $consolidacionService->consolidar($maquina);
+        $resumenHorometro = $consolidacionService->resumen($maquina);
+
+        $anioCombustible = now()->year;
+        $nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        $resumenCombustibleMensual = collect(range(1, 12))->map(function (int $mes) use ($combustiblesMaquina, $lecturasHorometro, $anioCombustible, $nombresMeses) {
+            $salidasMes = $combustiblesMaquina->filter(function ($detalle) use ($anioCombustible, $mes) {
+                $fecha = $detalle->documento?->fecha;
+
+                return $fecha?->year === $anioCombustible && $fecha?->month === $mes;
+            });
+
+            $lecturasMes = $lecturasHorometro->filter(fn (array $lectura) =>
+                $lectura['estado'] === 'valida'
+                && $lectura['fecha']?->year === $anioCombustible
+                && $lectura['fecha']?->month === $mes
+            );
+
+            return [
+                'mes' => $nombresMeses[$mes - 1],
+                'litros' => round((float) $salidasMes->sum('cantidad'), 3),
+                'importe' => round((float) $salidasMes->sum(fn ($detalle) => (float) $detalle->cantidad * (float) $detalle->costo_unitario), 2),
+                'horas' => round((float) $lecturasMes->sum('avance_valido'), 2),
+            ];
+        })->values();
     }
 if ($tab === 'kardex') {
         $maquina->load([
@@ -150,7 +206,14 @@ if ($tab === 'kardex') {
         ]);
     }
 
-    return view('maquinas.show', compact('maquina', 'tab', 'combustiblesMaquina'));
+    return view('maquinas.show', compact(
+        'maquina',
+        'tab',
+        'combustiblesMaquina',
+        'resumenCombustibleMensual',
+        'lecturasHorometro',
+        'resumenHorometro'
+    ));
 }
 
 public function updateGeneral(Request $request, Maquina $maquina)
@@ -245,15 +308,16 @@ public function guardarHoras(Request $request, Maquina $maquina, MaquinaHorometr
 {
     abort_unless($request->user()?->can('maquinas.horas.create.access'), 403);
 
+    $asignacion = $maquina->asignacionActiva()->with('obra')->first();
+
     $data = $request->validate([
         'horometro_fin' => ['required', 'numeric', 'min:0'],
         'inicio'        => ['nullable', 'date'],
         'fin'           => ['nullable', 'date', 'after_or_equal:inicio'],
         'obra_id'       => ['nullable', 'exists:obras,id'],
+        'fecha_registro' => [$asignacion ? 'nullable' : 'required', 'date'],
         'notas'         => ['nullable', 'string', 'max:500'],
     ]);
-
-    $asignacion = $maquina->asignacionActiva()->with('obra')->first();
 
     try {
         if ($asignacion) {
@@ -265,6 +329,7 @@ public function guardarHoras(Request $request, Maquina $maquina, MaquinaHorometr
         $horometroService->crearAjuste($maquina, [
             'horometro_nuevo' => $data['horometro_fin'],
             'obra_id' => $data['obra_id'] ?? null,
+            'fecha_registro' => $data['fecha_registro'],
             'tipo' => 'ajuste',
             'notas' => $data['notas'] ?? null,
         ], $request->user(), 'web_maquinas');

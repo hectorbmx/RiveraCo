@@ -112,7 +112,7 @@ class MaquinaRegistroController extends Controller
     //         'registros' => $registros,
     //     ]);
     // }
-public function index(Request $request, ObraMaquina $obraMaquina)
+public function index(Request $request, ObraMaquina $obraMaquina, MaquinaHorometroService $horometroService)
 {
     $user = $request->user();
     if (!$user) {
@@ -150,13 +150,8 @@ public function index(Request $request, ObraMaquina $obraMaquina)
         ], 403);
     }
 
-    // 4) Horómetro sugerido: último fin o baseline de asignación
-    $ultimo = $obraMaquina->registrosHoras()
-        ->orderByDesc('fin')
-        ->orderByDesc('id')
-        ->first();
-
-    $horometroSugerido = $ultimo?->horometro_fin ?? $obraMaquina->horometro_inicio ?? 0;
+    // 4) Usar el mismo horómetro global que se aplicará al guardar.
+    $horometroSugerido = $horometroService->horometroInicioParaRegistro($obraMaquina);
 
     // 5) Últimos registros (para mostrar historial)
     $registros = ObraMaquinaRegistro::query()
@@ -234,10 +229,18 @@ public function index(Request $request, ObraMaquina $obraMaquina)
 
         $data = $request->validate([
             'horometro_fin' => 'required|numeric|min:0',
+            // La app envía la fecha operativa como día calendario.
+            // Se mantiene nullable para no romper versiones móviles anteriores.
+            'fecha'        => 'nullable|date_format:Y-m-d',
             'inicio'        => 'nullable|date',
             'fin'           => 'nullable|date|after_or_equal:inicio',
             'notas'         => 'nullable|string|max:500',
         ]);
+
+        if (! empty($data['fecha'])) {
+            $data['inicio'] = $data['fecha'] . ' 00:00:00';
+            $data['fin'] = $data['fecha'] . ' 23:59:59';
+        }
 
         try {
             $registro = $horometroService->crearRegistro($obraMaquina, $data, $user, 'app');

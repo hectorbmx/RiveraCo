@@ -52,5 +52,10 @@ class ObraMaquinaRegistro extends Model
     {
         return $this->belongsTo(Maquina::class, 'maquina_id');
     }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }
 

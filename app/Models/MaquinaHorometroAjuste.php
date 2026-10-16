@@ -15,6 +15,7 @@ class MaquinaHorometroAjuste extends Model
         'maquina_id',
         'obra_id',
         'obra_maquina_id',
+        'fecha_registro',
         'horometro_anterior',
         'horometro_nuevo',
         'diferencia',
@@ -29,6 +30,7 @@ class MaquinaHorometroAjuste extends Model
         'horometro_anterior' => 'decimal:2',
         'horometro_nuevo' => 'decimal:2',
         'diferencia' => 'decimal:2',
+        'fecha_registro' => 'date',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

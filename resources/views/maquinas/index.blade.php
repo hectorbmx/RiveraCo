@@ -133,6 +133,7 @@
                             $seguroSeleccionado = null;
                             $preventivoMaquina = $preventivos[$m->id] ?? null;
                             $horometroActual = $horometrosActuales[$m->id] ?? ($preventivoMaquina['horometro_actual'] ?? 0);
+                            $fechaUltimaLectura = $fechasUltimasLecturas[$m->id] ?? null;
                             $asignacionActiva = $m->asignacionActiva;
                             $nombreMaquina = trim(($m->codigo ?? '') . ' ' . ($m->nombre ?? '')) ?: 'Maquina';
                             $canRegistrarHoras = auth()->user()?->can('maquinas.horas.create.access') ?? false;
@@ -151,6 +152,7 @@
                                 'obraId' => $asignacionActiva?->obra_id,
                                 'tieneAsignacion' => (bool) $asignacionActiva,
                                 'horometroActual' => (float) $horometroActual,
+                                'fechaUltimaLectura' => $fechaUltimaLectura,
                             ], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) : '{}';
                             $asignarObraPayload = $puedeAsignarObra ? json_encode([
                                 'action' => route('maquinas.asignarObra', $m),
@@ -1172,7 +1174,7 @@
                     <button type="button" class="text-slate-400 hover:text-slate-600" @click="closeHorasModal()">&times;</button>
                 </div>
 
-                <form method="POST" :action="form.action" class="space-y-4 px-5 py-5">
+                <form method="POST" :action="form.action" class="space-y-4 px-5 py-5" @submit="if (!validarCaptura()) $event.preventDefault()">
                     @csrf
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -1198,9 +1200,16 @@
                         </select>
                     </div>
 
+                    <div x-show="!form.tieneAsignacion" x-cloak>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha del registro <span class="text-red-500">*</span></label>
+                        <input type="date" name="fecha_registro" x-model="form.fechaRegistro" @blur="validarCaptura()" :required="!form.tieneAsignacion" class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                        <p class="mt-1 text-xs text-slate-500">Fecha operativa del ajuste del horómetro.</p>
+                    </div>
+
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Nuevo horometro <span class="text-red-500">*</span></label>
-                        <input type="number" name="horometro_fin" required min="0" step="0.01" class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500" :placeholder="formatHoras(form.horometroActual)">
+                        <input type="number" name="horometro_fin" required min="0" step="0.01" x-model="form.horometroNuevo" @blur="validarCaptura()" class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500" :placeholder="formatHoras(form.horometroActual)">
+                        <p x-show="form.errorMessage" x-cloak class="mt-1 rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700" x-text="form.errorMessage"></p>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1210,7 +1219,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Fin</label>
-                            <input type="datetime-local" name="fin" x-model="form.fin" class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                            <input type="datetime-local" name="fin" x-model="form.fin" @blur="validarCaptura()" class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
                         </div>
                     </div>
 
@@ -1221,7 +1230,7 @@
 
                     <div class="flex justify-end gap-3 border-t border-slate-100 pt-4">
                         <button type="button" class="px-4 py-2 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50" @click="closeHorasModal()">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 rounded-lg bg-[#0B265A] text-sm font-semibold text-white hover:bg-blue-900" x-text="form.tieneAsignacion ? 'Guardar horas' : 'Guardar ajuste'"></button>
+                        <button type="submit" class="px-4 py-2 rounded-lg bg-[#0B265A] text-sm font-semibold text-white hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-50" :disabled="form.hasError" x-text="form.tieneAsignacion ? 'Guardar horas' : 'Guardar ajuste'"></button>
                     </div>
                 </form>
             </div>
@@ -1249,8 +1258,13 @@
                 obraId: '',
                 tieneAsignacion: false,
                 horometroActual: 0,
+                horometroNuevo: '',
+                fechaUltimaLectura: '',
                 inicio: '',
                 fin: '',
+                fechaRegistro: '',
+                hasError: false,
+                errorMessage: '',
             },
             asignarForm: {
                 action: '',
@@ -1269,13 +1283,37 @@
                     obraId: data.obraId || '',
                     tieneAsignacion: Boolean(data.tieneAsignacion),
                     horometroActual: Number(data.horometroActual || 0),
+                    horometroNuevo: '',
+                    fechaUltimaLectura: data.fechaUltimaLectura || '',
                     inicio: localNow,
                     fin: localNow,
+                    fechaRegistro: localNow.slice(0, 10),
+                    hasError: false,
+                    errorMessage: '',
                 };
                 this.horasModalOpen = true;
             },
             closeHorasModal() {
                 this.horasModalOpen = false;
+            },
+            validarCaptura() {
+                const nuevo = Number(this.form.horometroNuevo);
+                const actual = Number(this.form.horometroActual);
+                const fecha = this.form.tieneAsignacion
+                    ? (this.form.fin || '').slice(0, 10)
+                    : this.form.fechaRegistro;
+                let error = '';
+
+                if (this.form.horometroNuevo !== '' && Number.isFinite(nuevo) && nuevo <= actual) {
+                    error = `El horómetro debe ser mayor a ${this.formatHoras(actual)} h.`;
+                } else if (fecha && this.form.fechaUltimaLectura && fecha < this.form.fechaUltimaLectura) {
+                    error = `La fecha no puede ser anterior al ${this.form.fechaUltimaLectura.split('-').reverse().join('/')}.`;
+                }
+
+                this.form.errorMessage = error;
+                this.form.hasError = Boolean(error);
+
+                return !this.form.hasError;
             },
             openAsignarModal(data) {
                 const now = new Date();

@@ -59,15 +59,15 @@
 
 <div class="overflow-auto border border-slate-200 rounded-2xl">
     <table class="min-w-full text-sm">
-    <thead class="bg-slate-50 border-b border-slate-200">
+    <thead class="bg-[#0B265A] border-b border-[#0B265A] text-white">
         <tr>
-            <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Proveedor</th>
-            <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Precio</th>
-            <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Moneda</th>
-            <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Entrega</th>
-            <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Activo</th>
-            <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Notas</th>
-            <th class="px-4 py-2 text-right text-xs font-semibold text-slate-500">Acciones</th>
+            <th class="px-4 py-2 text-left text-xs font-semibold">Proveedor</th>
+            <th class="px-4 py-2 text-left text-xs font-semibold">Precio</th>
+            <th class="px-4 py-2 text-left text-xs font-semibold">Moneda</th>
+            <th class="px-4 py-2 text-left text-xs font-semibold">Entrega</th>
+            <th class="px-4 py-2 text-left text-xs font-semibold">Activo</th>
+            <th class="px-4 py-2 text-left text-xs font-semibold">Notas</th>
+            <th class="px-4 py-2 text-right text-xs font-semibold">Acciones</th>
         </tr>
     </thead>
     <tbody class="divide-y divide-slate-100">

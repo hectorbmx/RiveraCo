@@ -19,8 +19,8 @@
 
     <div class="border rounded-2xl overflow-hidden">
         <table class="min-w-full text-sm">
-            <thead class="bg-slate-50">
-                <tr class="text-left text-slate-500 border-b">
+            <thead class="bg-[#0B265A] text-white">
+                <tr class="text-left border-b border-[#0B265A]">
                     <th class="py-2 px-3">Periodo</th>
                     <th class="py-2 px-3">Fechas</th>
                     <th class="py-2 px-3">Obra</th>

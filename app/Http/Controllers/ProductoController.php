@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 use App\Models\Producto;
 use App\Models\Proveedor;
+use App\Models\Almacen;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Support\Inventario\UnidadMedidaCatalogo;
@@ -14,8 +15,34 @@ class ProductoController extends Controller
 
      public function index(Request $request)
 {
+    // El catálogo de esta pantalla corresponde al almacén Giralda.
+    // Huentitán conserva sus productos en el catálogo global, pero no debe
+    // aparecer aquí ni inflar el total de existencias mostrado.
+    $almacenGiralda = Almacen::query()
+        ->where(function ($query) {
+            $query->where('nombre', 'like', '%Giralda%')
+                ->orWhere('codigo', 'like', '%GIRALDA%')
+                ->orWhere('codigo', 'like', 'GL%');
+        })
+        ->orderByDesc('activo')
+        ->orderBy('id')
+        ->first();
+
     $q = Producto::query()
-        ->withSum('inventarioStocks as existencias', 'stock_actual')
+        ->when($almacenGiralda, function ($query) use ($almacenGiralda) {
+            $query->whereHas('inventarioStocks', function ($stockQuery) use ($almacenGiralda) {
+                $stockQuery->where('almacen_id', $almacenGiralda->id);
+            });
+        }, function ($query) {
+            // Si la configuración del almacén está incompleta, no mostrar
+            // accidentalmente el catálogo global de Huentitán.
+            $query->whereRaw('1 = 0');
+        })
+        ->withSum([
+            'inventarioStocks as existencias' => function ($stockQuery) use ($almacenGiralda) {
+                $stockQuery->where('almacen_id', $almacenGiralda?->id ?? 0);
+            },
+        ], 'stock_actual')
         ->orderBy('nombre');
 
     if ($request->filled('estado')) {

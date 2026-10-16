@@ -105,8 +105,8 @@
 
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs border-collapse">
-                <thead>
-                    <tr class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200/80">
+                <thead class="bg-[#0B265A] text-white">
+                    <tr class="font-semibold border-b border-[#0B265A]">
                         <th class="p-3.5">Fecha</th>
                         <th class="p-3.5">Artículo</th>
                         <th class="p-3.5 text-right">Cantidad</th>

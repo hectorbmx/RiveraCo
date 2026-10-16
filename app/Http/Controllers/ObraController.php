@@ -1134,6 +1134,9 @@ if ($tab === 'caja-chica') {
 
         $asignacionesMaquina->each(function ($asignacion) use ($horometroService) {
             $asignacion->horometro_actual = $horometroService->horometroInicioParaRegistro($asignacion);
+            $asignacion->fecha_ultima_lectura = $horometroService
+                ->fechaUltimaLectura($asignacion->maquina)
+                ?->toDateString();
         });
 
         $maquinasAsignadasActivas    = $asignacionesMaquina->where('estado', 'activa');
@@ -1161,6 +1164,7 @@ if ($tab === 'horas-maquina') {
             'asignacion.maquina', // para mostrar la máquina en cada registro
         ])
         ->orderByDesc('inicio')
+        ->orderByDesc('created_at')
         ->orderByDesc('id')
         ->get();
 }
