@@ -192,6 +192,7 @@ public function index(Request $request)
     $preventivoVehiculo = null;
     $combustiblesVehiculo = collect();
     $cargasAppVehiculo = collect();
+    $resumenCombustibleMensual = collect();
     $kmSugeridoAsignacion = 0;
 
     $statsMantenimientos = [
@@ -560,15 +561,15 @@ protected function resolverKmInicialAsignacion(Vehiculo $vehiculo, ?VehiculoEmpl
                 ->withInput();
         }
 
-        $ultimoKmLog = VehiculoEmpleadoKmLog::where('vehiculo_empleado_id', $asignacion->id)->max('km');
+        $ultimoKmLog = VehiculoEmpleadoKmLog::whereHas('asignacion', fn ($query) => $query->where('vehiculo_id', $vehiculo->id))->max('km');
         $minPermitido = max(
             (int) ($asignacion->km_inicial ?? 0),
             (int) ($ultimoKmLog ?? 0)
         );
 
-        if ((int) $validated['km'] < $minPermitido) {
+        if ((int) $validated['km'] <= $minPermitido) {
             return back()
-                ->withErrors(['km' => "El kilometraje no puede ser menor a {$minPermitido}."])
+                ->withErrors(['km' => "El kilometraje debe ser mayor a {$minPermitido}."])
                 ->withInput();
         }
 

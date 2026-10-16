@@ -47,6 +47,7 @@
                                        class="mt-1 block w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
                                        placeholder="Lectura actual">
                                 <p id="combustible-km-hint" class="mt-1 text-xs text-slate-500"></p>
+                                <p id="combustible-km-alert" class="mt-1 hidden rounded-md px-2 py-1 text-xs font-medium" role="alert"></p>
                             </div>
                             <div>
                                 <label for="combustible_monto" class="block text-sm font-medium text-slate-700">Monto gasolina</label>
@@ -94,6 +95,7 @@
                     const kmInput = document.getElementById('combustible_km');
                     const vehicleLabel = document.getElementById('combustible-vehiculo-label');
                     const kmHint = document.getElementById('combustible-km-hint');
+                    const kmAlert = document.getElementById('combustible-km-alert');
 
                     if (!modal || !form || !submit || !kmInput) return;
 
@@ -102,18 +104,38 @@
                         modal.classList.remove('flex');
                     };
 
+                    const validateKm = () => {
+                        const currentKm = Number(kmInput.dataset.minimum || 0);
+                        const capturedKm = Number(kmInput.value);
+                        const invalid = Number.isFinite(capturedKm) && capturedKm <= currentKm;
+
+                        kmAlert.classList.toggle('hidden', !invalid);
+                        kmAlert.classList.toggle('bg-red-50', invalid);
+                        kmAlert.classList.toggle('text-red-700', invalid);
+                        kmAlert.textContent = invalid
+                            ? `La lectura debe ser mayor a ${currentKm.toLocaleString('es-MX')} km.`
+                            : '';
+
+                        const canSubmit = Boolean(form.action) && !invalid && kmInput.value !== '';
+                        submit.disabled = !canSubmit;
+                        submit.classList.toggle('opacity-50', !canSubmit);
+                        submit.classList.toggle('cursor-not-allowed', !canSubmit);
+                        return !invalid;
+                    };
+
                     const openModal = (button) => {
                         form.action = button.dataset.action || '';
                         vehicleLabel.textContent = button.dataset.vehicle || '-';
                         const currentKm = button.dataset.currentKm || '';
                         kmInput.value = currentKm;
-                        kmInput.min = currentKm || '0';
+                        kmInput.dataset.minimum = currentKm || '0';
+                        kmInput.min = currentKm ? String(Number(currentKm) + 1) : '0';
                         kmHint.textContent = currentKm
-                            ? `Última lectura registrada: ${Number(currentKm).toLocaleString('es-MX')} km. Captura una lectura igual o mayor.`
+                            ? `Máximo registrado para el vehículo: ${Number(currentKm).toLocaleString('es-MX')} km. Captura una lectura mayor.`
                             : 'No hay lectura previa; captura el kilometraje actual.';
-                        submit.disabled = !form.action;
-                        submit.classList.toggle('opacity-50', !form.action);
-                        submit.classList.toggle('cursor-not-allowed', !form.action);
+                        kmAlert.classList.add('hidden');
+                        submit.disabled = true;
+                        submit.classList.add('opacity-50', 'cursor-not-allowed');
                         modal.classList.remove('hidden');
                         modal.classList.add('flex');
                         kmInput.focus();
@@ -131,6 +153,12 @@
 
                     modal.addEventListener('click', (event) => {
                         if (event.target === modal) closeModal();
+                    });
+
+                    kmInput.addEventListener('blur', validateKm);
+                    kmInput.addEventListener('input', validateKm);
+                    form.addEventListener('submit', (event) => {
+                        if (!validateKm()) event.preventDefault();
                     });
                 })();
             </script>
@@ -222,6 +250,9 @@
                     @php
                         $asig = $resumen->asignacion;
                         $vehiculo = $asig->vehiculo;
+                        $maxKmVehiculo = $vehiculoKmLogs
+                            ->filter(fn ($log) => (int) ($log->asignacion?->vehiculo_id ?? 0) === (int) $asig->vehiculo_id)
+                            ->max('km');
                     @endphp
                     <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/60">
                         <div class="flex items-start justify-between gap-3">
@@ -243,7 +274,7 @@
                                     data-open-combustible-modal
                                     data-action="{{ route('obras.vehiculos.combustible.store', ['obra' => $obra->id, 'asignacion' => $asig->id]) }}"
                                     data-vehicle="{{ trim(($vehiculo->marca ?? '') . ' ' . ($vehiculo->modelo ?? '')) ?: 'Vehiculo' }} - {{ $vehiculo->placas ?? 'Sin placas' }}"
-                                    data-current-km="{{ $resumen->km_actual ?? '' }}"
+                                    data-current-km="{{ $maxKmPorVehiculo->get($asig->vehiculo_id) ?? $maxKmVehiculo ?? $resumen->km_actual ?? '' }}"
                                     class="mt-3 inline-flex items-center rounded-lg border border-[#0B265A] px-3 py-2 text-xs font-semibold text-[#0B265A] hover:bg-blue-50">
                                 + Agregar registro
                             </button>

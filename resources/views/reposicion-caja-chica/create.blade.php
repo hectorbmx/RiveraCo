@@ -41,17 +41,30 @@
         </div>
     </template>
 
-    {{-- PASO 1: SELECCIÓN PREVIA DE OBRA O ALMACÉN --}}
+    {{-- PASO 1: CONTEXTO DEL GASTO --}}
     <div class="rounded-xl border-2 border-[#0B265A]/20 bg-white p-5 shadow-sm">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
                 <div class="flex items-center gap-2">
                     <span class="flex h-6 w-6 items-center justify-center rounded-full bg-[#0B265A] text-xs font-bold text-white">1</span>
-                    <h2 class="text-base font-bold text-[#0B265A]">Selecciona la Obra o Almacén objetivo</h2>
+                    <h2 class="text-base font-bold text-[#0B265A]">
+                        {{ $contextoObraResidente ? 'Obra del gasto' : 'Selecciona la Obra o Almacén objetivo' }}
+                    </h2>
                 </div>
-                <p class="text-xs text-slate-500 mt-0.5">Todos los XMLs y gastos manuales que cargues se asignarán a esta obra/almacén. Al terminar el lote, podrás avanzar a la siguiente.</p>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    {{ $contextoObraResidente ? 'Este gasto quedará ligado a la obra que estás administrando.' : 'Todos los XMLs y gastos manuales que cargues se asignarán a esta obra/almacén. Al terminar el lote, podrás avanzar a la siguiente.' }}
+                </p>
             </div>
 
+            @if($contextoObraResidente)
+                <div class="min-w-[280px] rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5">
+                    <div class="text-[11px] font-bold uppercase tracking-wide text-blue-700">Obra actual</div>
+                    <div class="font-bold text-slate-900">{{ $obraContexto->nombre }}</div>
+                    @if($obraContexto->clave_obra)
+                        <div class="text-xs text-slate-600">{{ $obraContexto->clave_obra }}</div>
+                    @endif
+                </div>
+            @else
             <div class="flex flex-wrap items-center gap-3">
                 <div>
                     <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Destino</label>
@@ -81,6 +94,7 @@
                     </select>
                 </div>
             </div>
+            @endif
         </div>
     </div>
 

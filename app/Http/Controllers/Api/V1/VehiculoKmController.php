@@ -105,17 +105,17 @@ class VehiculoKmController extends Controller
             ], 422);
         }
 
-        $ultimoKmLog = VehiculoEmpleadoKmLog::where('vehiculo_empleado_id', $asignacion->id)->max('km');
+        $ultimoKmLog = VehiculoEmpleadoKmLog::whereHas('asignacion', fn ($query) => $query->where('vehiculo_id', $asignacion->vehiculo_id))->max('km');
 
         $minPermitido = max(
             (int) ($asignacion->km_inicial ?? 0),
             (int) ($ultimoKmLog ?? 0)
         );
 
-        if ((int) $data['km'] < $minPermitido) {
+        if ((int) $data['km'] <= $minPermitido) {
             return response()->json([
                 'ok' => false,
-                'message' => "El kilometraje no puede ser menor a {$minPermitido}.",
+                'message' => "El kilometraje debe ser mayor a {$minPermitido}.",
             ], 422);
         }
 

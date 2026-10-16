@@ -136,15 +136,31 @@
     {{-- TABLA --}}
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-slate-50 border-b border-slate-200">
-                    <tr class="text-slate-500 uppercase text-xs tracking-wide">
-                        <th class="px-5 py-4 text-left">Folio</th>
-                        <th class="px-5 py-4 text-left">Fecha</th>
-                        <th class="px-5 py-4 text-left">Cliente</th>
+            <table class="w-full text-sm" data-facturacion-sort>
+                <thead class="bg-[#0B265A] border-b border-[#0B265A] text-white">
+                    <tr class="text-white uppercase text-xs tracking-wide">
+                        <th class="px-5 py-4 text-left text-white">
+                            <button type="button" data-sort-key="folio" title="Ordenar por folio" class="inline-flex items-center gap-1 font-semibold text-white hover:text-blue-100">
+                                Folio <span data-sort-indicator="folio" aria-hidden="true">↕</span>
+                            </button>
+                        </th>
+                        <th class="px-5 py-4 text-left text-white">
+                            <button type="button" data-sort-key="fecha" title="Ordenar por fecha" class="inline-flex items-center gap-1 font-semibold text-white hover:text-blue-100">
+                                Fecha <span data-sort-indicator="fecha" aria-hidden="true">↕</span>
+                            </button>
+                        </th>
+                        <th class="px-5 py-4 text-left text-white">
+                            <button type="button" data-sort-key="cliente" title="Ordenar por cliente" class="inline-flex items-center gap-1 font-semibold text-white hover:text-blue-100">
+                                Cliente <span data-sort-indicator="cliente" aria-hidden="true">↕</span>
+                            </button>
+                        </th>
                         <th class="px-5 py-4 text-left">RFC</th>
                         <th class="px-5 py-4 text-left">Relación</th>
-                        <th class="px-5 py-4 text-right">Total</th>
+                        <th class="px-5 py-4 text-right text-white">
+                            <button type="button" data-sort-key="total" title="Ordenar por total" class="inline-flex items-center gap-1 font-semibold text-white hover:text-blue-100">
+                                Total <span data-sort-indicator="total" aria-hidden="true">↕</span>
+                            </button>
+                        </th>
                         <th class="px-5 py-4 text-left">Estado</th>
                         <th class="px-5 py-4 text-left">Estatus SAT</th>
                         <th class="px-5 py-4 text-right">Acciones</th>
@@ -169,8 +185,22 @@
                 $fechaFila = $esBorradorObra
                     ? optional($factura->fecha ?: $factura->created_at)->format('d/m/Y')
                     : ($esBorradorCfdi ? $factura->created_at->format('d/m/Y') : ($factura->fecha_emision?->format('d/m/Y') ?? $factura->created_at->format('d/m/Y')));
+                $fechaOrdenFila = $esBorradorObra
+                    ? optional($factura->fecha ?: $factura->created_at)->timestamp
+                    : ($esBorradorCfdi ? $factura->created_at->timestamp : ($factura->fecha_emision?->timestamp ?? $factura->created_at->timestamp));
+                $folioFila = $esBorradorObra
+                    ? 'BF-' . str_pad($factura->id, 5, '0', STR_PAD_LEFT)
+                    : ($esBorradorCfdi ? '' : trim(($factura->serie ? $factura->serie . '-' : '') . ($factura->folio ?: '')));
+                $clienteFila = $esBorradorObra || $esBorradorCfdi
+                    ? ($factura->cliente?->razon_social ?? $factura->cliente?->nombre_comercial ?? ($esBorradorCfdi ? ($factura->titulo ?: 'Borrador CFDI') : 'Cliente sin nombre'))
+                    : ($factura->receptor_nombre ?? $factura->cliente?->razon_social ?? $factura->cliente?->nombre_comercial ?? 'Sin cliente');
             @endphp
           <tr
+                    data-sort-row
+                    data-sort-folio="{{ strtolower($folioFila) }}"
+                    data-sort-fecha="{{ $fechaOrdenFila ?? 0 }}"
+                    data-sort-cliente="{{ strtolower($clienteFila) }}"
+                    data-sort-total="{{ $totalFila }}"
                     @class([
                         'hover:bg-slate-50' => !$estadoCancelada,
                         'bg-red-50/60 hover:bg-red-100/70 text-slate-500' => $estadoCancelada,
@@ -328,4 +358,43 @@
 </div>
 @endsection
 
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const table = document.querySelector('[data-facturacion-sort]');
+        if (!table) return;
+
+        const tbody = table.querySelector('tbody');
+        const state = {};
+
+        table.querySelectorAll('[data-sort-key]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const key = button.dataset.sortKey;
+                state[key] = state[key] === 'asc' ? 'desc' : 'asc';
+                const direction = state[key] === 'asc' ? 1 : -1;
+                const rows = [...tbody.querySelectorAll('[data-sort-row]')];
+
+                rows.sort((a, b) => {
+                    const name = `sort${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+                    const first = a.dataset[name] || '';
+                    const second = b.dataset[name] || '';
+
+                    if (key === 'fecha' || key === 'total') {
+                        return (Number(first) - Number(second)) * direction;
+                    }
+
+                    return first.localeCompare(second, 'es', { numeric: true, sensitivity: 'base' }) * direction;
+                });
+
+                rows.forEach((row) => tbody.appendChild(row));
+                table.querySelectorAll('[data-sort-indicator]').forEach((indicator) => {
+                    indicator.textContent = indicator.dataset.sortIndicator === key
+                        ? (state[key] === 'asc' ? '↑' : '↓')
+                        : '↕';
+                });
+            });
+        });
+    });
+</script>
+@endpush
 

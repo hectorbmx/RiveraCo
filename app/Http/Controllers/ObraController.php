@@ -1167,6 +1167,7 @@ if ($tab === 'horas-maquina') {
 
 
 $asignacionesVehiculoActivas = collect();
+$maxKmPorVehiculo = collect();
 
 if ($tab === 'vehiculos') {
     $empleadosActivosObraIds = ObraEmpleado::query()
@@ -1204,6 +1205,22 @@ if ($tab === 'vehiculos') {
             return $log;
         });
 
+    $vehiculoIds = $asignacionesVehiculoActivas->pluck('vehiculo_id')
+        ->merge($vehiculoKmLogs->map(fn ($log) => $log->asignacion?->vehiculo_id))
+        ->filter()
+        ->unique()
+        ->values();
+
+    $maxKmPorVehiculo = $vehiculoIds->isEmpty()
+        ? collect()
+        : VehiculoEmpleadoKmLog::query()
+            ->with('asignacion:id,vehiculo_id')
+            ->whereHas('asignacion', fn ($query) => $query->whereIn('vehiculo_id', $vehiculoIds))
+            ->get(['vehiculo_empleado_id', 'km'])
+            ->filter(fn ($log) => $log->asignacion?->vehiculo_id !== null)
+            ->groupBy(fn ($log) => $log->asignacion->vehiculo_id)
+            ->map(fn ($logs) => $logs->max('km'));
+
     $vehiculoKmLogs
         ->groupBy(fn ($log) => $log->vehiculo_empleado_id)
         ->each(function ($logs) {
@@ -1225,24 +1242,31 @@ if ($tab === 'vehiculos') {
             }
         });
 
-    $vehiculosObra = $asignacionesVehiculoActivas
+    $asignacionesPorVehiculo = $asignacionesVehiculoActivas
         ->concat($vehiculoKmLogs->map(fn ($log) => $log->asignacion))
         ->filter()
-        ->unique('id')
-        ->values();
+        ->groupBy('vehiculo_id')
+        ->map(function ($asignaciones) {
+            return $asignaciones
+                ->sortByDesc(fn ($asignacion) => $asignacion->fecha_asignacion?->timestamp ?? 0)
+                ->sortByDesc(fn ($asignacion) => $asignacion->fecha_fin === null ? 1 : 0)
+                ->first();
+        });
 
-    $logsPorAsignacion = $vehiculoKmLogs->groupBy(fn ($log) => $log->vehiculo_empleado_id);
+    $vehiculosObra = $asignacionesPorVehiculo->values();
+    $logsPorVehiculo = $vehiculoKmLogs->groupBy(fn ($log) => $log->asignacion?->vehiculo_id);
 
     $vehiculoKmResumen = $vehiculosObra
-        ->map(function ($asignacion) use ($logsPorAsignacion) {
-            $logsOrdenados = ($logsPorAsignacion->get($asignacion->id) ?? collect())
+        ->map(function ($asignacion) use ($logsPorVehiculo) {
+            $logsOrdenados = ($logsPorVehiculo->get($asignacion->vehiculo_id) ?? collect())
                 ->sortBy('fecha')
                 ->values();
             $primerLog = $logsOrdenados->first();
             $ultimoLog = $logsOrdenados->last();
             $kmInicio = $primerLog ? (int) $primerLog->km : ($asignacion->km_inicial !== null ? (int) $asignacion->km_inicial : null);
-            $kmActual = $ultimoLog
-                ? (int) $ultimoLog->km
+            $kmMaximo = $logsOrdenados->max(fn ($log) => (int) $log->km);
+            $kmActual = $logsOrdenados->isNotEmpty()
+                ? max((int) $kmMaximo, (int) ($asignacion->km_final ?? 0))
                 : ($asignacion->km_final !== null ? (int) $asignacion->km_final : $kmInicio);
             $montoGasolina = $logsOrdenados->sum(fn ($log) => (float) ($log->monto_gasolina ?? 0));
 
@@ -1533,6 +1557,7 @@ return view('obras.edit', [
     'vehiculosObra'               => $vehiculosObra,
     'asignacionesVehiculoActivas' => $asignacionesVehiculoActivas,
     'vehiculoKmLogs'              => $vehiculoKmLogs,
+    'maxKmPorVehiculo'            => $maxKmPorVehiculo,
     'vehiculoKmResumen'           => $vehiculoKmResumen,
     
 
@@ -3217,8 +3242,8 @@ public function updateVehiculoCombustible(Request $request, Obra $obra, Vehiculo
     ]);
 
     $ultimoKm = VehiculoEmpleadoKmLog::query()
-        ->where('vehiculo_empleado_id', $log->vehiculo_empleado_id)
         ->whereKeyNot($log->id)
+        ->whereHas('asignacion', fn ($query) => $query->where('vehiculo_id', $log->asignacion?->vehiculo_id))
         ->max('km');
 
     $asignacion = $log->asignacion;
@@ -3313,7 +3338,7 @@ private function validarDatosCapturaCombustible(Request $request, Obra $obra, Ve
     ]);
 
     $ultimoKm = VehiculoEmpleadoKmLog::query()
-        ->where('vehiculo_empleado_id', $asignacion->id)
+        ->whereHas('asignacion', fn ($query) => $query->where('vehiculo_id', $asignacion->vehiculo_id))
         ->max('km');
 
     $minPermitido = max(

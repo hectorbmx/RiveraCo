@@ -104,9 +104,12 @@ class ReposicionCajaChicaController extends Controller
         $origenCapturaInicial = $request->query('origen_captura') === 'obra_residente'
             ? 'obra_residente'
             : 'almacen';
+        $obraContexto = $destinoInicial === 'obra' && $obraInicialId !== ''
+            ? $obras->firstWhere('id', (int) $obraInicialId)
+            : null;
         $contextoObraResidente = $origenCapturaInicial === 'obra_residente'
             && $destinoInicial === 'obra'
-            && $obraInicialId !== '';
+            && $obraContexto !== null;
 
         return view('reposicion-caja-chica.create', compact(
             'categorias',
@@ -119,6 +122,7 @@ class ReposicionCajaChicaController extends Controller
             'obraInicialId',
             'almacenInicialId',
             'origenCapturaInicial',
+            'obraContexto',
             'contextoObraResidente'
         ));
     }
