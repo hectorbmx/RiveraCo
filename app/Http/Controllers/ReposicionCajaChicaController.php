@@ -595,6 +595,21 @@ class ReposicionCajaChicaController extends Controller
         $ambitoFirma = 'formato_administrativo';
         $firmasImpresas = $this->firmasImpresasReposicion($ambitoFirma);
 
+        $esReporteGeneral = !$request->filled('destino')
+            && !$request->filled('obra_id')
+            && !$request->filled('almacen_id');
+
+        if ($esReporteGeneral) {
+            return view('reposicion-caja-chica.reporte-caratula', compact(
+                'gastos',
+                'fechaInicio',
+                'fechaFin',
+                'ambitoFirma',
+                'firmasImpresas',
+                'reporteContexto'
+            ));
+        }
+
         return view('reposicion-caja-chica.reporte-formato-administrativo', compact(
             'gastos',
             'grupos',
