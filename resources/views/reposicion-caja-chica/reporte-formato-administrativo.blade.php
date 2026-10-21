@@ -34,7 +34,7 @@
         .sum-label { background: #e5e7eb !important; font-weight: 700; text-align: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .observations { border: 1px solid #1f2937; border-top: 0; min-height: 62px; padding: 5px 6px; }
         .observations strong { color: #dc2626; font-size: 15px; }
-        .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; margin-top: 44px; align-items: end; }
+        .signatures { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 44px; align-items: end; }
         .signature { text-align: center; }
         .signature-line { border-top: 1px solid #111827; min-height: 18px; padding-top: 5px; font-weight: 700; }
         .signature-label { margin-top: 3px; font-size: 12px; }
@@ -63,6 +63,7 @@
         $firmanteRealizo = $firmasImpresas->get('realizo')?->user?->name
             ?? $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_ELABORO)?->user?->name;
         $firmanteVobo = $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_VOBO)?->user?->name;
+        $firmanteVobo2 = $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_VOBO_2)?->user?->name;
         $firmanteReviso = $firmasImpresas->get('reviso')?->user?->name
             ?? $firmasImpresas->get(\App\Models\DocumentoFirmante::CAMPO_AUTORIZO)?->user?->name;
         $esAlmacenGiralda = $reporteContexto === 'Reporte general'
@@ -177,8 +178,12 @@
                     <div class="signature-label">Realizo</div>
                 </div>
                 <div class="signature">
-                    <div class="signature-line">{{ $firmanteVobo }}</div>
-                    <div class="signature-label">Vo. Bo.</div>
+                    <div class="signature-line">{{ $firmanteVobo ?: 'Pendiente de asignar' }}</div>
+                    <div class="signature-label">VoBo 1</div>
+                </div>
+                <div class="signature">
+                    <div class="signature-line">{{ $firmanteVobo2 ?: 'Pendiente de asignar' }}</div>
+                    <div class="signature-label">VoBo 2</div>
                 </div>
                 <div class="signature">
                     <div class="signature-line">{{ $firmanteReviso }}</div>
