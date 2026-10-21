@@ -4,10 +4,22 @@
 <div class="p-6">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h1 class="text-2xl font-bold text-[#0B265A]">Órdenes de compra</h1>
-        <a href="{{ route('ordenes_compra.create', request('area_codigo') ? ['area_codigo' => request('area_codigo')] : []) }}"
-           class="bg-[#FFC107] text-[#0B265A] font-semibold px-4 py-2 rounded-xl shadow hover:bg-[#e0ac05] transition">
-            + Nueva orden
-        </a>
+        <div class="flex flex-wrap items-center gap-2">
+            @if(($solicitudesMantenimientoPendientes ?? 0) > 0)
+                <a href="{{ route('ordenes_compra.create', request('area_codigo') ? ['area_codigo' => request('area_codigo')] : []) }}"
+                   class="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100"
+                   title="Solicitudes de mantenimiento pendientes de convertir en orden de compra">
+                    Solicitudes
+                    <span class="inline-flex min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
+                        {{ $solicitudesMantenimientoPendientes }}
+                    </span>
+                </a>
+            @endif
+            <a href="{{ route('ordenes_compra.create', request('area_codigo') ? ['area_codigo' => request('area_codigo')] : []) }}"
+               class="bg-[#FFC107] text-[#0B265A] font-semibold px-4 py-2 rounded-xl shadow hover:bg-[#e0ac05] transition">
+                + Nueva orden
+            </a>
+        </div>
     </div>
     {{-- BUSCADOR Y FILTROS --}}
     @php

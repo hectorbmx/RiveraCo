@@ -325,6 +325,145 @@ Recomendacion preliminar:
 10. Residente marca recibido/cerrado.
 11. Se puede imprimir el formato con firmas.
 
+## Flujo operativo definido
+
+La requisicion inicia como un documento de solicitud. El residente puede crearla desde el contexto fijo de una obra, pero no debe generar movimientos de inventario ni asignaciones automaticas.
+
+### Estados
+
+1. `pendiente_revision`
+   - La requisicion fue creada y tiene folio.
+   - Es la representacion operativa de una requisicion creada.
+   - Todavia no puede ser surtida por almacen.
+
+2. `autorizada`
+   - Un usuario con permiso de autorizacion reviso y aprobo la requisicion.
+   - Ya puede pasar al proceso de surtido.
+
+3. `en_surtido`
+   - Almacen o el responsable de surtido comenzo a atenderla.
+
+4. `surtida_parcial`
+   - Una o mas partidas fueron atendidas, pero existe saldo pendiente.
+
+5. `surtida`
+   - Todas las partidas fueron atendidas completamente.
+
+6. `rechazada`
+   - La requisicion fue revisada y no autorizada.
+   - Debe conservar el motivo del rechazo.
+
+7. `cancelada`
+   - La requisicion se cancelo y deja de estar disponible para surtido.
+   - El folio no se reutiliza.
+
+`creada` no se manejara como estado separado en el MVP. Al guardar, la requisicion nace directamente como `pendiente_revision`.
+
+### Transiciones permitidas
+
+```text
+pendiente_revision -> autorizada
+pendiente_revision -> rechazada
+pendiente_revision -> cancelada
+autorizada -> en_surtido
+autorizada -> cancelada
+en_surtido -> surtida_parcial
+en_surtido -> surtida
+surtida_parcial -> surtida
+```
+
+Regla central: una requisicion solo puede entrar a surtido cuando esta `autorizada`. Autorizar no descuenta inventario; el movimiento real ocurrira durante el surtido.
+
+### Datos de autorizacion y trazabilidad
+
+La autorizacion debe guardar:
+
+- Usuario que autoriza.
+- Fecha y hora de autorizacion.
+- Comentarios del autorizador.
+- Motivo cuando sea rechazada.
+- Firma correspondiente cuando el formato lo requiera.
+
+Tambien se recomienda conservar una bitacora de transiciones para conocer quien cambio el estado, desde cual estado y hacia cual estado.
+
+### Permisos del flujo
+
+Permisos funcionales confirmados para la siguiente etapa:
+
+- `obras.requisiciones.view`
+- `obras.requisiciones.create`
+- `obras.requisiciones.edit`
+- `obras.requisiciones.authorize`
+- `obras.requisiciones.reject`
+- `obras.requisiciones.supply`
+- `obras.requisiciones.receive`
+- `obras.requisiciones.cancel`
+- `obras.requisiciones.print`
+
+El permiso `obras.requisiciones.authorize` debe limitar la transicion a `autorizada`. El permiso de surtido debe pertenecer al personal de almacen o al rol operativo definido posteriormente.
+
+## Replica en la app movil
+
+La app movil debe permitir al residente crear requisiciones dentro de la obra a la que tiene acceso. No debe permitir cambiar libremente la obra ni consultar catalogos fuera de su contexto.
+
+### Alcance movil
+
+- Listar las obras accesibles al residente.
+- Seleccionar una obra activa como contexto.
+- Consultar tipos de requisicion activos.
+- Cargar el catalogo correspondiente.
+- Seleccionar una o varias partidas.
+- Permitir varias lineas del mismo material con destinos diferentes.
+- Capturar cantidad, equipo destino y observaciones.
+- Crear la requisicion con estado `pendiente_revision`.
+- Consultar folio, estado, partidas y observaciones.
+- Mostrar rechazo, autorizacion y avance de surtido.
+
+### Reglas de seguridad movil
+
+- El backend debe validar nuevamente la obra y el acceso del residente.
+- La app no debe generar folios localmente.
+- La app no debe enviar ni modificar el estado final.
+- La app no debe descontar inventario.
+- Los catalogos deben resolverse en el servidor según el tipo y almacen configurados.
+- La misma validacion de equipo destino usada en web debe aplicarse en la API.
+
+### Contrato API futuro
+
+El contrato movil debe reutilizar la misma estructura de cabecera y lineas que web:
+
+```json
+{
+  "obra_id": 18,
+  "tipo_requisicion_id": 4,
+  "fecha_requerida": "2026-10-20",
+  "observaciones": "Material requerido para iniciar trabajos",
+  "partidas": [
+    {
+      "item_id": 19,
+      "cantidad_solicitada": 100,
+      "equipo_tipo": "maquina",
+      "maquina_id": 1
+    }
+  ]
+}
+```
+
+La API debe devolver el folio generado, el estado inicial y el detalle normalizado con snapshots.
+
+## Checkpoints del flujo de autorizacion
+
+- [ ] Confirmar los estados definitivos en base de datos.
+- [ ] Confirmar roles responsables de revisar y autorizar.
+- [ ] Crear o reutilizar campos de autorizacion, rechazo y cancelacion.
+- [ ] Agregar acciones protegidas por permisos.
+- [ ] Crear bandeja de autorizacion agrupada por obra.
+- [ ] Bloquear surtido cuando la requisicion no este autorizada.
+- [ ] Definir surtido parcial y calculo de saldos.
+- [ ] Registrar bitacora de transiciones.
+- [ ] Definir endpoints y permisos de la app movil.
+- [ ] Replicar la validacion de obra, catalogo y equipos en la API.
+
 
 ### Pantalla de autorizacion
 

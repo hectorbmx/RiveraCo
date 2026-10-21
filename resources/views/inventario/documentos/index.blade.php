@@ -148,6 +148,12 @@
                                             : '—');
                                 @endphp
                                 <div class="font-medium text-slate-900">{{ $folioMostrar }}</div>
+                                @if($d->mantenimientoAbastecimiento)
+                                    <a href="{{ route('mantenimiento.mantenimientos.edit', $d->mantenimientoAbastecimiento->mantenimiento_id) }}"
+                                       class="text-xs font-semibold text-[#0B265A] hover:underline">
+                                        SMA: {{ $d->mantenimientoAbastecimiento->folio }}
+                                    </a>
+                                @endif
                                 @forelse($ordenesCompra as $ordenCompra)
                                     <div class="text-xs text-slate-500">OC: {{ $ordenCompra->folio ?: 'OC #'.$ordenCompra->id }}</div>
                                 @empty

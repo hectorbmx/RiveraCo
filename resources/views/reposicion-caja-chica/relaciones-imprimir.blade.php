@@ -5,8 +5,8 @@
     <title>Relacion caja chica {{ $relacion->folio }}</title>
     <style>
         * { box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; color: #111827; margin: 24px; font-size: 12px; }
-        .no-print { margin-bottom: 16px; text-align: right; }
+        body { background: #e5e7eb; font-family: Arial, sans-serif; color: #111827; margin: 24px auto; font-size: 12px; min-height: 11in; padding: .55in; width: 8.5in; box-shadow: 0 8px 24px rgba(15,23,42,.16); }
+        .no-print { position: fixed; bottom: 22px; right: max(22px, calc((100vw - 8.5in) / 2 + 22px)); z-index: 20; }
         .btn { border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; padding: 8px 12px; font-weight: 700; cursor: pointer; }
         .header { display: flex; justify-content: space-between; gap: 24px; border-bottom: 2px solid #0B265A; padding-bottom: 14px; margin-bottom: 16px; }
         h1 { margin: 0; color: #0B265A; font-size: 22px; }
@@ -27,7 +27,7 @@
         .signature { border-top: 1px solid #111827; padding-top: 8px; text-align: center; font-size: 11px; }
         .signature-name { min-height: 18px; font-weight: 700; margin-bottom: 4px; }
         @media print {
-            body { margin: 12mm; }
+            body { background: #fff; box-shadow: none; margin: 0; padding: .55in; width: 8.5in; }
             .no-print { display: none; }
             a { color: inherit; text-decoration: none; }
         }

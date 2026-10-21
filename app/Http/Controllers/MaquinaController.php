@@ -115,9 +115,18 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
         'obrasParaAjusteHorometro'
     ));
 }
-public function show(Request $request, Maquina $maquina, MaquinaHorometroConsolidacionService $consolidacionService)
+public function show(
+    Request $request,
+    Maquina $maquina,
+    MaquinaHorometroConsolidacionService $consolidacionService,
+    PreventivoMaquinaService $preventivoService
+)
 {
     $tab = $request->query('tab', 'general');
+    $preventivo = $preventivoService->calcularParaColeccion(
+        collect([$maquina]),
+        EmpresaConfig::first()
+    )[$maquina->id] ?? null;
     $combustiblesMaquina = collect();
     $resumenCombustibleMensual = collect();
     $lecturasHorometro = collect();
@@ -135,7 +144,7 @@ public function show(Request $request, Maquina $maquina, MaquinaHorometroConsoli
 
     if ($tab === 'servicios') {
         $maquina->load([
-            'mantenimientos' => fn($q) => $q->latest()->limit(50),
+            'mantenimientos' => fn($q) => $q->with('mecanico')->latest()->limit(50),
         ]);
     }
 
@@ -209,6 +218,7 @@ if ($tab === 'kardex') {
     return view('maquinas.show', compact(
         'maquina',
         'tab',
+        'preventivo',
         'combustiblesMaquina',
         'resumenCombustibleMensual',
         'lecturasHorometro',

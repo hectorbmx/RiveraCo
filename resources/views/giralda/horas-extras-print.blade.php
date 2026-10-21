@@ -5,8 +5,9 @@
     <title>Horas extra Giralda</title>
     <style>
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        body { font-family: Arial, sans-serif; color: #111827; margin: 12px; font-size: 10.5px; }
-        .no-print { margin-bottom: 14px; text-align: right; }
+        @page { size: Letter landscape; margin: 0; }
+        body { background: #e5e7eb; font-family: Arial, sans-serif; color: #111827; margin: 24px auto; font-size: 10.5px; min-height: 8.5in; padding: .45in; width: 11in; box-shadow: 0 8px 24px rgba(15,23,42,.16); }
+        .no-print { position: fixed; bottom: 22px; right: max(22px, calc((100vw - 11in) / 2 + 22px)); z-index: 20; }
         .btn { border: 1px solid #cbd5e1; background: #fff; border-radius: 5px; padding: 7px 11px; font-weight: 700; cursor: pointer; }
         .brand { min-height: 58px; display: inline-flex; align-items: center; gap: 10px; color: #0B265A; }
         .brand img { display: block; width: 86px; max-height: 54px; object-fit: contain; }
@@ -34,7 +35,7 @@
         .signature-label { margin-top: 4px; font-size: 11px; }
         @media print {
             @page { size: letter portrait; margin: 6mm; }
-            body { margin: 0; }
+            body { background: #fff; box-shadow: none; margin: 0; padding: .45in; width: 11in; }
             .no-print { display: none; }
         }
     </style>

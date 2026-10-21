@@ -5,8 +5,8 @@
     <title>Requisicion {{ $requisicion->folio }}</title>
     <style>
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        body { font-family: Arial, sans-serif; color: #111827; margin: 14px; font-size: 11px; }
-        .no-print { margin-bottom: 14px; text-align: right; }
+        body { background: #e5e7eb; font-family: Arial, sans-serif; color: #111827; margin: 0 auto; font-size: 11px; min-height: 11in; padding: .55in; width: 8.5in; box-shadow: 0 8px 24px rgba(15,23,42,.16); }
+        .no-print { position: fixed; bottom: 22px; right: max(22px, calc((100vw - 8.5in) / 2 + 22px)); z-index: 20; }
         .btn { border: 1px solid #cbd5e1; background: #fff; border-radius: 5px; padding: 7px 11px; font-weight: 700; cursor: pointer; }
         .brand { min-height: 58px; display: inline-flex; align-items: center; gap: 10px; color: #0B265A; }
         .brand img { display: block; width: 86px; max-height: 54px; object-fit: contain; }
@@ -37,7 +37,7 @@
         .signature-label { margin-top: 4px; font-size: 11px; font-weight: 700; }
         @media print {
             @page { size: letter portrait; margin: 7mm; }
-            body { margin: 0; }
+            body { background: #fff; box-shadow: none; margin: 0; padding: .55in; width: 8.5in; }
             .no-print { display: none; }
         }
     </style>
@@ -123,6 +123,9 @@
                 <th style="width: 90px;">Tipo</th>
                 <th style="width: 90px;">Unidad</th>
                 <th style="width: 92px;" class="right">Cantidad</th>
+                @if($requisicion->tipo?->item_type === 'producto')
+                    <th>Equipo destino</th>
+                @endif
                 <th style="width: 110px;">Estado</th>
                 <th>Observaciones</th>
             </tr>
@@ -140,12 +143,24 @@
                     <td>{{ ucfirst((string) ($detalle->item_type ?? '-')) }}</td>
                     <td>{{ $detalle->unidad ?? '-' }}</td>
                     <td class="right">{{ number_format((float) $detalle->cantidad_solicitada, 3) }}</td>
+                    @if($requisicion->tipo?->item_type === 'producto')
+                        <td>
+                            @if($detalle->equipo_tipo)
+                                <div class="item-title">{{ $detalle->equipo_nombre_snapshot ?: '-' }}</div>
+                                @if($detalle->equipo_identificador_snapshot)
+                                    <div class="snapshot">{{ $detalle->equipo_identificador_snapshot }}</div>
+                                @endif
+                            @else
+                                -
+                            @endif
+                        </td>
+                    @endif
                     <td>{{ ucfirst(str_replace('_', ' ', (string) $detalle->estado)) }}</td>
                     <td>{{ $detalle->observaciones ?: '-' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="center muted">Esta requisicion no tiene partidas.</td>
+                    <td colspan="{{ $requisicion->tipo?->item_type === 'producto' ? 8 : 7 }}" class="center muted">Esta requisicion no tiene partidas.</td>
                 </tr>
             @endforelse
         </tbody>

@@ -251,35 +251,107 @@
                     <div class="text-sm font-semibold text-slate-800">Servicios realizados</div>
                 <div class="text-xs text-slate-500">Mantenimientos ligados a esta máquina.</div>
                 </div>
-                <a href="{{ route('mantenimiento.mantenimientos.create', ['maquina_id' => $maquina->id]) }}"
-                   class="inline-flex items-center px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
-                    + Programar servicio
-                </a>
+                <div class="flex items-center gap-3">
+                    @include('maquinas.partials._preventivo_badge', ['preventivo' => $preventivo])
+                    @can('maquinas.servicios.edit.access')
+                        <a href="{{ route('mantenimiento.mantenimientos.create', ['maquina_id' => $maquina->id]) }}"
+                           class="inline-flex items-center px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+                            + Registrar servicio
+                        </a>
+                    @endcan
+                </div>
             </div>
 
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm">
-                    <thead class="bg-slate-50 text-slate-600">
+                    <thead class="bg-[#0B265A] text-left text-white">
                         <tr>
-                            <th class="text-left px-4 py-3">Folio</th>
-                            <th class="text-left px-4 py-3">Tipo</th>
-                            <th class="text-left px-4 py-3">Estatus</th>
-                            <th class="text-left px-4 py-3">Fecha</th>
-                            <th class="text-left px-4 py-3">Detalles</th>
+                            <th class="text-left px-4 py-3 font-semibold">Folio</th>
+                            <th class="text-left px-4 py-3 font-semibold">Tipo</th>
+                            <th class="text-left px-4 py-3 font-semibold">Estatus</th>
+                            <th class="text-left px-4 py-3 font-semibold">Fecha</th>
+                            <th class="text-left px-4 py-3 font-semibold">Detalles</th>
+                            <th class="text-center px-4 py-3 font-semibold">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y">
                         @forelse($maquina->mantenimientos ?? [] as $mtto)
+                            @php
+                                $servicioReturnTo = route('maquinas.show', ['maquina' => $maquina->id, 'tab' => 'servicios'], false);
+                                $servicioUrl = auth()->user()?->can('maquinas.servicios.edit.access')
+                                    ? route('mantenimiento.mantenimientos.edit', ['mantenimiento' => $mtto, 'return_to' => $servicioReturnTo])
+                                    : route('mantenimiento.mantenimientos.show', ['mantenimiento' => $mtto, 'return_to' => $servicioReturnTo]);
+                            @endphp
                             <tr class="hover:bg-slate-50">
-                                <td class="px-4 py-3">{{ $mtto->folio ?? $mtto->id }}</td>
+                                <td class="px-4 py-3">
+                                    <a href="{{ $servicioUrl }}"
+                                       class="font-semibold text-[#0B265A] hover:text-blue-700 hover:underline"
+                                       title="Ver detalle del servicio">
+                                        {{ $mtto->folio ?? $mtto->id }}
+                                    </a>
+                                </td>
                                 <td class="px-4 py-3">{{ $mtto->tipo ?? '—' }}</td>
                                 <td class="px-4 py-3">{{ $mtto->estatus ?? '—' }}</td>
                                 <td class="px-4 py-3">{{ optional($mtto->fecha_programada)->format('Y-m-d') ?? ($mtto->created_at?->format('Y-m-d') ?? '—') }}</td>
-                                <td class="px-4 py-3 text-slate-500">—</td>
+                                <td class="px-4 py-3 align-top">
+                                    <div class="max-w-md">
+                                        <div class="font-medium text-slate-700">
+                                            {{ $mtto->categoria_mantenimiento ?: ucfirst($mtto->tipo ?? 'Servicio') }}
+                                        </div>
+                                        <div class="text-xs text-slate-500">
+                                            {{ $mtto->descripcion ? \Illuminate\Support\Str::limit($mtto->descripcion, 100) : 'Sin descripción' }}
+                                        </div>
+                                        @if($mtto->mecanico)
+                                            <div class="mt-1 text-xs text-slate-400">
+                                                Mecánico: {{ $mtto->mecanico->nombre_completo ?? $mtto->mecanico->nombre ?? '—' }}
+                                            </div>
+                                        @endif
+                                        @if($mtto->costo_total !== null)
+                                            <div class="mt-1 text-xs text-slate-400">
+                                                Costo: ${{ number_format((float) $mtto->costo_total, 2) }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <div class="inline-flex items-center gap-2">
+                                        <a href="{{ $servicioUrl }}"
+                                           class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-[#0B265A] transition hover:bg-blue-100"
+                                           title="Ver detalle del servicio"
+                                           aria-label="Ver detalle del servicio">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                                                <circle cx="12" cy="12" r="2.5" />
+                                            </svg>
+                                        </a>
+                                        @if(($mtto->estatus ?? null) === 'completado')
+                                            <a href="{{ route('mantenimiento.mantenimientos.print', $mtto) }}" target="_blank" rel="noopener"
+                                               class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[#0B265A] transition hover:bg-slate-100"
+                                               title="Imprimir reporte"
+                                               aria-label="Imprimir reporte">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                    <path d="M6 9V3h12v6" />
+                                                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                                                    <path d="M6 14h12v7H6z" />
+                                                </svg>
+                                            </a>
+                                        @elseif(auth()->user()?->can('maquinas.servicios.edit.access'))
+                                            <a href="{{ route('mantenimiento.mantenimientos.edit', ['mantenimiento' => $mtto, 'return_to' => route('maquinas.show', ['maquina' => $maquina->id, 'tab' => 'servicios'], false)]) }}"
+                                               class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-700 transition hover:bg-amber-100"
+                                               title="Editar servicio"
+                                               aria-label="Editar servicio">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                    <path d="M12 20h9" />
+                                                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                                </svg>
+                                            </a>
+                                        @endif
+                                    </div>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-4 py-6 text-center text-slate-500">Sin servicios registrados.</td>
+                                <td colspan="6" class="px-4 py-6 text-center text-slate-500">Sin servicios registrados.</td>
                             </tr>
                         @endforelse
                     </tbody>

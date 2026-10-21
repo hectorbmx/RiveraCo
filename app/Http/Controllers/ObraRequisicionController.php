@@ -13,8 +13,10 @@ use App\Models\Obra;
 use App\Models\ObraRequisicion;
 use App\Models\ObraRequisicionDetalle;
 use App\Models\ObraRequisicionFolio;
+use App\Models\Vehiculo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ObraRequisicionController extends Controller
 {
@@ -32,8 +34,9 @@ class ObraRequisicionController extends Controller
             ->activos()
             ->ordenados()
             ->get();
+        [$maquinas, $vehiculos] = $this->catalogosEquipos();
 
-        return view('obras.requisiciones.create', compact('obra', 'tiposRequisicion'));
+        return view('obras.requisiciones.create', compact('obra', 'tiposRequisicion', 'maquinas', 'vehiculos'));
     }
 
     public function catalogo(Request $request, Obra $obra)
@@ -97,6 +100,18 @@ class ObraRequisicionController extends Controller
             'selected_items.*' => ['integer'],
             'selected_quantities' => ['nullable', 'array'],
             'selected_quantities.*' => ['nullable', 'numeric', 'min:0.001', 'max:999999.999'],
+            'selected_equipo_tipo' => ['nullable', 'array'],
+            'selected_equipo_tipo.*' => ['nullable', 'in:vehiculo,maquina'],
+            'selected_vehiculo_id' => ['nullable', 'array'],
+            'selected_vehiculo_id.*' => ['nullable', 'integer', 'exists:vehiculos,id'],
+            'selected_maquina_id' => ['nullable', 'array'],
+            'selected_maquina_id.*' => ['nullable', 'integer', 'exists:maquinas,id'],
+            'partidas' => ['nullable', 'array'],
+            'partidas.*.item_id' => ['required', 'integer'],
+            'partidas.*.cantidad_solicitada' => ['required', 'numeric', 'min:0.001', 'max:999999.999'],
+            'partidas.*.equipo_tipo' => ['nullable', 'in:vehiculo,maquina'],
+            'partidas.*.vehiculo_id' => ['nullable', 'integer', 'exists:vehiculos,id'],
+            'partidas.*.maquina_id' => ['nullable', 'integer', 'exists:maquinas,id'],
         ], [
             'tipo_requisicion_id.required' => 'Selecciona el tipo de requisicion.',
             'selected_items.array' => 'La seleccion de partidas no es valida.',
@@ -113,30 +128,25 @@ class ObraRequisicionController extends Controller
             ->where('activo', true)
             ->firstOrFail();
 
-        $selectedIds = collect($data['selected_items'] ?? [])
-            ->map(fn ($itemId) => (int) $itemId)
-            ->filter()
-            ->unique()
-            ->values();
-
-        $selectedQuantities = collect($data['selected_quantities'] ?? [])
-            ->mapWithKeys(fn ($cantidad, $itemId) => [(int) $itemId => (float) $cantidad]);
+        $lineasEntrada = $this->lineasEntrada($data);
+        $selectedIds = $lineasEntrada->pluck('item_id')->filter()->values();
 
         $catalogoItems = $this->itemsCatalogo($tipoSeleccionado, $obra)->keyBy('id');
         $detallesSeleccionados = collect();
 
         if ($tipoSeleccionado->requiere_catalogo) {
-            $detallesSeleccionados = $selectedIds
-                ->filter(fn ($itemId) => $catalogoItems->has($itemId))
-                ->map(function ($itemId) use ($catalogoItems, $selectedQuantities) {
-                    $item = $catalogoItems->get($itemId);
-                    $item['cantidad_solicitada'] = max(0.001, (float) ($selectedQuantities->get($itemId) ?: 1));
+            $detallesSeleccionados = $lineasEntrada
+                ->filter(fn (array $linea) => $catalogoItems->has($linea['item_id']))
+                ->map(function (array $linea) use ($catalogoItems) {
+                    $item = $catalogoItems->get($linea['item_id']);
+                    $item['cantidad_solicitada'] = $linea['cantidad_solicitada'];
+                    $item['equipo'] = $this->resolverEquipo($linea, $item['item_type'] ?? null);
 
                     return $item;
                 })
                 ->values();
 
-            if ($selectedIds->count() !== $detallesSeleccionados->count()) {
+            if ($lineasEntrada->count() !== $detallesSeleccionados->count()) {
                 return back()
                     ->withErrors(['selected_items' => 'La seleccion contiene partidas que ya no estan disponibles en el catalogo.'])
                     ->withInput();
@@ -224,11 +234,12 @@ class ObraRequisicionController extends Controller
     public function show(Obra $obra, ObraRequisicion $requisicion)
     {
         $requisicion = $this->requisicionDeObra($obra, $requisicion);
-        $editable = $requisicion->estado === ObraRequisicion::ESTADO_PENDIENTE_REVISION;
-        $modo = $editable ? 'edit' : 'show';
-        $catalogoItems = $this->catalogoDisponibleParaEditar($requisicion, $obra, $editable);
+        $editable = false;
+        $modo = 'show';
+        $catalogoItems = collect();
+        [$maquinas, $vehiculos] = $this->catalogosEquipos();
 
-        return view('obras.requisiciones.show_edit', compact('obra', 'requisicion', 'modo', 'editable', 'catalogoItems'));
+        return view('obras.requisiciones.show_edit', compact('obra', 'requisicion', 'modo', 'editable', 'catalogoItems', 'maquinas', 'vehiculos'));
     }
 
     public function edit(Obra $obra, ObraRequisicion $requisicion)
@@ -237,8 +248,9 @@ class ObraRequisicionController extends Controller
         $modo = 'edit';
         $editable = $requisicion->estado === ObraRequisicion::ESTADO_PENDIENTE_REVISION;
         $catalogoItems = $this->catalogoDisponibleParaEditar($requisicion, $obra, $editable);
+        [$maquinas, $vehiculos] = $this->catalogosEquipos();
 
-        return view('obras.requisiciones.show_edit', compact('obra', 'requisicion', 'modo', 'editable', 'catalogoItems'));
+        return view('obras.requisiciones.show_edit', compact('obra', 'requisicion', 'modo', 'editable', 'catalogoItems', 'maquinas', 'vehiculos'));
     }
 
     public function imprimir(Obra $obra, ObraRequisicion $requisicion)
@@ -280,6 +292,9 @@ class ObraRequisicionController extends Controller
             'detalles' => ['nullable', 'array'],
             'detalles.*.cantidad_solicitada' => ['required', 'numeric', 'min:0.001', 'max:999999.999'],
             'detalles.*.observaciones' => ['nullable', 'string', 'max:1000'],
+            'detalles.*.equipo_tipo' => ['nullable', 'in:vehiculo,maquina'],
+            'detalles.*.vehiculo_id' => ['nullable', 'integer', 'exists:vehiculos,id'],
+            'detalles.*.maquina_id' => ['nullable', 'integer', 'exists:maquinas,id'],
         ], [
             'detalles.*.cantidad_solicitada.required' => 'La cantidad solicitada es obligatoria.',
             'detalles.*.cantidad_solicitada.min' => 'La cantidad solicitada debe ser mayor a cero.',
@@ -303,6 +318,7 @@ class ObraRequisicionController extends Controller
                 $detalle->update([
                     'cantidad_solicitada' => $input['cantidad_solicitada'],
                     'observaciones' => $input['observaciones'] ?? null,
+                    ...$this->resolverEquipo($input, $detalle->item_type),
                 ]);
             }
         });
@@ -328,21 +344,29 @@ class ObraRequisicionController extends Controller
         }
 
         $data = $request->validate([
-            'selected_items' => ['required', 'array', 'min:1'],
+            'selected_items' => ['required_without:partidas', 'array', 'min:1'],
             'selected_items.*' => ['integer'],
+            'selected_quantities' => ['nullable', 'array'],
+            'selected_quantities.*' => ['nullable', 'numeric', 'min:0.001', 'max:999999.999'],
+            'selected_equipo_tipo' => ['nullable', 'array'],
+            'selected_equipo_tipo.*' => ['nullable', 'in:vehiculo,maquina'],
+            'selected_vehiculo_id' => ['nullable', 'array'],
+            'selected_vehiculo_id.*' => ['nullable', 'integer', 'exists:vehiculos,id'],
+            'selected_maquina_id' => ['nullable', 'array'],
+            'selected_maquina_id.*' => ['nullable', 'integer', 'exists:maquinas,id'],
+            'partidas' => ['required_without:selected_items', 'array', 'min:1'],
+            'partidas.*.item_id' => ['required', 'integer'],
+            'partidas.*.cantidad_solicitada' => ['required', 'numeric', 'min:0.001', 'max:999999.999'],
+            'partidas.*.equipo_tipo' => ['nullable', 'in:vehiculo,maquina'],
+            'partidas.*.vehiculo_id' => ['nullable', 'integer', 'exists:vehiculos,id'],
+            'partidas.*.maquina_id' => ['nullable', 'integer', 'exists:maquinas,id'],
         ], [
             'selected_items.required' => 'Selecciona al menos una partida para agregar.',
             'selected_items.min' => 'Selecciona al menos una partida para agregar.',
         ]);
 
-        $selectedIds = collect($data['selected_items'])
-            ->map(fn ($itemId) => (int) $itemId)
-            ->filter()
-            ->unique()
-            ->values();
-
-        $selectedQuantities = collect($data['selected_quantities'] ?? [])
-            ->mapWithKeys(fn ($cantidad, $itemId) => [(int) $itemId => (float) $cantidad]);
+        $lineasEntrada = $this->lineasEntrada($data);
+        $selectedIds = $lineasEntrada->pluck('item_id')->filter()->values();
 
         $catalogoItems = $this->itemsCatalogo($requisicion->tipo, $obra)->keyBy('id');
         $itemsExistentes = $requisicion->detalles()
@@ -350,18 +374,20 @@ class ObraRequisicionController extends Controller
             ->pluck('item_id')
             ->map(fn ($itemId) => (int) $itemId);
 
-        $detallesSeleccionados = $selectedIds
-            ->reject(fn ($itemId) => $itemsExistentes->contains($itemId))
-            ->filter(fn ($itemId) => $catalogoItems->has($itemId))
-            ->map(function ($itemId) use ($catalogoItems, $selectedQuantities) {
-                $item = $catalogoItems->get($itemId);
-                $item['cantidad_solicitada'] = max(0.001, (float) ($selectedQuantities->get($itemId) ?: 1));
+        $permitirDuplicados = $requisicion->tipo->item_type === 'producto';
+        $detallesSeleccionados = $lineasEntrada
+            ->reject(fn (array $linea) => ! $permitirDuplicados && $itemsExistentes->contains($linea['item_id']))
+            ->filter(fn (array $linea) => $catalogoItems->has($linea['item_id']))
+            ->map(function (array $linea) use ($catalogoItems) {
+                $item = $catalogoItems->get($linea['item_id']);
+                $item['cantidad_solicitada'] = $linea['cantidad_solicitada'];
+                $item['equipo'] = $this->resolverEquipo($linea, $item['item_type'] ?? null);
 
                 return $item;
             })
             ->values();
 
-        if ($selectedIds->contains(fn ($itemId) => ! $catalogoItems->has($itemId))) {
+        if ($lineasEntrada->contains(fn (array $linea) => ! $catalogoItems->has($linea['item_id']))) {
             return back()
                 ->withErrors(['selected_items' => 'La seleccion contiene partidas que ya no estan disponibles en el catalogo.'])
                 ->withInput();
@@ -427,7 +453,130 @@ class ObraRequisicionController extends Controller
             'cantidad_solicitada' => $cantidadSolicitada,
             'cantidad_surtida' => 0,
             'estado' => 'pendiente',
+            ...($item['equipo'] ?? [
+                'equipo_tipo' => null,
+                'vehiculo_id' => null,
+                'maquina_id' => null,
+                'equipo_nombre_snapshot' => null,
+                'equipo_identificador_snapshot' => null,
+            ]),
         ]);
+    }
+
+    private function lineasEntrada(array $data)
+    {
+        if (! empty($data['partidas'])) {
+            return collect($data['partidas'])
+                ->map(fn (array $linea) => [
+                    'item_id' => (int) $linea['item_id'],
+                    'cantidad_solicitada' => (float) $linea['cantidad_solicitada'],
+                    'equipo_tipo' => $linea['equipo_tipo'] ?? null,
+                    'vehiculo_id' => $linea['vehiculo_id'] ?? null,
+                    'maquina_id' => $linea['maquina_id'] ?? null,
+                ])
+                ->values();
+        }
+
+        return collect($data['selected_items'] ?? [])
+            ->map(fn ($itemId) => (int) $itemId)
+            ->filter()
+            ->unique()
+            ->map(fn (int $itemId) => [
+                'item_id' => $itemId,
+                'cantidad_solicitada' => max(0.001, (float) (($data['selected_quantities'][$itemId] ?? 1) ?: 1)),
+                'equipo_tipo' => $data['selected_equipo_tipo'][$itemId] ?? null,
+                'vehiculo_id' => $data['selected_vehiculo_id'][$itemId] ?? null,
+                'maquina_id' => $data['selected_maquina_id'][$itemId] ?? null,
+            ])
+            ->values();
+    }
+
+    private function resolverEquipo(array $input, ?string $itemType): array
+    {
+        $tipo = trim((string) ($input['equipo_tipo'] ?? ''));
+        $vehiculoId = $input['vehiculo_id'] ?? null;
+        $maquinaId = $input['maquina_id'] ?? null;
+
+        if ($tipo === '' && ($vehiculoId || $maquinaId)) {
+            throw ValidationException::withMessages([
+                'equipo' => 'Selecciona el tipo de equipo antes de indicar un vehiculo o una maquina.',
+            ]);
+        }
+
+        if ($tipo === '') {
+            return [
+                'equipo_tipo' => null,
+                'vehiculo_id' => null,
+                'maquina_id' => null,
+                'equipo_nombre_snapshot' => null,
+                'equipo_identificador_snapshot' => null,
+            ];
+        }
+
+        if ($itemType !== 'producto') {
+            throw ValidationException::withMessages([
+                'equipo' => 'El equipo destino solo puede asignarse a partidas de material o insumos.',
+            ]);
+        }
+
+        if ($tipo === 'vehiculo') {
+            if (! $vehiculoId || $maquinaId) {
+                throw ValidationException::withMessages([
+                    'equipo' => 'Una partida solo puede tener un vehiculo o una maquina, nunca ambos.',
+                ]);
+            }
+
+            $vehiculo = Vehiculo::query()->find($vehiculoId);
+            if (! $vehiculo) {
+                throw ValidationException::withMessages(['equipo' => 'El vehiculo seleccionado no existe.']);
+            }
+
+            return [
+                'equipo_tipo' => 'vehiculo',
+                'vehiculo_id' => $vehiculo->id,
+                'maquina_id' => null,
+                'equipo_nombre_snapshot' => trim(($vehiculo->marca ?? '') . ' ' . ($vehiculo->modelo ?? '')),
+                'equipo_identificador_snapshot' => $vehiculo->placas ?: ($vehiculo->tipo ?: null),
+            ];
+        }
+
+        if (! $maquinaId || $vehiculoId) {
+            throw ValidationException::withMessages([
+                'equipo' => 'Una partida solo puede tener un vehiculo o una maquina, nunca ambos.',
+            ]);
+        }
+
+        $maquina = Maquina::query()->find($maquinaId);
+        if (! $maquina) {
+            throw ValidationException::withMessages(['equipo' => 'La maquina seleccionada no existe.']);
+        }
+
+        return [
+            'equipo_tipo' => 'maquina',
+            'vehiculo_id' => null,
+            'maquina_id' => $maquina->id,
+            'equipo_nombre_snapshot' => $maquina->nombre ?: ($maquina->codigo ?: null),
+            'equipo_identificador_snapshot' => $maquina->codigo ?: ($maquina->tipo ?: null),
+        ];
+    }
+
+    private function catalogosEquipos(): array
+    {
+        $maquinas = Maquina::query()
+            ->with('asignacionActiva.obra:id,nombre,clave_obra')
+            ->where('estado', '!=', Maquina::ESTADO_BAJA_DEFINITIVA)
+            ->orderBy('codigo')
+            ->orderBy('nombre')
+            ->get(['id', 'codigo', 'nombre', 'tipo', 'estado', 'ubicacion']);
+
+        $vehiculos = Vehiculo::query()
+            ->with('asignacionActual.empleado')
+            ->orderBy('marca')
+            ->orderBy('modelo')
+            ->orderBy('placas')
+            ->get(['id', 'marca', 'modelo', 'placas', 'tipo', 'estatus']);
+
+        return [$maquinas, $vehiculos];
     }
 
     private function catalogoDisponibleParaEditar(ObraRequisicion $requisicion, Obra $obra, bool $editable)

@@ -16,6 +16,7 @@ use App\Models\HuentitanOrdenFabricacion;
 use App\Models\HuentitanOrdenFabricacionMaterial;
 use App\Models\HuentitanSalida;
 use App\Models\HuentitanSalidaDetalle;
+use App\Models\MantenimientoAbastecimiento;
 use App\Models\TipoIva;
 use App\Models\TipoRetencion;
 use App\Models\DocumentoFirmante;
@@ -276,6 +277,8 @@ class OrdenCompraController extends Controller
         ->paginate(20)
         ->withQueryString();
 
+    $solicitudesMantenimientoPendientes = $this->solicitudesMantenimientoConSaldoCompra()->count();
+
     /*
      * Recalcular totales mostrados en el listado
      * a partir de los detalles.
@@ -318,7 +321,8 @@ class OrdenCompraController extends Controller
             'semanaAnterior',
             'semanaSiguiente',
             'esSemanaActual',
-            'resumenSemanaGl'
+            'resumenSemanaGl',
+            'solicitudesMantenimientoPendientes'
         )
     );
 }
@@ -336,13 +340,59 @@ class OrdenCompraController extends Controller
     $tiposIva = TipoIva::where('activo', true)->orderBy('porcentaje')->get();
     $selectedAreaId = null;
     $huentitanAreaId = Area::where('codigo', 'HT')->value('id');
+    $solicitudesMantenimientoPendientes = $this->solicitudesMantenimientoConSaldoCompra();
 
     if (request()->filled('area_codigo')) {
         $selectedAreaId = Area::where('codigo', request('area_codigo'))->value('id');
     }
 
-    return view('ordencompra.create', compact('proveedores','areas','obras','centrosCosto','tiposIva','selectedAreaId','huentitanAreaId'));
+    return view('ordencompra.create', compact(
+        'proveedores',
+        'areas',
+        'obras',
+        'centrosCosto',
+        'tiposIva',
+        'selectedAreaId',
+        'huentitanAreaId',
+        'solicitudesMantenimientoPendientes'
+    ));
 }
+
+    public function buscarSolicitudesMantenimiento(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        $solicitudes = MantenimientoAbastecimiento::query()
+            ->with(['mantenimiento.maquina'])
+            ->where('tipo', MantenimientoAbastecimiento::TIPO_COMPRA)
+            ->whereIn('estado', ['pendiente', 'parcial', 'en_compra'])
+            ->where(function ($query) use ($q) {
+                $query->where('folio', 'like', "%{$q}%")
+                    ->orWhereHas('mantenimiento.maquina', function ($machine) use ($q) {
+                        $machine->where('codigo', 'like', "%{$q}%")
+                            ->orWhere('nombre', 'like', "%{$q}%");
+                    });
+            })
+            ->latest('id')
+            ->get()
+            ->filter(fn (MantenimientoAbastecimiento $solicitud) => $solicitud->detalles()->get()->contains(
+                fn ($detalle) => $this->saldoCompraDetalle($detalle) > 0.0005
+            ))
+            ->take(10);
+
+        return response()->json($solicitudes->map(fn ($solicitud) => [
+            'id' => $solicitud->id,
+            'folio' => $solicitud->folio,
+            'estado' => $solicitud->estado,
+            'maquina' => $solicitud->mantenimiento?->maquina?->codigo
+                ?: $solicitud->mantenimiento?->maquina?->nombre
+                ?: 'Máquina',
+        ])->values());
+    }
 
     /**
      * Guardar OC (estado inicial: programada -> legacy BORRADOR)
@@ -361,6 +411,9 @@ class OrdenCompraController extends Controller
             $oc->folio        = $this->generarFolioPorArea($area); // folio por área
             $oc->proveedor_id = $request->filled('proveedor_id') ? (int) $request->proveedor_id : null;
             $oc->obra_id      = $request->obra_id ? (int)$request->obra_id : null;
+            $oc->mantenimiento_abastecimiento_id = $request->filled('mantenimiento_abastecimiento_id')
+                ? (int) $request->mantenimiento_abastecimiento_id
+                : null;
             $oc->centro_costo_id = $request->centro_costo_id ? (int)$request->centro_costo_id : null;
             $oc->planeacion_gasto_id = $oc->obra_id && $request->planeacion_gasto_id ? (int)$request->planeacion_gasto_id : null;
 
@@ -398,6 +451,45 @@ class OrdenCompraController extends Controller
 
 
             $oc->save();
+
+            if ($oc->mantenimiento_abastecimiento_id) {
+                $solicitud = MantenimientoAbastecimiento::query()
+                    ->with('detalles')
+                    ->whereKey($oc->mantenimiento_abastecimiento_id)
+                    ->where('tipo', MantenimientoAbastecimiento::TIPO_COMPRA)
+                    ->whereIn('estado', ['pendiente', 'parcial', 'en_compra'])
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $detallesCargados = 0;
+                foreach ($solicitud->detalles as $detalleSolicitud) {
+                    $pendiente = $this->saldoCompraDetalle($detalleSolicitud);
+                    if ($pendiente <= 0) {
+                        continue;
+                    }
+
+                    $oc->detalles()->create([
+                        'mantenimiento_abastecimiento_detalle_id' => $detalleSolicitud->id,
+                        'producto_id' => $detalleSolicitud->producto_id,
+                        'descripcion' => $detalleSolicitud->producto_nombre_snapshot,
+                        'unidad' => $detalleSolicitud->unidad,
+                        'cantidad' => $pendiente,
+                        'cantidad_recibida' => 0,
+                        'precio_unitario' => 0,
+                        'importe' => 0,
+                        'notas' => 'Solicitud ' . $solicitud->folio,
+                    ]);
+                    $detallesCargados++;
+                }
+
+                if ($detallesCargados === 0) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'mantenimiento_abastecimiento_id' => 'La solicitud ya no tiene cantidades pendientes para comprar.',
+                    ]);
+                }
+
+                $solicitud->update(['estado' => 'en_compra']);
+            }
 
             if ($request->filled('obra_civil_material_request_items')) {
                 $materialRequestOrderService->attachApprovedItemsToOrder(
@@ -3778,6 +3870,44 @@ public function exportarListaPagos(
         return response($pdf->Output('S'))
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"');
+    }
+
+    /**
+     * Solicitudes de compra que todavía tienen al menos una partida sin cubrir.
+     * La solicitud puede estar en_compra porque una OC anterior solo tomó parte
+     * de sus partidas o cantidades.
+     */
+    private function solicitudesMantenimientoConSaldoCompra()
+    {
+        return MantenimientoAbastecimiento::query()
+            ->with(['mantenimiento.maquina', 'mantenimiento.vehiculo', 'mantenimiento.servicioPreventivoTipo', 'detalles'])
+            ->where('tipo', MantenimientoAbastecimiento::TIPO_COMPRA)
+            ->whereIn('estado', ['pendiente', 'parcial', 'en_compra'])
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (MantenimientoAbastecimiento $solicitud) => $solicitud->detalles->contains(
+                fn ($detalle) => $this->saldoCompraDetalle($detalle) > 0.0005
+            ))
+            ->values();
+    }
+
+    private function saldoCompraDetalle($detalle): float
+    {
+        $basePendiente = max(
+            0,
+            (float) $detalle->cantidad_solicitada - (float) $detalle->cantidad_atendida
+        );
+
+        if ($basePendiente <= 0) {
+            return 0.0;
+        }
+
+        $comprometido = OrdenCompraDetalle::query()
+            ->where('mantenimiento_abastecimiento_detalle_id', $detalle->id)
+            ->whereHas('orden', fn ($query) => $query->whereNotIn('estado', ['CANCELADA', 'CANCELADO']))
+            ->sum('cantidad');
+
+        return max(0, $basePendiente - (float) $comprometido);
     }
 }
 

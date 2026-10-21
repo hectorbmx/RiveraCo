@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\Producto;
 use App\Models\Proveedor;
 use App\Models\Almacen;
+use App\Models\MantenimientoAbastecimiento;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Support\Inventario\UnidadMedidaCatalogo;
@@ -69,7 +70,14 @@ class ProductoController extends Controller
 
     $productos = $q->paginate($perPage)->withQueryString();
 
-    return view('productos.index', compact('productos', 'perPage'));
+    $solicitudesAlmacenPendientes = MantenimientoAbastecimiento::query()
+        ->where('tipo', MantenimientoAbastecimiento::TIPO_ALMACEN)
+        ->whereIn('estado', ['pendiente', 'parcial'])
+        ->whereHas('detalles', fn ($query) => $query
+            ->whereColumn('cantidad_solicitada', '>', 'cantidad_atendida'))
+        ->count();
+
+    return view('productos.index', compact('productos', 'perPage', 'solicitudesAlmacenPendientes'));
 }
 
 

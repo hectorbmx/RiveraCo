@@ -5,6 +5,7 @@ namespace App\Services\Inventario;
 use App\Models\InventarioDocumento;
 use App\Models\OrdenCompra;
 use App\Models\OrdenCompraDetalle;
+use App\Models\MantenimientoAbastecimiento;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -168,9 +169,113 @@ class InventarioDocumentoService
             $this->actualizarEstadoRecepcionOrdenCompra($ordenCompra);
         }
 
+        if ($doc->tipo === 'entrada') {
+            $this->actualizarSolicitudesCompraPorEntrada($doc);
+        }
+
+        if ($doc->tipo === 'salida' && $doc->mantenimiento_abastecimiento_id) {
+            $this->actualizarSolicitudAlmacen($doc);
+        }
+
         $doc->estado = 'aplicado';
         $doc->save();
     });
+}
+
+private function actualizarSolicitudAlmacen(InventarioDocumento $doc): void
+{
+    $solicitud = MantenimientoAbastecimiento::query()
+        ->with('mantenimiento')
+        ->whereKey($doc->mantenimiento_abastecimiento_id)
+        ->lockForUpdate()
+        ->first();
+
+    if (!$solicitud || $solicitud->tipo !== MantenimientoAbastecimiento::TIPO_ALMACEN) {
+        throw new RuntimeException('La salida está vinculada a una solicitud de almacén inválida.');
+    }
+
+    $detallesSolicitud = $solicitud->detalles()
+        ->lockForUpdate()
+        ->get()
+        ->keyBy('producto_id');
+
+    foreach ($doc->detalles as $detalleSalida) {
+        $detalleSolicitud = $detallesSolicitud->get($detalleSalida->producto_id);
+
+        if (!$detalleSolicitud) {
+            throw new RuntimeException('La partida de salida no pertenece a la solicitud de almacén.');
+        }
+
+        $detalleSolicitud->cantidad_atendida = min(
+            (float) $detalleSolicitud->cantidad_solicitada,
+            (float) $detalleSolicitud->cantidad_atendida + (float) $detalleSalida->cantidad
+        );
+        $detalleSolicitud->estado = (float) $detalleSolicitud->cantidad_atendida + 0.0005 >= (float) $detalleSolicitud->cantidad_solicitada
+            ? 'surtida'
+            : ($detalleSolicitud->cantidad_atendida > 0 ? 'parcial' : 'pendiente');
+        $detalleSolicitud->save();
+    }
+
+    $solicitud->refresh();
+    $todosSurtidos = $solicitud->detalles()->where('estado', '!=', 'surtida')->doesntExist();
+    $algunSurtido = $solicitud->detalles()->where('cantidad_atendida', '>', 0)->exists();
+
+    $solicitud->estado = $todosSurtidos ? 'surtida' : ($algunSurtido ? 'parcial' : 'pendiente');
+    $solicitud->save();
+
+    if ($solicitud->mantenimiento) {
+        $solicitud->mantenimiento->update([
+            'abastecimiento_estado' => $todosSurtidos ? 'surtida' : 'surtida_parcial',
+        ]);
+    }
+}
+
+private function actualizarSolicitudesCompraPorEntrada(InventarioDocumento $doc): void
+{
+    $detalleIds = $doc->detalles->pluck('orden_compra_detalle_id')->filter()->unique()->values();
+    if ($detalleIds->isEmpty()) {
+        return;
+    }
+
+    $solicitudes = MantenimientoAbastecimiento::query()
+        ->with('mantenimiento')
+        ->where('tipo', MantenimientoAbastecimiento::TIPO_COMPRA)
+        ->whereHas('detalles', fn ($query) => $query->whereIn('id', function ($subquery) use ($detalleIds) {
+            $subquery->select('mantenimiento_abastecimiento_detalle_id')
+                ->from('orden_compra_detalles')
+                ->whereIn('id', $detalleIds->all())
+                ->whereNotNull('mantenimiento_abastecimiento_detalle_id');
+        }))
+        ->lockForUpdate()
+        ->get();
+
+    foreach ($solicitudes as $solicitud) {
+        $ocDetalleIds = $solicitud->detalles()
+            ->pluck('id')
+            ->all();
+
+        $totales = DB::table('orden_compra_detalles')
+            ->whereIn('mantenimiento_abastecimiento_detalle_id', $ocDetalleIds)
+            ->selectRaw('COALESCE(SUM(cantidad), 0) as solicitada, COALESCE(SUM(cantidad_recibida), 0) as recibida')
+            ->first();
+
+        $solicitada = (float) ($totales->solicitada ?? 0);
+        $recibida = (float) ($totales->recibida ?? 0);
+        if ($recibida <= 0) {
+            continue;
+        }
+
+        $solicitud->estado = $recibida + 0.0005 >= $solicitada
+            ? 'material_en_almacen'
+            : 'recibida_parcial';
+        $solicitud->save();
+
+        if ($solicitud->mantenimiento) {
+            $solicitud->mantenimiento->update([
+                'abastecimiento_estado' => $solicitud->estado,
+            ]);
+        }
+    }
 }
 // public function cancelar(InventarioDocumento $doc): void
 // {
@@ -441,6 +546,10 @@ public function cancelar(InventarioDocumento $doc): void
             ]);
         }
 
+        if ($doc->tipo === 'salida' && $doc->mantenimiento_abastecimiento_id) {
+            $this->revertirSolicitudAlmacen($doc);
+        }
+
         if ($doc->tipo === 'entrada') {
             $ordenesCompraCanceladas = collect();
 
@@ -486,9 +595,65 @@ public function cancelar(InventarioDocumento $doc): void
     });
 }
 
+private function revertirSolicitudAlmacen(InventarioDocumento $doc): void
+{
+    $solicitud = MantenimientoAbastecimiento::query()
+        ->with('mantenimiento')
+        ->whereKey($doc->mantenimiento_abastecimiento_id)
+        ->lockForUpdate()
+        ->first();
+
+    if (!$solicitud || $solicitud->tipo !== MantenimientoAbastecimiento::TIPO_ALMACEN) {
+        return;
+    }
+
+    $detallesSolicitud = $solicitud->detalles()
+        ->lockForUpdate()
+        ->get()
+        ->keyBy('producto_id');
+
+    foreach ($doc->detalles as $detalleSalida) {
+        $detalleSolicitud = $detallesSolicitud->get($detalleSalida->producto_id);
+        if (!$detalleSolicitud) {
+            continue;
+        }
+
+        $detalleSolicitud->cantidad_atendida = max(
+            0,
+            (float) $detalleSolicitud->cantidad_atendida - (float) $detalleSalida->cantidad
+        );
+        $detalleSolicitud->estado = $detalleSolicitud->cantidad_atendida > 0 ? 'parcial' : 'pendiente';
+        $detalleSolicitud->save();
+    }
+
+    $solicitud->refresh();
+    $algunSurtido = $solicitud->detalles()->where('cantidad_atendida', '>', 0)->exists();
+    $solicitud->estado = $algunSurtido ? 'parcial' : 'pendiente';
+    $solicitud->save();
+
+    if ($solicitud->mantenimiento) {
+        $solicitud->mantenimiento->update([
+            'abastecimiento_estado' => $algunSurtido ? 'surtida_parcial' : 'solicitud_almacen',
+        ]);
+    }
+}
+
     private function actualizarEstadoRecepcionOrdenCompra(OrdenCompra $ordenCompra): void
     {
         $detalles = $ordenCompra->detalles()->lockForUpdate()->get();
+
+        foreach ($detalles as $detalle) {
+            $cantidadOrdenada = (float) ($detalle->cantidad ?? 0);
+            $cantidadRecibida = (float) ($detalle->cantidad_recibida ?? 0);
+            $estadoDetalle = $cantidadRecibida <= 0
+                ? 'pendiente'
+                : ($cantidadRecibida + 0.0005 >= $cantidadOrdenada ? 'recibida' : 'parcial');
+
+            if ($detalle->estado_recepcion !== $estadoDetalle) {
+                $detalle->forceFill(['estado_recepcion' => $estadoDetalle])->save();
+            }
+        }
+
         $cantidadOrdenada = (float) $detalles->sum(fn (OrdenCompraDetalle $detalle) => (float) $detalle->cantidad);
         $cantidadRecibida = (float) $detalles->sum(fn (OrdenCompraDetalle $detalle) => (float) $detalle->cantidad_recibida);
 

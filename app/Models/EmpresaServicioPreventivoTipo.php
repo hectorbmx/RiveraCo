@@ -59,4 +59,16 @@ class EmpresaServicioPreventivoTipo extends Model
             ->orderBy('intervalo_valor')
             ->orderBy('nombre');
     }
+
+    public function materiales()
+    {
+        return $this->hasMany(EmpresaServicioPreventivoMaterial::class, 'servicio_preventivo_tipo_id')
+            ->orderBy('orden')
+            ->orderBy('id');
+    }
+
+    public function materialesActivos()
+    {
+        return $this->materiales()->where('activo', true);
+    }
 }

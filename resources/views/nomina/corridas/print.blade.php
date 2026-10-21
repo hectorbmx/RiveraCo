@@ -22,14 +22,7 @@
             font-size: 11px;
         }
 
-        .toolbar {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            padding: 12px;
-            background: #f8fafc;
-            border-bottom: 1px solid #e5e7eb;
-        }
+        .toolbar { display: flex; justify-content: flex-end; gap: 8px; padding: 12px; background: #f8fafc; border-bottom: 1px solid #e5e7eb; position: fixed; bottom: 22px; right: max(22px, calc((100vw - 11in) / 2 + 22px)); z-index: 20; }
 
         .toolbar button {
             border: 1px solid #cbd5e1;
@@ -41,9 +34,7 @@
             cursor: pointer;
         }
 
-        .document {
-            padding: 14px;
-        }
+        .document { background: #fff; box-shadow: 0 8px 24px rgba(15,23,42,.16); margin: 24px auto; min-height: 8.5in; padding: 14px; width: 11in; }
 
         .header {
             display: flex;
@@ -174,9 +165,7 @@
                 display: none;
             }
 
-            .document {
-                padding: 0;
-            }
+            .document { box-shadow: none; margin: 0; padding: 0; width: 11in; }
 
             body {
                 font-size: 10px;

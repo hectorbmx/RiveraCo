@@ -10,22 +10,23 @@
             margin: 0;
             font-family: Arial, Helvetica, sans-serif;
             color: #111827;
-            background: #fff;
+            background: #e5e7eb;
             font-size: 8px;
         }
         .page {
             width: 265mm;
             min-height: 198mm;
-            margin: 0 auto;
+            margin: 24px auto;
+            background: #fff;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, .16);
             border: 3px solid #0b3b96;
             padding: 0;
         }
         .toolbar {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            padding: 10px;
-            border-bottom: 1px solid #d1d5db;
+            position: fixed;
+            bottom: 22px;
+            right: max(22px, calc((100vw - 265mm) / 2 + 22px));
+            z-index: 20;
         }
         .toolbar button {
             border: 0;
@@ -160,9 +161,12 @@
         }
         @media print {
             .toolbar { display: none; }
+            body { background: #fff; }
             .page {
                 width: 265mm;
                 min-height: 198mm;
+                box-shadow: none;
+                margin: 0 auto;
             }
         }
     </style>

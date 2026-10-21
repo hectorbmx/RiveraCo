@@ -31,6 +31,7 @@ use App\Models\NominaListaRaya;
 use App\Models\NominaTipoSueldo;
 use App\Models\Almacen;
 use App\Models\TipoRetencion;
+use App\Models\Producto;
 use Illuminate\Validation\Rule;
 use App\Services\Nomina\ListaRayaResolver;
 use App\Services\Maquinas\PreventivoMaquinaService;
@@ -208,6 +209,10 @@ public function index(){
             ->vehiculos()
             ->ordenados()
             ->get();
+        $productosCatalogo = Producto::query()
+            ->where('activo', true)
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'sku', 'unidad']);
         $catalogoRoles = CatalogoRol::orderBy('nombre')->get();    
         $tarifarios = ComisionTarifario::orderByDesc('vigente_desde')->orderByDesc('id')->get();
 
@@ -284,6 +289,7 @@ public function index(){
         'preventivosMaquinaria',
         'serviciosPreventivosMaquinaria',
         'serviciosPreventivosVehiculos',
+        'productosCatalogo',
         'listasRaya',
         'almacenes',
         'vehiculoAlertaDestinatarios',

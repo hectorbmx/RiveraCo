@@ -3,7 +3,7 @@
 @section('title', 'Nueva requisicion')
 
 @section('content')
-<div class="max-w-5xl mx-auto space-y-6">
+<div class="max-w-7xl mx-auto space-y-6">
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
             <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Obra / Requisiciones</div>
@@ -114,7 +114,7 @@
         </div>
 
         <div id="selected-items-cart" class="mb-6 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <div class="border-b border-[#0B265A]/20 bg-[#0B265A] px-4 py-3 text-sm font-semibold text-white">
+            <div class="border-b border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#0B265A]">
                 Partidas seleccionadas
             </div>
             <div id="selected-items-cart-body" class="divide-y divide-slate-100"></div>
@@ -143,6 +143,19 @@
 </div>
 @endsection
 
+@php
+    $equiposVehiculos = $vehiculos->map(fn ($vehiculo) => [
+        'id' => $vehiculo->id,
+        'label' => trim(($vehiculo->marca ?? '') . ' ' . ($vehiculo->modelo ?? '')),
+        'identificador' => $vehiculo->placas ?: ($vehiculo->tipo ?: 'Sin identificador'),
+    ])->values();
+    $equiposMaquinas = $maquinas->map(fn ($maquina) => [
+        'id' => $maquina->id,
+        'label' => $maquina->nombre ?: ($maquina->codigo ?: 'Maquina'),
+        'identificador' => $maquina->codigo ?: ($maquina->tipo ?: 'Sin identificador'),
+    ])->values();
+@endphp
+
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -157,6 +170,10 @@
         const selectedItemsHidden = document.getElementById('selected-items-hidden');
         const selectedItemsCart = document.getElementById('selected-items-cart');
         const selectedItemsCartBody = document.getElementById('selected-items-cart-body');
+        const equipos = {
+            vehiculos: @json($equiposVehiculos),
+            maquinas: @json($equiposMaquinas),
+        };
 
         if (!form || !tipoSelect || !resumen || !contador || !estado || !lista) {
             return;
@@ -236,13 +253,15 @@
                 return;
             }
 
-            selectedItemsHidden.innerHTML = Array.from(selectedItems.values()).map(function (item) {
-                const id = String(item.id);
+            selectedItemsHidden.innerHTML = Array.from(selectedItems.values()).map(function (item, index) {
                 const quantity = formatQuantity(item.quantity);
 
                 return `
-                    <input type="hidden" name="selected_items[]" value="${escapeHtml(id)}">
-                    <input type="hidden" name="selected_quantities[${escapeHtml(id)}]" value="${escapeHtml(quantity)}">
+                    <input type="hidden" name="partidas[${index}][item_id]" value="${escapeHtml(item.id)}">
+                    <input type="hidden" name="partidas[${index}][cantidad_solicitada]" value="${escapeHtml(quantity)}">
+                    <input type="hidden" name="partidas[${index}][equipo_tipo]" value="${escapeHtml(item.equipo_tipo || '')}">
+                    <input type="hidden" name="partidas[${index}][vehiculo_id]" value="${escapeHtml(item.vehiculo_id || '')}">
+                    <input type="hidden" name="partidas[${index}][maquina_id]" value="${escapeHtml(item.maquina_id || '')}">
                 `;
             }).join('');
         };
@@ -269,8 +288,8 @@
                 return;
             }
 
-            const rows = Array.from(selectedItems.values()).map(function (item) {
-                const id = String(item.id);
+            const rows = Array.from(selectedItems.entries()).map(function ([lineId, item]) {
+                const id = String(lineId);
                 const subtitle = item.subtitle || 'Sin SKU / unidad';
                 const unidad = item.unidad || 'unidad';
                 const stock = item.badge || (
@@ -278,6 +297,28 @@
                         ? `Disponible: ${Number(item.stock_disponible).toLocaleString('es-MX', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`
                         : 'Sin existencia'
                 );
+                const equipoOptions = function (tipo) {
+                    const options = equipos[tipo] || [];
+                    return options.map(function (equipo) {
+                        const selected = String(item.equipo_id || '') === String(equipo.id) ? 'selected' : '';
+                        return `<option value="${escapeHtml(equipo.id)}" ${selected}>${escapeHtml(equipo.label)} · ${escapeHtml(equipo.identificador)}</option>`;
+                    }).join('');
+                };
+                const equipoDestino = currentTipo?.item_type === 'producto'
+                    ? `
+                        <div class="space-y-2">
+                            <select data-cart-equipo-tipo-id="${escapeHtml(id)}" class="w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                <option value="">Sin desglose</option>
+                                <option value="vehiculo" ${item.equipo_tipo === 'vehiculo' ? 'selected' : ''}>Vehiculo</option>
+                                <option value="maquina" ${item.equipo_tipo === 'maquina' ? 'selected' : ''}>Maquina</option>
+                            </select>
+                            <select data-cart-equipo-id="${escapeHtml(id)}" class="${item.equipo_tipo ? '' : 'hidden'} w-full rounded-xl border-slate-300 text-xs shadow-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                <option value="">Selecciona equipo</option>
+                                ${item.equipo_tipo ? equipoOptions(item.equipo_tipo + 's') : ''}
+                            </select>
+                        </div>
+                    `
+                    : '<span class="text-slate-400">No aplica</span>';
 
                 return `
                     <tr class="border-t border-slate-200">
@@ -299,7 +340,9 @@
                                    data-cart-quantity-id="${escapeHtml(id)}"
                                    class="w-28 rounded-xl border-slate-300 text-sm shadow-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
                         </td>
+                        <td class="px-4 py-3 align-top">${equipoDestino}</td>
                         <td class="px-4 py-3 text-right">
+                            ${currentTipo?.item_type === 'producto' ? `<button type="button" data-duplicate-item-id="${escapeHtml(id)}" class="mr-2 inline-flex items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-[#0B265A] transition hover:bg-blue-100" title="Duplicar partida">Duplicar</button>` : ''}
                             <button type="button"
                                     data-remove-item-id="${escapeHtml(id)}"
                                     class="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100">
@@ -313,12 +356,13 @@
             selectedItemsCartBody.innerHTML = `
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
-                        <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <thead class="bg-[#0B265A] text-left text-xs font-semibold uppercase tracking-wide text-white">
                             <tr>
                                 <th class="px-4 py-3">Producto</th>
                                 <th class="px-4 py-3">SKU / unidad</th>
                                 <th class="px-4 py-3">Existencia</th>
                                 <th class="px-4 py-3">Cantidad</th>
+                                <th class="px-4 py-3">Equipo destino</th>
                                 <th class="px-4 py-3 text-right">Accion</th>
                             </tr>
                         </thead>
@@ -327,16 +371,37 @@
                 </div>
             `;
 
+            selectedItemsCartBody.querySelectorAll('[data-duplicate-item-id]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const id = String(button.dataset.duplicateItemId);
+                    const original = selectedItems.get(id);
+                    if (!original) return;
+
+                    const duplicateId = `${original.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                    selectedItems.set(duplicateId, {
+                        ...original,
+                        equipo_tipo: '',
+                        equipo_id: '',
+                        vehiculo_id: '',
+                        maquina_id: '',
+                        line_id: duplicateId
+                    });
+                    syncSelectedInputs();
+                    renderSelectedCart();
+                });
+            });
+
             selectedItemsCartBody.querySelectorAll('[data-remove-item-id]').forEach(function (button) {
                 button.addEventListener('click', function () {
                     const id = String(button.dataset.removeItemId);
+                    const removed = selectedItems.get(id);
                     selectedItems.delete(id);
 
                     const checkbox = Array.from(lista.querySelectorAll('.catalogo-item-checkbox'))
                         .find(function (catalogoCheckbox) {
-                            return String(catalogoCheckbox.dataset.itemId || catalogoCheckbox.value) === id;
+                            return String(catalogoCheckbox.dataset.itemId || catalogoCheckbox.value) === String(removed?.id || '');
                         });
-                    if (checkbox) {
+                    if (checkbox && !Array.from(selectedItems.values()).some(item => String(item.id) === String(checkbox.dataset.itemId || checkbox.value))) {
                         checkbox.checked = false;
                     }
 
@@ -376,6 +441,36 @@
                 });
                 input.addEventListener('change', function () {
                     updateQuantity(true);
+                });
+            });
+
+            selectedItemsCartBody.querySelectorAll('[data-cart-equipo-tipo-id]').forEach(function (select) {
+                select.addEventListener('change', function () {
+                    const id = String(select.dataset.cartEquipoTipoId);
+                    const item = selectedItems.get(id);
+                    if (!item) return;
+
+                    item.equipo_tipo = select.value || '';
+                    item.equipo_id = '';
+                    item.vehiculo_id = '';
+                    item.maquina_id = '';
+                    selectedItems.set(id, item);
+                    syncSelectedInputs();
+                    renderSelectedCart();
+                });
+            });
+
+            selectedItemsCartBody.querySelectorAll('[data-cart-equipo-id]').forEach(function (select) {
+                select.addEventListener('change', function () {
+                    const id = String(select.dataset.cartEquipoId);
+                    const item = selectedItems.get(id);
+                    if (!item) return;
+
+                    item.equipo_id = select.value || '';
+                    item.vehiculo_id = item.equipo_tipo === 'vehiculo' ? item.equipo_id : '';
+                    item.maquina_id = item.equipo_tipo === 'maquina' ? item.equipo_id : '';
+                    selectedItems.set(id, item);
+                    syncSelectedInputs();
                 });
             });
         };
@@ -425,7 +520,7 @@
                                    data-item-badge-key="${escapeHtml(item.badge_key)}"
                                    data-item-unidad="${escapeHtml(item.unidad || '')}"
                                    data-stock-disponible="${escapeHtml(item.stock_disponible ?? '')}"
-                                   ${selectedItems.has(String(item.id)) ? 'checked' : ''}
+                                   ${Array.from(selectedItems.values()).some(selectedItem => String(selectedItem.id) === String(item.id)) ? 'checked' : ''}
                                    class="catalogo-item-checkbox rounded border-slate-300 text-[#0B265A] focus:ring-[#0B265A]">
                         </span>
                         <span class="min-w-0 text-sm font-semibold text-slate-800">
@@ -469,10 +564,18 @@
                             badge_key: checkbox.dataset.itemBadgeKey || '',
                             unidad: checkbox.dataset.itemUnidad || '',
                             stock_disponible: checkbox.dataset.stockDisponible || '',
-                            quantity: current?.quantity || 1
+                            quantity: current?.quantity || 1,
+                            equipo_tipo: current?.equipo_tipo || '',
+                            equipo_id: current?.equipo_id || '',
+                            vehiculo_id: current?.vehiculo_id || '',
+                            maquina_id: current?.maquina_id || ''
                         });
                     } else {
-                        selectedItems.delete(id);
+                        Array.from(selectedItems.entries()).forEach(function ([lineId, selectedItem]) {
+                            if (String(selectedItem.id) === id) {
+                                selectedItems.delete(lineId);
+                            }
+                        });
                     }
 
                     syncSelectedInputs();

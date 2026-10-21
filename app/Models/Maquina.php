@@ -101,6 +101,11 @@ public function mantenimientos()
     return $this->hasMany(\App\Models\Mantenimiento::class, 'maquina_id');
 }
 
+    public function materialesServiciosPreventivos()
+    {
+        return $this->hasMany(EmpresaServicioPreventivoMaterial::class, 'maquina_id');
+    }
+
 // Scopes
 // public function scopeOperativas($query)
 // {

@@ -132,26 +132,20 @@
                                 </td>
                                 <td class="px-3 py-2 text-center">
                                     @can('vehiculos.km_logs.create.access')
-                                        @if($asignacionActual)
-                                            <button
-                                                type="button"
-                                                class="inline-flex items-center justify-center rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100"
-                                                title="Registrar kilometraje"
-                                                @click="openKmLogModal({
-                                                    action: @js(route('mantenimiento.vehiculos.km-log.store', $vehiculo)),
-                                                    vehiculo: @js($vehiculoNombre),
-                                                    placas: @js($vehiculo->placas),
-                                                    asignado: @js($asignadoActual),
-                                                    kmActual: @js($kmActual !== null ? (int) $kmActual : 0)
-                                                })"
-                                            >
-                                                {{ $kmActual !== null ? number_format($kmActual) : '-' }}
-                                            </button>
-                                        @else
-                                            <span class="inline-flex items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-400" title="Sin asignacion activa">
-                                                {{ $kmActual !== null ? number_format($kmActual) : '-' }}
-                                            </span>
-                                        @endif
+                                        <button
+                                            type="button"
+                                            class="inline-flex items-center justify-center rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                                            title="Registrar kilometraje"
+                                            @click="openKmLogModal({
+                                                action: @js(route('mantenimiento.vehiculos.km-log.store', $vehiculo)),
+                                                vehiculo: @js($vehiculoNombre),
+                                                placas: @js($vehiculo->placas),
+                                                asignado: @js($asignadoActual),
+                                                kmActual: @js($kmActual !== null ? (int) $kmActual : 0)
+                                            })"
+                                        >
+                                            {{ $kmActual !== null ? number_format($kmActual) : '-' }}
+                                        </button>
                                     @else
                                         {{ $kmActual !== null ? number_format($kmActual) : '-' }}
                                     @endcan

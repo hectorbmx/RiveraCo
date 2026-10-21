@@ -18,6 +18,7 @@ class InventarioDocumento extends Model
         'almacen_id',
         'obra_id',
         'orden_compra_id',
+        'mantenimiento_abastecimiento_id',
         'proveedor_id',
         'estado',             // borrador|aplicado|cancelado
         'fecha',
@@ -65,6 +66,11 @@ class InventarioDocumento extends Model
     public function obra(): BelongsTo
     {
         return $this->belongsTo(Obra::class, 'obra_id');
+    }
+
+    public function mantenimientoAbastecimiento(): BelongsTo
+    {
+        return $this->belongsTo(MantenimientoAbastecimiento::class, 'mantenimiento_abastecimiento_id');
     }
 
     // public function proveedor(): BelongsTo

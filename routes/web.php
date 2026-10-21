@@ -475,6 +475,9 @@ Route::middleware('auth','verified')->group(function () {
         Route::get('documentos/buscar-proveedor', [InventarioDocumentoController::class, 'buscarProveedor'])->name('inventario.documentos.buscar-proveedor');
         Route::get('documentos/buscar-producto', [InventarioDocumentoController::class, 'buscarProducto'])->name('inventario.documentos.buscar-producto');
         Route::get('documentos/buscar-ordenes-compra', [InventarioDocumentoController::class, 'buscarOrdenesCompra'])->name('inventario.documentos.buscar-ordenes-compra');
+        Route::get('documentos/buscar-gastos-caja-chica', [InventarioDocumentoController::class, 'buscarGastosCajaChica'])->name('inventario.documentos.buscar-gastos-caja-chica');
+        Route::get('documentos/solicitudes-almacen-pendientes', [InventarioDocumentoController::class, 'solicitudesAlmacenPendientes'])
+            ->name('inventario.documentos.solicitudes-almacen-pendientes');
         Route::get('documentos/ordenes-compra/{ordenCompra}', [InventarioDocumentoController::class, 'detalleOrdenCompra'])->name('inventario.documentos.orden-compra-detalles');
 
         Route::get('stock.json', [InventarioStockController::class, 'index'])->name('inventario.stock.index.json');
@@ -491,6 +494,13 @@ Route::middleware('auth','verified')->group(function () {
         Route::get('documentos/{doc}/edit', [InventarioDocumentoController::class, 'edit'])->name('inventario.documentos.edit');
         // Actualizar (solo borrador)
         Route::put('documentos/{doc}', [InventarioDocumentoController::class, 'update'])->name('inventario.documentos.update');
+        // Corrección controlada de relación para entradas aplicadas.
+        Route::get('documentos/{doc}/corregir-relacion', [InventarioDocumentoController::class, 'editRelacion'])
+            ->middleware('permission:inventario.documentos.correccion_relacion.access')
+            ->name('inventario.documentos.edit-relacion');
+        Route::put('documentos/{doc}/corregir-relacion', [InventarioDocumentoController::class, 'updateRelacion'])
+            ->middleware('permission:inventario.documentos.correccion_relacion.access')
+            ->name('inventario.documentos.update-relacion');
         Route::delete('documentos/{doc}', [InventarioDocumentoController::class, 'destroy'])
             ->middleware('permission:borrar_documentos_entrada.access')
             ->name('inventario.documentos.destroy');
@@ -512,6 +522,13 @@ Route::middleware('auth','verified')->group(function () {
         Route::post('/configuracion-empresa/servicios-preventivos', [EmpresaServicioPreventivoTipoController::class, 'store'])->name('empresa_config.servicios-preventivos.store');
         Route::put('/configuracion-empresa/servicios-preventivos/{tipo}', [EmpresaServicioPreventivoTipoController::class, 'update'])->name('empresa_config.servicios-preventivos.update');
         Route::patch('/configuracion-empresa/servicios-preventivos/{tipo}/toggle-activo', [EmpresaServicioPreventivoTipoController::class, 'toggleActivo'])->name('empresa_config.servicios-preventivos.toggle-activo');
+        Route::get('/configuracion-empresa/servicios-preventivos/{tipo}/detalle-materiales', [EmpresaServicioPreventivoTipoController::class, 'materialesPorServicio'])->name('empresa_config.servicios-preventivos.materiales.detail');
+        Route::get('/configuracion-empresa/servicios-preventivos/{tipo}/materiales', [EmpresaServicioPreventivoTipoController::class, 'materiales'])->name('empresa_config.servicios-preventivos.materiales.index');
+        Route::post('/configuracion-empresa/servicios-preventivos/{tipo}/materiales', [EmpresaServicioPreventivoTipoController::class, 'storeMaterial'])->name('empresa_config.servicios-preventivos.materiales.store');
+        Route::get('/configuracion-empresa/servicios-preventivos/{tipo}/maquinas/{maquina}/materiales', [EmpresaServicioPreventivoTipoController::class, 'materiales'])->name('empresa_config.servicios-preventivos.maquinas.materiales.index');
+        Route::post('/configuracion-empresa/servicios-preventivos/{tipo}/maquinas/{maquina}/materiales', [EmpresaServicioPreventivoTipoController::class, 'storeMaterial'])->name('empresa_config.servicios-preventivos.maquinas.materiales.store');
+        Route::put('/configuracion-empresa/servicios-preventivos/materiales/{material}', [EmpresaServicioPreventivoTipoController::class, 'updateMaterial'])->name('empresa_config.servicios-preventivos.materiales.update');
+        Route::patch('/configuracion-empresa/servicios-preventivos/materiales/{material}/toggle-activo', [EmpresaServicioPreventivoTipoController::class, 'toggleMaterialActivo'])->name('empresa_config.servicios-preventivos.materiales.toggle-activo');
         Route::post('/configuracion-empresa/cuentas-banco', [EmpresaConfigController::class,'storeCuentaBanco'])->name('empresa_config.cuentas.store');
         Route::put('/configuracion-empresa/cuentas-banco/{cuenta}', [EmpresaConfigController::class, 'updateCuentaBanco'])->name('empresa_config.cuentas.update');
         Route::post('/configuracion-empresa/viaticos-tarifas', [EmpresaConfigController::class, 'storeViaticoTarifa'])->name('empresa_config.viaticos.store');
@@ -795,6 +812,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::post('ordenes_compra/{id}/revocar-autorizacion', [OrdenCompraController::class, 'revocarAutorizacion'])->name('ordenes_compra.revocar_autorizacion');
     Route::post('ordenes_compra/{id}/verificar', [OrdenCompraController::class, 'verificar'])->name('ordenes_compra.verificar');
     Route::post('ordenes_compra/{id}/cancelar', [OrdenCompraController::class, 'cancelar'])->name('ordenes_compra.cancelar');
+    Route::get('ordenes-compra/solicitudes-mantenimiento/buscar', [OrdenCompraController::class, 'buscarSolicitudesMantenimiento'])->name('ordenes_compra.solicitudes_mantenimiento.buscar');
                     // Detalles anidados
     Route::post('ordenes_compra/{orden}/detalles', [OrdenCompraDetalleController::class, 'store'])->name('ordenes_compra.detalles.store');
 
@@ -853,6 +871,12 @@ Route::middleware('auth','verified')->group(function () {
         // Mantenimientos de vehiculos
         Route::resource('mantenimientos', MantenimientoController::class)
             ->except(['destroy']);
+        Route::get('mantenimientos/{mantenimiento}/imprimir', [MantenimientoController::class, 'imprimirReporte'])
+            ->name('mantenimientos.print');
+        Route::post('mantenimientos/{mantenimiento}/abastecimientos', [MantenimientoController::class, 'solicitarAbastecimiento'])
+            ->name('mantenimientos.abastecimientos.store');
+        Route::get('mantenimientos/abastecimientos/{abastecimiento}/imprimir', [MantenimientoController::class, 'imprimirAbastecimiento'])
+            ->name('mantenimientos.abastecimientos.print');
 
     });
 //ara la vista de maquinas en el menu (no es el de la empresa config)

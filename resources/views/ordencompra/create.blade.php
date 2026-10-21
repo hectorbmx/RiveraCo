@@ -220,6 +220,20 @@
      DESPUÉS del script del buscador de proveedores.
      ───────────────────────────────────────────────────────────────────────── --}}
 <script>
+document.addEventListener('DOMContentLoaded', function () {
+    const solicitudSelect = document.getElementById('mantenimiento_abastecimiento_select');
+    const solicitudHidden = document.getElementById('mantenimiento_abastecimiento_id');
+
+    if (!solicitudSelect || !solicitudHidden) return;
+
+    const sincronizarSolicitud = () => {
+        solicitudHidden.value = solicitudSelect.value;
+    };
+
+    solicitudSelect.addEventListener('change', sincronizarSolicitud);
+    sincronizarSolicitud();
+});
+
 (function () {
     const obraSelect      = document.getElementById('obra_id');
     const partidasWrapper = document.getElementById('partidas_wrapper');
@@ -991,7 +1005,7 @@
                 </select>
             </div>
 
-            <div id="proveedor_credito_field" class="xl:col-span-2">
+            <div id="proveedor_credito_field" class="xl:col-span-1">
                 <label class="block text-sm font-medium mb-1">Fecha sugerida de pago</label>
                 <input
                     type="text"
@@ -1003,6 +1017,35 @@
                 <p id="proveedor_credito_note" class="mt-1 text-xs text-slate-500">
                     Se calcula con la fecha de la OC y los dias de credito del proveedor.
                 </p>
+            </div>
+
+            <div class="xl:col-span-2">
+                <label for="mantenimiento_abastecimiento_select" class="block text-sm font-medium mb-1">Solicitud de mantenimiento</label>
+                <input type="hidden" name="mantenimiento_abastecimiento_id" id="mantenimiento_abastecimiento_id" value="{{ old('mantenimiento_abastecimiento_id') }}">
+                <select id="mantenimiento_abastecimiento_select"
+                        class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    <option value="">Compra manual / sin solicitud</option>
+                    @foreach(($solicitudesMantenimientoPendientes ?? []) as $solicitud)
+                        @php
+                            $mantenimiento = $solicitud->mantenimiento;
+                            $equipo = $mantenimiento?->maquina?->codigo
+                                ?? $mantenimiento?->maquina?->nombre
+                                ?? $mantenimiento?->vehiculo?->placas
+                                ?? $mantenimiento?->vehiculo?->modelo
+                                ?? 'Equipo no especificado';
+                            $servicio = $mantenimiento?->servicioPreventivoTipo?->nombre
+                                ?? $mantenimiento?->categoria_mantenimiento
+                                ?? 'Servicio de mantenimiento';
+                        @endphp
+                        <option value="{{ $solicitud->id }}" @selected(old('mantenimiento_abastecimiento_id') == $solicitud->id)>
+                            {{ $solicitud->folio }} - {{ $equipo }} - {{ $servicio }}
+                        </option>
+                    @endforeach
+                </select>
+                <p class="mt-1 text-xs text-slate-500">Selecciona una solicitud con saldo pendiente. La orden cargará las partidas aún no comprometidas; conserva solo las que venda este proveedor para poder generar otra OC con el resto.</p>
+                @error('mantenimiento_abastecimiento_id')
+                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                @enderror
             </div>
         </div>
 

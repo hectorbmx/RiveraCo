@@ -93,6 +93,11 @@ class OrdenCompra extends Model
         return $this->hasMany(OrdenCompraDetalle::class, 'orden_compra_id');
     }
 
+    public function mantenimientoAbastecimiento()
+    {
+        return $this->belongsTo(\App\Models\MantenimientoAbastecimiento::class, 'mantenimiento_abastecimiento_id');
+    }
+
     public function registradoPor()
     {
         return $this->belongsTo(User::class, 'registrado_por');

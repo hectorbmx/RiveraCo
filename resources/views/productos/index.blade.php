@@ -17,6 +17,16 @@
                class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-emerald-700">
                 + Entrada
             </a>
+            @if(($solicitudesAlmacenPendientes ?? 0) > 0)
+                <a href="{{ route('inventario.documentos.create', ['tipo' => 'salida']) }}"
+                   class="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100"
+                   title="Solicitudes de almacén pendientes de surtir">
+                    Solicitudes
+                    <span class="inline-flex min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
+                        {{ $solicitudesAlmacenPendientes }}
+                    </span>
+                </a>
+            @endif
             <a href="{{ route('inventario.documentos.create', ['tipo' => 'salida']) }}"
                class="bg-rose-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-rose-700">
                 + Salida

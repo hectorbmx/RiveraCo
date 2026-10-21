@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <title>Asistencia semanal Giralda</title>
     <style>
-        body { font-family: Arial, sans-serif; color: #111827; font-size: 11px; }
+        @page { size: Letter landscape; margin: 0; }
+        body { background: #e5e7eb; font-family: Arial, sans-serif; color: #111827; font-size: 11px; margin: 24px auto; min-height: 8.5in; padding: .45in; width: 11in; box-shadow: 0 8px 24px rgba(15,23,42,.16); }
         h1 { color: #0B265A; margin-bottom: 4px; }
         table { width: 100%; border-collapse: collapse; margin-top: 14px; }
         th, td { border: 1px solid #cbd5e1; padding: 5px; text-align: left; vertical-align: top; }
@@ -21,7 +22,8 @@
         .summary { margin-top: 6px; color: #475569; }
         .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; margin-top: 48px; }
         .line { border-top: 1px solid #111827; padding-top: 6px; text-align: center; }
-        @media print { .no-print { display: none; } body { font-size: 10px; } }
+        .no-print { position: fixed; bottom: 22px; right: max(22px, calc((100vw - 11in) / 2 + 22px)); z-index: 20; }
+        @media print { .no-print { display: none; } body { background: #fff; box-shadow: none; font-size: 10px; margin: 0; padding: .45in; width: 11in; } }
     </style>
 </head>
 <body>

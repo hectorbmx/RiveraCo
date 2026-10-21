@@ -5,10 +5,10 @@
     <title>Formato administrativo caja chica {{ $fechaInicio->format('Ymd') }}-{{ $fechaFin->format('Ymd') }}</title>
     <style>
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        body { font-family: Arial, sans-serif; color: #111827; margin: 12px; font-size: 10.5px; }
-        .no-print { margin-bottom: 14px; text-align: right; }
+        body { background: #e5e7eb; font-family: Arial, sans-serif; color: #111827; margin: 24px auto; font-size: 10.5px; }
+        .no-print { position: fixed; bottom: 22px; right: max(22px, calc((100vw - 8.5in) / 2 + 22px)); z-index: 20; }
         .btn { border: 1px solid #cbd5e1; background: #fff; border-radius: 5px; padding: 7px 11px; font-weight: 700; cursor: pointer; }
-        .sheet { page-break-after: always; page-break-inside: avoid; }
+        .sheet { background: #fff; box-shadow: 0 8px 24px rgba(15,23,42,.16); margin: 0 auto 24px; min-height: 11in; padding: .45in; page-break-after: always; page-break-inside: avoid; width: 8.5in; }
         .sheet:last-child { page-break-after: auto; }
         .brand { min-height: 58px; display: inline-flex; align-items: center; gap: 10px; color: #0B265A; }
         .brand img { display: block; width: 86px; max-height: 54px; object-fit: contain; }
@@ -41,7 +41,8 @@
         .muted { color: #64748b; }
         @media print {
             @page { size: letter portrait; margin: 6mm; }
-            body { margin: 0; }
+            body { background: #fff; margin: 0; }
+            .sheet { box-shadow: none; margin: 0; min-height: 11in; padding: .45in; width: 8.5in; }
             .no-print { display: none; }
         }
     </style>
@@ -130,6 +131,10 @@
                                     'vehiculo' => preg_replace('/^Vehiculo:\s*/i', 'vehiculo: ', $activoOperativo),
                                     default => preg_replace_callback('/^(Maquina|Vehiculo):\s*/i', fn ($m) => strtolower($m[1]) . ': ', $activoOperativo),
                                 };
+
+                                if ($gasto->es_para_hidrotamiz) {
+                                    $activoOperativo = 'hidrotamiz';
+                                }
 
                                 $conceptoImpreso = trim($conceptoImpreso . ' | ' . $activoOperativo);
                             }

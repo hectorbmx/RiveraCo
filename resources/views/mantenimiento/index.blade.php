@@ -12,7 +12,7 @@
 
             <a href="{{ route('mantenimiento.mantenimientos.create') }}"
                class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
-                + Programar mantenimiento
+                + Registrar servicio
             </a>
         </div>
 
@@ -33,7 +33,7 @@
                         <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Mecanico</th>
                         <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Estatus</th>
                         <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Lectura</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Programado / Inicio</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Fecha del servicio</th>
                         <th class="px-4 py-2 text-right text-xs font-semibold text-slate-500">Acciones</th>
                     </tr>
                 </thead>
@@ -86,7 +86,7 @@
                             </td>
                             <td class="px-4 py-2 text-xs text-slate-500">
                                 @if($mantenimiento->fecha_programada)
-                                    <div>Prog: {{ $mantenimiento->fecha_programada->format('d/m/Y H:i') }}</div>
+                                    <div>{{ $mantenimiento->fecha_programada->format('d/m/Y H:i') }}</div>
                                 @endif
                                 @if($mantenimiento->fecha_inicio)
                                     <div>Ini: {{ $mantenimiento->fecha_inicio->format('d/m/Y H:i') }}</div>
@@ -94,14 +94,22 @@
                             </td>
                             <td class="px-4 py-2 text-right">
                                 <div class="inline-flex items-center gap-2">
-                                    <a href="{{ route('mantenimiento.mantenimientos.show', $mantenimiento) }}"
+                                    <a href="{{ route('mantenimiento.mantenimientos.edit', $mantenimiento) }}"
                                        class="text-xs px-2 py-1 rounded border border-slate-300 text-slate-700 hover:bg-slate-100">
                                         Ver
                                     </a>
-                                    <a href="{{ route('mantenimiento.mantenimientos.edit', $mantenimiento) }}"
-                                       class="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700">
-                                        Editar
-                                    </a>
+                                    @if(($mantenimiento->estatus ?? null) === 'completado')
+                                        <a href="{{ route('mantenimiento.mantenimientos.print', $mantenimiento) }}" target="_blank" rel="noopener"
+                                           class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-[#0B265A] hover:bg-slate-100"
+                                           title="Imprimir reporte" aria-label="Imprimir reporte">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg>
+                                        </a>
+                                    @else
+                                        <a href="{{ route('mantenimiento.mantenimientos.edit', $mantenimiento) }}"
+                                           class="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700">
+                                            Editar
+                                        </a>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

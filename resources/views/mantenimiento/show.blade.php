@@ -6,22 +6,34 @@
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h1 class="text-2xl font-semibold text-slate-800">
-                    Mantenimiento #{{ $mantenimiento->id }}
+                    Servicio #{{ $mantenimiento->id }}
                 </h1>
                 <p class="text-sm text-slate-500">
-                    Vehículo: {{ $mantenimiento->vehiculo->marca ?? '' }} {{ $mantenimiento->vehiculo->modelo ?? '' }}
-                    — Placas: {{ $mantenimiento->vehiculo->placas ?? '—' }}
+                    @if($mantenimiento->maquina)
+                        Máquina: {{ $mantenimiento->maquina->nombre }}
+                        @if($mantenimiento->maquina->codigo) — {{ $mantenimiento->maquina->codigo }} @endif
+                    @else
+                        Vehículo: {{ $mantenimiento->vehiculo->marca ?? '' }} {{ $mantenimiento->vehiculo->modelo ?? '' }}
+                        — Placas: {{ $mantenimiento->vehiculo->placas ?? '—' }}
+                    @endif
                 </p>
             </div>
 
             <div class="flex items-center gap-3">
-                <a href="{{ route('mantenimiento.mantenimientos.edit', $mantenimiento) }}"
-                   class="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700">
-                    Editar
-                </a>
-                <a href="{{ route('mantenimiento.mantenimientos.index') }}"
+                @if(($mantenimiento->estatus ?? null) === 'completado')
+                    <a href="{{ route('mantenimiento.mantenimientos.print', $mantenimiento) }}" target="_blank" rel="noopener"
+                       class="px-3 py-1.5 text-xs rounded-lg bg-[#0B265A] text-white hover:opacity-90">
+                        Imprimir reporte
+                    </a>
+                @else
+                    <a href="{{ route('mantenimiento.mantenimientos.edit', array_filter(['mantenimiento' => $mantenimiento, 'return_to' => $returnTo])) }}"
+                       class="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+                        Editar
+                    </a>
+                @endif
+                <a href="{{ $returnTo ?: route('mantenimiento.mantenimientos.index') }}"
                    class="text-sm text-slate-500 hover:text-slate-700">
-                    ← Volver al listado
+                    ← {{ $returnTo ? 'Volver a servicios de la máquina' : 'Volver al listado' }}
                 </a>
             </div>
         </div>
@@ -52,7 +64,7 @@
                     </div>
                 </div>
                 <div>
-                    <div class="text-xs font-semibold text-slate-500">Fecha programada</div>
+                    <div class="text-xs font-semibold text-slate-500">Fecha del servicio</div>
                     <div class="text-slate-800">
                         {{ $mantenimiento->fecha_programada ? $mantenimiento->fecha_programada->format('d/m/Y H:i') : '—' }}
                     </div>
@@ -83,6 +95,14 @@
                     <div class="text-xs font-semibold text-slate-500">Km próximo servicio</div>
                     <div class="text-slate-800">{{ $mantenimiento->km_proximo_servicio ?? '—' }}</div>
                 </div>
+                <div>
+                    <div class="text-xs font-semibold text-slate-500">Horómetro</div>
+                    <div class="text-slate-800">{{ $mantenimiento->horometro !== null ? number_format((float) $mantenimiento->horometro, 2) . ' h' : '—' }}</div>
+                </div>
+                <div>
+                    <div class="text-xs font-semibold text-slate-500">Obra</div>
+                    <div class="text-slate-800">{{ $mantenimiento->obra?->nombre ?? 'Patio / sin obra' }}</div>
+                </div>
             </div>
 
             {{-- Descripción --}}
@@ -93,8 +113,6 @@
                 </div>
             </div>
 
-            {{-- Aquí más adelante podemos agregar: detalles y fotos --}}
-            {{-- Detalles de refacciones / mano de obra --}}
             <div class="pt-4 border-t border-slate-100">
                 <div class="flex items-center justify-between mb-2">
                     <div class="text-sm font-semibold text-slate-700">Detalle del mantenimiento</div>
@@ -111,6 +129,7 @@
                     <table class="min-w-full text-xs border border-slate-100 rounded-lg overflow-hidden">
                         <thead class="bg-slate-50">
                             <tr>
+                                <th class="px-3 py-2 text-left font-semibold text-slate-500">Tipo</th>
                                 <th class="px-3 py-2 text-left font-semibold text-slate-500">Concepto</th>
                                 <th class="px-3 py-2 text-right font-semibold text-slate-500">Cantidad</th>
                                 <th class="px-3 py-2 text-right font-semibold text-slate-500">Costo unitario</th>
@@ -120,6 +139,9 @@
                         <tbody>
                             @foreach($mantenimiento->detalles as $detalle)
                                 <tr class="border-t border-slate-100">
+                                    <td class="px-3 py-2 text-slate-500">
+                                        {{ ucfirst(str_replace('_', ' ', $detalle->tipo ?? 'detalle')) }}
+                                    </td>
                                     <td class="px-3 py-2 text-slate-700">
                                         {{ $detalle->concepto }}
                                     </td>
@@ -139,9 +161,8 @@
                 @endif
             </div>
 
-            {{-- Fotos (si más adelante las cargamos) --}}
             <div class="pt-4 border-t border-slate-100">
-                <div class="text-sm font-semibold text-slate-700 mb-2">Fotos / evidencias</div>
+                <div class="text-sm font-semibold text-slate-700 mb-2">Evidencia fotográfica</div>
 
                 @if($mantenimiento->fotos->isEmpty())
                     <p class="text-sm text-slate-500">
@@ -151,7 +172,7 @@
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         @foreach($mantenimiento->fotos as $foto)
                             <div class="border border-slate-200 rounded-lg overflow-hidden">
-                                <img src="{{ asset($foto->ruta) }}" alt="Foto mantenimiento"
+                                <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($foto->ruta) }}" alt="Foto mantenimiento"
                                      class="w-full h-32 object-cover">
                                 @if($foto->descripcion)
                                     <div class="px-2 py-1 text-xs text-slate-600">

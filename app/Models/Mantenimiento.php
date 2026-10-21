@@ -23,6 +23,8 @@ class Mantenimiento extends Model
         'fecha_inicio',
         'fecha_fin',
         'estatus',
+        'abastecimiento_tipo',
+        'abastecimiento_estado',
         'mecanico_id',
         'costo_mano_obra',
         'costo_refacciones',
@@ -35,6 +37,10 @@ class Mantenimiento extends Model
         'fecha_inicio'     => 'datetime',
         'fecha_fin'        => 'datetime',
     ];
+
+    public const ABASTECIMIENTO_SURTIDO_DIRECTO = 'surtido_directo';
+    public const ABASTECIMIENTO_COMPRA = 'compra';
+    public const ABASTECIMIENTO_PARCIAL = 'parcial';
 
     /* ----------------- RELACIONES ----------------- */
 
@@ -69,6 +75,11 @@ class Mantenimiento extends Model
         return $this->hasMany(MantenimientoDetalle::class, 'mantenimiento_id');
     }
 
+    public function abastecimientos()
+    {
+        return $this->hasMany(MantenimientoAbastecimiento::class, 'mantenimiento_id');
+    }
+
     public function fotos()
     {
         return $this->hasMany(MantenimientoFoto::class, 'mantenimiento_id');
@@ -82,6 +93,8 @@ class Mantenimiento extends Model
             return null;
         }
 
-        return $this->fecha_inicio->diffInMinutes($this->fecha_fin);
+        $minutos = $this->fecha_inicio->diffInMinutes($this->fecha_fin, false);
+
+        return $minutos > 0 ? $minutos : null;
     }
 }

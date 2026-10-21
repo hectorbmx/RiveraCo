@@ -12,6 +12,8 @@ class UnidadMedidaCatalogo
             'PZA' => 'Pieza',
             'KG' => 'Kilogramo',
             'LT' => 'Litro',
+            'LTS' => 'Litros',
+            'LTS.' => 'Litros',
             'ML' => 'Metro lineal',
             'M2' => 'Metro cuadrado',
             'M3' => 'Metro cubico',

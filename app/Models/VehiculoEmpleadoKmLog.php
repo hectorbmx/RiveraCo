@@ -17,6 +17,7 @@ class VehiculoEmpleadoKmLog extends Model
 
     protected $fillable = [
         'vehiculo_empleado_id',
+        'vehiculo_id',
         'obra_id',
         'fecha',
         'km',
@@ -36,6 +37,11 @@ class VehiculoEmpleadoKmLog extends Model
     public function asignacion()
     {
         return $this->belongsTo(VehiculoEmpleado::class, 'vehiculo_empleado_id');
+    }
+
+    public function vehiculo()
+    {
+        return $this->belongsTo(Vehiculo::class, 'vehiculo_id');
     }
 
     public function obra()

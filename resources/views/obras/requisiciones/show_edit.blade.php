@@ -19,6 +19,8 @@
     };
 
     $catalogoItems = $catalogoItems ?? collect();
+    $maquinas = $maquinas ?? collect();
+    $vehiculos = $vehiculos ?? collect();
     $tipoItem = $requisicion->tipo?->item_type;
     $esMaquina = $tipoItem === 'maquina';
     $esProducto = $tipoItem === 'producto';
@@ -29,6 +31,16 @@
     $columnaPrincipalLabel = $esMaquina ? 'Maquina' : ($esProducto ? 'Producto' : 'Nombre');
     $columnaSecundariaLabel = $esMaquina ? 'Num. eco / tipo' : ($esProducto ? 'SKU / unidad' : 'Puesto');
     $columnaDisponibilidadLabel = $esProducto ? 'Existencia' : 'Disponibilidad';
+    $equiposVehiculos = $vehiculos->map(fn ($vehiculo) => [
+        'id' => $vehiculo->id,
+        'label' => trim(($vehiculo->marca ?? '') . ' ' . ($vehiculo->modelo ?? '')),
+        'identificador' => $vehiculo->placas ?: ($vehiculo->tipo ?: 'Sin identificador'),
+    ])->values();
+    $equiposMaquinas = $maquinas->map(fn ($maquina) => [
+        'id' => $maquina->id,
+        'label' => $maquina->nombre ?: ($maquina->codigo ?: 'Maquina'),
+        'identificador' => $maquina->codigo ?: ($maquina->tipo ?: 'Sin identificador'),
+    ])->values();
 @endphp
 
 <div class="max-w-7xl mx-auto space-y-6">
@@ -207,6 +219,9 @@
                             <th class="px-4 py-3 font-semibold">Tipo</th>
                             <th class="px-4 py-3 font-semibold">Unidad</th>
                             <th class="px-4 py-3 font-semibold">Cantidad</th>
+                            @if($tipoItem === 'producto')
+                                <th class="px-4 py-3 font-semibold">Equipo destino</th>
+                            @endif
                             <th class="px-4 py-3 font-semibold">Estado</th>
                             <th class="px-4 py-3 font-semibold">Observaciones</th>
                             @if($editable)
@@ -235,6 +250,46 @@
                                         {{ number_format((float) $detalle->cantidad_solicitada, 3) }}
                                     @endif
                                 </td>
+                                @if($tipoItem === 'producto')
+                                    <td class="px-4 py-3 text-slate-600">
+                                        @if($editable)
+                                            <div class="space-y-2">
+                                                <select name="detalles[{{ $detalle->id }}][equipo_tipo]"
+                                                        data-edit-equipo-tipo
+                                                        class="w-full min-w-36 rounded-xl border-slate-300 text-sm shadow-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                                    <option value="">Sin desglose</option>
+                                                    <option value="vehiculo" @selected($detalle->equipo_tipo === 'vehiculo')>Vehiculo</option>
+                                                    <option value="maquina" @selected($detalle->equipo_tipo === 'maquina')>Maquina</option>
+                                                </select>
+                                                <select name="detalles[{{ $detalle->id }}][{{ $detalle->equipo_tipo === 'vehiculo' ? 'vehiculo_id' : 'maquina_id' }}]"
+                                                        data-edit-equipo
+                                                        class="{{ $detalle->equipo_tipo ? '' : 'hidden' }} w-full min-w-52 rounded-xl border-slate-300 text-xs shadow-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                                    <option value="">Selecciona equipo</option>
+                                                    @if($detalle->equipo_tipo === 'vehiculo')
+                                                        @foreach($vehiculos as $vehiculo)
+                                                            <option value="{{ $vehiculo->id }}" @selected((int) $detalle->vehiculo_id === (int) $vehiculo->id)>
+                                                                {{ trim(($vehiculo->marca ?? '') . ' ' . ($vehiculo->modelo ?? '')) }} · {{ $vehiculo->placas ?: ($vehiculo->tipo ?: 'Sin identificador') }}
+                                                            </option>
+                                                        @endforeach
+                                                    @elseif($detalle->equipo_tipo === 'maquina')
+                                                        @foreach($maquinas as $maquina)
+                                                            <option value="{{ $maquina->id }}" @selected((int) $detalle->maquina_id === (int) $maquina->id)>
+                                                                {{ $maquina->nombre ?: ($maquina->codigo ?: 'Maquina') }} · {{ $maquina->codigo ?: ($maquina->tipo ?: 'Sin identificador') }}
+                                                            </option>
+                                                        @endforeach
+                                                    @endif
+                                                </select>
+                                            </div>
+                                        @elseif($detalle->equipo_tipo)
+                                            <span class="font-semibold text-slate-800">{{ $detalle->equipo_nombre_snapshot ?: '-' }}</span>
+                                            @if($detalle->equipo_identificador_snapshot)
+                                                <span class="block text-xs text-slate-500">{{ $detalle->equipo_identificador_snapshot }}</span>
+                                            @endif
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+                                @endif
                                 <td class="px-4 py-3 text-slate-600">{{ ucfirst(str_replace('_', ' ', $detalle->estado)) }}</td>
                                 <td class="px-4 py-3 text-slate-600">
                                     @if($editable)
@@ -268,7 +323,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $editable ? 7 : 6 }}" class="px-4 py-8 text-center text-sm text-slate-500">Esta requisicion no tiene partidas.</td>
+                                <td colspan="{{ ($editable ? 7 : 6) + ($tipoItem === 'producto' ? 1 : 0) }}" class="px-4 py-8 text-center text-sm text-slate-500">Esta requisicion no tiene partidas.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -312,6 +367,48 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const equiposEdicion = {
+            vehiculos: @json($equiposVehiculos),
+            maquinas: @json($equiposMaquinas),
+        };
+
+        document.querySelectorAll('[data-edit-equipo-tipo]').forEach(function (tipoSelect) {
+            const row = tipoSelect.closest('tr');
+            const equipoSelect = row?.querySelector('[data-edit-equipo]');
+            if (!equipoSelect) return;
+
+            const detalleId = (tipoSelect.name.match(/detalles\[(\d+)\]/) || [])[1];
+            const selectedValues = {
+                vehiculo: equipoSelect.value,
+                maquina: equipoSelect.value,
+            };
+
+            const refreshEquipo = function (preserveSelected = false) {
+                const tipo = tipoSelect.value;
+                const key = tipo === 'vehiculo' ? 'vehiculos' : 'maquinas';
+                const selected = preserveSelected ? selectedValues[tipo] : '';
+                const options = (equiposEdicion[key] || []).map(function (equipo) {
+                    return `<option value="${equipo.id}" ${String(selected) === String(equipo.id) ? 'selected' : ''}>${equipo.label} · ${equipo.identificador}</option>`;
+                }).join('');
+
+                equipoSelect.name = tipo
+                    ? `detalles[${detalleId}][${tipo === 'vehiculo' ? 'vehiculo_id' : 'maquina_id'}]`
+                    : '';
+                equipoSelect.innerHTML = `<option value="">Selecciona equipo</option>${options}`;
+                equipoSelect.classList.toggle('hidden', !tipo);
+            };
+
+            tipoSelect.addEventListener('change', function () {
+                selectedValues.vehiculo = '';
+                selectedValues.maquina = '';
+                refreshEquipo(false);
+            });
+
+            equipoSelect.addEventListener('change', function () {
+                selectedValues[tipoSelect.value] = equipoSelect.value;
+            });
+        });
+
         const input = document.getElementById('buscar-empleado-requisicion');
         const results = document.getElementById('catalogo-empleados-results');
         const selectedInput = document.getElementById('add-detalle-selected-item');

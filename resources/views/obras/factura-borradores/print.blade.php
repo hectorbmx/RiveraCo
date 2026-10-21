@@ -14,14 +14,7 @@
             font-size: 10.5px;
             line-height: 1.32;
         }
-        .toolbar {
-            align-items: center;
-            background: #0f172a;
-            color: #fff;
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 18px;
-        }
+        .toolbar { align-items: center; background: #0f172a; color: #fff; display: flex; justify-content: space-between; padding: 10px 18px; position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); width: min(816px, calc(100vw - 44px)); z-index: 20; }
         .toolbar .hint { color: #cbd5e1; font-size: 12px; }
         .toolbar button {
             background: #facc15;

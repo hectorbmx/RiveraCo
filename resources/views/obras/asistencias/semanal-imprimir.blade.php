@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <title>Lista semanal de asistencia</title>
     <style>
-        body { font-family: Arial, sans-serif; color: #111827; font-size: 12px; }
-        .toolbar { margin-bottom: 16px; }
+        body { background: #e5e7eb; font-family: Arial, sans-serif; color: #111827; font-size: 12px; margin: 24px auto; min-height: 8.5in; padding: .45in; width: 11in; box-shadow: 0 8px 24px rgba(15,23,42,.16); }
+        .toolbar { position: fixed; bottom: 22px; right: max(22px, calc((100vw - 11in) / 2 + 22px)); z-index: 20; }
         .btn { background: #0B265A; color: #fff; border: 0; border-radius: 6px; padding: 8px 12px; font-weight: 700; cursor: pointer; }
         .meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
         .box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; }
@@ -22,7 +22,7 @@
         @media print {
             @page { size: landscape; margin: 10mm; }
             .toolbar { display: none; }
-            body { font-size: 10px; }
+            body { background: #fff; box-shadow: none; font-size: 10px; margin: 0; padding: .45in; width: 11in; }
         }
     </style>
 </head>

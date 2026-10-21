@@ -186,6 +186,7 @@
                             <th class="w-36 px-3 py-2.5 text-left">Factura/Folio</th>
                             <th class="min-w-[320px] px-3 py-2.5 text-left">Concepto</th>
                             <th x-show="isGiraldaSelected" class="w-28 px-3 py-2.5 text-center">¿Activo?</th>
+                            <th x-show="isGiraldaSelected" class="w-32 px-3 py-2.5 text-center">¿Hidrotamiz?</th>
                             <th x-show="isGiraldaSelected" class="w-72 px-3 py-2.5 text-left">Activo</th>
                             <th class="w-44 px-3 py-2.5 text-left">Categoría</th>
                             <th class="w-32 px-3 py-2.5 text-left">Forma pago</th>
@@ -309,16 +310,26 @@
                                                :name="'gastos[' + index + '][es_para_activo]'"
                                                value="1"
                                                x-model="row.es_para_activo"
-                                               @change="if (!row.es_para_activo) row.activo_operativo = ''"
+                                               @change="if (!row.es_para_activo) row.activo_operativo = ''; if (row.es_para_activo) row.es_para_hidrotamiz = false"
                                                class="rounded border-slate-300 text-[#0B265A] focus:ring-[#0B265A]">
                                         <span>Sí</span>
                                     </label>
                                 </td>
 
+                                <td x-show="isGiraldaSelected" class="px-2 py-2 text-center align-top">
+                                    <input type="hidden" :name="'gastos[' + index + '][es_para_hidrotamiz]'" value="0">
+                                    <input type="checkbox"
+                                           :name="'gastos[' + index + '][es_para_hidrotamiz]'"
+                                           value="1"
+                                           x-model="row.es_para_hidrotamiz"
+                                           @change="if (row.es_para_hidrotamiz) { row.es_para_activo = false; row.activo_operativo = ''; }"
+                                           class="h-4 w-4 rounded border-slate-300 text-[#0B265A] focus:ring-[#0B265A]">
+                                </td>
+
                                 <td x-show="isGiraldaSelected" class="px-2 py-2">
                                     <select :name="'gastos[' + index + '][activo_operativo]'"
                                             x-model="row.activo_operativo"
-                                            :disabled="!row.es_para_activo"
+                                            :disabled="!row.es_para_activo || row.es_para_hidrotamiz"
                                             class="w-full rounded border-slate-300 text-xs py-1 px-1.5 disabled:bg-slate-100 disabled:text-slate-400">
                                         <option value="">Selecciona activo...</option>
                                         <template x-for="activo in activosOperativos" :key="activo.value">
@@ -538,6 +549,7 @@ function reposicionCajaChicaExcel() {
                             importe_registrado: parseFloat(g.importe_registrado) || 0,
                             motivo_sin_factura: g.motivo_sin_factura || '',
                             es_para_activo: Boolean(Number(g.es_para_activo || g.es_para_maquina || 0)),
+                            es_para_hidrotamiz: Boolean(Number(g.es_para_hidrotamiz || 0)),
                             activo_operativo: g.activo_operativo || (g.maquina_id ? 'maquina:' + g.maquina_id : (g.vehiculo_id ? 'vehiculo:' + g.vehiculo_id : '')),
                             es_para_maquina: Boolean(Number(g.es_para_maquina || 0)),
                             maquina_id: g.maquina_id || '',
@@ -685,6 +697,7 @@ function reposicionCajaChicaExcel() {
                     r.es_para_maquina = false;
                     r.maquina_id = '';
                     r.vehiculo_id = '';
+                    r.es_para_hidrotamiz = false;
                 }
             });
         },
@@ -717,6 +730,7 @@ function reposicionCajaChicaExcel() {
                 importe_registrado: 0,
                 motivo_sin_factura: '',
                 es_para_activo: false,
+                es_para_hidrotamiz: false,
                 activo_operativo: '',
                 es_para_maquina: false,
                 maquina_id: '',
@@ -833,6 +847,7 @@ function reposicionCajaChicaExcel() {
                             importe_registrado: parseFloat(cfdi.total) || 0,
                             motivo_sin_factura: '',
                             es_para_activo: false,
+                            es_para_hidrotamiz: false,
                 activo_operativo: '',
                 es_para_maquina: false,
                 maquina_id: '',

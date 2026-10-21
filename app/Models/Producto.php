@@ -105,6 +105,12 @@ public function inventarioStocks()
 {
     return $this->hasMany(\App\Models\InventarioStock::class, 'producto_id');
 }
+
+public function materialesServiciosPreventivos()
+{
+    return $this->hasMany(EmpresaServicioPreventivoMaterial::class, 'producto_id');
+}
+
 public function huentitanFormula()
 {
     return $this->hasOne(\App\Models\HuentitanFormula::class, 'producto_id');

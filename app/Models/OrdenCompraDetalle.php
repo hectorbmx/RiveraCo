@@ -27,6 +27,7 @@ class OrdenCompraDetalle extends Model
     // ];
     protected $fillable = [
     'orden_compra_id',
+    'mantenimiento_abastecimiento_detalle_id',
     'producto_id',
     'civil_concept_id',
     'civil_concept_snapshot',
@@ -40,6 +41,7 @@ class OrdenCompraDetalle extends Model
     'unidad',
     'cantidad',
     'cantidad_recibida',
+    'estado_recepcion',
     'precio_unitario',
     'precio_tope',
     'sobreprecio_autorizado_por',
@@ -117,6 +119,11 @@ class OrdenCompraDetalle extends Model
     public function huentitanSalidaDetalle()
     {
         return $this->belongsTo(HuentitanSalidaDetalle::class, 'huentitan_salida_detalle_id');
+    }
+
+    public function mantenimientoAbastecimientoDetalle()
+    {
+        return $this->belongsTo(\App\Models\MantenimientoAbastecimientoDetalle::class, 'mantenimiento_abastecimiento_detalle_id');
     }
 
     public function huentitanOrdenFabricacionMaterial()

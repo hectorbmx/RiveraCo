@@ -15,6 +15,7 @@ use App\Models\ReposicionCajaChicaRelacion;
 use App\Models\ReposicionCajaChicaSubcategoria;
 use App\Models\User;
 use App\Models\Vehiculo;
+use App\Services\Proveedores\ProveedorResolverService;
 use App\Services\Sat\CfdiXmlParserService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -163,7 +164,11 @@ class ReposicionCajaChicaController extends Controller
     /**
      * Guarda uno o un lote de gastos (captura tipo Excel).
      */
-    public function store(Request $request, CfdiXmlParserService $parser)
+    public function store(
+        Request $request,
+        CfdiXmlParserService $parser,
+        ProveedorResolverService $proveedorResolver
+    )
     {
         // Determinar si viene como lote (array 'gastos') o como gasto único
         $items = $request->input('gastos');
@@ -259,6 +264,7 @@ class ReposicionCajaChicaController extends Controller
 
         $categoriasMap = ReposicionCajaChicaCategoria::all()->keyBy('id');
         $gastosCreados = [];
+        $proveedoresCreados = [];
 
         DB::beginTransaction();
         try {
@@ -284,8 +290,26 @@ class ReposicionCajaChicaController extends Controller
                     ]);
                 }
 
+                $proveedorRfc = $proveedorResolver->normalizarRfc($item['proveedor_rfc'] ?? null);
+                $proveedorNombre = trim((string) ($item['proveedor_nombre'] ?? ''));
                 $proveedorId = $item['proveedor_id'] ?? null;
-                if ($proveedorId !== null && $proveedorId !== '') {
+
+                if ($proveedorRfc !== null) {
+                    $resolucionProveedor = $proveedorResolver->resolver([
+                        'rfc' => $proveedorRfc,
+                        'nombre' => $proveedorNombre,
+                        'razon_social' => $item['proveedor_razon_social'] ?? null,
+                    ]);
+
+                    $proveedorId = $resolucionProveedor['proveedor']?->id;
+
+                    if ($resolucionProveedor['creado'] && $resolucionProveedor['proveedor']) {
+                        $proveedoresCreados[$resolucionProveedor['proveedor']->id] = [
+                            'nombre' => $resolucionProveedor['proveedor']->nombre,
+                            'rfc' => $resolucionProveedor['rfc'],
+                        ];
+                    }
+                } elseif ($proveedorId !== null && $proveedorId !== '') {
                     $proveedor = Proveedor::query()
                         ->where('id', $proveedorId)
                         ->where('activo', true)
@@ -309,6 +333,7 @@ class ReposicionCajaChicaController extends Controller
                 }
 
                 $esParaActivo = filter_var($item['es_para_activo'] ?? ($item['es_para_maquina'] ?? false), FILTER_VALIDATE_BOOLEAN);
+                $esParaHidrotamiz = filter_var($item['es_para_hidrotamiz'] ?? false, FILTER_VALIDATE_BOOLEAN);
                 $activoOperativo = trim((string) ($item['activo_operativo'] ?? ''));
                 $maquinaId = null;
                 $vehiculoId = null;
@@ -319,6 +344,18 @@ class ReposicionCajaChicaController extends Controller
                 if ($submittedMaquinaId !== '' && $submittedVehiculoId !== '') {
                     throw ValidationException::withMessages([
                         "gastos.{$idx}.activo_operativo" => "No puedes asignar maquina y vehiculo simultaneamente en la fila #" . ($idx + 1),
+                    ]);
+                }
+
+                if ($esParaHidrotamiz && ($esParaActivo || $submittedMaquinaId !== '' || $submittedVehiculoId !== '' || $activoOperativo !== '')) {
+                    throw ValidationException::withMessages([
+                        "gastos.{$idx}.es_para_hidrotamiz" => "Hidrotamiz no puede combinarse con un vehiculo o una maquina en la fila #" . ($idx + 1),
+                    ]);
+                }
+
+                if ($esParaHidrotamiz && !$esAlmacenGiralda) {
+                    throw ValidationException::withMessages([
+                        "gastos.{$idx}.es_para_hidrotamiz" => "Hidrotamiz solo puede seleccionarse en gastos del almacen Giralda en la fila #" . ($idx + 1),
                     ]);
                 }
 
@@ -422,10 +459,11 @@ class ReposicionCajaChicaController extends Controller
                     'maquina_id' => $maquinaId,
                     'vehiculo_id' => $vehiculoId,
                     'activo_operativo_tipo' => $activoOperativoTipo,
+                    'es_para_hidrotamiz' => $esParaHidrotamiz,
                     'fecha_gasto' => $item['fecha_gasto'] ?: now()->toDateString(),
-                    'proveedor_nombre' => $item['proveedor_nombre'],
+                    'proveedor_nombre' => $proveedorNombre,
                     'proveedor_id' => $proveedorId,
-                    'proveedor_rfc' => $item['proveedor_rfc'] ?? null,
+                    'proveedor_rfc' => $proveedorRfc,
                     'factura_folio' => $facturaFolio ?: null,
                     'concepto' => $item['concepto'],
                     'forma_pago' => $formaPago,
@@ -493,9 +531,22 @@ class ReposicionCajaChicaController extends Controller
                 ? "Se enviaron {$totalGastos} gasto(s) a revisión de oficina."
                 : "Se guardaron {$totalGastos} gasto(s) como borrador.";
 
-            return redirect()
+            $redirect = redirect()
                 ->route('reposicion-caja-chica.index')
                 ->with('success', $msg);
+
+            if ($proveedoresCreados !== []) {
+                $detalleProveedores = collect($proveedoresCreados)
+                    ->map(fn (array $proveedor) => "- {$proveedor['nombre']} ({$proveedor['rfc']})")
+                    ->implode("\n");
+
+                $redirect->with(
+                    'warning',
+                    "Se agregaron proveedores con datos minimos. Completa sus registros lo antes posible:\n{$detalleProveedores}"
+                );
+            }
+
+            return $redirect;
         } catch (\Throwable $e) {
             DB::rollBack();
             if ($e instanceof ValidationException) {
@@ -666,6 +717,7 @@ class ReposicionCajaChicaController extends Controller
         $validated = $request->validate([
             'fecha_gasto' => ['required', 'date'],
             'forma_pago' => ['required', 'in:efectivo,tarjeta,transferencia'],
+            'proveedor_id' => ['nullable', 'integer', 'exists:proveedores,id'],
             'proveedor_nombre' => ['required', 'string', 'max:255'],
             'proveedor_rfc' => ['nullable', 'string', 'max:20'],
             'concepto' => ['required', 'string', 'max:2000'],
@@ -673,12 +725,20 @@ class ReposicionCajaChicaController extends Controller
             'observaciones' => ['nullable', 'string', 'max:4000'],
             'subcategoria_id' => ['nullable', 'integer', 'exists:reposicion_caja_chica_subcategorias,id'],
             'activo_operativo' => ['nullable', 'string', 'max:100'],
+            'es_para_hidrotamiz' => ['nullable', 'boolean'],
         ]);
 
         $activoOperativo = trim((string) ($validated['activo_operativo'] ?? ''));
+        $esParaHidrotamiz = filter_var($validated['es_para_hidrotamiz'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $maquinaId = null;
         $vehiculoId = null;
         $activoOperativoTipo = null;
+
+        if ($esParaHidrotamiz && $activoOperativo !== '') {
+            throw ValidationException::withMessages([
+                'es_para_hidrotamiz' => 'Hidrotamiz no puede combinarse con un vehiculo o una maquina.',
+            ]);
+        }
 
         if ($activoOperativo !== '') {
             if ($activoOperativo === 'indirecto') {
@@ -723,11 +783,32 @@ class ReposicionCajaChicaController extends Controller
         }
 
         $estado = $gasto->estado_autorizacion;
+        $proveedorId = $validated['proveedor_id'] ?? null;
+        $proveedorNombre = $validated['proveedor_nombre'];
+        $proveedorRfc = $validated['proveedor_rfc'] ?? null;
+
+        if ($proveedorId) {
+            $proveedor = Proveedor::query()
+                ->whereKey($proveedorId)
+                ->where('activo', true)
+                ->first();
+
+            if (! $proveedor) {
+                throw ValidationException::withMessages([
+                    'proveedor_id' => 'El proveedor seleccionado no esta activo o no existe.',
+                ]);
+            }
+
+            $proveedorNombre = $proveedor->nombre;
+            $proveedorRfc = $proveedor->rfc;
+        }
+
         $cambios = [
             'fecha_gasto' => $validated['fecha_gasto'],
             'forma_pago' => $validated['forma_pago'],
-            'proveedor_nombre' => $validated['proveedor_nombre'],
-            'proveedor_rfc' => $validated['proveedor_rfc'] ?? null,
+            'proveedor_id' => $proveedorId,
+            'proveedor_nombre' => $proveedorNombre,
+            'proveedor_rfc' => $proveedorRfc,
             'concepto' => $validated['concepto'],
             'motivo_sin_factura' => $validated['motivo_sin_factura'] ?? null,
             'observaciones' => $validated['observaciones'] ?? null,
@@ -736,6 +817,7 @@ class ReposicionCajaChicaController extends Controller
             'maquina_id' => $maquinaId,
             'vehiculo_id' => $vehiculoId,
             'activo_operativo_tipo' => $activoOperativoTipo,
+            'es_para_hidrotamiz' => $esParaHidrotamiz,
             'updated_by' => $request->user()->id,
         ];
 

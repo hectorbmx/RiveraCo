@@ -46,6 +46,13 @@
         </div>
     </div>
 
+    @if(session('warning'))
+        <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <div class="font-semibold">Aviso de proveedores</div>
+            <div class="mt-1 whitespace-pre-line">{{ session('warning') }}</div>
+        </div>
+    @endif
+
     {{-- KPIs pausados temporalmente
     <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
         <div class="rounded-lg bg-white p-4 shadow-sm border border-slate-200">

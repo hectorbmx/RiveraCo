@@ -555,15 +555,14 @@ protected function resolverKmInicialAsignacion(Vehiculo $vehiculo, ?VehiculoEmpl
             ->latest('fecha_asignacion')
             ->first();
 
-        if (! $asignacion) {
-            return back()
-                ->withErrors(['km' => 'El vehiculo no tiene una asignacion activa para registrar kilometraje.'])
-                ->withInput();
-        }
-
-        $ultimoKmLog = VehiculoEmpleadoKmLog::whereHas('asignacion', fn ($query) => $query->where('vehiculo_id', $vehiculo->id))->max('km');
+        $ultimoKmLog = VehiculoEmpleadoKmLog::query()
+            ->where(function ($query) use ($vehiculo) {
+                $query->where('vehiculo_id', $vehiculo->id)
+                    ->orWhereHas('asignacion', fn ($assignmentQuery) => $assignmentQuery->where('vehiculo_id', $vehiculo->id));
+            })
+            ->max('km');
         $minPermitido = max(
-            (int) ($asignacion->km_inicial ?? 0),
+            (int) ($asignacion?->km_inicial ?? 0),
             (int) ($ultimoKmLog ?? 0)
         );
 
@@ -573,14 +572,15 @@ protected function resolverKmInicialAsignacion(Vehiculo $vehiculo, ?VehiculoEmpl
                 ->withInput();
         }
 
-        DB::transaction(function () use ($validated, $asignacion, $request) {
+        DB::transaction(function () use ($validated, $asignacion, $request, $vehiculo) {
             // La foto es opcional temporalmente; conservar este bloque para reactivar la evidencia obligatoria.
             $path = $request->hasFile('foto')
                 ? $request->file('foto')->store('vehiculos/km-logs', 'public')
                 : null;
 
             VehiculoEmpleadoKmLog::create([
-                'vehiculo_empleado_id' => $asignacion->id,
+                'vehiculo_empleado_id' => $asignacion?->id,
+                'vehiculo_id' => $vehiculo->id,
                 'obra_id' => null,
                 'fecha' => isset($validated['fecha']) ? Carbon::parse($validated['fecha']) : now(),
                 'km' => (int) $validated['km'],
@@ -590,8 +590,10 @@ protected function resolverKmInicialAsignacion(Vehiculo $vehiculo, ?VehiculoEmpl
                 'origen' => VehiculoEmpleadoKmLog::ORIGEN_WEB_MECANICO,
             ]);
 
-            $asignacion->km_final = (int) $validated['km'];
-            $asignacion->save();
+            if ($asignacion) {
+                $asignacion->km_final = (int) $validated['km'];
+                $asignacion->save();
+            }
         });
 
         return back()->with('success', 'Kilometraje registrado correctamente.');

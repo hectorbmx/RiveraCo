@@ -755,7 +755,7 @@
                                 Mantenimientos del vehículo
                             </h2>
                             <p class="text-sm text-slate-500">
-                                Histórico de mantenimientos programados y de emergencia para esta unidad.
+                                Bitácora de servicios realizados y de emergencia para esta unidad.
                             </p>
                         </div>
 
@@ -807,7 +807,7 @@
                                         'km_proximo_servicio' => $preventivoVehiculo['km_proximo_servicio'],
                                     ]) }}"
                                    class="inline-flex items-center justify-center px-3 py-2 rounded-lg text-sm bg-white/80 text-slate-800 border border-white/60 font-medium hover:bg-white">
-                                    Programar servicio
+                                    Registrar servicio
                                 </a>
                             </div>
 
@@ -866,7 +866,7 @@
                                 <table class="min-w-full text-xs">
                                     <thead class="bg-[#0B265A] border-b border-[#0B265A] text-white">
                                         <tr>
-                                            <th class="px-3 py-2 text-left font-semibold">Fecha prog.</th>
+                                            <th class="px-3 py-2 text-left font-semibold">Fecha servicio</th>
                                             <th class="px-3 py-2 text-left font-semibold">Tipo</th>
                                             <th class="px-3 py-2 text-left font-semibold">Categoría</th>
                                             <th class="px-3 py-2 text-left font-semibold">Obra</th>
@@ -879,7 +879,7 @@
                                     <tbody>
                                         @foreach($mantenimientosVehiculo as $mant)
                                             <tr class="border-b border-slate-100">
-                                                {{-- Fecha programada --}}
+                                                {{-- Fecha del servicio --}}
                                                 <td class="px-3 py-2 text-slate-700">
                                                     {{ $mant->fecha_programada
                                                         ? \Carbon\Carbon::parse($mant->fecha_programada)->format('d/m/Y')

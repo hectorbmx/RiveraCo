@@ -25,6 +25,7 @@ class ReposicionCajaChicaGasto extends Model
         'maquina_id',
         'vehiculo_id',
         'activo_operativo_tipo',
+        'es_para_hidrotamiz',
         'fecha_gasto',
         'proveedor_nombre',
         'proveedor_id',
@@ -54,6 +55,7 @@ class ReposicionCajaChicaGasto extends Model
         'resuelto_at' => 'datetime',
         'solicitado_at' => 'datetime',
         'es_para_maquina' => 'boolean',
+        'es_para_hidrotamiz' => 'boolean',
     ];
 
     public function relacion(): BelongsTo
@@ -98,6 +100,10 @@ class ReposicionCajaChicaGasto extends Model
 
     public function getActivoOperativoLabelAttribute(): string
     {
+        if ($this->es_para_hidrotamiz) {
+            return 'Hidrotamiz';
+        }
+
         if ($this->activo_operativo_tipo === 'indirecto') {
             return 'Indirecto';
         }

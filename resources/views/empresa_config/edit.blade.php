@@ -706,7 +706,7 @@ function cuentasBancoTab() {
 
                         <div class="overflow-x-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50 text-gray-700">
+                                <thead class="bg-[#0B265A] text-white">
                                     <tr>
                                         <th class="text-left px-4 py-3">Nombre</th>
                                         <th class="text-left px-4 py-3">Código</th>
@@ -881,7 +881,18 @@ function cuentasBancoTab() {
                 {{-- ======================
                      MAQUINARIA
                 ======================= --}}
-                <div x-show="tab === 'maquinaria'" x-cloak class="space-y-6">
+                <div x-show="tab === 'maquinaria'" x-cloak class="space-y-6" x-data="servicioMaterialesTab({
+                    materialesUrl: @js(route('empresa_config.servicios-preventivos.materiales.index', '__TIPO__')),
+                    guardarUrl: @js(route('empresa_config.servicios-preventivos.materiales.store', '__TIPO__')),
+                    actualizarUrl: @js(route('empresa_config.servicios-preventivos.materiales.update', '__MATERIAL__')),
+                    toggleUrl: @js(route('empresa_config.servicios-preventivos.materiales.toggle-activo', '__MATERIAL__')),
+                    productos: @js($productosCatalogo->map(fn ($producto) => [
+                        'id' => $producto->id,
+                        'nombre' => $producto->nombre,
+                        'sku' => $producto->sku,
+                        'unidad' => $producto->unidad,
+                    ])->values()),
+                })">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">Maquinaria</h2>
                         <p class="text-sm text-gray-600">Servicios por horas de uso y por tiempo.</p>
@@ -900,7 +911,7 @@ function cuentasBancoTab() {
 
                         <div class="overflow-x-auto">
                             <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50 text-gray-700">
+                                <thead class="bg-[#0B265A] text-white">
                                     <tr>
                                         <th class="text-left px-4 py-3">Nombre</th>
                                         <th class="text-left px-4 py-3">Código</th>
@@ -908,6 +919,7 @@ function cuentasBancoTab() {
                                         <th class="text-left px-4 py-3">Meses</th>
                                         <th class="text-left px-4 py-3">Alerta</th>
                                         <th class="text-left px-4 py-3">Estado</th>
+                                        <th class="text-right px-4 py-3">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y">
@@ -925,14 +937,107 @@ function cuentasBancoTab() {
                                                     <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600 ring-1 ring-gray-200">Inactivo</span>
                                                 @endif
                                             </td>
+                                            <td class="px-4 py-3 text-right">
+                                                <a href="{{ route('empresa_config.servicios-preventivos.materiales.detail', $servicio) }}"
+                                                   title="Configurar materiales por máquina"
+                                                   class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5h2m-1-2v4m7.07 1.93-1.42 1.42M21 12h-4m2.93 5.07-1.42-1.42M13 21h-2m1-4v4m-5.07-1.93 1.42-1.42M3 12h4m-2.93-5.07 1.42 1.42" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="m15.5 8.5-7 7-3 1 1-3 7-7a1.414 1.414 0 0 1 2 2Z" />
+                                                    </svg>
+                                                </a>
+                                            </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">Aún no hay tipos de servicio preventivo para maquinaria.</td>
+                                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">Aún no hay tipos de servicio preventivo para maquinaria.</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+
+                    <div class="hidden bg-white rounded-xl border border-gray-200 shadow-sm">
+                        <div class="p-4 border-b border-gray-100 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <h3 class="text-base font-semibold text-gray-900">Materiales requeridos por servicio</h3>
+                                <p class="text-sm text-gray-600">Relaciona productos de Giralda con cada tipo de servicio de maquinaria.</p>
+                            </div>
+                            <select x-model="tipoId" @change="cargarMateriales()" class="w-full md:w-80 rounded-lg border-gray-300 text-sm">
+                                <option value="">Selecciona un servicio</option>
+                                @foreach($serviciosPreventivosMaquinaria as $servicio)
+                                    <option value="{{ $servicio->id }}">{{ $servicio->nombre }} ({{ $servicio->codigo }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="p-4 space-y-4">
+                            <div x-show="tipoId" x-cloak class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                                <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                                    <div class="md:col-span-6">
+                                        <label class="block text-xs font-semibold uppercase tracking-wide text-gray-600">Producto</label>
+                                        <select x-model="form.producto_id" class="mt-1 w-full rounded-lg border-gray-300 text-sm">
+                                            <option value="">Selecciona un producto</option>
+                                            <template x-for="producto in productos" :key="producto.id">
+                                                <option :value="producto.id" x-text="`${producto.nombre} - ${producto.sku || 'sin SKU'}`"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-semibold uppercase tracking-wide text-gray-600">Cantidad</label>
+                                        <input type="number" min="0.001" step="0.001" x-model="form.cantidad_requerida" class="mt-1 w-full rounded-lg border-gray-300 text-sm">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-semibold uppercase tracking-wide text-gray-600">Unidad</label>
+                                        <input type="text" maxlength="50" x-model="form.unidad" placeholder="Automática" class="mt-1 w-full rounded-lg border-gray-300 text-sm">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <button type="button" @click="guardarMaterial()" :disabled="guardando" class="w-full rounded-lg bg-[#0B265A] px-3 py-2 text-sm font-semibold text-white hover:bg-[#163875] disabled:cursor-not-allowed disabled:opacity-60">
+                                            <span x-text="editandoId ? 'Actualizar' : 'Agregar material'"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p x-show="mensaje" x-text="mensaje" class="mt-2 text-sm text-red-600"></p>
+                            </div>
+
+                            <div x-show="!tipoId" class="py-8 text-center text-sm text-gray-500">Selecciona un tipo de servicio para administrar sus materiales.</div>
+
+                            <div x-show="tipoId && !cargando && materiales.length === 0" x-cloak class="py-8 text-center text-sm text-gray-500">Este servicio todavía no tiene materiales configurados.</div>
+
+                            <div x-show="materiales.length" x-cloak class="overflow-x-auto">
+                                <table class="min-w-full text-sm">
+                                    <thead class="bg-[#0B265A] text-white">
+                                        <tr>
+                                            <th class="text-left px-4 py-3">Producto</th>
+                                            <th class="text-left px-4 py-3">Cantidad</th>
+                                            <th class="text-left px-4 py-3">Unidad</th>
+                                            <th class="text-left px-4 py-3">Estado</th>
+                                            <th class="text-right px-4 py-3">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y">
+                                        <template x-for="material in materiales" :key="material.id">
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-3 font-medium text-gray-900">
+                                                    <span x-text="material.producto?.nombre || 'Producto no disponible'"></span>
+                                                    <span class="block text-xs text-gray-500" x-text="material.producto?.sku || '—'"></span>
+                                                </td>
+                                                <td class="px-4 py-3 text-gray-700" x-text="material.cantidad_requerida"></td>
+                                                <td class="px-4 py-3 text-gray-700" x-text="material.unidad || material.producto?.unidad || '—'"></td>
+                                                <td class="px-4 py-3">
+                                                    <span x-show="material.activo" class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">Activo</span>
+                                                    <span x-show="!material.activo" class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600 ring-1 ring-gray-200">Inactivo</span>
+                                                </td>
+                                                <td class="px-4 py-3 text-right whitespace-nowrap">
+                                                    <button type="button" @click="editarMaterial(material)" class="mr-2 text-sm font-semibold text-blue-700 hover:underline">Editar</button>
+                                                    <button type="button" @click="toggleMaterial(material)" class="text-sm font-semibold text-gray-700 hover:underline" x-text="material.activo ? 'Desactivar' : 'Activar'"></button>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
 
@@ -992,7 +1097,7 @@ function cuentasBancoTab() {
 
     <div class="overflow-x-auto">
         <table class="min-w-full text-sm">
-            <thead class="bg-gray-50 text-gray-700">
+            <thead class="bg-[#0B265A] text-white">
                 <tr>
                     <th class="text-left px-4 py-3">Nombre</th>
                     <th class="text-left px-4 py-3">Código</th>
@@ -2599,6 +2704,121 @@ function listasRayaTab() {
                 </form>
             </div>
         </div>
+
+        <script>
+            function servicioMaterialesTab(config) {
+                return {
+                    ...config,
+                    tipoId: '',
+                    materiales: [],
+                    guardando: false,
+                    cargando: false,
+                    mensaje: '',
+                    editandoId: null,
+                    form: {
+                        producto_id: '',
+                        cantidad_requerida: '',
+                        unidad: '',
+                    },
+                    csrf() {
+                        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                    },
+                    url(template, value) {
+                        return template.replace(value === 'tipo' ? '__TIPO__' : '__MATERIAL__', this.tipoId || value);
+                    },
+                    async cargarMateriales() {
+                        this.materiales = [];
+                        this.cancelarEdicion();
+                        this.mensaje = '';
+
+                        if (!this.tipoId) {
+                            return;
+                        }
+
+                        this.cargando = true;
+                        try {
+                            const response = await fetch(this.url(this.materialesUrl, 'tipo'), {
+                                headers: { 'Accept': 'application/json' },
+                            });
+                            if (!response.ok) throw new Error('No se pudieron cargar los materiales.');
+                            this.materiales = await response.json();
+                        } catch (error) {
+                            this.mensaje = error.message;
+                        } finally {
+                            this.cargando = false;
+                        }
+                    },
+                    cancelarEdicion() {
+                        this.editandoId = null;
+                        this.form = { producto_id: '', cantidad_requerida: '', unidad: '' };
+                    },
+                    editarMaterial(material) {
+                        this.editandoId = material.id;
+                        this.form = {
+                            producto_id: String(material.producto_id),
+                            cantidad_requerida: material.cantidad_requerida,
+                            unidad: material.unidad || '',
+                        };
+                    },
+                    async guardarMaterial() {
+                        this.mensaje = '';
+                        if (!this.tipoId || !this.form.producto_id || !this.form.cantidad_requerida) {
+                            this.mensaje = 'Selecciona un producto e indica una cantidad mayor a cero.';
+                            return;
+                        }
+
+                        this.guardando = true;
+                        const editando = Boolean(this.editandoId);
+                        const url = editando
+                            ? this.actualizarUrl.replace('__MATERIAL__', this.editandoId)
+                            : this.url(this.guardarUrl, 'tipo');
+                        const response = await fetch(url, {
+                            method: editando ? 'PUT' : 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': this.csrf(),
+                            },
+                            body: JSON.stringify({
+                                ...this.form,
+                                activo: true,
+                            }),
+                        });
+
+                        if (!response.ok) {
+                            const data = await response.json().catch(() => ({}));
+                            this.mensaje = data.message || Object.values(data.errors || {}).flat().join(' ') || 'No se pudo guardar el material.';
+                            this.guardando = false;
+                            return;
+                        }
+
+                        const material = await response.json();
+                        if (editando) {
+                            this.materiales = this.materiales.map((item) => item.id === material.id ? material : item);
+                        } else {
+                            this.materiales.push(material);
+                        }
+                        this.cancelarEdicion();
+                        this.guardando = false;
+                    },
+                    async toggleMaterial(material) {
+                        const response = await fetch(this.toggleUrl.replace('__MATERIAL__', material.id), {
+                            method: 'PATCH',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': this.csrf(),
+                            },
+                        });
+                        if (!response.ok) {
+                            this.mensaje = 'No se pudo cambiar el estado del material.';
+                            return;
+                        }
+                        const data = await response.json();
+                        material.activo = data.activo;
+                    },
+                };
+            }
+        </script>
 @endsection
 
 

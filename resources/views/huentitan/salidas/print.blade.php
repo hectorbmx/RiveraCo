@@ -25,7 +25,7 @@
         .observaciones { margin-top: 14px; border: 1px solid #d1d5db; padding: 10px; min-height: 52px; font-size: 12px; }
         .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 34px; }
         .signature { text-align: center; font-size: 12px; padding-top: 36px; border-top: 1px solid #111827; }
-        .actions { width: 216mm; margin: 12px auto; text-align: right; }
+        .actions { position: fixed; bottom: 22px; right: max(22px, calc((100vw - 216mm) / 2 + 22px)); z-index: 20; }
         .actions button { border: 1px solid #111827; background: #111827; color: #fff; border-radius: 4px; padding: 8px 12px; cursor: pointer; }
         @media print {
             body { background: #fff; }

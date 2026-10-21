@@ -10,6 +10,12 @@
         </div>
 
         <div class="flex items-center gap-2">
+            @if($doc->tipo === 'entrada' && $doc->estado === 'aplicado' && auth()->user()?->can('inventario.documentos.correccion_relacion.access'))
+                <a href="{{ route('inventario.documentos.edit-relacion', $doc) }}"
+                   class="px-4 py-2 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 text-sm font-semibold hover:bg-amber-100">
+                    Corregir relación
+                </a>
+            @endif
             @if($doc->estado === 'borrador')
                 <form method="POST" action="{{ route('inventario.documentos.aplicar', $doc) }}"
                       onsubmit="return confirm('¿Aplicar documento #{{ $doc->id }}? Esto afectará stock y kardex.');">
@@ -33,6 +39,19 @@
         <div><span class="text-slate-500">Referencia:</span> <span class="text-slate-900 font-medium">{{ $doc->referencia ?? '—' }}</span></div>
         <div><span class="text-slate-500">Motivo:</span> <span class="text-slate-900 font-medium">{{ $doc->motivo ?? '—' }}</span></div>
         <div><span class="text-slate-500">Notas:</span> <span class="text-slate-900 font-medium">{{ $doc->notas ?? '—' }}</span></div>
+        @if($doc->mantenimientoAbastecimiento)
+            <div class="md:col-span-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2">
+                <span class="text-blue-700">Solicitud de mantenimiento:</span>
+                <a href="{{ route('mantenimiento.mantenimientos.edit', $doc->mantenimientoAbastecimiento->mantenimiento_id) }}"
+                   class="font-semibold text-[#0B265A] hover:underline">
+                    {{ $doc->mantenimientoAbastecimiento->folio }}
+                </a>
+                <span class="text-slate-600">
+                    · {{ $doc->mantenimientoAbastecimiento->mantenimiento?->maquina?->codigo ?? 'Máquina' }}
+                    · {{ ucfirst($doc->mantenimientoAbastecimiento->estado) }}
+                </span>
+            </div>
+        @endif
     </div>
 
     @php

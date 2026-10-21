@@ -23,6 +23,11 @@ class ObraRequisicionDetalle extends Model
         'cantidad_surtida',
         'estado',
         'observaciones',
+        'equipo_tipo',
+        'vehiculo_id',
+        'maquina_id',
+        'equipo_nombre_snapshot',
+        'equipo_identificador_snapshot',
         'surtido_origen_type',
         'surtido_origen_id',
         'inventario_documento_id',
@@ -37,5 +42,15 @@ class ObraRequisicionDetalle extends Model
     public function requisicion()
     {
         return $this->belongsTo(ObraRequisicion::class, 'obra_requisicion_id');
+    }
+
+    public function vehiculo()
+    {
+        return $this->belongsTo(Vehiculo::class, 'vehiculo_id');
+    }
+
+    public function maquina()
+    {
+        return $this->belongsTo(Maquina::class, 'maquina_id');
     }
 }
