@@ -10,6 +10,7 @@ use App\Models\InventarioStock;
 use App\Models\InventarioDocumento;
 use App\Models\Mantenimiento;
 use App\Models\MantenimientoAbastecimiento;
+use App\Models\MantenimientoMaterial;
 use App\Models\Maquina;
 use App\Models\OrdenCompra;
 use App\Models\Vehiculo;
@@ -17,6 +18,7 @@ use App\Services\Maquinas\MaquinaHorometroService;
 use App\Services\Mantenimiento\MantenimientoAbastecimientoService;
 use App\Services\Contracts\ImageOptimizerInterface;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class MantenimientoController extends Controller
 {
@@ -186,7 +188,12 @@ class MantenimientoController extends Controller
     /**
      * Formulario edición
      */
-    public function edit(Request $request, Mantenimiento $mantenimiento, MantenimientoAbastecimientoService $abastecimientoService)
+    public function edit(
+        Request $request,
+        Mantenimiento $mantenimiento,
+        MantenimientoAbastecimientoService $abastecimientoService,
+        MaquinaHorometroService $horometroService
+    )
     {
         $vehiculos = Vehiculo::orderBy('marca')->get();
         $maquinas = Maquina::orderBy('nombre')->get();
@@ -194,8 +201,11 @@ class MantenimientoController extends Controller
         $serviciosPreventivosMaquinaria = $this->serviciosPreventivosPorAmbito(EmpresaServicioPreventivoTipo::AMBITO_MAQUINARIA);
         $serviciosPreventivosVehiculos = $this->serviciosPreventivosPorAmbito(EmpresaServicioPreventivoTipo::AMBITO_VEHICULO);
         $materialesPreventivosMaquina = $this->materialesPreventivosParaMaquina($mantenimiento->maquina_id);
+        $materialesOrden = $mantenimiento->materialesOrden()->get();
+        $detalles = $mantenimiento->detalles()->get();
         $materialesAbastecimiento = $abastecimientoService->calcular($mantenimiento);
         $abastecimientos = $mantenimiento->abastecimientos()->with('detalles')->latest('id')->get();
+        $ordenServicioDatos = $this->datosOrdenServicio($mantenimiento, $horometroService);
 
         $returnTo = $this->safeReturnUrl($request->input('return_to'));
 
@@ -207,8 +217,11 @@ class MantenimientoController extends Controller
             'serviciosPreventivosMaquinaria',
             'serviciosPreventivosVehiculos',
             'materialesPreventivosMaquina',
+            'materialesOrden',
+            'detalles',
             'materialesAbastecimiento',
             'abastecimientos',
+            'ordenServicioDatos',
             'returnTo'
         ));
     }
@@ -218,6 +231,18 @@ class MantenimientoController extends Controller
         Mantenimiento $mantenimiento,
         MantenimientoAbastecimientoService $abastecimientoService
     ) {
+        if ($mantenimiento->estatus === 'borrador' || !$mantenimiento->orden_servicio_folio) {
+            return back()->withErrors([
+                'abastecimiento' => 'Primero debes generar la orden de servicio antes de solicitar material.',
+            ]);
+        }
+
+        if ($mantenimiento->estatus === 'completado') {
+            return back()->withErrors([
+                'abastecimiento' => 'El servicio ya fue ejecutado y no admite nuevas solicitudes de material.',
+            ]);
+        }
+
         $data = $request->validate([
             'tipo' => 'required|in:almacen,compra',
         ]);
@@ -235,6 +260,81 @@ class MantenimientoController extends Controller
         return redirect()
             ->route('mantenimiento.mantenimientos.edit', $mantenimiento)
             ->with('success', "Solicitud {$solicitud->folio} generada correctamente.");
+    }
+
+    public function generarOrdenServicio(Mantenimiento $mantenimiento)
+    {
+        if ($mantenimiento->estatus !== 'borrador') {
+            return back()->with('error', 'La orden de servicio solo puede generarse desde un borrador.');
+        }
+
+        if ($mantenimiento->tipo === 'programado' && !$mantenimiento->servicio_preventivo_tipo_id) {
+            return back()->withErrors([
+                'servicio_preventivo_tipo_id' => 'Selecciona el tipo de servicio preventivo antes de generar la orden.',
+            ])->withInput();
+        }
+
+        DB::transaction(function () use ($mantenimiento): void {
+            $mantenimiento->update([
+                'orden_servicio_folio' => sprintf('OSM-%s-%06d', now()->format('y'), $mantenimiento->id),
+                'orden_servicio_generada_at' => now(),
+                'orden_servicio_generada_por' => auth()->id(),
+                'estatus' => 'orden_generada',
+            ]);
+
+            if ($mantenimiento->tipo === 'programado' && $mantenimiento->servicio_preventivo_tipo_id) {
+                $materiales = collect($this->materialesPreventivosParaMaquina($mantenimiento->maquina_id)[$mantenimiento->servicio_preventivo_tipo_id] ?? []);
+
+                foreach ($materiales as $orden => $material) {
+                    MantenimientoMaterial::create([
+                        'mantenimiento_id' => $mantenimiento->id,
+                        'material_preventivo_id' => $material['id'] ?? null,
+                        'producto_id' => $material['producto_id'] ?? null,
+                        'producto_nombre_snapshot' => $material['producto'] ?: 'Producto no disponible',
+                        'producto_sku_snapshot' => $material['sku'] ?? null,
+                        'unidad' => $material['unidad'] ?? null,
+                        'cantidad_requerida' => $material['cantidad'] ?? 0,
+                        'orden' => $orden,
+                        'incluido' => true,
+                    ]);
+                }
+            }
+        });
+
+        return back()->with('success', 'Orden de servicio generada correctamente.');
+    }
+
+    public function actualizarMaterialesOrden(Request $request, Mantenimiento $mantenimiento)
+    {
+        if ($mantenimiento->estatus !== 'orden_generada') {
+            return back()->withErrors(['materiales' => 'Los materiales solo pueden ajustarse después de generar la orden de servicio y antes de solicitar abastecimiento.']);
+        }
+
+        if ($mantenimiento->abastecimientos()->exists()) {
+            return back()->withErrors(['materiales' => 'Los materiales ya no pueden modificarse porque existe una solicitud de abastecimiento.']);
+        }
+
+        $data = $request->validate([
+            'incluidos' => ['nullable', 'array'],
+            'incluidos.*' => ['integer', 'exists:mantenimiento_materiales,id'],
+            'motivos' => ['nullable', 'array'],
+            'motivos.*' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $incluidos = collect($data['incluidos'] ?? [])->map(fn ($id) => (int) $id)->all();
+        $motivos = $data['motivos'] ?? [];
+
+        DB::transaction(function () use ($mantenimiento, $incluidos, $motivos): void {
+            $mantenimiento->materialesOrden()->get()->each(function (MantenimientoMaterial $material) use ($incluidos, $motivos): void {
+                $incluido = in_array($material->id, $incluidos, true);
+                $material->update([
+                    'incluido' => $incluido,
+                    'motivo_exclusion' => $incluido ? null : ($motivos[$material->id] ?? null),
+                ]);
+            });
+        });
+
+        return back()->with('success', 'Materiales de la orden actualizados correctamente.');
     }
 
     public function imprimirAbastecimiento(MantenimientoAbastecimiento $abastecimiento)
@@ -269,6 +369,26 @@ class MantenimientoController extends Controller
         });
 
         return view('mantenimiento.abastecimiento-print', compact('abastecimiento', 'existencias'));
+    }
+
+    public function imprimirOrdenServicio(
+        Mantenimiento $mantenimiento,
+        MaquinaHorometroService $horometroService
+    ) {
+        $mantenimiento->load(['maquina', 'vehiculo', 'obra', 'mecanico', 'servicioPreventivoTipo']);
+
+        if (!$mantenimiento->orden_servicio_folio) {
+            abort(404, 'La orden de servicio todavía no ha sido generada.');
+        }
+
+        $ordenServicioDatos = $this->datosOrdenServicio($mantenimiento, $horometroService);
+        $materialesOrden = $mantenimiento->materialesOrden()->where('incluido', true)->get();
+
+        return view('mantenimiento.orden-servicio-print', compact(
+            'mantenimiento',
+            'ordenServicioDatos',
+            'materialesOrden'
+        ));
     }
 
     public function imprimirReporte(Mantenimiento $mantenimiento)
@@ -363,6 +483,11 @@ class MantenimientoController extends Controller
             'categoria_mantenimiento' => 'nullable|string|max:100',
             'servicio_preventivo_tipo_id' => 'nullable|exists:empresa_servicio_preventivo_tipos,id',
             'descripcion' => 'nullable|string',
+            'detalles' => 'nullable|array',
+            'detalles.*.concepto' => 'required|string|max:150',
+            'detalles.*.tipo' => 'nullable|in:refaccion,consumible,mano_obra,servicio_externo',
+            'detalles.*.cantidad' => 'required|numeric|min:0.01',
+            'detalles.*.costo_unitario' => 'nullable|numeric|min:0',
             'km_actuales' => 'nullable|integer',
             'km_proximo_servicio' => 'nullable|integer',
             'horometro' => 'nullable|numeric|min:0',
@@ -374,10 +499,31 @@ class MantenimientoController extends Controller
             'fotos.*' => 'image|mimes:jpg,jpeg,png,webp|max:10240',
             'foto_descripciones' => 'nullable|array|max:8',
             'foto_descripciones.*' => 'nullable|string|max:200',
-            'estatus' => 'required|in:borrador,pendiente,en_proceso,completado,cancelado',
+            'estatus' => 'required|in:borrador,orden_generada,pendiente,en_proceso,completado,cancelado',
             'abastecimiento_tipo' => 'nullable|in:surtido_directo,compra,parcial',
             'abastecimiento_estado' => 'nullable|in:pendiente,solicitud_almacen,solicitud_compra,parcial,listo',
         ]);
+
+        $tieneAbastecimientos = $mantenimiento->abastecimientos()->exists();
+
+        if ($tieneAbastecimientos) {
+            $cambioEstructural = (int) ($validated['maquina_id'] ?? 0) !== (int) ($mantenimiento->maquina_id ?? 0)
+                || (int) ($validated['vehiculo_id'] ?? 0) !== (int) ($mantenimiento->vehiculo_id ?? 0)
+                || (int) ($validated['servicio_preventivo_tipo_id'] ?? 0) !== (int) ($mantenimiento->servicio_preventivo_tipo_id ?? 0)
+                || ($validated['tipo'] ?? null) !== $mantenimiento->tipo;
+
+            if ($cambioEstructural || ($validated['estatus'] ?? null) === 'borrador') {
+                return back()->withErrors([
+                    'estatus' => 'El activo, tipo de servicio y estado de la orden quedan bloqueados después de solicitar abastecimiento.',
+                ])->withInput();
+            }
+        }
+
+        if ($mantenimiento->estatus === 'completado' && ($validated['estatus'] ?? null) !== 'completado') {
+            return back()->withErrors([
+                'estatus' => 'Un servicio completado no puede reabrirse desde esta pantalla.',
+            ])->withInput();
+        }
 
         if (!empty($validated['vehiculo_id']) && !empty($validated['maquina_id'])) {
             return back()
@@ -429,7 +575,34 @@ class MantenimientoController extends Controller
             $validated['abastecimiento_estado'] = 'pendiente';
         }
 
+        $detalles = collect($validated['detalles'] ?? [])->map(function (array $detalle) {
+            $cantidad = (float) $detalle['cantidad'];
+            $costoUnitario = (float) ($detalle['costo_unitario'] ?? 0);
+
+            return [
+                'concepto' => $detalle['concepto'],
+                'tipo' => $detalle['tipo'] ?? null,
+                'cantidad' => $cantidad,
+                'costo_unitario' => $costoUnitario,
+                'costo_total' => round($cantidad * $costoUnitario, 2),
+            ];
+        });
+        unset($validated['detalles']);
+
         $mantenimiento->update($validated);
+
+        if ($mantenimiento->tipo === 'emergencia') {
+            $mantenimiento->detalles()->delete();
+            if ($detalles->isNotEmpty()) {
+                $mantenimiento->detalles()->createMany($detalles->all());
+            }
+
+            $mantenimiento->update([
+                'costo_mano_obra' => $detalles->where('tipo', 'mano_obra')->sum('costo_total'),
+                'costo_refacciones' => $detalles->whereIn('tipo', ['refaccion', 'consumible'])->sum('costo_total'),
+                'costo_total' => $detalles->sum('costo_total'),
+            ]);
+        }
 
         if ($mantenimiento->estatus === 'completado') {
             $this->actualizarManoDeObra($mantenimiento->fresh(['mecanico']));
@@ -596,6 +769,7 @@ class MantenimientoController extends Controller
 
                 return [
                     'id' => $material->id,
+                    'producto_id' => $material->producto_id,
                     'producto' => $material->producto?->nombre,
                     'sku' => $material->producto?->sku,
                     'cantidad' => $requerido,
@@ -613,6 +787,14 @@ class MantenimientoController extends Controller
     private function validarServicioPreventivoTipo(array $data): ?string
     {
         $tipoId = $data['servicio_preventivo_tipo_id'] ?? null;
+
+        if (($data['tipo'] ?? null) === 'programado' && !$tipoId) {
+            return 'Selecciona el tipo de servicio preventivo para un servicio programado.';
+        }
+
+        if (($data['tipo'] ?? null) === 'emergencia' && $tipoId) {
+            return 'Un servicio de emergencia no debe tener tipo de servicio preventivo.';
+        }
 
         if (!$tipoId) {
             return null;
@@ -635,5 +817,48 @@ class MantenimientoController extends Controller
         return $existe
             ? null
             : 'El tipo de servicio seleccionado no corresponde al activo o no esta activo.';
+    }
+
+    private function datosOrdenServicio(Mantenimiento $mantenimiento, MaquinaHorometroService $horometroService): array
+    {
+        $mantenimiento->loadMissing(['maquina', 'vehiculo', 'obra', 'servicioPreventivoTipo']);
+
+        $esMaquina = (bool) $mantenimiento->maquina_id;
+        $ultimoServicioQuery = Mantenimiento::query()
+            ->where('id', '<>', $mantenimiento->id)
+            ->where('estatus', 'completado')
+            ->where('tipo', $mantenimiento->tipo);
+
+        if ($esMaquina) {
+            $ultimoServicioQuery->where('maquina_id', $mantenimiento->maquina_id);
+        } else {
+            $ultimoServicioQuery->where('vehiculo_id', $mantenimiento->vehiculo_id);
+        }
+
+        if ($mantenimiento->tipo === 'programado' && $mantenimiento->servicio_preventivo_tipo_id) {
+            $ultimoServicioQuery->where('servicio_preventivo_tipo_id', $mantenimiento->servicio_preventivo_tipo_id);
+        }
+
+        $ultimoServicio = $ultimoServicioQuery
+            ->orderByDesc('fecha_fin')
+            ->orderByDesc('fecha_programada')
+            ->orderByDesc('id')
+            ->first();
+
+        $lecturaActual = $esMaquina
+            ? $horometroService->horometroActual($mantenimiento->maquina)
+            : $mantenimiento->km_actuales;
+
+        return [
+            'es_maquina' => $esMaquina,
+            'equipo' => $esMaquina ? $mantenimiento->maquina?->nombre : trim(($mantenimiento->vehiculo?->marca ?? '') . ' ' . ($mantenimiento->vehiculo?->modelo ?? '')),
+            'codigo' => $esMaquina ? $mantenimiento->maquina?->codigo : $mantenimiento->vehiculo?->placas,
+            'ubicacion' => $esMaquina
+                ? ($mantenimiento->maquina?->ubicacion === Maquina::UBIC_EN_OBRA ? ($mantenimiento->obra?->nombre ?? 'En obra') : 'En patio')
+                : ($mantenimiento->obra?->nombre ?? 'No definida'),
+            'lectura_actual' => $lecturaActual,
+            'lectura_label' => $esMaquina ? 'Horómetro actual' : 'Kilometraje actual',
+            'ultimo_servicio' => $ultimoServicio,
+        ];
     }
 }

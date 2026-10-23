@@ -55,6 +55,7 @@ use App\Http\Controllers\CatalogoRolController;
 use App\Http\Controllers\MaquinasReporteDiarioController;
 
 use App\Http\Controllers\Maquinas\MaquinaSeguroController;
+use App\Http\Controllers\Maquinas\MaquinaFotoController;
 use App\Http\Controllers\Vehiculos\VehiculoSeguroController;
 use App\Http\Controllers\Vehiculos\VehiculoDocumentoController;
 
@@ -873,6 +874,12 @@ Route::middleware('auth','verified')->group(function () {
             ->except(['destroy']);
         Route::get('mantenimientos/{mantenimiento}/imprimir', [MantenimientoController::class, 'imprimirReporte'])
             ->name('mantenimientos.print');
+        Route::get('mantenimientos/{mantenimiento}/orden-servicio/imprimir', [MantenimientoController::class, 'imprimirOrdenServicio'])
+            ->name('mantenimientos.orden-servicio.print');
+        Route::post('mantenimientos/{mantenimiento}/generar-orden-servicio', [MantenimientoController::class, 'generarOrdenServicio'])
+            ->name('mantenimientos.generar-orden-servicio');
+        Route::post('mantenimientos/{mantenimiento}/materiales-orden', [MantenimientoController::class, 'actualizarMaterialesOrden'])
+            ->name('mantenimientos.materiales-orden.update');
         Route::post('mantenimientos/{mantenimiento}/abastecimientos', [MantenimientoController::class, 'solicitarAbastecimiento'])
             ->name('mantenimientos.abastecimientos.store');
         Route::get('mantenimientos/abastecimientos/{abastecimiento}/imprimir', [MantenimientoController::class, 'imprimirAbastecimiento'])
@@ -886,6 +893,15 @@ Route::middleware('auth','verified')->group(function () {
         Route::get('obras/{obra}/pilas-activas',[MaquinaController::class, 'pilasActivasObra'])->middleware('permission:maquinas.asignar_obra.access')->name('obras.pilas-activas');
         Route::get('maquinas/{maquina}', [MaquinaController::class, 'show'])->name('show');
         Route::put('maquinas/{maquina}/general', [MaquinaController::class, 'updateGeneral'])->name('updateGeneral');
+        Route::post('maquinas/{maquina}/fotos', [MaquinaFotoController::class, 'store'])
+            ->middleware(['auth', 'permission:fotos_maquinas_create.access'])
+            ->name('fotos.store');
+        Route::put('maquinas/{maquina}/fotos/{foto}', [MaquinaFotoController::class, 'update'])
+            ->middleware(['auth', 'permission:fotos_maquinas_edit.access'])
+            ->name('fotos.update');
+        Route::delete('maquinas/{maquina}/fotos/{foto}', [MaquinaFotoController::class, 'destroy'])
+            ->middleware(['auth', 'permission:fotos_maquinas_delete.access'])
+            ->name('fotos.destroy');
     // acciones puntuales (NO crear maquina, solo cambiar estado/ubicacion y agregar seguro)
         Route::post('maquinas/{maquina}/cambiar-estado', [MaquinaController::class, 'cambiarEstado'])->name('cambiarEstado');
         Route::post('maquinas/{maquina}/cambiar-ubicacion', [MaquinaController::class, 'cambiarUbicacion'])->name('cambiarUbicacion');

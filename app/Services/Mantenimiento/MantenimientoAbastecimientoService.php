@@ -14,21 +14,55 @@ class MantenimientoAbastecimientoService
 {
     public function calcular(Mantenimiento $mantenimiento): Collection
     {
-        if (!$mantenimiento->maquina_id || !$mantenimiento->servicio_preventivo_tipo_id) {
+        if (!$mantenimiento->maquina_id) {
             return collect();
         }
 
-        $materiales = EmpresaServicioPreventivoMaterial::query()
-            ->where('servicio_preventivo_tipo_id', $mantenimiento->servicio_preventivo_tipo_id)
-            ->where('activo', true)
-            ->where(function ($query) use ($mantenimiento) {
-                $query->whereNull('maquina_id')
-                    ->orWhere('maquina_id', $mantenimiento->maquina_id);
-            })
-            ->with('producto:id,nombre,sku,unidad')
-            ->orderBy('orden')
-            ->orderBy('id')
-            ->get();
+        $tieneSnapshot = $mantenimiento->materialesOrden()->exists();
+
+        if ($tieneSnapshot) {
+            $materialesOrden = $mantenimiento->materialesOrden()
+                ->where('incluido', true)
+                ->get()
+                ->map(fn ($material) => [
+                    'material_preventivo_id' => $material->material_preventivo_id,
+                    'producto_id' => $material->producto_id,
+                    'producto' => $material->producto_nombre_snapshot,
+                    'sku' => $material->producto_sku_snapshot,
+                    'unidad' => $material->unidad,
+                    'requerido' => (float) $material->cantidad_requerida,
+                ]);
+        } else {
+            if (!$mantenimiento->servicio_preventivo_tipo_id) {
+                return collect();
+            }
+
+            $materiales = EmpresaServicioPreventivoMaterial::query()
+                ->where('servicio_preventivo_tipo_id', $mantenimiento->servicio_preventivo_tipo_id)
+                ->where('activo', true)
+                ->where(function ($query) use ($mantenimiento) {
+                    $query->whereNull('maquina_id')
+                        ->orWhere('maquina_id', $mantenimiento->maquina_id);
+                })
+                ->with('producto:id,nombre,sku,unidad')
+                ->orderBy('orden')
+                ->orderBy('id')
+                ->get();
+
+            $especificos = $materiales->where('maquina_id', $mantenimiento->maquina_id);
+            $materialesEfectivos = $especificos->isNotEmpty()
+                ? $especificos
+                : $materiales->whereNull('maquina_id');
+
+            $materialesOrden = $materialesEfectivos->values()->map(fn ($material) => [
+                'material_preventivo_id' => $material->id,
+                'producto_id' => $material->producto_id,
+                'producto' => $material->producto?->nombre ?? 'Producto no disponible',
+                'sku' => $material->producto?->sku,
+                'unidad' => $material->unidad ?: $material->producto?->unidad,
+                'requerido' => (float) $material->cantidad_requerida,
+            ]);
+        }
 
         $abastecimientos = $mantenimiento->abastecimientos()
             ->with([
@@ -52,11 +86,6 @@ class MantenimientoAbastecimientoService
             ->unique()
             ->values();
 
-        $especificos = $materiales->where('maquina_id', $mantenimiento->maquina_id);
-        $materialesEfectivos = $especificos->isNotEmpty()
-            ? $especificos
-            : $materiales->whereNull('maquina_id');
-
         $almacen = Almacen::query()
             ->where('activo', true)
             ->where(function ($query) {
@@ -73,12 +102,12 @@ class MantenimientoAbastecimientoService
                 ->keyBy('producto_id')
             : collect();
 
-        return $materialesEfectivos->values()->map(function (EmpresaServicioPreventivoMaterial $material) use ($stock, $surtidoPorProducto, $foliosSalida) {
-            $stockRow = $stock->get($material->producto_id);
-            $requerido = (float) $material->cantidad_requerida;
+        return $materialesOrden->map(function (array $material) use ($stock, $surtidoPorProducto, $foliosSalida) {
+            $stockRow = $stock->get($material['producto_id']);
+            $requerido = $material['requerido'];
             $disponible = max(0, (float) ($stockRow?->stock_actual ?? 0) - (float) ($stockRow?->stock_reservado ?? 0));
             $surtible = min($requerido, $disponible);
-            $surtido = min($requerido, (float) $surtidoPorProducto->get($material->producto_id, 0));
+            $surtido = min($requerido, (float) $surtidoPorProducto->get($material['producto_id'], 0));
             $faltante = max(0, $requerido - $surtido);
 
             $estado = $faltante <= 0
@@ -86,11 +115,11 @@ class MantenimientoAbastecimientoService
                 : ($surtible >= $faltante ? 'disponible' : ($surtible > 0 ? 'parcial' : 'sin_existencia'));
 
             return [
-                'material_preventivo_id' => $material->id,
-                'producto_id' => $material->producto_id,
-                'producto' => $material->producto?->nombre ?? 'Producto no disponible',
-                'sku' => $material->producto?->sku,
-                'unidad' => $material->unidad ?: $material->producto?->unidad,
+                'material_preventivo_id' => $material['material_preventivo_id'],
+                'producto_id' => $material['producto_id'],
+                'producto' => $material['producto'],
+                'sku' => $material['sku'],
+                'unidad' => $material['unidad'],
                 'requerido' => $requerido,
                 'surtido' => $surtido,
                 'disponible' => $disponible,
@@ -104,6 +133,14 @@ class MantenimientoAbastecimientoService
 
     public function crearSolicitud(Mantenimiento $mantenimiento, string $tipo, ?int $usuarioId = null): MantenimientoAbastecimiento
     {
+        if (!$mantenimiento->orden_servicio_folio || $mantenimiento->estatus === 'borrador') {
+            throw new \RuntimeException('Primero debes generar la orden de servicio antes de solicitar material.');
+        }
+
+        if ($mantenimiento->estatus === 'completado') {
+            throw new \RuntimeException('El servicio ya fue ejecutado y no admite nuevas solicitudes de material.');
+        }
+
         $tipo = $tipo === MantenimientoAbastecimiento::TIPO_COMPRA
             ? MantenimientoAbastecimiento::TIPO_COMPRA
             : MantenimientoAbastecimiento::TIPO_ALMACEN;

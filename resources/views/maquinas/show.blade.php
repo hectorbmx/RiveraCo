@@ -42,14 +42,16 @@
             'kardex'   =>  'Kardex',
             'combustible' => 'Combustible',
             'horometro' => 'Horómetro',
+            'fotos'    => 'Fotos',
         ];
     @endphp
 
     <div class="border-b mb-4">
-        <nav class="flex gap-2">
+        <nav class="flex gap-2 overflow-x-auto" aria-label="Secciones de la máquina">
             @foreach($tabs as $key => $label)
                 <a href="{{ route('maquinas.show', ['maquina' => $maquina->id, 'tab' => $key]) }}"
-                   class="px-4 py-2 text-sm font-medium rounded-t-lg
+                   @if($tab === $key) aria-current="page" @endif
+                   class="shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium rounded-t-lg
                           {{ $tab === $key ? 'bg-white border border-b-0 text-[#0B265A]' : 'text-slate-600 hover:text-slate-900' }}">
                     {{ $label }}
                 </a>
@@ -58,6 +60,10 @@
     </div>
 
     {{-- Tab content --}}
+    @if($tab === 'fotos')
+        @include('maquinas.partials.tabs.fotos', ['fotosMaquina' => $maquina->fotos])
+    @endif
+
     @if($tab === 'general')
         @if ($errors->any())
             <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -324,6 +330,18 @@
                                                 <circle cx="12" cy="12" r="2.5" />
                                             </svg>
                                         </a>
+                                        @if($mtto->orden_servicio_folio)
+                                            <a href="{{ route('mantenimiento.mantenimientos.orden-servicio.print', $mtto) }}" target="_blank" rel="noopener"
+                                               class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-[#0B265A] transition hover:bg-blue-100"
+                                               title="Imprimir orden de servicio"
+                                               aria-label="Imprimir orden de servicio">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                    <path d="M6 9V3h12v6" />
+                                                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                                                    <path d="M6 14h12v7H6z" />
+                                                </svg>
+                                            </a>
+                                        @endif
                                         @if(($mtto->estatus ?? null) === 'completado')
                                             <a href="{{ route('mantenimiento.mantenimientos.print', $mtto) }}" target="_blank" rel="noopener"
                                                class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[#0B265A] transition hover:bg-slate-100"

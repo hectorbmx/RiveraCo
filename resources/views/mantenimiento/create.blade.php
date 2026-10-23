@@ -107,6 +107,7 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de servicio preventivo</label>
                         <select name="servicio_preventivo_tipo_id"
                                 x-model="servicioId"
+                                :required="tipo === 'programado'"
                                 class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
                             <option value="">Sin tipo específico</option>
                             @foreach($serviciosPreventivos as $servicioPreventivo)

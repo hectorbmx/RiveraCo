@@ -16,6 +16,8 @@
             }
             $hayFaltantes = $materialesAbastecimiento->contains(fn ($material) => (float) $material['faltante'] > 0);
             $hayDisponibles = $materialesAbastecimiento->contains(fn ($material) => (float) $material['surtible'] > 0);
+            $ordenGenerada = !empty($mantenimiento->orden_servicio_folio)
+                && $mantenimiento->estatus !== 'borrador';
             $solicitudAlmacenActiva = $abastecimientos->first(fn ($solicitud) => $solicitud->tipo === 'almacen' && !in_array($solicitud->estado, ['surtida', 'cancelada'], true));
             $solicitudCompraActiva = $abastecimientos->first(fn ($solicitud) => $solicitud->tipo === 'compra' && !in_array($solicitud->estado, ['surtida', 'cancelada'], true));
             $cancelUrl = $esMaquina
@@ -61,6 +63,15 @@
             </div>
         @endif
 
+        <div class="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-4">
+            <div class="md:col-span-4 -mx-4 -mt-4 rounded-t-2xl bg-[#0B265A] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white">Contexto de la orden de servicio</div>
+            <div><div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">{{ $ordenServicioDatos['es_maquina'] ? 'Máquina' : 'Vehículo' }}</div><div class="text-sm font-semibold text-slate-800">{{ $ordenServicioDatos['equipo'] ?: '—' }}</div></div>
+            <div><div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Código / placas</div><div class="text-sm font-semibold text-slate-800">{{ $ordenServicioDatos['codigo'] ?: '—' }}</div></div>
+            <div><div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Ubicación</div><div class="text-sm font-semibold text-slate-800">{{ $ordenServicioDatos['ubicacion'] ?: '—' }}</div></div>
+            <div><div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">{{ $ordenServicioDatos['lectura_label'] }}</div><div class="text-sm font-semibold text-slate-800">{{ $ordenServicioDatos['lectura_actual'] !== null ? number_format((float) $ordenServicioDatos['lectura_actual'], 2) : '—' }}</div></div>
+            <div class="md:col-span-4 border-t border-slate-100 pt-2 text-xs text-slate-600"><strong>Último servicio equivalente:</strong> {{ $ordenServicioDatos['ultimo_servicio']?->fecha_fin?->format('d/m/Y H:i') ?? $ordenServicioDatos['ultimo_servicio']?->fecha_programada?->format('d/m/Y H:i') ?? 'Sin registro' }}</div>
+        </div>
+
         <!-- Layout principal a 3 columnas para ajuste de pantalla completa -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
             
@@ -102,7 +113,7 @@
 
                         <div>
                             <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">Tipo <span class="text-red-500">*</span></label>
-                            <select name="tipo" class="w-full rounded-xl border-slate-200 bg-slate-50/50 text-xs font-medium focus:border-blue-600 focus:ring-blue-600 py-2 px-3">
+                            <select name="tipo" id="tipo-mantenimiento" class="w-full rounded-xl border-slate-200 bg-slate-50/50 text-xs font-medium focus:border-blue-600 focus:ring-blue-600 py-2 px-3">
                                 <option value="programado" @selected(old('tipo', $mantenimiento->tipo) === 'programado')>Programado</option>
                                 <option value="emergencia" @selected(old('tipo', $mantenimiento->tipo) === 'emergencia')>Emergencia</option>
                             </select>
@@ -112,6 +123,7 @@
                             <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">Estatus <span class="text-red-500">*</span></label>
                             <select name="estatus" class="w-full rounded-xl border-slate-200 bg-slate-50/50 text-xs font-medium focus:border-blue-600 focus:ring-blue-600 py-2 px-3">
                                 <option value="borrador" @selected(old('estatus', $mantenimiento->estatus) === 'borrador')>Borrador</option>
+                                <option value="orden_generada" @selected(old('estatus', $mantenimiento->estatus) === 'orden_generada')>Orden de servicio generada</option>
                                 <option value="pendiente" @selected(old('estatus', $mantenimiento->estatus) === 'pendiente')>Pendiente</option>
                                 <option value="en_proceso" @selected(old('estatus', $mantenimiento->estatus) === 'en_proceso')>En proceso</option>
                                 <option value="completado" @selected(old('estatus', $mantenimiento->estatus) === 'completado')>Completado</option>
@@ -124,7 +136,7 @@
                             <div class="grid grid-cols-1 gap-3 p-3 md:grid-cols-2">
                             <div class="md:col-span-2">
                             <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">Tipo de servicio preventivo</label>
-                            <select name="servicio_preventivo_tipo_id" id="servicio_preventivo_tipo_id" class="w-full rounded-xl border-slate-200 bg-slate-50/50 text-xs font-medium focus:border-blue-600 focus:ring-blue-600 py-2 px-3">
+                            <select name="servicio_preventivo_tipo_id" id="servicio_preventivo_tipo_id" @required(old('tipo', $mantenimiento->tipo) === 'programado') class="w-full rounded-xl border-slate-200 bg-slate-50/50 text-xs font-medium focus:border-blue-600 focus:ring-blue-600 py-2 px-3">
                                 <option value="">Sin tipo específico</option>
                                 @foreach($serviciosPreventivos as $servicioPreventivo)
                                     <option value="{{ $servicioPreventivo->id }}"
@@ -186,6 +198,30 @@
                             <textarea name="descripcion" rows="2" class="w-full rounded-xl border-slate-200 bg-slate-50/50 text-xs font-medium focus:border-blue-600 focus:ring-blue-600 p-2.5" placeholder="Detalles adicionales...">{{ old('descripcion', $mantenimiento->descripcion) }}</textarea>
                         </div>
 
+                        @if($mantenimiento->tipo === 'emergencia')
+                            <div class="md:col-span-2 overflow-hidden rounded-xl border border-amber-200">
+                                <div class="bg-amber-50 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-amber-900">Detalle manual de emergencia</div>
+                                <div class="overflow-x-auto p-3">
+                                    <table class="w-full text-xs">
+                                        <thead class="text-left text-[10px] uppercase tracking-wider text-slate-500">
+                                            <tr><th class="pb-2">Tipo</th><th class="pb-2">Concepto</th><th class="pb-2">Cantidad</th><th class="pb-2">Costo unitario</th></tr>
+                                        </thead>
+                                        <tbody id="detalles-emergencia">
+                                            @foreach(old('detalles', $detalles->toArray()) as $indice => $detalle)
+                                                <tr class="border-t border-slate-100">
+                                                    <td class="py-2 pr-2"><select name="detalles[{{ $indice }}][tipo]" class="w-full rounded-lg border-slate-200 py-1.5"><option value="refaccion" @selected(($detalle['tipo'] ?? '') === 'refaccion')>Refacción</option><option value="consumible" @selected(($detalle['tipo'] ?? '') === 'consumible')>Consumible</option><option value="mano_obra" @selected(($detalle['tipo'] ?? '') === 'mano_obra')>Mano de obra</option><option value="servicio_externo" @selected(($detalle['tipo'] ?? '') === 'servicio_externo')>Servicio externo</option></select></td>
+                                                    <td class="py-2 pr-2"><input required name="detalles[{{ $indice }}][concepto]" value="{{ $detalle['concepto'] ?? '' }}" class="w-full rounded-lg border-slate-200 py-1.5"></td>
+                                                    <td class="py-2 pr-2"><input required type="number" min="0.01" step="0.01" name="detalles[{{ $indice }}][cantidad]" value="{{ $detalle['cantidad'] ?? 1 }}" class="w-full rounded-lg border-slate-200 py-1.5"></td>
+                                                    <td class="py-2"><input type="number" min="0" step="0.01" name="detalles[{{ $indice }}][costo_unitario]" value="{{ $detalle['costo_unitario'] ?? 0 }}" class="w-full rounded-lg border-slate-200 py-1.5"></td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                    <p class="mt-2 text-[10px] text-amber-800">Los servicios de emergencia usan esta captura manual y no cargan una plantilla preventiva.</p>
+                                </div>
+                            </div>
+                        @endif
+
                         <div class="md:col-span-2 overflow-hidden rounded-xl border border-slate-200">
                             <div class="bg-[#0B265A] px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-white">Evidencia del servicio</div>
                             <div class="p-3">
@@ -229,12 +265,25 @@
 
                 <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
                     <a href="{{ $cancelUrl }}" class="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition">Cancelar</a>
-                    @if(($mantenimiento->estatus ?? null) === 'completado')
+                    @if(($mantenimiento->estatus ?? null) === 'borrador')
+                        <form method="POST" action="{{ route('mantenimiento.mantenimientos.generar-orden-servicio', $mantenimiento) }}">
+                            @csrf
+                            <button type="submit" class="px-5 py-2 text-xs font-semibold rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 transition">
+                                Crear orden de servicio
+                            </button>
+                        </form>
+                    @elseif(($mantenimiento->estatus ?? null) === 'completado')
                         <a href="{{ route('mantenimiento.mantenimientos.print', $mantenimiento) }}" target="_blank" rel="noopener"
                            class="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold rounded-xl bg-[#0B265A] text-white shadow-md hover:opacity-90 transition">
                             Imprimir reporte
                         </a>
                     @else
+                        @if($mantenimiento->orden_servicio_folio)
+                            <a href="{{ route('mantenimiento.mantenimientos.orden-servicio.print', $mantenimiento) }}" target="_blank" rel="noopener"
+                               class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl border border-blue-200 text-blue-700 hover:bg-blue-50 transition">
+                                Imprimir orden
+                            </a>
+                        @endif
                         <button type="submit" form="main-form" id="servicio-ejecutado-button" class="px-5 py-2 text-xs font-semibold rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 transition">Servicio ejecutado</button>
                     @endif
                 </div>
@@ -242,6 +291,35 @@
 
             <!-- Columna Derecha: Materiales y Solicitudes (50% del ancho) -->
             <div class="lg:col-span-6 flex flex-col gap-4">
+                @if($materialesOrden->isNotEmpty())
+                        <form method="POST" action="{{ route('mantenimiento.mantenimientos.materiales-orden.update', $mantenimiento) }}" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+                            @csrf
+                            <div class="-mx-4 -mt-4 mb-3 flex items-center justify-between bg-[#0B265A] px-3 py-2.5">
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-white">Materiales de la orden</h3>
+                                <span class="text-[10px] text-blue-100">Ajuste exclusivo de este servicio</span>
+                            </div>
+                            <div class="space-y-2">
+                                @foreach($materialesOrden as $materialOrden)
+                                    <div class="rounded-xl border border-slate-200 p-2.5 text-xs {{ $materialOrden->incluido ? 'bg-slate-50' : 'bg-amber-50' }}">
+                                        <label class="flex items-start gap-2">
+                                            <input type="checkbox" name="incluidos[]" value="{{ $materialOrden->id }}" @checked($materialOrden->incluido) @disabled($ordenGenerada === false) class="mt-0.5 rounded border-slate-300 text-blue-700 focus:ring-blue-600">
+                                            <span class="flex-1">
+                                                <span class="block font-semibold text-slate-800">{{ $materialOrden->producto_nombre_snapshot }}</span>
+                                                <span class="block text-[11px] text-slate-500">{{ $materialOrden->producto_sku_snapshot ?: 'Sin SKU' }} · {{ number_format((float) $materialOrden->cantidad_requerida, 2) }} {{ $materialOrden->unidad ?: '' }}</span>
+                                            </span>
+                                        </label>
+                                        <input type="text" name="motivos[{{ $materialOrden->id }}]" value="{{ $materialOrden->motivo_exclusion }}" placeholder="Motivo si se excluye (opcional)" @disabled($ordenGenerada === false) class="mt-2 w-full rounded-lg border-slate-200 px-2 py-1.5 text-[11px] disabled:bg-slate-100">
+                                    </div>
+                                @endforeach
+                            </div>
+                            @if($ordenGenerada && $abastecimientos->isEmpty())
+                                <button type="submit" class="mt-3 rounded-xl bg-[#0B265A] px-3 py-2 text-xs font-bold text-white hover:bg-[#12367d]">Guardar materiales</button>
+                            @else
+                                <p class="mt-3 text-[11px] font-semibold text-slate-500">Los materiales quedan bloqueados después de generar una solicitud de abastecimiento.</p>
+                            @endif
+                        </form>
+                @endif
+
                 @if($materialesAbastecimiento->isNotEmpty())
                     <!-- Materiales compactos -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 flex flex-col max-h-[300px]">
@@ -293,7 +371,7 @@
                             <form method="POST" action="{{ route('mantenimiento.mantenimientos.abastecimientos.store', $mantenimiento) }}">
                                 @csrf
                                 <input type="hidden" name="tipo" value="almacen">
-                                <button type="submit" @disabled($solicitudAlmacenActiva || !$hayFaltantes) class="w-full rounded-xl bg-[#0B265A] p-2.5 text-left text-white hover:bg-[#12367d] disabled:opacity-50 transition">
+                                <button type="submit" @disabled(!$ordenGenerada || $solicitudAlmacenActiva || !$hayFaltantes) class="w-full rounded-xl bg-[#0B265A] p-2.5 text-left text-white hover:bg-[#12367d] disabled:opacity-50 transition">
                                     <span class="block text-xs font-bold">Almacén</span>
                                     <span class="block text-[10px] text-blue-200">Surtido parcial/total</span>
                                 </button>
@@ -301,7 +379,7 @@
                             <form method="POST" action="{{ route('mantenimiento.mantenimientos.abastecimientos.store', $mantenimiento) }}">
                                 @csrf
                                 <input type="hidden" name="tipo" value="compra">
-                                <button type="submit" @disabled($solicitudCompraActiva || !$hayFaltantes) class="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-left text-slate-800 hover:bg-slate-50 disabled:opacity-50 transition">
+                                <button type="submit" @disabled(!$ordenGenerada || $solicitudCompraActiva || !$hayFaltantes) class="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-left text-slate-800 hover:bg-slate-50 disabled:opacity-50 transition">
                                     <span class="block text-xs font-bold">Compras</span>
                                     <span class="block text-[10px] text-slate-500">Adquisición externa</span>
                                 </button>
@@ -331,7 +409,11 @@
                                 @endforeach
                             </div>
                         @endif
-                        @if(!$hayFaltantes)
+                        @if(!$ordenGenerada)
+                            <p class="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-[11px] font-semibold text-blue-700">
+                                Genera la orden de servicio para habilitar las solicitudes de material.
+                            </p>
+                        @elseif(!$hayFaltantes)
                             <p class="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] font-semibold text-emerald-700">
                                 Materiales surtidos. No se pueden generar nuevas solicitudes para este servicio.
                             </p>
@@ -427,7 +509,18 @@
             }
 
             const tipoServicio = document.getElementById('servicio_preventivo_tipo_id');
+            const tipoMantenimiento = document.getElementById('tipo-mantenimiento');
             const categoria = document.getElementById('categoria_mantenimiento');
+
+            const actualizarRequeridoTipoServicio = () => {
+                if (tipoServicio && tipoMantenimiento) {
+                    tipoServicio.required = tipoMantenimiento.value === 'programado';
+                }
+            };
+
+            actualizarRequeridoTipoServicio();
+            tipoMantenimiento?.addEventListener('change', actualizarRequeridoTipoServicio);
+
             if (!tipoServicio || !categoria) return;
 
             let ultimaCategoriaAutomatica = @json($categoriaSugerida);

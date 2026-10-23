@@ -142,6 +142,12 @@ public function show(
     // Siempre cargamos la asignación activa + obra (para mostrar contexto)
     $maquina->load(['asignacionActiva.obra']);
 
+    if ($tab === 'fotos') {
+        $maquina->load([
+            'fotos' => fn ($q) => $q->with('usuario:id,name')->latest()->orderByDesc('id'),
+        ]);
+    }
+
     if ($tab === 'servicios') {
         $maquina->load([
             'mantenimientos' => fn($q) => $q->with('mecanico')->latest()->limit(50),

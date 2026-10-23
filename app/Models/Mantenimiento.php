@@ -23,6 +23,9 @@ class Mantenimiento extends Model
         'fecha_inicio',
         'fecha_fin',
         'estatus',
+        'orden_servicio_folio',
+        'orden_servicio_generada_at',
+        'orden_servicio_generada_por',
         'abastecimiento_tipo',
         'abastecimiento_estado',
         'mecanico_id',
@@ -36,6 +39,7 @@ class Mantenimiento extends Model
         'fecha_programada' => 'datetime',
         'fecha_inicio'     => 'datetime',
         'fecha_fin'        => 'datetime',
+        'orden_servicio_generada_at' => 'datetime',
     ];
 
     public const ABASTECIMIENTO_SURTIDO_DIRECTO = 'surtido_directo';
@@ -73,6 +77,11 @@ class Mantenimiento extends Model
     public function detalles()
     {
         return $this->hasMany(MantenimientoDetalle::class, 'mantenimiento_id');
+    }
+
+    public function materialesOrden()
+    {
+        return $this->hasMany(MantenimientoMaterial::class, 'mantenimiento_id')->orderBy('orden')->orderBy('id');
     }
 
     public function abastecimientos()
