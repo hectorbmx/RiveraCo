@@ -7,13 +7,17 @@ use App\Models\User;
 use App\Models\UsuarioApp;
 use App\Services\Mobile\AppMobileContextService;
 use Illuminate\Http\Request;
-use Illuminate\Http\Exceptions\HttpResponseException;
+use App\Services\Mobile\AppMobileAccessService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function __construct(private AppMobileContextService $contextService)
+    public function __construct(
+        private AppMobileContextService $contextService,
+        private AppMobileAccessService $accessService,
+        private User $users
+    )
     {
     }
 
@@ -24,7 +28,7 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $user = $this->users->newQuery()->where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
@@ -35,11 +39,12 @@ class AuthController extends Controller
         $usuarioApp = $this->validarUsuarioApp($user);
         $isResidente = $this->contextService->puedeVerPanelResidente($user);
         $isGerencial = $this->contextService->puedeVerGerencial($user);
+        $isMecanico = $this->contextService->puedeVerPanelMecanico($user);
 
-        if (!$isResidente && !$isGerencial) {
+        if (!$isResidente && !$isGerencial && !$isMecanico) {
             return response()->json([
                 'ok' => false,
-                'message' => 'Tu rol no tiene acceso a la app.',
+                'message' => 'No tienes acceso a la app.',
             ], 403);
         }
 
@@ -49,7 +54,7 @@ class AuthController extends Controller
         if ($isResidente) {
             $contexto = $this->contextService->contextoResidente($user, $usuarioApp);
 
-            if (!$contexto && !$isGerencial) {
+            if (!$contexto && !$isGerencial && !$isMecanico) {
                 return response()->json([
                     'ok' => false,
                     'message' => 'No tienes una obra activa asignada.',
@@ -75,11 +80,12 @@ class AuthController extends Controller
 
         $isResidente = $this->contextService->puedeVerPanelResidente($user);
         $isGerencial = $this->contextService->puedeVerGerencial($user);
+        $isMecanico = $this->contextService->puedeVerPanelMecanico($user);
 
-        if (!$isResidente && !$isGerencial) {
+        if (!$isResidente && !$isGerencial && !$isMecanico) {
             return response()->json([
                 'ok' => false,
-                'message' => 'Tu rol no tiene acceso a la app.',
+                'message' => 'No tienes acceso a la app.',
             ], 403);
         }
 
@@ -91,7 +97,7 @@ class AuthController extends Controller
         if ($withContext && $isResidente) {
             $contexto = $this->contextService->contextoResidente($user, $usuarioApp, $obraId);
 
-            if (!$contexto && !$isGerencial) {
+            if (!$contexto && !$isGerencial && !$isMecanico) {
                 return response()->json([
                     'ok' => false,
                     'message' => 'No tienes una obra activa asignada.',
@@ -111,23 +117,7 @@ class AuthController extends Controller
 
     private function validarUsuarioApp(User $user): UsuarioApp
     {
-        $usuarioApp = UsuarioApp::where('user_id', $user->id)->first();
-
-        if (!$usuarioApp) {
-            throw new HttpResponseException(response()->json([
-                'ok' => false,
-                'message' => 'Este usuario no esta habilitado para la app.',
-            ], 403));
-        }
-
-        if (!$usuarioApp->is_active) {
-            throw new HttpResponseException(response()->json([
-                'ok' => false,
-                'message' => 'Tu acceso a la app esta desactivado.',
-            ], 403));
-        }
-
-        return $usuarioApp;
+        return $this->accessService->usuarioActivo($user);
     }
 
     private function payloadSesion(User $user, UsuarioApp $usuarioApp, ?array $contexto, ?string $token = null, ?array $opciones = null): array

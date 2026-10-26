@@ -120,8 +120,8 @@
     "semantic_hash": "5928eb7aae3ae93b06ace63de746caef"
   },
   "app/Http/Controllers/Api/V1/AuthController.php": {
-    "mtime": 1789338791.9870071,
-    "ast_hash": "5b50ee8f9bb44f0f69ec33295879b99e",
+    "mtime": 1792778664.9430168,
+    "ast_hash": "c688dfbf88ea1dfb8a9a4450046be6c1",
     "semantic_hash": ""
   },
   "app/Http/Controllers/Api/V1/ComisionController.php": {
@@ -135,9 +135,9 @@
     "semantic_hash": "eda39460541558453673bc1f1cf6dd7d"
   },
   "app/Http/Controllers/Api/V1/Gerencial/InventarioGerencialController.php": {
-    "mtime": 1770745967.6188924,
-    "ast_hash": "079406b4d8960ce143b493b925848da5",
-    "semantic_hash": "079406b4d8960ce143b493b925848da5"
+    "mtime": 1792782690.9264884,
+    "ast_hash": "2d5b091d92b075b514f7fa54bc7170da",
+    "semantic_hash": ""
   },
   "app/Http/Controllers/Api/V1/Gerencial/InventarioKardexGerencialController.php": {
     "mtime": 1770745967.6204906,
@@ -145,8 +145,8 @@
     "semantic_hash": "427152e83564e07686dc20ebeb2ddd03"
   },
   "app/Http/Controllers/Api/V1/Gerencial/MaquinasGerencialController.php": {
-    "mtime": 1789680406.475918,
-    "ast_hash": "29ad869b85944b516ea93d479fedfd4c",
+    "mtime": 1792779815.1511753,
+    "ast_hash": "c0226afc297d71463a6f07e68cebd27b",
     "semantic_hash": ""
   },
   "app/Http/Controllers/Api/V1/Gerencial/ObraComisionesApiController.php": {
@@ -345,8 +345,8 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/MantenimientoController.php": {
-    "mtime": 1792616581.7282379,
-    "ast_hash": "88486fdea9cbf4182a8d7429fbd575c3",
+    "mtime": 1793028653.0791626,
+    "ast_hash": "01a0e318d4a5f6db24c22599a56ae322",
     "semantic_hash": ""
   },
   "app/Http/Controllers/MaquinaController.php": {
@@ -555,8 +555,8 @@
     "semantic_hash": ""
   },
   "app/Http/Kernel.php": {
-    "mtime": 1789404775.410864,
-    "ast_hash": "ea0931e92055400f0021564f93daad3a",
+    "mtime": 1792778661.5649872,
+    "ast_hash": "3facc91dded73f3aaffb23fb30516ca8",
     "semantic_hash": ""
   },
   "app/Http/Middleware/Authenticate.php": {
@@ -2905,8 +2905,8 @@
     "semantic_hash": ""
   },
   "resources/views/maquinas/show.blade.php": {
-    "mtime": 1792775381.6224139,
-    "ast_hash": "c8bec24c25ce4c2daf576ff4b7274727",
+    "mtime": 1793030329.4484367,
+    "ast_hash": "cc2746fe1684adaeb04b4666fb37f7ad",
     "semantic_hash": ""
   },
   "resources/views/nomina/corridas/show.blade.php": {
@@ -3350,8 +3350,8 @@
     "semantic_hash": "d7ad2cabfd98256ae5904e1aec1d1996"
   },
   "routes/api.php": {
-    "mtime": 1789665548.4586978,
-    "ast_hash": "eec45936450fa027bf924e82273185d7",
+    "mtime": 1793028463.677566,
+    "ast_hash": "e72d5a8487cd9697d3dc677dae89aca9",
     "semantic_hash": ""
   },
   "routes/auth.php": {
@@ -4975,13 +4975,13 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/Api/V1/AppContextController.php": {
-    "mtime": 1789338067.582919,
-    "ast_hash": "68a23e3cac44641e412f502523f83768",
+    "mtime": 1792778799.4146025,
+    "ast_hash": "8417b7cdb626994431c2e7580933fb7d",
     "semantic_hash": ""
   },
   "app/Http/Controllers/Api/V1/Gerencial/VehiculosGerencialController.php": {
-    "mtime": 1789666273.4191978,
-    "ast_hash": "25e7ab61aee7c8a13e5e60aeb01e1573",
+    "mtime": 1792779789.0772154,
+    "ast_hash": "c1e6608193fac4b9d6664913e401ecad",
     "semantic_hash": ""
   },
   "app/Http/Controllers/Inventario/HuentitanEntradaController.php": {
@@ -5085,8 +5085,8 @@
     "semantic_hash": ""
   },
   "app/Services/Mobile/AppMobileContextService.php": {
-    "mtime": 1789359198.3517416,
-    "ast_hash": "16c6044298119cd65732a4f9be08d6b1",
+    "mtime": 1792778656.8613336,
+    "ast_hash": "801624ab261746af80fc11be75c3c4e0",
     "semantic_hash": ""
   },
   "app/Services/Vehiculos/VehiculoDocumentosConsultaService.php": {
@@ -5795,8 +5795,8 @@
     "semantic_hash": ""
   },
   "app/Services/Mantenimiento/MantenimientoAbastecimientoService.php": {
-    "mtime": 1792615630.845226,
-    "ast_hash": "b58f55ea8c6213d7b7d992e78d6f5742",
+    "mtime": 1793028599.7384796,
+    "ast_hash": "0bbc23dfc7203503467ab2d12854cc8a",
     "semantic_hash": ""
   },
   "app/Services/Maquinas/MaquinaFotoService.php": {
@@ -8367,6 +8367,341 @@
   "storage/framework/views/a516dce8a06141d97a7edf80992e3c75.php": {
     "mtime": 1792775400.4126956,
     "ast_hash": "58063deb4733d11934379fc80e2f6101",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/010cc23c827c7f4e1c7ecf6d1a84fda9.php": {
+    "mtime": 1792775499.792079,
+    "ast_hash": "3f96697f0e5d1b4e1c3a9ea02c33fd63",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/5acc112cd3f56b9754b9989636657c4f.php": {
+    "mtime": 1792775499.6913984,
+    "ast_hash": "76a03e64ee8e6012a58fe98e11043c2b",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/6a32d9438aaf4500381987d075cd5111.php": {
+    "mtime": 1792776732.455815,
+    "ast_hash": "9ba58346a0d8f7d9686a664688b0327f",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/7f4be6b5030023dbdad5533439b29d4c.php": {
+    "mtime": 1792775580.359528,
+    "ast_hash": "e4378870c32ceb29a693891c1bac54f7",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/84fa833d21854a22db99371ccf34c80f.php": {
+    "mtime": 1792775580.301255,
+    "ast_hash": "7cec64ed68fc58195c1fee7220bf6329",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/92699fb55b9efb166cdcf4169351f6ec.php": {
+    "mtime": 1792776707.6242585,
+    "ast_hash": "80ab552d32370683c6a337e56e6bd7e7",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/9e65bd08b2d647cf0a42d9a2b5c5544b.php": {
+    "mtime": 1792775590.7689874,
+    "ast_hash": "d0498239283e6c0a7be70d3772a0b158",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/a6cc69d0243ac14d0f695b5e3c29ba47.php": {
+    "mtime": 1792775499.5327692,
+    "ast_hash": "349f8c2b191e327504c54a7cad91ee4f",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ad07ec800633dcc99db3e529479c87c8.php": {
+    "mtime": 1792776707.4185736,
+    "ast_hash": "5ae52c45d6d90d585d41017df17d0238",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/bd8bcc87553bf7a614cd75508306a304.php": {
+    "mtime": 1792775497.6620421,
+    "ast_hash": "08f66dccded281ad0fad565aeaa79082",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/cd43adc221585e8e0f51b00cc182689c.php": {
+    "mtime": 1792775499.5888522,
+    "ast_hash": "002ba5ad45f25e3bb38bed65915216cb",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/dd04842e00b0b935831112e715a3ce9a.php": {
+    "mtime": 1792775421.9886043,
+    "ast_hash": "b5a1cbb720fa474b2f8ca9663a75752f",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/eab9c92b4ee4a60063b4653f557d1cd0.php": {
+    "mtime": 1792775499.8997386,
+    "ast_hash": "b78c26ca6ec5dd5cc20297bb54f721cf",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ee7ad4945054b48521a92681bbd18e70.php": {
+    "mtime": 1792775580.304971,
+    "ast_hash": "cc0e63c8622d44a6b8604bee7288636e",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f155307debd1fe51f304d3d8d31ad3f6.php": {
+    "mtime": 1792775579.7161558,
+    "ast_hash": "444d2b715bbb57a345e31e55f2a142e3",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f30fae91b7f964826e30b99a32dff0f5.php": {
+    "mtime": 1792775499.994338,
+    "ast_hash": "deeb37270ea455329ae4d6cadd8c9113",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/fdef57f438fe631d7f2b855041ee1e86.php": {
+    "mtime": 1792775499.012579,
+    "ast_hash": "4ae6aa9fdd58b507bf07ac78927656b5",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/feac7e9d859789ab087db5189081da25.php": {
+    "mtime": 1792775498.990059,
+    "ast_hash": "9e4d38ef5c4762f3afca6db2c8324bfd",
+    "semantic_hash": ""
+  },
+  "tests/Unit/AppMobileContextAccessTest.php": {
+    "mtime": 1792776986.8213923,
+    "ast_hash": "65ee677ec1f172823269ddae43794bef",
+    "semantic_hash": ""
+  },
+  "storage/app/public/maquinas/25/fotos/5b0aa1be-8e12-47b1-aafe-3e23fce8b587.webp": {
+    "mtime": 1792775623.788291,
+    "ast_hash": "bac42bdb30d999c73aaff27df07b6975",
+    "semantic_hash": ""
+  },
+  "storage/app/public/maquinas/25/fotos/bd3a7ec3-bb31-4202-8808-8b6730391c38.webp": {
+    "mtime": 1792775622.9164588,
+    "ast_hash": "d68052afd2673ba1f37dfcde7a0192ed",
+    "semantic_hash": ""
+  },
+  "storage/app/public/maquinas/25/fotos/e22569df-13a0-4546-b681-0836497ffa92.webp": {
+    "mtime": 1792775623.913915,
+    "ast_hash": "0ab68d358f2709f2779d1e2885034c6c",
+    "semantic_hash": ""
+  },
+  "app/Http/Middleware/EnsureMobileAppAccess.php": {
+    "mtime": 1792778659.941344,
+    "ast_hash": "53d633f22cc1ed35afd47f948293b9be",
+    "semantic_hash": ""
+  },
+  "app/Services/Mobile/AppMobileAccessService.php": {
+    "mtime": 1792778658.5777617,
+    "ast_hash": "516e06cf7b3a209022f3c034903727ba",
+    "semantic_hash": ""
+  },
+  "tests/Feature/AppMobileMechanicAccessTest.php": {
+    "mtime": 1792779733.1675887,
+    "ast_hash": "8342777a00cc76f83cd087ff086e5393",
+    "semantic_hash": ""
+  },
+  "docs/CONTRATO_SESION_APP_MECANICO_T02.md": {
+    "mtime": 1792780041.9281926,
+    "ast_hash": "1c5ddd7dbf33c8efabec0fd27e904c10",
+    "semantic_hash": ""
+  },
+  "docs/PLAN_APP_MECANICO_SERVICIOS_PROGRAMADOS.md": {
+    "mtime": 1793030129.4553993,
+    "ast_hash": "69522dd281600e522b6235c01d6c1d96",
+    "semantic_hash": ""
+  },
+  "app/Http/Controllers/Api/V1/Mecanico/MaquinaController.php": {
+    "mtime": 1792779728.4533963,
+    "ast_hash": "2dd8b6dbb1233723c9961950abb83968",
+    "semantic_hash": ""
+  },
+  "app/Http/Controllers/Api/V1/Mecanico/VehiculoController.php": {
+    "mtime": 1792779730.1087494,
+    "ast_hash": "7aa6469d5915639013c33aec2efa268c",
+    "semantic_hash": ""
+  },
+  "app/Services/Mobile/Equipos/EquipoMecanicoPresenter.php": {
+    "mtime": 1792779723.398034,
+    "ast_hash": "e128c7438496b025bc2f3ecd9f19e1cd",
+    "semantic_hash": ""
+  },
+  "app/Services/Mobile/Equipos/MaquinasConsultaService.php": {
+    "mtime": 1792779972.2545173,
+    "ast_hash": "5df6855e60c22ba0d2a70365ccb2b3e0",
+    "semantic_hash": ""
+  },
+  "app/Services/Mobile/Equipos/VehiculosConsultaService.php": {
+    "mtime": 1792779972.544712,
+    "ast_hash": "a74297990ecc78b3c053741654037766",
+    "semantic_hash": ""
+  },
+  "tests/Feature/AppMobileEquipmentReadTest.php": {
+    "mtime": 1792779972.8045995,
+    "ast_hash": "fa374f801e49c9e5158391ee7026441a",
+    "semantic_hash": ""
+  },
+  "docs/CONTRATO_CONSULTA_EQUIPOS_MECANICO_T04.md": {
+    "mtime": 1792780038.5570245,
+    "ast_hash": "9c7fd194a60d4acf07747f0f30115a3b",
+    "semantic_hash": ""
+  },
+  "app/Http/Controllers/Api/V1/Mecanico/CatalogoController.php": {
+    "mtime": 1792782647.8345633,
+    "ast_hash": "90d32bafb5cb36192fd767dd31baf6c5",
+    "semantic_hash": ""
+  },
+  "app/Http/Controllers/Api/V1/Mecanico/InventarioController.php": {
+    "mtime": 1792782404.9664133,
+    "ast_hash": "8cd9c09aab45c8befd69250c1512eedb",
+    "semantic_hash": ""
+  },
+  "app/Services/Mantenimiento/MantenimientoCatalogoService.php": {
+    "mtime": 1792782690.6078682,
+    "ast_hash": "768d7ed11142bedfeeb55b17e0a60eeb",
+    "semantic_hash": ""
+  },
+  "app/Services/Mobile/InventarioConsultaService.php": {
+    "mtime": 1792782690.8204367,
+    "ast_hash": "00bf0c26ba573e843974d45a7357b759",
+    "semantic_hash": ""
+  },
+  "app/Services/Mobile/ServicioProgramadoCatalogoService.php": {
+    "mtime": 1792782690.9069562,
+    "ast_hash": "4304f7bd2131f3fd24fa88215e1eff44",
+    "semantic_hash": ""
+  },
+  "tests/Feature/AppMobileCaptureCatalogTest.php": {
+    "mtime": 1792782691.2762494,
+    "ast_hash": "398d219df953a9108d1fb27cc356ec21",
+    "semantic_hash": ""
+  },
+  "docs/CONTRATO_CATALOGOS_INVENTARIO_MECANICO_T05.md": {
+    "mtime": 1792782839.7841165,
+    "ast_hash": "a86546c67c12bfba2d27bc7e122137a5",
+    "semantic_hash": ""
+  },
+  "app/Http/Controllers/Api/V1/Mecanico/ServicioProgramadoController.php": {
+    "mtime": 1793028463.6765635,
+    "ast_hash": "89f97db7431f033e97a76cfe74d6b652",
+    "semantic_hash": ""
+  },
+  "app/Services/Mantenimiento/MantenimientoBorradorService.php": {
+    "mtime": 1792783637.5580401,
+    "ast_hash": "04ce114035e6f36bd8b5b6a55e729f4d",
+    "semantic_hash": ""
+  },
+  "tests/Feature/AppMobileServiceDraftTest.php": {
+    "mtime": 1793028787.2083359,
+    "ast_hash": "971a5c7c63635fd2fc1e049cfc3e9949",
+    "semantic_hash": ""
+  },
+  "app/Services/Mobile/ServicioProgramadoConsultaService.php": {
+    "mtime": 1793028599.739483,
+    "ast_hash": "28f3a237e212330c172a61eefcf1e0ce",
+    "semantic_hash": ""
+  },
+  "docs/CONTRATO_BORRADORES_SERVICIOS_MECANICO_T06.md": {
+    "mtime": 1792783765.2504046,
+    "ast_hash": "17273da22ede484052704c2e3d19fe3a",
+    "semantic_hash": ""
+  },
+  "docs/CONTRATO_SEGUIMIENTO_SERVICIOS_MECANICO_T07.md": {
+    "mtime": 1792790406.3899324,
+    "ast_hash": "470379a20d3dd105ede0dd959b7e1cd1",
+    "semantic_hash": ""
+  },
+  "app/Services/Mantenimiento/MantenimientoOrdenService.php": {
+    "mtime": 1792786589.89922,
+    "ast_hash": "a5dc7dac604c439e040442cb425a87ba",
+    "semantic_hash": ""
+  },
+  "docs/CONTRATO_ORDEN_SERVICIO_MECANICO_T08.md": {
+    "mtime": 1792804857.0760367,
+    "ast_hash": "b1cf312d9ce6540c944c575eca951e47",
+    "semantic_hash": ""
+  },
+  "app/Services/Mantenimiento/MantenimientoMaterialesService.php": {
+    "mtime": 1792787784.6564171,
+    "ast_hash": "da4c7f54a9de57443c676279e437ecf7",
+    "semantic_hash": ""
+  },
+  "docs/CONTRATO_MATERIALES_SERVICIO_MECANICO_T09.md": {
+    "mtime": 1792789207.5364184,
+    "ast_hash": "d67b71ab40dcd6807e8b155f73dd6d69",
+    "semantic_hash": ""
+  },
+  "docs/CONTRATO_ABASTECIMIENTO_SERVICIO_MECANICO_T10.md": {
+    "mtime": 1792789206.2038243,
+    "ast_hash": "bff1e8ccf40eb45af3f3593a9b0f6c55",
+    "semantic_hash": ""
+  },
+  "app/Services/Mantenimiento/MantenimientoEvidenciaService.php": {
+    "mtime": 1792790235.2517922,
+    "ast_hash": "0ea3dba914b73303249f0cb5e998c7e7",
+    "semantic_hash": ""
+  },
+  "docs/CONTRATO_EVIDENCIAS_SERVICIO_MECANICO_T11.md": {
+    "mtime": 1792790403.2461376,
+    "ast_hash": "d7472df6fbf1813d67db4b2a11a67c28",
+    "semantic_hash": ""
+  },
+  "docs/IMPLEMENTACION_NAVEGACION_MOVIL_MECANICO_C13_2.md": {
+    "mtime": 1792793218.4574554,
+    "ast_hash": "f188c0772e3773a5bc9a35415a7e47f5",
+    "semantic_hash": ""
+  },
+  "docs/INSPECCION_CLIENTE_MOVIL_MECANICO_T13.md": {
+    "mtime": 1793030129.4603655,
+    "ast_hash": "ccc94462ce41336026bcab86d4f4fbd6",
+    "semantic_hash": ""
+  },
+  "docs/IMPLEMENTACION_CONSULTAS_MOVIL_MECANICO_C13_3.md": {
+    "mtime": 1792795810.1103742,
+    "ast_hash": "fef54237ccbaa1744f77dc996a2903ea",
+    "semantic_hash": ""
+  },
+  "docs/IMPLEMENTACION_CAPTURA_MOVIL_MECANICO_C13_4.md": {
+    "mtime": 1792797760.18198,
+    "ast_hash": "fcd371230aa3bd92fac7dcff9ac246a8",
+    "semantic_hash": ""
+  },
+  "docs/validaciones/APP_MECANICO_CONCURRENCIA_C14_1.json": {
+    "mtime": 1792804788.4774072,
+    "ast_hash": "06d4a3d656bbba33fd11176c5bda08d3",
+    "semantic_hash": ""
+  },
+  "tests/Support/MobileOrderConcurrencyWorker.php": {
+    "mtime": 1792804777.3759456,
+    "ast_hash": "1325c0e3306ff45144c02bad1ba43352",
+    "semantic_hash": ""
+  },
+  "tools/test_mobile_order_concurrency.php": {
+    "mtime": 1792804776.0781662,
+    "ast_hash": "fff94b2078edbc5f9cab1945fba580d9",
+    "semantic_hash": ""
+  },
+  "tools/test_mobile_order_concurrency.ps1": {
+    "mtime": 1792804774.8244293,
+    "ast_hash": "f979f42a59b0c1a89d2e7ce562d1f764",
+    "semantic_hash": ""
+  },
+  "docs/VALIDACION_CONCURRENCIA_APP_MECANICO_C14_1.md": {
+    "mtime": 1792805014.320811,
+    "ast_hash": "7fc5b1aa43932781b58ef8030f68917f",
+    "semantic_hash": ""
+  },
+  "app/Services/Mantenimiento/MantenimientoEjecucionService.php": {
+    "mtime": 1793028785.3108423,
+    "ast_hash": "4eb9fe645504027b98e003b7660db388",
+    "semantic_hash": ""
+  },
+  "app/Services/Mantenimiento/MantenimientoManoObraService.php": {
+    "mtime": 1793028440.7231636,
+    "ast_hash": "876ae45b407e50cc44305546f6eb5a51",
+    "semantic_hash": ""
+  },
+  "docs/CONTRATO_EJECUCION_SERVICIO_MECANICO_T12.md": {
+    "mtime": 1793030129.462513,
+    "ast_hash": "7bd071eb2776e1521a71d75bec385fde",
+    "semantic_hash": ""
+  },
+  "docs/IMPLEMENTACION_EJECUCION_MOVIL_MECANICO_C13_5.md": {
+    "mtime": 1793030129.4503968,
+    "ast_hash": "67923fdf5a4d4a9ab6f849b34054da32",
     "semantic_hash": ""
   }
 }

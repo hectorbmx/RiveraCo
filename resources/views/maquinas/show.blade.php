@@ -449,7 +449,7 @@
 
     <div class="overflow-x-auto">
     <table class="min-w-full text-sm">
-    <thead class="bg-slate-50 text-slate-600">
+    <thead class="bg-[#0B265A] text-white">
         <tr>
             <th class="px-2 py-3"></th>
             <th class="text-left px-4 py-3">Aseguradora</th>

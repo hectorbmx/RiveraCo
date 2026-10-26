@@ -9,16 +9,19 @@ use App\Models\Mantenimiento;
 use App\Models\MantenimientoAbastecimiento;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class MantenimientoAbastecimientoService
 {
     public function calcular(Mantenimiento $mantenimiento): Collection
     {
-        if (!$mantenimiento->maquina_id) {
+        if (! $mantenimiento->maquina_id) {
             return collect();
         }
 
-        $tieneSnapshot = $mantenimiento->materialesOrden()->exists();
+        // Una orden emitida sin filas también tiene su selección congelada: vacía.
+        $tieneSnapshot = $mantenimiento->orden_servicio_folio || $mantenimiento->materialesOrden()->exists();
 
         if ($tieneSnapshot) {
             $materialesOrden = $mantenimiento->materialesOrden()
@@ -33,7 +36,7 @@ class MantenimientoAbastecimientoService
                     'requerido' => (float) $material->cantidad_requerida,
                 ]);
         } else {
-            if (!$mantenimiento->servicio_preventivo_tipo_id) {
+            if (! $mantenimiento->servicio_preventivo_tipo_id) {
                 return collect();
             }
 
@@ -102,12 +105,16 @@ class MantenimientoAbastecimientoService
                 ->keyBy('producto_id')
             : collect();
 
-        return $materialesOrden->map(function (array $material) use ($stock, $surtidoPorProducto, $foliosSalida) {
+        $surtidoRestante = $surtidoPorProducto->all();
+
+        return $materialesOrden->map(function (array $material) use ($stock, &$surtidoRestante, $foliosSalida) {
             $stockRow = $stock->get($material['producto_id']);
             $requerido = $material['requerido'];
             $disponible = max(0, (float) ($stockRow?->stock_actual ?? 0) - (float) ($stockRow?->stock_reservado ?? 0));
             $surtible = min($requerido, $disponible);
-            $surtido = min($requerido, (float) $surtidoPorProducto->get($material['producto_id'], 0));
+            $producto = $material['producto_id'];
+            $surtido = $producto ? min($requerido, max(0, (float) ($surtidoRestante[$producto] ?? 0))) : 0;
+            $surtidoRestante[$producto] = max(0, (float) ($surtidoRestante[$producto] ?? 0) - $surtido);
             $faltante = max(0, $requerido - $surtido);
 
             $estado = $faltante <= 0
@@ -131,49 +138,38 @@ class MantenimientoAbastecimientoService
         });
     }
 
-    public function crearSolicitud(Mantenimiento $mantenimiento, string $tipo, ?int $usuarioId = null): MantenimientoAbastecimiento
+    public function crearSolicitud(Mantenimiento $mantenimiento, string $tipo, ?int $usuarioId = null, ?int $empleadoId = null): MantenimientoAbastecimiento
     {
-        if (!$mantenimiento->orden_servicio_folio || $mantenimiento->estatus === 'borrador') {
-            throw new \RuntimeException('Primero debes generar la orden de servicio antes de solicitar material.');
-        }
+        Validator::make(['tipo' => $tipo], ['tipo' => 'required|in:almacen,compra'])->validate();
 
-        if ($mantenimiento->estatus === 'completado') {
-            throw new \RuntimeException('El servicio ya fue ejecutado y no admite nuevas solicitudes de material.');
-        }
+        return DB::transaction(function () use ($mantenimiento, $tipo, $usuarioId, $empleadoId) {
+            $actual = Mantenimiento::query()->lockForUpdate()->findOrFail($mantenimiento->id);
+            if ($empleadoId !== null) {
+                abort_unless($actual->tipo === 'programado', 404);
+                abort_unless((int) $actual->mecanico_id === $empleadoId, 403);
+            }
+            if (! $actual->orden_servicio_folio || ! in_array($actual->estatus, ['orden_generada', 'pendiente', 'en_proceso'], true)) {
+                throw new ConflictHttpException('Se requiere una orden generada y un servicio sin completar ni cancelar para solicitar material.');
+            }
 
-        $tipo = $tipo === MantenimientoAbastecimiento::TIPO_COMPRA
-            ? MantenimientoAbastecimiento::TIPO_COMPRA
-            : MantenimientoAbastecimiento::TIPO_ALMACEN;
+            $materiales = $this->calcular($actual);
+            if ($materiales->isEmpty()) {
+                throw new ConflictHttpException('El servicio no tiene materiales incluidos en la orden para generar una solicitud.');
+            }
+            $materialesPendientes = $materiales->filter(fn (array $material) => (float) $material['faltante'] > 0.0005)->values();
+            if ($materialesPendientes->isEmpty()) {
+                throw new ConflictHttpException('La necesidad de materiales de este servicio ya fue surtida. No se puede generar otra solicitud.');
+            }
 
-        $materiales = $this->calcular($mantenimiento);
-        if ($materiales->isNotEmpty() && $materiales->every(fn (array $material) => (float) $material['faltante'] <= 0.0005)) {
-            throw new \RuntimeException('La necesidad de materiales de este servicio ya fue surtida. No se puede generar otra solicitud.');
-        }
-
-        $existente = $mantenimiento->abastecimientos()
-            ->where('tipo', $tipo)
-            ->whereNotIn('estado', ['surtida', 'cancelada'])
-            ->latest('id')
-            ->first();
-
-        if ($existente) {
-            return $existente;
-        }
-
-        if ($materiales->isEmpty()) {
-            throw new \RuntimeException('El servicio no tiene materiales configurados para generar una solicitud.');
-        }
-
-        $materialesPendientes = $materiales
-            ->filter(fn (array $material) => (float) $material['faltante'] > 0.0005)
-            ->values();
-
-        if ($materialesPendientes->isEmpty()) {
-            throw new \RuntimeException('La necesidad de materiales de este servicio ya fue surtida. No se puede generar otra solicitud.');
-        }
-
-        return DB::transaction(function () use ($mantenimiento, $tipo, $usuarioId, $materialesPendientes) {
-            $solicitud = $mantenimiento->abastecimientos()->create([
+            $existente = $actual->abastecimientos()->where('tipo', $tipo)
+                ->whereNotIn('estado', ['surtida', 'cancelada'])->latest('id')->first();
+            if ($existente) {
+                return $existente;
+            }
+            if ($materialesPendientes->contains(fn (array $material) => empty($material['producto_id']))) {
+                throw new ConflictHttpException('Hay materiales sin producto vinculado. Revisa la orden en la web antes de solicitar abastecimiento.');
+            }
+            $solicitud = $actual->abastecimientos()->create([
                 'tipo' => $tipo,
                 'estado' => 'pendiente',
                 'created_by' => $usuarioId,
@@ -192,13 +188,13 @@ class MantenimientoAbastecimientoService
                 'estado' => 'pendiente',
             ])->all());
 
-            $mantenimiento->update([
+            $actual->update([
                 'abastecimiento_tipo' => $tipo === MantenimientoAbastecimiento::TIPO_COMPRA ? Mantenimiento::ABASTECIMIENTO_COMPRA : Mantenimiento::ABASTECIMIENTO_SURTIDO_DIRECTO,
                 'abastecimiento_estado' => $tipo === MantenimientoAbastecimiento::TIPO_COMPRA ? 'solicitud_compra' : 'solicitud_almacen',
-                'estatus' => 'pendiente',
+                'estatus' => $actual->estatus === 'en_proceso' ? 'en_proceso' : 'pendiente',
             ]);
 
             return $solicitud->fresh(['detalles', 'mantenimiento']);
-        });
+        }, 3);
     }
 }

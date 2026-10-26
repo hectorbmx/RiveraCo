@@ -1,0 +1,108 @@
+{
+    "ok": true,
+    "server": "10.4.32-MariaDB",
+    "engines": {
+        "almacenes": "InnoDB",
+        "empleados": "InnoDB",
+        "empresa_servicio_preventivo_materiales": "InnoDB",
+        "empresa_servicio_preventivo_tipos": "InnoDB",
+        "inventario_stock": "InnoDB",
+        "mantenimientos": "InnoDB",
+        "mantenimiento_abastecimientos": "InnoDB",
+        "mantenimiento_materiales": "InnoDB",
+        "maquinas": "InnoDB",
+        "productos": "InnoDB"
+    },
+    "closed_at": "2026-10-23T19:19:48-06:00",
+    "stock_unchanged": true,
+    "abastecimientos": 0,
+    "scenarios": [
+        {
+            "scenario": "double-generation",
+            "http": [
+                200,
+                200
+            ],
+            "lock_wait": {
+                "requesting_trx_id": "119",
+                "blocking_trx_id": "118",
+                "waiting_connection": 13,
+                "blocking_connection": 11
+            },
+            "folio": "OSM-26-000001",
+            "author": 80,
+            "materials": [
+                {
+                    "material_preventivo_id": 1,
+                    "producto_id": 5,
+                    "cantidad_requerida": "10.000",
+                    "producto_nombre_snapshot": "Aceite de prueba"
+                },
+                {
+                    "material_preventivo_id": 2,
+                    "producto_id": 6,
+                    "cantidad_requerida": "1.000",
+                    "producto_nombre_snapshot": "Filtro de prueba"
+                }
+            ]
+        },
+        {
+            "scenario": "rollback-and-retry",
+            "http": [
+                500,
+                200
+            ],
+            "lock_wait": {
+                "requesting_trx_id": "134",
+                "blocking_trx_id": "133",
+                "waiting_connection": 17,
+                "blocking_connection": 15
+            },
+            "folio": "OSM-26-000002",
+            "author": 81,
+            "materials": [
+                {
+                    "material_preventivo_id": 1,
+                    "producto_id": 5,
+                    "cantidad_requerida": "10.000",
+                    "producto_nombre_snapshot": "Aceite de prueba"
+                },
+                {
+                    "material_preventivo_id": 2,
+                    "producto_id": 6,
+                    "cantidad_requerida": "1.000",
+                    "producto_nombre_snapshot": "Filtro de prueba"
+                }
+            ]
+        },
+        {
+            "scenario": "generation-and-edit",
+            "http": [
+                200,
+                409
+            ],
+            "lock_wait": {
+                "requesting_trx_id": "140",
+                "blocking_trx_id": "139",
+                "waiting_connection": 21,
+                "blocking_connection": 19
+            },
+            "folio": "OSM-26-000003",
+            "author": 80,
+            "materials": [
+                {
+                    "material_preventivo_id": 1,
+                    "producto_id": 5,
+                    "cantidad_requerida": "10.000",
+                    "producto_nombre_snapshot": "Aceite de prueba"
+                },
+                {
+                    "material_preventivo_id": 2,
+                    "producto_id": 6,
+                    "cantidad_requerida": "1.000",
+                    "producto_nombre_snapshot": "Filtro de prueba"
+                }
+            ]
+        }
+    ]
+}

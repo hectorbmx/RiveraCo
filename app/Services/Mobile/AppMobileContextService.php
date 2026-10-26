@@ -26,16 +26,17 @@ class AppMobileContextService
     {
         $puedeGerencial = $this->puedeVerGerencial($user);
         $puedeResidente = $this->puedeVerPanelResidente($user);
+        $paneles = $this->panelesDisponibles($puedeResidente, $puedeGerencial, $this->puedeVerPanelMecanico($user));
         $obrasResidente = $puedeResidente ? $this->obrasDisponiblesResidente($user, $usuarioApp) : collect();
         $obraSeleccionada = $this->resolverObraSeleccionada($obrasResidente, $obraId);
 
         return [
-            'paneles' => $this->panelesDisponibles($puedeResidente, $puedeGerencial),
+            'paneles' => $paneles,
             'obras_residente' => $obrasResidente
                 ->map(fn (Obra $obra) => $this->mapObraOpcion($obra))
                 ->values(),
             'defaults' => [
-                'panel' => $this->resolverPanelDefault($puedeResidente, $puedeGerencial),
+                'panel' => count($paneles) === 1 ? $paneles[0]['key'] : null,
                 'obra_id' => $obraSeleccionada?->id,
             ],
         ];
@@ -55,7 +56,9 @@ class AppMobileContextService
 
     public function puedeVerPanelResidente(User $user): bool
     {
-        return $user->hasRole('residente') || $this->esAdminRivera($user);
+        return $user->hasRole('residente')
+            || $this->esAdminRivera($user)
+            || $user->can('app.regular.access');
     }
 
     public function puedeVerGerencial(User $user): bool
@@ -66,6 +69,11 @@ class AppMobileContextService
     public function puedeVerTodasLasObrasResidente(User $user): bool
     {
         return $this->esAdminRivera($user);
+    }
+
+    public function puedeVerPanelMecanico(User $user): bool
+    {
+        return $user->can('app.mecanico.access');
     }
 
     public function vehiculoActivoParaContexto(User $user, UsuarioApp $usuarioApp, Obra $obra): ?VehiculoEmpleado
@@ -118,7 +126,7 @@ class AppMobileContextService
             ->values();
     }
 
-    private function panelesDisponibles(bool $puedeResidente, bool $puedeGerencial): array
+    private function panelesDisponibles(bool $puedeResidente, bool $puedeGerencial, bool $puedeMecanico): array
     {
         $paneles = [];
 
@@ -136,20 +144,11 @@ class AppMobileContextService
             ];
         }
 
+        if ($puedeMecanico) {
+            $paneles[] = ['key' => 'mecanico', 'label' => 'Mecánico'];
+        }
+
         return $paneles;
-    }
-
-    private function resolverPanelDefault(bool $puedeResidente, bool $puedeGerencial): ?string
-    {
-        if ($puedeResidente && ! $puedeGerencial) {
-            return 'residente';
-        }
-
-        if ($puedeGerencial && ! $puedeResidente) {
-            return 'gerencial';
-        }
-
-        return null;
     }
 
     private function resolverObraSeleccionada(Collection $obras, ?int $obraId): ?Obra

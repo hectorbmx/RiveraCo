@@ -65,6 +65,26 @@ Route::prefix('v1')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
         Route::get('app/contexto-opciones', [AppContextController::class, 'opciones']);
 
+        Route::prefix('mecanico')->middleware(\App\Http\Middleware\EnsureMobileAppAccess::class.':mecanico')->group(function () {
+            Route::get('servicios/catalogos', [\App\Http\Controllers\Api\V1\Mecanico\CatalogoController::class, 'index']);
+            Route::get('servicios', [\App\Http\Controllers\Api\V1\Mecanico\ServicioProgramadoController::class, 'index']);
+            Route::get('servicios/{servicio}', [\App\Http\Controllers\Api\V1\Mecanico\ServicioProgramadoController::class, 'show'])->whereNumber('servicio');
+            Route::post('servicios', [\App\Http\Controllers\Api\V1\Mecanico\ServicioProgramadoController::class, 'store']);
+            Route::patch('servicios/{servicio}', [\App\Http\Controllers\Api\V1\Mecanico\ServicioProgramadoController::class, 'update']);
+            Route::post('servicios/{servicio}/generar-orden', [\App\Http\Controllers\Api\V1\Mecanico\ServicioProgramadoController::class, 'generarOrden'])->whereNumber('servicio');
+            Route::post('servicios/{servicio}/iniciar', [\App\Http\Controllers\Api\V1\Mecanico\ServicioProgramadoController::class, 'iniciar'])->whereNumber('servicio');
+            Route::post('servicios/{servicio}/completar', [\App\Http\Controllers\Api\V1\Mecanico\ServicioProgramadoController::class, 'completar'])->whereNumber('servicio');
+            Route::patch('servicios/{servicio}/materiales', [\App\Http\Controllers\Api\V1\Mecanico\ServicioProgramadoController::class, 'materiales'])->whereNumber('servicio');
+            Route::post('servicios/{servicio}/abastecimientos', [\App\Http\Controllers\Api\V1\Mecanico\ServicioProgramadoController::class, 'abastecimiento'])->whereNumber('servicio');
+            Route::post('servicios/{servicio}/evidencias', [\App\Http\Controllers\Api\V1\Mecanico\ServicioProgramadoController::class, 'evidencias'])->whereNumber('servicio');
+            Route::get('inventario/productos', [\App\Http\Controllers\Api\V1\Mecanico\InventarioController::class, 'productos']);
+            Route::get('maquinas', [\App\Http\Controllers\Api\V1\Mecanico\MaquinaController::class, 'index']);
+            Route::get('maquinas/{maquina}', [\App\Http\Controllers\Api\V1\Mecanico\MaquinaController::class, 'show']);
+            Route::get('vehiculos', [\App\Http\Controllers\Api\V1\Mecanico\VehiculoController::class, 'index']);
+            Route::get('vehiculos/{vehiculo}', [\App\Http\Controllers\Api\V1\Mecanico\VehiculoController::class, 'show']);
+        });
+
+        Route::middleware(\App\Http\Middleware\EnsureMobileAppAccess::class.':legacy')->group(function () {
         Route::get('maquinas/{obraMaquina}/registros', [MaquinaRegistroController::class, 'index']);
         Route::post('maquinas/{obraMaquina}/registros', [MaquinaRegistroController::class, 'store']);
         Route::post('maquinas/{obraMaquina}/reportar-falla', [MaquinaRegistroController::class, 'reportarFalla']);
@@ -113,9 +133,13 @@ Route::prefix('v1')->group(function () {
         Route::get('attendance/logs', [AttendanceApiController::class, 'index']);
         Route::get('attendance/employees/search', [AttendanceApiController::class, 'searchEmployees']);
         Route::get('attendance/employees/{employee}/summary', [AttendanceApiController::class, 'employeeSummary']);
+        });
 
         //acceso gerencial
-          Route::prefix('gerencial')->middleware('permission:app.gerencial.access')->group(function () {
+          Route::prefix('gerencial')->middleware([
+              \App\Http\Middleware\EnsureMobileAppAccess::class.':gerencial',
+              'permission:app.gerencial.access',
+          ])->group(function () {
 
                 Route::get('dashboard', [DashboardGerencialController::class, 'index']);
 

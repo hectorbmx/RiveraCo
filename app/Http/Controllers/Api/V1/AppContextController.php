@@ -3,14 +3,13 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\UsuarioApp;
 use App\Services\Mobile\AppMobileContextService;
 use Illuminate\Http\Request;
-use Illuminate\Http\Exceptions\HttpResponseException;
+use App\Services\Mobile\AppMobileAccessService;
 
 class AppContextController extends Controller
 {
-    public function __construct(private AppMobileContextService $contextService)
+    public function __construct(private AppMobileContextService $contextService, private AppMobileAccessService $accessService)
     {
     }
 
@@ -21,12 +20,14 @@ class AppContextController extends Controller
         ]);
 
         $user = $request->user();
-        $usuarioApp = $this->validarUsuarioApp($user->id);
+        $usuarioApp = $this->accessService->usuarioActivo($user);
 
-        if (! $this->contextService->puedeVerPanelResidente($user) && ! $this->contextService->puedeVerGerencial($user)) {
+        if (! $this->contextService->puedeVerPanelResidente($user)
+            && ! $this->contextService->puedeVerGerencial($user)
+            && ! $this->contextService->puedeVerPanelMecanico($user)) {
             return response()->json([
                 'ok' => false,
-                'message' => 'Tu rol no tiene acceso a la app.',
+                'message' => 'No tienes acceso a la app.',
             ], 403);
         }
 
@@ -36,24 +37,4 @@ class AppContextController extends Controller
         ]);
     }
 
-    private function validarUsuarioApp(int $userId): UsuarioApp
-    {
-        $usuarioApp = UsuarioApp::where('user_id', $userId)->first();
-
-        if (! $usuarioApp) {
-            throw new HttpResponseException(response()->json([
-                'ok' => false,
-                'message' => 'Este usuario no esta habilitado para la app.',
-            ], 403));
-        }
-
-        if (! $usuarioApp->is_active) {
-            throw new HttpResponseException(response()->json([
-                'ok' => false,
-                'message' => 'Tu acceso a la app esta desactivado.',
-            ], 403));
-        }
-
-        return $usuarioApp;
-    }
 }
