@@ -2905,8 +2905,8 @@
     "semantic_hash": ""
   },
   "resources/views/maquinas/show.blade.php": {
-    "mtime": 1793030329.4484367,
-    "ast_hash": "cc2746fe1684adaeb04b4666fb37f7ad",
+    "mtime": 1793030654.9934409,
+    "ast_hash": "16d57ac601857b3b0923b33d199f8987",
     "semantic_hash": ""
   },
   "resources/views/nomina/corridas/show.blade.php": {

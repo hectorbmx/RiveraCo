@@ -386,7 +386,7 @@
 
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm">
-                    <thead class="bg-slate-50 text-slate-600">
+                    <thead class="bg-[#0B265A] text-white">
                         <tr>
                             <th class="text-left px-4 py-3">Obra</th>
                             <th class="text-left px-4 py-3">Inicio</th>
@@ -687,7 +687,7 @@
 
     <div class="overflow-x-auto">
         <table class="min-w-full text-sm">
-            <thead class="bg-slate-50 text-slate-600">
+            <thead class="bg-[#0B265A] text-white">
                 <tr>
                     <th class="text-left px-4 py-3">Fecha</th>
                     <th class="text-left px-4 py-3">Tipo</th>
