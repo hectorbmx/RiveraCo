@@ -313,6 +313,8 @@
                     @error('Horassemana') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
+
+            @include('empleados.partials._hora_extra_tarifa', ['empleado' => $empleado])
         </div>
 
         {{-- SECCIÓN 5: NOTAS INTERNAS --}}
@@ -340,5 +342,10 @@
                 Guardar cambios
             </button>
         </div>
+    </form>
+
+    <form id="hora-extra-tarifa-form" method="POST"
+          action="{{ route('empleados.hora-extra-tarifas.store', $empleado->getKey()) }}">
+        @csrf
     </form>
 </div>

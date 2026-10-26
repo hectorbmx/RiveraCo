@@ -994,6 +994,9 @@ Route::middleware('auth','verified')->group(function () {
     // Rutas para gestion de empleados
      Route::resource('empleados', EmpleadoController::class)->except(['destroy']);
 
+    Route::post('empleados/{empleado}/hora-extra-tarifas', [\App\Http\Controllers\EmpleadoHoraExtraTarifaController::class, 'store'])
+        ->name('empleados.hora-extra-tarifas.store');
+
     // Ruta para dar de baja / alta (cambiar estatus)
     Route::patch('empleados/{empleado}/toggle-status', [EmpleadoController::class, 'toggleStatus'])
         ->name('empleados.toggle-status');

@@ -72,6 +72,12 @@
     <div class="title">FORMATO DE HORAS EXTRA GIRALDA</div>
     <div class="rule"></div>
     <div class="period">Periodo: {{ $desde ?: '-' }} a {{ $hasta ?: '-' }}</div>
+    @if($empleadoId)
+        <div style="margin-bottom: 10px; color: #475569;">
+            Reporte individual: empleado {{ $empleadoId }}.
+            <a class="no-print" style="position: static; margin-left: 10px;" href="{{ route('giralda.horas-extras.print', ['desde' => $desde, 'hasta' => $hasta]) }}">Ver semana completa</a>
+        </div>
+    @endif
 
     <table>
         <thead>
@@ -130,17 +136,22 @@
                         <div class="employee-total-rate">
                             @if($fila['tarifa_hora_extra'] !== null)
                                 $ {{ number_format((float) $fila['tarifa_hora_extra'], 2) }} / h
+                            @elseif($fila['tarifas_multiples'])
+                                Tarifas múltiples
                             @else
-                                -
+                                Pendiente
                             @endif
                         </div>
                         <div class="employee-total-amount">
                             @if($fila['total_pesos_horas_extra'] !== null)
                                 $ {{ number_format((float) $fila['total_pesos_horas_extra'], 2) }}
                             @else
-                                -
+                                Pendiente de completar
                             @endif
                         </div>
+                        @if($fila['estimados_snapshot'] > 0)
+                            <div class="employee-total-rate">Incluye estimaciones históricas</div>
+                        @endif
                     </td>
                 </tr>
             @empty
@@ -159,12 +170,12 @@
                 <td class="center">{{ number_format((float) $totalPeriodo, 2) }}</td>
             </tr>
             <tr class="total-row">
-                <td class="left">Total pagado H. Extra</td>
+                <td class="left">Importe H. Extra</td>
                 <td class="left">-</td>
                 @foreach($dias as $dia)
                     <td></td>
                 @endforeach
-                <td class="center employee-total-amount">$ {{ number_format((float) $totalPesosPeriodo, 2) }}</td>
+                <td class="center employee-total-amount">{{ $totalPesosPeriodo === null ? 'Pendiente de completar' : '$ '.number_format((float) $totalPesosPeriodo, 2) }}</td>
             </tr>
         </tfoot>
     </table>

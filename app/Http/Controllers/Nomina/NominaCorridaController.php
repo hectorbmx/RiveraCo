@@ -689,28 +689,17 @@ class NominaCorridaController extends Controller
             ->whereIn('empleado_id', $empleados->keys())
             ->whereDate('fecha', '>=', Carbon::parse($fechaInicio)->toDateString())
             ->whereDate('fecha', '<=', Carbon::parse($fechaFin)->toDateString())
-            ->select('empleado_id', DB::raw('SUM(total_horas) as total_horas'))
-            ->groupBy('empleado_id')
             ->get()
-            ->mapWithKeys(function ($row) use ($empleados) {
-                $empleado = $empleados->get((int) $row->empleado_id);
-                $totalHoras = (float) ($row->total_horas ?? 0);
+            ->groupBy('empleado_id')
+            ->map(function ($registros, $empleadoId) {
+                $resumen = app(\App\Services\Empleados\GiraldaHoraExtraSnapshotService::class)->resumen($registros);
+                if ($resumen['pendientes'] > 0) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'horas_extra' => 'El empleado '.$empleadoId.' tiene horas extra sin snapshot. Completa los registros históricos antes de sincronizar nómina.',
+                    ]);
+                }
 
-                $sueldoReal = (float) ($empleado?->Sueldo_real ?? 0);
-                $sueldoImss = (float) ($empleado?->Sueldo ?? 0);
-                $complemento = (float) ($empleado?->Complemento ?? 0);
-                $base = $sueldoReal > 0 ? $sueldoReal : ($sueldoImss + $complemento);
-                $tarifaHoraExtra = $base > 0 ? (($base / 7) / 8) * 2 : 0;
-                $monto = round($totalHoras * $tarifaHoraExtra, 2);
-
-                return [
-                    (int) $row->empleado_id => (object) [
-                        'empleado_id' => (int) $row->empleado_id,
-                        'total_horas' => round($totalHoras, 2),
-                        'tarifa_hora_extra' => round($tarifaHoraExtra, 2),
-                        'monto' => $monto,
-                    ],
-                ];
+                return (object) array_merge($resumen, ['empleado_id' => (int) $empleadoId]);
             });
     }
     private function syncComisionesTrazadas(NominaRecibo $recibo, $comisionesEmpleado): void

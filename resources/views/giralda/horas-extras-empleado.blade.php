@@ -70,6 +70,8 @@
                         <th class="text-left p-3">Fecha</th>
                         <th class="text-left p-3">Horario</th>
                         <th class="text-right p-3">Horas</th>
+                        <th class="text-right p-3">Costo / h</th>
+                        <th class="text-right p-3">Importe</th>
                         <th class="text-left p-3">Motivo</th>
                         <th class="text-left p-3">Solicita</th>
                         <th class="text-left p-3">Autoriza</th>
@@ -85,6 +87,11 @@
                             <td class="p-3">{{ optional($registro->fecha)->format('d/m/Y') }}</td>
                             <td class="p-3">{{ substr($registro->hora_inicio, 0, 5) }} - {{ substr($registro->hora_fin, 0, 5) }}</td>
                             <td class="p-3 text-right font-semibold text-[#0B265A]">{{ number_format((float) $registro->total_horas, 2) }}</td>
+                            <td class="p-3 text-right">{{ $registro->tieneSnapshot() ? '$'.number_format((float) $registro->costo_hora_extra, 4) : '—' }}</td>
+                            <td class="p-3 text-right">
+                                <div class="font-semibold">{{ $registro->tieneSnapshot() ? '$'.number_format((float) $registro->importe, 2) : '—' }}</div>
+                                <div class="text-xs text-slate-500">{{ $registro->snapshotEtiqueta() }}</div>
+                            </td>
                             <td class="p-3">{{ $registro->motivo }}</td>
                             <td class="p-3">{{ $registro->responsable_solicita }}</td>
                             <td class="p-3">{{ $registro->responsable_autoriza ?: '-' }}</td>
@@ -117,7 +124,8 @@
                                                             <div class="grid grid-cols-3 gap-2">
                                                                 <div>
                                                                     <label class="mb-1 block text-sm font-medium">Fecha</label>
-                                                                    <input type="date" name="fecha" value="{{ optional($registro->fecha)->toDateString() }}" @unless($puedeIgnorarCandadoHorasExtras) min="{{ $fechaHorasExtraMin }}" max="{{ $fechaHorasExtraMax }}" @endunless class="w-full rounded border p-2" required>
+                                                                    <input type="date" name="fecha" value="{{ optional($registro->fecha)->toDateString() }}" @if($registro->tieneSnapshot()) readonly @endif @unless($puedeIgnorarCandadoHorasExtras) min="{{ $fechaHorasExtraMin }}" max="{{ $fechaHorasExtraMax }}" @endunless class="w-full rounded border p-2" required>
+                                                                    <p class="mt-1 text-xs text-slate-500">Se conserva la fecha y tarifa originales; al cambiar las horas se recalcula el importe.</p>
                                                                 </div>
                                                                 <div>
                                                                     <label class="mb-1 block text-sm font-medium">Inicio</label>
@@ -194,7 +202,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $mostrarAccionesHe ? 8 : 7 }}" class="p-6 text-center text-slate-400">No hay horas extras registradas en esta semana.</td>
+                            <td colspan="{{ $mostrarAccionesHe ? 10 : 9 }}" class="p-6 text-center text-slate-400">No hay horas extras registradas en esta semana.</td>
                         </tr>
                     @endforelse
                 </tbody>

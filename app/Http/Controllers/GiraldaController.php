@@ -10,6 +10,7 @@ use App\Models\GiraldaAsistencia;
 use App\Models\GiraldaHoraExtra;
 use App\Models\Obra;
 use App\Models\OrdenCompra;
+use App\Services\Empleados\GiraldaHoraExtraSnapshotService;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
@@ -160,6 +161,20 @@ class GiraldaController extends Controller
             ->orderBy('Apellidos')
             ->orderBy('Nombre')
             ->get();
+
+        if ($tab === 'horas_extras') {
+            $empleados->load([
+                'horaExtraTarifas',
+                'giraldaHorasExtras' => fn ($query) => $query
+                    ->whereDate('fecha', '>=', $desde)->whereDate('fecha', '<=', $hasta),
+            ]);
+            $tarifaService = app(\App\Services\Empleados\EmpleadoHoraExtraTarifaService::class);
+            foreach ($empleados as $empleado) {
+                $empleado->setAttribute('hora_extra_datos_captura', $tarifaService->paraCaptura($empleado));
+                $empleado->setAttribute('hora_extra_importe_acumulado', $tarifaService->importeAcumulado($empleado, $empleado->giraldaHorasExtras));
+                $empleado->setAttribute('hora_extra_resumen', app(GiraldaHoraExtraSnapshotService::class)->resumen($empleado->giraldaHorasExtras));
+            }
+        }
 
         $horasExtras = GiraldaHoraExtra::with(['empleado', 'autorizadoPor'])
             ->when($areaGiralda, function ($query) use ($areaGiralda) {
@@ -513,10 +528,10 @@ class GiraldaController extends Controller
 
         $data['estado'] = 'pendiente';
 
-        GiraldaHoraExtra::create($data);
+        app(GiraldaHoraExtraSnapshotService::class)->crear($data, auth()->id());
 
         return redirect()
-            ->route('giralda.empleados', array_merge($request->only(['desde', 'hasta', 'empleado_id', 'semana', 'estatus']), ['tab' => 'horas_extras']))
+            ->route('giralda.empleados', array_merge($request->only(['desde', 'hasta', 'semana', 'estatus']), ['tab' => 'horas_extras']))
             ->with('success', 'Horas extra registradas.');
     }
 
@@ -590,7 +605,7 @@ class GiraldaController extends Controller
         $data['autorizado_por'] = null;
         $data['fecha_autorizacion'] = null;
 
-        $horaExtra->update($data);
+        app(GiraldaHoraExtraSnapshotService::class)->actualizar($horaExtra, $data);
 
         return redirect()
             ->route('giralda.empleados.horas-extras', [
@@ -617,6 +632,10 @@ class GiraldaController extends Controller
 
         $empleadoId = $horaExtra->empleado_id;
         $semana = $request->query('semana', now()->startOfWeek(Carbon::MONDAY)->toDateString());
+
+        if (app(GiraldaHoraExtraSnapshotService::class)->tieneNominaProtegida($horaExtra)) {
+            return $this->horaExtraErrorResponse($request, $horaExtra, 'El periodo tiene nómina cerrada o pagada; no se puede eliminar este registro.');
+        }
 
         $horaExtra->delete();
 
@@ -700,6 +719,10 @@ class GiraldaController extends Controller
     {
         $this->authorizeAny(['giralda.access']);
 
+        if ($request->query->has('empleado_id')) {
+            return redirect()->route('giralda.horas-extras.print', $request->only(['desde', 'hasta']));
+        }
+
         [$desde, $hasta, $empleadoId] = [
             $request->query('desde'),
             $request->query('hasta'),
@@ -721,7 +744,7 @@ class GiraldaController extends Controller
             $cursor->addDay();
         }
 
-        $registros = $this->horasExtrasFiltradas($desde, $hasta, $empleadoId)->get();
+        $registros = $this->horasExtrasFiltradas($inicioPeriodo->toDateString(), $finPeriodo->toDateString(), $empleadoId)->get();
 
         $filas = $registros
             ->groupBy(fn ($registro) => $registro->empleado_id ?? 'sin-empleado')
@@ -773,14 +796,7 @@ class GiraldaController extends Controller
                 }
 
                 $puestoEmpleado = $empleado?->Puesto ?? $empleado?->puesto_base ?? null;
-                $sueldoBaseHoraExtra = (float) ($empleado?->Sueldo_real ?? 0);
-
-                if ($sueldoBaseHoraExtra <= 0) {
-                    $sueldoBaseHoraExtra = (float) ($empleado?->Sueldo ?? 0) + (float) ($empleado?->Complemento ?? 0);
-                }
-
-                $tarifaHoraExtra = $sueldoBaseHoraExtra > 0 ? (($sueldoBaseHoraExtra / 7) / 8) * 2 : null;
-                $totalPesosHorasExtra = $tarifaHoraExtra !== null ? $tarifaHoraExtra * $totalEmpleado : null;
+                $resumenSnapshot = app(GiraldaHoraExtraSnapshotService::class)->resumen($items);
 
                 return [
                     'empleado' => $empleadoNombre,
@@ -792,9 +808,11 @@ class GiraldaController extends Controller
                     'motivos' => $motivosPorEmpleado,
                     'horarios' => $horariosPorEmpleado,
                     'total' => round($totalEmpleado, 2),
-                    'sueldo_base_hora_extra' => $sueldoBaseHoraExtra > 0 ? round($sueldoBaseHoraExtra, 2) : null,
-                    'tarifa_hora_extra' => $tarifaHoraExtra !== null ? round($tarifaHoraExtra, 2) : null,
-                    'total_pesos_horas_extra' => $totalPesosHorasExtra !== null ? round($totalPesosHorasExtra, 2) : null,
+                    'tarifa_hora_extra' => $resumenSnapshot['tarifa_hora_extra'],
+                    'tarifas_multiples' => $resumenSnapshot['tarifas_multiples'],
+                    'pendientes_snapshot' => $resumenSnapshot['pendientes'],
+                    'estimados_snapshot' => $resumenSnapshot['estimados'],
+                    'total_pesos_horas_extra' => $resumenSnapshot['monto'],
                 ];
             })
             ->sortBy([
@@ -810,7 +828,8 @@ class GiraldaController extends Controller
         }
 
         $totalPeriodo = round($filas->sum(fn ($fila) => $fila['total']), 2);
-        $totalPesosPeriodo = round($filas->sum(fn ($fila) => $fila['total_pesos_horas_extra'] ?? 0), 2);
+        $totalPesosPeriodo = $filas->contains(fn ($fila) => $fila['pendientes_snapshot'] > 0)
+            ? null : round($filas->sum('total_pesos_horas_extra'), 2);
 
         $firmasImpresas = DocumentoFirmante::query()
             ->with('user:id,name')
@@ -828,6 +847,7 @@ class GiraldaController extends Controller
             'totalesPorDia',
             'totalPeriodo',
             'totalPesosPeriodo',
+            'empleadoId',
             'firmasImpresas'
         ));
     }
@@ -846,7 +866,7 @@ class GiraldaController extends Controller
 
         return response()->streamDownload(function () use ($desde, $hasta, $empleadoId) {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['Empleado', 'Fecha', 'Hora inicial', 'Hora final', 'Total horas', 'Motivo', 'Solicita', 'Autoriza', 'Estado', 'Observaciones']);
+            fputcsv($out, ['Empleado', 'Fecha', 'Hora inicial', 'Hora final', 'Total horas', 'Motivo', 'Solicita', 'Autoriza', 'Estado', 'Observaciones', 'Costo por hora extra', 'Importe', 'Origen tarifa', 'Fuente importe']);
 
             $this->horasExtrasFiltradas($desde, $hasta, $empleadoId)
                 ->chunk(200, function ($registros) use ($out) {
@@ -862,6 +882,10 @@ class GiraldaController extends Controller
                             $registro->responsable_autoriza,
                             $registro->estado,
                             $registro->observaciones,
+                            $registro->tieneSnapshot() ? $registro->costo_hora_extra : null,
+                            $registro->tieneSnapshot() ? $registro->importe : null,
+                            $registro->origen_tarifa,
+                            $registro->snapshotEtiqueta(),
                         ]);
                     }
                 });

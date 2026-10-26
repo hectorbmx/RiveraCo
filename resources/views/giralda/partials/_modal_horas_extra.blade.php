@@ -6,10 +6,13 @@
     $fechaHorasExtraDefault = $semanaHorasExtraInicio->isSameWeek(now()) ? now()->toDateString() : $semanaHorasExtraInicio->toDateString();
     $fechaHorasExtraMin = now()->startOfWeek(\Carbon\Carbon::MONDAY)->subWeek()->toDateString();
     $fechaHorasExtraMax = now()->endOfWeek(\Carbon\Carbon::SUNDAY)->toDateString();
-    $autorizadoresHorasExtras = \App\Models\User::role('gerente-almacen')->orderBy('name')->get();
+    $autorizadoresHorasExtras = $autorizadoresHorasExtras ?? \App\Models\User::role('gerente-almacen')->orderBy('name')->get();
+    $datosTarifaCaptura = $empleado->hora_extra_datos_captura
+        ?? app(\App\Services\Empleados\EmpleadoHoraExtraTarifaService::class)->paraCaptura($empleado);
+    $importeAcumulado = $empleado->hora_extra_importe_acumulado;
 @endphp
 
-<div x-data="horasExtraModal({ inicio: @js(old('hora_inicio', $horaSalidaBase)), fin: @js(old('hora_fin', $horaSalidaBase)), total: @js(old('total_horas')) })" x-init="recalcular()" class="inline-block text-left">
+<div x-data="horasExtraModal({ inicio: @js(old('hora_inicio', $horaSalidaBase)), fin: @js(old('hora_fin', $horaSalidaBase)), total: @js(old('total_horas')), fecha: @js(old('fecha', $fechaHorasExtraDefault)), tarifas: @js($datosTarifaCaptura) })" x-init="recalcular()" class="inline-block text-left">
     @if($esSemanaHorasExtrasEditable ?? true)
         <button type="button" @click="open = true" class="px-3 py-1.5 rounded bg-[#0B265A] text-white hover:bg-blue-900">
             Dar horas
@@ -19,7 +22,7 @@
     @endif
 
     <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-        <div @click.away="open = false" class="w-full max-w-xl bg-white rounded-lg shadow-xl">
+        <div @click.away="open = false" class="w-full max-w-xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-xl">
             <div class="p-4 border-b flex items-center justify-between">
                 <div>
                     <h3 class="font-semibold text-[#0B265A]">Horas extra</h3>
@@ -43,13 +46,23 @@
                         <div><span class="font-semibold">Horario:</span> {{ $horaEntradaBase ?? '--:--' }} - {{ $horaSalidaBase ?? '--:--' }}</div>
                     @endif
                     <div><span class="font-semibold">Puesto:</span> {{ $puestoEmpleado }}</div>
-                    <div class="text-red-700"><span class="font-semibold">Horas extra acumuladas:</span> {{ number_format($totalHorasSemana, 2) }} hrs</div>
+                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-red-700">
+                        <div><span class="font-semibold">Horas extra acumuladas:</span> {{ number_format($totalHorasSemana, 2) }} hrs</div>
+                        <div><span class="font-semibold">Costo acumulado:</span> {{ $importeAcumulado === null ? 'Pendiente de completar' : '$'.number_format((float) $importeAcumulado, 2) }}</div>
+                    </div>
+                    <div class="text-blue-700">Acumulado de importes guardados de la semana seleccionada.</div>
+                    @if(($empleado->hora_extra_resumen['pendientes'] ?? 0) > 0)
+                        <div class="text-amber-800">Hay registros anteriores pendientes de completar su importe.</div>
+                    @endif
+                    @if(($empleado->hora_extra_resumen['estimados'] ?? 0) > 0)
+                        <div class="text-amber-800">El acumulado incluye estimaciones históricas identificadas en el detalle.</div>
+                    @endif
                 </div>
 
                 <div class="grid grid-cols-3 gap-2">
                     <div>
                         <label class="block text-sm font-medium mb-1">Fecha</label>
-                        <input type="date" name="fecha" value="{{ old('fecha', $fechaHorasExtraDefault) }}" @unless($puedeIgnorarCandadoHorasExtras) min="{{ $fechaHorasExtraMin }}" max="{{ $fechaHorasExtraMax }}" @endunless class="w-full border rounded p-2" required>
+                        <input type="date" name="fecha" x-model="fecha" @unless($puedeIgnorarCandadoHorasExtras) min="{{ $fechaHorasExtraMin }}" max="{{ $fechaHorasExtraMax }}" @endunless class="w-full border rounded p-2" required>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Inicio</label>
@@ -66,10 +79,18 @@
                         <label class="block text-sm font-medium mb-1">Horas extra</label>
                         <input type="number" name="total_horas" x-model="total" @input="actualizarFinDesdeTotal()" min="0" step="0.25" class="w-full border rounded p-2" required>
                     </div>
-                    <div class="md:col-span-2 flex items-end">
-                        <div class="text-xs text-slate-500" x-text="manual ? 'Captura manual' : 'Calculado con inicio y fin'"></div>
+                    <div>
+                        <div class="block text-sm font-medium mb-1">Costo por hora extra</div>
+                        <output class="block w-full border rounded bg-slate-50 p-2" x-text="moneda(costoHora, 4)"></output>
+                        <div class="mt-1 text-xs text-slate-500" x-text="modalidadTarifa"></div>
+                    </div>
+                    <div>
+                        <div class="block text-sm font-medium mb-1">Importe de esta captura</div>
+                        <output aria-live="polite" class="block w-full border border-blue-200 rounded bg-blue-50 p-2 font-semibold text-[#0B265A]" x-text="moneda(importeCaptura)"></output>
                     </div>
                 </div>
+                <p class="text-xs text-slate-500" x-text="manual ? 'Horas capturadas manualmente. Vista previa del importe.' : 'Horas calculadas con inicio y fin. Vista previa del importe.'"></p>
+                <p class="text-xs text-slate-500">Al guardar se conservarán la tarifa aplicada y el importe, aunque después cambie el sueldo.</p>
 
                 <div>
                     <label class="block text-sm font-medium mb-1">Motivo</label>
@@ -116,7 +137,36 @@ function horasExtraModal(defaults) {
         inicio: defaults.inicio ?? '',
         fin: defaults.fin ?? '',
         total: defaults.total ?? '0.00',
+        fecha: defaults.fecha ?? '',
+        tarifas: defaults.tarifas ?? { automatica: null, vigencias: [] },
         manual: defaults.total !== null && defaults.total !== undefined && defaults.total !== '',
+
+        get vigenciaTarifa() {
+            return this.tarifas.vigencias.find(tarifa => tarifa.desde <= this.fecha && (!tarifa.hasta || tarifa.hasta >= this.fecha));
+        },
+
+        get costoHora() {
+            if (!this.fecha) return null;
+            return this.vigenciaTarifa?.modalidad === 'cuota_fija'
+                ? this.vigenciaTarifa.costo : this.tarifas.automatica;
+        },
+
+        get modalidadTarifa() {
+            return this.vigenciaTarifa?.modalidad === 'cuota_fija' ? 'Cuota fija' : 'Automática por sueldo';
+        },
+
+        get importeCaptura() {
+            const horas = this.horasCapturadas();
+            return this.costoHora === null || horas === null
+                ? null : Math.round((horas * this.costoHora + Number.EPSILON) * 100) / 100;
+        },
+
+        moneda(importe, decimales = 2) {
+            if (importe === null || !Number.isFinite(Number(importe))) return 'Sin tarifa definida';
+            return new Intl.NumberFormat('es-MX', {
+                style: 'currency', currency: 'MXN', minimumFractionDigits: 2, maximumFractionDigits: decimales,
+            }).format(importe);
+        },
 
         activarCalculoAutomatico() {
             this.manual = false;

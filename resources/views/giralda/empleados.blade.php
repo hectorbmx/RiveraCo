@@ -117,8 +117,8 @@
                         <a href="{{ route('giralda.empleados', ['tab' => $tab, 'estatus' => $estatus, 'semana' => $semanaSiguiente, 'q' => $busqueda]) }}" class="px-3 py-2 rounded border text-sm">Siguiente</a>
                     @endif
                     @if($tab === 'horas_extras')
-                        <a href="{{ route('giralda.horas-extras.print', ['desde' => $desde, 'hasta' => $hasta, 'empleado_id' => $empleadoId]) }}" target="_blank" class="px-3 py-2 rounded border text-sm">Imprimir semana</a>
-                        <a href="{{ route('giralda.horas-extras.export', ['desde' => $desde, 'hasta' => $hasta, 'empleado_id' => $empleadoId]) }}" class="px-3 py-2 rounded border text-sm">Exportar CSV</a>
+                        <a href="{{ route('giralda.horas-extras.print', ['desde' => $desde, 'hasta' => $hasta]) }}" target="_blank" class="px-3 py-2 rounded border text-sm">Imprimir semana completa</a>
+                        <a href="{{ route('giralda.horas-extras.export', ['desde' => $desde, 'hasta' => $hasta]) }}" class="px-3 py-2 rounded border text-sm">Exportar CSV de la semana</a>
                     @elseif($tab === 'asistencia')
                         <a href="{{ route('giralda.asistencia.print', ['semana' => $semana, 'estatus' => $estatus, 'q' => $busqueda]) }}" target="_blank" class="px-3 py-2 rounded border text-sm">Imprimir semana</a>
                     @endif

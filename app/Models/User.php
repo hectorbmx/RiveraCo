@@ -92,6 +92,11 @@ class User extends Authenticatable
                 ->withTimestamps();
         }
 
+        public function horaExtraTarifasRegistradas(): \Illuminate\Database\Eloquent\Relations\HasMany
+        {
+            return $this->hasMany(EmpleadoHoraExtraTarifa::class, 'registrado_por');
+        }
+
         public function hasDeniedPermission(string $permission): bool
         {
             return $this->deniedPermissions()

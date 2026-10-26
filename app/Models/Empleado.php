@@ -95,7 +95,7 @@ public function areaRef()
     return $this->belongsTo(\App\Models\Area::class, 'Area', 'id');
 }
 
-// ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ helper seguro si en algÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âºn lado te estÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡n accediendo raro:
+// Acceso seguro al identificador del area.
 public function getAreaIdAttribute()
 {
     return $this->getAttribute('Area');
@@ -160,13 +160,13 @@ public function getAreaIdAttribute()
             ->orderByDesc('obra_empleado.fecha_alta')
             ->orderByDesc('obra_empleado.id');
     }
-        // VehÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­culos que ha tenido asignados (histÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³rico)
+    // Historial de vehiculos asignados.
     public function vehiculosAsignados()
     {
         return $this->hasMany(VehiculoEmpleado::class, 'empleado_id', 'id_Empleado');
     }
 
-    // Mantenimientos donde fue mecÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡nico
+    // Mantenimientos donde participo como mecanico.
     public function mantenimientosComoMecanico()
     {
         return $this->hasMany(Mantenimiento::class, 'mecanico_id', 'id_Empleado');
@@ -200,6 +200,13 @@ public function getAreaIdAttribute()
             ->orderByDesc('fecha_entrega')
             ->orderByDesc('id');
     }
+    public function horaExtraTarifas(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(EmpleadoHoraExtraTarifa::class, 'empleado_id', 'id_Empleado')
+            ->orderByDesc('vigente_desde')
+            ->orderByDesc('id');
+    }
+
     public function giraldaHorasExtras()
     {
         return $this->hasMany(\App\Models\GiraldaHoraExtra::class, 'empleado_id', 'id_Empleado')
