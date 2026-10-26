@@ -13,6 +13,7 @@ class Producto extends Model
    protected $fillable = [
     'legacy_prod_id',
     'nombre',
+    'marca',
     'descripcion',
     'sku',
     'unidad',

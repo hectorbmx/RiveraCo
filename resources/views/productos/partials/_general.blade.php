@@ -35,6 +35,16 @@
     </div>
 
     <div>
+        <label for="marca" class="block text-xs font-semibold text-slate-600 mb-1">Marca (opcional)</label>
+        <input id="marca" name="marca" type="text" maxlength="100"
+               value="{{ old('marca', $producto->marca ?? '') }}"
+               class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+        @error('marca')
+            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+    </div>
+
+    <div>
         <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción</label>
         <textarea name="descripcion"
                   class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm"

@@ -1,11 +1,11 @@
 # Graph Report - rivera-v2  (2026-10-26)
 
 ## Corpus Check
-- 1550 files · ~4,697,731 words
+- 1531 files · ~4,666,516 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 7765 nodes · 13480 edges · 1254 communities (1176 shown, 78 thin omitted)
+- 7750 nodes · 13487 edges · 1229 communities (1153 shown, 76 thin omitted)
 - Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 735 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
@@ -236,17 +236,22 @@
 - 2026_05_06_154534_add_csd_fields_to_sat_empresas_table.php
 - 2026_05_06_164815_add_facturapi_fields_to_sat_empresas_table.php
 - 79c8b59029384a6aa84b536a6daf05e9.php
+- VehiculoAsignacionFoto
 - ClienteContactoController
 - UserFactory
+- 2026_05_14_161150_add_documento_tipo_id_to_empleado_documentos_table.php
+- 2026_05_25_000001_create_equipos_computo_tables.php
 - .update
 - Tablas Nuevas Propuestas
 - InventarioDocumentoController
+- EmailVerificationPromptController.php
 - Cambios en Laravel
 - Fase 3: Importador De Excel
 - EmpresaConfigController.php
 - 2026_06_15_184630_create_obra_solicitud_gasto_detalles_table.php
 - EmpresaAlertaDestinatario
 - 2026_06_23_120000_create_obra_factura_pagos_table.php
+- VehiculosAlertasPreventivoKm.php
 - 2026_06_24_090000_create_obra_tipo_configuraciones_table.php
 - 2026_06_24_110000_add_comprobante_to_obra_factura_pagos_table.php
 - 2026_06_25_090000_create_obra_factura_borradores_table.php
@@ -264,6 +269,7 @@
 - cliente.blade.php
 - 2025_12_18_184201_add_rol_id_to_comision_personal_table.php
 - show.blade.php
+- 33c229b111e5b86f2d788dc063d4edd6.php
 - 4f230847dbc256924ade4eb2c2d00cb2.php
 - 6a2cd42352527a6acb1a6fd285ce1209.php
 - 2026_08_03_120000_change_descripcion_to_text_on_sat_factura_conceptos_table.php
@@ -291,21 +297,27 @@
 - PreventivoVehiculoService
 - check_mojibake.php
 - ZkDeviceClient
+- 2026_04_17_185235_create_sat_empresas_table.php
 - 2026_02_03_171602_create_almacenes_table.php
 - Fase 6: PDF de orden de compra
 - Fase 7: exportes y resumen semanal
 - Fase 8: autorizacion y presupuesto
+- NominaPagoExtra
+- InventarioKardexController.php
 - EnsureActiveAgentDevice.php
 - 2026_07_24_140000_create_cliente_contactos_table.php
 - 2025_12_11_180011_add_estado_to_obras_facturas_table.php
 - 2026_02_25_160241_create_facturas_table.php
+- OrdenCompraNotificationService
 - SatCfdiConcepto.php
 - Riesgos y decisiones pendientes
 - 2026_08_10_110000_add_discount_fields_to_orden_compra_detalles.php
+- RedirectIfAuthenticated.php
 - 2026_05_11_194518_create_obra_reposicion_gastos_table.php
 - InventarioKardexGerencialController.php
 - ContpaqiFacturaImportController.php
 - SnapshotsController.php
+- 2026_07_07_100010_add_lista_raya_principal_to_empleados_table.php
 - 2026_07_28_120000_add_obra_and_gasolina_fields_to_vehiculo_empleado_km_logs_table.php
 - 2026_05_13_161351_create_metodo_pago_empresas_table.php
 - bbb23e7f8adf8bfbf8dfb9fa27e962e1.php
@@ -320,13 +332,20 @@
 - Servicios recomendados
 - Decisiones de negocio acordadas
 - Modelo objetivo
+- 2026_05_27_000002_create_pagos_proveedores_table.php
 - ObraCivilFeatureSchemaGuard
 - 2026_06_15_184629_create_obra_solicitud_gastos_table.php
+- 2026_07_28_120000_add_obra_and_gasolina_fields_to_vehiculo_empleado_km_logs_table.php
 - 2026_08_19_000002_create_civil_work_report_items_table.php
+- 2026_08_19_000003_create_civil_work_report_photos_table.php
+- 2026_08_24_090000_add_tipo_iva_to_obra_factura_borradores_table.php
 - 2026_07_28_130000_add_vehiculo_preventivo_fields_to_empresa_config.php
+- 0730a29172fa8eb705dfce66665e1c41.php
 - 2026_08_26_000001_create_obra_civil_material_groups_table.php
 - 07479eb5e3b05d804b3bd6338762f776.php
+- 158fb44eddc53caf5406295fd79144b2.php
 - 2053c64407d0cd51b1a6e415de776be5.php
+- 20e025c0f8ca396ec9b548ce06c6e36a.php
 - 2255aef76127c58a763132644a050950.php
 - 231d6c3cc20e4b5fe038534307b95229.php
 - 2835931cf67106a60001da8f9a702caf.php
@@ -350,51 +369,29 @@
 - Replica en la app movil
 - Fase 0 Ejecutada: Diagnostico Del Sistema Actual
 - 2026_07_28_120000_add_obra_and_gasolina_fields_to_vehiculo_empleado_km_logs_table.php
-- 2026_07_28_150000_create_empresa_alerta_destinatarios_table.php
 - CatalogoPilasSeeder.php
 - EmpresaServicioPreventivoTipoSeeder.php
 - LoginRequest
 - .handle
 - ObraContrato
-- VehiculoDocumento
-- InventarioDocumentoDetalle
-- InventarioKardexGerencialController.php
 - ReposicionCajaChicaCategoria
 - 2026_08_19_000003_create_civil_work_report_photos_table.php
 - NominaTipoSueldoSeeder.php
-- 2026_10_21_000003_create_mantenimiento_materiales_table.php
 - NewPasswordController.php
 - ObraReposicionGastoDetalle
 - RegisteredUserController.php
-- VehiculoSeguroController
-- ObraReposicionGastoDetalle
 - .edit
 - EmailVerificationPromptController.php
 - MantenimientoAbastecimientoDetalle
 - T13 / C13.2. Navegación y consulta inicial del panel mecánico
-- ComisionEtapaPersonal
-- OrdenCompraCreada.php
 - T13 / C13.4. Captura y operaciones de servicios programados
-- SatFacturaBorradorController.php
 - 2026_06_25_090000_create_obra_factura_borradores_table.php
-- 2026_09_11_000001_add_usa_bentonita_to_obras_table.php
-- 2026_09_29_100000_add_origen_to_obra_maquina_registros_table.php
-- CatalogoRolesAliasSeeder
 - ComisionTarifarioInicialSeeder
-- MetodoPagoEmpresaSeeder.php
-- LoginRequest
-- MaquinaFotoService
 - MantenimientoEvidenciaService.php
 - InventarioKardexGerencialController.php
 - InventarioKardexController.php
-- SatCfdiEstadisticaController.php
 - FacturapiService
-- ObraComisionesApiController.php
 - ProveedorResolverService
-- CatalogoRolesSeeder
-- EmpresaConfigSeeder.php
-- NominaTipoSueldoSeeder.php
-- .run
 
 ## God Nodes (most connected - your core abstractions)
 1. `Obra` - 296 edges
@@ -423,19 +420,15 @@
 ## Import Cycles
 - None detected.
 
-## Communities (1254 total, 78 thin omitted)
+## Communities (1229 total, 76 thin omitted)
 
 ### Community 0 - "Seeder"
 Cohesion: 0.06
 Nodes (36): EmpresaSecurityController, Request, assignPermissions(), up(), assignPermissions(), up(), up(), down() (+28 more)
 
 ### Community 1 - "ObraReposicionGasto"
-Cohesion: 0.07
-Nodes (5): AgendaController, Request, SatFacturaConcepto, handle(), Closure
-
-### Community 2 - "User"
-Cohesion: 0.14
-Nodes (9): AppContextController, Request, AuthController, Request, EnsureMobileAppAccess, Closure, Request, Response (+1 more)
+Cohesion: 0.06
+Nodes (6): AgendaController, Request, CajaChicaController, Request, MetodoPagoEmpresa, SatFacturaConcepto
 
 ### Community 3 - "Comision"
 Cohesion: 0.05
@@ -446,16 +439,16 @@ Cohesion: 0.08
 Nodes (25): 1. Confirmar el buzon institucional, 1. Revisar el flujo actual de envio, 2. Crear servicio Microsoft Graph, 2. Entrar al panel correcto, 3. Agregar configuracion, 3. Crear App Registration, 4. Agregar variables de entorno, 4. Guardar datos de la app (+17 more)
 
 ### Community 5 - "AttendanceUser"
-Cohesion: 0.11
+Cohesion: 0.10
 Nodes (8): ClienteContactoController, Request, ClienteController, Request, ClientePortalController, Request, Cliente, ClientePortal
 
 ### Community 6 - "Model"
-Cohesion: 0.12
-Nodes (5): MaquinaRegistroController, Request, UsuarioApp, ResidenteObraCivilContext, AppMobileMechanicAccessTest
+Cohesion: 0.08
+Nodes (6): UsuarioApp, ResidenteObraCivilContext, ResidenteObraCivilContextService, AppMobileMechanicAccessTest, handle(), Closure
 
 ### Community 7 - "ResidenteComisionesService"
-Cohesion: 0.11
-Nodes (6): CajaChicaController, Request, ObraReposicionGastoController, ImageOptimizerInterface, Request, ObraReposicionGasto
+Cohesion: 0.13
+Nodes (4): ObraReposicionGastoController, ImageOptimizerInterface, Request, ObraReposicionGasto
 
 ### Community 8 - "Migration"
 Cohesion: 0.02
@@ -466,15 +459,15 @@ Cohesion: 0.10
 Nodes (3): Request, ProveedorController, Proveedor
 
 ### Community 10 - "EquipoComputo"
-Cohesion: 0.12
-Nodes (5): EquipoComputoController, Request, EquipoComputo, EquipoComputoFoto, EquipoComputoMovimiento
+Cohesion: 0.20
+Nodes (4): EquipoComputoController, Request, EquipoComputo, EquipoComputoFoto
 
 ### Community 11 - "Maquina"
 Cohesion: 0.08
 Nodes (25): Checkpoints tecnicos, Checkpoints tecnicos, Comandos sugeridos de revision, Contexto, Contexto, Definicion de terminado, Definicion de terminado, Informacion deseada (+17 more)
 
 ### Community 12 - "Obra"
-Cohesion: 0.11
+Cohesion: 0.12
 Nodes (5): ObraCivilController, Request, CivilCatalogImport, CivilEstimation, ObraCivilInsumoImport
 
 ### Community 13 - "ObraFacturaBorrador"
@@ -490,8 +483,8 @@ Cohesion: 0.04
 Nodes (46): Auditoria, Checkpoint, Checkpoint, Checkpoint, Checkpoint, Checkpoint, Checkpoint, Checkpoint (+38 more)
 
 ### Community 16 - "Queueable"
-Cohesion: 0.10
-Nodes (9): ObraCivilMaterialRequestController, RedirectResponse, Request, View, ObraCivilMaterialRequest, ObraCivilMaterialRequestApprovalService, ObraCivilMaterialRequestIndexService, Collection (+1 more)
+Cohesion: 0.08
+Nodes (11): Request, ResidenteObraCivilMaterialController, ObraCivilMaterialRequestController, RedirectResponse, Request, View, ObraCivilMaterialRequest, ObraCivilMaterialRequestApprovalService (+3 more)
 
 ### Community 17 - "ObraMaquina"
 Cohesion: 0.05
@@ -505,25 +498,33 @@ Nodes (48): 1. Mecánico desde el módulo de máquinas, 2. Residente desde Larav
 Cohesion: 0.05
 Nodes (42): Checkpoint, Checkpoint, Checkpoint, Checkpoint, Checkpoint, Checkpoint, Checkpoint, Checkpoint (+34 more)
 
+### Community 20 - "ObraController"
+Cohesion: 0.11
+Nodes (5): ObraController, Carbon, Collection, Request, ObraTipoConfiguracion
+
 ### Community 21 - "SatDocumentRequest"
-Cohesion: 0.14
-Nodes (6): Request, SatEmpresaController, BelongsTo, SatDocumentRequest, HasMany, SatEmpresa
+Cohesion: 0.12
+Nodes (8): Request, SatCfdiEstadisticaController, Request, SatEmpresaController, BelongsTo, SatDocumentRequest, HasMany, SatEmpresa
 
 ### Community 22 - "MaquinariaReporteSnapshot"
-Cohesion: 0.14
+Cohesion: 0.17
 Nodes (5): MaquinasReporteDiarioController, Request, MaquinaReporteDiario, MaquinariaReporteSnapshot, MaquinariaReporteSnapshotItem
 
 ### Community 23 - "Producto"
-Cohesion: 0.08
+Cohesion: 0.07
 Nodes (5): Request, ProductoController, Producto, UnidadMedidaCatalogo, In
 
 ### Community 24 - "devDependencies"
 Cohesion: 0.09
 Nodes (22): alpinejs, autoprefixer, axios, laravel-vite-plugin, devDependencies, alpinejs, autoprefixer, axios (+14 more)
 
+### Community 25 - "NominaListaRaya"
+Cohesion: 0.11
+Nodes (5): OrdenCompraController, Request, Area, HasMany, HasOne
+
 ### Community 27 - "ObraSolicitudGasto"
-Cohesion: 0.09
-Nodes (8): Carbon, Request, ReposicionCajaChicaController, DocumentoFirmante, BelongsTo, HasMany, ReposicionCajaChicaGasto, CfdiXmlParserService
+Cohesion: 0.20
+Nodes (4): Carbon, Request, ReposicionCajaChicaController, DocumentoFirmante
 
 ### Community 28 - ".view"
 Cohesion: 0.10
@@ -546,31 +547,31 @@ Cohesion: 0.15
 Nodes (10): Authenticate, Request, EncryptCookies, PreventRequestsDuringMaintenance, TrimStrings, TrustHosts, TrustProxies, ValidateSignature (+2 more)
 
 ### Community 33 - "ObraEmpleado"
-Cohesion: 0.10
-Nodes (7): GrandstreamAssignExtension, GrandstreamSyncExtensions, AgentTelephonyController, Request, PhoneExtension, TelephonyCallRequest, GrandstreamExtensionMapper
+Cohesion: 0.20
+Nodes (3): AgentTelephonyController, Request, TelephonyCallRequest
 
 ### Community 34 - "Seguro"
 Cohesion: 0.20
 Nodes (5): GiraldaController, Carbon, Request, GiraldaHoraExtra, StreamedResponse
 
 ### Community 35 - "FormRequest"
-Cohesion: 0.08
-Nodes (7): UpdateCommercialMaterialStatusRequest, StoreReposicionCajaChicaGastoRequest, StoreOrdenCompraDetalleRequest, StoreOrdenCompraRequest, UpdateOrdenCompraDetalleRequest, UpdateOrdenCompraRequest, FormRequest
+Cohesion: 0.07
+Nodes (9): UpdateCommercialMaterialStatusRequest, UpdateMaterialFamilyStatusRequest, ProfileUpdateRequest, StoreReposicionCajaChicaGastoRequest, StoreOrdenCompraDetalleRequest, StoreOrdenCompraRequest, UpdateOrdenCompraDetalleRequest, UpdateOrdenCompraRequest (+1 more)
 
 ### Community 36 - "Command"
 Cohesion: 0.05
 Nodes (42): 1. Servicio generado o registrado, 2. Coordinacion, 3. Confirmacion, 4. Materiales, 5. Ejecucion, 6. Registro digital, 7. Validacion administrativa, 8. Cierre (+34 more)
 
 ### Community 37 - "MaquinaEstadoCambiado"
-Cohesion: 0.18
-Nodes (4): CheckInsuranceExpirations, MaquinaSeguroController, Request, Seguro
+Cohesion: 0.23
+Nodes (3): MaquinaSeguroController, Request, Seguro
 
 ### Community 38 - "Mantenimiento"
-Cohesion: 0.25
-Nodes (4): CalendarioOperacionalService, Carbon, CarbonInterface, Collection
+Cohesion: 0.17
+Nodes (8): CalendarioOperacionalController, JsonResponse, Request, View, CalendarioOperacionalService, Carbon, CarbonInterface, Collection
 
 ### Community 39 - "MaquinaService"
-Cohesion: 0.13
+Cohesion: 0.12
 Nodes (5): HuentitanInventarioController, Request, Herramienta, BelongsTo, InventarioStock
 
 ### Community 40 - "OrdenCompraDetalleController.php"
@@ -582,11 +583,11 @@ Cohesion: 0.14
 Nodes (5): PagoProveedorController, Request, PagoProveedor, OrdenCompraFlujoNotification, OrdenCompraNotificationService
 
 ### Community 42 - "web.php"
-Cohesion: 0.13
-Nodes (12): AttendanceSync, AttendanceApiController, Request, AttendanceIngestController, Request, AttendanceController, Request, AttendanceWebController (+4 more)
+Cohesion: 0.10
+Nodes (13): AttendanceSync, AttendanceApiController, Request, AttendanceIngestController, Request, AttendanceController, Request, AttendanceWebController (+5 more)
 
 ### Community 43 - "Controller"
-Cohesion: 0.13
+Cohesion: 0.14
 Nodes (5): ObraSolicitudGastoController, Request, ObraPlaneacionSemanal, ObraSolicitudGasto, ObraSolicitudGastoDetalle
 
 ### Community 44 - "ObraPila"
@@ -598,8 +599,8 @@ Cohesion: 0.12
 Nodes (16): T00. Barrido y documento de trabajo, T01. Cerrar las reglas del primer alcance, T02. Especificar sesión y selección de panel, T03. Implementar acceso al panel mecánico, T04. Compartir las consultas de equipos, T05. Publicar catálogos de captura, T06. Compartir la creación y edición de borradores, T07. Publicar listado y detalle de seguimiento (+8 more)
 
 ### Community 46 - "ServiceProvider"
-Cohesion: 0.16
-Nodes (5): AppServiceProvider, AuthServiceProvider, BroadcastServiceProvider, EventServiceProvider, ServiceProvider
+Cohesion: 0.14
+Nodes (6): AppServiceProvider, AuthServiceProvider, BroadcastServiceProvider, EventServiceProvider, RouteServiceProvider, ServiceProvider
 
 ### Community 47 - "SatCfdiProgramacion"
 Cohesion: 0.07
@@ -610,11 +611,11 @@ Cohesion: 0.12
 Nodes (16): require, barryvdh/laravel-dompdf, facturapi/facturapi-php, guzzlehttp/guzzle, intervention/image, laravel/framework, laravel/sanctum, laravel/tinker (+8 more)
 
 ### Community 49 - "UsuarioController.php"
-Cohesion: 0.08
+Cohesion: 0.07
 Nodes (5): EmpleadoController, Request, Empleado, EmpleadoKardexService, Collection
 
 ### Community 50 - "CatalogoRol"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (3): GrandstreamAgentPush, PendingRequest, GrandstreamClient
 
 ### Community 51 - "Cliente"
@@ -634,8 +635,8 @@ Cohesion: 0.09
 Nodes (22): Bitacora De Checkpoints, Concepto General, Decisiones Pendientes, Estados, Evolucion Posterior: Generador, Fase 1: Analisis Del Flujo Existente, Fase 2: Diseno Tecnico Minimo, Fase 3: Persistencia (+14 more)
 
 ### Community 55 - "api.php"
-Cohesion: 0.10
-Nodes (12): BackfillObraEmpleadoRolId, GrandstreamImportCdr, GrandstreamTestCall, GrandstreamTestConnection, ImportLegacyCompras, ImportProductosLegacy, InventarioImportStockCsv, InventarioSeedCatalogoStock (+4 more)
+Cohesion: 0.08
+Nodes (15): BackfillObraEmpleadoRolId, CheckInsuranceExpirations, GrandstreamImportCdr, GrandstreamTestCall, GrandstreamTestConnection, ImportLegacyCompras, ImportProductosLegacy, InventarioImportStockCsv (+7 more)
 
 ### Community 56 - "VehiculoEmpleado"
 Cohesion: 0.09
@@ -670,12 +671,12 @@ Cohesion: 0.11
 Nodes (17): AI Transcription, Decisiones recomendadas, Estado actual confirmado, Fase 1: metadata de grabacion, Fase 2: descarga por agente local, Fase 3: almacenamiento en SIRICO, Fase 4: API del agente, Fase 5: UI (+9 more)
 
 ### Community 64 - "EmpresaConfig"
-Cohesion: 0.12
-Nodes (7): CatalogoMaterialController, Request, UpdateCommercialMaterialRequest, UpdateMaterialFamilyRequest, UpdateMaterialFamilyStatusRequest, ObraCivilMaterialGroup, ObraCivilCommercialMaterialSeeder
+Cohesion: 0.18
+Nodes (5): CatalogoMaterialController, Request, UpdateCommercialMaterialRequest, UpdateMaterialFamilyRequest, ObraCivilMaterialGroup
 
 ### Community 65 - "LoginRequest"
-Cohesion: 0.08
-Nodes (15): ProcessSatCsfRequestJob, ProcessSatDownloadJob, FacturaBorradorAutorizado, FacturaBorradorCreado, FacturaBorradorListoParaFacturar, FacturaBorradorRechazado, SeguroVehiculoVencimiento, SolicitudGastoCreada (+7 more)
+Cohesion: 0.07
+Nodes (7): FacturaBorradorAutorizado, FacturaBorradorCreado, FacturaBorradorListoParaFacturar, FacturaBorradorRechazado, OrdenCompraCreada, SeguroVehiculoVencimiento, Notification
 
 ### Community 66 - "What You Must Do When Invoked"
 Cohesion: 0.08
@@ -690,12 +691,12 @@ Cohesion: 0.10
 Nodes (19): Comandos usados en el barrido, Comisiones, Comunidades mas grandes, Empleados, Estado del grafo, Facturacion SAT y CFDI, Hubs principales, Inventario (+11 more)
 
 ### Community 69 - "ResidenteComisionController"
-Cohesion: 0.17
-Nodes (7): MaquinasGerencialController, Request, MaquinaController, JsonResponse, Request, MaquinasConsultaService, Request
+Cohesion: 0.21
+Nodes (4): MaquinasGerencialController, Request, MaquinasConsultaService, Request
 
 ### Community 70 - "auth.php"
-Cohesion: 0.21
-Nodes (5): CatalogoRolesAliasSeeder, ComisionesCatalogosSeeder, ComisionTarifarioInicialSeeder, EmpresaServicioPreventivoTipoSeeder, Seeder
+Cohesion: 0.05
+Nodes (19): PlanoCategoria, CatalogoPilasSeeder, CatalogoRolesAliasSeeder, CatalogoRolesSeeder, ComisionesCatalogosSeeder, ComisionTarifarioInicialSeeder, DatabaseSeeder, DocumentoFirmaDefinicionSeeder (+11 more)
 
 ### Community 71 - "CatalogoPila"
 Cohesion: 0.11
@@ -704,10 +705,6 @@ Nodes (18): AQUI UNA NOTA, LAS LISTAS DE RAYA CUANDO SON OBRAS, NO NECESITAN EST
 ### Community 72 - ".edit"
 Cohesion: 0.05
 Nodes (41): 1) El valor de la obra ya está definido por el negocio, 1) No construir el dashboard directo en la vista, 2) Crear un array final de dashboard, 2) Facturado y cobrado no son lo mismo, 3) Gastado debe arrancar desde órdenes de compra, 3) Mantener los textos y unidades consistentes, 4) El avance general no es financiero, 4) No duplicar reglas de negocio entre controller y vista (+33 more)
-
-### Community 73 - "SatConcepto"
-Cohesion: 0.14
-Nodes (6): ObraCivilFieldReviewController, RedirectResponse, Request, View, CivilWorkReport, ObraCivilFieldReviewService
 
 ### Community 74 - "ObraAsistencia"
 Cohesion: 0.09
@@ -718,8 +715,8 @@ Cohesion: 0.17
 Nodes (11): Checkpoint final, Fase 1: base de datos y modelo, Fase 2: validacion de requests, Objetivo, Orden recomendado de implementacion, Paso 1.1: crear migracion, Paso 1.2: actualizar modelo `OrdenCompraDetalle`, Paso 2.1: actualizar `StoreOrdenCompraDetalleRequest` (+3 more)
 
 ### Community 76 - "SatComplementoPagoController"
-Cohesion: 0.19
-Nodes (5): TelephonyMatchCalls, TelephonyTestMatcher, PhoneCall, Collection, TelephonyCallMatcher
+Cohesion: 0.10
+Nodes (10): GrandstreamAssignExtension, TelephonyMatchCalls, TelephonyTestMatcher, Builder, Request, TelephonyExtensionController, PhoneCall, PhoneExtension (+2 more)
 
 ### Community 77 - ".create"
 Cohesion: 0.13
@@ -734,12 +731,12 @@ Cohesion: 0.20
 Nodes (10): scripts, post-autoload-dump, post-create-project-cmd, post-root-package-install, post-update-cmd, Illuminate\\Foundation\\ComposerScripts::postAutoloadDump, @php artisan key:generate --ansi, @php artisan package:discover --ansi (+2 more)
 
 ### Community 80 - "SatCfdiPago"
-Cohesion: 0.15
-Nodes (3): AppMobileContextService, Collection, ResidenteObraCivilContextService
+Cohesion: 0.11
+Nodes (9): AppContextController, Request, EnsureMobileAppAccess, Closure, Request, Response, AppMobileAccessService, AppMobileContextService (+1 more)
 
 ### Community 81 - "User.php"
-Cohesion: 0.15
-Nodes (4): VehiculosAlertasPreventivoKm, Request, VehiculoController, Vehiculo
+Cohesion: 0.14
+Nodes (5): Request, VehiculoController, Request, VehiculoSeguroController, Vehiculo
 
 ### Community 82 - "EmpleadoNota"
 Cohesion: 0.06
@@ -762,8 +759,8 @@ Cohesion: 0.09
 Nodes (22): 1. RH: cumpleanos, 2. Vehiculos: servicios programados, 3. Maquinaria: servicios programados, 4. Ordenes de compra: fecha y autorizacion, 5. Seguros: vigencia y vencimientos, 6. Obras: inicio/fin programado y real, Categorias principales, Checkpoint 1: Servicio agregador (+14 more)
 
 ### Community 88 - "Component"
-Cohesion: 0.10
-Nodes (16): DashboardGerencialController, Request, CatalogoController, JsonResponse, Request, Controller, DashboardController, ContpaqiFacturaImportController (+8 more)
+Cohesion: 0.11
+Nodes (13): DashboardGerencialController, Request, ObraComisionesApiController, Request, Controller, DashboardController, MaquinaSeguroController, ReportesController (+5 more)
 
 ### Community 90 - "AuthenticatedSessionController.php"
 Cohesion: 0.12
@@ -810,8 +807,8 @@ Cohesion: 0.22
 Nodes (8): About Laravel, Code of Conduct, Contributing, Laravel Sponsors, Learning Laravel, License, Premium Partners, Security Vulnerabilities
 
 ### Community 102 - "ConfirmablePasswordController.php"
-Cohesion: 0.08
-Nodes (7): MantenimientoController, Request, Mantenimiento, MantenimientoEjecucionService, Closure, MantenimientoManoObraService, MantenimientoMaterialesService
+Cohesion: 0.10
+Nodes (5): Mantenimiento, MantenimientoEjecucionService, Closure, MantenimientoManoObraService, MantenimientoMaterialesService
 
 ### Community 103 - "ProfileController.php"
 Cohesion: 0.08
@@ -830,8 +827,8 @@ Cohesion: 0.07
 Nodes (26): Checkpoints tecnicos generales, Componentes propuestos, Fase 1: crear componentes sin migrar pantallas, Fase 2: migrar las pantallas patron, Fase 3: migrar pantallas que ya tienen filtros funcionales, Fase 4: agregar filtros donde hoy no existen, Fase 5: barrido extendido de toda la app, `filters.actions` (+18 more)
 
 ### Community 107 - "LoginRequest"
-Cohesion: 0.29
-Nodes (4): AsistenciaResumenService, Carbon, CarbonInterface, Collection
+Cohesion: 0.22
+Nodes (6): ObrasGerencialController, Request, AsistenciaResumenService, Carbon, CarbonInterface, Collection
 
 ### Community 109 - "config"
 Cohesion: 0.29
@@ -842,8 +839,8 @@ Cohesion: 0.40
 Nodes (3): Kernel, ConsoleKernel, Schedule
 
 ### Community 111 - "ObraPila"
-Cohesion: 0.10
-Nodes (7): ObraMaquinaHorasController, Request, MaquinaHorometroAjuste, ObraMaquina, ObraMaquinaRegistro, MaquinaHorometroService, Carbon
+Cohesion: 0.11
+Nodes (8): MaquinaRegistroController, Request, ObraMaquinaHorasController, Request, ObraMaquina, ObraMaquinaRegistro, MaquinaHorometroService, Carbon
 
 ### Community 112 - "ComisionController.php"
 Cohesion: 0.15
@@ -858,7 +855,7 @@ Cohesion: 0.33
 Nodes (5): For /graphify explain, For /graphify path, graphify reference: query, path, explain, Step 0 — Constrained query expansion (REQUIRED before traversal), Step 1 — Traversal
 
 ### Community 116 - "RouteServiceProvider.php"
-Cohesion: 0.18
+Cohesion: 0.19
 Nodes (5): ObraCivilCommercialMaterial, CatalogoMaterialCostosService, Builder, Collection, Request
 
 ### Community 117 - "UserFactory"
@@ -870,16 +867,12 @@ Cohesion: 0.33
 Nodes (5): proveedores.partials._facturas, proveedores.partials._general, proveedores.partials._ordenes, proveedores.partials._pagado, proveedores.partials._productos
 
 ### Community 119 - "ResidenteComisionController"
-Cohesion: 0.13
-Nodes (4): NominaCorridaController, NominaGeneradorController, Request, NominaCorrida
+Cohesion: 0.07
+Nodes (10): NominaRecalcularCorrida, NominaCorridaController, Carbon, Request, NominaGeneradorController, Request, NominaCorrida, NominaRecibo (+2 more)
 
 ### Community 120 - "AgentNotificationController"
 Cohesion: 0.10
 Nodes (19): API propuesta, App movil: selector de panel y selector de obra, Cambios backend, Cambios Ionic, Casos que debe resolver, Checkpoints, Checkpoints, Criterio de listo (+11 more)
-
-### Community 121 - "ComisionPersonal"
-Cohesion: 0.22
-Nodes (5): EmpresaConfigAreaController, Request, Area, HasMany, HasOne
 
 ### Community 122 - "psr-4"
 Cohesion: 0.40
@@ -906,44 +899,44 @@ Cohesion: 0.33
 Nodes (5): clientes._form, clientes.partials._contactos, clientes.partials._documentos, clientes.partials._portales, clientes.partials.tab-placeholder
 
 ### Community 131 - "autoload-dev"
-Cohesion: 0.21
-Nodes (7): JsonResponse, Request, ServicioProgramadoController, MantenimientoAbastecimientoService, Collection, Builder, ServicioProgramadoConsultaService
+Cohesion: 0.36
+Nodes (4): JsonResponse, Request, ServicioProgramadoController, ServicioProgramadoConsultaService
 
 ### Community 132 - "keywords"
-Cohesion: 0.08
-Nodes (10): Request, PlaneacionGastosController, Request, PresupuestoController, PresupuestoController, ObraPlaneacionGasto, Presupuesto, PresupuestoDetalle (+2 more)
+Cohesion: 0.07
+Nodes (9): Request, PlaneacionGastosController, Request, PresupuestoController, PresupuestoController, ObraPlaneacionGasto, ObraReposicionGastoDetalle, Presupuesto (+1 more)
 
 ### Community 133 - "2014_10_12_000000_create_users_table.php"
 Cohesion: 0.14
 Nodes (13): 1. Barrido puntual, 2. Crear partial de areas, 3. Crear partial de almacenes, 4. Agregar tab nuevo, 5. Ajustar redireccion de almacen, 6. Verificacion fase 1, Alcance fase 1, Fase posterior opcional (+5 more)
 
 ### Community 134 - "2014_10_12_100000_create_password_reset_tokens_table.php"
-Cohesion: 0.17
-Nodes (6): EmpresaServicioPreventivoTipoController, Request, EmpresaServicioPreventivoMaterial, BelongsTo, EmpresaServicioPreventivoTipo, Builder
+Cohesion: 0.23
+Nodes (4): EmpresaServicioPreventivoTipoController, Request, EmpresaServicioPreventivoTipo, Builder
 
 ### Community 135 - "2019_08_19_000000_create_failed_jobs_table.php"
-Cohesion: 0.14
-Nodes (5): MantenimientoBorradorService, Collection, MantenimientoCatalogoService, MantenimientoOrdenService, ServicioProgramadoCatalogoService
+Cohesion: 0.17
+Nodes (4): MantenimientoBorradorService, Collection, MantenimientoCatalogoService, MantenimientoOrdenService
 
 ### Community 138 - "2025_11_24_193802_create_clientes_table.php"
 Cohesion: 0.19
 Nodes (6): ObraCivilWorkReportController, Request, View, ObraCivilWorkReportIndexService, Builder, LengthAwarePaginator
 
 ### Community 140 - "2025_11_24_194732_add_address_fields_to_clientes_table.php"
-Cohesion: 0.15
-Nodes (4): MaquinaEstadoCambiado, SendMaquinaEstadoNotification, VehiculoAlertaLog, InteractsWithSockets
+Cohesion: 0.13
+Nodes (12): MaquinaEstadoCambiado, ProcessSatCsfRequestJob, ProcessSatDownloadJob, SendMaquinaEstadoNotification, SolicitudGastoCreada, Dispatchable, InteractsWithQueue, InteractsWithSockets (+4 more)
 
 ### Community 141 - "2025_11_25_180929_create_obra_contratos_table.php"
-Cohesion: 0.23
-Nodes (3): Almacen, BelongsTo, HasMany
+Cohesion: 0.12
+Nodes (6): InventarioStockController, Request, Almacen, BelongsTo, HasMany, BelongsTo
 
 ### Community 142 - "2025_11_25_190048_create_plano_categorias_table.php"
-Cohesion: 0.19
-Nodes (3): EmpleadoDocumentoController, Request, EmpleadoDocumento
+Cohesion: 0.09
+Nodes (5): EmpleadoDocumentoController, Request, EmpleadoDocumento, EmpresaDocumentoTipo, SoftDeletes
 
 ### Community 143 - "2025_11_25_190110_create_obra_planos_table.php"
-Cohesion: 0.06
-Nodes (13): EmpresaConfigController, Request, CentroCosto, CuentaBancoEmpresa, DocumentoFirmaDefinicion, EmpresaAlertaDestinatario, Builder, EmpresaDocumentoTipo (+5 more)
+Cohesion: 0.12
+Nodes (6): EmpresaConfigController, Request, CentroCosto, CuentaBancoEmpresa, DocumentoFirmaDefinicion, TipoIva
 
 ### Community 144 - "2025_11_25_191851_create_obra_presupuestos_table.php"
 Cohesion: 0.14
@@ -954,8 +947,8 @@ Cohesion: 0.36
 Nodes (3): BelongsTo, HasMany, ReposicionCajaChicaRelacion
 
 ### Community 148 - "2025_11_27_181836_create_empleado_contactos_emergencia_table.php"
-Cohesion: 0.10
-Nodes (4): OrdenCompraDetalleController, Request, OrdenCompra, OrdenCompraTotalesService
+Cohesion: 0.09
+Nodes (5): OrdenCompraDetalleController, Request, OrdenCompra, TipoRetencion, OrdenCompraTotalesService
 
 ### Community 149 - "AgentNotificationController"
 Cohesion: 0.12
@@ -991,7 +984,7 @@ Nodes (10): Alcance del catálogo y existencias, Autorización común, Código c
 
 ### Community 162 - "2025_12_04_194732_create_comision_detalles_table.php"
 Cohesion: 0.32
-Nodes (4): JsonResponse, Request, VehiculoController, EquipoMecanicoPresenter
+Nodes (4): MaquinaController, JsonResponse, Request, EquipoMecanicoPresenter
 
 ### Community 163 - "2025_12_04_194735_create_comision_perforaciones_table.php"
 Cohesion: 0.18
@@ -1002,11 +995,11 @@ Cohesion: 0.18
 Nodes (5): CsfRequestService, D32RequestService, CaptchaResolverInterface, SatCaptchaResolverFactory, Client
 
 ### Community 166 - "2025_12_09_191332_add_totales_materiales_to_obras_table.php"
-Cohesion: 0.18
+Cohesion: 0.17
 Nodes (4): Request, VehiculoKmController, VehiculoEmpleado, VehiculoEmpleadoKmLog
 
 ### Community 167 - "2025_12_11_173358_create_obras_facturas_table.php"
-Cohesion: 0.20
+Cohesion: 0.19
 Nodes (3): ObraCivilInsumoExcelParser, SimpleXMLElement, ZipArchive
 
 ### Community 168 - "EmailVerificationPromptController.php"
@@ -1018,24 +1011,24 @@ Cohesion: 0.15
 Nodes (13): Checkpoint 1: propagar `commercial_request` hacia OC, Checkpoint 2: exponer piezas en el selector de OC, Checkpoint 3: mostrar piezas en aprobacion y revision, Checkpoint 4: resolver aprobacion parcial con piezas, Checkpoint 5: impresion y detalle de OC, Checkpoint 6: pruebas y validacion, Estado actual detectado, Flujo objetivo (+5 more)
 
 ### Community 171 - "2025_12_11_192310_create_mantenimientos_table.php"
-Cohesion: 0.18
+Cohesion: 0.17
 Nodes (5): ObraCivilInsumo, Collection, ResidenteObraCivilMaterialRequestService, ObraCivilInsumoBalanceService, Collection
 
 ### Community 172 - "2025_12_11_192314_create_mantenimiento_detalles_table.php"
 Cohesion: 0.03
-Nodes (31): AreaHorario, AttendanceDeviceCheckpoint, CatalogoRolAlias, CivilBuilding, CivilEstimationItem, CivilPartida, CivilWorkReportItem, CivilWorkReportPhoto (+23 more)
+Nodes (26): AreaHorario, AttendanceDeviceCheckpoint, CatalogoRolAlias, CivilBuilding, CivilEstimationItem, CivilPartida, CivilWorkReportItem, CivilWorkReportPhoto (+18 more)
 
 ### Community 173 - "InventarioStock"
 Cohesion: 0.29
 Nodes (7): Acciones y compatibilidad web, Contrato, Errores, Flujo compartido y límites, Snapshot y avance, T10. Solicitudes de abastecimiento y avance, Validación
 
 ### Community 174 - "2025_12_11_192326_create_documentos_vehiculo_table.php"
-Cohesion: 0.36
-Nodes (4): MaquinaEstadoMail, Content, Envelope, Mailable
+Cohesion: 0.25
+Nodes (5): MaquinaEstadoMail, SatFacturaMail, Content, Envelope, Mailable
 
 ### Community 175 - "2025_12_15_161442_create_areas_table.php"
-Cohesion: 0.06
-Nodes (12): EmpresaConfigMaquinaController, Request, MaquinaController, Request, ObraMaquinaController, Request, Maquina, HasMany (+4 more)
+Cohesion: 0.08
+Nodes (8): EmpresaConfigMaquinaController, Request, MaquinaController, Request, Maquina, HasMany, MaquinaMovimiento, MaquinaService
 
 ### Community 176 - "2025_12_15_163323_add_iva_default_to_productos_table.php.php"
 Cohesion: 0.19
@@ -1046,7 +1039,7 @@ Cohesion: 0.06
 Nodes (32): Caso A: todo para stock, Caso B: todo para servicio, Caso C: entrada mixta, Contexto del negocio, Decisión pendiente, Diseño propuesto, Entrada de inventario, Entradas digitales al almacén (+24 more)
 
 ### Community 178 - "2025_12_18_184128_create_catalogo_roles_table.php"
-Cohesion: 0.19
+Cohesion: 0.39
 Nodes (3): HuentitanSalidaDetalle, BelongsTo, HasMany
 
 ### Community 179 - "2025_12_18_184151_create_catalogo_roles_alias_table.php"
@@ -1070,16 +1063,16 @@ Cohesion: 0.15
 Nodes (13): 34. Plan de accion general: movimientos separados y trazabilidad, Cabos sueltos que deben cerrarse con cuidado, Criterio de aceptacion del flujo base, Movimiento 1: Crear orden de fabricacion, Movimiento 2: Compra por faltantes de fabricacion, Movimiento 3: Entrada por orden de compra, Movimiento 4: Revisar disponibilidad, Movimiento 5: Apartar material (+5 more)
 
 ### Community 186 - "2026_01_05_195229_make_numero_pila_nullable_in_obras_pilas_table.php"
-Cohesion: 0.19
-Nodes (8): Model, Request, TelephonyClickToCallController, Builder, Request, TelephonyExtensionController, TelephonyPhoneNumber, PhoneNumberNormalizer
+Cohesion: 0.20
+Nodes (7): TelephonyIndexPhones, Model, Request, TelephonyClickToCallController, TelephonyPhoneNumber, PhoneNumberNormalizer, TelephonyPhoneIndexBuilder
 
 ### Community 187 - "2026_01_06_161521_create_empresa_config_table.php"
 Cohesion: 0.18
 Nodes (5): InventarioCorte, BelongsTo, HasMany, InventarioMovimiento, BelongsTo
 
 ### Community 188 - "ClientePortal"
-Cohesion: 0.14
-Nodes (3): GrandstreamApiException, RuntimeException, MaquinaFotoServiceTest
+Cohesion: 0.16
+Nodes (3): BelongsTo, HasMany, ReposicionCajaChicaGasto
 
 ### Community 192 - "2026_01_07_184707_create_comision_tarifarios_table.php"
 Cohesion: 0.15
@@ -1110,8 +1103,8 @@ Cohesion: 0.17
 Nodes (3): Request, SatCfdiPagoController, SatCfdiPago
 
 ### Community 206 - "2026_02_03_171602_create_almacenes_table.php"
-Cohesion: 0.26
-Nodes (5): MaquinaFotoController, RedirectResponse, Request, MaquinaFoto, BelongsTo
+Cohesion: 0.10
+Nodes (12): Handler, MaquinaFotoController, RedirectResponse, Request, MaquinaFoto, BelongsTo, MaquinaFotoService, Collection (+4 more)
 
 ### Community 207 - "2026_02_03_171637_add_inventario_fields_to_productos_table.php"
 Cohesion: 0.22
@@ -1126,12 +1119,16 @@ Cohesion: 0.10
 Nodes (20): Flujo objetivo, Hallazgos iniciales, Objetivo, Paso 10. Mostrar historial operativo, Paso 11. Aplicar candados, Paso 12. Integrar navegación e impresión, Paso 13. Ejecutar pruebas del flujo, Paso 1. Definir y preparar estados (+12 more)
 
 ### Community 220 - "2026_02_17_153044_alter_empleados_estatus_to_tinyint.php"
-Cohesion: 0.33
-Nodes (6): Checkpoint, Compatibilidad web y acciones, Contrato API, Errores, Reglas de etapa y pertenencia, T09. Ajuste de materiales de la orden
+Cohesion: 0.19
+Nodes (5): EmpresaServicioPreventivoMaterial, BelongsTo, MantenimientoAbastecimientoService, Collection, Builder
 
 ### Community 222 - "2026_02_25_160241_create_facturas_table.php"
-Cohesion: 0.12
-Nodes (7): Request, SatComplementoPagoController, Request, SatFacturaPagoController, SatFacturaMail, SatFacturaPago, MicrosoftGraphMailService
+Cohesion: 0.13
+Nodes (6): Request, SatComplementoPagoController, Request, SatFacturaPagoController, SatFacturaPago, MicrosoftGraphMailService
+
+### Community 223 - "2026_02_27_183137_add_ubicacion_to_maquinas_table.php"
+Cohesion: 0.42
+Nodes (4): ObraCivilFieldReviewController, RedirectResponse, Request, View
 
 ### Community 224 - "FacturaBorradorCreado"
 Cohesion: 0.18
@@ -1158,40 +1155,32 @@ Cohesion: 0.50
 Nodes (3): obras.reposicion-gastos.pdf._header, obras.reposicion-gastos.pdf._observaciones-firmas, obras.reposicion-gastos.pdf._styles
 
 ### Community 233 - "2026_03_04_195453_create_jobs_table.php"
-Cohesion: 0.35
+Cohesion: 0.30
 Nodes (4): EmpresaViaticoTarifa, Builder, EmpresaViaticoTarifaService, CarbonInterface
-
-### Community 234 - "2026_03_10_165357_create_seguros_table.php"
-Cohesion: 0.38
-Nodes (3): Handler, ExceptionHandler, Throwable
 
 ### Community 235 - "CatalogoRol"
 Cohesion: 0.20
 Nodes (10): Checkpoints futuros para salidas, Entrada de producto terminado desde fabricacion, Fase S1: Definir salida base, Fase S2: Salida a obra, Fase S3: Salida por fabricacion, Fase S4: Entrada de producto terminado, Plan complementario: salidas HUENTITAN, Salida directa hacia obra (+2 more)
 
 ### Community 236 - "2026_03_17_190518_create_vehiculo_documentos_table.php"
-Cohesion: 0.15
-Nodes (5): CatalogoRolController, Request, CatalogoRol, NominaTipoSueldo, Builder
+Cohesion: 0.22
+Nodes (3): CatalogoRolController, Request, CatalogoRol
 
 ### Community 238 - "2026_04_07_164110_create_presupuesto_detalles_table.php"
-Cohesion: 0.35
-Nodes (3): Carbon, Collection, PreventivoMaquinaService
+Cohesion: 0.26
+Nodes (4): EmpresaConfig, Carbon, Collection, PreventivoMaquinaService
 
 ### Community 239 - "2026_04_07_171505_update_presupuesto_detalles_add_fields_pesimista_optimista.php"
-Cohesion: 0.25
-Nodes (3): EmpleadoEppEntregaController, Request, EmpleadoEppEntrega
-
-### Community 244 - "2026_04_10_185239_create_planeacion_gastos_table.php"
 Cohesion: 0.24
-Nodes (3): AgentOpenLinkController, RedirectResponse, AgentOpenLink
+Nodes (3): EmpleadoEppEntregaController, Request, EmpleadoEppEntrega
 
 ### Community 246 - "64d5b5b5e15997d6185a02db44016242.php"
 Cohesion: 0.12
 Nodes (16): 2026-10-23: reglas iniciales aceptadas y consulta de productos, 2026-10-23: T02, selección de panel y compatibilidad, 2026-10-23: T05, diagnóstico D06 y alcance de productos, 2026-10-26: D05 confirmada por el usuario, App móvil: panel de mecánico y servicios programados, Bitácora de trabajo, Contratos propuestos, Control del documento (+8 more)
 
 ### Community 249 - "2026_04_15_163214_fix_fk_planeacion_semanal.php"
-Cohesion: 0.29
-Nodes (5): RedirectResponse, Request, View, ProfileController, ProfileUpdateRequest
+Cohesion: 0.43
+Nodes (4): RedirectResponse, Request, View, ProfileController
 
 ### Community 250 - "2026_04_16_162200_create_sat_download_requests_table.php"
 Cohesion: 0.38
@@ -1206,8 +1195,8 @@ Cohesion: 0.50
 Nodes (3): obras.reposicion-gastos.pdf._header, obras.reposicion-gastos.pdf._observaciones-firmas, obras.reposicion-gastos.pdf._styles
 
 ### Community 256 - "2026_04_17_194930_add_sat_empresa_id_to_sat_download_requests_table.php"
-Cohesion: 0.16
-Nodes (5): ObrasGerencialController, Request, ObraEmpleadoController, Request, ObraEmpleado
+Cohesion: 0.22
+Nodes (3): ObraEmpleadoController, Request, ObraEmpleado
 
 ### Community 257 - "2026_04_21_162245_alter_estado_on_sat_download_requests_table.php"
 Cohesion: 0.22
@@ -1240,6 +1229,14 @@ Nodes (4): Fase 5: corte semanal y reposicion, Paso 5.1: cambiar concepto de Pag
 ### Community 270 - "79c8b59029384a6aa84b536a6daf05e9.php"
 Cohesion: 0.50
 Nodes (4): Fase 5: interfaz de captura en edit, Paso 5.1: agregar input de descuento al formulario de detalle, Paso 5.2: ajustar layout de captura, Paso 5.3: mostrar descuento en tabla de detalles
+
+### Community 277 - "UserFactory"
+Cohesion: 0.24
+Nodes (3): MaquinaHorometroAjuste, MaquinaHorometroConsolidacionService, Collection
+
+### Community 280 - "2026_05_14_161150_add_documento_tipo_id_to_empleado_documentos_table.php"
+Cohesion: 0.27
+Nodes (3): ObraPilaController, Request, ObraPila
 
 ### Community 287 - "Tablas Nuevas Propuestas"
 Cohesion: 0.25
@@ -1278,7 +1275,7 @@ Cohesion: 0.31
 Nodes (3): ObraPlanoController, Request, ObraPlano
 
 ### Community 306 - "2026_06_25_090000_create_obra_factura_borradores_table.php"
-Cohesion: 0.33
+Cohesion: 0.29
 Nodes (6): Contrato multipart, Errores, Guardado compartido y limpieza, Permisos y etapas, T11. Evidencias fotográficas del servicio, Validación
 
 ### Community 309 - "mixta.blade.php"
@@ -1290,8 +1287,8 @@ Cohesion: 0.33
 Nodes (6): Ajuste operativo: fabricacion sin salida manual, Ajuste sobre calcular materiales, Checkpoints de ajuste en orden de fabricacion, Estados operativos simplificados, Regla de usuario, Regla tecnica
 
 ### Community 315 - "NominaCorridaController.php"
-Cohesion: 0.14
-Nodes (5): HuentitanOrdenFabricacion, BelongsTo, HasMany, HuentitanOrdenFabricacionMaterial, BelongsTo
+Cohesion: 0.24
+Nodes (3): HuentitanOrdenFabricacion, BelongsTo, HasMany
 
 ### Community 317 - "Handler.php"
 Cohesion: 0.80
@@ -1346,8 +1343,8 @@ Cohesion: 0.36
 Nodes (3): CatalogoPilaController, Request, CatalogoPila
 
 ### Community 516 - "SeguroVehiculo.php"
-Cohesion: 0.27
-Nodes (4): EmpresaConfig, Carbon, Collection, PreventivoVehiculoService
+Cohesion: 0.25
+Nodes (4): ServicioProgramadoCatalogoService, Carbon, Collection, PreventivoVehiculoService
 
 ### Community 518 - "Fase 6: Reportes Y Auditoria"
 Cohesion: 0.50
@@ -1381,10 +1378,6 @@ Nodes (5): AppLayout, View, GuestLayout, View, Component
 Cohesion: 0.43
 Nodes (4): PasswordResetLinkController, RedirectResponse, Request, View
 
-### Community 535 - "PreventivoVehiculoService"
-Cohesion: 0.16
-Nodes (3): Carbon, Collection, ObraAsistenciaSemanalReporte
-
 ### Community 536 - "check_mojibake.php"
 Cohesion: 0.50
 Nodes (3): SplFileInfo, relative_path(), scan_file()
@@ -1392,6 +1385,10 @@ Nodes (3): SplFileInfo, relative_path(), scan_file()
 ### Community 537 - "ZkDeviceClient"
 Cohesion: 0.40
 Nodes (5): Compra para stock, fabricacion u obra, Decisiones operativas, Impacto en inventario, Orden de compra contra entrada, Recepcion parcial
+
+### Community 538 - "2026_04_17_185235_create_sat_empresas_table.php"
+Cohesion: 0.60
+Nodes (3): JsonResponse, Request, VehiculoController
 
 ### Community 542 - "Fase 6: PDF de orden de compra"
 Cohesion: 0.67
@@ -1422,12 +1419,16 @@ Cohesion: 0.33
 Nodes (6): Riesgo 1: Borradores duplicados, Riesgo 2: Multiples proveedores por solicitud, Riesgo 3: `orden_compra_id` en cabecera de solicitud, Riesgo 4: Reducir cantidad en OC, Riesgo 5: Solicitud con insumo inactivo, Riesgos y decisiones pendientes
 
 ### Community 580 - "2026_08_10_110000_add_discount_fields_to_orden_compra_detalles.php"
-Cohesion: 0.25
-Nodes (3): InventarioStockController, Request, BelongsTo
+Cohesion: 0.60
+Nodes (3): CatalogoController, JsonResponse, Request
+
+### Community 581 - "RedirectIfAuthenticated.php"
+Cohesion: 0.60
+Nodes (3): RedirectResponse, VerifyEmailController, EmailVerificationRequest
 
 ### Community 582 - "2026_05_11_194518_create_obra_reposicion_gastos_table.php"
 Cohesion: 0.25
-Nodes (6): PasswordController, RedirectResponse, Request, RedirectResponse, VerifyEmailController, EmailVerificationRequest
+Nodes (6): EmailVerificationNotificationController, RedirectResponse, Request, PasswordController, RedirectResponse, Request
 
 ### Community 583 - "InventarioKardexGerencialController.php"
 Cohesion: 0.18
@@ -1438,8 +1439,8 @@ Cohesion: 0.50
 Nodes (4): 1. Index de entradas, 2. Nueva entrada, 3. Detalle de entrada, Pantallas propuestas
 
 ### Community 588 - "SnapshotsController.php"
-Cohesion: 0.20
-Nodes (5): Request, ResidenteObraCivilAvanceController, UploadedFile, ResidenteObraCivilAvanceReportService, ImageManager
+Cohesion: 0.16
+Nodes (8): Request, ResidenteObraCivilAvanceController, InterventionImageOptimizer, UploadedFile, UploadedFile, ResidenteObraCivilAvanceReportService, ImageManager, ImageOptimizerInterface
 
 ### Community 591 - "2026_07_28_120000_add_obra_and_gasolina_fields_to_vehiculo_empleado_km_logs_table.php"
 Cohesion: 0.33
@@ -1493,21 +1494,29 @@ Nodes (4): Aprobacion cerrada, Borradores no descuentan, pero deben advertirse, 
 Cohesion: 0.50
 Nodes (4): Cantidades por item aprobado, Modelo objetivo, Relacion item aprobado -> detalle OC, Tabla puente solicitud - OC
 
+### Community 629 - "2026_07_28_120000_add_obra_and_gasolina_fields_to_vehiculo_empleado_km_logs_table.php"
+Cohesion: 0.40
+Nodes (5): Archivos del cliente, Cambios de esta entrega, Pendiente siguiente, T13 / C13.3. Consultas, filtros y pruebas de vistas, Validación
+
 ### Community 631 - "2026_08_19_000002_create_civil_work_report_items_table.php"
-Cohesion: 0.47
-Nodes (3): FacturaController, Request, Factura
+Cohesion: 0.29
+Nodes (5): FacturaController, Request, ContpaqiFacturaImportController, Request, Factura
+
+### Community 632 - "2026_08_19_000003_create_civil_work_report_photos_table.php"
+Cohesion: 0.40
+Nodes (5): Archivos del cliente (repositorio separado), C13.5: inicio y cierre en el cliente móvil, Cierre del checkpoint, Comportamiento implementado, Validación
 
 ### Community 636 - "2026_07_28_130000_add_vehiculo_preventivo_fields_to_empresa_config.php"
 Cohesion: 0.67
 Nodes (3): Alcance MVP, Incluido, No incluido en MVP
 
 ### Community 651 - "2026_08_26_000001_create_obra_civil_material_groups_table.php"
-Cohesion: 0.21
-Nodes (8): EmailVerificationNotificationController, RedirectResponse, Request, Closure, Request, Response, RedirectIfAuthenticated, RouteServiceProvider
+Cohesion: 0.53
+Nodes (4): Closure, Request, Response, RedirectIfAuthenticated
 
 ### Community 652 - "07479eb5e3b05d804b3bd6338762f776.php"
-Cohesion: 0.19
-Nodes (7): AgentAuthController, Request, EnsureActiveAgentDevice, Closure, Request, Response, AgentDevice
+Cohesion: 0.27
+Nodes (5): EnsureActiveAgentDevice, Closure, Request, Response, AgentDevice
 
 ### Community 667 - "2255aef76127c58a763132644a050950.php"
 Cohesion: 0.67
@@ -1534,8 +1543,8 @@ Cohesion: 0.33
 Nodes (6): Alcance y aislamiento, Cierre del checkpoint, Pendientes de T14, Repetir la prueba, Resultados, T14 / C14.1. Concurrencia de órdenes sobre InnoDB
 
 ### Community 721 - "2026_07_22_140000_add_idempotency_key_to_obra_factura_pagos_table.php"
-Cohesion: 0.39
-Nodes (4): AuthenticatedSessionController, RedirectResponse, Request, View
+Cohesion: 0.21
+Nodes (5): AuthenticatedSessionController, RedirectResponse, Request, View, LoginRequest
 
 ### Community 747 - "empleados.blade.php"
 Cohesion: 0.50
@@ -1554,8 +1563,8 @@ Cohesion: 0.67
 Nodes (3): keywords, framework, laravel
 
 ### Community 772 - "2026_07_28_130000_add_vehiculo_preventivo_fields_to_empresa_config.php"
-Cohesion: 0.29
-Nodes (7): Acceso y alcance, Acciones calculadas en servidor, Checkpoint y validación, Detalle, Errores, Listado, T07. Consulta y seguimiento de servicios programados
+Cohesion: 0.14
+Nodes (13): Checkpoint, Compatibilidad web y acciones, Contrato API, Errores, Reglas de etapa y pertenencia, T09. Ajuste de materiales de la orden, Acceso y alcance, Acciones calculadas en servidor (+5 more)
 
 ### Community 802 - "Flujo operativo definido"
 Cohesion: 0.40
@@ -1597,14 +1606,6 @@ Nodes (4): Closure, Request, Response, RequireApiKey
 Cohesion: 0.36
 Nodes (3): Request, VehiculoDocumentoController, VehiculoDocumento
 
-### Community 891 - "VehiculoDocumento"
-Cohesion: 0.19
-Nodes (4): Archivos del cliente (repositorio separado), C13.5: inicio y cierre en el cliente móvil, Comportamiento implementado, Validación
-
-### Community 905 - "InventarioDocumentoDetalle"
-Cohesion: 0.48
-Nodes (3): InterventionImageOptimizer, UploadedFile, ImageOptimizerInterface
-
 ### Community 1016 - "2026_08_19_000003_create_civil_work_report_photos_table.php"
 Cohesion: 0.20
 Nodes (10): C13.1. Localizar e inspeccionar — completado, C13.2. Sesión y navegación — completado, independiente de D05, C13.3. Equipos y consultas — completado, independiente de D05, C13.4. Captura y operaciones disponibles — completado, independiente de D05, C13.5. Ejecución y validación móvil — completado el 2026-10-26, Checkpoints pequeños dentro de T13, Dependencias y publicación, Hallazgos (+2 more)
@@ -1618,60 +1619,52 @@ Cohesion: 0.48
 Nodes (4): NewPasswordController, RedirectResponse, Request, View
 
 ### Community 1187 - "ObraReposicionGastoDetalle"
-Cohesion: 0.04
-Nodes (13): ComisionController, Request, ComisionController, Request, CatalogoActividadComision, ComisionDetalle, ComisionPerforacion, ComisionPersonal (+5 more)
+Cohesion: 0.07
+Nodes (10): ComisionController, Request, ComisionController, Request, CatalogoActividadComision, ComisionDetalle, ComisionPerforacion, ComisionPersonal (+2 more)
 
 ### Community 1201 - "RegisteredUserController.php"
 Cohesion: 0.43
 Nodes (4): RedirectResponse, Request, View, RegisteredUserController
 
 ### Community 1208 - ".edit"
-Cohesion: 0.04
-Nodes (8): ObraContratoController, Request, ObraFacturaController, Request, ObraPilaController, Request, Obra, ObraFactura
+Cohesion: 0.05
+Nodes (6): ObraContratoController, Request, ObraFacturaController, Request, Obra, ObraFactura
 
 ### Community 1211 - "EmailVerificationPromptController.php"
 Cohesion: 0.53
 Nodes (4): EmailVerificationPromptController, RedirectResponse, Request, View
 
 ### Community 1226 - "T13 / C13.2. Navegación y consulta inicial del panel mecánico"
-Cohesion: 0.16
-Nodes (11): Archivos del cliente, Cambios de esta entrega, Pendiente siguiente, T13 / C13.3. Consultas, filtros y pruebas de vistas, Validación, Archivos principales del cliente, Cambios, Consultas iniciales incluidas (+3 more)
+Cohesion: 0.33
+Nodes (6): Archivos principales del cliente, Cambios, Consultas iniciales incluidas, Siguiente entrega, T13 / C13.2. Navegación y consulta inicial del panel mecánico, Validación
 
 ### Community 1230 - "T13 / C13.4. Captura y operaciones de servicios programados"
-Cohesion: 0.33
+Cohesion: 0.40
 Nodes (5): Archivos del cliente, Cierre del checkpoint, Implementado, T13 / C13.4. Captura y operaciones de servicios programados, Validación y límites
-
-### Community 1233 - "2026_09_11_000001_add_usa_bentonita_to_obras_table.php"
-Cohesion: 0.43
-Nodes (4): CalendarioOperacionalController, JsonResponse, Request, View
-
-### Community 1240 - "MaquinaFotoService"
-Cohesion: 0.43
-Nodes (3): MaquinaFotoService, Collection, ImageOptimizerInterface
 
 ### Community 1241 - "MantenimientoEvidenciaService.php"
 Cohesion: 0.53
 Nodes (3): MantenimientoEvidenciaService, Closure, ImageOptimizerInterface
 
 ## Knowledge Gaps
-- **1787 isolated node(s):** `name`, `type`, `description`, `laravel`, `framework` (+1782 more)
+- **1788 isolated node(s):** `name`, `type`, `description`, `laravel`, `framework` (+1783 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **78 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **76 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Controller` connect `Component` to `Seeder`, `ObraReposicionGasto`, `User`, `SatCfdiEstadisticaController.php`, `AttendanceUser`, `Model`, `ResidenteComisionesService`, `Proveedor`, `EquipoComputo`, `Obra`, `InventarioDocumento`, `Queueable`, `2026_02_03_171906_create_inventario_movimientos_table.php`, `ObraController`, `MaquinariaReporteSnapshot`, `Producto`, `SatDocumentRequest`, `NominaListaRaya`, `ObraSolicitudGasto`, `2026_02_03_171602_create_almacenes_table.php`, `ObraEmpleado`, `Seguro`, `MaquinaEstadoCambiado`, `MaquinaService`, `PagoProveedor`, `web.php`, `Controller`, `NominaTipoSueldoSeeder.php`, `UsuarioController.php`, `SatFacturaPago`, `SatCfdiConcepto.php`, `SatDownloadRequest`, `EmpresaConfig`, `2026_08_10_110000_add_discount_fields_to_orden_compra_detalles.php`, `ResidenteComisionController`, `2026_05_11_194518_create_obra_reposicion_gastos_table.php`, `SatConcepto`, `SnapshotsController.php`, `.create`, `User.php`, `ProveedorController`, `require-dev`, `AuthenticatedSessionController.php`, `AgentNotificationController`, `ConfirmablePasswordController.php`, `2026_06_15_184629_create_obra_solicitud_gastos_table.php`, `ObraPila`, `InventarioSeedInicial.php`, `UserFactory`, `ResidenteComisionController`, `2026_08_19_000002_create_civil_work_report_items_table.php`, `ComisionPersonal`, `autoload-dev`, `keywords`, `2014_10_12_100000_create_password_reset_tokens_table.php`, `2025_11_24_193802_create_clientes_table.php`, `2026_08_26_000001_create_obra_civil_material_groups_table.php`, `07479eb5e3b05d804b3bd6338762f776.php`, `2025_11_25_190048_create_plano_categorias_table.php`, `2025_11_25_190110_create_obra_planos_table.php`, `2025_11_27_181836_create_empleado_contactos_emergencia_table.php`, `NewPasswordController.php`, `2025_12_02_185705_create_orden_compra_detalles_table.php`, `2025_12_04_193404_create_maquinas_table.php`, `2025_12_04_194732_create_comision_detalles_table.php`, `ObraReposicionGastoDetalle`, `2025_12_04_194735_create_comision_perforaciones_table.php`, `2025_12_09_191332_add_totales_materiales_to_obras_table.php`, `2d323a8ad75556fd3a9d74487fddb95e.php`, `2025_12_15_161442_create_areas_table.php`, `RegisteredUserController.php`, `VehiculoSeguroController`, `.edit`, `2026_01_05_195229_make_numero_pila_nullable_in_obras_pilas_table.php`, `EmailVerificationPromptController.php`, `2026_01_07_184610_create_uoms_table.php`, `2026_01_07_184707_create_comision_tarifarios_table.php`, `2026_01_20_185055_create_obras_asistencias_table.php`, `2026_01_21_195045_create_vehiculo_empleado_km_logs_table.php`, `2026_02_03_171602_create_almacenes_table.php`, `2026_02_03_171637_add_inventario_fields_to_productos_table.php`, `2026_07_22_140000_add_idempotency_key_to_obra_factura_pagos_table.php`, `2026_09_11_000001_add_usa_bentonita_to_obras_table.php`, `CatalogoRolesAliasSeeder`, `InventarioKardexGerencialController.php`, `InventarioKardexController.php`, `SatCfdiEstadisticaController.php`, `ObraComisionesApiController.php`, `2026_02_25_160241_create_facturas_table.php`, `2026_03_17_190518_create_vehiculo_documentos_table.php`, `2026_04_07_171505_update_presupuesto_detalles_add_fields_pesimista_optimista.php`, `2026_04_10_185239_create_planeacion_gastos_table.php`, `2026_04_15_163214_fix_fk_planeacion_semanal.php`, `InventarioMovimiento`, `2026_04_17_194930_add_sat_empresa_id_to_sat_download_requests_table.php`, `.update`, `InventarioDocumentoController`, `2026_06_24_110000_add_comprobante_to_obra_factura_pagos_table.php`, `CatalogoPilasSeeder.php`, `ObraContrato`, `92699fb55b9efb166cdcf4169351f6ec.php`, `VehiculoObra`?**
+- **Why does `Controller` connect `Component` to `Seeder`, `ObraReposicionGasto`, `ObraReposicionGastoController.php`, `User`, `SatCfdiEstadisticaController.php`, `AttendanceUser`, `ResidenteComisionesService`, `Proveedor`, `EquipoComputo`, `Obra`, `InventarioDocumento`, `Queueable`, `2026_02_03_171906_create_inventario_movimientos_table.php`, `ObraController`, `MaquinariaReporteSnapshot`, `Producto`, `SatDocumentRequest`, `NominaListaRaya`, `2026_04_17_185235_create_sat_empresas_table.php`, `ObraSolicitudGasto`, `2026_02_03_171602_create_almacenes_table.php`, `ObraEmpleado`, `Seguro`, `MaquinaEstadoCambiado`, `Mantenimiento`, `MaquinaService`, `NominaPagoExtra`, `PagoProveedor`, `web.php`, `Controller`, `NominaTipoSueldoSeeder.php`, `UsuarioController.php`, `SatFacturaPago`, `SatDownloadRequest`, `EmpresaConfig`, `2026_08_10_110000_add_discount_fields_to_orden_compra_detalles.php`, `ResidenteComisionController`, `2026_05_11_194518_create_obra_reposicion_gastos_table.php`, `RedirectIfAuthenticated.php`, `SnapshotsController.php`, `.create`, `SatComplementoPagoController`, `SatCfdiPago`, `User.php`, `ProveedorController`, `require-dev`, `AuthenticatedSessionController.php`, `AgentNotificationController`, `2026_06_15_184629_create_obra_solicitud_gastos_table.php`, `LoginRequest`, `ObraPila`, `InventarioSeedInicial.php`, `UserFactory`, `ResidenteComisionController`, `2026_08_19_000002_create_civil_work_report_items_table.php`, `ComisionPersonal`, `2026_08_24_090000_add_tipo_iva_to_obra_factura_borradores_table.php`, `autoload-dev`, `keywords`, `2014_10_12_100000_create_password_reset_tokens_table.php`, `2025_11_24_193802_create_clientes_table.php`, `2025_11_25_180929_create_obra_contratos_table.php`, `2025_11_25_190048_create_plano_categorias_table.php`, `2025_11_25_190110_create_obra_planos_table.php`, `2025_11_27_181836_create_empleado_contactos_emergencia_table.php`, `NewPasswordController.php`, `2025_12_02_185705_create_orden_compra_detalles_table.php`, `2025_12_04_193404_create_maquinas_table.php`, `2025_12_04_194732_create_comision_detalles_table.php`, `ObraReposicionGastoDetalle`, `2025_12_04_194735_create_comision_perforaciones_table.php`, `2025_12_09_191332_add_totales_materiales_to_obras_table.php`, `2d323a8ad75556fd3a9d74487fddb95e.php`, `2025_12_11_192314_create_mantenimiento_detalles_table.php`, `2025_12_15_161442_create_areas_table.php`, `RegisteredUserController.php`, `.edit`, `2026_01_05_195229_make_numero_pila_nullable_in_obras_pilas_table.php`, `EmailVerificationPromptController.php`, `2026_01_07_184610_create_uoms_table.php`, `2026_01_07_184707_create_comision_tarifarios_table.php`, `2026_01_20_185055_create_obras_asistencias_table.php`, `2026_01_21_195045_create_vehiculo_empleado_km_logs_table.php`, `2026_02_03_171602_create_almacenes_table.php`, `2026_02_03_171637_add_inventario_fields_to_productos_table.php`, `2026_07_22_140000_add_idempotency_key_to_obra_factura_pagos_table.php`, `InventarioKardexGerencialController.php`, `InventarioKardexController.php`, `2026_02_17_153037_alter_nomina_recibos_add_corrida_and_snapshot_fields.php`, `2026_02_25_160241_create_facturas_table.php`, `2026_02_27_183137_add_ubicacion_to_maquinas_table.php`, `2026_03_17_190518_create_vehiculo_documentos_table.php`, `2026_04_07_171505_update_presupuesto_detalles_add_fields_pesimista_optimista.php`, `2026_04_15_163214_fix_fk_planeacion_semanal.php`, `InventarioMovimiento`, `2026_04_17_194930_add_sat_empresa_id_to_sat_download_requests_table.php`, `2026_05_14_161150_add_documento_tipo_id_to_empleado_documentos_table.php`, `.update`, `InventarioDocumentoController`, `2026_06_24_110000_add_comprobante_to_obra_factura_pagos_table.php`, `CatalogoPilasSeeder.php`, `ObraContrato`, `92699fb55b9efb166cdcf4169351f6ec.php`, `VehiculoObra`?**
   _High betweenness centrality (0.067) - this node is a cross-community bridge._
-- **Why does `Obra` connect `.edit` to `2026_04_17_194930_add_sat_empresa_id_to_sat_download_requests_table.php`, `ObraReposicionGasto`, `Model`, `ResidenteComisionesService`, `InventarioDocumentoDetalle`, `2025_11_24_193802_create_clientes_table.php`, `Proveedor`, `Obra`, `2025_11_24_194732_add_address_fields_to_clientes_table.php`, `InventarioDocumento`, `2025_11_25_190110_create_obra_planos_table.php`, `Queueable`, `ObraController`, `PreventivoVehiculoService`, `NominaListaRaya`, `Empleado`, `ObraSolicitudGasto`, `2025_12_04_193404_create_maquinas_table.php`, `.update`, `HasFactory`, `Seguro`, `ObraReposicionGastoDetalle`, `2025_12_09_191332_add_totales_materiales_to_obras_table.php`, `Mantenimiento`, `2d323a8ad75556fd3a9d74487fddb95e.php`, `Controller`, `2025_12_11_192314_create_mantenimiento_detalles_table.php`, `2025_12_15_161442_create_areas_table.php`, `2026_06_24_110000_add_comprobante_to_obra_factura_pagos_table.php`, `2025_12_18_184128_create_catalogo_roles_table.php`, `OrdenCompra`, `SatFacturaPago`, `SatCfdiConcepto.php`, `SatDownloadRequest`, `SatConcepto`, `CatalogoPilasSeeder.php`, `SnapshotsController.php`, `ComisionEtapaPersonal`, `SatCfdiPago`, `InventarioStockController.php`, `ComisionTarifarioInicialSeeder`, `ProveedorController`, `Component`, `AuthenticatedSessionController.php`, `ObraComisionesApiController.php`, `2026_04_07_171505_update_presupuesto_detalles_add_fields_pesimista_optimista.php`, `ObraPila`, `UserFactory`?**
-  _High betweenness centrality (0.038) - this node is a cross-community bridge._
-- **Why does `Maquina` connect `2025_12_15_161442_create_areas_table.php` to `ObraReposicionGasto`, `2014_10_12_100000_create_password_reset_tokens_table.php`, `2019_08_19_000000_create_failed_jobs_table.php`, `2025_11_24_194732_add_address_fields_to_clientes_table.php`, `InventarioDocumento`, `2025_11_25_190110_create_obra_planos_table.php`, `UserFactory`, `PreventivoVehiculoService`, `ObraSolicitudGasto`, `ObraReposicionGastoDetalle`, `MaquinaEstadoCambiado`, `Mantenimiento`, `2025_12_11_192314_create_mantenimiento_detalles_table.php`, `2025_12_11_192326_create_documentos_vehiculo_table.php`, `SatDownloadRequest`, `ResidenteComisionController`, `2026_02_03_171602_create_almacenes_table.php`, `2026_06_25_090000_create_obra_factura_borradores_table.php`, `InventarioStockController.php`, `MaquinaFotoService`, `ConfirmablePasswordController.php`, `2026_04_07_164110_create_presupuesto_detalles_table.php`, `ObraPila`?**
+- **Why does `Obra` connect `.edit` to `2026_04_17_194930_add_sat_empresa_id_to_sat_download_requests_table.php`, `ObraReposicionGasto`, `keywords`, `Model`, `ResidenteComisionesService`, `Proveedor`, `2025_11_24_193802_create_clientes_table.php`, `Obra`, `2025_11_24_194732_add_address_fields_to_clientes_table.php`, `InventarioDocumento`, `2025_11_25_190110_create_obra_planos_table.php`, `Queueable`, `2025_11_25_190048_create_plano_categorias_table.php`, `ObraController`, `2025_11_27_181836_create_empleado_contactos_emergencia_table.php`, `2026_05_14_161150_add_documento_tipo_id_to_empleado_documentos_table.php`, `NominaListaRaya`, `Empleado`, `ObraSolicitudGasto`, `2025_12_04_193404_create_maquinas_table.php`, `.update`, `HasFactory`, `Seguro`, `ObraReposicionGastoDetalle`, `NominaPagoExtra`, `2025_12_09_191332_add_totales_materiales_to_obras_table.php`, `Mantenimiento`, `2d323a8ad75556fd3a9d74487fddb95e.php`, `Controller`, `2025_12_11_192314_create_mantenimiento_detalles_table.php`, `2025_12_15_161442_create_areas_table.php`, `2026_06_24_110000_add_comprobante_to_obra_factura_pagos_table.php`, `UsuarioController.php`, `OrdenCompra`, `SatFacturaPago`, `SatDownloadRequest`, `SatConcepto`, `CatalogoPilasSeeder.php`, `SnapshotsController.php`, `SatCfdiPago`, `InventarioStockController.php`, `ComisionTarifarioInicialSeeder`, `ProveedorController`, `Component`, `AuthenticatedSessionController.php`, `2026_02_27_183137_add_ubicacion_to_maquinas_table.php`, `2026_03_10_165357_create_seguros_table.php`, `LoginRequest`, `2026_04_07_171505_update_presupuesto_detalles_add_fields_pesimista_optimista.php`, `ObraPila`, `UserFactory`?**
+  _High betweenness centrality (0.039) - this node is a cross-community bridge._
+- **Why does `Maquina` connect `2025_12_15_161442_create_areas_table.php` to `ObraReposicionGasto`, `SeguroVehiculo.php`, `2014_10_12_100000_create_password_reset_tokens_table.php`, `2019_08_19_000000_create_failed_jobs_table.php`, `Model`, `2025_11_24_194732_add_address_fields_to_clientes_table.php`, `InventarioDocumento`, `2025_11_25_190110_create_obra_planos_table.php`, `ObraController`, `UserFactory`, `ObraSolicitudGasto`, `2025_12_04_194732_create_comision_detalles_table.php`, `MaquinaEstadoCambiado`, `NominaPagoExtra`, `Mantenimiento`, `2025_12_11_192314_create_mantenimiento_detalles_table.php`, `2025_12_11_192326_create_documentos_vehiculo_table.php`, `SatDownloadRequest`, `ClientePortal`, `ResidenteComisionController`, `auth.php`, `2026_02_03_171602_create_almacenes_table.php`, `2026_06_25_090000_create_obra_factura_borradores_table.php`, `InventarioStockController.php`, `2026_02_17_153037_alter_nomina_recibos_add_corrida_and_snapshot_fields.php`, `2026_03_10_165357_create_seguros_table.php`, `2026_04_07_164110_create_presupuesto_detalles_table.php`, `ObraPila`?**
   _High betweenness centrality (0.019) - this node is a cross-community bridge._
 - **Are the 20 inferred relationships involving `Obra` (e.g. with `.index()` and `.index()`) actually correct?**
   _`Obra` has 20 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `name`, `type`, `description` to the rest of the system?**
-  _1787 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _1788 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Seeder` be split into smaller, more focused modules?**
   _Cohesion score 0.059466848940533154 - nodes in this community are weakly interconnected._
 - **Should `ObraReposicionGasto` be split into smaller, more focused modules?**
-  _Cohesion score 0.06993006993006994 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06317907444668008 - nodes in this community are weakly interconnected._

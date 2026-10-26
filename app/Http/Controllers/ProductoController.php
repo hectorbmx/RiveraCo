@@ -94,6 +94,7 @@ class ProductoController extends Controller
     {
         $data = $request->validate([
             'nombre' => ['required','string','max:255'],
+            'marca' => ['nullable','string','max:100'],
             'descripcion' => ['nullable','string','max:500'],
             'sku' => ['nullable','string','max:100','unique:productos,sku'],
             'unidad' => ['nullable', UnidadMedidaCatalogo::regla()],
@@ -362,6 +363,7 @@ public function proveedoresUpdate(Request $request, Producto $producto, Proveedo
     {
         $data = $request->validate([
             'nombre' => ['required','string','max:255'],
+            'marca' => ['nullable','string','max:100'],
             'descripcion' => ['nullable','string','max:500'],
             'sku' => ['nullable','string','max:100','unique:productos,sku,' . $producto->id],
             'unidad' => ['nullable', UnidadMedidaCatalogo::regla()],

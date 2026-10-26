@@ -33,6 +33,10 @@ No se modificaron hosts, dependencias, configuración de permisos ni datos opera
 - TypeScript de app y specs: `--noEmit --incremental false`, ambos exit 0.
 - Build Angular de desarrollo completo con plantillas: exit 0. Salida temporal única fuera de `www`, sin despliegue; advertencias de componentes ajenos y Stencil conservadas.
 - Los siete archivos móviles pasaron decodificación UTF-8 estricta, búsqueda de mojibake y espacios finales; diff comprobado. El comprobador PHP se aplica a los documentos, pues no cubre extensiones TS/HTML externas a la raíz backend.
-- Graphify se consultó para el contrato backend y se actualiza al cerrar. El cliente sigue sin grafo propio; el grafo backend no indexa sus símbolos.
+- Graphify se consultó para el contrato backend y se actualizó al cerrar: 7765 nodos, 13480 relaciones y 1254 comunidades. El cliente sigue sin grafo propio; el grafo backend no indexa sus símbolos.
 
 Las pruebas usan respuestas HTTP controladas y conservan la cobertura anterior de cámara/galería simuladas. No constituyen recorrido conectado con usuario real, Android o cámara física. Esas verificaciones, carreras de ejecución/surtido y configuración operativa siguen en T14/T01; no se marcan completas en esta entrega. No se ejecutó commit ni push.
+
+## Cierre del checkpoint
+
+C13.5 cerró a las 2026-10-26T10:08:10.881930-06:00 (America/Mexico_City) tras pruebas, build, revisión UTF-8 y actualización del grafo. Por la pausa acordada, otro punto no comenzaría antes de 2026-10-26T10:18:10.881930-06:00. El usuario pidió ejecutar solo C13.5; T14 y la publicación final continúan pendientes.
