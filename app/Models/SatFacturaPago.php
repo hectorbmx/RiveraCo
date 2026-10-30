@@ -13,6 +13,9 @@ class SatFacturaPago extends Model
 
         // Relaciones
         'sat_factura_id',
+        'solicitud_id',
+        'solicitud_hash',
+        'facturapi_payload',
 
         // PAC / CFDI
         'facturapi_invoice_id',
@@ -57,6 +60,7 @@ class SatFacturaPago extends Model
         'tipo_cambio' => 'decimal:6',
 
         'facturapi_response' => 'array',
+        'facturapi_payload' => 'array',
     ];
 
     /*
@@ -68,6 +72,11 @@ class SatFacturaPago extends Model
     public function factura()
     {
         return $this->belongsTo(SatFactura::class, 'sat_factura_id');
+    }
+
+    public function documentos()
+    {
+        return $this->hasMany(SatFacturaPagoDocumento::class, 'sat_factura_pago_id');
     }
 
     public function pagosInternosObra()

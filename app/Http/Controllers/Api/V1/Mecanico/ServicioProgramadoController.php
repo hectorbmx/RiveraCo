@@ -29,8 +29,9 @@ class ServicioProgramadoController extends Controller
         $filtros = $request->validate([
             'q' => ['nullable', 'string', 'max:120'],
             'estatus' => ['nullable', Rule::in(ServicioProgramadoConsultaService::ESTADOS)],
-            'maquina_id' => ['nullable', 'integer', 'min:1', Rule::prohibitedIf($request->filled('vehiculo_id'))],
-            'vehiculo_id' => ['nullable', 'integer', 'min:1', Rule::prohibitedIf($request->filled('maquina_id'))],
+            'equipo_tipo' => ['nullable', Rule::in(['maquinas', 'vehiculos'])],
+            'maquina_id' => ['nullable', 'integer', 'min:1', Rule::prohibitedIf($request->filled('vehiculo_id') || $request->input('equipo_tipo') === 'vehiculos')],
+            'vehiculo_id' => ['nullable', 'integer', 'min:1', Rule::prohibitedIf($request->filled('maquina_id') || $request->input('equipo_tipo') === 'maquinas')],
             'obra_id' => ['nullable', 'integer', 'min:1'],
             'solo_mios' => ['nullable', 'boolean'],
             'fecha_desde' => ['nullable', 'date_format:Y-m-d'],
@@ -39,6 +40,11 @@ class ServicioProgramadoController extends Controller
         ]);
         $empleadoId = $this->empleadoConsulta($request);
         $query = $consulta->consulta();
+        if (! empty($filtros['equipo_tipo'])) {
+            $esMaquina = $filtros['equipo_tipo'] === 'maquinas';
+            $query->whereNotNull($esMaquina ? 'maquina_id' : 'vehiculo_id')
+                ->whereNull($esMaquina ? 'vehiculo_id' : 'maquina_id');
+        }
         foreach (['estatus', 'maquina_id', 'vehiculo_id', 'obra_id'] as $campo) {
             if (isset($filtros[$campo])) {
                 $query->where($campo, $filtros[$campo]);

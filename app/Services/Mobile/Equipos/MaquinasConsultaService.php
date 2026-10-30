@@ -6,11 +6,20 @@ use App\Models\Mantenimiento;
 use App\Models\Maquina;
 use App\Models\ObraMaquina;
 use App\Models\Seguro;
+use App\Services\Maquinas\MaquinaHorometroService;
+use App\Services\Maquinas\PreventivoMaquinaService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 
 class MaquinasConsultaService
 {
+    public function __construct(
+        private PreventivoMaquinaService $preventivoService,
+        private MaquinaHorometroService $horometroService,
+    ) {
+    }
+
     public function index(Request $request)
     {
         $q = Maquina::query()
@@ -21,6 +30,7 @@ class MaquinasConsultaService
                 'placas',
                 'horometro_base',
                 'estado',
+                'ubicacion',
                 'marca',
                 'modelo',
                 'tipo',
@@ -60,6 +70,7 @@ class MaquinasConsultaService
 
         $perPage = min(max((int) $request->get('per_page', 20), 1), 50);
         $rows = $q->paginate($perPage)->withQueryString();
+        $operativos = $this->datosOperativos($rows->getCollection());
 
         $maquinaIds = $rows->getCollection()->pluck('id')->filter()->values();
         $asignacionesActivas = $maquinaIds->isEmpty()
@@ -77,7 +88,7 @@ class MaquinasConsultaService
 
         return [
             'ok' => true,
-            'data' => $rows->through(function ($m) use ($asignacionesActivas) {
+            'data' => $rows->through(function ($m) use ($asignacionesActivas, $operativos) {
                 $asig = $asignacionesActivas->get($m->id);
 
                 return [
@@ -90,6 +101,8 @@ class MaquinasConsultaService
                     'placas' => $m->placas ?? null,
                     'horometro_base' => $m->horometro_base ?? null,
                     'estado' => $m->estado ?? null,
+                    'ubicacion' => $m->ubicacion ?? null,
+                    ...$operativos[$m->id],
                     'asignada' => (bool) $asig,
                     'obra_activa' => $asig && $asig->obra ? [
                         'id' => (int) $asig->obra->id,
@@ -152,6 +165,8 @@ class MaquinasConsultaService
             ->values();
 
         $asig = $maquina->asignacionActiva;
+        $retiro = app(\App\Services\Maquinas\MaquinaAsignacionService::class)->asignacionParaRetiro($maquina);
+        $operativos = $this->datosOperativos(collect([$maquina]));
 
         $seguros = $maquina->seguros()
             ->orderByDesc('vigencia_hasta')
@@ -179,6 +194,7 @@ class MaquinasConsultaService
                     'placas' => $maquina->placas ?? null,
                     'color' => $maquina->color ?? null,
                     'horometro_base' => $maquina->horometro_base ?? null,
+                    ...$operativos[$maquina->id],
                     'estado' => $maquina->estado ?? null,
                     'ubicacion' => $maquina->ubicacion ?? null,
                     'notas' => $maquina->notas ?? null,
@@ -196,6 +212,13 @@ class MaquinasConsultaService
                         'ubicacion' => $asig->obra->ubicacion ?? null,
                     ] : null,
                 ] : null,
+                'asignacion_retiro' => $retiro ? [
+                    'obra_maquina_id' => (int) $retiro->id,
+                    'fecha_inicio' => optional($retiro->fecha_inicio)->toDateString(),
+                    'horometro_inicio' => $retiro->horometro_inicio,
+                    'estado' => $retiro->estado,
+                    'obra' => $retiro->obra ? $retiro->obra->only(['id', 'nombre', 'clave_obra', 'estatus_nuevo']) : null,
+                ] : null,
                 'asignaciones_recientes' => $asignaciones,
                 'seguro_vigente' => $this->resolverSeguroVigente($seguros),
                 'seguros_recientes' => $seguros->map(fn (Seguro $seguro) => $this->mapSeguro($seguro))->values(),
@@ -203,6 +226,33 @@ class MaquinasConsultaService
                 'mantenimientos_resumen' => $this->mapMantenimientosResumen($maquina),
             ],
         ];
+    }
+
+    private function datosOperativos(Collection $maquinas): array
+    {
+        if ($maquinas->isEmpty()) {
+            return [];
+        }
+
+        $preventivos = $this->preventivoService->calcularParaColeccion($maquinas);
+
+        return $maquinas->mapWithKeys(function (Maquina $maquina) use ($preventivos) {
+            $preventivo = $preventivos[$maquina->id];
+            $horometroActual = $preventivo['horometro_actual'];
+            // Las metas son fechas civiles; la última lectura se serializa con zona.
+            $preventivo['proximo_fecha'] = $preventivo['proximo_fecha']?->toDateString();
+            $preventivo['servicios'] = array_map(function (array $servicio) {
+                $servicio['proximo_fecha'] = $servicio['proximo_fecha']?->toDateString();
+
+                return $servicio;
+            }, $preventivo['servicios']);
+
+            return [$maquina->id => [
+                'horometro_actual' => $horometroActual,
+                'fecha_ultima_lectura' => $this->horometroService->fechaUltimaLectura($maquina)?->toIso8601String(),
+                'preventivo' => $preventivo,
+            ]];
+        })->all();
     }
 
     private function mapSeguro(Seguro $seguro): array

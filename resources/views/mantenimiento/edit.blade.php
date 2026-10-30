@@ -4,6 +4,7 @@
     <div class="max-w-[95%] mx-auto py-4">
         @php
             $esMaquina = !empty($mantenimiento->maquina_id);
+            $servicioCerrado = in_array($mantenimiento->estatus, ['completado', 'cancelado'], true);
             $serviciosPreventivos = $esMaquina ? ($serviciosPreventivosMaquinaria ?? collect()) : ($serviciosPreventivosVehiculos ?? collect());
             $servicioPreventivoId = old('servicio_preventivo_tipo_id', $mantenimiento->servicio_preventivo_tipo_id);
             $servicioPreventivoSeleccionado = $serviciosPreventivos->firstWhere('id', $servicioPreventivoId);
@@ -16,6 +17,7 @@
             }
             $hayFaltantes = $materialesAbastecimiento->contains(fn ($material) => (float) $material['faltante'] > 0);
             $hayDisponibles = $materialesAbastecimiento->contains(fn ($material) => (float) $material['surtible'] > 0);
+            $hayPorComprar = $materialesAbastecimiento->contains(fn ($material) => (float) $material['por_comprar'] > 0.0005);
             $ordenGenerada = !empty($mantenimiento->orden_servicio_folio)
                 && $mantenimiento->estatus !== 'borrador';
             $solicitudAlmacenActiva = $abastecimientos->first(fn ($solicitud) => $solicitud->tipo === 'almacen' && !in_array($solicitud->estado, ['surtida', 'cancelada'], true));
@@ -34,7 +36,7 @@
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
-                        <h1 class="text-xl font-bold text-slate-900">Editar Mantenimiento</h1>
+                        <h1 class="text-xl font-bold text-slate-900">{{ $servicioCerrado ? 'Consultar mantenimiento' : 'Editar Mantenimiento' }}</h1>
                         <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">#{{ $mantenimiento->id }}</span>
                     </div>
                     <p class="text-xs font-medium text-slate-500">
@@ -51,6 +53,15 @@
                 &larr; Volver
             </a>
         </div>
+
+        @if($servicioCerrado)
+            <div role="status" class="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-[#0B265A]">
+                <strong>Servicio {{ $mantenimiento->estatus === 'completado' ? 'completado' : 'cancelado' }}.</strong> Los datos se muestran en modo consulta.
+            </div>
+            <style>
+                .campos-servicio-cerrado :is(input:not([type="hidden"]), select, textarea) { background-color: #f1f5f9; color: #64748b; border-color: #cbd5e1; cursor: not-allowed; opacity: 1; }
+            </style>
+        @endif
 
         @if($errors->any())
             <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl shadow-sm">
@@ -83,6 +94,7 @@
                     @if($returnTo)
                         <input type="hidden" name="return_to" value="{{ $returnTo }}">
                     @endif
+                    <fieldset @disabled($servicioCerrado) class="min-w-0 border-0 p-0 m-0 {{ $servicioCerrado ? 'campos-servicio-cerrado' : '' }}" aria-label="Datos del mantenimiento">
 
                     <div class="mb-4 overflow-hidden rounded-xl border border-slate-200">
                         <div class="bg-[#0B265A] px-3 py-2 text-xs font-bold uppercase tracking-wider text-white">Datos del servicio</div>
@@ -225,7 +237,7 @@
                         <div class="md:col-span-2 overflow-hidden rounded-xl border border-slate-200">
                             <div class="bg-[#0B265A] px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-white">Evidencia del servicio</div>
                             <div class="p-3">
-                                <p class="text-[11px] text-slate-500">Agrega hasta 8 fotografías del trabajo realizado. Cada imagen se optimizará a WebP antes de almacenarse y puede llevar su propia nota.</p>
+                                <p class="text-[11px] text-slate-500">{{ $servicioCerrado ? 'Fotografías registradas del servicio. La captura está bloqueada después del cierre.' : 'Agrega hasta 8 fotografías del trabajo realizado. Cada imagen se optimizará a WebP antes de almacenarse y puede llevar su propia nota.' }}</p>
                                 <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
                                     <div>
                                         <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">Fotografías</label>
@@ -261,10 +273,11 @@
                             </div>
                         </div>
                     </div>
+                    </fieldset>
                 </form>
 
                 <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                    <a href="{{ $cancelUrl }}" class="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition">Cancelar</a>
+                    <a href="{{ $cancelUrl }}" class="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition">{{ $servicioCerrado ? 'Volver' : 'Cancelar' }}</a>
                     @if(($mantenimiento->estatus ?? null) === 'borrador')
                         <form method="POST" action="{{ route('mantenimiento.mantenimientos.generar-orden-servicio', $mantenimiento) }}">
                             @csrf
@@ -277,6 +290,10 @@
                            class="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold rounded-xl bg-[#0B265A] text-white shadow-md hover:opacity-90 transition">
                             Imprimir reporte
                         </a>
+                    @elseif($mantenimiento->estatus === 'cancelado')
+                        @if($mantenimiento->orden_servicio_folio)
+                            <a href="{{ route('mantenimiento.mantenimientos.orden-servicio.print', $mantenimiento) }}" target="_blank" rel="noopener" class="px-4 py-2 text-xs font-semibold rounded-xl border border-blue-200 text-blue-700 hover:bg-blue-50">Imprimir orden</a>
+                        @endif
                     @else
                         @if($mantenimiento->orden_servicio_folio)
                             <a href="{{ route('mantenimiento.mantenimientos.orden-servicio.print', $mantenimiento) }}" target="_blank" rel="noopener"
@@ -302,20 +319,20 @@
                                 @foreach($materialesOrden as $materialOrden)
                                     <div class="rounded-xl border border-slate-200 p-2.5 text-xs {{ $materialOrden->incluido ? 'bg-slate-50' : 'bg-amber-50' }}">
                                         <label class="flex items-start gap-2">
-                                            <input type="checkbox" name="incluidos[]" value="{{ $materialOrden->id }}" @checked($materialOrden->incluido) @disabled($ordenGenerada === false) class="mt-0.5 rounded border-slate-300 text-blue-700 focus:ring-blue-600">
+                                            <input type="checkbox" name="incluidos[]" value="{{ $materialOrden->id }}" @checked($materialOrden->incluido) @disabled($servicioCerrado || $ordenGenerada === false) class="mt-0.5 rounded border-slate-300 text-blue-700 focus:ring-blue-600">
                                             <span class="flex-1">
                                                 <span class="block font-semibold text-slate-800">{{ $materialOrden->producto_nombre_snapshot }}</span>
                                                 <span class="block text-[11px] text-slate-500">{{ $materialOrden->producto_sku_snapshot ?: 'Sin SKU' }} · {{ number_format((float) $materialOrden->cantidad_requerida, 2) }} {{ $materialOrden->unidad ?: '' }}</span>
                                             </span>
                                         </label>
-                                        <input type="text" name="motivos[{{ $materialOrden->id }}]" value="{{ $materialOrden->motivo_exclusion }}" placeholder="Motivo si se excluye (opcional)" @disabled($ordenGenerada === false) class="mt-2 w-full rounded-lg border-slate-200 px-2 py-1.5 text-[11px] disabled:bg-slate-100">
+                                        <input type="text" name="motivos[{{ $materialOrden->id }}]" value="{{ $materialOrden->motivo_exclusion }}" placeholder="Motivo obligatorio si no se aplica en este servicio" maxlength="255" @disabled($servicioCerrado || $ordenGenerada === false) class="mt-2 w-full rounded-lg border-slate-200 px-2 py-1.5 text-[11px] disabled:bg-slate-100">
                                     </div>
                                 @endforeach
                             </div>
-                            @if($ordenGenerada && $abastecimientos->isEmpty())
+                            @if(!$servicioCerrado && $ordenGenerada && $abastecimientos->isEmpty())
                                 <button type="submit" class="mt-3 rounded-xl bg-[#0B265A] px-3 py-2 text-xs font-bold text-white hover:bg-[#12367d]">Guardar materiales</button>
                             @else
-                                <p class="mt-3 text-[11px] font-semibold text-slate-500">Los materiales quedan bloqueados después de generar una solicitud de abastecimiento.</p>
+                                <p class="mt-3 text-[11px] font-semibold text-slate-500">{{ $servicioCerrado ? 'El servicio está cerrado. Los materiales son de solo consulta.' : 'Los materiales quedan bloqueados después de generar una solicitud de abastecimiento.' }}</p>
                             @endif
                         </form>
                 @endif
@@ -344,11 +361,12 @@
                                             <span class="px-1.5 py-0.5 bg-red-50 text-red-700 text-[10px] font-bold rounded">Sin stock</span>
                                         @endif
                                     </div>
-                                    <div class="flex justify-between mt-1 text-[11px] text-slate-500">
+                                    <div class="flex flex-wrap justify-between gap-2 mt-1 text-[11px] text-slate-500">
                                         <span>Req: <strong class="text-slate-700">{{ number_format($material['requerido'], 2) }}</strong></span>
                                         <span>Surtido: <strong class="text-emerald-700">{{ number_format($material['surtido'], 2) }}</strong></span>
                                         <span>Surtible: <strong class="text-slate-700">{{ number_format($material['surtible'], 2) }}</strong></span>
                                         <span>Faltante: <strong class="{{ $material['faltante'] > 0 ? 'text-red-600' : 'text-slate-700' }}">{{ number_format($material['faltante'], 2) }}</strong></span>
+                                        <span>Por comprar: <strong class="{{ $material['por_comprar'] > 0 ? 'text-amber-700' : 'text-emerald-700' }}">{{ number_format($material['por_comprar'], 2) }}</strong></span>
                                     </div>
                                     @if(!empty($material['folios_salida']))
                                         <div class="mt-1 text-[10px] text-slate-500">
@@ -371,7 +389,7 @@
                             <form method="POST" action="{{ route('mantenimiento.mantenimientos.abastecimientos.store', $mantenimiento) }}">
                                 @csrf
                                 <input type="hidden" name="tipo" value="almacen">
-                                <button type="submit" @disabled(!$ordenGenerada || $solicitudAlmacenActiva || !$hayFaltantes) class="w-full rounded-xl bg-[#0B265A] p-2.5 text-left text-white hover:bg-[#12367d] disabled:opacity-50 transition">
+                                <button type="submit" @disabled($servicioCerrado || !$ordenGenerada || $solicitudAlmacenActiva || !$hayFaltantes) class="w-full rounded-xl bg-[#0B265A] p-2.5 text-left text-white hover:bg-[#12367d] disabled:opacity-50 transition">
                                     <span class="block text-xs font-bold">Almacén</span>
                                     <span class="block text-[10px] text-blue-200">Surtido parcial/total</span>
                                 </button>
@@ -379,7 +397,7 @@
                             <form method="POST" action="{{ route('mantenimiento.mantenimientos.abastecimientos.store', $mantenimiento) }}">
                                 @csrf
                                 <input type="hidden" name="tipo" value="compra">
-                                <button type="submit" @disabled(!$ordenGenerada || $solicitudCompraActiva || !$hayFaltantes) class="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-left text-slate-800 hover:bg-slate-50 disabled:opacity-50 transition">
+                                <button type="submit" @disabled($servicioCerrado || !$ordenGenerada || $solicitudCompraActiva || !$hayPorComprar) class="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-left text-slate-800 hover:bg-slate-50 disabled:opacity-50 transition">
                                     <span class="block text-xs font-bold">Compras</span>
                                     <span class="block text-[10px] text-slate-500">Adquisición externa</span>
                                 </button>

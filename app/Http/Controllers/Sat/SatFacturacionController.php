@@ -157,14 +157,14 @@ class SatFacturacionController extends Controller
             ->latest('fecha_emision')
             ->get();
 
-        $pagos = SatFacturaPago::with('factura')
+        $pagos = SatFacturaPago::with(['factura', 'documentos.factura'])
             ->whereHas('factura', fn ($query) => $query->where('cliente_id', $cliente->id))
             ->latest('fecha_pago')
             ->get();
 
         $totalVigente = $facturasVigentes->sum('total');
         $totalCancelado = $facturasCanceladas->sum('total');
-        $totalPagado = $pagos->where('estado', 'timbrado')->sum('monto');
+        $totalPagado = $pagos->whereIn('estado', ['timbrado', 'cancelacion_pendiente'])->sum('monto');
 
         return view('sat.facturacion.cliente', compact(
             'cliente',

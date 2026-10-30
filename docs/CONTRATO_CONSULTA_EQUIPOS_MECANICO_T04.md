@@ -42,7 +42,7 @@ Ejemplo de estructura, con datos ficticios:
 
 ### Campos de máquinas
 
-`id`, `codigo`, `nombre`, `tipo`, `marca`, `modelo`, `placas`, `horometro_base`, `estado`, `asignada`, `obra_activa`.
+`id`, `codigo`, `nombre`, `tipo`, `marca`, `modelo`, `placas`, `horometro_base`, `horometro_actual`, `fecha_ultima_lectura`, `preventivo`, `estado`, `ubicacion`, `asignada`, `obra_activa`.
 
 `obra_activa` es nula o contiene `id`, `nombre`, `clave_obra`, `estatus_nuevo`. Describe la ubicación/asignación del equipo y no representa una obra asignada al mecánico.
 
@@ -59,6 +59,29 @@ Máquina: `ok`, `data.maquina`, `data.asignacion_activa`, `data.mantenimientos_r
 Vehículo: `ok`, `data.vehiculo`, `data.asignacion_actual`, `data.mantenimientos_recientes`, `data.mantenimientos_resumen`.
 
 La ficha de máquina incluye identidad, marca/modelo/serie/placas/color, horómetro base, estado, ubicación y notas del equipo. La asignación activa contiene fechas, lectura inicial, estado y obra. La ficha de vehículo usa los mismos campos operativos de su listado.
+
+### Ampliación operativa de máquinas — 2026-10-29
+
+El listado y `data.maquina` del detalle entregan los mismos campos operativos:
+
+| Campo | Contrato |
+|---|---|
+| `ubicacion` | Valor del catálogo (`en_obra`, `en_camino`, `en_reparacion`, `en_patio`) o `null`. Es independiente del estado y de la obra activa. |
+| `horometro_actual` | Número o `null`, calculado con `MaquinaHorometroService` mediante `PreventivoMaquinaService`. Considera base, asignaciones, registros, mantenimientos y ajustes; no equivale necesariamente a `horometro_base`. Cero es una lectura válida. |
+| `fecha_ultima_lectura` | Fecha y hora ISO 8601 con zona, o `null`. Usa `fechaUltimaLectura`, igual que Laravel: considera registros, ajustes y mantenimientos. Una máquina con solo horómetro base puede tener lectura actual y fecha nula. |
+| `preventivo` | Resumen prioritario de `PreventivoMaquinaService`, idéntico al cálculo web, y arreglo `servicios` con todos los tipos activos de maquinaria. |
+
+`preventivo` contiene `servicio_id`, `servicio_nombre`, `servicio_codigo`, `servicio_tipo_actual`, `servicio_tipo_siguiente`, `servicio_tipo_codigo`, `servicio_tipo_nombre`, `estado`, `label`, `color`, `horas_usadas`, `horas_restantes`, `intervalo_horas`, `porcentaje`, `proximo_horometro`, `proximo_fecha`, `horometro_actual` y `servicios`. Cada elemento de `servicios` contiene los mismos datos del tipo preventivo, sin repetir `horometro_actual` ni anidar otro arreglo.
+
+- Estados: `sin_datos`, `ok`, `proximo`, `vencido`. El texto de `label` es informativo; el cliente debe usar `estado` para su lógica.
+- `proximo_fecha` es una fecha civil `YYYY-MM-DD` o `null`, tanto en el resumen como en cada servicio. No debe desplazarse por conversión de zona horaria.
+- Los ajustes con `fecha_registro` guardan solo el día en el modelo existente: su hora se representa a medianoche. Se conserva esta regla del servicio compartido.
+- Solo se consideran tipos activos del ámbito maquinaria; se conserva el respaldo de configuración general cuando no hay tipos activos. El servicio compartido decide prioridad, intervalos y vencimiento por horas o tiempo.
+- El cálculo del listado se limita a la página consultada (máximo 50 equipos). No se agregan indicadores globales ni nuevos filtros en este paso.
+- La consulta gerencial compartida recibe estos campos adicionales y conserva su paginador anidado y sus campos anteriores. La proyección mecánica sigue excluyendo seguros y documentos.
+- No se requieren migraciones, nuevos permisos ni cambios en datos. El cliente móvil ya incorpora estos campos en las tarjetas de listado/detalle; ver [implementación de consultas móviles](IMPLEMENTACION_CONSULTAS_MOVIL_MECANICO_C13_3.md#tarjetas-operativas-de-máquinas--2026-10-29).
+
+Validación añadida: pruebas HTTP de proyección en listado/detalle y pruebas con SQLite en memoria usando los servicios reales para lecturas actuales, ausencia de lecturas, cero, tipos activos, prioridad por tiempo, respaldo de configuración, paginación y filtros.
 
 ### Historial de servicios
 

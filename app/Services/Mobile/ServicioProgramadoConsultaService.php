@@ -18,7 +18,7 @@ class ServicioProgramadoConsultaService
     {
         return Mantenimiento::query()->where('tipo', 'programado')
             ->with(['maquina:id,nombre,codigo', 'vehiculo:id,marca,modelo,placas',
-                'obra:id,nombre', 'mecanico:id_Empleado,Nombre,Apellidos', 'servicioPreventivoTipo:id,nombre,ambito,activo',
+                'obra:id,nombre', 'mecanico:id_Empleado,Nombre,Apellidos', 'servicioPreventivoTipo:id,nombre,ambito,activo,intervalo_valor,unidad',
                 'materialesOrden:id,mantenimiento_id,producto_id,cantidad_requerida,incluido',
                 'abastecimientos:id,mantenimiento_id,tipo,estado',
                 'abastecimientos.detalles:id,abastecimiento_id,producto_id,cantidad_atendida'])
@@ -67,14 +67,15 @@ class ServicioProgramadoConsultaService
             'obra' => $servicio->obra?->only(['id', 'nombre']),
             'mecanico' => $servicio->mecanico ? ['id' => (int) $servicio->mecanico->id_Empleado,
                 'nombre' => trim($servicio->mecanico->Nombre.' '.$servicio->mecanico->Apellidos)] : null,
-            'servicio_preventivo' => $servicio->servicioPreventivoTipo?->only(['id', 'nombre', 'ambito']),
+            'servicio_preventivo' => $servicio->servicioPreventivoTipo?->only(['id', 'nombre', 'ambito', 'intervalo_valor', 'unidad']),
             'es_propio' => $propio,
             'acciones_permitidas' => ['editar_borrador' => $editable, 'generar_orden' => $generable,
                 'ajustar_materiales' => $propio && $servicio->estatus === 'orden_generada' && (bool) $servicio->orden_servicio_folio
                     && (bool) $servicio->materiales_orden_exists && ! $servicio->abastecimientos_exists,
                 'solicitar_almacen' => $solicitable && ! $activas->contains('tipo', 'almacen'),
                 'solicitar_compra' => $solicitable && ! $activas->contains('tipo', 'compra'),
-                'agregar_evidencias' => $propio && $servicio->fotos_count < 8,
+                'agregar_evidencias' => $propio && $servicio->fotos_count < 8
+                    && app(\App\Services\Mantenimiento\MantenimientoEjecucionService::class)->permiteEvidencias($servicio),
                 'iniciar' => $propio && (bool) $servicio->orden_servicio_folio && in_array($servicio->estatus, ['orden_generada', 'pendiente'], true),
                 'completar' => $propio && (bool) $servicio->orden_servicio_folio && $servicio->estatus === 'en_proceso'
                     && $servicio->fecha_inicio !== null && app(\App\Services\Mantenimiento\MantenimientoEjecucionService::class)->surtidoCompleto($servicio),
@@ -89,8 +90,14 @@ class ServicioProgramadoConsultaService
             ->whereIn('mantenimiento_abastecimiento_id', $servicio->abastecimientos->modelKeys())
             ->orderBy('id')->get(['id', 'mantenimiento_abastecimiento_id', 'folio', 'estado', 'estado_recepcion', 'fecha'])
             ->groupBy('mantenimiento_abastecimiento_id');
+        $avanceCompleto = $this->abastecimiento->calcular($servicio, true);
+        $avance = $avanceCompleto->where('incluido', true)->values();
+        $inventarioPorMaterial = $avanceCompleto->keyBy('material_id');
+        $resumen = $this->resumen($servicio, $empleadoId);
+        $resumen['acciones_permitidas']['solicitar_compra'] = $resumen['acciones_permitidas']['solicitar_compra']
+            && $avance->contains(fn ($material) => $material['por_comprar'] > 0.0005);
 
-        return array_merge($this->resumen($servicio, $empleadoId), [
+        return array_merge($resumen, [
             'orden' => ['folio' => $servicio->orden_servicio_folio, 'generada_at' => $servicio->orden_servicio_generada_at,
                 'tiene_snapshot' => (bool) $servicio->materiales_orden_exists],
             'materiales' => $servicio->materialesOrden->map(fn ($m) => [
@@ -99,8 +106,9 @@ class ServicioProgramadoConsultaService
                 'producto' => $m->producto_nombre_snapshot, 'sku' => $m->producto_sku_snapshot,
                 'unidad' => $m->unidad, 'cantidad_requerida' => (float) $m->cantidad_requerida,
                 'incluido' => (bool) $m->incluido, 'motivo_exclusion' => $m->motivo_exclusion,
+                'disponible' => $inventarioPorMaterial->get($m->id)['disponible'] ?? null,
             ])->values(),
-            'avance_materiales' => $this->abastecimiento->calcular($servicio)->values(),
+            'avance_materiales' => $avance,
             'solicitudes' => $servicio->abastecimientos->sortBy('id')->values()->map(fn ($s) => [
                 'id' => (int) $s->id, 'folio' => $s->folio, 'tipo' => $s->tipo, 'estado' => $s->estado,
                 'created_at' => $s->created_at,

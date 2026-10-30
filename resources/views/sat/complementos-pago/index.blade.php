@@ -129,6 +129,7 @@
         </div>
 
         @if($tab === 'pendientes')
+            <form id="seleccion-complemento" method="GET" action="{{ route('sat.complementos-pago.create') }}" class="px-5 py-3 bg-blue-50 flex flex-wrap items-center justify-between gap-3"><span class="text-sm text-blue-900">Selecciona las facturas del mismo cliente que cubre el pago.</span><button type="submit" class="rounded-xl bg-[#0B265A] text-white px-4 py-2 text-sm font-semibold">Complementar facturas seleccionadas</button></form>
             <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div>
                     <h2 class="text-lg font-semibold text-slate-900">Por complementar</h2>
@@ -140,7 +141,7 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="bg-[#0B265A] border-b border-[#0B265A] text-white">
-                        <tr class="text-white uppercase text-xs tracking-wide">
+                        <tr class="text-white uppercase text-xs tracking-wide"><th class="px-3 py-4">Incluir</th>
                             <th class="px-5 py-4 text-left">Factura</th>
                             <th class="px-5 py-4 text-left">Cliente</th>
                             <th class="px-5 py-4 text-left">Obra</th>
@@ -154,7 +155,7 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse($facturasPendientes as $facturaPendiente)
-                            <tr class="hover:bg-slate-50">
+                            <tr class="hover:bg-slate-50"><td class="px-3 py-4"><input type="checkbox" form="seleccion-complemento" name="factura_ids[]" value="{{ $facturaPendiente->id }}" aria-label="Incluir factura {{ $facturaPendiente->serie }}-{{ $facturaPendiente->folio }}" class="rounded border-slate-300"></td>
                                 <td class="px-5 py-4">
                                     <a href="{{ route('sat.facturacion.show', $facturaPendiente) }}"
                                        class="font-semibold text-indigo-700 hover:text-indigo-900 hover:underline">
@@ -295,15 +296,10 @@
                                     </div>
                                 </td>
                                 <td class="px-5 py-4">
-                                    @if($pago->factura)
-                                        <a href="{{ route('sat.facturacion.show', $pago->factura) }}"
-                                           class="font-semibold text-indigo-700 hover:text-indigo-900 hover:underline">
-                                            {{ trim(($pago->factura->serie ? $pago->factura->serie . '-' : '') . $pago->factura->folio) ?: 'Factura #' . $pago->factura->id }}
-                                        </a>
-                                        <div class="text-xs text-slate-500 font-mono">{{ $pago->factura->uuid }}</div>
-                                    @else
-                                        <span class="text-slate-400">Factura no encontrada</span>
-                                    @endif
+                                    @foreach($pago->documentos as $documento)
+                                        <a href="{{ route('sat.facturacion.show', $documento->factura) }}" class="block font-semibold text-indigo-700 hover:underline">{{ trim(($documento->factura->serie ? $documento->factura->serie.'-' : '').$documento->factura->folio) ?: 'Factura #'.$documento->sat_factura_id }}</a>
+                                        <div class="text-xs text-slate-500 font-mono">{{ $documento->factura->uuid }}</div>
+                                    @endforeach
                                 </td>
                                 <td class="px-5 py-4">
                                     <div class="font-semibold text-slate-900">
@@ -314,7 +310,7 @@
                                 <td class="px-5 py-4">
                                     <div class="text-xs font-mono text-slate-700">{{ $pago->uuid ?: 'Sin UUID' }}</div>
                                 </td>
-                                <td class="px-5 py-4 text-center">{{ $pago->numero_parcialidad ?: '-' }}</td>
+                                <td class="px-5 py-4 text-center">{{ $pago->documentos->count() > 1 ? 'Por factura' : ($pago->numero_parcialidad ?: '-') }}</td>
                                 <td class="px-5 py-4 text-right font-semibold text-emerald-700">
                                     ${{ number_format($pago->monto, 2) }}
                                 </td>

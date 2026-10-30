@@ -226,10 +226,19 @@
                             <td class="px-4 py-3">
                                 @php
                                     $obraActual = $m->asignacionActiva?->obra;
-                                    $ubicLabel = $obraActual ? 'En obra' : 'En patio';
-                                    $ubicClass = $obraActual
-                                        ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                        : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                                    $ubicLabel = match($m->ubicacion) {
+                                        'en_obra' => 'En obra',
+                                        'en_camino' => 'En camino',
+                                        'en_reparacion' => 'En reparación',
+                                        'en_patio' => 'En patio',
+                                        default => 'Sin ubicación',
+                                    };
+                                    $ubicClass = match($m->ubicacion) {
+                                        'en_obra' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                        'en_camino', 'en_reparacion' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                        'en_patio' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                        default => 'bg-slate-50 text-slate-700 border-slate-200',
+                                    };
                                 @endphp
 
                                 @if($obraActual && $puedeDarBaja)
@@ -237,26 +246,26 @@
                                             class="inline-flex w-fit items-center gap-1.5 rounded-lg border px-2 py-1 text-left text-xs font-medium {{ $ubicClass }} hover:bg-blue-100 hover:border-blue-300 transition"
                                             title="Administrar ubicación de la máquina"
                                             @click.stop='openBajaModal({!! $bajaObraPayload !!})'>
-                                        <span>{{ $obraActual->nombre ?? 'Obra' }}</span>
+                                        <span>{{ $ubicLabel }} · {{ $obraActual->nombre ?? 'Obra' }}</span>
                                         <span aria-hidden="true">↗</span>
                                     </button>
                                 @elseif($obraActual)
                                     <span class="inline-flex w-fit items-center rounded-lg border px-2 py-1 text-xs font-medium {{ $ubicClass }}">
-                                        {{ $obraActual->nombre ?? 'Obra' }}
+                                        {{ $ubicLabel }} · {{ $obraActual->nombre ?? 'Obra' }}
                                     </span>
                                 @elseif($puedeAsignarObra)
                                     <button type="button"
                                             class="inline-flex w-fit items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-medium {{ $ubicClass }} hover:bg-emerald-100 hover:border-emerald-300 transition"
                                             title="Asignar a una obra"
                                             @click.stop='openAsignarModal({!! $asignarObraPayload !!})'>
-                                        <span>En patio</span>
+                                        <span>{{ $ubicLabel }}</span>
                                         <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                             <path fill-rule="evenodd" d="M10 2a.75.75 0 0 1 .75.75v6.5h6.5a.75.75 0 0 1 0 1.5h-6.5v6.5a.75.75 0 0 1-1.5 0v-6.5h-6.5a.75.75 0 0 1 0-1.5h6.5v-6.5A.75.75 0 0 1 10 2Z" clip-rule="evenodd" />
                                         </svg>
                                     </button>
                                 @else
                                     <span class="inline-flex w-fit items-center px-2 py-1 rounded-lg border text-xs {{ $ubicClass }}" title="Solo máquinas operativas pueden asignarse desde esta vista">
-                                        En patio
+                                        {{ $ubicLabel }}
                                     </span>
                                 @endif
                             </td>

@@ -13,7 +13,7 @@ class EquipoMecanicoPresenter
         return [
             'ok' => $payload['ok'],
             'data' => $items->map(fn (array $item) => $tipo === 'maquina'
-                ? Arr::only($item, ['id', 'codigo', 'nombre', 'tipo', 'marca', 'modelo', 'placas', 'horometro_base', 'estado', 'asignada', 'obra_activa'])
+                ? Arr::only($item, ['id', 'codigo', 'nombre', 'tipo', 'marca', 'modelo', 'placas', 'horometro_base', 'horometro_actual', 'fecha_ultima_lectura', 'preventivo', 'estado', 'ubicacion', 'asignada', 'obra_activa'])
                 : array_merge($this->vehiculo($item), [
                     'asignado' => $item['asignado'],
                     'asignacion_actual' => $this->asignacionVehiculo($item['asignacion_actual']),
@@ -26,8 +26,9 @@ class EquipoMecanicoPresenter
     {
         $data = $payload['data'];
         $equipo = $tipo === 'maquina'
-            ? ['maquina' => Arr::only($data['maquina'], ['id', 'codigo', 'nombre', 'tipo', 'marca', 'modelo', 'numero_serie', 'placas', 'color', 'horometro_base', 'estado', 'ubicacion', 'notas']),
-                'asignacion_activa' => $data['asignacion_activa']]
+            ? ['maquina' => Arr::only($data['maquina'], ['id', 'codigo', 'nombre', 'tipo', 'marca', 'modelo', 'numero_serie', 'placas', 'color', 'horometro_base', 'horometro_actual', 'fecha_ultima_lectura', 'preventivo', 'estado', 'ubicacion', 'notas']),
+                'asignacion_activa' => $data['asignacion_activa'],
+                'asignacion_retiro' => $data['asignacion_retiro'] ?? null]
             : ['vehiculo' => $this->vehiculo($data['vehiculo']),
                 'asignacion_actual' => $this->asignacionVehiculo($data['asignacion_actual'])];
 

@@ -37,9 +37,9 @@ El ejemplo ilustra el objeto de evidencia. La URL real es absoluta, usa la confi
 
 Sanctum, usuario app activo y `app.mecanico.access`. Debe existir un empleado vinculado; el servicio debe ser programado y pertenecer a ese mecánico, sin necesidad de obra asignada.
 
-Se conserva la regla web de evidencias: pueden agregarse en cualquiera de los estados existentes, incluso completado o cancelado, mientras haya capacidad. Subir una foto no cambia etapa, asignación, fechas de ejecución, lecturas ni costos. Las transiciones de ejecución siguen siendo tarea de T12.
+Regla móvil actualizada el 2026-10-28: requiere orden con folio, inicio registrado, estado `en_proceso` o `completado` y surtido completo de los materiales incluidos. Las partidas excluidas no bloquean. Una compra o recepción no sustituye la atención de las cantidades requeridas por el servicio. Si no hay materiales incluidos, no se exige una compra artificial. Ajuste web del 2026-10-29: los servicios completados o cancelados quedan en modo consulta, incluida la carga de fotografías desde su formulario de edición.
 
-`acciones_permitidas.agregar_evidencias` se calcula en listado y detalle como servicio propio con menos de ocho fotos. Se usa `withCount` para no traer imágenes por fila; la operación vuelve a comprobar propiedad y capacidad dentro de la transacción.
+`acciones_permitidas.agregar_evidencias` se calcula en listado y detalle como servicio propio, con menos de ocho fotos y cumplimiento de la etapa y surtido anteriores. Se usa `withCount` para no traer imágenes por fila; la operación vuelve a comprobar propiedad, etapa, surtido y capacidad bajo bloqueo del mantenimiento, antes de procesar archivos. Un incumplimiento de etapa o surtido devuelve HTTP 409. Subir fotos no modifica la ejecución.
 
 ## Guardado compartido y limpieza
 
@@ -62,6 +62,7 @@ La web conserva su formulario, permisos de edición, redirect y presentación de
 | 401 | Sin autenticación. |
 | 403 | Sin acceso mecánico/usuario activo o servicio ajeno. |
 | 404 | Servicio inexistente o emergencia fuera del alcance móvil. |
+| 409 | Servicio sin orden/inicio, cancelado, en una etapa previa o con materiales incluidos pendientes de surtir. |
 | 422 | Sin empleado vinculado, archivos/descripciones inválidos, campos adicionales o límite acumulado excedido. |
 | 500 | Fallo inesperado de procesamiento, almacenamiento o persistencia; lote revertido y limpieza compensatoria intentada. |
 
@@ -75,7 +76,7 @@ Nueve pruebas nuevas sobre SQLite efímero y disco de pruebas aislado:
 - Límite acumulado, rechazo previo a escribir y acción deshabilitada al llegar a ocho.
 - Formatos/tamaño/descripciones/campos protegidos y cantidad por lote.
 - Propiedad, tipo, empleado vinculado, permisos e inexistencia sin escritura.
-- Conservación de etapas, incluidos completado/cancelado, conforme a web.
+- Conservación de etapas al cargar; en móvil solo se admite ejecución iniciada y surtida, también completada; los cancelados se rechazan. En web se bloquea la edición y carga al cerrar el servicio.
 - Fallo del optimizador en la segunda foto: rollback y conservación de evidencia anterior.
 - Trigger SQL en la segunda foto: rollback del lote y limpieza de todos sus archivos.
 - Edición web compartida y rollback de cabecera al fallar la foto.
@@ -84,3 +85,10 @@ Nueve pruebas nuevas sobre SQLite efímero y disco de pruebas aislado:
 Suite móvil completa: **89 pruebas / 877 comprobaciones**, `php -d extension=pdo_sqlite vendor/phpunit/phpunit/phpunit --filter=AppMobile --no-progress`. Sin escribir en la base local ni en las fotos reales; Storage fake y SQLite en memoria. Sintaxis/rutas/UTF-8 verificados y graphify actualizado al cierre. Prueba de cargas simultáneas sobre InnoDB pendiente para T14.
 
 Siguiente: T12. Resolver D05 antes de habilitar inicio/cierre si no existe una decisión suficiente sobre materiales; no inferir esa regla de esta carga de fotos.
+
+## Checkpoint del 2026-10-28
+
+- Cabecera del servicio al inicio; después acciones, ajustes/materiales y solicitudes, ejecución y evidencias. Las cabeceras de acciones, ejecución y carga de evidencias usan azul de la app con texto blanco.
+- El card de carga permanece visible y explica el bloqueo. Archivo, cámara y envío respetan la acción autorizada por la API. Las fotos existentes siguen disponibles para consulta.
+- La carga móvil exige inicio y surtido completo; no se exige pasar por Compras si almacén puede surtir directamente. Inicio con materiales pendientes conserva su comportamiento anterior.
+- Validación local: 68 pruebas del backend, 716 comprobaciones; 29 pruebas de captura móvil y compilación Angular de desarrollo correctas. Sintaxis PHP y UTF-8 verificados. No requiere migración ni cambios a registros reales.

@@ -30,7 +30,7 @@
                     Ver factura
                 </a>
             @endif
-            @if($pago->estado === 'timbrado')
+            @if(in_array($pago->estado, ['timbrado', 'cancelacion_pendiente'], true))
                 <form method="POST"
                       action="{{ route('sat.facturacion.pagos.cancelar', $pago) }}"
                       onsubmit="return confirm('¿Cancelar este complemento de pago?');">
@@ -38,13 +38,18 @@
                     <input type="hidden" name="motivo_cancelacion" value="02">
                     <button type="submit"
                             class="inline-flex items-center justify-center rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white hover:bg-red-700">
-                        Cancelar complemento
+                        {{ $pago->estado === 'cancelacion_pendiente' ? 'Consultar cancelación' : 'Cancelar complemento completo' }}
                     </button>
                 </form>
             @endif
         </div>
     </div>
 
+    @if(session('warning'))<div class="mb-4 rounded-xl bg-amber-50 text-amber-900 p-4" role="status">{{ session('warning') }}</div>@endif
+    @if($pago->error_message)<div class="mb-4 rounded-xl bg-amber-50 text-amber-900 p-4" role="alert">{{ $pago->error_message }}</div>@endif
+    @if($pago->solicitud_id && in_array($pago->estado, ['en_proceso', 'pendiente_confirmacion'], true))
+        <form method="POST" action="{{ route('sat.complementos-pago.reintentar', $pago) }}" class="mb-5">@csrf<button type="submit" class="rounded-xl bg-[#0B265A] text-white px-4 py-3">Consultar / reintentar el mismo complemento</button><p class="mt-2 text-sm text-slate-600">Se conserva el reparto y la solicitud original; no se generará otro recibo por reintentar.</p></form>
+    @endif
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div class="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm">
             <p class="text-sm text-slate-500">Monto pagado</p>
@@ -70,45 +75,12 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-6">
             <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="px-5 py-4 border-b border-slate-200">
-                    <h2 class="text-lg font-semibold text-slate-900">Factura relacionada</h2>
-                </div>
-                <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <div class="text-xs font-semibold text-slate-500 uppercase">Folio</div>
-                        <div class="font-semibold text-slate-900">
-                            @if($pago->factura)
-                                {{ trim(($pago->factura->serie ? $pago->factura->serie . '-' : '') . $pago->factura->folio) ?: 'Factura #' . $pago->factura->id }}
-                            @else
-                                Factura no encontrada
-                            @endif
-                        </div>
-                    </div>
-                    <div>
-                        <div class="text-xs font-semibold text-slate-500 uppercase">UUID factura</div>
-                        <div class="font-mono text-xs text-slate-700 break-all">{{ $pago->factura?->uuid ?: '-' }}</div>
-                    </div>
-                    <div>
-                        <div class="text-xs font-semibold text-slate-500 uppercase">Cliente</div>
-                        <div class="font-semibold text-slate-900">
-                            {{ $pago->factura?->receptor_nombre ?: $pago->factura?->cliente?->razon_social ?: 'Sin cliente' }}
-                        </div>
-                        <div class="text-xs text-slate-500">
-                            {{ $pago->factura?->receptor_rfc ?: $pago->factura?->cliente?->rfc ?: '-' }}
-                        </div>
-                    </div>
-                    <div>
-                        <div class="text-xs font-semibold text-slate-500 uppercase">Obra</div>
-                        @if($pago->factura?->obra)
-                            <a href="{{ route('obras.edit', $pago->factura->obra) }}"
-                               class="font-semibold text-indigo-700 hover:text-indigo-900 hover:underline">
-                                {{ $pago->factura->obra->nombre ?? 'Obra #' . $pago->factura->obra->id }}
-                            </a>
-                        @else
-                            <div class="text-slate-500">Sin obra</div>
-                        @endif
-                    </div>
-                </div>
+                <h2 class="px-5 py-4 bg-[#0B265A] text-white font-semibold">Facturas relacionadas ({{ $pago->documentos->count() }})</h2>
+                <div class="overflow-x-auto"><table class="w-full text-sm"><thead class="bg-slate-50"><tr><th class="p-4 text-left">Factura / obra</th><th class="p-4 text-right">Parcialidad</th><th class="p-4 text-right">Saldo anterior</th><th class="p-4 text-right">Aplicado</th><th class="p-4 text-right">Saldo restante</th></tr></thead><tbody class="divide-y">
+                @foreach($pago->documentos as $documento)
+                    <tr><td class="p-4"><a class="font-semibold text-blue-800" href="{{ route('sat.facturacion.show', $documento->factura) }}">{{ trim(($documento->factura->serie ? $documento->factura->serie.'-' : '').$documento->factura->folio) ?: 'Factura #'.$documento->sat_factura_id }}</a><div class="text-xs font-mono text-slate-500 break-all">{{ $documento->factura->uuid }}</div><div class="text-xs text-slate-500">{{ $documento->factura->obra?->nombre ?: 'Sin obra' }}</div></td><td class="p-4 text-right">{{ $documento->numero_parcialidad }}</td><td class="p-4 text-right">{{ number_format($documento->saldo_anterior, 2) }}</td><td class="p-4 text-right font-semibold text-emerald-700">{{ number_format($documento->importe_aplicado, 2) }}</td><td class="p-4 text-right">{{ number_format($documento->saldo_insoluto, 2) }}</td></tr>
+                @endforeach
+                </tbody></table></div><p class="p-4 text-xs text-slate-500">Importes en {{ $pago->moneda }}. El XML y PDF corresponden a un solo complemento con todas estas facturas. Cancelarlo afecta al comprobante completo.</p>
             </section>
 
             <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -177,7 +149,7 @@
                     </div>
                     <div>
                         <div class="text-xs font-semibold text-slate-500 uppercase">Parcialidad</div>
-                        <div>{{ $pago->numero_parcialidad ?: '-' }}</div>
+                        <div>{{ $pago->documentos->count() > 1 ? 'Por factura (ver desglose)' : ($pago->numero_parcialidad ?: '-') }}</div>
                     </div>
                     <div>
                         <div class="text-xs font-semibold text-slate-500 uppercase">Facturapi ID</div>

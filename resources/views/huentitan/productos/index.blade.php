@@ -14,6 +14,9 @@
             {{-- <a href="{{ route('huentitan.index') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-md border text-sm font-medium hover:bg-gray-50">Panel</a> --}}
             <a href="{{ route('huentitan.productos.create') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-[#FFC107] text-[#0B265A] text-sm font-semibold hover:opacity-90">Nuevo</a>
             <a href="{{ route('huentitan.entradas.create') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Nueva entrada</a>
+            @can('huentitan.salidas.create')
+                <a href="{{ route('huentitan.salidas.create') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-rose-600 text-white text-sm font-medium hover:bg-rose-700">Nueva salida</a>
+            @endcan
             <a href="{{ route('huentitan.inventario.index') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-gray-900 text-white text-sm font-medium hover:bg-gray-800">Inventario</a>
         </div>
     </div>
@@ -82,7 +85,7 @@
 
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
-                <thead class="bg-gray-50 text-gray-600">
+                <thead class="bg-[#0B265A] text-white">
                     <tr>
                         <th class="px-4 py-3 text-left">Codigo</th>
                         <th class="px-4 py-3 text-left">Producto</th>

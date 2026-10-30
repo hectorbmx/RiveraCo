@@ -52,6 +52,10 @@
         {{-- Almac&eacute;n --}}
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1">Almac&eacute;n *</label>
+          @if(!empty($almacenFijo))
+            <div class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-[#0B265A]">{{ $almacenFijo->nombre }}</div>
+            <input type="hidden" name="almacen_id" value="{{ $almacenFijo->id }}">
+          @else
           <select name="almacen_id" required
                   class="w-full rounded-xl border-slate-200 focus:border-slate-400 focus:ring-slate-200">
             <option value="">Selecciona&hellip;</option>
@@ -59,6 +63,7 @@
               <option value="{{ $a->id }}" @selected(old('almacen_id')==$a->id)>{{ $a->nombre }}</option>
             @endforeach
           </select>
+          @endif
           @error('almacen_id')<div class="text-red-600 text-xs mt-1">{{ $message }}</div>@enderror
         </div>
 

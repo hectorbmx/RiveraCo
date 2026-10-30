@@ -13,6 +13,10 @@ use App\Models\EmpresaConfig;
 use App\Models\Obra;
 use App\Services\Maquinas\PreventivoMaquinaService;
 use App\Services\Maquinas\MaquinaHorometroService;
+use App\Services\Maquinas\MaquinaHorasService;
+use App\Services\Maquinas\MaquinaUbicacionService;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Illuminate\Validation\ValidationException;
 use App\Services\Maquinas\MaquinaHorometroConsolidacionService;
 
 
@@ -286,6 +290,37 @@ public function cambiarEstado(Request $request, Maquina $maquina, MaquinaService
         
     }
 }
+public function opcionesUbicacion(Request $request, string $maquina, MaquinaUbicacionService $ubicaciones)
+{
+    return response()->json(['ok' => true, 'data' => $ubicaciones->consultar((int) $maquina, $request->user())]);
+}
+
+public function cambiarUbicacion(Request $request, string $maquina, MaquinaUbicacionService $ubicaciones)
+{
+    try {
+        $operacion = $ubicaciones->guardar((int) $maquina, $request->except(['_token', '_method']), $request->user(), 'web_maquinas');
+    } catch (ConflictHttpException $error) {
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => false, 'code' => 'contexto_maquina_cambio', 'message' => $error->getMessage()], 409);
+        }
+
+        return back()->withErrors(['general' => $error->getMessage()])->withInput();
+    } catch (ValidationException $error) {
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => false, 'message' => $error->getMessage(), 'errors' => $error->errors()], 422);
+        }
+        throw $error;
+    }
+    if ($request->expectsJson()) {
+        $data = $ubicaciones->consultar((int) $maquina, $request->user());
+        $data['operacion'] = $operacion;
+
+        return response()->json(['ok' => true, 'message' => 'Ubicación actualizada correctamente.', 'data' => $data]);
+    }
+
+    return back()->with('success', 'Ubicación actualizada correctamente.');
+}
+
 public function toggleServicio(Request $request, Maquina $maquina, MaquinaService $svc)
 {
     // Solo operativa <-> fuera_servicio
@@ -320,7 +355,7 @@ public function toggleServicio(Request $request, Maquina $maquina, MaquinaServic
         return back()->withErrors(['general' => $e->getMessage()]);
     }
 }
-public function guardarHoras(Request $request, Maquina $maquina, MaquinaHorometroService $horometroService)
+public function guardarHoras(Request $request, Maquina $maquina, MaquinaHorasService $horasService)
 {
     abort_unless($request->user()?->can('maquinas.horas.create.access'), 403);
 
@@ -336,19 +371,10 @@ public function guardarHoras(Request $request, Maquina $maquina, MaquinaHorometr
     ]);
 
     try {
-        if ($asignacion) {
-            $horometroService->crearRegistro($asignacion, $data, $request->user(), 'web_maquinas');
-
+        $operacion = $horasService->guardarWeb($maquina, $data, $request->user());
+        if ($operacion['tipo'] === 'registro_horas') {
             return back()->with('success', 'Horas registradas correctamente.');
         }
-
-        $horometroService->crearAjuste($maquina, [
-            'horometro_nuevo' => $data['horometro_fin'],
-            'obra_id' => $data['obra_id'] ?? null,
-            'fecha_registro' => $data['fecha_registro'],
-            'tipo' => 'ajuste',
-            'notas' => $data['notas'] ?? null,
-        ], $request->user(), 'web_maquinas');
     } catch (\Throwable $e) {
         return back()
             ->withErrors(['horometro_fin' => $e->getMessage()])
@@ -366,7 +392,7 @@ public function bajaDeObra(Request $request, Maquina $maquina, MaquinaService $m
         'fecha_fin' => ['nullable', 'date'],
     ]);
 
-    $asignacion = $maquina->asignacionActiva()->with('obra')->first();
+    $asignacion = app(\App\Services\Maquinas\MaquinaAsignacionService::class)->asignacionParaRetiro($maquina);
 
     if (! $asignacion) {
         return back()->withErrors([

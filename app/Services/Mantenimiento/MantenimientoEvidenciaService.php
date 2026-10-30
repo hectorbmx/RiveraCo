@@ -42,6 +42,9 @@ class MantenimientoEvidenciaService
                 if ($empleadoId !== null) {
                     abort_unless($actual->tipo === 'programado', 404);
                     abort_unless((int) $actual->mecanico_id === $empleadoId, 403);
+                    if (! app(MantenimientoEjecucionService::class)->permiteEvidencias($actual)) {
+                        throw new \Symfony\Component\HttpKernel\Exception\ConflictHttpException('Las evidencias están disponibles al iniciar el servicio y recibir todos los materiales incluidos.');
+                    }
                 }
                 if ($actual->fotos()->count() + count($datos['fotos']) > 8) {
                     throw ValidationException::withMessages(['fotos' => 'Un servicio puede tener como máximo 8 fotografías de evidencia.']);

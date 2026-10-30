@@ -93,10 +93,9 @@
                     @forelse($pagos as $pago)
                         <tr class="hover:bg-slate-50">
                             <td class="px-5 py-4">
-                                <a href="{{ route('sat.facturacion.show', $pago->factura) }}"
-                                   class="font-semibold text-indigo-700 hover:text-indigo-900 hover:underline">
-                                    {{ $pago->factura->serie }}-{{ $pago->factura->folio }}
-                                </a>
+                                @foreach($pago->documentos as $documento)
+                                    <a href="{{ route('sat.facturacion.show', $documento->factura) }}" class="block font-semibold text-indigo-700 hover:text-indigo-900 hover:underline">{{ $documento->factura->serie }}-{{ $documento->factura->folio }}</a>
+                                @endforeach
                             </td>
                             <td class="px-5 py-4">{{ $pago->fecha_pago?->format('d/m/Y H:i') ?? '---' }}</td>
                             <td class="px-5 py-4 text-xs">{{ $pago->uuid ?? 'Sin UUID' }}</td>

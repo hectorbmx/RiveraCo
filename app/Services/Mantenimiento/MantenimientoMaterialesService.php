@@ -56,11 +56,22 @@ class MantenimientoMaterialesService
                     throw ValidationException::withMessages(["materiales.$indice.id" => 'El material no pertenece a esta orden de servicio.']);
                 }
             }
+            // Validar todos los motivos antes de modificar la primera partida.
+            foreach ($filas as $indice => $fila) {
+                $material = $materiales->get((int) $fila['id']);
+                $motivo = (bool) $fila['incluido'] ? null : trim((string) (array_key_exists('motivo_exclusion', $fila)
+                    ? $fila['motivo_exclusion'] : $material->motivo_exclusion));
+                if (! (bool) $fila['incluido'] && $motivo === '') {
+                    $campo = $formularioWeb ? 'motivos.'.$material->id : "materiales.$indice.motivo_exclusion";
+                    throw ValidationException::withMessages([$campo => 'Indica por qué no se aplicará '.$material->producto_nombre_snapshot.' en este servicio.']);
+                }
+                $filas[$indice]['motivo_exclusion'] = $motivo;
+            }
             foreach ($filas as $fila) {
                 $material = $materiales->get((int) $fila['id']);
                 $incluido = (bool) $fila['incluido'];
                 $material->update(['incluido' => $incluido,
-                    'motivo_exclusion' => $incluido ? null : (array_key_exists('motivo_exclusion', $fila) ? $fila['motivo_exclusion'] : $material->motivo_exclusion)]);
+                    'motivo_exclusion' => $fila['motivo_exclusion']]);
             }
 
             return $actual->refresh();

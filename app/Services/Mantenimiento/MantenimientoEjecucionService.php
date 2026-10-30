@@ -29,6 +29,14 @@ class MantenimientoEjecucionService
         return true;
     }
 
+    public function permiteEvidencias(Mantenimiento $servicio): bool
+    {
+        return (bool) $servicio->orden_servicio_folio
+            && $servicio->fecha_inicio !== null
+            && in_array($servicio->estatus, ['en_proceso', 'completado'], true)
+            && $this->surtidoCompleto($servicio);
+    }
+
     public function ejecutar(Mantenimiento $servicio, string $accion, array $datos, int $empleadoId): Mantenimiento
     {
         $campos = $accion === 'iniciar' ? ['fecha_inicio'] : ['fecha_fin', 'horometro', 'km_actuales', 'notas'];
@@ -78,6 +86,9 @@ class MantenimientoEjecucionService
     {
         DB::transaction(function () use ($servicio, $datos, $guardar) {
             $actual = Mantenimiento::query()->lockForUpdate()->findOrFail($servicio->id);
+            if (in_array($actual->estatus, ['completado', 'cancelado'], true)) {
+                throw new ConflictHttpException('El servicio está cerrado y sus datos son de solo consulta.');
+            }
             if ($actual->tipo === 'programado') {
                 $this->validar($actual, $datos);
             }

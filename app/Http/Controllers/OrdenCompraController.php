@@ -25,6 +25,7 @@ use App\Services\ObraCivilInsumoBalanceService;
 use App\Services\ObraCivil\ObraCivilMaterialRequestOrderService;
 use App\Services\OrdenCompraNotificationService;
 use App\Services\OrdenCompraTotalesService;
+use App\Services\Mantenimiento\MantenimientoCompraEstadoService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -488,7 +489,7 @@ class OrdenCompraController extends Controller
                     ]);
                 }
 
-                $solicitud->update(['estado' => 'en_compra']);
+                app(MantenimientoCompraEstadoService::class)->sincronizar($oc);
             }
 
             if ($request->filled('obra_civil_material_request_items')) {
@@ -859,11 +860,14 @@ public function autorizar(Request $request, $id, OrdenCompraNotificationService 
             ->with('error', $this->civilAuthorizationExcessMessage($civilExcesses))
             ->with('civil_sobregiro_confirm_oc_id', $oc->id);
     }
-    $oc->estado             = 'AUTORIZADA';
-    $oc->fecha_autorizacion = now()->toDateString();
-    $oc->usuario_autoriza   = $this->usuarioActualNombre();
-    $oc->autorizado_por     = auth()->id();
-    $oc->save();
+    DB::transaction(function () use ($oc) {
+        $oc->estado             = 'AUTORIZADA';
+        $oc->fecha_autorizacion = now()->toDateString();
+        $oc->usuario_autoriza   = $this->usuarioActualNombre();
+        $oc->autorizado_por     = auth()->id();
+        $oc->save();
+        app(MantenimientoCompraEstadoService::class)->sincronizar($oc);
+    });
 
     $notifications->autorizada($oc);
 
@@ -902,6 +906,7 @@ public function revocarAutorizacion(Request $request, $id)
         $oc->usuario_autoriza = null;
         $oc->autorizado_por = null;
         $oc->save();
+        app(MantenimientoCompraEstadoService::class)->sincronizar($oc);
     });
 
     return back()->with('success', 'Autorizacion revocada. La orden vuelve a borrador y puede editarse.');
@@ -2383,8 +2388,11 @@ foreach ($oc->detalles as $detalle) {
             $oc->comentarios = trim(($oc->comentarios ?? '') . "\n[CANCELACIÓN] " . $motivo);
         }
 
-        $oc->estado = 'CANCELADA';
-        $oc->save();
+        DB::transaction(function () use ($oc) {
+            $oc->estado = 'CANCELADA';
+            $oc->save();
+            app(MantenimientoCompraEstadoService::class)->sincronizar($oc);
+        });
 
         return back()->with('success', 'Orden cancelada.');
     }

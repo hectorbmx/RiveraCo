@@ -32,6 +32,21 @@ Las escrituras fuera de la raíz del backend utilizaron revisión de sandbox par
 
 Las pruebas de navegador verifican renderizado e interacción con contratos representativos; no sustituyen el recorrido conectado con un usuario autorizado ni la validación Android/cámara de T14. El cliente sigue sin grafo propio; el grafo del backend se mantiene libre de salidas temporales generadas.
 
+## Tarjetas operativas de máquinas — 2026-10-29
+
+Se amplió el contrato TypeScript con ubicación, obra activa, horómetro actual, última lectura y resumen preventivo del contrato T04. Se conservan los campos originales y el horómetro base, sin usar este último como sustituto de una lectura actual ausente.
+
+- Componente reutilizable `mecanico-maquina-card.component`: cabecera azul `#0b265a`, código, estado, nombre principal, marca/modelo/tipo, ubicación y obra, lectura actual y fecha.
+- Preventivo prioritario con estado textual y color, avance recibido, horas usadas/intervalo y metas de horómetro/fecha. Los tipos adicionales se consultan con un desplegable nativo. El cliente no recalcula intervalos ni decide qué servicio es prioritario.
+- Fechas de metas tratadas como fechas civiles sin conversión de zona. La última lectura se presenta en Ciudad de México. Cero se conserva como lectura válida; los datos ausentes tienen mensajes explícitos.
+- Listado con tarjetas y acciones compactas: detalle y programación de servicio para una sola máquina. Programar requiere el empleado de la sesión; no se agregaron acciones de asignación, baja de obra ni escritura de horómetros.
+- El detalle reutiliza la tarjeta, toma la obra de `asignacion_activa` y conserva el historial de servicios debajo.
+- Se conservan búsqueda, paginación, carga, error y resultados vacíos. Los indicadores y filtros nuevos corresponden al paso 3 y no se agregaron en esta entrega. Vehículos y seguimiento de servicios conservan sus vistas.
+
+Archivos del cliente: contrato `src/app/services/mecanico-consulta.service.ts`, componente nuevo con plantilla/estilos/pruebas, y página `mecanico-consulta` con sus pruebas de integración.
+
+Validación de esta ampliación: 30 pruebas exitosas de tarjetas y consultas en Chrome Headless, compilación completa de desarrollo con plantillas estrictas y verificación UTF-8/mojibake. Se conservan las advertencias previas de componentes ajenos al cambio. El navegador de comprobación no tenía sesión autenticada y llegó al login; no se validó el catálogo conectado con una cuenta real en esta entrega. Sin despliegue ni escrituras de datos; salida de compilación temporal, sin reemplazar `app/www`.
+
 ## Pendiente siguiente
 
 C13.4: catálogos y captura de borradores, generación de orden, ajuste de materiales, solicitudes y carga de evidencias con sus contratos T05–T11. Ejecución C13.5 depende de T12 y de la respuesta D05 sobre materiales pendientes. T13 y la entrega integral continúan abiertas; no corresponde commit/push final todavía.

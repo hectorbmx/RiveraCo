@@ -11,6 +11,8 @@ class MaquinaHorometroAjuste extends Model
 
     protected $table = 'maquina_horometro_ajustes';
 
+    protected $hidden = ['solicitud_hash'];
+
     protected $fillable = [
         'maquina_id',
         'obra_id',

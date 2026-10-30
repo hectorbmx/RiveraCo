@@ -119,7 +119,8 @@ class SatFactura extends Model
     }
     public function pagos()
     {
-        return $this->hasMany(SatFacturaPago::class, 'sat_factura_id');
+        return $this->belongsToMany(SatFacturaPago::class, 'sat_factura_pago_documentos', 'sat_factura_id', 'sat_factura_pago_id')
+            ->withPivot(['importe_aplicado', 'saldo_anterior', 'saldo_insoluto', 'numero_parcialidad']);
     }
 
     public function timbradoPor()

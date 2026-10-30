@@ -1,5 +1,16 @@
 # Roadmap: Complementos de pago SAT / Facturapi
 
+## Actualización 2026-10-30: un pago para varias facturas
+
+- Implementada selección múltiple desde pendientes y captura del importe aplicado por factura, con una sola fecha/forma de pago y un único CFDI tipo P.
+- Servicio compartido para captura nueva/anterior, resúmenes fiscales de FacturAPI por documento y validación de emisor/receptor/moneda/saldos.
+- Cabecera de recibo y tabla de documentos, con migración compatible aplicada solo en local (lote 153): 15 complementos anteriores, 15 documentos, cero diferencias de importe.
+- Listado, búsqueda, detalle, saldos por factura, resumen del cliente y correo muestran el desglose. Cancelación afecta al recibo completo y no libera saldos mientras no se confirme fiscalmente.
+- Solicitud persistida, reserva de saldo y clave de idempotencia para reintentos; resultados inciertos se consultan desde el mismo complemento.
+- [Implementación, límites y despliegue](COMPLEMENTO_PAGO_VARIAS_FACTURAS.md). Comprobaciones estáticas y consultas locales de lectura; sin emisión/cancelación ni envío real. Pruebas funcionales pendientes del usuario.
+
+Los apartados siguientes conservan el historial del desarrollo inicial de una factura por recibo; esta actualización amplía ese alcance sin duplicar los complementos existentes.
+
 ## Objetivo
 
 Crear un modulo formal de complementos de pago para facturas emitidas desde Facturapi, separado del listado general de facturas y conectado con el control interno de pagos de obras.

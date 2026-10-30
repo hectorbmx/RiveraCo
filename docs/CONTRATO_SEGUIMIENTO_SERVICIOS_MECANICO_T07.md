@@ -19,6 +19,7 @@ Ambas rutas requieren Sanctum, usuario app activo y `app.mecanico.access`, sin o
 |---|---|
 | `q` | Texto de hasta 120 caracteres. Busca descripción, categoría, folio de orden, nombre/código de máquina y marca/modelo/placas de vehículo. |
 | `estatus` | `borrador`, `orden_generada`, `pendiente`, `en_proceso`, `completado`, `cancelado`. |
+| `equipo_tipo` | `maquinas` o `vehiculos`; filtra todos los servicios de ese tipo sin exigir ID. Vacío conserva ambos. Se rechaza un ID del tipo opuesto. |
 | `maquina_id` / `vehiculo_id` | Entero positivo, mutuamente excluyentes. ID sin coincidencias devuelve lista vacía. |
 | `obra_id` | Entero positivo; no implica asignación del usuario a la obra. |
 | `solo_mios` | Booleano Laravel: `0` o `1` en query string. Por defecto consulta todos. |
@@ -42,7 +43,7 @@ Cada elemento contiene cabecera de servicio, costos de consulta, fechas programa
 - `vehiculo`: ID, marca, modelo y placas; o null.
 - `obra`: ID y nombre; o null (también si fue eliminada lógicamente).
 - `mecanico`: ID y nombre completo; o null. Se excluyen datos personales, nómina y contactos.
-- `servicio_preventivo`: ID, nombre y ámbito; o null si la referencia ya no existe.
+- `servicio_preventivo`: ID, nombre, ámbito, `intervalo_valor` numérico y `unidad` (`horas` o `km`); o null si la referencia ya no existe. El listado móvil usa nombre e intervalo del catálogo en su segunda línea, conservando la descripción manual para el detalle.
 - `es_propio` y `acciones_permitidas`.
 
 El listado precarga las relaciones y usa subconsultas de existencia para materiales y solicitudes; no calcula inventario ni trae evidencias por cada fila.

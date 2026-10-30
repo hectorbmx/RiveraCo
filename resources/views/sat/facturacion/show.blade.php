@@ -186,8 +186,8 @@
         <div class="space-y-6">
             @php
     $totalPagado = $factura->pagos()
-        ->where('estado', 'timbrado')
-        ->sum('monto');
+        ->whereIn('estado', ['timbrado', 'cancelacion_pendiente'])
+        ->sum('sat_factura_pago_documentos.importe_aplicado');
 
     $saldoPendiente = max($factura->total - $totalPagado, 0);
 @endphp
@@ -403,7 +403,7 @@
 
                             {{-- PARCIALIDAD --}}
                             <td class="px-5 py-4 text-center">
-                                {{ $pago->numero_parcialidad }}
+                                {{ ($pago->pivot?->numero_parcialidad ?? $pago->numero_parcialidad) }}
                             </td>
 
                             {{-- FECHA --}}
@@ -418,12 +418,12 @@
 
                             {{-- MONTO --}}
                             <td class="px-5 py-4 text-right font-semibold text-emerald-700">
-                                ${{ number_format($pago->monto, 2) }}
+                                ${{ number_format(($pago->pivot?->importe_aplicado ?? $pago->monto), 2) }}
                             </td>
 
                             {{-- SALDO --}}
                             <td class="px-5 py-4 text-right">
-                                ${{ number_format($pago->saldo_insoluto, 2) }}
+                                ${{ number_format(($pago->pivot?->saldo_insoluto ?? $pago->saldo_insoluto), 2) }}
                             </td>
 
                             {{-- ESTADO --}}
@@ -566,6 +566,7 @@
               action="{{ route('sat.facturacion.pagos.store', $factura) }}"
               class="p-6 space-y-5">
             @csrf
+                    <input type="hidden" name="solicitud_id" value="{{ old('solicitud_id', (string) \Illuminate\Support\Str::uuid()) }}">
 
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">
@@ -573,7 +574,7 @@
                 </label>
                 <input type="datetime-local"
                        name="fecha_pago"
-                       value="{{ now()->format('Y-m-d\TH:i') }}"
+                       value="{{ old('fecha_pago', \Carbon\Carbon::now('America/Mexico_City')->format('Y-m-d\TH:i')) }}"
                        class="w-full rounded-xl border-slate-200 focus:border-emerald-300 focus:ring-emerald-200">
             </div>
 
@@ -588,27 +589,26 @@
                     <option value="02">02 - Cheque nominativo</option>
                     <option value="04">04 - Tarjeta de crédito</option>
                     <option value="28">28 - Tarjeta de débito</option>
-                    <option value="99">99 - Por definir</option>
                 </select>
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">
-                    IVA
+                    Impuestos
                 </label>
-                <select name="tipo_iva"
-                        class="w-full rounded-xl border-slate-200 focus:border-emerald-300 focus:ring-emerald-200">
-                    <option value="0.16">IVA 16%</option>
-                    <option value="exento">Exento</option>
-                    <option value="sin_iva">No objeto</option>
-                </select>
+                <p class="text-sm text-slate-600">Se obtendrán de la factura en FacturAPI, prorrateados al importe pagado.</p>
+                @if(($factura->moneda ?: 'MXN') !== 'MXN')
+                    <label class="block mt-3 text-sm font-medium">Tipo de cambio del pago a MXN<input type="number" name="tipo_cambio" min="0.000001" step="0.000001" required class="mt-2 w-full rounded-xl border-slate-300"></label>
+                @else
+                    <input type="hidden" name="tipo_cambio" value="1">
+                @endif
             </div>
 
             <div>
                 @php
                     $totalPagado = $factura->pagos()
-                        ->where('estado', 'timbrado')
-                        ->sum('monto');
+                        ->whereIn('estado', ['timbrado', 'cancelacion_pendiente'])
+                        ->sum('sat_factura_pago_documentos.importe_aplicado');
 
                     $saldoPendiente = max($factura->total - $totalPagado, 0);
                 @endphp

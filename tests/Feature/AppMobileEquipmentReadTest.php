@@ -48,7 +48,10 @@ class AppMobileEquipmentReadTest extends TestCase
             'fecha_asignacion' => '2026-10-01', 'fecha_fin' => null, 'km_inicial' => 1000, 'km_final' => null,
             'notas' => 'Nota administrativa', 'fotos' => [['url' => 'documento-interno']],
             'empleado' => ['id' => 10, 'nombre' => 'Operador', 'puesto' => 'Operador', 'celular' => 'privado']];
-        $maquina = ['id' => 17, 'codigo' => 'M-17', 'nombre' => 'Equipo', 'estado' => 'operativa', 'asignada' => false, 'obra_activa' => null];
+        $maquina = ['id' => 17, 'codigo' => 'M-17', 'nombre' => 'Equipo', 'estado' => 'operativa', 'asignada' => false, 'obra_activa' => null,
+            'ubicacion' => 'en_patio', 'horometro_base' => 1000, 'horometro_actual' => 1480,
+            'fecha_ultima_lectura' => '2026-10-28T10:00:00-06:00',
+            'preventivo' => ['estado' => 'proximo', 'servicios' => [['servicio_nombre' => 'General', 'horas_restantes' => 20]]]];
         $vehiculo = ['id' => 7, 'marca' => 'Marca', 'modelo' => 'Modelo', 'placas' => 'PRUEBA', 'asignado' => true,
             'asignacion_actual' => $asignacion, 'seguro_vigente' => ['poliza_numero' => 'POLIZA_INTERNA'],
             'tarjeta_circulacion' => ['archivo_url' => 'documento-interno']];
@@ -94,6 +97,19 @@ class AppMobileEquipmentReadTest extends TestCase
     {
         return ['/api/v1/mecanico/maquinas', '/api/v1/mecanico/maquinas/17',
             '/api/v1/mecanico/vehiculos', '/api/v1/mecanico/vehiculos/7'];
+    }
+
+    public function test_machine_operational_summary_reaches_list_and_detail(): void
+    {
+        foreach (['/api/v1/mecanico/maquinas' => 'data.0', '/api/v1/mecanico/maquinas/17' => 'data.maquina'] as $ruta => $path) {
+            $this->getJson($ruta)->assertOk()
+                ->assertJsonPath($path.'.ubicacion', 'en_patio')
+                ->assertJsonPath($path.'.horometro_base', 1000)
+                ->assertJsonPath($path.'.horometro_actual', 1480)
+                ->assertJsonPath($path.'.fecha_ultima_lectura', '2026-10-28T10:00:00-06:00')
+                ->assertJsonPath($path.'.preventivo.estado', 'proximo')
+                ->assertJsonPath($path.'.preventivo.servicios.0.horas_restantes', 20);
+        }
     }
 
     public function test_mechanic_can_list_all_equipment_without_worksite_and_pass_filters_to_shared_queries(): void

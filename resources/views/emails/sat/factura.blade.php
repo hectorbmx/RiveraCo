@@ -36,7 +36,7 @@
                             <tr>
                                 <td style="padding:8px 0; color:#64748b;">Factura relacionada</td>
                                 <td style="padding:8px 0; text-align:right; font-weight:bold;">
-                                    {{ $factura->serie }}-{{ $factura->folio }}
+                                    @if($esComplemento && $pago->documentos->isNotEmpty()) {{ $pago->documentos->map(fn ($documento) => trim(($documento->factura->serie ? $documento->factura->serie.'-' : '').$documento->factura->folio))->implode(', ') }} @else {{ $factura->serie }}-{{ $factura->folio }} @endif
                                 </td>
                             </tr>
 
@@ -50,7 +50,7 @@
                             <tr>
                                 <td style="padding:8px 0; color:#64748b;">Parcialidad</td>
                                 <td style="padding:8px 0; text-align:right; font-weight:bold;">
-                                    {{ $pago->numero_parcialidad }}
+                                    {{ $pago->documentos->count() > 1 ? 'Detalle por factura en el comprobante' : $pago->numero_parcialidad }}
                                 </td>
                             </tr>
 

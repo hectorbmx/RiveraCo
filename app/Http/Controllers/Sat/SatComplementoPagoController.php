@@ -7,9 +7,10 @@ use App\Models\ObraFacturaPago;
 use App\Models\SatFactura;
 use App\Models\SatFacturaPago;
 use Carbon\Carbon;
+use App\Services\Facturacion\SatComplementoPagoService;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 
 class SatComplementoPagoController extends Controller
 {
@@ -22,9 +23,9 @@ class SatComplementoPagoController extends Controller
         $search = trim((string) $request->input('search'));
         $tab = $request->input('tab') === 'pendientes' ? 'pendientes' : 'registrados';
 
-        $pagosQuery = SatFacturaPago::with(['factura.cliente', 'factura.obra', 'pagosInternosObra'])
+        $pagosQuery = SatFacturaPago::with(['factura.cliente', 'factura.obra', 'documentos.factura.obra', 'pagosInternosObra'])
             ->when($clienteSearch !== '', function ($query) use ($clienteSearch) {
-                $query->whereHas('factura', function ($facturaQuery) use ($clienteSearch) {
+                $query->whereHas('documentos.factura', function ($facturaQuery) use ($clienteSearch) {
                     $facturaQuery
                         ->where('receptor_nombre', 'like', "%{$clienteSearch}%")
                         ->orWhere('receptor_rfc', 'like', "%{$clienteSearch}%")
@@ -44,7 +45,7 @@ class SatComplementoPagoController extends Controller
                     $searchQuery
                         ->where('uuid', 'like', "%{$search}%")
                         ->orWhere('facturapi_response', 'like', "%{$search}%")
-                        ->orWhereHas('factura', function ($facturaQuery) use ($search) {
+                        ->orWhereHas('documentos.factura', function ($facturaQuery) use ($search) {
                             $facturaQuery
                                 ->where('uuid', 'like', "%{$search}%")
                                 ->orWhere('serie', 'like', "%{$search}%")
@@ -64,18 +65,18 @@ class SatComplementoPagoController extends Controller
         $finMes = Carbon::now()->endOfMonth();
 
         $kpis = [
-            'timbrados_mes' => SatFacturaPago::where('estado', 'timbrado')
+            'timbrados_mes' => SatFacturaPago::whereIn('estado', ['timbrado', 'cancelacion_pendiente'])
                 ->whereBetween('fecha_pago', [$inicioMes, $finMes])
                 ->count(),
-            'monto_timbrado_mes' => SatFacturaPago::where('estado', 'timbrado')
+            'monto_timbrado_mes' => SatFacturaPago::whereIn('estado', ['timbrado', 'cancelacion_pendiente'])
                 ->whereBetween('fecha_pago', [$inicioMes, $finMes])
                 ->sum('monto'),
         ];
 
         $facturasPpd = SatFactura::with(['cliente', 'obra'])
             ->withSum([
-                'pagos as pagos_timbrados_sum' => fn ($query) => $query->where('estado', 'timbrado'),
-            ], 'monto')
+                'pagos as pagos_timbrados_sum' => fn ($query) => $query->whereIn('estado', ['timbrado', 'cancelacion_pendiente']),
+            ], 'sat_factura_pago_documentos.importe_aplicado')
             ->where('metodo_pago', 'PPD')
             ->where('estado', 'timbrada')
             ->when($clienteSearch !== '', function ($query) use ($clienteSearch) {
@@ -165,236 +166,85 @@ class SatComplementoPagoController extends Controller
 
     public function create(Request $request)
     {
+        $request->validate(['factura_id' => ['nullable', 'integer'], 'factura_ids' => ['nullable', 'array', 'max:20'],
+            'factura_ids.*' => ['integer', 'distinct']]);
         $facturaSeleccionadaId = $request->integer('factura_id') ?: null;
-        $formasPago = config('sat_catalogs.formas_pago', []);
+        $formasPago = collect(config('sat_catalogs.formas_pago', []))->except(['99'])->all();
         $facturasPendientes = $this->facturasPendientesPorComplementar();
 
         $facturaSeleccionada = $facturasPendientes
             ->firstWhere('id', $facturaSeleccionadaId)
             ?? $facturasPendientes->first();
 
+        $facturasSeleccionadasIds = array_map('intval', $request->input('factura_ids', $facturaSeleccionadaId ? [$facturaSeleccionadaId] : []));
+
         return view('sat.complementos-pago.create', compact(
             'formasPago',
             'facturasPendientes',
-            'facturaSeleccionada'
+            'facturaSeleccionada',
+            'facturasSeleccionadasIds'
         ));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, SatComplementoPagoService $servicio)
     {
+        // Compatibilidad con la captura anterior de una sola factura.
+        if (! $request->has('facturas') && $request->filled('factura_id')) {
+            $request->merge(['facturas' => [['factura_id' => $request->input('factura_id'), 'monto' => $request->input('monto')]]]);
+        }
         $data = $request->validate([
-            'factura_id' => ['required', 'exists:sat_facturas,id'],
-            'fecha_pago' => ['required', 'date'],
-            'forma_pago' => ['required', 'string', 'max:5'],
-            'tipo_iva' => ['required', 'in:0.16,exento,sin_iva'],
-            'monto' => ['required', 'numeric', 'min:0.01'],
+            'solicitud_id' => ['required', 'uuid'],
+            'fecha_pago' => ['required', 'date', 'before_or_equal:now'],
+            'forma_pago' => ['required', Rule::in(array_values(array_diff(array_map('strval', array_keys(config('sat_catalogs.formas_pago', []))), ['99'])))],
+            'tipo_cambio' => ['nullable', 'numeric', 'gt:0', 'decimal:0,6'],
+            'monto' => ['required', 'numeric', 'min:0.01', 'max:999999999999.99', 'decimal:0,2'],
+            'facturas' => ['required', 'array', 'min:1', 'max:20'],
+            'facturas.*.factura_id' => ['required', 'integer', 'distinct', 'exists:sat_facturas,id'],
+            'facturas.*.monto' => ['required', 'numeric', 'min:0.01', 'max:999999999999.99', 'decimal:0,2'],
         ]);
-
-        $factura = SatFactura::with('pagos')->findOrFail($data['factura_id']);
-
-        if ($factura->estado !== 'timbrada') {
-            return back()->withInput()->with('error', 'Solo se pueden registrar pagos a facturas timbradas.');
-        }
-
-        if ($factura->metodo_pago !== 'PPD') {
-            return back()->withInput()->with('error', 'Solo las facturas PPD pueden generar complemento de pago.');
-        }
-
-        if (! $factura->facturapi_invoice_id || ! $factura->uuid || ! $factura->facturapi_customer_id) {
-            return back()->withInput()->with('error', 'La factura no tiene UUID, cliente o ID de Facturapi.');
-        }
-
-        $totalPagado = $factura->pagos()
-            ->whereIn('estado', ['timbrado', 'registrado'])
-            ->sum('monto');
-
-        $saldoAnterior = round((float) $factura->total - (float) $totalPagado, 2);
-        $monto = round((float) $data['monto'], 2);
-        $saldoInsoluto = round($saldoAnterior - $monto, 2);
-
-        if ($saldoAnterior <= 0) {
-            return back()->withInput()->with('error', 'La factura ya no tiene saldo pendiente por complementar.');
-        }
-
-        if ($monto > $saldoAnterior) {
-            return back()->withInput()->with('error', 'El monto pagado no puede ser mayor al saldo pendiente.');
-        }
-
-        $numeroParcialidad = $factura->pagos()
-            ->whereIn('estado', ['timbrado', 'registrado'])
-            ->count() + 1;
-
-        $taxes = [];
-
-        if ($data['tipo_iva'] === '0.16') {
-            $taxes = [
-                [
-                    'type' => 'IVA',
-                    'rate' => 0.16,
-                    'factor' => 'Tasa',
-                    'base' => round($monto / 1.16, 2),
-                ],
-            ];
-        } elseif ($data['tipo_iva'] === 'exento') {
-            $taxes = [
-                [
-                    'type' => 'IVA',
-                    'rate' => 0.0,
-                    'factor' => 'Exento',
-                    'base' => $monto,
-                ],
-            ];
-        }
-
-        $payload = [
-            'type' => 'P',
-            'customer' => $factura->facturapi_customer_id,
-            'complements' => [
-                [
-                    'type' => 'pago',
-                    'data' => [
-                        [
-                            'payment_form' => $data['forma_pago'],
-                            'currency' => $factura->moneda ?? 'MXN',
-                            'exchange' => (float) ($factura->tipo_cambio ?: 1),
-                            'date' => Carbon::parse($data['fecha_pago'])->toIso8601String(),
-                            'related_documents' => [
-                                [
-                                    'uuid' => $factura->uuid,
-                                    'amount' => $monto,
-                                    'installment' => $numeroParcialidad,
-                                    'last_balance' => $saldoAnterior,
-                                    'taxes' => $taxes,
-                                ],
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-        ];
-
         try {
-            $response = Http::withBasicAuth(config('services.facturapi.secret_key'), '')
-                ->post('https://www.facturapi.io/v2/invoices', $payload);
-
-            if (! $response->successful()) {
-                $error = $response->json('message')
-                    ?? $response->json('error')
-                    ?? $response->body();
-
-                return back()->withInput()->with('error', 'Error al generar complemento de pago: ' . $error);
-            }
-
-            $body = $response->json();
-
-            $pago = SatFacturaPago::create([
-                'sat_factura_id' => $factura->id,
-                'facturapi_invoice_id' => $body['id'] ?? null,
-                'uuid' => data_get($body, 'uuid') ?? data_get($body, 'stamp.uuid'),
-                'fecha_pago' => $data['fecha_pago'],
-                'forma_pago' => $data['forma_pago'],
-                'moneda' => $factura->moneda ?? 'MXN',
-                'tipo_cambio' => $factura->tipo_cambio,
-                'monto' => $monto,
-                'saldo_anterior' => $saldoAnterior,
-                'saldo_insoluto' => $saldoInsoluto,
-                'numero_parcialidad' => $numeroParcialidad,
-                'estado' => 'timbrado',
-                'facturapi_response' => $body,
-                'error_message' => null,
-            ]);
-
-            if (! empty($body['id'])) {
-                $this->guardarArchivosPago($pago);
-            }
-
-            $pagosInternosLigados = $this->ligarPagosInternos($factura, $pago, $monto);
-            $mensaje = 'Complemento de pago generado correctamente.';
-
-            if ($pagosInternosLigados > 0) {
-                $mensaje .= " Se ligaron {$pagosInternosLigados} pago(s) interno(s).";
-            }
-
-            return redirect()
-                ->route('sat.complementos-pago.index')
-                ->with('success', $mensaje);
-        } catch (\Throwable $e) {
-            return back()->withInput()->with('error', 'Error al generar complemento de pago: ' . $e->getMessage());
+            $pago = $servicio->generar($data, (int) $request->user()->id);
+        } catch (ValidationException $error) {
+            throw $error;
+        } catch (\Throwable $error) {
+            report($error);
+            return back()->withInput()->with('error', 'No se pudo generar el complemento: '.$error->getMessage());
         }
+
+        return redirect()->route('sat.facturacion.pagos.show', $pago)->with(
+            $pago->estado === 'timbrado' ? 'success' : 'warning',
+            $pago->estado === 'timbrado' ? 'Complemento generado: un solo CFDI para '.$pago->documentos()->count().' factura(s).'
+                : 'La solicitud quedó guardada con estado '.$pago->estado.'. Consulta o reintenta este mismo complemento; no generes otro.'
+        );
     }
 
-    private function ligarPagosInternos(SatFactura $factura, SatFacturaPago $pago, float $monto): int
+    public function reintentar(Request $request, SatFacturaPago $pago, SatComplementoPagoService $servicio)
     {
-        $pagosInternos = ObraFacturaPago::where('requiere_complemento_pago', true)
-            ->whereNull('sat_factura_pago_id')
-            ->where('factura_uuid', $factura->uuid)
-            ->orderBy('fecha_pago')
-            ->orderBy('id')
-            ->get();
-
-        if ($pagosInternos->isEmpty()) {
-            return 0;
+        if (! $pago->solicitud_id || ! in_array($pago->estado, ['en_proceso', 'pendiente_confirmacion'], true)) {
+            return back()->with('error', 'Este complemento no tiene una emisión pendiente de confirmar.');
+        }
+        // Se recuperan las entradas del pago original; no se acepta otro reparto.
+        $facturas = $pago->documentos()->orderBy('sat_factura_id')->get()->map(fn ($documento) => [
+            'factura_id' => $documento->sat_factura_id, 'monto' => $documento->importe_aplicado,
+        ])->all();
+        try {
+            $resultado = $servicio->generar(['solicitud_id' => $pago->solicitud_id,
+                'fecha_pago' => $pago->fecha_pago->toIso8601String(), 'forma_pago' => $pago->forma_pago,
+                'tipo_cambio' => $pago->tipo_cambio, 'monto' => $pago->monto, 'facturas' => $facturas], (int) $request->user()->id);
+        } catch (\Throwable $error) {
+            return back()->with('error', $error->getMessage());
         }
 
-        $seleccionados = collect();
-        $acumulado = 0.0;
-
-        foreach ($pagosInternos as $pagoInterno) {
-            $acumulado = round($acumulado + (float) $pagoInterno->monto, 2);
-            $seleccionados->push($pagoInterno);
-
-            if ($acumulado >= $monto) {
-                break;
-            }
-        }
-
-        if (round($acumulado, 2) !== round($monto, 2)) {
-            return 0;
-        }
-
-        ObraFacturaPago::whereIn('id', $seleccionados->pluck('id'))
-            ->update(['sat_factura_pago_id' => $pago->id]);
-
-        return $seleccionados->count();
-    }
-
-    private function guardarArchivosPago(SatFacturaPago $pago): void
-    {
-        $basePath = 'sat/facturas/pagos/' . $pago->id;
-
-        $xmlResponse = Http::withBasicAuth(config('services.facturapi.secret_key'), '')
-            ->get('https://www.facturapi.io/v2/invoices/' . $pago->facturapi_invoice_id . '/xml');
-
-        if ($xmlResponse->successful()) {
-            $xmlPath = $basePath . '/pago-' . $pago->id . '.xml';
-
-            Storage::disk('local')->put($xmlPath, $xmlResponse->body());
-
-            $pago->update([
-                'xml_path' => $xmlPath,
-            ]);
-        }
-
-        $pdfResponse = Http::withBasicAuth(config('services.facturapi.secret_key'), '')
-            ->get('https://www.facturapi.io/v2/invoices/' . $pago->facturapi_invoice_id . '/pdf');
-
-        if ($pdfResponse->successful()) {
-            $pdfPath = $basePath . '/pago-' . $pago->id . '.pdf';
-
-            Storage::disk('local')->put($pdfPath, $pdfResponse->body());
-
-            $pago->update([
-                'pdf_path' => $pdfPath,
-            ]);
-        }
+        return back()->with($resultado->estado === 'timbrado' ? 'success' : 'warning',
+            $resultado->estado === 'timbrado' ? 'Timbrado confirmado. Se conserva el mismo CFDI.' : 'El timbrado sigue pendiente de confirmar. No generes otro complemento.');
     }
 
     private function facturasPendientesPorComplementar()
     {
         $facturasPpd = SatFactura::with(['cliente', 'obra'])
             ->withSum([
-                'pagos as pagos_timbrados_sum' => fn ($query) => $query->where('estado', 'timbrado'),
-            ], 'monto')
+                'pagos as pagos_timbrados_sum' => fn ($query) => $query->whereIn('estado', ['timbrado', 'cancelacion_pendiente']),
+            ], 'sat_factura_pago_documentos.importe_aplicado')
             ->where('metodo_pago', 'PPD')
             ->where('estado', 'timbrada')
             ->latest('fecha_emision')

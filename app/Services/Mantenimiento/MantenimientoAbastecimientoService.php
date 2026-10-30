@@ -14,7 +14,7 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class MantenimientoAbastecimientoService
 {
-    public function calcular(Mantenimiento $mantenimiento): Collection
+    public function calcular(Mantenimiento $mantenimiento, bool $incluirExcluidos = false): Collection
     {
         if (! $mantenimiento->maquina_id) {
             return collect();
@@ -25,9 +25,12 @@ class MantenimientoAbastecimientoService
 
         if ($tieneSnapshot) {
             $materialesOrden = $mantenimiento->materialesOrden()
-                ->where('incluido', true)
+                ->when(! $incluirExcluidos, fn ($query) => $query->where('incluido', true))
+                ->orderBy('orden')->orderBy('id')
                 ->get()
                 ->map(fn ($material) => [
+                    'material_id' => (int) $material->id,
+                    'incluido' => (bool) $material->incluido,
                     'material_preventivo_id' => $material->material_preventivo_id,
                     'producto_id' => $material->producto_id,
                     'producto' => $material->producto_nombre_snapshot,
@@ -58,6 +61,8 @@ class MantenimientoAbastecimientoService
                 : $materiales->whereNull('maquina_id');
 
             $materialesOrden = $materialesEfectivos->values()->map(fn ($material) => [
+                'material_id' => null,
+                'incluido' => true,
                 'material_preventivo_id' => $material->id,
                 'producto_id' => $material->producto_id,
                 'producto' => $material->producto?->nombre ?? 'Producto no disponible',
@@ -106,22 +111,28 @@ class MantenimientoAbastecimientoService
             : collect();
 
         $surtidoRestante = $surtidoPorProducto->all();
+        $disponibleRestante = $stock->map(fn ($fila) => max(0, (float) $fila->stock_actual - (float) $fila->stock_reservado))->all();
 
-        return $materialesOrden->map(function (array $material) use ($stock, &$surtidoRestante, $foliosSalida) {
+        return $materialesOrden->map(function (array $material) use ($stock, &$surtidoRestante, &$disponibleRestante, $foliosSalida) {
             $stockRow = $stock->get($material['producto_id']);
-            $requerido = $material['requerido'];
+            $requerido = $material['incluido'] ? $material['requerido'] : 0;
             $disponible = max(0, (float) ($stockRow?->stock_actual ?? 0) - (float) ($stockRow?->stock_reservado ?? 0));
-            $surtible = min($requerido, $disponible);
             $producto = $material['producto_id'];
             $surtido = $producto ? min($requerido, max(0, (float) ($surtidoRestante[$producto] ?? 0))) : 0;
             $surtidoRestante[$producto] = max(0, (float) ($surtidoRestante[$producto] ?? 0) - $surtido);
             $faltante = max(0, $requerido - $surtido);
+            // El mismo inventario no puede cubrir dos partidas del mismo producto.
+            $surtible = min($faltante, (float) ($disponibleRestante[$producto] ?? 0));
+            $disponibleRestante[$producto] = max(0, (float) ($disponibleRestante[$producto] ?? 0) - $surtible);
+            $porComprar = max(0, $faltante - $surtible);
 
             $estado = $faltante <= 0
                 ? 'surtido'
                 : ($surtible >= $faltante ? 'disponible' : ($surtible > 0 ? 'parcial' : 'sin_existencia'));
 
             return [
+                'material_id' => $material['material_id'],
+                'incluido' => $material['incluido'],
                 'material_preventivo_id' => $material['material_preventivo_id'],
                 'producto_id' => $material['producto_id'],
                 'producto' => $material['producto'],
@@ -132,6 +143,7 @@ class MantenimientoAbastecimientoService
                 'disponible' => $disponible,
                 'surtible' => $surtible,
                 'faltante' => $faltante,
+                'por_comprar' => $porComprar,
                 'folios_salida' => $foliosSalida->all(),
                 'estado' => $estado,
             ];
@@ -169,6 +181,12 @@ class MantenimientoAbastecimientoService
             if ($materialesPendientes->contains(fn (array $material) => empty($material['producto_id']))) {
                 throw new ConflictHttpException('Hay materiales sin producto vinculado. Revisa la orden en la web antes de solicitar abastecimiento.');
             }
+            if ($tipo === MantenimientoAbastecimiento::TIPO_COMPRA) {
+                $materialesPendientes = $materialesPendientes->filter(fn (array $material) => $material['por_comprar'] > 0.0005)->values();
+                if ($materialesPendientes->isEmpty()) {
+                    throw new ConflictHttpException('El inventario disponible de Giralda cubre lo pendiente. Solicita el surtido desde almacén.');
+                }
+            }
             $solicitud = $actual->abastecimientos()->create([
                 'tipo' => $tipo,
                 'estado' => 'pendiente',
@@ -183,7 +201,7 @@ class MantenimientoAbastecimientoService
                 'unidad' => $material['unidad'],
                 // Una solicitud posterior representa solamente el faltante.
                 'cantidad_requerida' => $material['faltante'],
-                'cantidad_solicitada' => $material['faltante'],
+                'cantidad_solicitada' => $tipo === MantenimientoAbastecimiento::TIPO_COMPRA ? $material['por_comprar'] : $material['faltante'],
                 'cantidad_atendida' => 0,
                 'estado' => 'pendiente',
             ])->all());

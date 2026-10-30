@@ -79,6 +79,11 @@ Route::prefix('v1')->group(function () {
             Route::post('servicios/{servicio}/evidencias', [\App\Http\Controllers\Api\V1\Mecanico\ServicioProgramadoController::class, 'evidencias'])->whereNumber('servicio');
             Route::get('inventario/productos', [\App\Http\Controllers\Api\V1\Mecanico\InventarioController::class, 'productos']);
             Route::get('maquinas', [\App\Http\Controllers\Api\V1\Mecanico\MaquinaController::class, 'index']);
+            Route::get('maquinas/{maquinaId}/opciones-operacion', [\App\Http\Controllers\Api\V1\Mecanico\MaquinaController::class, 'opciones'])->whereNumber('maquinaId');
+            Route::post('maquinas/{maquinaId}/horas', [\App\Http\Controllers\Api\V1\Mecanico\MaquinaController::class, 'horas'])->whereNumber('maquinaId');
+            Route::post('maquinas/{maquinaId}/asignar-obra', [\App\Http\Controllers\Api\V1\Mecanico\MaquinaController::class, 'asignarObra'])->whereNumber('maquinaId');
+            Route::post('maquinas/{maquinaId}/baja-obra', [\App\Http\Controllers\Api\V1\Mecanico\MaquinaController::class, 'bajaObra'])->whereNumber('maquinaId');
+            Route::patch('maquinas/{maquinaId}/ubicacion', [\App\Http\Controllers\Api\V1\Mecanico\MaquinaController::class, 'ubicacion'])->whereNumber('maquinaId');
             Route::get('maquinas/{maquina}', [\App\Http\Controllers\Api\V1\Mecanico\MaquinaController::class, 'show']);
             Route::get('vehiculos', [\App\Http\Controllers\Api\V1\Mecanico\VehiculoController::class, 'index']);
             Route::get('vehiculos/{vehiculo}', [\App\Http\Controllers\Api\V1\Mecanico\VehiculoController::class, 'show']);

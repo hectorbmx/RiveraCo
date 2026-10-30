@@ -8,6 +8,8 @@ class MaquinaMovimiento extends Model
 {
     protected $table = 'maquina_movimientos';
 
+    protected $hidden = ['solicitud_hash'];
+
     protected $fillable = [
         'maquina_id',
         'obra_id',

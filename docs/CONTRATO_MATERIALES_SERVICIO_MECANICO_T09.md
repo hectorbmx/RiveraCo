@@ -21,8 +21,8 @@ Requiere Sanctum, usuario app activo, `app.mecanico.access` y un empleado existe
 - Cada fila admite exclusivamente `id`, `incluido` y `motivo_exclusion`.
 - `id`: entero positivo, sin duplicados, perteneciente al snapshot de este servicio.
 - `incluido`: booleano obligatorio. Se aceptan los valores booleanos estándar de validación Laravel (`true`, `false`, `0`, `1`, `"0"`, `"1"`).
-- `motivo_exclusion`: texto opcional de hasta 255 caracteres o null. Al excluir, omitirlo conserva el motivo existente y null lo borra. Al incluir, siempre se limpia el motivo.
-- El motivo no es obligatorio, para conservar la regla web actual.
+- `motivo_exclusion`: texto de hasta 255 caracteres. Al excluir debe existir un motivo no vacío, también en web. Omitirlo conserva el existente; enviar null, vacío o espacios se rechaza si la partida queda excluida. Al incluir, siempre se limpia el motivo.
+- Ajuste autorizado el 2026-10-28: el motivo pasa a ser obligatorio para justificar piezas o consumibles que no se aplican en este servicio.
 - Es un ajuste parcial: las filas omitidas permanecen como están. Para excluir todas deben enviarse explícitamente; un arreglo vacío se rechaza.
 - Se rechazan campos superiores desconocidos y campos adicionales dentro de cada fila. No se permite agregar/eliminar materiales, sustituir productos, cambiar cantidades, unidad, orden del snapshot ni precios.
 
@@ -67,3 +67,13 @@ Siete pruebas nuevas sobre SQLite en memoria: ajuste parcial/reintento, motivo o
 Suite móvil completa: **71 pruebas / 692 comprobaciones**, con `php -d extension=pdo_sqlite vendor/phpunit/phpunit/phpunit --filter=AppMobile --no-progress`. Sin modificación de la base local ni php.ini. Sintaxis, rutas protegidas y UTF-8 verificados; graphify actualizado al cierre. La prueba de concurrencia real sobre InnoDB sigue en T14.
 
 Siguiente: T10, solicitudes y avance de abastecimiento, coordinados con el bloqueo del mantenimiento.
+
+## Ajuste operativo del 2026-10-28
+
+- Caso: aceite sustituido en una reparación reciente que no debe solicitarse de nuevo en el preventivo.
+- El móvil muestra cantidad original y cantidad efectiva para este servicio (cero al excluir), sin borrar partidas ni cambiar la plantilla o la cantidad del snapshot.
+- La exclusión exige motivo en cliente y servidor. Los motivos se normalizan y validan antes de escribir cualquier fila.
+- Se conserva el ajuste exclusivo en orden generada antes de cualquier solicitud. En borrador se explica que primero debe generarse la orden; no se genera automáticamente.
+- El cliente bloquea solicitudes de almacén/compra mientras haya cambios locales de materiales sin guardar, también en el manejador de la acción.
+- El resumen posterior muestra la partida excluida, cero para este servicio y su motivo. La cantidad parcial sigue fuera de este contrato.
+- Verificación del ajuste: 67 pruebas del backend y 699 comprobaciones (`AppMobileServiceDraftTest`), 28 pruebas de captura móvil y compilación Angular de desarrollo correctas. Se comprobó que el aceite excluido no se solicita, que la plantilla y el snapshot conservan su cantidad y que una exclusión sin motivo no escribe cambios. No requiere migración ni modificación de registros reales para validar.

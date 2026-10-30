@@ -11,6 +11,8 @@ class ObraMaquinaRegistro extends Model
 
     protected $table = 'obra_maquina_registros';
 
+    protected $hidden = ['solicitud_hash'];
+
     protected $fillable = [
         'obra_maquina_id',
         'obra_id',

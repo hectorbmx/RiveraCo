@@ -3,16 +3,19 @@
 ## Control del documento
 
 - Fecha de apertura: 2026-10-23.
-- Estado: implementación backend y cliente completada por checkpoints; activación y validación integral pendientes.
+- Estado: T15.1-T15.3 de horas completados; T15.4-T15.5 de asignación/retiro y D09 backend/formulario móvil implementados, pendientes de pruebas del usuario. Validación integral pendiente. Grafo diferido al cierre.
 - Alcance: Laravel, API y cliente Ionic/Angular inspeccionado en C:\xampp\htdocs\rivera\app (avances C13.1-C13.4 registrados).
 - Propósito: mantener tareas, hallazgos, decisiones, pruebas y checkpoints en un solo documento.
 - Regla de seguimiento: marcar una tarea como completada solo después de registrar su validación. Si se implementó pero no se validó, conservarla pendiente y explicar el avance en la bitácora.
+- Revisión previa al cierre, 2026-10-29: [AMK1, estado/ubicación y acciones del residente](REVISION_ESTADO_UBICACION_MAQUINAS_AMK1.md). Cierre y actualización final del grafo pospuestos mientras se revisan autorización por obra, asignaciones abiertas a obras terminadas y las reglas del cambio de estado.
 
 ## Objetivo y alcance acordado
 
 Crear una tercera vista móvil, `mecanico`, con tres entradas: Máquinas, Vehículos y Servicios programados.
 
 El mecánico podrá consultar equipos y crear y dar seguimiento a servicios programados con el comportamiento que hoy existe en Laravel: borrador, orden de servicio, materiales, abastecimiento y registro de ejecución con evidencias.
+
+**Ampliación acordada, 2026-10-29:** desde Máquinas también deberá registrar horas o ajustar el horómetro y administrar ubicación/asignación con paridad respecto de `/maquinas`. El bloque T15 se ejecutará antes de continuar con indicadores/filtros nuevos del catálogo y antes del cierre integral T14. La consulta y las tarjetas ya construidas no completan estas operaciones de escritura.
 
 El reporte de fallas del residente es un flujo independiente. No se convertirá en la base de este módulo. La obra del servicio seguirá siendo opcional; entrar al panel de mecánico no dependerá de una asignación a obra.
 
@@ -52,6 +55,12 @@ El reporte de fallas del residente es un flujo independiente. No se convertirá 
 | H19 | En el barrido de T05, hay tres tipos de maquinaria y ningún tipo de vehículo configurado localmente. | El catálogo móvil informa configuración ausente; no se crean tipos automáticamente. |
 | H20 | El abastecimiento existente devuelve vacío para mantenimientos sin máquina; las plantillas tienen `maquina_id`, sin vínculo específico a vehículo. | D06 queda diagnosticado: se publica lectura/tipos de vehículo, pero se declara que sus plantillas automáticas no están implementadas. Extender ese flujo requiere alcance posterior. |
 | H21 | El selector web de materiales usa el catálogo global de productos activos. | La API incluye productos sin fila de stock y limita las cantidades estrictamente a Giralda, sin revelar existencias de otros almacenes. |
+| H22 | El alcance original de T04 es solo lectura; las rutas mecánicas de equipos aún no publican escrituras de horas o ubicación. | Las tarjetas operativas de los pasos 1 y 2 no habilitan esas funciones. Se agrega T15. |
+| H23 | `guardarHoras()` diferencia máquina con asignación activa y máquina sin asignación. | Con obra crea `ObraMaquinaRegistro`; sin obra crea `MaquinaHorometroAjuste`. El servicio compartido exige lectura creciente y fecha no anterior a la última válida; no corrige hacia abajo ni edita lecturas históricas. |
+| H24 | Administrar ubicación desde el listado web significa asignar a obra o finalizar la asignación y volver a patio. | `MaquinaService` crea/finaliza `ObraMaquina` y registra movimientos. Asignar exige estado operativa, ausencia de asignación activa y pilas activas en la obra. |
+| H25 | El listado web representa ubicación como obra activa o patio, aunque el campo `maquinas.ubicacion` admite también camino y reparación. | Definir una presentación consistente; cambiar el campo no equivale a asignar o retirar una máquina. |
+| H26 | La ruta web `cambiar-ubicacion` apunta a `MaquinaController::cambiarUbicacion`, que no está definido; el método sí existe en `MaquinaService`. | Revisar/completar ese flujo antes de anunciar cambios directos de ubicación; no copiar la ruta como si estuviera operativa. |
+| H27 | Existen tablas y servicios para lecturas, ajustes, asignaciones y movimientos. | De entrada no se requiere una nueva tabla. Las API móviles deben reutilizar reglas y auditoría, con autorización por operación y protección frente a solicitudes simultáneas. |
 
 ## Decisiones pendientes
 
@@ -67,6 +76,7 @@ Resolver cada punto antes de implementar la tarea que depende de él. Se puede a
 | D06 | ¿Cómo se obtienen los materiales preventivos de vehículos? | Catálogos y generación de orden. |
 | D07 | ¿Se conserva, sustituye o retira `app.regular.access` a este usuario al habilitar mecánico? | Accesos múltiples y panel predeterminado. No quitar permisos durante la implementación sin una decisión. |
 | D08 | ¿Qué panel abre cuando tiene varios accesos? | Login, `me` y navegación móvil. |
+| D09 | Aprobado 2026-10-29: camino/reparación conservan obra; regreso a la misma obra con asignación activa; sin obra se permiten camino/reparación/patio; con obra, patio exige retiro. Estado operativo independiente, motivo obligatorio, auditoría y permiso `maquinas.ubicacion.update.access` compartido web/app, otorgado manualmente. | Decisión resuelta; backend compartido/API y formulario móvil implementados. Pruebas funcionales a cargo del usuario. |
 
 ## Contratos propuestos
 
@@ -76,6 +86,11 @@ Base: `/api/v1/mecanico`. Son propuestas de diseño, no rutas implementadas.
 |---|---|---|
 | GET | `/maquinas` | Listado y búsqueda paginados. |
 | GET | `/maquinas/{maquina}` | Detalle e historial autorizado. |
+| GET | `/maquinas/{maquina}/opciones-operacion` | Propuesta T15: acciones autorizadas, lectura de referencia y búsqueda paginada de obras elegibles. Contrato final pendiente de T15.1. |
+| POST | `/maquinas/{maquina}/horas` | Propuesta T15: registrar lectura con obra o crear ajuste sin asignación, decidido en servidor. |
+| POST | `/maquinas/{maquina}/asignar-obra` | Propuesta T15: asignación con fecha, lectura inicial y notas; ubicación y movimiento coordinados. |
+| POST | `/maquinas/{maquina}/baja-obra` | Propuesta T15: finalizar asignación y devolver a patio, conservando historial. |
+| PATCH | `/maquinas/{maquina}/ubicacion` | Propuesta T15 sujeta a D09: cambio directo de ubicación con motivo/auditoría, sin romper la asignación. |
 | GET | `/vehiculos` | Listado y búsqueda paginados. |
 | GET | `/vehiculos/{vehiculo}` | Detalle e historial autorizado. |
 | GET | `/inventario/productos` | Buscar productos por nombre/SKU y consultar unidad, existencia y disponibilidad de Giralda; incluir productos válidos sin stock para solicitar compra. Contrato por definir para delimitar el catálogo aplicable. |
@@ -234,6 +249,79 @@ Antes de programar cada contrato, documentar: parámetros, campos de entrada, re
 
 **Avance C14.1 validado, 2026-10-23:** tres escenarios concurrentes y seis peticiones HTTP sobre InnoDB aislado: generación doble sin duplicar snapshot, rollback de la primera generación con reintento concurrente y edición concurrente rechazada tras emitir orden. Espera observada en INNODB_LOCK_WAITS, stock intacto y ninguna solicitud creada. [Prueba e informe C14.1](VALIDACION_CONCURRENCIA_APP_MECANICO_C14_1.md). T14 sigue abierta por el recorrido conectado/dispositivo y ejecución dependiente de T12/D05.
 
+### T15. Operaciones de máquinas: horas y ubicación — prioridad actual
+
+Ampliación del 2026-10-29. T15.1-T15.3 de horas completados y T15.4-T15.5 de asignación/retiro implementados. Sus pruebas funcionales quedan a cargo del usuario; D09 y T15.6 permanecen pendientes. Se conserva la consulta operativa validada: paso 1 API (40 pruebas/350 comprobaciones) y paso 2 contrato/tarjetas (30 pruebas Chrome Headless y build completo). Ver [T04](CONTRATO_CONSULTA_EQUIPOS_MECANICO_T04.md) y [tarjetas móviles](IMPLEMENTACION_CONSULTAS_MOVIL_MECANICO_C13_3.md#tarjetas-operativas-de-máquinas--2026-10-29). El recorrido con sesión real sigue pendiente.
+
+#### T15.1. Contrato, permisos y reglas por operación
+
+- [x] Documentar entradas, respuestas, acciones permitidas y errores de horas y asignación/retiro, incluyendo fechas con zona, contexto obsoleto y resultado incierto/reintento; reservar el cambio directo pendiente de D09.
+- [x] Especificar usuario móvil activo y `app.mecanico.access`, además del permiso de la operación: `maquinas.horas.create.access`, `maquinas.asignar_obra.access` o `baja_maquinas.access`. Es contrato, no implementación nueva de autorización.
+- [x] Definir capacidades por máquina y la misma autorización en cada escritura; ocultar un botón no sustituye la validación del servidor. Los endpoints futuros no anuncian capacidades habilitadas.
+- [x] Delimitar ubicación frente a estado operativo y el alcance pendiente de D09; no publicar el cambio directo ni crear/asignar permisos por esta especificación.
+- [x] Resolver D09 con el usuario antes de implementar cambios directos: transiciones, asignación activa y permiso aplicable. Aprobado 2026-10-29; implementación pendiente.
+- [x] Especificar acceso mecánico independiente de obra y de los paneles residente/gerencial; operar una máquina asignada no requiere asignar al mecánico como residente.
+
+**Checkpoint:** contrato revisable y matriz de permisos/estados definidos. D09 puede quedar pendiente para el cambio directo, sin bloquear las demás operaciones.
+
+**Cierre documental T15.1, 2026-10-29:** [contrato de operaciones T15](CONTRATO_OPERACIONES_MAQUINAS_MECANICO_T15.md) creado y contrastado con la web actual. Entradas, capacidades, permisos, errores, fechas y recuperación definidos para horas/asignación/retiro; D09 sigue abierto y cambio directo deshabilitado en el diseño. Ejemplos JSON, formato y UTF-8 verificados. No se implementaron rutas, formularios o migraciones ni se modificaron permisos/datos. Por instrucción del usuario, detenerse al cerrar este paso y solicitar confirmación para T15.2.
+
+#### T15.2. API compartida para registrar horas y ajustar horómetro
+
+- [x] Extraer la coordinación de `guardarHoras()` para compartirla con web/API y reutilizar `MaquinaHorometroService`.
+- [x] Resolver la asignación en servidor: con obra activa guardar registro de horas; sin asignación guardar ajuste con fecha, notas y obra relacionada opcional.
+- [x] Conservar validación de lectura creciente y secuencia de fechas. No editar históricos ni permitir reducir el horómetro como parte de esta entrega.
+- [x] Releer máquina/asignación bajo transacción y conservar autor, origen móvil y trazabilidad; rechazar contexto móvil obsoleto y recuperar dobles envíos exactos mediante huella persistida. Bloqueos concurrentes reales pendientes de InnoDB en T15.6.
+- [x] Retornar datos actualizados para refrescar lectura, última fecha y preventivos.
+
+**Checkpoint:** pruebas de paridad web/API, con y sin obra, permisos, cero de referencia, lectura igual/inferior, fechas inválidas, rollback y reintento sin duplicados.
+
+**Cierre T15.2, 2026-10-29:** API de opciones/horas y servicio compartido implementados; **132 pruebas / 1,332 comprobaciones** de regresión, incluidas 16 pruebas nuevas de horas con SQLite en memoria. Migración nullable/única de `solicitud_hash` en las dos tablas existentes, aplicada solo en local (lote 151), sin poblar históricos ni crear capturas operativas. Rutas, sintaxis, UTF-8 y formato verificados; [contrato T15](CONTRATO_OPERACIONES_MAQUINAS_MECANICO_T15.md#cierre-t152--2026-10-29) actualizado. Concurrencia InnoDB y sesión real pendientes de T15.6. Detenerse y pedir confirmación para T15.3; no se implementó todavía su modal.
+
+#### T15.3. Modal móvil de horas
+
+- [x] Agregar acción compacta «Registrar horas» o «Ajustar horómetro» por permiso de sesión; consultar capacidades/asignación actuales del servidor antes de habilitar el formulario.
+- [x] Mostrar máquina, obra y lectura actual; capturar nueva lectura, fechas y notas. Ofrecer obra relacionada opcional solo cuando corresponda.
+- [x] Mostrar errores por campo, bloquear doble envío y recuperar el estado tras una respuesta incierta mediante reintento del payload original conservado por usuario/máquina.
+- [x] Refrescar tarjeta y detalle después de guardar, sin perder búsqueda/página.
+
+**Checkpoint:** pruebas de formulario, capacidades y recarga; compilación móvil y verificación UTF-8.
+
+**Cierre T15.3, 2026-10-29:** modal Ionic, DTO/transporte de horas, selección paginada de obra relacionada y acciones en tarjetas implementados. Contexto del servidor, fecha/hora de México con offset, errores 409/422, bloqueo de doble envío, recuperación por sesión y descarte de respuestas de otra máquina/usuario. **112 pruebas Chrome Headless**, incluidas 22 nuevas, y build completo de desarrollo exitosos; UTF-8 verificado. [Implementación y límites T15.3](IMPLEMENTACION_HORAS_MAQUINA_MOVIL_T15_3.md). Sin escrituras operativas ni despliegue; recorrido conectado/dispositivo pendiente de T15.6. Detenerse y pedir confirmación antes de T15.4.
+
+#### T15.4. API compartida de ubicación y asignaciones
+
+- [x] Implementar API reutilizando `MaquinaService` para asignar y finalizar, sin `update` aislado de ubicación.
+- [x] Publicar búsqueda de obras vigentes con pilas activas y capacidades según permiso/estado/asignación.
+- [x] Implementar validaciones compartidas de fechas y lectura contra historial, conservando el retiro sin inventar una lectura final.
+- [x] Implementar bloqueo/relectura de máquina antes de asignación, contexto esperado y reintentos exactos con huella persistida.
+- [x] Coordinar ubicación, asignación, movimiento, autor y huella bajo transacción. Verificación funcional/concurrente pendiente del usuario.
+- [x] Implementar backend de cambio directo con D09 aprobado, controlador H26 y reglas compartidas web/API; corregir presentación de ubicación H25. Pruebas funcionales pendientes del usuario.
+
+**Checkpoint funcional pendiente del usuario:** código de asignar/retirar entregado; no se declara paridad probada ni se marca todo el bloque validado mientras falten sus pruebas y D09.
+
+**Entrega de código T15.4, 2026-10-29:** dos POST y `uso=asignacion` implementados, con permisos existentes y reglas compartidas con web. Migración nullable/única en movimientos aplicada solo en local, lote 152, sin llenar históricos ni crear movimientos operativos. [Detalles T15.4](IMPLEMENTACION_ASIGNACIONES_MAQUINAS_T15_4.md). Solo sintaxis, rutas, formato y UTF-8 comprobados; sin pruebas funcionales ni actualización del grafo por instrucción del usuario. D09 continúa pendiente. Detenerse y pedir confirmación para T15.5 de asignar/retirar.
+
+#### T15.5. Formularios móviles de ubicación
+
+- [x] Agregar «Asignar a obra» o «Retirar de obra» según capacidades; buscador de obra y datos de asignación, con confirmación de retiro.
+- [x] Agregar opciones de cambio directo con contrato D09 aprobado y backend disponible; formulario móvil implementado. Pruebas funcionales pendientes del usuario.
+- [x] Mostrar destino y efecto de asignar/retirar; conservar historial mediante la API existente y distinguir ubicación de estado operativo.
+- [x] Implementar bloqueo de doble envío, errores y actualización de tarjeta/detalle tras guardar. Verificación funcional pendiente del usuario.
+
+**Checkpoint funcional pendiente del usuario:** código de formularios de asignación/retiro/cambio directo entregado; faltan recorridos con máquina asignada, en patio, no operativa y usuario sin permiso. No se declara paridad probada. D09 aprobado e implementado en backend y móvil.
+
+**Entrega de código T15.5, 2026-10-29:** formularios desde listado/detalle, búsqueda paginada de obras elegibles, fecha/lectura/notas de asignación, confirmación de retiro y recuperación de operación incierta por usuario/máquina. Compilación TypeScript y plantillas Angular verificada; sin pruebas funcionales ni actualización del grafo. [Detalles T15.5](IMPLEMENTACION_ASIGNACIONES_MOVIL_T15_5.md). Detenerse para informar y pedir confirmación antes de continuar.
+
+#### T15.6. Validación integral de estas operaciones
+
+- [ ] Recorrer con sesión real web/app: registrar horas con obra, ajustar sin obra, asignar, retirar y los cambios directos aprobados.
+- [ ] Verificar autor/origen, registros anteriores intactos, recálculo preventivo y ausencia de asignaciones o movimientos duplicados.
+- [ ] Probar carreras pertinentes sobre InnoDB aislado, incluyendo captura de horas frente a retiro y dos intentos de asignación; no usar datos operativos.
+- [ ] Registrar resultados, límites y pendientes; actualizar contratos y checkpoints. Mantener T14 abierto hasta completar el recorrido global y de dispositivo.
+
+**Checkpoint:** paridad funcional comprobada. Continuar después con indicadores/filtros nuevos del catálogo, seguros si se acuerdan y cierre global T14.
+
 ## Orden de trabajo y dependencias
 
 1. T01 y T02: definir reglas y contratos; adelantar la inspección móvil de T13.
@@ -243,6 +331,8 @@ Antes de programar cada contrato, documentar: parámetros, campos de entrada, re
 5. T11 y T12: evidencias y ejecución.
 6. T13: completar pantallas conforme se validen los contratos.
 7. T14: cerrar la entrega con el recorrido completo.
+
+**Prioridad vigente desde 2026-10-29:** conservar los pasos 1 y 2 del catálogo como completados en pruebas controladas; ejecutar T15.1 → T15.2 → T15.3 → T15.4 → T15.5 → T15.6. Después retomar indicadores/filtros y terminar T14. D09 no bloquea horas ni asignación/retiro. Reportar cada paso y pedir confirmación antes del siguiente. T15.1-T15.3 completados y código de asignación/retiro T15.4-T15.5 entregado; T15.6 y D09 siguen pendientes. **Instrucción vigente del usuario:** dejar las pruebas funcionales a su cargo y actualizar el grafo hasta el final; no ejecutarlas ni actualizarlo automáticamente en los siguientes pasos.
 
 ## Fuentes de referencia
 
@@ -254,6 +344,10 @@ Antes de programar cada contrato, documentar: parámetros, campos de entrada, re
 - `app/Http/Controllers/Api/V1/Gerencial/MaquinasGerencialController.php`
 - `app/Http/Controllers/Api/V1/Gerencial/VehiculosGerencialController.php`
 - `app/Services/Mobile/AppMobileContextService.php`
+- `app/Http/Controllers/MaquinaController.php`: registro/ajuste de horas, asignación y retiro de obra.
+- `app/Services/Maquinas/MaquinaHorometroService.php`: lecturas, ajustes y secuencia histórica.
+- `app/Services/Maquinas/MaquinaService.php`: asignación, ubicación y movimientos.
+- `resources/views/maquinas/index.blade.php`: acciones y permisos del listado web.
 - `app/Http/Controllers/Api/V1/AuthController.php`
 - `app/Http/Controllers/Api/V1/AppContextController.php`
 - `routes/api.php`
@@ -283,6 +377,114 @@ Antes de programar cada contrato, documentar: parámetros, campos de entrada, re
 | 2026-10-23 | T14 / C14.1 | Prueba concurrente InnoDB aislada con tres escenarios y seis peticiones HTTP: orden idempotente, rollback/reintento y edición concurrente rechazada. Cierre: 2026-10-23T19:23:34.2342304-06:00 (America/Mexico_City). | MariaDB 10.4.32, espera real entre conexiones en los tres escenarios, stock intacto, sin solicitudes. Instancia apagada y datos/temporales retirados; informe JSON conservado. Sintaxis PHP/PowerShell, guard de aislamiento, UTF-8/diff y grafo (7725 nodos/13380 relaciones) validados. Reintento elevado del grafo resuelve WinError 5. | Siguiente punto no antes de 2026-10-23T19:33:34.2342304-06:00. T14 sigue abierta por usuario/dispositivo y recorrido completo; T12/C13.5 esperan D05. No se realizó commit/push final. |
 | 2026-10-26 | T12 | D05 confirmada e implementada: iniciar con faltantes, completar solo surtido; cancelación solo web. Ejecución bajo bloqueo y mano de obra compartida; ajuste de cantidades repetidas, fechas y lecturas. Cierre: 2026-10-26T09:35:41.792505-06:00 (America/Mexico_City). | 99 pruebas/959 comprobaciones; paridad HTTP web/API, rollback SQL, reintentos, permisos, preventivo real, rutas, sintaxis y UTF-8. Grafo actualizado: 7760 nodos/13474 relaciones. | C13.5, no antes de 2026-10-26T09:45:41.792505-06:00. T14 conserva recorrido conectado/dispositivo y carreras de ejecución/surtido. Sin commit/push hasta terminar el alcance. |
 | 2026-10-26 | T13 / C13.5 | Inicio y cierre móvil según T12/D05: fecha México, lectura final, notas, acciones de servidor, bloqueo de doble envío y recuperación ante resultado incierto. Cierre: 2026-10-26T10:08:10.881930-06:00 (America/Mexico_City). | 63 pruebas Chrome Headless (16 nuevas), TypeScript app/spec y build completo exitosos; UTF-8/diff verificados. Graphify actualizado: 7765 nodos/13480 relaciones/1254 comunidades. Salida temporal de build retirada. | T14 sigue pendiente; siguiente punto no antes de 2026-10-26T10:18:10.881930-06:00 (America/Mexico_City). Pedido humano limitado a C13.5: no se inició T14 ni commit/push. |
+
+### 2026-10-29: ampliación de consulta y nueva prioridad T15
+
+- Pasos 1 y 2 del catálogo ya validados: datos operativos en API y contrato/tarjetas móviles; 40 pruebas/350 comprobaciones backend y 30 pruebas Chrome Headless más build móvil. Sin recorrido conectado con cuenta real.
+- El usuario solicita paridad de horas y ubicación respecto de `/maquinas`; se contrasta con el alcance original de consulta T04 y se registran H22-H27.
+- Se agrega T15.1-T15.6 como prioridad previa a indicadores/filtros y al cierre T14. No se implementaron las escrituras ni se modificaron permisos, usuarios o datos en esta actualización documental.
+- D09 identifica lo que falta definir para cambios directos de ubicación; asignar a obra y retirar al patio sí pertenecen al alcance solicitado.
+- Validación de esta actualización: revisión contra controladores, rutas, vista y servicios web existentes; comprobación de formato y UTF-8 del documento.
+
+### 2026-10-29: cierre documental T15.1
+
+- Creado `CONTRATO_OPERACIONES_MAQUINAS_MECANICO_T15.md` con permisos por operación, propuestas de rutas, contexto esperado, campos de captura, ejemplos, errores y recuperación de reintentos.
+- Se conserva la decisión del modo de horas en servidor y las reglas de lectura/fecha del servicio existente. La API exige fechas explícitas en registros de obra para recuperación reproducible; la web mantiene su normalización opcional.
+- D09 queda pendiente con alcance explícito: no publicar cambios directos de ubicación ni inventar sus permisos. Asignar/retirar y horas pueden continuar con los permisos actuales.
+- Validación documental: contraste con fuente web, ejemplos JSON, `git diff --check` y `php tools/check_mojibake.php`. Sin código ni datos modificados y sin pruebas de endpoints futuros.
+- Siguiente: solicitar confirmación del usuario para T15.2; no iniciarlo en el mismo paso.
+
+### 2026-10-29: cierre T15.2
+
+- Implementadas opciones de captura y API de horas, servicio de coordinación compartido con web y validación del contexto esperado. Los reintentos exactos se recuperan por huella persistida con autor/origen, sin repetir ni recalcular la lectura original.
+- El esquema anterior no conservaba todo el contexto para demostrar identidad: ajuste documentado antes de implementar y migración nullable/única creada para ambas tablas. Aplicada solo en local, lote 151; cero huellas no nulas en datos operativos tras la migración. No se crearon permisos ni se modificó producción.
+- 132 pruebas / 1,332 comprobaciones, con HTTP sobre SQLite aislado para permisos, captura, contexto, reintentos, rollback, paridad web/API y migración reversible. Sintaxis, rutas, formato y UTF-8 verificados. Las pruebas concurrentes de bloqueo en InnoDB permanecen en T15.6.
+- Siguiente: pedir confirmación para T15.3 (modal móvil). No avanzar automáticamente a pantallas ni ubicación.
+
+### 2026-10-29: cierre T15.3
+
+- Modal de registro/ajuste integrado en las tarjetas del listado y detalle. La operación consulta contexto/capacidades frescas, conserva referencias nulas/cero y maneja fechas de México con offset explícito.
+- Captura con obra relacionada opcional paginada, validación, errores por campo, bloqueo de doble envío y revisión de contexto tras 409. El resultado actualiza la fila/detalle sin recargar ni perder búsqueda/página.
+- Un envío incierto conserva el payload exacto por usuario/máquina en memoria y sesión; solo permite reintentar ese contenido y descarta respuestas ajenas. Se documenta el límite de persistencia de sesión.
+- 112 pruebas exitosas de módulo/contrato en Chrome Headless (22 nuevas), build completo de desarrollo y UTF-8 verificados. HTTP interceptado/datos controlados, sin capturas operativas ni cambios del backend. Salida temporal de compilación retirada al cerrar.
+- Siguiente: pedir confirmación para T15.4, API de asignación/retiro y revisión de D09 antes de cualquier cambio directo. No iniciar ese paso automáticamente.
+
+### 2026-10-29: entrega de código T15.4
+
+- Publicados POST de asignación/retiro y catálogo de obras elegibles con permisos específicos, estado/asignación y contexto esperado. Se reutilizan reglas, transacciones y auditoría de `MaquinaService`, ahora compartidas y reforzadas para web/API.
+- Huella nullable/única en `maquina_movimientos` para reintentos exactos por actor/acción/contexto. Migración aplicada solo en local, lote 152; no se crearon movimientos ni se poblaron históricos.
+- Se comprobaron sintaxis PHP, registro de rutas, formato y UTF-8. No se ejecutaron pruebas funcionales ni se actualizó el grafo, conforme a la instrucción del usuario. El checkpoint funcional no se marca validado.
+- D09 y la ruta web de cambio directo permanecen pendientes; esta entrega no habilita camino/reparación ni altera estado operativo.
+- Siguiente: solicitar confirmación para T15.5 (formularios móviles de asignar/retirar). Las pruebas quedan para el usuario y el grafo para el cierre.
+
+### 2026-10-29: entrega de código T15.5
+
+- Integrados formularios de asignación y retiro al patio desde tarjetas del listado y detalle. Se consultan capacidades/contexto actuales; obra destino paginada, fecha, horómetro inicial y notas de asignación; retiro con confirmación explícita y fecha de cierre.
+- Resultado actualiza tarjeta/detalle conservando búsqueda y página. Un resultado incierto congela el payload por usuario/máquina y permite reabrir «Confirmar operación pendiente», incluso si cambió la asignación. Se usa la recuperación exacta del servidor.
+- TypeScript y compilación Angular de desarrollo verificados; formato y UTF-8 revisados. No se ejecutaron pruebas funcionales ni se actualizó el grafo, por instrucción del usuario. Sin movimientos operativos ni cambios de base de datos en este paso.
+- D09 sigue abierto; T15.6 y el recorrido del usuario permanecen pendientes. Informar la entrega y pedir confirmación antes de cualquier siguiente paso.
+
+### 2026-10-29: decisión parcial D09
+
+- El usuario confirma conservar la asignación a obra cuando la máquina pase a camino o reparación. El retiro explícito sigue finalizando la asignación; un cambio de ubicación sin asignación no crea una nueva.
+- Actualizado el contrato T15. No se interpretó esta respuesta como aprobación de permisos nuevos ni de todas las transiciones propuestas. D09 permanece parcialmente definida.
+- Paso documental: sin cambios de código, datos ni permisos. Pruebas a cargo del usuario y grafo diferido al cierre.
+- Siguiente: concretar el permiso y las transiciones restantes antes de implementar el cambio directo; pedir confirmación para continuar.
+
+### 2026-10-29: aprobación completa D09 y cierre documental
+
+- El usuario aprueba la definición propuesta: conservar obra en camino/reparación, regreso a la misma obra con asignación activa, camino/reparación/patio sin obra y retiro explícito para cerrar una asignación. Cambio de obra mediante retiro y nueva asignación.
+- Estado operativo independiente de ubicación. Motivo obligatorio y registro de autor, fecha y ubicaciones anterior/nueva.
+- Aprobado permiso específico `maquinas.ubicacion.update.access`, compartido por web/app y otorgado manualmente. No se creó ni asignó en este paso.
+- D09 resuelta como decisión. Contrato actualizado con matriz de transiciones y condiciones; formato y UTF-8 revisados. Sin código, datos, pruebas funcionales ni actualización del grafo.
+- Siguiente paso: implementar backend compartido/API y corregir H26; después formularios móviles. Pedir confirmación antes del backend y reportar al cerrar cada paso.
+
+### 2026-10-29: entrega backend D09
+
+- Implementado servicio compartido de ubicación con permiso efectivo, motivo obligatorio, destinos según asignación y ubicación actual, estado operativo independiente e historial ligado a la misma obra. No permite enviar al patio una máquina asignada sin el retiro explícito.
+- PATCH móvil y GET de opciones/POST web implementados, corrigiendo H26. El catálogo muestra ubicación guardada y obra vinculada (H25); no se agrega un formulario web nuevo en este paso.
+- Contexto de ubicación separado del contexto previo; incorpora último movimiento para distinguir cambios repetidos. Transacción, bloqueo máquina/asignación y huella por actor/origen/payload para recuperar reintentos exactos.
+- Sin migración nueva ni datos/permisos modificados. Registro y otorgamiento manual de `maquinas.ubicacion.update.access` pendientes de administración. Requiere migración previa T15.4 de huella en movimientos al desplegar.
+- Sintaxis PHP, rutas, vista, formato y UTF-8 revisados. Sin pruebas funcionales ni actualización del grafo por instrucción del usuario; no se marca paridad probada.
+- [Detalle técnico D09](IMPLEMENTACION_UBICACION_MAQUINAS_D09_BACKEND.md). Siguiente: contrato/formulario móvil de cambio directo; informar y pedir confirmación antes de comenzar.
+
+### 2026-10-29: entrega formulario móvil D09
+
+- Acción Cambiar ubicación integrada en listado/detalle, con permiso de sesión y consulta fresca de destinos/contexto/capacidad al abrir. Máquina y obra como referencia; destino sin selección automática, motivo obligatorio y notas opcionales.
+- Confirmación del cambio y conservación de obra/estado operativo. Contexto separado del contrato de horas/asignación; tratamiento de nulo/cero y lectura decimal sin normalizar en cliente.
+- Errores por campo, recarga/revisión tras 409, bloqueo de doble envío y recuperación exacta del payload incierto por usuario/máquina. Botón de recuperación en tarjeta y coordinación con capturas pendientes de horas/asignación.
+- TypeScript y compilación Angular de desarrollo completos; UTF-8/formato revisados. Sin pruebas funcionales, escrituras operativas, cambios de permisos ni actualización del grafo. Temporales retirados.
+- [Detalle móvil D09](IMPLEMENTACION_UBICACION_MOVIL_D09.md). T15.6/recorrido conectado quedan a cargo del usuario; permiso nuevo requiere registro/asignación manual y actualización de sesión. Informar entrega y pedir confirmación antes del siguiente paso; grafo sigue para el cierre.
+
+### 2026-10-29: revisión AMK1 solicitada antes del cierre
+
+- Inspección de solo lectura: AMK1 fuera de servicio/en obra por un cambio de estado histórico (movimiento 48), anterior a T15/D09. Autor registrado; origen web/app no conservado. No atribuir el movimiento al residente sin evidencia histórica.
+- Asignación 4 sigue abierta a obra 4, ya terminada. El listado y el detalle no aplican la misma definición de asignación vigente. Sin corrección automática de datos.
+- Confirmado que la pantalla residente usa actualizar-estado para falla/inicio/fin de reparación. Esa ruta no replica la autorización por obra de reportar-falla ni valida vigencia de asignación; middleware legacy no resuelve ese alcance por registro.
+- Registrar hallazgos de auditoría, concurrencia, errores web y reglas de horas en [revisión AMK1](REVISION_ESTADO_UBICACION_MAQUINAS_AMK1.md). Cambios de código/datos pendientes de autorización y definición; sin pruebas funcionales.
+- El cierre documental y el grafo quedan pospuestos por esta prioridad del usuario. No marcar T15.6/T14 validados.
+
+### 2026-10-29: revisión de liberación automática al cerrar obra
+
+- Confirmado bloque existente en ObraController::update: al pasar de estatus no cerrado a terminada/cancelada libera asignaciones y envía máquinas a patio mediante MaquinaService. Conserva estado operativo; suspensión no libera.
+- El bloque se incorporó en julio y desde 2026-09-25 usa el servicio en vez de una actualización masiva de la asignación. Obra de AMK1 sin actualización desde junio: apunta a pendiente anterior a esa automatización, sin evidencia de fecha exacta de cierre.
+- Consulta local de solo lectura: tres asignaciones abiertas a obras terminadas (AMK1, BG-12 y S3). Sin corrección de datos en esta revisión.
+- Hallazgos: no hay transacción global de cierre; un fallo puede dejar obra cerrada y liberación parcial. Guardar otra vez la misma obra cerrada no reejecuta el proceso. Registrar evidencia y recomendaciones en [revisión AMK1](REVISION_ESTADO_UBICACION_MAQUINAS_AMK1.md).
+- Pendiente definir/autorizar refuerzo del cierre y regularización histórica; cierre documental/grafo continúan pospuestos. Sin pruebas funcionales ni escrituras operativas.
+
+### 2026-10-29: ajuste de retiro pendiente desde ubicación
+
+- Aprobado para AMK1: única acción de ubicación Pasar al patio; cierre explícito de la asignación pendiente, conservación de fuera de servicio, sin nueva obra.
+- Implementado selector compartido de una única asignación abierta para retiro, aunque la obra esté terminada/cancelada. Opciones/detalle exponen asignacion_retiro y contexto_retiro separado de horas. Web/API conservan validación de fecha y movimiento transaccional.
+- Etiqueta de ubicación interactiva en listado/detalle y menú de acciones con capacidades frescas, explicación de permisos y apertura del formulario existente. Sin retiro automático ni modificación del registro de AMK1.
+- El usuario configurará manualmente baja_maquinas.access. No se registraron ni concedieron permisos; requiere actualizar sesión móvil después del cambio manual.
+- [Detalle del ajuste](AJUSTE_RETIRO_ASIGNACIONES_PENDIENTES_MOVIL.md). Sintaxis, TypeScript, compilación Angular, formato y UTF-8 comprobados; sin pruebas funcionales ni actualización del grafo. Cierre global continúa pospuesto durante la revisión de reglas/hallazgos.
+
+### 2026-10-29: tarjetas de máquinas plegables
+
+- Cabecera azul de cada tarjeta convertida en botón con flecha para mostrar/ocultar datos de forma independiente, en listado y detalle. Inician abiertas y conservan el contenido al plegarse.
+- Badge de estado permanece visible. Acceso por teclado, aria-expanded y vínculo al contenido; flecha independiente del desplegable de preventivos.
+- Compilación Angular y UTF-8 verificados; sin pruebas funcionales ni cambios de backend/datos. Actualización final del grafo sigue pendiente del cierre de los ajustes.
 
 ### Plantilla para nuevas entradas
 

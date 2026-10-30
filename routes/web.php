@@ -247,6 +247,7 @@ Route::middleware(['auth', 'verified'])
             Route::get('/', [SatComplementoPagoController::class, 'index'])->name('index');
             Route::get('/create', [SatComplementoPagoController::class, 'create'])->name('create');
             Route::post('/', [SatComplementoPagoController::class, 'store'])->name('store');
+            Route::post('/{pago}/reintentar', [SatComplementoPagoController::class, 'reintentar'])->name('reintentar');
         });
 
         /*
@@ -904,7 +905,10 @@ Route::middleware('auth','verified')->group(function () {
             ->name('fotos.destroy');
     // acciones puntuales (NO crear maquina, solo cambiar estado/ubicacion y agregar seguro)
         Route::post('maquinas/{maquina}/cambiar-estado', [MaquinaController::class, 'cambiarEstado'])->name('cambiarEstado');
-        Route::post('maquinas/{maquina}/cambiar-ubicacion', [MaquinaController::class, 'cambiarUbicacion'])->name('cambiarUbicacion');
+        Route::get('maquinas/{maquina}/opciones-ubicacion', [MaquinaController::class, 'opcionesUbicacion'])
+            ->whereNumber('maquina')->name('opcionesUbicacion');
+        Route::post('maquinas/{maquina}/cambiar-ubicacion', [MaquinaController::class, 'cambiarUbicacion'])
+            ->whereNumber('maquina')->name('cambiarUbicacion');
         // Route::post('maquinas/{maquina}/seguros', [MaquinaSeguroController::class, 'store'])->name('seguros.store');
         Route::post('maquinas/{maquina}/toggle-servicio', [MaquinaController::class, 'toggleServicio'])->name('toggleServicio');
         Route::post('maquinas/{maquina}/horas', [MaquinaController::class, 'guardarHoras'])

@@ -203,6 +203,41 @@ class AppMobileServiceDraftTest extends TestCase
         $this->assertDatabaseHas('mantenimientos', ['id' => $s->id, 'mecanico_id' => 12]);
     }
 
+    public function test_web_rejects_all_edits_and_photo_uploads_after_service_closure(): void
+    {
+        $s = $this->prepararEjecucion();
+        Storage::fake('public');
+        foreach (['completado', 'cancelado'] as $estado) {
+            foreach (['programado', 'emergencia'] as $tipo) {
+                $s->update(['estatus' => $estado, 'tipo' => $tipo, 'descripcion' => 'Descripción cerrada']);
+                $payload = array_merge($this->datos(), ['estatus' => $estado, 'tipo' => $tipo,
+                    'descripcion' => 'No guardar', 'fotos' => [UploadedFile::fake()->image('foto.jpg')]]);
+                $this->put(route('mantenimiento.mantenimientos.update', $s), $payload)
+                    ->assertRedirect()->assertSessionHasErrors('estatus');
+                $this->assertSame('Descripción cerrada', $s->fresh()->descripcion);
+                $this->assertSame($estado, $s->fresh()->estatus);
+            }
+        }
+        $this->assertDatabaseCount('mantenimiento_fotos', 0);
+        $this->assertSame([], Storage::disk('public')->allFiles());
+    }
+
+    public function test_web_rechecks_closure_under_lock_before_persisting_a_stale_form(): void
+    {
+        $s = $this->prepararEjecucion();
+        $ejecutado = false;
+        DB::table('mantenimientos')->where('id', $s->id)->update(['estatus' => 'completado']);
+        try {
+            app(\App\Services\Mantenimiento\MantenimientoEjecucionService::class)->guardarWeb($s,
+                ['estatus' => 'completado'], function () use (&$ejecutado) { $ejecutado = true; });
+            $this->fail('Un formulario abierto antes del cierre no debe poder guardar después.');
+        } catch (ConflictHttpException $exception) {
+            $this->assertStringContainsString('solo consulta', $exception->getMessage());
+        }
+        $this->assertFalse($ejecutado);
+        $this->assertSame('completado', $s->fresh()->estatus);
+    }
+
     public function test_vehicle_completion_requires_integer_odometer_without_inventing_supply_or_salary(): void
     {
         $s = $this->prepararEjecucion();
@@ -258,7 +293,7 @@ class AppMobileServiceDraftTest extends TestCase
         $s = $this->prepararEjecucion();
         Schema::table('empresa_servicio_preventivo_tipos', function (Blueprint $t) {
             $t->string('codigo')->nullable();
-            foreach (['orden', 'intervalo_valor', 'intervalo_meses', 'alerta_valor'] as $campo) {
+            foreach (['orden', 'intervalo_meses', 'alerta_valor'] as $campo) {
                 $t->integer($campo)->default(0);
             }
         });
@@ -305,6 +340,8 @@ class AppMobileServiceDraftTest extends TestCase
             $t->id();
             $t->string('ambito');
             $t->boolean('activo');
+            $t->integer('intervalo_valor')->nullable();
+            $t->string('unidad')->nullable();
         });
         Schema::create('mantenimientos', function (Blueprint $t) {
             $t->id();
@@ -649,13 +686,49 @@ class AppMobileServiceDraftTest extends TestCase
         $this->getJson('/api/v1/mecanico/servicios?page=99')->assertOk()->assertJsonPath('data', []);
     }
 
+    public function test_list_and_detail_expose_configured_preventive_name_and_interval(): void
+    {
+        $this->prepararConsulta();
+        DB::table('empresa_servicio_preventivo_tipos')->where('id', 1)
+            ->update(['nombre' => 'General', 'intervalo_valor' => 500, 'unidad' => 'horas']);
+        $s = $this->crear();
+        foreach (['/api/v1/mecanico/servicios', '/api/v1/mecanico/servicios/'.$s->id] as $url) {
+            $prefijo = str_ends_with($url, '/servicios') ? 'data.0.servicio_preventivo' : 'data.servicio_preventivo';
+            $this->getJson($url)->assertOk()->assertJsonPath($prefijo.'.nombre', 'General')
+                ->assertJsonPath($prefijo.'.intervalo_valor', 500)->assertJsonPath($prefijo.'.unidad', 'horas');
+        }
+        DB::table('empresa_servicio_preventivo_tipos')->where('id', 1)->delete();
+        $this->getJson('/api/v1/mecanico/servicios')->assertOk()->assertJsonPath('data.0.servicio_preventivo', null);
+    }
+
     public function test_rejects_invalid_read_filters(): void
     {
         foreach (['q[]=x', 'q='.str_repeat('x', 121), 'per_page=51', 'per_page=0', 'page=-1', 'estatus=otro',
-            'maquina_id=17&vehiculo_id=7', 'solo_mios=si', 'obra_id=-1', 'fecha_desde=ayer',
+            'maquina_id=17&vehiculo_id=7', 'equipo_tipo=otro', 'equipo_tipo=vehiculos&maquina_id=17',
+            'equipo_tipo=maquinas&vehiculo_id=7', 'solo_mios=si', 'obra_id=-1', 'fecha_desde=ayer',
             'fecha_desde=2026-10-25&fecha_hasta=2026-10-24'] as $query) {
             $this->getJson('/api/v1/mecanico/servicios?'.$query)->assertUnprocessable();
         }
+    }
+
+    public function test_service_type_filter_separates_all_vehicles_and_machines_before_selecting_an_id(): void
+    {
+        $this->prepararConsulta();
+        $maquina = $this->crear();
+        $vehiculo = app(MantenimientoBorradorService::class)->crear($this->datos([
+            'tipo' => 'programado', 'maquina_id' => null, 'vehiculo_id' => 7,
+            'mecanico_id' => 11,
+            'servicio_preventivo_tipo_id' => 2, 'horometro' => null, 'km_actuales' => 1000,
+        ]));
+        $base = '/api/v1/mecanico/servicios';
+        $this->getJson($base.'?equipo_tipo=maquinas')->assertOk()->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.id', $maquina->id);
+        $this->getJson($base.'?equipo_tipo=vehiculos')->assertOk()->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.id', $vehiculo->id);
+        $this->getJson($base.'?equipo_tipo=vehiculos&vehiculo_id=7&estatus=borrador&solo_mios=1&fecha_desde=2026-10-25&fecha_hasta=2026-10-25')
+            ->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $vehiculo->id);
+        $this->getJson($base.'?equipo_tipo=vehiculos&q=Equipo')->assertOk()->assertJsonPath('meta.total', 0);
+        $this->getJson($base.'?equipo_tipo=')->assertOk()->assertJsonPath('meta.total', 2);
     }
 
     public function test_read_only_actor_without_employee_does_not_own_unassigned_services(): void
@@ -719,6 +792,51 @@ class AppMobileServiceDraftTest extends TestCase
         $this->assertArrayNotHasKey('orden_servicio_generada_por', $response->json('data'));
         $this->assertDatabaseHas('inventario_stock', ['stock_actual' => 8, 'stock_reservado' => 3]);
         $this->assertDatabaseCount('mantenimiento_abastecimientos', 2);
+    }
+
+    public function test_print_report_includes_receipts_linked_by_line_without_duplicate_or_unrelated_documents(): void
+    {
+        $this->prepararConsulta();
+        $servicio = $this->crear();
+        Schema::drop('inventario_documentos');
+        Schema::create('inventario_documentos', function (Blueprint $t) {
+            $t->id(); $t->unsignedBigInteger('mantenimiento_abastecimiento_id')->nullable();
+            $t->unsignedBigInteger('orden_compra_id')->nullable();
+            $t->string('folio'); $t->string('tipo'); $t->string('estado');
+            $t->dateTime('fecha')->nullable(); $t->softDeletes();
+        });
+        Schema::create('inventario_documento_detalles', function (Blueprint $t) {
+            $t->id(); $t->unsignedBigInteger('documento_id'); $t->unsignedBigInteger('orden_compra_id')->nullable();
+            $t->unsignedBigInteger('orden_compra_detalle_id')->nullable(); $t->unsignedBigInteger('producto_id');
+            $t->decimal('cantidad'); $t->decimal('costo_unitario')->default(0);
+        });
+        Schema::create('orden_compra_detalles', function (Blueprint $t) {
+            $t->id(); $t->unsignedBigInteger('orden_compra_id');
+        });
+        DB::table('mantenimiento_abastecimientos')->insert(['id' => 6, 'mantenimiento_id' => $servicio->id,
+            'folio' => 'SMA-6', 'tipo' => 'compra', 'estado' => 'material_en_almacen']);
+        DB::table('ordenes_compra')->insert([
+            ['id' => 203, 'mantenimiento_abastecimiento_id' => 6, 'folio' => 'OC-203', 'estado' => 'AUTORIZADA'],
+            ['id' => 204, 'mantenimiento_abastecimiento_id' => 999, 'folio' => 'OC-AJENA', 'estado' => 'AUTORIZADA'],
+        ]);
+        DB::table('orden_compra_detalles')->insert(['id' => 474, 'orden_compra_id' => 203]);
+        foreach ([31, 32, 33, 34, 35] as $id) {
+            DB::table('inventario_documentos')->insert(['id' => $id, 'folio' => 'ENT-'.$id, 'tipo' => 'entrada',
+                'estado' => 'aplicado', 'mantenimiento_abastecimiento_id' => $id === 33 ? 6 : null,
+                'orden_compra_id' => $id === 33 ? 203 : null]);
+        }
+        DB::table('inventario_documento_detalles')->insert([
+            ['documento_id' => 31, 'orden_compra_id' => 203, 'orden_compra_detalle_id' => 474, 'producto_id' => 5, 'cantidad' => 60],
+            ['documento_id' => 31, 'orden_compra_id' => 203, 'orden_compra_detalle_id' => 474, 'producto_id' => 5, 'cantidad' => 1],
+            ['documento_id' => 32, 'orden_compra_id' => null, 'orden_compra_detalle_id' => 474, 'producto_id' => 5, 'cantidad' => 1],
+            ['documento_id' => 34, 'orden_compra_id' => 204, 'orden_compra_detalle_id' => null, 'producto_id' => 5, 'cantidad' => 10],
+            ['documento_id' => 35, 'orden_compra_id' => 203, 'orden_compra_detalle_id' => 474, 'producto_id' => 5, 'cantidad' => 10],
+        ]);
+        DB::table('inventario_documentos')->where('id', 35)->update(['deleted_at' => now()]);
+        $view = app(\App\Http\Controllers\MantenimientoController::class)->imprimirReporte($servicio);
+        $this->assertSame([31, 32, 33], $view->getData()['documentosInventario']->pluck('id')->all());
+        $this->assertSame([203], $view->getData()['ordenesCompra']->pluck('id')->all());
+        $this->assertDatabaseHas('inventario_documentos', ['id' => 31, 'orden_compra_id' => null, 'mantenimiento_abastecimiento_id' => null]);
     }
 
     public function test_read_endpoints_require_mechanic_permission_and_authentication(): void
@@ -942,8 +1060,9 @@ class AppMobileServiceDraftTest extends TestCase
         $this->assertSame(0.0, (float) $service->fresh()->costo_total);
         $this->patchJson($url, ['materiales' => [['id' => $material->id, 'incluido' => false]]])->assertOk()
             ->assertJsonPath('data.materiales.0.motivo_exclusion', 'No requiere cambio');
-        $this->patchJson($url, ['materiales' => [['id' => $material->id, 'incluido' => false, 'motivo_exclusion' => null]]])->assertOk()
-            ->assertJsonPath('data.materiales.0.motivo_exclusion', null);
+        $this->patchJson($url, ['materiales' => [['id' => $material->id, 'incluido' => false, 'motivo_exclusion' => null]]])->assertUnprocessable()
+            ->assertJsonValidationErrors('materiales.0.motivo_exclusion');
+        $this->assertSame('No requiere cambio', $material->fresh()->motivo_exclusion);
         $this->patchJson($url, $payload)->assertOk();
         $this->patchJson($url, ['materiales' => [['id' => $material->id, 'incluido' => true, 'motivo_exclusion' => 'Se ignora al incluir']]])
             ->assertOk()->assertJsonPath('data.materiales.0.incluido', true)->assertJsonPath('data.materiales.0.motivo_exclusion', null);
@@ -1055,7 +1174,7 @@ class AppMobileServiceDraftTest extends TestCase
         DB::unprepared("CREATE TRIGGER fallo_ajuste BEFORE UPDATE ON mantenimiento_materiales WHEN NEW.id = $second->id BEGIN SELECT RAISE(ABORT, 'fallo_controlado'); END");
         try {
             app(MantenimientoMaterialesService::class)->actualizar($service, ['materiales' => [
-                ['id' => $first->id, 'incluido' => false], ['id' => $second->id, 'incluido' => false],
+                ['id' => $first->id, 'incluido' => false, 'motivo_exclusion' => 'Aceite nuevo'], ['id' => $second->id, 'incluido' => false, 'motivo_exclusion' => 'Pieza nueva'],
             ]], 11);
             $this->fail('Debió revertir todos los cambios de inclusión.');
         } catch (QueryException $exception) {
@@ -1063,6 +1182,50 @@ class AppMobileServiceDraftTest extends TestCase
         }
         $this->assertTrue($first->fresh()->incluido);
         $this->assertTrue($second->fresh()->incluido);
+    }
+
+    public function test_material_exclusion_requires_a_reason_and_validates_all_rows_before_writing(): void
+    {
+        $this->prepararOrden();
+        $service = $this->ordenConMateriales();
+        $first = $service->materialesOrden()->firstOrFail();
+        $second = $service->materialesOrden()->create(['producto_id' => 5, 'producto_nombre_snapshot' => 'Segundo',
+            'cantidad_requerida' => 2, 'orden' => 1, 'incluido' => true]);
+        $url = '/api/v1/mecanico/servicios/'.$service->id.'/materiales';
+        foreach ([null, '', '   '] as $motivo) {
+            $this->patchJson($url, ['materiales' => [
+                ['id' => $first->id, 'incluido' => false, 'motivo_exclusion' => 'Aceite cambiado en reparación'],
+                ['id' => $second->id, 'incluido' => false, 'motivo_exclusion' => $motivo],
+            ]])->assertUnprocessable()->assertJsonValidationErrors('materiales.1.motivo_exclusion');
+            $this->assertTrue($first->fresh()->incluido);
+            $this->assertTrue($second->fresh()->incluido);
+        }
+        $webUrl = route('mantenimiento.mantenimientos.materiales-orden.update', $service);
+        $this->post($webUrl, ['incluidos' => [$second->id]])->assertRedirect()->assertSessionHasErrors('motivos.'.$first->id);
+        $this->assertTrue($first->fresh()->incluido);
+    }
+
+    public function test_excluded_oil_is_not_requested_and_template_quantity_is_preserved(): void
+    {
+        $this->prepararAbastecimiento();
+        $service = $this->ordenConMateriales();
+        $oil = $service->materialesOrden()->firstOrFail();
+        $this->patchJson('/api/v1/mecanico/servicios/'.$service->id.'/materiales', ['materiales' => [
+            ['id' => $oil->id, 'incluido' => false, 'motivo_exclusion' => '  Aceite cambiado durante la reparación anterior  '],
+        ]])->assertOk()->assertJsonPath('data.materiales.0.motivo_exclusion', 'Aceite cambiado durante la reparación anterior')
+            ->assertJsonPath('data.avance_materiales', []);
+        $this->postJson('/api/v1/mecanico/servicios/'.$service->id.'/abastecimientos', ['tipo' => 'compra'])->assertConflict();
+        $this->assertDatabaseCount('mantenimiento_abastecimientos', 0);
+        DB::table('productos')->insert(['id' => 6, 'nombre' => 'Filtro nuevo', 'sku' => 'FIL-6', 'unidad' => 'PZA']);
+        $service->materialesOrden()->create(['producto_id' => 6, 'producto_nombre_snapshot' => 'Filtro nuevo',
+            'cantidad_requerida' => 1, 'unidad' => 'PZA', 'orden' => 1, 'incluido' => true]);
+        $this->postJson('/api/v1/mecanico/servicios/'.$service->id.'/abastecimientos', ['tipo' => 'compra'])
+            ->assertOk()->assertJsonCount(1, 'data.solicitudes.0.materiales')
+            ->assertJsonPath('data.solicitudes.0.materiales.0.producto_id', 6);
+        $this->assertSame(10.0, (float) $oil->fresh()->cantidad_requerida);
+        $this->assertFalse($oil->fresh()->incluido);
+        $this->assertSame(10.0, (float) DB::table('empresa_servicio_preventivo_materiales')->where('id', 1)->value('cantidad_requerida'));
+        $this->assertSame(8.0, (float) DB::table('inventario_stock')->where('producto_id', 5)->value('stock_actual'));
     }
 
     private function prepararAbastecimiento(): void
@@ -1114,9 +1277,65 @@ class AppMobileServiceDraftTest extends TestCase
         $this->postJson('/api/v1/mecanico/servicios/'.$service->id.'/abastecimientos', ['tipo' => 'compra'])->assertOk()
             ->assertJsonPath('data.estatus', 'en_proceso')->assertJsonPath('data.abastecimiento_estado', 'solicitud_compra')
             ->assertJsonPath('data.solicitudes.0.tipo', 'compra')->assertJsonCount(1, 'data.solicitudes.0.materiales')
-            ->assertJsonPath('data.solicitudes.0.materiales.0.solicitado', 10);
+            ->assertJsonPath('data.solicitudes.0.materiales.0.solicitado', 5)
+            ->assertJsonPath('data.solicitudes.0.materiales.0.requerido', 10);
         $this->assertFalse($excluded->fresh()->incluido);
         $this->assertDatabaseCount('ordenes_compra', 0);
+    }
+
+    public function test_purchase_requests_only_inventory_shortage_and_warehouse_keeps_full_pending_delivery(): void
+    {
+        $this->prepararAbastecimiento();
+        foreach ([[0, 0, 25], [15, 5, 15], [35, 5, 0]] as [$stock, $reservado, $comprar]) {
+            DB::table('inventario_stock')->where('producto_id', 5)->update(['stock_actual' => $stock, 'stock_reservado' => $reservado]);
+            $s = $this->ordenConMateriales(); $s->materialesOrden()->update(['cantidad_requerida' => 25]);
+            $url = '/api/v1/mecanico/servicios/'.$s->id;
+            $this->getJson($url)->assertOk()->assertJsonPath('data.materiales.0.disponible', $stock - $reservado)
+                ->assertJsonPath('data.avance_materiales.0.por_comprar', $comprar)
+                ->assertJsonPath('data.acciones_permitidas.solicitar_compra', $comprar > 0);
+            if ($comprar > 0) {
+                $id = $this->postJson($url.'/abastecimientos', ['tipo' => 'compra'])->assertOk()->json('solicitud_id');
+                $this->assertDatabaseHas('mantenimiento_abastecimiento_detalles', ['abastecimiento_id' => $id,
+                    'cantidad_requerida' => 25, 'cantidad_solicitada' => $comprar, 'cantidad_atendida' => 0]);
+            } else {
+                $this->postJson($url.'/abastecimientos', ['tipo' => 'compra'])->assertConflict();
+                $this->assertDatabaseMissing('mantenimiento_abastecimientos', ['mantenimiento_id' => $s->id, 'tipo' => 'compra']);
+            }
+            $id = $this->postJson($url.'/abastecimientos', ['tipo' => 'almacen'])->assertOk()->json('solicitud_id');
+            $this->assertDatabaseHas('mantenimiento_abastecimiento_detalles', ['abastecimiento_id' => $id, 'cantidad_solicitada' => 25]);
+            $this->assertSame(25.0, (float) $s->materialesOrden()->first()->cantidad_requerida);
+            $this->assertDatabaseHas('inventario_stock', ['producto_id' => 5, 'stock_actual' => $stock, 'stock_reservado' => $reservado]);
+        }
+    }
+
+    public function test_duplicate_product_rows_share_inventory_and_active_purchase_replays_keep_quantity(): void
+    {
+        $this->prepararAbastecimiento();
+        DB::table('inventario_stock')->where('producto_id', 5)->update(['stock_actual' => 15, 'stock_reservado' => 0]);
+        $s = $this->ordenConMateriales();
+        $s->materialesOrden()->create(['producto_id' => 5, 'producto_nombre_snapshot' => 'Aceite segunda partida',
+            'cantidad_requerida' => 10, 'incluido' => true, 'orden' => 1]);
+        $avance = app(MantenimientoAbastecimientoService::class)->calcular($s);
+        $this->assertSame([0, 5.0], $avance->pluck('por_comprar')->all());
+        $url = '/api/v1/mecanico/servicios/'.$s->id.'/abastecimientos';
+        $id = $this->postJson($url, ['tipo' => 'compra'])->assertOk()->assertJsonCount(1, 'data.solicitudes.0.materiales')->json('solicitud_id');
+        DB::table('inventario_stock')->where('producto_id', 5)->update(['stock_actual' => 100]);
+        $this->postJson($url, ['tipo' => 'compra'])->assertOk()->assertJsonPath('solicitud_id', $id);
+        $this->assertDatabaseHas('mantenimiento_abastecimiento_detalles', ['abastecimiento_id' => $id, 'cantidad_solicitada' => 5]);
+        $this->assertDatabaseCount('mantenimiento_abastecimientos', 1);
+    }
+
+    public function test_inventory_remains_visible_for_excluded_material_and_reinclusion_restores_purchase_shortage(): void
+    {
+        $this->prepararAbastecimiento(); $s = $this->ordenConMateriales();
+        $material = $s->materialesOrden()->firstOrFail();
+        $url = '/api/v1/mecanico/servicios/'.$s->id.'/materiales';
+        $this->patchJson($url, ['materiales' => [['id' => $material->id, 'incluido' => false, 'motivo_exclusion' => 'Ya se cambió']]])
+            ->assertOk()->assertJsonPath('data.materiales.0.disponible', 5)->assertJsonPath('data.avance_materiales', [])
+            ->assertJsonPath('data.acciones_permitidas.solicitar_compra', false);
+        $this->patchJson($url, ['materiales' => [['id' => $material->id, 'incluido' => true]]])
+            ->assertOk()->assertJsonPath('data.materiales.0.disponible', 5)->assertJsonPath('data.avance_materiales.0.por_comprar', 5);
+        $this->assertSame(10.0, (float) $material->fresh()->cantidad_requerida);
     }
 
     public function test_subsequent_closed_request_only_requests_shortfall_and_fully_supplied_service_is_blocked(): void
@@ -1240,10 +1459,19 @@ class AppMobileServiceDraftTest extends TestCase
         Storage::fake('public');
     }
 
+    private function crearConEvidenciasHabilitadas(): Mantenimiento
+    {
+        $servicio = $this->crear();
+        $servicio->update(['estatus' => 'en_proceso', 'orden_servicio_folio' => 'OS-EVIDENCIAS',
+            'fecha_inicio' => '2026-10-25 08:00:00']);
+
+        return $servicio->refresh();
+    }
+
     public function test_uploads_real_images_as_webp_with_bounded_dimensions_and_shared_evidence_urls(): void
     {
         $this->prepararEvidencias();
-        $service = $this->crear();
+        $service = $this->crearConEvidenciasHabilitadas();
         $response = $this->post('/api/v1/mecanico/servicios/'.$service->id.'/evidencias', [
             'fotos' => [UploadedFile::fake()->image('grande.png', 2500, 1000), UploadedFile::fake()->image('pequena.jpg', 120, 80)],
             'foto_descripciones' => ['Inspección de motor', 'Antes del cambio'],
@@ -1269,7 +1497,7 @@ class AppMobileServiceDraftTest extends TestCase
     public function test_enforces_cumulative_eight_photo_limit_and_updates_evidence_action(): void
     {
         $this->prepararEvidencias();
-        $service = $this->crear();
+        $service = $this->crearConEvidenciasHabilitadas();
         for ($i = 0; $i < 7; $i++) {
             $service->fotos()->create(['ruta' => 'existente-'.$i.'.webp']);
         }
@@ -1288,7 +1516,7 @@ class AppMobileServiceDraftTest extends TestCase
     public function test_rejects_invalid_evidence_formats_sizes_descriptions_and_protected_fields(): void
     {
         $this->prepararEvidencias();
-        $service = $this->crear();
+        $service = $this->crearConEvidenciasHabilitadas();
         $url = '/api/v1/mecanico/servicios/'.$service->id.'/evidencias';
         foreach ([[], ['fotos' => []], ['fotos' => [UploadedFile::fake()->create('archivo.pdf', 1, 'application/pdf')]],
             ['fotos' => [UploadedFile::fake()->image('grande.jpg')->size(10241)]],
@@ -1307,7 +1535,7 @@ class AppMobileServiceDraftTest extends TestCase
     public function test_evidence_upload_rechecks_owner_scope_employee_and_access_before_writing(): void
     {
         $this->prepararEvidencias();
-        $service = $this->crear();
+        $service = $this->crearConEvidenciasHabilitadas();
         $url = '/api/v1/mecanico/servicios/'.$service->id.'/evidencias';
         $datos = ['fotos' => [UploadedFile::fake()->image('a.jpg')]];
         $service->update(['mecanico_id' => 12]);
@@ -1325,23 +1553,53 @@ class AppMobileServiceDraftTest extends TestCase
         $this->assertCount(0, Storage::disk('public')->allFiles());
     }
 
-    public function test_evidence_upload_preserves_web_compatible_stage_rules_without_mutating_execution(): void
+    public function test_mobile_evidence_requires_started_service_and_preserves_execution(): void
     {
         $this->prepararEvidencias();
-        $service = $this->crear();
-        foreach (['borrador', 'orden_generada', 'pendiente', 'en_proceso', 'completado', 'cancelado'] as $status) {
+        $service = $this->crearConEvidenciasHabilitadas();
+        foreach (['borrador', 'orden_generada', 'pendiente', 'cancelado'] as $status) {
+            $service->update(['estatus' => $status]);
+            $this->getJson('/api/v1/mecanico/servicios/'.$service->id)->assertOk()
+                ->assertJsonPath('data.acciones_permitidas.agregar_evidencias', false);
+            $this->post('/api/v1/mecanico/servicios/'.$service->id.'/evidencias',
+                ['fotos' => [UploadedFile::fake()->image('a.jpg')]], ['Accept' => 'application/json'])->assertConflict();
+        }
+        foreach (['en_proceso', 'completado'] as $status) {
             $service->update(['estatus' => $status]);
             $this->post('/api/v1/mecanico/servicios/'.$service->id.'/evidencias',
                 ['fotos' => [UploadedFile::fake()->image('a.jpg')]], ['Accept' => 'application/json'])->assertCreated()
                 ->assertJsonPath('data.estatus', $status);
         }
-        $this->assertDatabaseCount('mantenimiento_fotos', 6);
+        $this->assertDatabaseCount('mantenimiento_fotos', 2);
+        $this->assertSame('2026-10-25 08:00:00', $service->fresh()->getRawOriginal('fecha_inicio'));
+    }
+
+    public function test_mobile_evidence_waits_for_actual_supply_and_ignores_excluded_materials(): void
+    {
+        $this->prepararEvidencias();
+        $service = $this->crearConEvidenciasHabilitadas();
+        $this->materialEjecucion($service, 5, 10);
+        $this->materialEjecucion($service, 6, 50, false);
+        $url = '/api/v1/mecanico/servicios/'.$service->id;
+        $this->surtirEjecucion($service, 4);
+        $this->getJson($url)->assertOk()->assertJsonPath('data.acciones_permitidas.agregar_evidencias', false);
+        $this->post($url.'/evidencias', ['fotos' => [UploadedFile::fake()->image('a.jpg')]], ['Accept' => 'application/json'])->assertConflict();
+        $this->assertDatabaseCount('mantenimiento_fotos', 0);
+        $this->assertCount(0, Storage::disk('public')->allFiles());
+        $this->surtirEjecucion($service, 6);
+        $this->getJson($url)->assertOk()->assertJsonPath('data.acciones_permitidas.agregar_evidencias', true);
+        $this->post($url.'/evidencias', ['fotos' => [UploadedFile::fake()->image('a.jpg')]], ['Accept' => 'application/json'])->assertCreated();
+        $service->update(['fecha_inicio' => null]);
+        $this->post($url.'/evidencias', ['fotos' => [UploadedFile::fake()->image('b.jpg')]], ['Accept' => 'application/json'])->assertConflict();
+        $service->update(['fecha_inicio' => '2026-10-25 08:00:00', 'orden_servicio_folio' => null]);
+        $this->post($url.'/evidencias', ['fotos' => [UploadedFile::fake()->image('b.jpg')]], ['Accept' => 'application/json'])->assertConflict();
+        $this->assertDatabaseCount('mantenimiento_fotos', 1);
     }
 
     public function test_optimizer_failure_rolls_back_batch_and_removes_new_files_without_deleting_existing_evidence(): void
     {
         $this->prepararEvidencias();
-        $service = $this->crear();
+        $service = $this->crearConEvidenciasHabilitadas();
         $old = 'mantenimientos/evidencias/existente.webp';
         Storage::disk('public')->put($old, 'existente');
         $service->fotos()->create(['ruta' => $old]);
@@ -1367,7 +1625,7 @@ class AppMobileServiceDraftTest extends TestCase
     public function test_sql_failure_cleans_new_files_and_rolls_back_photo_rows(): void
     {
         $this->prepararEvidencias();
-        $service = $this->crear();
+        $service = $this->crearConEvidenciasHabilitadas();
         DB::unprepared("CREATE TRIGGER fallo_foto BEFORE INSERT ON mantenimiento_fotos WHEN NEW.descripcion = 'fallar' BEGIN SELECT RAISE(ABORT, 'fallo_controlado'); END");
         try {
             app(MantenimientoEvidenciaService::class)->agregar($service, [
@@ -1408,7 +1666,7 @@ class AppMobileServiceDraftTest extends TestCase
     public function test_partial_disk_write_failure_is_detected_and_cleaned_without_creating_photo_rows(): void
     {
         $this->prepararEvidencias();
-        $service = $this->crear();
+        $service = $this->crearConEvidenciasHabilitadas();
         $disk = Storage::disk('public');
         $failedDisk = Mockery::mock(\Illuminate\Filesystem\FilesystemAdapter::class);
         $failedDisk->shouldReceive('put')->once()->andReturnUsing(function ($path) use ($disk) {

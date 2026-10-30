@@ -277,6 +277,11 @@ class MantenimientoController extends Controller
 
                 if ($ordenesCompra->isNotEmpty()) {
                     $query->orWhereIn('orden_compra_id', $ordenesCompra->pluck('id'));
+                    // Una entrada puede recibir varias OCs y conservar el vínculo solo en sus partidas.
+                    $query->orWhereHas('detalles', fn ($detalle) => $detalle
+                        ->whereIn('orden_compra_id', $ordenesCompra->pluck('id')));
+                    $query->orWhereHas('detalles.ordenCompraDetalle', fn ($detalleCompra) => $detalleCompra
+                        ->whereIn('orden_compra_id', $ordenesCompra->pluck('id')));
                 }
             })
             ->whereIn('tipo', ['entrada', 'salida'])
@@ -335,6 +340,9 @@ class MantenimientoController extends Controller
         \App\Services\Mantenimiento\MantenimientoEvidenciaService $evidencias
     )
     {
+        if (in_array($mantenimiento->estatus, ['completado', 'cancelado'], true)) {
+            return back()->withErrors(['estatus' => 'El servicio está cerrado y sus datos son de solo consulta.']);
+        }
         $validated = $request->validate(array_merge($this->borradores->reglas(false), [
             'fecha_inicio' => 'nullable|required_if:estatus,completado|date',
             'fecha_fin' => 'nullable|required_if:estatus,completado|date|after:fecha_inicio',

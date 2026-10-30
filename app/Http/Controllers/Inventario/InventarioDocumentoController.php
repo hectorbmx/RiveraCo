@@ -66,6 +66,7 @@ class InventarioDocumentoController extends Controller
 public function create(Request $request)
 {
     $tipo = $request->query('tipo', 'entrada');
+    $almacenFijo = in_array($tipo, ['entrada', 'salida'], true) ? $this->almacenGiralda() : null;
     $abastecimiento = null;
     $partidasIniciales = [];
     $stockPorAlmacen = [];
@@ -131,6 +132,7 @@ public function create(Request $request)
 
     $almacenes = Almacen::query()
         ->where('activo', true)
+        ->when($almacenFijo, fn ($query) => $query->whereKey($almacenFijo->id))
         ->orderBy('nombre')
         ->get(['id', 'nombre']);
 
@@ -195,6 +197,7 @@ if ($tipo === 'entrada') {
     return view('inventario.documentos.create', compact(
         'tipo',
         'almacenes',
+        'almacenFijo',
         'tipos',
         'obras',
         'proveedores',
@@ -590,6 +593,10 @@ public function update(Request $request, InventarioDocumento $doc)
 
     public function store(Request $request, InventarioDocumentoService $service)
     {
+        // El flujo general de productos corresponde a Giralda. No confiar en el ID del formulario.
+        if (in_array($request->input('tipo'), ['entrada', 'salida'], true)) {
+            $request->merge(['almacen_id' => $this->almacenGiralda()->id]);
+        }
         $cantidadRule = $request->input('tipo') === 'salida'
             ? ['required', 'integer', 'gte:0']
             : ['required', 'numeric', 'gt:0'];
@@ -887,6 +894,17 @@ return redirect()
     }
 
      
+    private function almacenGiralda(): Almacen
+    {
+        return Almacen::query()->where('activo', true)
+            ->where(function ($query) {
+                $query->where('nombre', 'like', '%Giralda%')
+                    ->orWhere('codigo', 'like', '%GIRALDA%')
+                    ->orWhere('codigo', 'like', 'GL%');
+            })
+            ->orderBy('id')->firstOrFail();
+    }
+
     public function cancelar(
         InventarioDocumento $doc,
         InventarioDocumentoService $service
