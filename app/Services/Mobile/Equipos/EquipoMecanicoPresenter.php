@@ -38,6 +38,17 @@ class EquipoMecanicoPresenter
         ])];
     }
 
+    public function detalleVehiculoAmpliado(array $payload): array
+    {
+        $data = $payload['data'];
+
+        return ['ok' => $payload['ok'], 'data' => [
+            'vehiculo' => $this->vehiculo($data['vehiculo']),
+            'asignacion_actual' => $this->asignacionVehiculo($data['asignacion_actual']),
+            'seguro_vigente' => $data['seguro_vigente'],
+        ]];
+    }
+
     private function vehiculo(array $data): array
     {
         return Arr::only($data, ['id', 'marca', 'modelo', 'anio', 'color', 'placas', 'serie', 'tipo', 'estatus', 'fecha_registro', 'foto_url']);

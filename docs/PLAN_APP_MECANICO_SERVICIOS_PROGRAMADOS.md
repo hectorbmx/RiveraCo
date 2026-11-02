@@ -486,6 +486,13 @@ Ampliación del 2026-10-29. T15.1-T15.3 de horas completados y T15.4-T15.5 de as
 - Badge de estado permanece visible. Acceso por teclado, aria-expanded y vínculo al contenido; flecha independiente del desplegable de preventivos.
 - Compilación Angular y UTF-8 verificados; sin pruebas funcionales ni cambios de backend/datos. Actualización final del grafo sigue pendiente del cierre de los ajustes.
 
+### 2026-10-30: loader corporativo en movimientos
+
+- Integrado el mismo LoadingController corporativo de la app (logo Rivera, fondo difuminado y spinner) para las escrituras del módulo mecánico.
+- Interceptor limitado a POST/PUT/PATCH/DELETE mecánicos: servicio, órdenes, materiales, solicitudes, ejecución, evidencias y operaciones de máquina. Las confirmaciones se muestran antes del envío; búsquedas y consultas GET conservan sus indicadores.
+- Cierre al completar/fallar/cancelar; referencias concurrentes y transiciones serializadas para evitar overlays huérfanos. Se manipula únicamente el overlay propio sin alterar la operación ni otros loaders.
+- TypeScript, compilación Angular, formato y UTF-8 revisados; sin pruebas funcionales, escrituras operativas o cambios de backend/permisos. [Archivos y alcance](LOADER_MOVIMIENTOS_APP_MECANICO.md).
+
 ### Plantilla para nuevas entradas
 
 - Fecha:

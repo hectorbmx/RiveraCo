@@ -4,9 +4,14 @@ namespace App\Console\Commands;
 
 use App\Models\Seguro;
 use App\Models\User;
+use App\Models\EmpresaAlertaDestinatario;
+use App\Models\EmpresaConfig;
+use App\Models\Maquina;
+use App\Models\Vehiculo;
 use App\Notifications\SeguroVehiculoVencimiento;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Notification;
+use Spatie\Permission\Models\Role;
 
 class CheckInsuranceExpirations extends Command
 {
@@ -15,7 +20,7 @@ class CheckInsuranceExpirations extends Command
      *
      * @var string
      */
-    protected $signature = 'app:check-insurance-expirations';
+    protected $signature = 'app:check-insurance-expirations {--dry-run : Muestra los avisos sin enviarlos}';
 
     /**
      * The console command description.
@@ -33,8 +38,8 @@ class CheckInsuranceExpirations extends Command
 
         // Buscar seguros que venzan en los próximos 15 días, con alertas activas y no alertados hoy
         $seguros = Seguro::where('alerta_vencimiento_activa', true)
-            ->where('vigencia_hasta', '<=', now()->addDays(15))
-            ->where('vigencia_hasta', '>=', now())
+            ->whereDate('vigencia_hasta', '<=', now()->addDays(15)->toDateString())
+            ->whereDate('vigencia_hasta', '>=', now()->toDateString())
             ->where(function($query) {
                 $query->whereNull('ultima_alerta_enviada_at')
                       ->orWhere('ultima_alerta_enviada_at', '<', now()->startOfDay());
@@ -46,15 +51,31 @@ class CheckInsuranceExpirations extends Command
             return;
         }
 
-        $admins = User::role('administrador')->get();
-
-        if ($admins->isEmpty()) {
-            $this->error('No administrators found to notify.');
-            return;
+        $admins = Role::where('name', 'administrador')->where('guard_name', 'web')->exists()
+            ? User::role('administrador')->get() : collect();
+        $config = EmpresaConfig::first();
+        $configurados = $config ? EmpresaAlertaDestinatario::query()
+            ->with('user')->where('empresa_config_id', $config->id)->modulo('seguros')
+            ->where('activo', true)->where('notificar_sistema', true)->get()
+            ->pluck('user')->filter() : collect();
+        if ($admins->isEmpty() && $configurados->isEmpty()) {
+            $this->warn('No hay destinatarios activos para alertas de seguros.');
+            return self::SUCCESS;
         }
 
         foreach ($seguros as $seguro) {
-            Notification::send($admins, new SeguroVehiculoVencimiento($seguro));
+            $destinatarios = $admins;
+            if ($seguro->asegurable instanceof Maquina || $seguro->asegurable instanceof Vehiculo) {
+                $destinatarios = $destinatarios->concat($configurados)->unique('id')->values();
+            }
+            if ($destinatarios->isEmpty()) {
+                continue;
+            }
+            if ($this->option('dry-run')) {
+                $this->line("Seguro {$seguro->id}: {$seguro->poliza_numero} ({$destinatarios->count()} destinatarios)");
+                continue;
+            }
+            Notification::send($destinatarios, new SeguroVehiculoVencimiento($seguro));
             
             $seguro->update([
                 'ultima_alerta_enviada_at' => now()
@@ -64,5 +85,6 @@ class CheckInsuranceExpirations extends Command
         }
 
         $this->info('Done!');
+        return self::SUCCESS;
     }
 }

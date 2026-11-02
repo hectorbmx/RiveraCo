@@ -172,18 +172,9 @@ class PreventivoMaquinaService
         }
 
         $horasUsadas = max(0, $horometroActual - $horometroBaseServicio);
-        $ciclosCompletos = (int) floor($horasUsadas / $intervaloHoras);
-        $horasEnCiclo = fmod($horasUsadas, $intervaloHoras);
-        $proximoCiclo = $horasUsadas > 0 && abs($horasEnCiclo) < 0.00001
-            ? max(1, $ciclosCompletos)
-            : $ciclosCompletos + 1;
-        $proximoHorometro = $horometroBaseServicio + ($proximoCiclo * $intervaloHoras);
+        $proximoHorometro = $horometroBaseServicio + $intervaloHoras;
         $horasRestantes = $proximoHorometro - $horometroActual;
-        $porcentaje = min(100, max(0, ($horasEnCiclo / $intervaloHoras) * 100));
-
-        if ($horasUsadas > 0 && abs($horasEnCiclo) < 0.00001) {
-            $porcentaje = 100;
-        }
+        $porcentaje = min(100, max(0, ($horasUsadas / $intervaloHoras) * 100));
         $proximoFecha = $fechaUltimoServicio && $intervaloMeses > 0
             ? $fechaUltimoServicio->copy()->addMonths($intervaloMeses)
             : null;

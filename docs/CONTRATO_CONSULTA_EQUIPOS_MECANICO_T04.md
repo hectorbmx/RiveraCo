@@ -78,7 +78,7 @@ El listado y `data.maquina` del detalle entregan los mismos campos operativos:
 - Los ajustes con `fecha_registro` guardan solo el día en el modelo existente: su hora se representa a medianoche. Se conserva esta regla del servicio compartido.
 - Solo se consideran tipos activos del ámbito maquinaria; se conserva el respaldo de configuración general cuando no hay tipos activos. El servicio compartido decide prioridad, intervalos y vencimiento por horas o tiempo.
 - El cálculo del listado se limita a la página consultada (máximo 50 equipos). No se agregan indicadores globales ni nuevos filtros en este paso.
-- La consulta gerencial compartida recibe estos campos adicionales y conserva su paginador anidado y sus campos anteriores. La proyección mecánica sigue excluyendo seguros y documentos.
+- La consulta gerencial compartida recibe estos campos adicionales y conserva su paginador anidado y sus campos anteriores. La proyección mecánica original sigue excluyendo seguros y documentos; la ampliación de vehículos usa rutas independientes.
 - No se requieren migraciones, nuevos permisos ni cambios en datos. El cliente móvil ya incorpora estos campos en las tarjetas de listado/detalle; ver [implementación de consultas móviles](IMPLEMENTACION_CONSULTAS_MOVIL_MECANICO_C13_3.md#tarjetas-operativas-de-máquinas--2026-10-29).
 
 Validación añadida: pruebas HTTP de proyección en listado/detalle y pruebas con SQLite en memoria usando los servicios reales para lecturas actuales, ausencia de lecturas, cero, tipos activos, prioridad por tiempo, respaldo de configuración, paginación y filtros.
@@ -93,7 +93,7 @@ Cada mantenimiento conserva: ID, tipo, categoría, descripción, kilómetros act
 
 ### Datos excluidos
 
-Las respuestas mecánicas no incluyen pólizas, seguros recientes, comprobantes, documentos administrativos, sus resúmenes ni historial de asignaciones. La proyección de salida usa una lista explícita de campos; no basta ocultarlos en la pantalla.
+Las respuestas de los endpoints originales de T04 no incluyen pólizas, seguros recientes, comprobantes, documentos administrativos, sus resúmenes ni historial de asignaciones. La proyección de salida usa una lista explícita de campos; no basta ocultarlos en la pantalla. La ampliación de vehículos descrita al final agrega rutas independientes para consultar historiales y seguros, sin cambiar esos endpoints originales.
 
 ## Implementación compartida
 
@@ -112,3 +112,14 @@ Las respuestas mecánicas no incluyen pólizas, seguros recientes, comprobantes,
 - Sintaxis PHP, estilo de archivos nuevos, UTF-8 y rutas registradas verificados.
 - No se crearon permisos ni se alteraron usuarios. La creación/asignación manual de `app.mecanico.access` sigue siendo necesaria para activar el acceso de un usuario real si aún no la realizó el administrador.
 - No se implementaron productos de Giralda (T05), creación de servicios (T06) ni pantallas móviles (T13).
+
+## Ampliación de vehículos — 2026-10-30
+
+El detalle móvil de vehículos incorpora ficha ampliada, asignaciones, servicios,
+seguros y combustible mediante nuevas rutas específicas del panel mecánico.
+Los endpoints originales de T04 conservan su proyección y compatibilidad.
+
+La definición de rutas, alcance de datos, permisos, presentación y verificaciones
+se encuentra en [DETALLE_VEHICULOS_MECANICO.md](DETALLE_VEHICULOS_MECANICO.md).
+La ampliación permite consultar seguros e historiales solicitados por el usuario;
+no expone teléfono/puesto del empleado ni el conjunto de documentos administrativos.

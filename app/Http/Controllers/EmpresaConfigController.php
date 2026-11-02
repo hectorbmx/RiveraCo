@@ -89,6 +89,22 @@ public function index(){
             ->orderBy('nombre')
             ->orderBy('email')
             ->get();
+        $otrosDestinatariosAlertas = EmpresaAlertaDestinatario::query()
+            ->with('user')
+            ->where('empresa_config_id', $config->id)
+            ->whereIn('modulo', ['maquinaria', 'seguros'])
+            ->orderByDesc('activo')
+            ->orderBy('nombre')
+            ->get()
+            ->groupBy('modulo');
+        $otrosDestinatariosAlertas = EmpresaAlertaDestinatario::query()
+            ->with('user')
+            ->where('empresa_config_id', $config->id)
+            ->whereIn('modulo', ['maquinaria', 'seguros'])
+            ->orderByDesc('activo')
+            ->orderBy('nombre')
+            ->get()
+            ->groupBy('modulo');
         $usuariosNotificables = User::query()
             ->orderBy('name')
             ->orderBy('email')
@@ -293,6 +309,8 @@ public function index(){
         'listasRaya',
         'almacenes',
         'vehiculoAlertaDestinatarios',
+        'otrosDestinatariosAlertas',
+        'otrosDestinatariosAlertas',
         'usuariosNotificables',
     ));
 }
@@ -380,6 +398,68 @@ public function index(){
         return redirect()
             ->route('empresa_config.edit', ['tab' => 'vehiculos'])
             ->with('success', 'Configuracion de vehiculos guardada.');
+    }
+
+    if (in_array($section, ['alertas_maquinaria', 'alertas_seguros'], true)) {
+        $data = $request->validate([
+            'destinatarios' => ['nullable', 'array'],
+            'destinatarios.*.id' => ['required', 'integer'],
+            'destinatarios.*.activo' => ['nullable', 'boolean'],
+            'nuevo_user_id' => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+        $modulo = $section === 'alertas_maquinaria' ? 'maquinaria' : 'seguros';
+
+        foreach ($data['destinatarios'] ?? [] as $row) {
+            $destinatario = EmpresaAlertaDestinatario::query()
+                ->where('empresa_config_id', $config->id)
+                ->modulo($modulo)
+                ->find($row['id']);
+            if ($destinatario) {
+                $destinatario->update(['activo' => ! empty($row['activo'])]);
+            }
+        }
+
+        if (! empty($data['nuevo_user_id'])) {
+            $usuario = User::findOrFail($data['nuevo_user_id']);
+            EmpresaAlertaDestinatario::updateOrCreate(
+                ['empresa_config_id' => $config->id, 'modulo' => $modulo, 'user_id' => $usuario->id],
+                ['nombre' => $usuario->name, 'email' => $usuario->email, 'notificar_correo' => false, 'notificar_sistema' => true, 'activo' => true]
+            );
+        }
+
+        return redirect()->route('empresa_config.edit', ['tab' => 'maquinaria'])
+            ->with('success', 'Destinatarios de alertas guardados.');
+    }
+
+    if (in_array($section, ['alertas_maquinaria', 'alertas_seguros'], true)) {
+        $data = $request->validate([
+            'destinatarios' => ['nullable', 'array'],
+            'destinatarios.*.id' => ['required', 'integer'],
+            'destinatarios.*.activo' => ['nullable', 'boolean'],
+            'nuevo_user_id' => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+        $modulo = $section === 'alertas_maquinaria' ? 'maquinaria' : 'seguros';
+
+        foreach ($data['destinatarios'] ?? [] as $row) {
+            $destinatario = EmpresaAlertaDestinatario::query()
+                ->where('empresa_config_id', $config->id)
+                ->modulo($modulo)
+                ->find($row['id']);
+            if ($destinatario) {
+                $destinatario->update(['activo' => ! empty($row['activo'])]);
+            }
+        }
+
+        if (! empty($data['nuevo_user_id'])) {
+            $usuario = User::findOrFail($data['nuevo_user_id']);
+            EmpresaAlertaDestinatario::updateOrCreate(
+                ['empresa_config_id' => $config->id, 'modulo' => $modulo, 'user_id' => $usuario->id],
+                ['nombre' => $usuario->name, 'email' => $usuario->email, 'notificar_correo' => false, 'notificar_sistema' => true, 'activo' => true]
+            );
+        }
+
+        return redirect()->route('empresa_config.edit', ['tab' => 'maquinaria'])
+            ->with('success', 'Destinatarios de alertas guardados.');
     }
 
     if (in_array($section, ['rrhh', 'comisiones', 'reglas', 'alertas'], true)) {

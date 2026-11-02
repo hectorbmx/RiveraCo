@@ -152,7 +152,7 @@ class VehiculosConsultaService
         ];
     }
 
-    private function mapAsignacion(VehiculoEmpleado $asignacion, bool $withFotos = false): array
+    public function mapAsignacion(VehiculoEmpleado $asignacion, bool $withFotos = false): array
     {
         $empleado = $asignacion->empleado;
         $data = [
@@ -186,7 +186,7 @@ class VehiculosConsultaService
         return $data;
     }
 
-    private function mapSeguro(Seguro $seguro): array
+    public function mapSeguro(Seguro $seguro): array
     {
         $estatus = $this->estatusSeguro($seguro);
 
@@ -214,7 +214,7 @@ class VehiculosConsultaService
         ];
     }
 
-    private function mapMantenimiento(Mantenimiento $mantenimiento): array
+    public function mapMantenimiento(Mantenimiento $mantenimiento): array
     {
         $mecanico = $mantenimiento->mecanico;
 

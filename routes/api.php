@@ -64,6 +64,8 @@ Route::prefix('v1')->group(function () {
 
         Route::get('me', [AuthController::class, 'me']);
         Route::get('app/contexto-opciones', [AppContextController::class, 'opciones']);
+        Route::get('app/notificaciones', [\App\Http\Controllers\Api\V1\AppNotificationController::class, 'index']);
+        Route::post('app/notificaciones/{id}/leer', [\App\Http\Controllers\Api\V1\AppNotificationController::class, 'leer']);
 
         Route::prefix('mecanico')->middleware(\App\Http\Middleware\EnsureMobileAppAccess::class.':mecanico')->group(function () {
             Route::get('servicios/catalogos', [\App\Http\Controllers\Api\V1\Mecanico\CatalogoController::class, 'index']);
@@ -87,6 +89,11 @@ Route::prefix('v1')->group(function () {
             Route::get('maquinas/{maquina}', [\App\Http\Controllers\Api\V1\Mecanico\MaquinaController::class, 'show']);
             Route::get('vehiculos', [\App\Http\Controllers\Api\V1\Mecanico\VehiculoController::class, 'index']);
             Route::get('vehiculos/{vehiculo}', [\App\Http\Controllers\Api\V1\Mecanico\VehiculoController::class, 'show']);
+            Route::get('vehiculos/{vehiculo}/detalle', [\App\Http\Controllers\Api\V1\Mecanico\VehiculoController::class, 'detalle']);
+            Route::get('vehiculos/{vehiculo}/asignaciones', [\App\Http\Controllers\Api\V1\Mecanico\VehiculoController::class, 'asignaciones']);
+            Route::get('vehiculos/{vehiculo}/servicios', [\App\Http\Controllers\Api\V1\Mecanico\VehiculoController::class, 'servicios']);
+            Route::get('vehiculos/{vehiculo}/seguros', [\App\Http\Controllers\Api\V1\Mecanico\VehiculoController::class, 'seguros']);
+            Route::get('vehiculos/{vehiculo}/combustible', [\App\Http\Controllers\Api\V1\Mecanico\VehiculoController::class, 'combustible']);
         });
 
         Route::middleware(\App\Http\Middleware\EnsureMobileAppAccess::class.':legacy')->group(function () {
@@ -159,6 +166,10 @@ Route::prefix('v1')->group(function () {
                 //catalogo de vehiculos
                 Route::get('vehiculos', [VehiculosGerencialController::class, 'index']);
                 Route::get('vehiculos/{vehiculo}', [VehiculosGerencialController::class, 'show']);
+                Route::get('vehiculos/{vehiculo}/asignaciones', [VehiculosGerencialController::class, 'asignaciones']);
+                Route::get('vehiculos/{vehiculo}/servicios', [VehiculosGerencialController::class, 'servicios']);
+                Route::get('vehiculos/{vehiculo}/seguros', [VehiculosGerencialController::class, 'seguros']);
+                Route::get('vehiculos/{vehiculo}/combustible', [VehiculosGerencialController::class, 'combustible']);
                 
                 //catalogo de empleados
                 Route::get('empleados', [PersonalGerencialController::class, 'index']);

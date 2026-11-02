@@ -45,17 +45,20 @@ class SeguroVehiculoVencimiento extends Notification
         if ($vehiculo instanceof \App\Models\Vehiculo) {
             $nombreVehiculo = "Vehículo: {$vehiculo->marca} {$vehiculo->modelo} ({$vehiculo->placas})";
         } elseif ($vehiculo instanceof \App\Models\Maquina) {
-            $nombreVehiculo = "Máquina: {$vehiculo->economico} - {$vehiculo->nombre}";
+            $nombreVehiculo = "Máquina: {$vehiculo->codigo} - {$vehiculo->nombre}";
         }
 
         return [
             'tipo' => 'vencimiento_seguro',
+            'titulo' => 'Seguro por vencer',
             'id' => $this->seguro->id,
+            'maquina_id' => $vehiculo instanceof \App\Models\Maquina ? $vehiculo->id : null,
+            'vehiculo_id' => $vehiculo instanceof \App\Models\Vehiculo ? $vehiculo->id : null,
             'asegurable_nombre' => $nombreVehiculo,
             'poliza' => $this->seguro->poliza_numero,
             'vence' => $this->seguro->vigencia_hasta->format('d/m/Y'),
             'dias_restantes' => now()->diffInDays($this->seguro->vigencia_hasta, false),
-            'mensaje' => "Seguro por vencer: {$nombreVehiculo} - Póliza: {$this->seguro->poliza_numero}",
+            'mensaje' => "{$nombreVehiculo} - Póliza: {$this->seguro->poliza_numero}. Vence el {$this->seguro->vigencia_hasta->format('d/m/Y')}.",
         ];
     }
 }

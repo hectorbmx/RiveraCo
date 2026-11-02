@@ -208,18 +208,9 @@ class PreventivoVehiculoService
         }
 
         $kmUsados = max(0, $kmActual - $kmBaseServicio);
-        $ciclosCompletos = (int) floor($kmUsados / $intervaloKm);
-        $kmEnCiclo = $kmUsados % $intervaloKm;
-        $proximoCiclo = $kmUsados > 0 && $kmEnCiclo === 0
-            ? max(1, $ciclosCompletos)
-            : $ciclosCompletos + 1;
-        $kmProximoServicio = $kmBaseServicio + ($proximoCiclo * $intervaloKm);
+        $kmProximoServicio = $kmBaseServicio + $intervaloKm;
         $kmRestantes = $kmProximoServicio - $kmActual;
-        $porcentaje = min(100, max(0, ($kmEnCiclo / $intervaloKm) * 100));
-
-        if ($kmUsados > 0 && $kmEnCiclo === 0) {
-            $porcentaje = 100;
-        }
+        $porcentaje = min(100, max(0, ($kmUsados / $intervaloKm) * 100));
 
         $proximoFecha = $fechaUltimoServicio && $intervaloMeses > 0
             ? $fechaUltimoServicio->copy()->addMonths($intervaloMeses)
