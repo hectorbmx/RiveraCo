@@ -305,8 +305,8 @@
     "semantic_hash": "99e434de7ae01139e9d503fe166e6212"
   },
   "app/Http/Controllers/EmpresaConfigController.php": {
-    "mtime": 1793637317.4743242,
-    "ast_hash": "46db3acf18ab4bd91d87d38870ffc741",
+    "mtime": 1793641491.5734508,
+    "ast_hash": "78437026dcdc2c60dfdf3d61cb04199d",
     "semantic_hash": ""
   },
   "app/Http/Controllers/EmpresaConfigMaquinaController.php": {
@@ -2775,8 +2775,8 @@
     "semantic_hash": "9e0ffaed7de9e3c0b8c6be5df4ee206a"
   },
   "resources/views/empresa_config/edit.blade.php": {
-    "mtime": 1793637317.4783266,
-    "ast_hash": "b4ed4642f6d4ce52e8974a55153aa755",
+    "mtime": 1793641488.8601725,
+    "ast_hash": "10b6ff9f7b51ec45b159aea76230b91f",
     "semantic_hash": ""
   },
   "resources/views/empresa_config/index.blade.php": {

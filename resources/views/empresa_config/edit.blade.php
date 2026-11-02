@@ -906,14 +906,6 @@ function cuentasBancoTab() {
                         ])
                     @endforeach
 
-                    @foreach (['maquinaria' => 'Preventivos de maquinaria', 'seguros' => 'Seguros de máquinas y vehículos'] as $moduloAlerta => $tituloAlerta)
-                        @include('empresa_config.partials.destinatarios_alertas', [
-                            'moduloAlerta' => $moduloAlerta,
-                            'tituloAlerta' => $tituloAlerta,
-                            'destinatariosAlerta' => $otrosDestinatariosAlertas->get($moduloAlerta, collect()),
-                        ])
-                    @endforeach
-
                     <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
                         <div class="p-4 border-b border-gray-100 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div>

@@ -1010,7 +1010,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_events_maquinaestadocambiado",
-      "community": 90,
+      "community": 136,
       "norm_label": "maquinaestadocambiado.php"
     },
     {
@@ -1020,7 +1020,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "app_events_maquinaestadocambiado_maquinaestadocambiado",
-      "community": 90,
+      "community": 136,
       "norm_label": "maquinaestadocambiado"
     },
     {
@@ -1040,7 +1040,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "interactswithsockets",
-      "community": 90,
+      "community": 136,
       "norm_label": "interactswithsockets"
     },
     {
@@ -1060,7 +1060,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "app_events_maquinaestadocambiado_maquinaestadocambiado_construct",
-      "community": 90,
+      "community": 136,
       "norm_label": ".__construct()"
     },
     {
@@ -1070,7 +1070,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "app_events_maquinaestadocambiado_maquinaestadocambiado_broadcaston",
-      "community": 90,
+      "community": 136,
       "norm_label": ".broadcaston()"
     },
     {
@@ -1770,7 +1770,7 @@
       "source_location": "L174",
       "_origin": "ast",
       "id": "app_http_controllers_admin_usuariocontroller_usuariocontroller_edit",
-      "community": 30,
+      "community": 7,
       "norm_label": ".edit()"
     },
     {
@@ -5550,7 +5550,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "app_http_controllers_comisioncontroller_comisioncontroller",
-      "community": 7,
+      "community": 233,
       "norm_label": "comisioncontroller"
     },
     {
@@ -5560,7 +5560,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "app_http_controllers_comisioncontroller_comisioncontroller_index",
-      "community": 7,
+      "community": 233,
       "norm_label": ".index()"
     },
     {
@@ -5570,7 +5570,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "app_http_controllers_comisioncontroller_php_request",
-      "community": 7,
+      "community": 233,
       "norm_label": "request"
     },
     {
@@ -5590,7 +5590,7 @@
       "source_location": "L357",
       "_origin": "ast",
       "id": "app_http_controllers_comisioncontroller_comisioncontroller_store",
-      "community": 7,
+      "community": 233,
       "norm_label": ".store()"
     },
     {
@@ -5600,7 +5600,7 @@
       "source_location": "L665",
       "_origin": "ast",
       "id": "app_http_controllers_comisioncontroller_comisioncontroller_show",
-      "community": 7,
+      "community": 233,
       "norm_label": ".show()"
     },
     {
@@ -5610,7 +5610,7 @@
       "source_location": "L1040",
       "_origin": "ast",
       "id": "app_http_controllers_comisioncontroller_comisioncontroller_edit",
-      "community": 7,
+      "community": 233,
       "norm_label": ".edit()"
     },
     {
@@ -5620,7 +5620,7 @@
       "source_location": "L1089",
       "_origin": "ast",
       "id": "app_http_controllers_comisioncontroller_comisioncontroller_update",
-      "community": 7,
+      "community": 233,
       "norm_label": ".update()"
     },
     {
@@ -5630,7 +5630,7 @@
       "source_location": "L1102",
       "_origin": "ast",
       "id": "app_http_controllers_comisioncontroller_comisioncontroller_destroy",
-      "community": 7,
+      "community": 233,
       "norm_label": ".destroy()"
     },
     {
@@ -5640,7 +5640,7 @@
       "source_location": "L1129",
       "_origin": "ast",
       "id": "app_http_controllers_comisioncontroller_comisioncontroller_print",
-      "community": 7,
+      "community": 233,
       "norm_label": ".print()"
     },
     {
@@ -5650,7 +5650,7 @@
       "source_location": "L1229",
       "_origin": "ast",
       "id": "app_http_controllers_comisioncontroller_comisioncontroller_recalcularimportes",
-      "community": 7,
+      "community": 233,
       "norm_label": ".recalcularimportes()"
     },
     {
@@ -6147,7 +6147,7 @@
       "label": ".update()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L319",
+      "source_location": "L310",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
       "community": 143,
@@ -6167,7 +6167,7 @@
       "label": ".guardarDestinatariosAlertaVehiculos()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L473",
+      "source_location": "L433",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_guardardestinatariosalertavehiculos",
       "community": 143,
@@ -6177,7 +6177,7 @@
       "label": ".persistirDestinatarioAlerta()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L505",
+      "source_location": "L465",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_persistirdestinatarioalerta",
       "community": 143,
@@ -6187,7 +6187,7 @@
       "label": ".storeViaticoTarifa()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L531",
+      "source_location": "L491",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storeviaticotarifa",
       "community": 143,
@@ -6197,7 +6197,7 @@
       "label": ".storeTipoObraConfiguracion()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L551",
+      "source_location": "L511",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetipoobraconfiguracion",
       "community": 143,
@@ -6207,7 +6207,7 @@
       "label": ".updateFolioObra()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L595",
+      "source_location": "L555",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatefolioobra",
       "community": 143,
@@ -6217,7 +6217,7 @@
       "label": ".updateTipoObraConfiguracion()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L620",
+      "source_location": "L580",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatetipoobraconfiguracion",
       "community": 143,
@@ -6227,7 +6227,7 @@
       "label": ".ultimoConsecutivoObraExistente()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L643",
+      "source_location": "L603",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_ultimoconsecutivoobraexistente",
       "community": 143,
@@ -6237,7 +6237,7 @@
       "label": ".formatearFolioObra()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L657",
+      "source_location": "L617",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_formatearfolioobra",
       "community": 143,
@@ -6247,7 +6247,7 @@
       "label": ".storeCuentaBanco()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L662",
+      "source_location": "L622",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storecuentabanco",
       "community": 143,
@@ -6257,7 +6257,7 @@
       "label": ".updateCuentaBanco()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L689",
+      "source_location": "L649",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatecuentabanco",
       "community": 143,
@@ -6267,7 +6267,7 @@
       "label": ".toggleCuentaBancoActiva()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L726",
+      "source_location": "L686",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_togglecuentabancoactiva",
       "community": 143,
@@ -6277,7 +6277,7 @@
       "label": ".marcarCuentaBancoPrincipal()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L735",
+      "source_location": "L695",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_marcarcuentabancoprincipal",
       "community": 143,
@@ -6287,7 +6287,7 @@
       "label": ".storeDocumentoEmpleado()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L750",
+      "source_location": "L710",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storedocumentoempleado",
       "community": 767,
@@ -6297,7 +6297,7 @@
       "label": ".updateDocumentoEmpleado()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L796",
+      "source_location": "L756",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatedocumentoempleado",
       "community": 143,
@@ -6307,7 +6307,7 @@
       "label": ".toggleDocumentoEmpleadoActivo()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L820",
+      "source_location": "L780",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_toggledocumentoempleadoactivo",
       "community": 143,
@@ -6317,7 +6317,7 @@
       "label": ".destroyDocumentoEmpleado()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L834",
+      "source_location": "L794",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_destroydocumentoempleado",
       "community": 527,
@@ -6327,7 +6327,7 @@
       "label": ".storeDocumentoFirmaDefinicion()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L845",
+      "source_location": "L805",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storedocumentofirmadefinicion",
       "community": 143,
@@ -6337,7 +6337,7 @@
       "label": ".updateDocumentoFirmaDefinicion()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L886",
+      "source_location": "L846",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatedocumentofirmadefinicion",
       "community": 143,
@@ -6347,7 +6347,7 @@
       "label": ".toggleDocumentoFirmaDefinicion()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L909",
+      "source_location": "L869",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_toggledocumentofirmadefinicion",
       "community": 143,
@@ -6357,7 +6357,7 @@
       "label": ".storeCentroCosto()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L919",
+      "source_location": "L879",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storecentrocosto",
       "community": 143,
@@ -6367,7 +6367,7 @@
       "label": ".toggleCentroCosto()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L936",
+      "source_location": "L896",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_togglecentrocosto",
       "community": 143,
@@ -6377,7 +6377,7 @@
       "label": ".storeTipoIva()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L947",
+      "source_location": "L907",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetipoiva",
       "community": 143,
@@ -6387,7 +6387,7 @@
       "label": ".toggleTipoIva()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L973",
+      "source_location": "L933",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_toggletipoiva",
       "community": 143,
@@ -6397,7 +6397,7 @@
       "label": ".marcarTipoIvaDefault()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L984",
+      "source_location": "L944",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_marcartipoivadefault",
       "community": 143,
@@ -6407,7 +6407,7 @@
       "label": ".storeTipoSueldo()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L995",
+      "source_location": "L955",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetiposueldo",
       "community": 143,
@@ -6417,7 +6417,7 @@
       "label": ".toggleTipoSueldo()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L1027",
+      "source_location": "L987",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_toggletiposueldo",
       "community": 143,
@@ -6427,7 +6427,7 @@
       "label": ".storeTipoRetencion()",
       "file_type": "code",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L1038",
+      "source_location": "L998",
       "_origin": "ast",
       "id": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetiporetencion",
       "community": 143,
@@ -14710,7 +14710,7 @@
       "source_location": "L236",
       "_origin": "ast",
       "id": "app_http_controllers_telephony_telephonyextensioncontroller_telephonyextensioncontroller_attachphonematches",
-      "community": 76,
+      "community": 142,
       "norm_label": ".attachphonematches()"
     },
     {
@@ -16280,7 +16280,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "app_listeners_sendmaquinaestadonotification_sendmaquinaestadonotification",
-      "community": 90,
+      "community": 136,
       "norm_label": "sendmaquinaestadonotification"
     },
     {
@@ -16290,7 +16290,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "app_listeners_sendmaquinaestadonotification_sendmaquinaestadonotification_construct",
-      "community": 90,
+      "community": 136,
       "norm_label": ".__construct()"
     },
     {
@@ -16300,7 +16300,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "app_listeners_sendmaquinaestadonotification_sendmaquinaestadonotification_handle",
-      "community": 90,
+      "community": 136,
       "norm_label": ".handle()"
     },
     {
@@ -18270,7 +18270,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "app_models_comisiontarifario_comisiontarifario",
-      "community": 7,
+      "community": 233,
       "norm_label": "comisiontarifario"
     },
     {
@@ -18280,7 +18280,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "app_models_comisiontarifario_comisiontarifario_estados",
-      "community": 7,
+      "community": 233,
       "norm_label": ".estados()"
     },
     {
@@ -18290,7 +18290,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "app_models_comisiontarifario_comisiontarifario_detalles",
-      "community": 7,
+      "community": 233,
       "norm_label": ".detalles()"
     },
     {
@@ -18310,7 +18310,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "app_models_comisiontarifariodetalle_comisiontarifariodetalle",
-      "community": 7,
+      "community": 233,
       "norm_label": "comisiontarifariodetalle"
     },
     {
@@ -18320,7 +18320,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "app_models_comisiontarifariodetalle_comisiontarifariodetalle_tarifario",
-      "community": 7,
+      "community": 233,
       "norm_label": ".tarifario()"
     },
     {
@@ -18330,7 +18330,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "app_models_comisiontarifariodetalle_comisiontarifariodetalle_rol",
-      "community": 7,
+      "community": 233,
       "norm_label": ".rol()"
     },
     {
@@ -18340,7 +18340,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "app_models_comisiontarifariodetalle_comisiontarifariodetalle_uom",
-      "community": 7,
+      "community": 233,
       "norm_label": ".uom()"
     },
     {
@@ -20050,7 +20050,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_models_huentitanentradadetalle",
-      "community": 541,
+      "community": 77,
       "norm_label": "huentitanentradadetalle.php"
     },
     {
@@ -20060,7 +20060,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "app_models_huentitanentradadetalle_huentitanentradadetalle",
-      "community": 541,
+      "community": 77,
       "norm_label": "huentitanentradadetalle"
     },
     {
@@ -20070,7 +20070,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "app_models_huentitanentradadetalle_huentitanentradadetalle_entrada",
-      "community": 541,
+      "community": 77,
       "norm_label": ".entrada()"
     },
     {
@@ -20080,7 +20080,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "app_models_huentitanentradadetalle_php_belongsto",
-      "community": 541,
+      "community": 77,
       "norm_label": "belongsto"
     },
     {
@@ -20090,7 +20090,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "app_models_huentitanentradadetalle_huentitanentradadetalle_ordencompradetalle",
-      "community": 541,
+      "community": 77,
       "norm_label": ".ordencompradetalle()"
     },
     {
@@ -20100,7 +20100,7 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "app_models_huentitanentradadetalle_huentitanentradadetalle_huentitansalidadetalle",
-      "community": 541,
+      "community": 77,
       "norm_label": ".huentitansalidadetalle()"
     },
     {
@@ -20110,7 +20110,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "app_models_huentitanentradadetalle_huentitanentradadetalle_producto",
-      "community": 541,
+      "community": 77,
       "norm_label": ".producto()"
     },
     {
@@ -21810,7 +21810,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "app_models_maquinamovimiento_maquinamovimiento",
-      "community": 161,
+      "community": 41,
       "norm_label": "maquinamovimiento"
     },
     {
@@ -21820,7 +21820,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "app_models_maquinamovimiento_maquinamovimiento_maquina",
-      "community": 161,
+      "community": 41,
       "norm_label": ".maquina()"
     },
     {
@@ -21830,7 +21830,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "app_models_maquinamovimiento_maquinamovimiento_obra",
-      "community": 161,
+      "community": 41,
       "norm_label": ".obra()"
     },
     {
@@ -21840,7 +21840,7 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "app_models_maquinamovimiento_maquinamovimiento_asignacion",
-      "community": 161,
+      "community": 41,
       "norm_label": ".asignacion()"
     },
     {
@@ -21850,7 +21850,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "app_models_maquinamovimiento_maquinamovimiento_user",
-      "community": 161,
+      "community": 41,
       "norm_label": ".user()"
     },
     {
@@ -23910,7 +23910,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "app_models_obramaquinaregistro_obramaquinaregistro",
-      "community": 196,
+      "community": 88,
       "norm_label": "obramaquinaregistro"
     },
     {
@@ -23920,7 +23920,7 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "app_models_obramaquinaregistro_obramaquinaregistro_asignacion",
-      "community": 196,
+      "community": 88,
       "norm_label": ".asignacion()"
     },
     {
@@ -23930,7 +23930,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "app_models_obramaquinaregistro_obramaquinaregistro_obra",
-      "community": 196,
+      "community": 88,
       "norm_label": ".obra()"
     },
     {
@@ -23940,7 +23940,7 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "app_models_obramaquinaregistro_obramaquinaregistro_maquina",
-      "community": 196,
+      "community": 88,
       "norm_label": ".maquina()"
     },
     {
@@ -23950,7 +23950,7 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "app_models_obramaquinaregistro_obramaquinaregistro_createdby",
-      "community": 196,
+      "community": 88,
       "norm_label": ".createdby()"
     },
     {
@@ -24750,7 +24750,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra",
-      "community": 70,
+      "community": 25,
       "norm_label": "ordencompra"
     },
     {
@@ -24760,7 +24760,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_getestadonormalizadoattribute",
-      "community": 70,
+      "community": 25,
       "norm_label": ".getestadonormalizadoattribute()"
     },
     {
@@ -24770,7 +24770,7 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_proveedor",
-      "community": 70,
+      "community": 25,
       "norm_label": ".proveedor()"
     },
     {
@@ -24780,7 +24780,7 @@
       "source_location": "L76",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_obra",
-      "community": 70,
+      "community": 25,
       "norm_label": ".obra()"
     },
     {
@@ -24790,7 +24790,7 @@
       "source_location": "L81",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_centrocosto",
-      "community": 70,
+      "community": 25,
       "norm_label": ".centrocosto()"
     },
     {
@@ -24800,7 +24800,7 @@
       "source_location": "L86",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_areacatalogo",
-      "community": 70,
+      "community": 25,
       "norm_label": ".areacatalogo()"
     },
     {
@@ -24810,7 +24810,7 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_detalles",
-      "community": 70,
+      "community": 25,
       "norm_label": ".detalles()"
     },
     {
@@ -24820,7 +24820,7 @@
       "source_location": "L96",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_mantenimientoabastecimiento",
-      "community": 70,
+      "community": 25,
       "norm_label": ".mantenimientoabastecimiento()"
     },
     {
@@ -24830,7 +24830,7 @@
       "source_location": "L101",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_registradopor",
-      "community": 70,
+      "community": 25,
       "norm_label": ".registradopor()"
     },
     {
@@ -24840,7 +24840,7 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_autorizadopor",
-      "community": 70,
+      "community": 25,
       "norm_label": ".autorizadopor()"
     },
     {
@@ -24850,7 +24850,7 @@
       "source_location": "L111",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_verificadopor",
-      "community": 70,
+      "community": 25,
       "norm_label": ".verificadopor()"
     },
     {
@@ -24860,7 +24860,7 @@
       "source_location": "L116",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_pagosproveedor",
-      "community": 70,
+      "community": 25,
       "norm_label": ".pagosproveedor()"
     },
     {
@@ -24870,7 +24870,7 @@
       "source_location": "L121",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_pagoproveedoractivo",
-      "community": 70,
+      "community": 25,
       "norm_label": ".pagoproveedoractivo()"
     },
     {
@@ -24880,7 +24880,7 @@
       "source_location": "L127",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_partida",
-      "community": 70,
+      "community": 25,
       "norm_label": ".partida()"
     },
     {
@@ -24890,7 +24890,7 @@
       "source_location": "L131",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_planeaciongasto",
-      "community": 70,
+      "community": 25,
       "norm_label": ".planeaciongasto()"
     },
     {
@@ -24900,7 +24900,7 @@
       "source_location": "L136",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_materialrequestlinks",
-      "community": 70,
+      "community": 25,
       "norm_label": ".materialrequestlinks()"
     },
     {
@@ -24910,7 +24910,7 @@
       "source_location": "L141",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_materialrequests",
-      "community": 70,
+      "community": 25,
       "norm_label": ".materialrequests()"
     },
     {
@@ -24920,7 +24920,7 @@
       "source_location": "L153",
       "_origin": "ast",
       "id": "app_models_ordencompra_ordencompra_huentitanentradas",
-      "community": 70,
+      "community": 25,
       "norm_label": ".huentitanentradas()"
     },
     {
@@ -24940,7 +24940,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "app_models_ordencompradetalle_ordencompradetalle",
-      "community": 136,
+      "community": 70,
       "norm_label": "ordencompradetalle"
     },
     {
@@ -24950,7 +24950,7 @@
       "source_location": "L88",
       "_origin": "ast",
       "id": "app_models_ordencompradetalle_ordencompradetalle_orden",
-      "community": 136,
+      "community": 70,
       "norm_label": ".orden()"
     },
     {
@@ -24960,7 +24960,7 @@
       "source_location": "L93",
       "_origin": "ast",
       "id": "app_models_ordencompradetalle_ordencompradetalle_producto",
-      "community": 136,
+      "community": 70,
       "norm_label": ".producto()"
     },
     {
@@ -24970,7 +24970,7 @@
       "source_location": "L97",
       "_origin": "ast",
       "id": "app_models_ordencompradetalle_ordencompradetalle_tiporetencion",
-      "community": 136,
+      "community": 70,
       "norm_label": ".tiporetencion()"
     },
     {
@@ -24980,7 +24980,7 @@
       "source_location": "L101",
       "_origin": "ast",
       "id": "app_models_ordencompradetalle_ordencompradetalle_sobreprecioautorizadopor",
-      "community": 136,
+      "community": 70,
       "norm_label": ".sobreprecioautorizadopor()"
     },
     {
@@ -24990,7 +24990,7 @@
       "source_location": "L105",
       "_origin": "ast",
       "id": "app_models_ordencompradetalle_ordencompradetalle_civilconcept",
-      "community": 136,
+      "community": 70,
       "norm_label": ".civilconcept()"
     },
     {
@@ -25000,7 +25000,7 @@
       "source_location": "L110",
       "_origin": "ast",
       "id": "app_models_ordencompradetalle_ordencompradetalle_obracivilinsumo",
-      "community": 136,
+      "community": 70,
       "norm_label": ".obracivilinsumo()"
     },
     {
@@ -25010,7 +25010,7 @@
       "source_location": "L114",
       "_origin": "ast",
       "id": "app_models_ordencompradetalle_ordencompradetalle_obracivilmaterialrequestitem",
-      "community": 136,
+      "community": 70,
       "norm_label": ".obracivilmaterialrequestitem()"
     },
     {
@@ -25020,7 +25020,7 @@
       "source_location": "L119",
       "_origin": "ast",
       "id": "app_models_ordencompradetalle_ordencompradetalle_huentitansalidadetalle",
-      "community": 136,
+      "community": 70,
       "norm_label": ".huentitansalidadetalle()"
     },
     {
@@ -25030,7 +25030,7 @@
       "source_location": "L124",
       "_origin": "ast",
       "id": "app_models_ordencompradetalle_ordencompradetalle_mantenimientoabastecimientodetalle",
-      "community": 136,
+      "community": 70,
       "norm_label": ".mantenimientoabastecimientodetalle()"
     },
     {
@@ -25040,7 +25040,7 @@
       "source_location": "L129",
       "_origin": "ast",
       "id": "app_models_ordencompradetalle_ordencompradetalle_huentitanordenfabricacionmaterial",
-      "community": 136,
+      "community": 70,
       "norm_label": ".huentitanordenfabricacionmaterial()"
     },
     {
@@ -25050,7 +25050,7 @@
       "source_location": "L134",
       "_origin": "ast",
       "id": "app_models_ordencompradetalle_ordencompradetalle_huentitanentradadetalles",
-      "community": 136,
+      "community": 70,
       "norm_label": ".huentitanentradadetalles()"
     },
     {
@@ -25060,7 +25060,7 @@
       "source_location": "L139",
       "_origin": "ast",
       "id": "app_models_ordencompradetalle_ordencompradetalle_getcantidadpendienteattribute",
-      "community": 136,
+      "community": 70,
       "norm_label": ".getcantidadpendienteattribute()"
     },
     {
@@ -28450,7 +28450,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "app_notifications_vehiculoserviciopreventivonotification_vehiculoserviciopreventivonotification",
-      "community": 253,
+      "community": 171,
       "norm_label": "vehiculoserviciopreventivonotification"
     },
     {
@@ -28470,7 +28470,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "app_notifications_vehiculoserviciopreventivonotification_vehiculoserviciopreventivonotification_via",
-      "community": 253,
+      "community": 171,
       "norm_label": ".via()"
     },
     {
@@ -28480,7 +28480,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "app_notifications_vehiculoserviciopreventivonotification_vehiculoserviciopreventivonotification_tomail",
-      "community": 253,
+      "community": 171,
       "norm_label": ".tomail()"
     },
     {
@@ -28500,7 +28500,7 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "app_notifications_vehiculoserviciopreventivonotification_vehiculoserviciopreventivonotification_toarray",
-      "community": 253,
+      "community": 171,
       "norm_label": ".toarray()"
     },
     {
@@ -28510,7 +28510,7 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "app_notifications_vehiculoserviciopreventivonotification_vehiculoserviciopreventivonotification_nombrevehiculo",
-      "community": 253,
+      "community": 171,
       "norm_label": ".nombrevehiculo()"
     },
     {
@@ -28520,7 +28520,7 @@
       "source_location": "L88",
       "_origin": "ast",
       "id": "app_notifications_vehiculoserviciopreventivonotification_vehiculoserviciopreventivonotification_formatkm",
-      "community": 253,
+      "community": 171,
       "norm_label": ".formatkm()"
     },
     {
@@ -29690,7 +29690,7 @@
       "source_location": "L252",
       "_origin": "ast",
       "id": "app_services_comisiones_residentecomisionesservice_residentecomisionesservice_storefotoforuser",
-      "community": 30,
+      "community": 7,
       "norm_label": ".storefotoforuser()"
     },
     {
@@ -29740,7 +29740,7 @@
       "source_location": "L354",
       "_origin": "ast",
       "id": "app_services_comisiones_residentecomisionesservice_residentecomisionesservice_validarcomisiondeobra",
-      "community": 30,
+      "community": 7,
       "norm_label": ".validarcomisiondeobra()"
     },
     {
@@ -31710,7 +31710,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinaasignacionservice",
-      "community": 161,
+      "community": 41,
       "norm_label": "maquinaasignacionservice.php"
     },
     {
@@ -32010,7 +32010,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinahorometroconsolidacionservice",
-      "community": 41,
+      "community": 541,
       "norm_label": "maquinahorometroconsolidacionservice.php"
     },
     {
@@ -32020,7 +32020,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinahorometroconsolidacionservice_maquinahorometroconsolidacionservice",
-      "community": 41,
+      "community": 541,
       "norm_label": "maquinahorometroconsolidacionservice"
     },
     {
@@ -32030,7 +32030,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinahorometroconsolidacionservice_maquinahorometroconsolidacionservice_consolidar",
-      "community": 41,
+      "community": 541,
       "norm_label": ".consolidar()"
     },
     {
@@ -32040,7 +32040,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinahorometroconsolidacionservice_php_collection",
-      "community": 41,
+      "community": 541,
       "norm_label": "collection"
     },
     {
@@ -32050,7 +32050,7 @@
       "source_location": "L99",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinahorometroconsolidacionservice_maquinahorometroconsolidacionservice_resumen",
-      "community": 41,
+      "community": 541,
       "norm_label": ".resumen()"
     },
     {
@@ -32060,7 +32060,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinahorometroservice",
-      "community": 196,
+      "community": 88,
       "norm_label": "maquinahorometroservice.php"
     },
     {
@@ -32070,7 +32070,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinahorometroservice_maquinahorometroservice",
-      "community": 196,
+      "community": 88,
       "norm_label": "maquinahorometroservice"
     },
     {
@@ -32080,7 +32080,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinahorometroservice_maquinahorometroservice_horometroactual",
-      "community": 196,
+      "community": 88,
       "norm_label": ".horometroactual()"
     },
     {
@@ -32090,7 +32090,7 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinahorometroservice_maquinahorometroservice_horometrosugeridoparaasignacion",
-      "community": 196,
+      "community": 88,
       "norm_label": ".horometrosugeridoparaasignacion()"
     },
     {
@@ -32100,7 +32100,7 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinahorometroservice_maquinahorometroservice_horometroiniciopararegistro",
-      "community": 196,
+      "community": 88,
       "norm_label": ".horometroiniciopararegistro()"
     },
     {
@@ -32110,7 +32110,7 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinahorometroservice_maquinahorometroservice_crearajuste",
-      "community": 196,
+      "community": 88,
       "norm_label": ".crearajuste()"
     },
     {
@@ -32120,7 +32120,7 @@
       "source_location": "L99",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinahorometroservice_maquinahorometroservice_crearregistro",
-      "community": 196,
+      "community": 88,
       "norm_label": ".crearregistro()"
     },
     {
@@ -32130,7 +32130,7 @@
       "source_location": "L137",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinahorometroservice_maquinahorometroservice_validarsecuenciaglobal",
-      "community": 196,
+      "community": 88,
       "norm_label": ".validarsecuenciaglobal()"
     },
     {
@@ -32140,7 +32140,7 @@
       "source_location": "L163",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinahorometroservice_maquinahorometroservice_fechaultimalectura",
-      "community": 196,
+      "community": 88,
       "norm_label": ".fechaultimalectura()"
     },
     {
@@ -32150,7 +32150,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinahorometroservice_php_carbon",
-      "community": 196,
+      "community": 88,
       "norm_label": "carbon"
     },
     {
@@ -32160,7 +32160,7 @@
       "source_location": "L211",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinahorometroservice_maquinahorometroservice_mayornumero",
-      "community": 196,
+      "community": 88,
       "norm_label": ".mayornumero()"
     },
     {
@@ -32170,7 +32170,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinaservice",
-      "community": 90,
+      "community": 136,
       "norm_label": "maquinaservice.php"
     },
     {
@@ -32220,7 +32220,7 @@
       "source_location": "L230",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinaservice_maquinaservice_cambiarestado",
-      "community": 161,
+      "community": 41,
       "norm_label": ".cambiarestado()"
     },
     {
@@ -32230,7 +32230,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinaubicacionservice",
-      "community": 161,
+      "community": 41,
       "norm_label": "maquinaubicacionservice.php"
     },
     {
@@ -32240,7 +32240,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinaubicacionservice_maquinaubicacionservice",
-      "community": 171,
+      "community": 41,
       "norm_label": "maquinaubicacionservice"
     },
     {
@@ -32260,7 +32260,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinaubicacionservice_maquinaubicacionservice_puedecambiar",
-      "community": 171,
+      "community": 41,
       "norm_label": ".puedecambiar()"
     },
     {
@@ -32270,7 +32270,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinaubicacionservice_maquinaubicacionservice_consultar",
-      "community": 171,
+      "community": 41,
       "norm_label": ".consultar()"
     },
     {
@@ -32280,7 +32280,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinaubicacionservice_maquinaubicacionservice_datos",
-      "community": 171,
+      "community": 41,
       "norm_label": ".datos()"
     },
     {
@@ -32290,7 +32290,7 @@
       "source_location": "L51",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinaubicacionservice_maquinaubicacionservice_guardar",
-      "community": 171,
+      "community": 41,
       "norm_label": ".guardar()"
     },
     {
@@ -32300,7 +32300,7 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinaubicacionservice_maquinaubicacionservice_asignacion",
-      "community": 171,
+      "community": 41,
       "norm_label": ".asignacion()"
     },
     {
@@ -32310,7 +32310,7 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinaubicacionservice_maquinaubicacionservice_contexto",
-      "community": 171,
+      "community": 41,
       "norm_label": ".contexto()"
     },
     {
@@ -32320,7 +32320,7 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinaubicacionservice_maquinaubicacionservice_destinos",
-      "community": 171,
+      "community": 41,
       "norm_label": ".destinos()"
     },
     {
@@ -32330,7 +32330,7 @@
       "source_location": "L130",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinaubicacionservice_maquinaubicacionservice_validar",
-      "community": 171,
+      "community": 41,
       "norm_label": ".validar()"
     },
     {
@@ -32340,7 +32340,7 @@
       "source_location": "L160",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinaubicacionservice_maquinaubicacionservice_decimal",
-      "community": 171,
+      "community": 41,
       "norm_label": ".decimal()"
     },
     {
@@ -32350,7 +32350,7 @@
       "source_location": "L165",
       "_origin": "ast",
       "id": "app_services_maquinas_maquinaubicacionservice_maquinaubicacionservice_resultado",
-      "community": 171,
+      "community": 41,
       "norm_label": ".resultado()"
     },
     {
@@ -65760,7 +65760,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_implementacion_captura_movil_mecanico_c13_4",
-      "community": 891,
+      "community": 201,
       "norm_label": "implementacion_captura_movil_mecanico_c13_4.md"
     },
     {
@@ -65770,7 +65770,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_implementacion_captura_movil_mecanico_c13_4_t13_c13_4_captura_y_operaciones_de_servicios_programados",
-      "community": 816,
+      "community": 201,
       "norm_label": "t13 / c13.4. captura y operaciones de servicios programados"
     },
     {
@@ -65780,7 +65780,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "docs_implementacion_captura_movil_mecanico_c13_4_implementado",
-      "community": 816,
+      "community": 201,
       "norm_label": "implementado"
     },
     {
@@ -65790,7 +65790,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "docs_implementacion_captura_movil_mecanico_c13_4_archivos_del_cliente",
-      "community": 816,
+      "community": 201,
       "norm_label": "archivos del cliente"
     },
     {
@@ -65800,7 +65800,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "docs_implementacion_captura_movil_mecanico_c13_4_validaci\u00f3n_y_l\u00edmites",
-      "community": 816,
+      "community": 201,
       "norm_label": "validacion y limites"
     },
     {
@@ -65810,7 +65810,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "docs_implementacion_captura_movil_mecanico_c13_4_cierre_del_checkpoint",
-      "community": 816,
+      "community": 201,
       "norm_label": "cierre del checkpoint"
     },
     {
@@ -65890,7 +65890,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_implementacion_ejecucion_movil_mecanico_c13_5",
-      "community": 891,
+      "community": 201,
       "norm_label": "implementacion_ejecucion_movil_mecanico_c13_5.md"
     },
     {
@@ -65900,7 +65900,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_implementacion_ejecucion_movil_mecanico_c13_5_c13_5_inicio_y_cierre_en_el_cliente_m\u00f3vil",
-      "community": 824,
+      "community": 201,
       "norm_label": "c13.5: inicio y cierre en el cliente movil"
     },
     {
@@ -65910,7 +65910,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "docs_implementacion_ejecucion_movil_mecanico_c13_5_comportamiento_implementado",
-      "community": 824,
+      "community": 201,
       "norm_label": "comportamiento implementado"
     },
     {
@@ -65920,7 +65920,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "docs_implementacion_ejecucion_movil_mecanico_c13_5_archivos_del_cliente_repositorio_separado",
-      "community": 824,
+      "community": 201,
       "norm_label": "archivos del cliente (repositorio separado)"
     },
     {
@@ -65930,7 +65930,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "docs_implementacion_ejecucion_movil_mecanico_c13_5_validaci\u00f3n",
-      "community": 824,
+      "community": 201,
       "norm_label": "validacion"
     },
     {
@@ -65940,7 +65940,7 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "docs_implementacion_ejecucion_movil_mecanico_c13_5_cierre_del_checkpoint",
-      "community": 824,
+      "community": 201,
       "norm_label": "cierre del checkpoint"
     },
     {
@@ -66010,7 +66010,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_implementacion_navegacion_movil_mecanico_c13_2",
-      "community": 891,
+      "community": 201,
       "norm_label": "implementacion_navegacion_movil_mecanico_c13_2.md"
     },
     {
@@ -66230,7 +66230,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_inspeccion_cliente_movil_mecanico_t13",
-      "community": 891,
+      "community": 201,
       "norm_label": "inspeccion_cliente_movil_mecanico_t13.md"
     },
     {
@@ -88380,7 +88380,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L256",
+      "source_location": "L248",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "role"
@@ -88875,7 +88875,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L263",
+      "source_location": "L255",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "permission"
@@ -106696,7 +106696,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L834",
+      "source_location": "L794",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_destroydocumentoempleado",
@@ -106716,7 +106716,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L657",
+      "source_location": "L617",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_formatearfolioobra",
@@ -106726,7 +106726,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L473",
+      "source_location": "L433",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_guardardestinatariosalertavehiculos",
@@ -106746,7 +106746,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L735",
+      "source_location": "L695",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_marcarcuentabancoprincipal",
@@ -106756,7 +106756,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L984",
+      "source_location": "L944",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_marcartipoivadefault",
@@ -106766,7 +106766,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L505",
+      "source_location": "L465",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_persistirdestinatarioalerta",
@@ -106776,7 +106776,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L919",
+      "source_location": "L879",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storecentrocosto",
@@ -106786,7 +106786,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L662",
+      "source_location": "L622",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storecuentabanco",
@@ -106796,7 +106796,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L750",
+      "source_location": "L710",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storedocumentoempleado",
@@ -106806,7 +106806,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L845",
+      "source_location": "L805",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storedocumentofirmadefinicion",
@@ -106816,7 +106816,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L947",
+      "source_location": "L907",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetipoiva",
@@ -106826,7 +106826,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L551",
+      "source_location": "L511",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetipoobraconfiguracion",
@@ -106836,7 +106836,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L1038",
+      "source_location": "L998",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetiporetencion",
@@ -106846,7 +106846,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L995",
+      "source_location": "L955",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetiposueldo",
@@ -106856,7 +106856,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L531",
+      "source_location": "L491",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storeviaticotarifa",
@@ -106866,7 +106866,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L936",
+      "source_location": "L896",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_togglecentrocosto",
@@ -106876,7 +106876,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L726",
+      "source_location": "L686",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_togglecuentabancoactiva",
@@ -106886,7 +106886,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L820",
+      "source_location": "L780",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_toggledocumentoempleadoactivo",
@@ -106896,7 +106896,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L909",
+      "source_location": "L869",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_toggledocumentofirmadefinicion",
@@ -106906,7 +106906,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L973",
+      "source_location": "L933",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_toggletipoiva",
@@ -106916,7 +106916,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L1027",
+      "source_location": "L987",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_toggletiposueldo",
@@ -106926,7 +106926,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L643",
+      "source_location": "L603",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_ultimoconsecutivoobraexistente",
@@ -106936,7 +106936,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L319",
+      "source_location": "L310",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
@@ -106946,7 +106946,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L689",
+      "source_location": "L649",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatecuentabanco",
@@ -106956,7 +106956,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L796",
+      "source_location": "L756",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatedocumentoempleado",
@@ -106966,7 +106966,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L886",
+      "source_location": "L846",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatedocumentofirmadefinicion",
@@ -106976,7 +106976,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L595",
+      "source_location": "L555",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatefolioobra",
@@ -106986,7 +106986,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L620",
+      "source_location": "L580",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatetipoobraconfiguracion",
@@ -107019,7 +107019,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L206",
+      "source_location": "L198",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_formatearfolioobra",
@@ -107030,7 +107030,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L182",
+      "source_location": "L174",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_ultimoconsecutivoobraexistente",
@@ -107042,7 +107042,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L279",
+      "source_location": "L271",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_http_controllers_inventario_inventariostockcontroller_inventariostockcontroller_view"
@@ -107075,7 +107075,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L232",
+      "source_location": "L224",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_catalogorol_catalogorol"
@@ -107085,7 +107085,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L152",
+      "source_location": "L144",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_centrocosto_centrocosto",
@@ -107097,7 +107097,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L233",
+      "source_location": "L225",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_comisiontarifario_comisiontarifario"
@@ -107108,7 +107108,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L240",
+      "source_location": "L232",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_comisiontarifariodetalle_comisiontarifariodetalle"
@@ -107118,7 +107118,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L113",
+      "source_location": "L105",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_cuentabancoempresa_cuentabancoempresa",
@@ -107129,7 +107129,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L125",
+      "source_location": "L117",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_documentofirmadefinicion_documentofirmadefinicion",
@@ -107141,7 +107141,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L146",
+      "source_location": "L138",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_empleado_empleado"
@@ -107173,7 +107173,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L119",
+      "source_location": "L111",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_empresadocumentotipo_empresadocumentotipo",
@@ -107185,7 +107185,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L220",
+      "source_location": "L212",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_empresaserviciopreventivotipo_empresaserviciopreventivotipo"
@@ -107196,7 +107196,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L170",
+      "source_location": "L162",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_empresaviaticotarifa_empresaviaticotarifa"
@@ -107207,7 +107207,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L129",
+      "source_location": "L121",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_equipocomputo_equipocomputo"
@@ -107218,7 +107218,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L218",
+      "source_location": "L210",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_maquina_maquina"
@@ -107239,7 +107239,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L166",
+      "source_location": "L158",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_nominatiposueldo_nominatiposueldo",
@@ -107250,7 +107250,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L178",
+      "source_location": "L170",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_obrafolio_obrafolio",
@@ -107261,7 +107261,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L189",
+      "source_location": "L181",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_obratipoconfiguracion_obratipoconfiguracion",
@@ -107273,7 +107273,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L228",
+      "source_location": "L220",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_producto_producto"
@@ -107283,7 +107283,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L157",
+      "source_location": "L149",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_tipoiva_tipoiva",
@@ -107295,7 +107295,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L161",
+      "source_location": "L153",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_tiporetencion_tiporetencion"
@@ -107306,7 +107306,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L108",
+      "source_location": "L100",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_edit",
       "target": "app_models_user_user"
@@ -107327,7 +107327,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L739",
+      "source_location": "L699",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_marcarcuentabancoprincipal",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
@@ -107338,7 +107338,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L987",
+      "source_location": "L947",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_marcartipoivadefault",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
@@ -107349,7 +107349,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L957",
+      "source_location": "L917",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetipoiva",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
@@ -107360,7 +107360,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L938",
+      "source_location": "L898",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_togglecentrocosto",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
@@ -107371,7 +107371,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L728",
+      "source_location": "L688",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_togglecuentabancoactiva",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
@@ -107382,7 +107382,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L823",
+      "source_location": "L783",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_toggledocumentoempleadoactivo",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
@@ -107393,7 +107393,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L911",
+      "source_location": "L871",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_toggledocumentofirmadefinicion",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
@@ -107404,7 +107404,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L975",
+      "source_location": "L935",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_toggletipoiva",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
@@ -107415,7 +107415,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L1029",
+      "source_location": "L989",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_toggletiposueldo",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
@@ -107426,7 +107426,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L396",
+      "source_location": "L387",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_guardardestinatariosalertavehiculos",
@@ -107436,7 +107436,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L319",
+      "source_location": "L310",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
@@ -107448,7 +107448,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L413",
+      "source_location": "L404",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
       "target": "app_models_empresaalertadestinatario_empresaalertadestinatario",
@@ -107459,7 +107459,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L321",
+      "source_location": "L312",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
       "target": "app_models_empresaconfig_empresaconfig",
@@ -107471,7 +107471,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L423",
+      "source_location": "L414",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
       "target": "app_models_user_user"
@@ -107481,7 +107481,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L705",
+      "source_location": "L665",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatecuentabanco",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
@@ -107492,7 +107492,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L809",
+      "source_location": "L769",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatedocumentoempleado",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
@@ -107503,7 +107503,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L896",
+      "source_location": "L856",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatedocumentofirmadefinicion",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
@@ -107514,7 +107514,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L611",
+      "source_location": "L571",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatefolioobra",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
@@ -107525,7 +107525,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L627",
+      "source_location": "L587",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatetipoobraconfiguracion",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_update",
@@ -107535,7 +107535,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L473",
+      "source_location": "L433",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_guardardestinatariosalertavehiculos",
@@ -107546,7 +107546,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L505",
+      "source_location": "L465",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_persistirdestinatarioalerta",
@@ -107557,7 +107557,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L919",
+      "source_location": "L879",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storecentrocosto",
@@ -107568,7 +107568,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L662",
+      "source_location": "L622",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storecuentabanco",
@@ -107579,7 +107579,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L750",
+      "source_location": "L710",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storedocumentoempleado",
@@ -107590,7 +107590,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L845",
+      "source_location": "L805",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storedocumentofirmadefinicion",
@@ -107601,7 +107601,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L947",
+      "source_location": "L907",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetipoiva",
@@ -107612,7 +107612,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L551",
+      "source_location": "L511",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetipoobraconfiguracion",
@@ -107623,7 +107623,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L1038",
+      "source_location": "L998",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetiporetencion",
@@ -107634,7 +107634,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L995",
+      "source_location": "L955",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetiposueldo",
@@ -107645,7 +107645,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L531",
+      "source_location": "L491",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storeviaticotarifa",
@@ -107656,7 +107656,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L689",
+      "source_location": "L649",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatecuentabanco",
@@ -107667,7 +107667,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L796",
+      "source_location": "L756",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatedocumentoempleado",
@@ -107678,7 +107678,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L886",
+      "source_location": "L846",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatedocumentofirmadefinicion",
@@ -107689,7 +107689,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L595",
+      "source_location": "L555",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatefolioobra",
@@ -107700,7 +107700,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L620",
+      "source_location": "L580",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatetipoobraconfiguracion",
@@ -107712,7 +107712,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L489",
+      "source_location": "L449",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_guardardestinatariosalertavehiculos",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_persistirdestinatarioalerta",
@@ -107723,7 +107723,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L480",
+      "source_location": "L440",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_guardardestinatariosalertavehiculos",
       "target": "app_models_empresaalertadestinatario_empresaalertadestinatario",
@@ -107733,7 +107733,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L473",
+      "source_location": "L433",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_guardardestinatariosalertavehiculos",
@@ -107744,7 +107744,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L505",
+      "source_location": "L465",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_persistirdestinatarioalerta",
@@ -107757,7 +107757,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L507",
+      "source_location": "L467",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_persistirdestinatarioalerta",
       "target": "app_models_user_user"
@@ -107766,7 +107766,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L531",
+      "source_location": "L491",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storeviaticotarifa",
@@ -107778,7 +107778,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L570",
+      "source_location": "L530",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetipoobraconfiguracion",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_ultimoconsecutivoobraexistente",
@@ -107789,7 +107789,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L582",
+      "source_location": "L542",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetipoobraconfiguracion",
       "target": "app_models_obrafolio_obrafolio",
@@ -107800,7 +107800,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L574",
+      "source_location": "L534",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetipoobraconfiguracion",
       "target": "app_models_obratipoconfiguracion_obratipoconfiguracion",
@@ -107811,7 +107811,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L601",
+      "source_location": "L561",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatefolioobra",
       "target": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_ultimoconsecutivoobraexistente",
@@ -107821,7 +107821,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L595",
+      "source_location": "L555",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatefolioobra",
@@ -107834,7 +107834,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L633",
+      "source_location": "L593",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatetipoobraconfiguracion",
       "target": "app_models_obra_obra"
@@ -107843,7 +107843,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L620",
+      "source_location": "L580",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatetipoobraconfiguracion",
@@ -107856,7 +107856,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L645",
+      "source_location": "L605",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_ultimoconsecutivoobraexistente",
       "target": "app_models_obra_obra"
@@ -107866,7 +107866,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L682",
+      "source_location": "L642",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storecuentabanco",
       "target": "app_models_cuentabancoempresa_cuentabancoempresa",
@@ -107877,7 +107877,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L689",
+      "source_location": "L649",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatecuentabanco",
       "target": "app_models_cuentabancoempresa_cuentabancoempresa",
@@ -107887,7 +107887,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L726",
+      "source_location": "L686",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_togglecuentabancoactiva",
@@ -107899,7 +107899,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L735",
+      "source_location": "L695",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_marcarcuentabancoprincipal",
       "target": "app_models_cuentabancoempresa_cuentabancoempresa",
@@ -107910,7 +107910,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L752",
+      "source_location": "L712",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storedocumentoempleado",
       "target": "app_models_empresaconfig_empresaconfig",
@@ -107921,7 +107921,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L771",
+      "source_location": "L731",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storedocumentoempleado",
       "target": "app_models_empresadocumentotipo_empresadocumentotipo",
@@ -107931,7 +107931,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L796",
+      "source_location": "L756",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatedocumentoempleado",
@@ -107942,7 +107942,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L820",
+      "source_location": "L780",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_toggledocumentoempleadoactivo",
@@ -107953,7 +107953,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L834",
+      "source_location": "L794",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_destroydocumentoempleado",
@@ -107965,7 +107965,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L870",
+      "source_location": "L830",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storedocumentofirmadefinicion",
       "target": "app_models_documentofirmadefinicion_documentofirmadefinicion",
@@ -107975,7 +107975,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L886",
+      "source_location": "L846",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_updatedocumentofirmadefinicion",
@@ -107986,7 +107986,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L909",
+      "source_location": "L869",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_toggledocumentofirmadefinicion",
@@ -107998,7 +107998,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L929",
+      "source_location": "L889",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storecentrocosto",
       "target": "app_models_centrocosto_centrocosto",
@@ -108008,7 +108008,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L936",
+      "source_location": "L896",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_togglecentrocosto",
@@ -108020,7 +108020,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L957",
+      "source_location": "L917",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetipoiva",
       "target": "app_models_tipoiva_tipoiva",
@@ -108030,7 +108030,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L973",
+      "source_location": "L933",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_toggletipoiva",
@@ -108042,7 +108042,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L984",
+      "source_location": "L944",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_marcartipoivadefault",
       "target": "app_models_tipoiva_tipoiva",
@@ -108053,7 +108053,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L1013",
+      "source_location": "L973",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetiposueldo",
       "target": "app_models_nominatiposueldo_nominatiposueldo",
@@ -108063,7 +108063,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L1027",
+      "source_location": "L987",
       "weight": 1.0,
       "context": "parameter_type",
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_toggletiposueldo",
@@ -108076,7 +108076,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "app/Http/Controllers/EmpresaConfigController.php",
-      "source_location": "L1055",
+      "source_location": "L1015",
       "weight": 1.0,
       "source": "app_http_controllers_empresaconfigcontroller_empresaconfigcontroller_storetiporetencion",
       "target": "app_models_tiporetencion_tiporetencion"
