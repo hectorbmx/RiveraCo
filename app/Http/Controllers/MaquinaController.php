@@ -152,6 +152,13 @@ public function show(
         ]);
     }
 
+    if ($tab === 'documentacion') {
+        abort_unless($request->user()->can('documentos_maquinas_view.access'), 403);
+        $maquina->load([
+            'documentos' => fn ($q) => $q->with('usuario:id,name')->latest()->orderByDesc('id'),
+        ]);
+    }
+
     if ($tab === 'servicios') {
         $maquina->load([
             'mantenimientos' => fn($q) => $q->with('mecanico')->latest()->limit(50),

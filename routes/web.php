@@ -56,6 +56,7 @@ use App\Http\Controllers\MaquinasReporteDiarioController;
 
 use App\Http\Controllers\Maquinas\MaquinaSeguroController;
 use App\Http\Controllers\Maquinas\MaquinaFotoController;
+use App\Http\Controllers\Maquinas\MaquinaDocumentoController;
 use App\Http\Controllers\Vehiculos\VehiculoSeguroController;
 use App\Http\Controllers\Vehiculos\VehiculoDocumentoController;
 
@@ -897,6 +898,21 @@ Route::middleware('auth','verified')->group(function () {
         Route::post('maquinas/{maquina}/fotos', [MaquinaFotoController::class, 'store'])
             ->middleware(['auth', 'permission:fotos_maquinas_create.access'])
             ->name('fotos.store');
+        Route::post('maquinas/{maquina}/documentos', [MaquinaDocumentoController::class, 'store'])
+            ->middleware('permission:documentos_maquinas_create.access')
+            ->name('documentos.store');
+        Route::get('maquinas/{maquina}/documentos/{documento}', [MaquinaDocumentoController::class, 'ver'])
+            ->middleware('permission:documentos_maquinas_view.access')
+            ->name('documentos.ver');
+        Route::get('maquinas/{maquina}/documentos/{documento}/descargar', [MaquinaDocumentoController::class, 'descargar'])
+            ->middleware('permission:documentos_maquinas_view.access')
+            ->name('documentos.descargar');
+        Route::put('maquinas/{maquina}/documentos/{documento}', [MaquinaDocumentoController::class, 'update'])
+            ->middleware('permission:documentos_maquinas_edit.access')
+            ->name('documentos.update');
+        Route::delete('maquinas/{maquina}/documentos/{documento}', [MaquinaDocumentoController::class, 'destroy'])
+            ->middleware('permission:documentos_maquinas_delete.access')
+            ->name('documentos.destroy');
         Route::put('maquinas/{maquina}/fotos/{foto}', [MaquinaFotoController::class, 'update'])
             ->middleware(['auth', 'permission:fotos_maquinas_edit.access'])
             ->name('fotos.update');

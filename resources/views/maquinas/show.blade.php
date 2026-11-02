@@ -44,6 +44,9 @@
             'horometro' => 'Horómetro',
             'fotos'    => 'Fotos',
         ];
+        if (auth()->user()?->can('documentos_maquinas_view.access')) {
+            $tabs['documentacion'] = 'Documentación';
+        }
     @endphp
 
     <div class="border-b mb-4">
@@ -60,6 +63,10 @@
     </div>
 
     {{-- Tab content --}}
+    @if($tab === 'documentacion')
+        @include('maquinas.partials.tabs.documentacion', ['documentosMaquina' => $maquina->documentos])
+    @endif
+
     @if($tab === 'fotos')
         @include('maquinas.partials.tabs.fotos', ['fotosMaquina' => $maquina->fotos])
     @endif

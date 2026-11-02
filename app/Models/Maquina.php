@@ -57,6 +57,11 @@ class Maquina extends Model
         return $this->hasMany(MaquinaFoto::class, 'maquina_id');
     }
 
+    public function documentos(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(MaquinaDocumento::class, 'maquina_id');
+    }
+
     // Máquinas actualmente asignadas a alguna obra
     public function scopeOperativas($query)
     {
