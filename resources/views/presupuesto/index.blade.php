@@ -1,6 +1,11 @@
 @extends('layouts.admin')
 
 @section('content')
+<style>
+    .presupuestos-table thead { background: #0B265A; color: #fff; }
+    .presupuestos-table tbody tr:hover,
+    .presupuestos-table tbody tr:focus-within { background: #dce9fa; }
+</style>
 <div class="p-6">
     <div class="flex justify-between mb-4">
         <h1 class="text-xl font-semibold">Presupuestos Sincronizados (Excel)</h1>
@@ -23,8 +28,24 @@
 @endphp
 
     <div class="bg-white rounded-lg shadow overflow-hidden">
-        <table class="w-full text-sm border-collapse">
-            <thead class="bg-gray-100">
+        <form method="GET" action="{{ route('presupuesto.index') }}" class="flex flex-wrap items-end gap-3 px-5 py-4 border-b border-slate-200 bg-slate-50" role="search">
+            <div class="flex-1 min-w-0 max-w-xl">
+                <label for="buscar-presupuesto" class="block text-sm font-medium text-slate-700 mb-1">Buscar por cliente o código</label>
+                <input id="buscar-presupuesto" type="search" name="buscar" value="{{ $buscar }}" maxlength="255"
+                       class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+                       placeholder="Escribe el cliente o código del proyecto…">
+                @error('buscar')
+                    <p class="mt-1 text-xs text-red-700">{{ $message }}</p>
+                @enderror
+            </div>
+            <button type="submit" class="rounded-xl bg-[#0B265A] px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">Buscar</button>
+            @if($buscar !== '')
+                <a href="{{ route('presupuesto.index') }}" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-white">Limpiar</a>
+            @endif
+        </form>
+        <div class="overflow-x-auto" role="region" aria-label="Presupuestos" tabindex="0">
+        <table class="presupuestos-table w-full text-sm border-collapse">
+            <thead>
                 <tr>
                     <th class="p-2 border font-semibold text-center">Código Proyecto</th>
                     <th class="p-2 border font-semibold text-left">Cliente</th>
@@ -36,8 +57,8 @@
                 </tr>
             </thead>
             <tbody>
-            @foreach($presupuestos as $presupuesto)
-                <tr class="border-b hover:bg-gray-50 transition-colors">
+            @forelse($presupuestos as $presupuesto)
+                <tr class="border-b transition-colors">
                     <td class="p-2 border text-center font-bold text-blue-900">
                         {{ $presupuesto->codigo_proyecto }}
                     </td>
@@ -90,9 +111,16 @@
                         </div>
                     </td>
                 </tr>
-            @endforeach
+            @empty
+                <tr>
+                    <td colspan="7" class="px-5 py-10 text-center text-slate-500">
+                        {{ $buscar !== '' ? 'No se encontraron presupuestos con ese cliente o código.' : 'Aún no hay presupuestos sincronizados.' }}
+                    </td>
+                </tr>
+            @endforelse
             </tbody>
         </table>
+        </div>
     </div>
 
     {{-- Paginación con estilo Tailwind --}}

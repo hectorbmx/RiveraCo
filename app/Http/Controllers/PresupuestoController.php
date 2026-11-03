@@ -12,12 +12,22 @@ use App\Models\PresupuestoPila;
 use App\Models\PresupuestoResumen;
 class PresupuestoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Traemos los presupuestos ordenados por los más recientes
-        $presupuestos = Presupuesto::orderBy('created_at', 'desc')->get();
+        $request->validate(['buscar' => ['nullable', 'string', 'max:255']]);
+        $buscar = trim((string) $request->input('buscar', ''));
+        $presupuestos = Presupuesto::query()
+            ->when($buscar !== '', function ($query) use ($buscar) {
+                $literal = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $buscar);
+                $query->where(function ($query) use ($literal) {
+                    $query->whereRaw("nombre_cliente LIKE ? ESCAPE '!'", ['%' . $literal . '%'])
+                        ->orWhereRaw("codigo_proyecto LIKE ? ESCAPE '!'", ['%' . $literal . '%']);
+                });
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
         
-        return view('presupuesto.index', compact('presupuestos'));
+        return view('presupuesto.index', compact('presupuestos', 'buscar'));
     }
 
 

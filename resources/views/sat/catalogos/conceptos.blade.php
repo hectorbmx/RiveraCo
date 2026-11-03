@@ -4,6 +4,20 @@
 
 @section('content')
 
+<style>
+    .conceptos-table tbody tr:hover,
+    .conceptos-table tbody tr:focus-within { background: #dce9fa; }
+    .concepto-edit { position: relative; }
+    .concepto-edit .edit-tooltip {
+        position: absolute; right: 0; bottom: calc(100% + 6px); z-index: 10;
+        padding: 5px 8px; border-radius: 6px; background: #0B265A; color: #fff;
+        font-size: 12px; font-weight: 500; white-space: nowrap;
+        pointer-events: none; opacity: 0; transition: opacity .15s;
+    }
+    .concepto-edit:hover .edit-tooltip,
+    .concepto-edit:focus-visible .edit-tooltip { opacity: 1; }
+</style>
+
 <div x-data="catalogoConceptosSat()" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
     {{-- HEADER --}}
@@ -30,12 +44,29 @@
     {{-- TABLA --}}
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
 
-        <div class="overflow-x-auto">
+        <form method="GET" action="{{ route('sat.catalogos.conceptos') }}" class="flex flex-wrap items-end gap-3 px-5 py-4 border-b border-slate-200 bg-slate-50" role="search">
+            <div class="flex-1 min-w-0 sm:min-w-[280px] max-w-xl">
+                <label for="buscar-descripcion" class="block text-sm font-medium text-slate-700 mb-1">Buscar concepto por descripción</label>
+                <input id="buscar-descripcion" type="search" name="descripcion"
+                       value="{{ $descripcion }}" maxlength="1000" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+                       placeholder="Escribe parte de la descripción…">
+                @error('descripcion')
+                    <p class="mt-1 text-xs text-red-700">{{ $message }}</p>
+                @enderror
+            </div>
+            <button type="submit" class="rounded-xl bg-[#0B265A] px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">Buscar</button>
+            @if($descripcion !== '')
+                <a href="{{ route('sat.catalogos.conceptos') }}" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-white">Limpiar</a>
+            @endif
+        </form>
 
-            <table class="w-full text-sm">
+        <div class="overflow-x-auto" role="region" aria-label="Conceptos SAT" tabindex="0">
 
-                <thead class="bg-slate-50 border-b border-slate-200">
-                    <tr class="text-xs uppercase tracking-wide text-slate-500">
+            <table class="conceptos-table w-full text-sm">
+                <caption class="sr-only">Catálogo de conceptos SAT{{ $descripcion !== '' ? ' filtrado por descripción: ' . $descripcion : '' }}</caption>
+
+                <thead class="bg-[#0B265A] border-b border-[#0B265A] text-white">
+                    <tr class="text-xs uppercase tracking-wide">
 
                         <th class="px-5 py-4 text-left">
                             Código
@@ -76,13 +107,13 @@
 
                     @forelse($conceptos as $concepto)
 
-                        <tr class="hover:bg-slate-50">
+                        <tr class="transition-colors">
 
                             <td class="px-5 py-4 font-medium text-slate-900">
                                 {{ $concepto->codigo ?? '—' }}
                             </td>
 
-                            <td class="px-5 py-4">
+                            <td class="px-5 py-4 break-words">
                                 {{ $concepto->descripcion }}
                             </td>
 
@@ -132,8 +163,12 @@
                                             'activo' => (bool) $concepto->activo,
                                             'observaciones' => $concepto->observaciones,
                                         ]))"
-                                        class="text-sm font-medium text-indigo-600 hover:text-indigo-800">
-                                    Editar
+                                        class="concepto-edit inline-flex items-center justify-center rounded-lg p-2 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600"
+                                        aria-label="Editar concepto" title="Editar concepto">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 0 1 2.652 2.652L9.832 16.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.862 4.487Zm0 0 2.651 2.651M18 14.25v4.875A1.875 1.875 0 0 1 16.125 21H4.875A1.875 1.875 0 0 1 3 19.125V7.875A1.875 1.875 0 0 1 4.875 6H9.75" />
+                                    </svg>
+                                    <span class="edit-tooltip" aria-hidden="true">Editar concepto</span>
                                 </button>
 
                             </td>
@@ -145,7 +180,7 @@
                         <tr>
                             <td colspan="8"
                                 class="px-5 py-10 text-center text-slate-500">
-                                Aún no hay conceptos registrados.
+                                {{ $descripcion !== '' ? 'No se encontraron conceptos con esa descripción.' : 'Aún no hay conceptos registrados.' }}
                             </td>
                         </tr>
 
@@ -157,11 +192,15 @@
 
         </div>
 
-        @if($conceptos->hasPages())
-            <div class="px-5 py-4 border-t border-slate-200">
+        <div class="px-5 py-4 border-t border-slate-200 text-sm text-slate-500">
+            <p class="{{ $conceptos->hasPages() ? 'mb-3' : '' }}" role="status">
+                Mostrando {{ $conceptos->firstItem() ?? 0 }}–{{ $conceptos->lastItem() ?? 0 }}
+                de {{ number_format($conceptos->total()) }} concepto(s){{ $descripcion !== '' ? ' encontrados' : '' }}.
+            </p>
+            @if($conceptos->hasPages())
                 {{ $conceptos->links() }}
-            </div>
-        @endif
+            @endif
+        </div>
 
     </div>
 {{-- MODAL NUEVO CONCEPTO --}}

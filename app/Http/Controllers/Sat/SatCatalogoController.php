@@ -10,11 +10,21 @@ use Illuminate\Http\Request;
 
 class SatCatalogoController extends Controller
 {
-    public function conceptos()
+    public function conceptos(Request $request)
     {
-        $conceptos = SatConcepto::latest()->paginate(20);
+        $request->validate(['descripcion' => ['nullable', 'string', 'max:1000']]);
+        $descripcion = trim((string) $request->input('descripcion', ''));
+        $conceptos = SatConcepto::query()
+            ->when($descripcion !== '', function ($query) use ($descripcion) {
+                $literal = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $descripcion);
+                $query->whereRaw("descripcion LIKE ? ESCAPE '!'", ['%' . $literal . '%']);
+            })
+            ->latest()
+            ->orderByDesc('id')
+            ->paginate(20)
+            ->appends(['descripcion' => $descripcion]);
 
-        return view('sat.catalogos.conceptos', compact('conceptos'));
+        return view('sat.catalogos.conceptos', compact('conceptos', 'descripcion'));
     }
     public function storeConcepto(Request $request)
 {
