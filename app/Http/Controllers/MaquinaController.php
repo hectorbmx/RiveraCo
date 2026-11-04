@@ -42,14 +42,14 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
         ->pluck('total', 'ubicacion'); // ['en_patio' => 10, ...]
 
     $asignadas = Maquina::query()
-        ->whereHas('asignacionActiva', function ($q) {
+        ->whereHas('asignacionAbierta', function ($q) {
             $q->where('estado', 'activa')->whereNull('fecha_fin');
         })
         ->count();
 
     // Lista
     $maquinasQuery = Maquina::query()
-        ->with(['asignacionActiva.obra:id,nombre', 'seguros'])
+        ->with(['asignacionActiva.obra:id,nombre', 'asignacionAbierta.obra:id,nombre', 'seguros'])
         ->when($search !== '', function ($query) use ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('codigo', 'like', "%{$search}%")
@@ -61,7 +61,7 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
                   ->orWhere('placas', 'like', "%{$search}%")
                   ->orWhere('estado', 'like', "%{$search}%")
                   ->orWhere('ubicacion', 'like', "%{$search}%")
-                  ->orWhereHas('asignacionActiva.obra', function ($obraQuery) use ($search) {
+                  ->orWhereHas('asignacionAbierta.obra', function ($obraQuery) use ($search) {
                       $obraQuery->where('nombre', 'like', "%{$search}%");
                   });
             });

@@ -2315,7 +2315,6 @@ private function resolverEstadoCampoSemanal(bool $planeado, $entrada, $salida, ?
    public function update(Request $request, Obra $obra, MaquinaService $maquinaService)
 {
     $this->abortarSiObraFueraDeArea($obra);
-    $estatusAnterior = (int) $obra->estatus_nuevo;
   
     // 2) Validar
     $data = $request->validate([
@@ -2347,36 +2346,31 @@ private function resolverEstadoCampoSemanal(bool $planeado, $entrada, $salida, ?
     $data['area_id'] = $this->areaIdParaTipoObra($data['tipo_obra']);
     $data['usa_bentonita'] = $request->boolean('usa_bentonita');
 
-    $obra->update($data);
+    DB::transaction(function () use ($obra, $data, $maquinaService) {
+        $obra = Obra::query()->lockForUpdate()->findOrFail($obra->id);
+        $obra->update($data);
 
-    $estatusNuevo = (int) $obra->estatus_nuevo;
-    $estatusQueLiberanRecursos = [
-        Obra::ESTATUS_TERMINADA,
-        Obra::ESTATUS_CANCELADA,
-    ];
+        if (! in_array((int) $obra->estatus_nuevo, [Obra::ESTATUS_TERMINADA, Obra::ESTATUS_CANCELADA], true)) {
+            return;
+        }
 
-    if (
-        !in_array($estatusAnterior, $estatusQueLiberanRecursos, true)
-        && in_array($estatusNuevo, $estatusQueLiberanRecursos, true)
-    ) {
+        // El cierre y las bajas se guardan juntos; un error no debe dejar la obra cerrada
+        // con máquinas aún asignadas. También regulariza pendientes al guardar una obra cerrada.
+        $fechaLiberacion = $data['fecha_fin_real'] ?? now()->toDateString();
         $obra->empleadosAsignados()
             ->where('activo', true)
             ->whereNull('fecha_baja')
-            ->update([
-                'activo' => false,
-                'fecha_baja' => $data['fecha_fin_real'] ?? now()->toDateString(),
-            ]);
-        $fechaLiberacion = $data['fecha_fin_real'] ?? now()->toDateString();
+            ->update(['activo' => false, 'fecha_baja' => $fechaLiberacion]);
 
         $obra->maquinasAsignadas()
             ->where('estado', 'activa')
             ->whereNull('fecha_fin')
+            ->orderBy('maquina_id')
             ->get()
             ->each(fn (ObraMaquina $asignacion) => $maquinaService->finalizarAsignacion($asignacion, [
                 'fecha_fin' => $fechaLiberacion,
             ]));
-
-    }
+    }, 3);
 
     return redirect()->route('obras.index')
         ->with('success', 'Obra actualizada correctamente.');

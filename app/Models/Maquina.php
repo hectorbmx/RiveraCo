@@ -85,6 +85,15 @@ class Maquina extends Model
             })
             ->latest('id'); // si hay varias activas por error, toma la creada mas reciente
     }
+
+    // La salida física queda pendiente aunque la obra ya esté terminada o cancelada.
+    public function asignacionAbierta()
+    {
+        return $this->hasOne(ObraMaquina::class, 'maquina_id')
+            ->where('estado', 'activa')
+            ->whereNull('fecha_fin')
+            ->latest('id');
+    }
 // Movimientos (bitácora)
 public function movimientos()
 {

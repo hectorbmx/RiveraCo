@@ -135,6 +135,7 @@
                             $horometroActual = $horometrosActuales[$m->id] ?? ($preventivoMaquina['horometro_actual'] ?? 0);
                             $fechaUltimaLectura = $fechasUltimasLecturas[$m->id] ?? null;
                             $asignacionActiva = $m->asignacionActiva;
+                            $asignacionUbicacion = $m->asignacionAbierta;
                             $nombreMaquina = trim(($m->codigo ?? '') . ' ' . ($m->nombre ?? '')) ?: 'Maquina';
                             $canRegistrarHoras = auth()->user()?->can('maquinas.horas.create.access') ?? false;
                             $canAsignarObra = auth()->user()?->can('maquinas.asignar_obra.access') ?? false;
@@ -142,7 +143,7 @@
                             $puedeRegistrarHoras = $canRegistrarHoras && $horometroActual !== null;
                             $tienePilasActivasEnObra = false;
                             $puedeAsignarObra = $canAsignarObra
-                                && !$asignacionActiva
+                                && !$asignacionUbicacion
                                 && ($m->estado ?? null) === 'operativa';
 
                             $horasModalPayload = $puedeRegistrarHoras ? json_encode([
@@ -159,10 +160,10 @@
                                 'maquina' => $nombreMaquina,
                                 'horometroInicio' => (float) ($horometroActual ?? $m->horometro_base ?? 0),
                             ], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) : '{}';
-                            $bajaObraPayload = ($puedeDarBaja && $asignacionActiva) ? json_encode([
+                            $bajaObraPayload = ($puedeDarBaja && $asignacionUbicacion) ? json_encode([
                                 'action' => route('maquinas.bajaObra', $m),
                                 'maquina' => $nombreMaquina,
-                                'obra' => $asignacionActiva->obra?->nombre ?? 'Obra actual',
+                                'obra' => $asignacionUbicacion->obra?->nombre ?? 'Obra actual',
                             ], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) : '{}';
 
                             if ($m->seguros && $m->seguros->isNotEmpty()) {
@@ -225,7 +226,7 @@
                             {{-- Ubicación actual --}}
                             <td class="px-4 py-3">
                                 @php
-                                    $obraActual = $m->asignacionActiva?->obra;
+                                    $obraActual = $asignacionUbicacion?->obra;
                                     $ubicLabel = match($m->ubicacion) {
                                         'en_obra' => 'En obra',
                                         'en_camino' => 'En camino',
