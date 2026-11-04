@@ -23,10 +23,10 @@ class MaquinaPreventivoReferenciaController extends Controller
     public function store(Request $request, Maquina $maquina, MaquinaPreventivoReferenciaService $referencias)
     {
         $this->autorizar($request);
-        $referencias->guardar($maquina->id, $request->only(['servicio_preventivo_tipo_id', 'horometro_esperado', 'motivo']), $request->user());
+        $referencias->guardar($maquina->id, $request->only(['servicio_preventivo_tipo_id', 'horometro_esperado', 'meta_horometro', 'motivo']), $request->user());
 
         return redirect()->route('maquinas.preventivo.edit', $maquina)
-            ->with('success', 'Referencia del preventivo guardada. El horómetro de la máquina se conserva.');
+            ->with('success', 'Meta del preventivo guardada. El horómetro de la máquina se conserva.');
     }
 
     private function autorizar(Request $request): void

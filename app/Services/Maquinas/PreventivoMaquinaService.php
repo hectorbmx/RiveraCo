@@ -116,19 +116,22 @@ class PreventivoMaquinaService
                 ]);
                 $fechaUltimoServicio = $this->fechaUltimoServicio($ultimoServicio);
                 $referencia = $referencias->get($servicio->exists ? $servicio->id : 'legacy');
+                $metaHorometro = null;
                 // Un mantenimiento posterior vuelve a ser la referencia normal del ciclo.
                 if ($referencia && (! $ultimoServicio ||
                     ((! $fechaUltimoServicio || $referencia->fecha_referencia->greaterThanOrEqualTo($fechaUltimoServicio))
                         && (float) $referencia->horometro >= (float) $ultimoServicio->horometro))) {
                     $horometroBaseServicio = (float) $referencia->horometro;
                     $fechaUltimoServicio = $referencia->fecha_referencia;
+                    $metaHorometro = $referencia->meta_horometro !== null ? (float) $referencia->meta_horometro : null;
                 }
 
                 return $this->calcularServicio(
                     $servicio,
                     $horometroActual,
                     $horometroBaseServicio,
-                    $fechaUltimoServicio
+                    $fechaUltimoServicio,
+                    $metaHorometro
                 );
             })
             ->values();
@@ -159,7 +162,8 @@ class PreventivoMaquinaService
         EmpresaServicioPreventivoTipo $servicio,
         ?float $horometroActual,
         ?float $horometroBaseServicio,
-        ?Carbon $fechaUltimoServicio
+        ?Carbon $fechaUltimoServicio,
+        ?float $metaHorometro = null
     ): array {
         $intervaloHoras = (float) $servicio->intervalo_valor;
         $intervaloMeses = (int) ($servicio->intervalo_meses ?? 0);
@@ -188,9 +192,10 @@ class PreventivoMaquinaService
         }
 
         $horasUsadas = max(0, $horometroActual - $horometroBaseServicio);
-        $proximoHorometro = $horometroBaseServicio + $intervaloHoras;
+        $proximoHorometro = $metaHorometro ?? ($horometroBaseServicio + $intervaloHoras);
         $horasRestantes = $proximoHorometro - $horometroActual;
-        $porcentaje = min(100, max(0, ($horasUsadas / $intervaloHoras) * 100));
+        $horasCiclo = max(0, $proximoHorometro - $horometroBaseServicio);
+        $porcentaje = $horasCiclo > 0 ? min(100, max(0, ($horasUsadas / $horasCiclo) * 100)) : 100;
         $proximoFecha = $fechaUltimoServicio && $intervaloMeses > 0
             ? $fechaUltimoServicio->copy()->addMonths($intervaloMeses)
             : null;
@@ -237,6 +242,7 @@ class PreventivoMaquinaService
             'label' => $label,
             'color' => $color,
             'horas_usadas' => $horasUsadas,
+            'horas_ciclo' => $horasCiclo,
             'horas_restantes' => $horasRestantes,
             'intervalo_horas' => $intervaloHoras,
             'intervalo_meses' => $intervaloMeses,

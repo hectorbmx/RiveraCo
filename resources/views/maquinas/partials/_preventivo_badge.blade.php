@@ -55,7 +55,7 @@
 
         @if(($preventivoData['horas_usadas'] ?? null) !== null)
             <div class="flex items-center justify-between text-[11px] text-slate-500">
-                <span>{{ number_format($preventivoData['horas_usadas'], 1) }} / {{ number_format($preventivoData['intervalo_horas'], 0) }} h</span>
+                <span>{{ number_format($preventivoData['horas_usadas'], 1) }} / {{ number_format($preventivoData['horas_ciclo'] ?? $preventivoData['intervalo_horas'], 1) }} h</span>
                 @if(($preventivoData['proximo_horometro'] ?? null) !== null)
                     <span>Meta {{ number_format($preventivoData['proximo_horometro'], 1) }} h</span>
                 @endif

@@ -292,7 +292,7 @@
                                 @can('ajuste_horario_servicio.access')
                                     <a href="{{ route('maquinas.preventivo.edit', $m) }}"
                                        class="mt-2 inline-flex text-xs font-semibold text-[#0B265A] hover:underline"
-                                       title="Establecer la referencia del preventivo conservando el horómetro actual">Ajustar inicio del servicio</a>
+                                       title="Editar el horómetro meta del servicio conservando la lectura actual">Ajustar meta del servicio</a>
                                 @endcan
                             </td>
                             <td class="px-4 py-3">

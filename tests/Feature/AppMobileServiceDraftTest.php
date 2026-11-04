@@ -291,6 +291,7 @@ class AppMobileServiceDraftTest extends TestCase
     public function test_execution_normalizes_offsets_and_completed_service_drives_existing_preventive_calculator(): void
     {
         (require database_path('migrations/2026_11_04_150000_create_maquina_preventivo_referencias_table.php'))->up();
+        (require database_path('migrations/2026_11_04_160000_add_meta_to_maquina_preventivo_referencias.php'))->up();
         $s = $this->prepararEjecucion();
         Schema::table('empresa_servicio_preventivo_tipos', function (Blueprint $t) {
             $t->string('codigo')->nullable();

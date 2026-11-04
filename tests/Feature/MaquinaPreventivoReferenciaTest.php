@@ -46,6 +46,7 @@ class MaquinaPreventivoReferenciaTest extends TestCase
             $t->dateTime('fecha_fin')->nullable(); $t->dateTime('fecha_programada')->nullable(); $t->timestamps();
         });
         (require database_path('migrations/2026_11_04_150000_create_maquina_preventivo_referencias_table.php'))->up();
+        (require database_path('migrations/2026_11_04_160000_add_meta_to_maquina_preventivo_referencias.php'))->up();
         DB::table('users')->insert(['id' => 80, 'name' => 'Responsable autorizado']);
         DB::table('maquinas')->insert(['id' => 16, 'codigo' => 'TEREX', 'nombre' => 'GRUA TEREX', 'horometro_base' => 0]);
         DB::table('empresa_servicio_preventivo_tipos')->insert([
@@ -70,7 +71,7 @@ class MaquinaPreventivoReferenciaTest extends TestCase
     private function guardar(array $extra = [])
     {
         return $this->from('/_test/maquinas/16/referencia')->post('/_test/maquinas/16/referencia', array_replace([
-            'servicio_preventivo_tipo_id' => 1, 'horometro_esperado' => 6474, 'motivo' => 'Inicio de control en el sistema',
+            'servicio_preventivo_tipo_id' => 1, 'horometro_esperado' => 6474, 'meta_horometro' => 6724, 'motivo' => 'Inicio de control en el sistema',
         ], $extra));
     }
 
@@ -175,5 +176,57 @@ class MaquinaPreventivoReferenciaTest extends TestCase
         $this->assertStringContainsString('6,724.00 h', $html);
         $this->assertStringContainsString('Responsable autorizado', $html);
         $this->assertStringContainsString('Inicio de control en el sistema', $html);
+        $this->assertStringContainsString('name="meta_horometro"', $html);
+    }
+
+    public function test_meta_personalizada_se_conserva_con_nuevas_lecturas_y_cambios_de_intervalo(): void
+    {
+        $this->guardar(['meta_horometro' => 6600])->assertSessionHasNoErrors();
+        $this->assertSame(6600.0, $this->servicio()['proximo_horometro']);
+        $this->assertSame(126.0, $this->servicio()['horas_restantes']);
+        $this->actual = 6500.0;
+        DB::table('empresa_servicio_preventivo_tipos')->where('id', 1)->update(['intervalo_valor' => 500]);
+        $servicio = $this->servicio();
+        $this->assertSame(6600.0, $servicio['proximo_horometro']);
+        $this->assertSame(100.0, $servicio['horas_restantes']);
+        $this->assertSame(126.0, $servicio['horas_ciclo']);
+        $this->assertEqualsWithDelta(26 / 126 * 100, $servicio['porcentaje'], 0.001);
+        $this->assertDatabaseHas('maquina_preventivo_referencias', ['meta_horometro' => 6600, 'horometro' => 6474]);
+        $this->assertDatabaseHas('maquinas', ['horometro_base' => 0]);
+    }
+
+    public function test_corregir_meta_en_el_mismo_dia_guarda_nuevo_registro(): void
+    {
+        $this->guardar(['meta_horometro' => 6600])->assertSessionHasNoErrors();
+        $this->guardar(['meta_horometro' => 6650])->assertSessionHasNoErrors();
+        $this->guardar(['meta_horometro' => 6650])->assertSessionHasNoErrors();
+        $this->assertSame(6650.0, $this->servicio()['proximo_horometro']);
+        $this->assertDatabaseCount('maquina_preventivo_referencias', 2);
+        $this->assertDatabaseHas('maquina_preventivo_referencias', ['meta_horometro' => 6600]);
+    }
+
+    public function test_meta_alcanzada_o_rebasada_se_muestra_vencida_sin_dividir_por_cero(): void
+    {
+        $this->guardar(['meta_horometro' => 6474])->assertSessionHasNoErrors();
+        $this->assertSame('Servicio requerido', $this->servicio()['label']);
+        $this->assertSame(100, $this->servicio()['porcentaje']);
+        $this->guardar(['meta_horometro' => 6400])->assertSessionHasNoErrors();
+        $this->assertSame('vencido', $this->servicio()['estado']);
+        $this->assertSame(-74.0, $this->servicio()['horas_restantes']);
+    }
+
+    public function test_meta_requiere_valor_numerico_valido(): void
+    {
+        foreach ([null, -1, 'abc', '6600.123', 100000000] as $meta) {
+            $this->guardar(['meta_horometro' => $meta])->assertSessionHasErrors('meta_horometro');
+        }
+        $this->assertDatabaseCount('maquina_preventivo_referencias', 0);
+    }
+
+    public function test_referencias_anteriores_sin_meta_siguen_funcionando(): void
+    {
+        DB::table('maquina_preventivo_referencias')->insert(['maquina_id' => 16, 'servicio_preventivo_tipo_id' => 1,
+            'horometro' => 6474, 'fecha_referencia' => now(), 'created_by' => 80, 'motivo' => 'Referencia anterior']);
+        $this->assertSame(6724.0, $this->servicio()['proximo_horometro']);
     }
 }
