@@ -34,6 +34,7 @@ class AppMobileMachineHoursTest extends TestCase
         $this->withoutMiddleware(ThrottleRequests::class);
         $this->travelTo(now()->setDate(2026, 10, 29)->startOfDay());
         $this->esquema();
+        (require database_path('migrations/2026_11_04_150000_create_maquina_preventivo_referencias_table.php'))->up();
         $this->migracion()->up();
         foreach (['app.mecanico.access', 'app.regular.access', 'app.gerencial.access', 'maquinas.horas.create.access'] as $permiso) {
             Gate::define($permiso, fn () => in_array($permiso, $this->permisos, true));

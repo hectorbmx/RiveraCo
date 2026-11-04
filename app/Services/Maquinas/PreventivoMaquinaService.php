@@ -6,6 +6,7 @@ use App\Models\EmpresaConfig;
 use App\Models\EmpresaServicioPreventivoTipo;
 use App\Models\Mantenimiento;
 use App\Models\Maquina;
+use App\Models\MaquinaPreventivoReferencia;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -57,8 +58,12 @@ class PreventivoMaquinaService
             ->ordenados()
             ->get();
 
+        $referencias = MaquinaPreventivoReferencia::whereIn('maquina_id', $ids)->latest('id')->get()
+            ->unique(fn ($referencia) => $referencia->maquina_id . ':' . ($referencia->servicio_preventivo_tipo_id ?? 'legacy'))
+            ->groupBy('maquina_id');
+
         return $maquinas
-            ->mapWithKeys(function (Maquina $maquina) use ($config, $ultimosServiciosPorTipo, $ultimosServiciosLegacy, $serviciosPreventivos) {
+            ->mapWithKeys(function (Maquina $maquina) use ($config, $ultimosServiciosPorTipo, $ultimosServiciosLegacy, $serviciosPreventivos, $referencias) {
                 $ultimosServiciosMaquina = $ultimosServiciosPorTipo->get($maquina->id, collect());
                 $ultimoServicioLegacy = $ultimosServiciosLegacy->get($maquina->id);
                 $horometroActual = $this->horometroService->horometroActual($maquina);
@@ -70,7 +75,8 @@ class PreventivoMaquinaService
                         $horometroActual,
                         $ultimosServiciosMaquina,
                         $ultimoServicioLegacy,
-                        $serviciosPreventivos
+                        $serviciosPreventivos,
+                        $referencias->get($maquina->id, collect())->keyBy(fn ($referencia) => $referencia->servicio_preventivo_tipo_id ?? 'legacy')
                     ),
                 ];
             })
@@ -83,7 +89,8 @@ class PreventivoMaquinaService
         ?float $horometroActual,
         Collection $ultimosServiciosMaquina,
         ?Mantenimiento $ultimoServicioLegacy,
-        Collection $serviciosPreventivos
+        Collection $serviciosPreventivos,
+        Collection $referencias
     ): array {
         if ($serviciosPreventivos->isEmpty()) {
             $serviciosPreventivos = collect([
@@ -98,7 +105,7 @@ class PreventivoMaquinaService
         }
 
         $servicios = $serviciosPreventivos
-            ->map(function (EmpresaServicioPreventivoTipo $servicio) use ($maquina, $horometroActual, $ultimosServiciosMaquina, $ultimoServicioLegacy) {
+            ->map(function (EmpresaServicioPreventivoTipo $servicio) use ($maquina, $horometroActual, $ultimosServiciosMaquina, $ultimoServicioLegacy, $referencias) {
                 $ultimoServicio = $servicio->exists
                     ? $ultimosServiciosMaquina->get($servicio->id)
                     : $ultimoServicioLegacy;
@@ -108,6 +115,14 @@ class PreventivoMaquinaService
                     $horometroActual !== null ? 0 : null,
                 ]);
                 $fechaUltimoServicio = $this->fechaUltimoServicio($ultimoServicio);
+                $referencia = $referencias->get($servicio->exists ? $servicio->id : 'legacy');
+                // Un mantenimiento posterior vuelve a ser la referencia normal del ciclo.
+                if ($referencia && (! $ultimoServicio ||
+                    ((! $fechaUltimoServicio || $referencia->fecha_referencia->greaterThanOrEqualTo($fechaUltimoServicio))
+                        && (float) $referencia->horometro >= (float) $ultimoServicio->horometro))) {
+                    $horometroBaseServicio = (float) $referencia->horometro;
+                    $fechaUltimoServicio = $referencia->fecha_referencia;
+                }
 
                 return $this->calcularServicio(
                     $servicio,
@@ -165,6 +180,7 @@ class PreventivoMaquinaService
                 'horas_usadas' => null,
                 'horas_restantes' => null,
                 'intervalo_horas' => $intervaloHoras,
+                'intervalo_meses' => $intervaloMeses,
                 'porcentaje' => 0,
                 'proximo_horometro' => null,
                 'proximo_fecha' => null,
@@ -223,6 +239,7 @@ class PreventivoMaquinaService
             'horas_usadas' => $horasUsadas,
             'horas_restantes' => $horasRestantes,
             'intervalo_horas' => $intervaloHoras,
+            'intervalo_meses' => $intervaloMeses,
             'porcentaje' => $porcentaje,
             'proximo_horometro' => $proximoHorometro,
             'proximo_fecha' => $proximoFecha,

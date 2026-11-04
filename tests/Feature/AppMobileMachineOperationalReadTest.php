@@ -73,6 +73,7 @@ class AppMobileMachineOperationalReadTest extends TestCase
         });
         DB::table('maquinas')->insert(['id' => 17, 'codigo' => 'M-17', 'nombre' => 'Grúa',
             'horometro_base' => 100, 'estado' => 'operativa', 'ubicacion' => 'en_obra']);
+        (require database_path('migrations/2026_11_04_150000_create_maquina_preventivo_referencias_table.php'))->up();
     }
 
     private function listado(array $params = []): array

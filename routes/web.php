@@ -892,6 +892,10 @@ Route::middleware('auth','verified')->group(function () {
     Route::prefix('maquinas')->name('maquinas.')->group(function(){
 
         Route::get('/', [MaquinaController::class, 'index'])->name('index');
+        Route::get('maquinas/{maquina}/ajuste-servicio', [\App\Http\Controllers\MaquinaPreventivoReferenciaController::class, 'edit'])
+            ->middleware('permission:ajuste_horario_servicio.access')->name('preventivo.edit');
+        Route::post('maquinas/{maquina}/ajuste-servicio', [\App\Http\Controllers\MaquinaPreventivoReferenciaController::class, 'store'])
+            ->middleware('permission:ajuste_horario_servicio.access')->name('preventivo.store');
         Route::get('obras/{obra}/pilas-activas',[MaquinaController::class, 'pilasActivasObra'])->middleware('permission:maquinas.asignar_obra.access')->name('obras.pilas-activas');
         Route::get('maquinas/{maquina}', [MaquinaController::class, 'show'])->name('show');
         Route::put('maquinas/{maquina}/general', [MaquinaController::class, 'updateGeneral'])->name('updateGeneral');
