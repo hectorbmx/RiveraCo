@@ -87,19 +87,36 @@
         </div>
 
         <div id="catalogo-panel" class="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div class="flex flex-col gap-3 border-b border-slate-200 pb-3 lg:flex-row lg:items-end lg:justify-between">
+            <div class="flex flex-col gap-3 border-b border-slate-200 pb-3 xl:flex-row xl:items-center xl:justify-between">
                 <div>
                     <p class="text-sm font-semibold text-slate-800">Catalogo disponible</p>
                     <p id="catalogo-resumen" class="text-xs text-slate-500">Selecciona un tipo de requisicion para cargar opciones.</p>
                 </div>
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <div id="catalogo-buscador-wrap" class="hidden min-w-0 sm:w-80">
+                <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                    <div id="catalogo-buscador-wrap" class="hidden min-w-0 sm:w-64">
                         <label for="catalogo-buscador" class="sr-only">Buscar en catalogo</label>
                         <input id="catalogo-buscador"
                                type="search"
                                autocomplete="off"
                                placeholder="Buscar producto, SKU o unidad"
                                class="w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                    </div>
+                    <div id="catalogo-filtros-wrap" class="hidden flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <div id="catalogo-filtro-estado-wrap" class="hidden">
+                            <label for="catalogo-filtro-estado" class="sr-only">Estado de maquinaria</label>
+                            <select id="catalogo-filtro-estado" class="w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                <option value="">Todos los estados</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="catalogo-filtro-disponibilidad" class="sr-only">Disponibilidad</label>
+                            <select id="catalogo-filtro-disponibilidad" class="w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+                                <option value="">Toda disponibilidad</option>
+                                <option value="disponible">Disponible</option>
+                                <option value="asignado_esta_obra">Asignado a esta obra</option>
+                                <option value="asignado_otra_obra">Asignado a otra obra</option>
+                            </select>
+                        </div>
                     </div>
                     <span id="catalogo-contador" class="inline-flex w-fit items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">0 items</span>
                 </div>
@@ -167,6 +184,10 @@
         const lista = document.getElementById('catalogo-lista');
         const buscadorWrap = document.getElementById('catalogo-buscador-wrap');
         const buscador = document.getElementById('catalogo-buscador');
+        const filtrosWrap = document.getElementById('catalogo-filtros-wrap');
+        const filtroEstadoWrap = document.getElementById('catalogo-filtro-estado-wrap');
+        const filtroEstado = document.getElementById('catalogo-filtro-estado');
+        const filtroDisponibilidad = document.getElementById('catalogo-filtro-disponibilidad');
         const selectedItemsHidden = document.getElementById('selected-items-hidden');
         const selectedItemsCart = document.getElementById('selected-items-cart');
         const selectedItemsCartBody = document.getElementById('selected-items-cart-body');
@@ -182,6 +203,7 @@
         const catalogoUrl = form.dataset.catalogoUrl;
         let activeRequest = 0;
         let currentTipo = null;
+        let catalogoItems = [];
         let searchTimer = null;
         const selectedItems = new Map();
 
@@ -480,7 +502,7 @@
             const isProducto = itemType === 'producto';
 
             if (!items.length) {
-                setEmpty(isProducto && options.q ? 'Sin coincidencias para la busqueda.' : 'No hay elementos disponibles para este tipo de requisicion.');
+                setEmpty(options.filtered || options.q ? 'Sin coincidencias para la busqueda o los filtros.' : 'No hay elementos disponibles para este tipo de requisicion.');
                 contador.textContent = isProducto ? '0 resultados' : '0 items';
                 renderSelectedCart();
                 return;
@@ -586,6 +608,25 @@
             renderSelectedCart();
         };
 
+        const normalizeSearch = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim();
+
+        const applyCatalogoFilters = function () {
+            if (!currentTipo) return;
+            const query = normalizeSearch(buscador.value);
+            const estadoValue = filtroEstado.value;
+            const disponibilidad = filtroDisponibilidad.value;
+            const isProducto = currentTipo.item_type === 'producto';
+            const items = catalogoItems.filter(function (item) {
+                const text = [item.label, item.subtitle, item.estado_label, item.ubicacion,
+                    item.asignacion?.obra_nombre, item.asignacion?.obra_clave].join(' ');
+                return (isProducto || !query || normalizeSearch(text).includes(query))
+                    && (!estadoValue || String(item.estado || 'sin_estado') === estadoValue)
+                    && (!disponibilidad || item.badge_key === disponibilidad);
+            });
+            renderItems(items, currentTipo, { q: query, filtered: Boolean(estadoValue || disponibilidad) });
+            if (!isProducto) contador.textContent = `${items.length} de ${catalogoItems.length} items`;
+        };
+
         const loadCatalogo = async function (options = {}) {
             const tipoId = tipoSelect.value;
             const query = String(options.q ?? '').trim();
@@ -594,6 +635,7 @@
 
             if (!tipoId) {
                 currentTipo = null;
+                catalogoItems = [];
                 selectedItems.clear();
                 syncSelectedInputs();
                 renderSelectedCart();
@@ -634,18 +676,26 @@
                 const tipo = payload.tipo || {};
                 const items = Array.isArray(payload.items) ? payload.items : [];
                 currentTipo = tipo;
+                catalogoItems = items;
                 const isProducto = tipo.item_type === 'producto';
 
                 if (buscadorWrap) {
-                    buscadorWrap.classList.toggle('hidden', !isProducto);
+                    buscadorWrap.classList.toggle('hidden', !tipo.requiere_catalogo);
+                    buscador.placeholder = isProducto ? 'Buscar producto, SKU o unidad'
+                        : (tipo.item_type === 'maquina' ? 'Buscar máquina, código o tipo' : 'Buscar nombre, puesto u obra');
                 }
+                filtrosWrap.classList.toggle('hidden', !['maquina', 'empleado'].includes(tipo.item_type));
+                filtroEstadoWrap.classList.toggle('hidden', tipo.item_type !== 'maquina');
+                const estados = new Map(items.map(item => [item.estado || 'sin_estado', item.estado_label || 'Sin estado']));
+                filtroEstado.innerHTML = '<option value="">Todos los estados</option>' + Array.from(estados, ([value, label]) =>
+                    `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join('');
 
                 const origen = tipo.origen_catalogo ? `Origen: ${tipo.origen_catalogo}` : 'Origen no definido';
                 const almacen = tipo.almacen?.nombre ? ` · Almacen: ${tipo.almacen.nombre}` : '';
 
                 resumen.textContent = `${tipo.nombre || 'Tipo seleccionado'} · ${origen}${almacen}`;
 
-                renderItems(items, tipo, { q: query });
+                applyCatalogoFilters();
             } catch (error) {
                 if (requestId !== activeRequest) {
                     return;
@@ -664,6 +714,12 @@
             if (buscador) {
                 buscador.value = '';
             }
+            currentTipo = null;
+            catalogoItems = [];
+            filtroEstado.value = '';
+            filtroDisponibilidad.value = '';
+            filtrosWrap.classList.add('hidden');
+            buscadorWrap.classList.add('hidden');
 
             selectedItems.clear();
             syncSelectedInputs();
@@ -673,7 +729,9 @@
 
         if (buscador) {
             buscador.addEventListener('input', function () {
-                if (!currentTipo || currentTipo.item_type !== 'producto') {
+                if (!currentTipo) return;
+                if (currentTipo.item_type !== 'producto') {
+                    applyCatalogoFilters();
                     return;
                 }
 
@@ -687,7 +745,13 @@
                     loadCatalogo({ q: query, limit: 100, page: 1 });
                 }, 300);
             });
+            buscador.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') event.preventDefault();
+            });
         }
+
+        filtroEstado.addEventListener('change', applyCatalogoFilters);
+        filtroDisponibilidad.addEventListener('change', applyCatalogoFilters);
 
         if (tipoSelect.value) {
             loadCatalogo();

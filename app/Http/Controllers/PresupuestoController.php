@@ -36,8 +36,10 @@ class PresupuestoController extends Controller
     {
         // Aquí usamos Eager Loading para traer todas las tablas relacionadas de un golpe
         $presupuesto = Presupuesto::with(['detalles', 'pilas', 'resumenes'])->findOrFail($id);
+        $gastosBase = \App\Models\ObraPlaneacionGasto::where('presupuesto_id', $presupuesto->id)
+            ->where('numero_semana', 0)->orderBy('id')->get();
         
-        return view('presupuesto.show', compact('presupuesto'));
+        return view('presupuesto.show', compact('presupuesto', 'gastosBase'));
     }
    public function exportPdf($id)
     {

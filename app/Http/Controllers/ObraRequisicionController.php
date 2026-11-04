@@ -675,7 +675,7 @@ class ObraRequisicionController extends Controller
                     $badgeKey = 'asignado_otra_obra';
                 }
 
-                $nombre = trim(($empleado->Nombre ?? '') . ' ' . ($empleado->Apellidos ?? ''));
+                $nombre = trim(($empleado->Apellidos ?? '') . ' ' . ($empleado->Nombre ?? ''));
                 $puesto = $empleado->Puesto ?: $empleado->puesto_base;
 
                 return [
