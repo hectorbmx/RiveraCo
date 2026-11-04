@@ -16,6 +16,8 @@ use App\Models\CatalogoRol;
 use App\Models\CatalogoActividadComision;
 use App\Models\ComisionTarifario;
 use App\Models\ComisionTarifarioDetalle;
+use App\Services\Comisiones\ComisionEtapasService;
+use App\Services\Comisiones\ComisionesWebService;
 
 
 class ComisionController extends Controller
@@ -63,62 +65,16 @@ class ComisionController extends Controller
     /**
      * Mostrar formulario para crear una nueva comisión.
      */
-    public function create(Obra $obra)
+    public function create(Request $request, Obra $obra, ComisionesWebService $service)
     {
-        // Pilas activas de esta obra
-        $pilas = $obra->pilas()
-            ->activas()
-            ->orderBy('id')
-            ->get();
-            $actividades = CatalogoActividadComision::where('activa', 1)
-    ->orderBy('orden')
-    ->get();
+        try {
+            $datos = $service->datosGeneralesForUser($request->user(), $obra);
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            return redirect()->route('obras.edit', ['obra' => $obra, 'tab' => 'comisiones'])
+                ->withErrors($exception->errors());
+        }
 
-
-        // $roles = CatalogoRol::orderBy('nombre'->get);
-
-        // Empleados asignados a la obra (para llenar tabla de personal)
-        $asignacionesEmpleados = ObraEmpleado::with('empleado')
-            ->where('obra_id', $obra->id)
-            ->where('activo', 1)
-            ->get();
-
-        $residenteAsignado = $asignacionesEmpleados->first(function ($asignacion) {
-            $emp = $asignacion->empleado;
-            if (!$emp) {
-                return false;
-            }
-
-            // usamos puesto_base o Puesto para identificar RESIDENTE
-            $puesto = strtoupper($emp->puesto_base ?? $emp->Puesto ?? '');
-            return $puesto === 'RESIDENTE';
-        });
-
-        // Máquinas asignadas a la obra y activas
-        $asignacionesMaquinas = ObraMaquina::with('maquina')
-            ->where('obra_id', $obra->id)
-            ->activas()
-            ->get();
-        
-        $maquinaPerforadora = $asignacionesMaquinas->first(function ($asignacion) {
-        $maq = $asignacion->maquina;
-        if (!$maq) return false;
-
-        // Ajusta el campo: tipo_base, tipo, categoria, etc.
-        $tipo = strtoupper($maq->tipo ?? $maq->codigo ?? '');
-        return $tipo === 'PERFORADORA';
-    }) ?? $asignacionesMaquinas->first(); // fallback
-
-        return view('obras.comisiones.create', [
-            'obra'                => $obra,
-            'pilas'               => $pilas,
-            'asignacionesEmpleados' => $asignacionesEmpleados,
-            'asignacionesMaquinas'  => $asignacionesMaquinas,
-            'residenteAsignado'   => $residenteAsignado,
-            'maquinaPerforadora'  => $maquinaPerforadora,
-            'actividades' => $actividades,
-            // 'roles'               => $roles,
-        ]);
+        return view('obras.comisiones.create-etapas', ['obra' => $obra] + $datos);
     }
 
     /**
@@ -662,7 +618,7 @@ public function store(Request $request, Obra $obra)
 
 //     return view('obras.comisiones.show', compact('obra', 'comision'));
 // }
-public function show(Obra $obra, Comision $comision)
+public function show(Request $request, Obra $obra, Comision $comision, ComisionEtapasService $etapasService, ComisionesWebService $webService, \App\Services\Comisiones\ComisionEtapaCorreccionService $correcciones)
 {
     if ($comision->obra_id !== $obra->id) abort(404);
 
@@ -681,6 +637,23 @@ public function show(Obra $obra, Comision $comision)
         'etapas.personal.actividad',
         'detalles',                        // aquí está la producción
     ]);
+
+    // Resumen de consulta: comparte el calculo movil sin exigir permiso de captura.
+    $seguimientoComision = $etapasService->mapComision($comision);
+    $gestionEtapas = $correcciones->permisos($request->user(), $obra);
+    $puedeCapturarEtapas = ! in_array($comision->estado, ['cerrada', 'cancelada'], true)
+        && $webService->puedeCapturar($request->user(), $obra);
+    try {
+        $request->validate(['etapa' => ['nullable', 'string', 'max:30']]);
+        $etapaSeleccionada = $request->filled('etapa')
+            ? $webService->seleccionarEtapaForUser($request->user(), $obra, $comision, $request->input('etapa'))
+            : null;
+    } catch (\Illuminate\Validation\ValidationException $exception) {
+        return redirect()->route('obras.comisiones.show', [$obra, $comision])->withErrors($exception->errors());
+    }
+    $personalDisponibleEtapa = $etapaSeleccionada
+        ? $etapasService->personalDisponible($obra)
+        : collect();
 
     // Normalizamos
     $detalles      = $comision->detalles->values();
@@ -901,7 +874,7 @@ public function show(Obra $obra, Comision $comision)
     }
 
     return view('obras.comisiones.show', compact(
-        'obra', 'comision', 'columnas', 'totales', 'matriz', 'totalesCols', 'granTotal'
+        'obra', 'comision', 'columnas', 'totales', 'matriz', 'totalesCols', 'granTotal', 'seguimientoComision', 'puedeCapturarEtapas', 'etapaSeleccionada', 'personalDisponibleEtapa', 'gestionEtapas'
     ));
 }
 

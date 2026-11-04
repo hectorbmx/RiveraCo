@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\ComisionEtapa;
 use App\Models\Comision;
 use App\Services\Comisiones\ResidenteComisionesService;
+use App\Services\Comisiones\ComisionEtapaRules;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class ResidenteComisionController extends Controller
 {
@@ -47,7 +46,7 @@ class ResidenteComisionController extends Controller
     {
         $data = $request->validate(array_merge([
             'obra_id' => ['nullable', 'integer'],
-        ], $this->etapaRules()));
+        ], ComisionEtapaRules::rules()));
 
         return response()->json([
             'ok' => true,
@@ -94,42 +93,7 @@ class ResidenteComisionController extends Controller
             'opcionales.bentonita' => ['nullable', 'boolean'],
             'opcionales.ademe' => ['nullable', 'boolean'],
             'perforacion' => ['nullable', 'array'],
-        ], $this->etapaRules('perforacion.'));
-    }
-
-    private function etapaRules(string $prefix = ''): array
-    {
-        return [
-            "{$prefix}estado" => [
-                'nullable',
-                Rule::in([
-                    ComisionEtapa::ESTADO_PENDIENTE,
-                    ComisionEtapa::ESTADO_EN_PROCESO,
-                    ComisionEtapa::ESTADO_COMPLETADA,
-                    ComisionEtapa::ESTADO_NO_APLICA,
-                ]),
-            ],
-            "{$prefix}hora_inicio" => ['nullable', 'date_format:H:i'],
-            "{$prefix}hora_fin" => ['nullable', 'date_format:H:i'],
-            "{$prefix}observaciones" => ['nullable', 'string'],
-            "{$prefix}requiere_foto" => ['nullable', 'boolean'],
-            "{$prefix}diametro" => ['nullable', 'numeric', 'min:0'],
-            "{$prefix}cantidad" => ['nullable', 'integer', 'min:0'],
-            "{$prefix}profundidad" => ['nullable', 'numeric', 'min:0'],
-            "{$prefix}metros_comision" => ['nullable', 'numeric', 'min:0'],
-            "{$prefix}kg_acero" => ['nullable', 'numeric', 'min:0'],
-            "{$prefix}vol_bentonita" => ['nullable', 'numeric', 'min:0'],
-            "{$prefix}vol_concreto" => ['nullable', 'numeric', 'min:0'],
-            "{$prefix}ml_ademe_bauer" => ['nullable', 'numeric', 'min:0'],
-            "{$prefix}campana_pzas" => ['nullable', 'integer', 'min:0'],
-            "{$prefix}adicional" => ['nullable', 'string', 'max:100'],
-            "{$prefix}personal" => ['nullable', 'array'],
-            "{$prefix}personal.*.obra_empleado_id" => ['required_with:' . "{$prefix}personal", 'integer', 'exists:obra_empleado,id'],
-            "{$prefix}personal.*.actividad_id" => ['nullable', 'integer', 'exists:catalogo_actividades_comision,id'],
-            "{$prefix}personal.*.comisiona" => ['nullable', 'boolean'],
-            "{$prefix}personal.*.importe_comision" => ['nullable', 'numeric', 'min:0'],
-            "{$prefix}personal.*.notas" => ['nullable', 'string'],
-        ];
+        ], ComisionEtapaRules::rules('perforacion.'));
     }
 
     private function obraId(Request $request): ?int

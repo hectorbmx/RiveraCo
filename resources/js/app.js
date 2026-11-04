@@ -1,8 +1,12 @@
 import './bootstrap';
 
 import Alpine from 'alpinejs';
+import { comisionEtapaFormulario } from './comision-etapa-form';
+import { comisionAltaFormulario } from './comision-alta-form';
 
 window.Alpine = Alpine;
+Alpine.data('comisionEtapaFormulario', comisionEtapaFormulario);
+Alpine.data('comisionAltaFormulario', comisionAltaFormulario);
 
 Alpine.start();
 function showGlobalSubmitLoader(message = 'Procesando...') {

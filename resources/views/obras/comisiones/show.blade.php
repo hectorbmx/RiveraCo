@@ -4,6 +4,8 @@
 
 @section('content')
 
+    @include('obras.comisiones.partials.resultado-guardado')
+
     <div class="flex items-center justify-between mb-4">
         <div>
             <h1 class="text-xl font-semibold text-slate-800">
@@ -81,11 +83,18 @@
         @endif
     </div>
 
+    @error('etapa')
+        <p role="alert" class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ $message }}</p>
+    @enderror
+
     @php
         $etapasVisibles = $comision->etapas
-            ->where('estado', '!=', 'no_aplica')
+            ->filter(fn ($etapa) => $puedeCapturarEtapas || $etapa->estado !== 'no_aplica')
             ->values();
+        $accionesEtapas = collect($seguimientoComision['etapas'])->keyBy('etapa');
     @endphp
+
+    @include('obras.comisiones.partials.seguimiento', ['seguimiento' => $seguimientoComision])
 
     {{-- MOVIMIENTOS POR ETAPA (APP MOVIL) --}}
     <div class="bg-white border rounded-xl shadow-sm p-6 mb-6">
@@ -135,7 +144,7 @@
                         $horaFin = $etapa->hora_fin ? substr((string) $etapa->hora_fin, 0, 5) : null;
                     @endphp
 
-                    <div class="border border-slate-200 rounded-xl p-4">
+                    <div id="etapa-{{ $etapa->etapa }}" class="border border-slate-200 rounded-xl p-4">
                         <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                             <div>
                                 <div class="flex flex-wrap items-center gap-2">
@@ -170,7 +179,15 @@
                                     </p>
                                 @endif
                             </div>
+                            @include('obras.comisiones.partials.acciones-etapa', [
+                                'accionEtapa' => $accionesEtapas->get($etapa->etapa),
+                            ])
                         </div>
+                        @include('obras.comisiones.partials.gestion-etapa')
+
+                        @if(($etapaSeleccionada['etapa'] ?? null) === $etapa->etapa)
+                            @include('obras.comisiones.partials.formulario-etapa')
+                        @endif
 
                         <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <div>
@@ -184,6 +201,7 @@
                                     <div class="flex flex-wrap gap-3">
                                         @foreach($etapa->fotos as $foto)
                                             @php $fotoUrl = Storage::disk('public')->url(ltrim($foto->path, '/')); @endphp
+                                            <div>
                                             <a href="{{ $fotoUrl }}" target="_blank" class="block group">
                                                 <img src="{{ $fotoUrl }}"
                                                      alt="Foto {{ $etapaLabels[$etapa->etapa] ?? $etapa->etapa }}"
@@ -194,6 +212,8 @@
                                                     </div>
                                                 @endif
                                             </a>
+                                            @include('obras.comisiones.partials.borrar-foto')
+                                            </div>
                                         @endforeach
                                     </div>
                                 @endif

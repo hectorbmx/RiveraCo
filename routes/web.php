@@ -977,10 +977,32 @@ Route::middleware('auth','verified')->group(function () {
             // Guardar nueva comision
             Route::post('comisiones', [ComisionController::class, 'store'])
                 ->name('comisiones.store');
+            Route::post('comisiones/por-etapas', [\App\Http\Controllers\ComisionEtapaController::class, 'crear'])
+                ->middleware('permission:obras.edit')
+                ->name('comisiones.store-etapas');
             // Ver detalle de una comision (y desde aqui imprimir)
             Route::get('comisiones/{comision}', [ComisionController::class, 'show'])
                 ->name('comisiones.show');
+
+            Route::post('comisiones/{comision}/etapas/{etapa}/activar', [\App\Http\Controllers\ComisionEtapaController::class, 'activar'])
+                ->middleware('permission:obras.edit')
+                ->name('comisiones.etapas.activar');
+            Route::post('comisiones/{comision}/etapas/{etapa}/guardar', [\App\Http\Controllers\ComisionEtapaController::class, 'guardar'])
+                ->middleware('permission:obras.edit')
+                ->name('comisiones.etapas.guardar');
             // Editar comision
+            Route::get('comisiones/{comision}/etapas/{etapa}/editar', [\App\Http\Controllers\ComisionEtapaCorreccionController::class, 'editar'])
+                ->whereIn('etapa', ['perforacion', 'acero', 'colado'])
+                ->middleware('permission:editar_perforacion.access|editar_acero.access|editar_colado.access')->name('comisiones.etapas.editar');
+            Route::put('comisiones/{comision}/etapas/{etapa}', [\App\Http\Controllers\ComisionEtapaCorreccionController::class, 'actualizar'])
+                ->whereIn('etapa', ['perforacion', 'acero', 'colado'])
+                ->middleware('permission:editar_perforacion.access|editar_acero.access|editar_colado.access')->name('comisiones.etapas.actualizar');
+            Route::delete('comisiones/{comision}/etapas/{etapa}', [\App\Http\Controllers\ComisionEtapaCorreccionController::class, 'borrar'])
+                ->whereIn('etapa', ['perforacion', 'acero', 'colado'])
+                ->middleware('permission:borrar_perforacion.access|borrar_acero.access|borrar_colado.access')->name('comisiones.etapas.borrar');
+            Route::delete('comisiones/{comision}/etapas/{etapa}/fotos/{foto}', [\App\Http\Controllers\ComisionEtapaCorreccionController::class, 'borrarFoto'])
+                ->whereIn('etapa', ['perforacion', 'acero', 'colado'])
+                ->middleware('permission:borrar_fotos_perforacion.access|borrar_fotos_acero.access|borrar_fotos_colado.access')->name('comisiones.etapas.fotos.borrar');
             Route::get('comisiones/{comision}/edit', [ComisionController::class, 'edit'])
                 ->name('comisiones.edit');
             // Actualizar comision
