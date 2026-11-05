@@ -72,23 +72,30 @@
                         <tr>
                             <th class="px-4 py-3 font-semibold">Folio</th>
                             <th class="px-4 py-3 font-semibold">Tipo</th>
+                            <th class="px-4 py-3 font-semibold">Fecha de creación</th>
                             <th class="px-4 py-3 font-semibold">Fecha solicitud</th>
                             <th class="px-4 py-3 font-semibold">Fecha requerida</th>
                             <th class="px-4 py-3 font-semibold">Partidas</th>
                             <th class="px-4 py-3 font-semibold">Solicita</th>
                             <th class="px-4 py-3 font-semibold">Estado</th>
+                            <th class="px-4 py-3 text-right font-semibold">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($requisiciones as $requisicion)
                             <tr class="border-t border-slate-200 hover:bg-slate-50">
                                 <td class="px-4 py-3 font-semibold"><a href="{{ route('obras.requisiciones.show', [$obra, $requisicion]) }}" class="text-[#0B265A] underline-offset-2 hover:underline">{{ $requisicion->folio }}</a></td>
-                                <td class="px-4 py-3 text-slate-700">{{ $requisicion->tipo?->nombre ?? '-' }}</td>
+                                <td class="px-4 py-3 text-slate-700">
+                                    <span tabindex="0" class="cursor-help border-b border-dotted border-slate-400"
+                                          title="{{ $requisicion->detalles->map(fn ($detalle) => $detalle->descripcion . ' — ' . number_format((float) $detalle->cantidad_solicitada, 3) . ' ' . ($detalle->unidad ?? ''))->implode("\n") ?: 'Sin partidas capturadas.' }}">{{ $requisicion->tipo?->nombre ?? '-' }}</span>
+                                </td>
+                                <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ optional($requisicion->created_at)->format('d/m/Y H:i') ?? '-' }}</td>
                                 <td class="px-4 py-3 text-slate-600">{{ optional($requisicion->fecha_solicitud)->format('d/m/Y') ?? '-' }}</td>
                                 <td class="px-4 py-3 text-slate-600">{{ optional($requisicion->fecha_requerida)->format('d/m/Y') ?? '-' }}</td>
-                                <td class="px-4 py-3 text-slate-600">{{ $requisicion->detalles_count ?? $requisicion->detalles()->count() }}</td>
+                                <td class="px-4 py-3 text-slate-600">{{ $requisicion->detalles_count ?? $requisicion->detalles->count() }}</td>
                                 <td class="px-4 py-3 text-slate-600">{{ $requisicion->solicitadoPor?->name ?? '-' }}</td>
                                 <td class="px-4 py-3 text-slate-700">{{ $estadoLabel($requisicion->estado) }}</td>
+                                <td class="px-4 py-3">@include('obras.partials.requisiciones.acciones', ['obra' => $obra, 'requisicion' => $requisicion])</td>
                             </tr>
                         @endforeach
                     </tbody>

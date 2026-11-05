@@ -889,7 +889,7 @@ class ObraRequisicionController extends Controller
     private function requisicionesDeObra(Obra $obra)
     {
         return ObraRequisicion::query()
-            ->with(['tipo', 'solicitadoPor'])
+            ->with(['tipo', 'solicitadoPor', 'detalles'])
             ->withCount('detalles')
             ->where('obra_id', $obra->id)
             ->latest('id')

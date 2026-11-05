@@ -956,7 +956,7 @@ $requisicionesStats = [
 
 if ($tab === 'requisiciones') {
     $requisicionesObra = \App\Models\ObraRequisicion::query()
-        ->with(['tipo', 'solicitadoPor'])
+        ->with(['tipo', 'solicitadoPor', 'detalles'])
         ->where('obra_id', $obra->id)
         ->latest('id')
         ->get();

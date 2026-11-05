@@ -2,42 +2,48 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Requisicion {{ $requisicion->folio }}</title>
+    @php
+        $tituloRequisicion = match ($requisicion->tipo?->item_type) {
+            'producto' => 'Requisición de material',
+            'maquina' => 'Requisición de maquinaria',
+            'empleado' => 'Requisición de personal',
+            default => 'Requisición de ' . ($requisicion->tipo?->nombre ?: 'obra'),
+        };
+    @endphp
+    <title>{{ $tituloRequisicion }} {{ $requisicion->folio }}</title>
     <style>
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        body { background: #e5e7eb; font-family: Arial, sans-serif; color: #111827; margin: 0 auto; font-size: 11px; min-height: 11in; padding: .55in; width: 8.5in; box-shadow: 0 8px 24px rgba(15,23,42,.16); }
+        body { background: #e5e7eb; font-family: Arial, sans-serif; color: #111827; margin: 24px auto; font-size: 10.5px; }
+        .sheet { background: #fff; box-shadow: 0 8px 24px rgba(15,23,42,.16); margin: 0 auto 24px; min-height: 11in; padding: .45in; width: 8.5in; }
         .no-print { position: fixed; bottom: 22px; right: max(22px, calc((100vw - 8.5in) / 2 + 22px)); z-index: 20; }
         .btn { border: 1px solid #cbd5e1; background: #fff; border-radius: 5px; padding: 7px 11px; font-weight: 700; cursor: pointer; }
-        .brand { min-height: 58px; display: inline-flex; align-items: center; gap: 10px; color: #0B265A; }
-        .brand img { display: block; width: 86px; max-height: 54px; object-fit: contain; }
-        .brand-text { display: flex; flex-direction: column; line-height: .86; letter-spacing: 1px; }
-        .brand-text .rivera { font-size: 32px; font-weight: 900; }
-        .brand-text .construcciones { margin-top: 4px; font-size: 14px; font-weight: 900; letter-spacing: 1.4px; }
-        .title { color: #0B265A; text-align: center; font-size: 22px; font-weight: 800; margin: 10px 0 8px; letter-spacing: 1px; text-transform: uppercase; }
-        .rule { border-top: 7px solid #d9d8f0; border-bottom: 4px double #0B265A; height: 12px; margin-bottom: 12px; }
-        .meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
-        .box { border: 1px solid #cbd5e1; min-height: 54px; padding: 8px; }
-        .box-wide { grid-column: span 2; }
-        .label { color: #64748b; font-size: 9px; text-transform: uppercase; font-weight: 800; margin-bottom: 4px; }
-        .value { color: #111827; font-weight: 800; line-height: 1.25; }
-        .muted { color: #64748b; font-weight: 600; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; page-break-inside: auto; }
+        @include('impresion.cabecera-estilos')
+        .meta { margin-bottom: 0; }
+        .meta td { padding: 5px 7px; height: 23px; }
+        .meta .label { width: 17%; background: #e5e7eb; font-weight: 700; text-transform: uppercase; }
+        .muted { color: #64748b; }
+        table { width: 100%; border-collapse: collapse; page-break-inside: auto; }
         tr { page-break-inside: avoid; page-break-after: auto; }
-        th, td { border: 1px solid #cbd5e1; padding: 6px; vertical-align: top; }
-        th { background: #c8d8f2 !important; color: #111827; text-align: left; text-transform: uppercase; font-size: 10px; }
-        td { line-height: 1.25; }
+        th, td { border: 1px solid #1f2937; padding: 2px 5px; height: 18px; line-height: 1.12; vertical-align: top; }
+        th { background: #c8d8f2 !important; color: #111827; text-align: center; text-transform: uppercase; font-size: 10px; }
+        .partidas td { overflow-wrap: anywhere; }
+        .partidas thead { display: table-header-group; }
+        .partidas { margin-top: -1px; }
         .center { text-align: center; }
         .right { text-align: right; }
-        .item-title { font-weight: 800; }
+        .item-title { font-weight: 600; }
         .snapshot { color: #64748b; font-size: 10px; margin-top: 2px; }
-        .observaciones { border: 1px solid #cbd5e1; margin-top: 14px; padding: 9px; min-height: 58px; white-space: pre-line; }
-        .signatures { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 58px; }
+        .observaciones { border: 1px solid #1f2937; border-top: 0; padding: 5px 6px; min-height: 62px; }
+        .observaciones strong { color: #dc2626; font-size: 15px; }
+        .observaciones-texto { white-space: pre-line; overflow-wrap: anywhere; }
+        .signatures { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 44px; align-items: end; break-inside: avoid; }
         .signature { text-align: center; }
-        .line { border-top: 1px solid #111827; min-height: 20px; padding-top: 6px; text-align: center; font-weight: 700; }
-        .signature-label { margin-top: 4px; font-size: 11px; font-weight: 700; }
+        .line { border-top: 1px solid #111827; min-height: 18px; padding-top: 5px; text-align: center; font-weight: 700; }
+        .signature-label { margin-top: 3px; font-size: 12px; }
         @media print {
-            @page { size: letter portrait; margin: 7mm; }
-            body { background: #fff; box-shadow: none; margin: 0; padding: .55in; width: 8.5in; }
+            @page { size: letter portrait; margin: 6mm; }
+            body { background: #fff; margin: 0; }
+            .sheet { box-shadow: none; margin: 0; min-height: auto; padding: .45in; width: 100%; }
             .no-print { display: none; }
         }
     </style>
@@ -71,62 +77,46 @@
         <button class="btn" onclick="window.print()">Imprimir</button>
     </div>
 
-    <div class="brand">
-        <img src="{{ asset('images/logoAzul.png') }}" alt="Rivera Construcciones" onerror="this.style.display='none';">
-        <div class="brand-text">
-            <span class="rivera">RIVERA</span>
-            <span class="construcciones">CONSTRUCCIONES</span>
-        </div>
-    </div>
+    <main class="sheet">
+    @include('impresion.cabecera', ['tituloDocumento' => $tituloRequisicion])
 
-    <div class="title">Requisicion de obra</div>
-    <div class="rule"></div>
+    <table class="meta">
+        <tr>
+            <td class="label">Obra</td>
+            <td colspan="3"><strong>{{ $obra->nombre }}</strong> <span class="muted">— {{ $obra->clave_obra ?? '-' }}</span></td>
+        </tr>
+        <tr>
+            <td class="label">Folio</td>
+            <td>{{ $requisicion->folio }}</td>
+            <td class="label">Estado</td>
+            <td>{{ $estadoLabel }}</td>
+        </tr>
+        <tr>
+            <td class="label">Fecha solicitud</td>
+            <td>{{ optional($requisicion->fecha_solicitud)->format('d/m/Y') ?? '-' }}</td>
+            <td class="label">Fecha requerida</td>
+            <td>{{ optional($requisicion->fecha_requerida)->format('d/m/Y') ?? '-' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Tipo</td>
+            <td>{{ $requisicion->tipo?->nombre ?? '-' }} <span class="muted">(Catálogo {{ $requisicion->numero_catalogo ?? '-' }})</span></td>
+            <td class="label">Solicita</td>
+            <td>{{ $requisicion->solicitadoPor?->name ?? '-' }}</td>
+        </tr>
+    </table>
 
-    <div class="meta">
-        <div class="box">
-            <div class="label">Folio</div>
-            <div class="value">{{ $requisicion->folio }}</div>
-        </div>
-        <div class="box">
-            <div class="label">Estado</div>
-            <div class="value">{{ $estadoLabel }}</div>
-        </div>
-        <div class="box">
-            <div class="label">Fecha solicitud</div>
-            <div class="value">{{ optional($requisicion->fecha_solicitud)->format('d/m/Y') ?? '-' }}</div>
-        </div>
-        <div class="box">
-            <div class="label">Fecha requerida</div>
-            <div class="value">{{ optional($requisicion->fecha_requerida)->format('d/m/Y') ?? '-' }}</div>
-        </div>
-        <div class="box box-wide">
-            <div class="label">Obra</div>
-            <div class="value">{{ $obra->nombre }}</div>
-            <div class="muted">{{ $obra->clave_obra ?? '-' }}</div>
-        </div>
-        <div class="box">
-            <div class="label">Tipo</div>
-            <div class="value">{{ $requisicion->tipo?->nombre ?? '-' }}</div>
-            <div class="muted">Catalogo {{ $requisicion->numero_catalogo ?? '-' }}</div>
-        </div>
-        <div class="box">
-            <div class="label">Solicita</div>
-            <div class="value">{{ $requisicion->solicitadoPor?->name ?? '-' }}</div>
-        </div>
-    </div>
-
-    <table>
+    <table class="partidas">
         <thead>
             <tr>
-                <th style="width: 42px;" class="center">#</th>
+                <th style="width: 30px;" class="center">#</th>
                 <th>Partida</th>
-                <th style="width: 90px;">Tipo</th>
-                <th style="width: 90px;">Unidad</th>
-                <th style="width: 92px;" class="right">Cantidad</th>
+                <th style="width: 60px;">Tipo</th>
+                <th style="width: 50px;">Unidad</th>
+                <th style="width: 68px;" class="right">Cantidad</th>
                 @if($requisicion->tipo?->item_type === 'producto')
                     <th>Equipo destino</th>
                 @endif
-                <th style="width: 110px;">Estado</th>
+                <th style="width: 85px;">Estado</th>
                 <th>Observaciones</th>
             </tr>
         </thead>
@@ -167,8 +157,8 @@
     </table>
 
     <div class="observaciones">
-        <div class="label">Observaciones generales</div>
-        {{ $requisicion->observaciones ?: '-' }}
+        <strong>Observaciones:</strong>
+        <div class="observaciones-texto">{{ $requisicion->observaciones ?: '-' }}</div>
     </div>
 
     <div class="signatures">
@@ -189,5 +179,6 @@
             <div class="signature-label">Recibe</div>
         </div>
     </div>
+    </main>
 </body>
 </html>

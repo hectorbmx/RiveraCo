@@ -10,14 +10,7 @@
         .btn { border: 1px solid #cbd5e1; background: #fff; border-radius: 5px; padding: 7px 11px; font-weight: 700; cursor: pointer; }
         .sheet { background: #fff; box-shadow: 0 8px 24px rgba(15,23,42,.16); margin: 0 auto 24px; min-height: 11in; padding: .45in; page-break-after: always; page-break-inside: avoid; width: 8.5in; }
         .sheet:last-child { page-break-after: auto; }
-        .brand { min-height: 58px; display: inline-flex; align-items: center; gap: 10px; color: #0B265A; }
-        .brand img { display: block; width: 86px; max-height: 54px; object-fit: contain; }
-        .brand-text { display: flex; flex-direction: column; line-height: .86; letter-spacing: 1px; }
-        .brand-text .rivera { font-size: 32px; font-weight: 900; }
-        .brand-text .construcciones { margin-top: 4px; font-size: 14px; font-weight: 900; letter-spacing: 1.4px; }
-        .brand-fallback { color: #0B265A; font-weight: 800; font-size: 22px; letter-spacing: 1px; line-height: 1; }
-        .title { color: #0B265A; text-align: center; font-size: 24px; font-weight: 800; margin: 10px 0 8px; letter-spacing: 1px; }
-        .rule { border-top: 7px solid #d9d8f0; border-bottom: 4px double #0B265A; height: 12px; margin-bottom: 8px; }
+        @include('impresion.cabecera-estilos')
         .meta { width: 100%; border-collapse: collapse; margin-bottom: 0; }
         .meta td { border: 1px solid #1f2937; padding: 5px 7px; height: 23px; }
         .meta .label { width: 90px; background: #e5e7eb; font-weight: 700; }
@@ -80,15 +73,7 @@
         @endphp
 
         <section class="sheet">
-            <div class="brand">
-                <img src="{{ asset('images/logoAzul.png') }}" alt="Rivera Construcciones" onerror="this.style.display='none';">
-                <div class="brand-text">
-                    <span class="rivera">RIVERA</span>
-                    <span class="construcciones">CONSTRUCCIONES</span>
-                </div>
-            </div>
-            <div class="title">{{ strtoupper($grupoLabel) }}</div>
-            <div class="rule"></div>
+            @include('impresion.cabecera', ['tituloDocumento' => strtoupper($grupoLabel)])
 
             <table class="meta">
                 <tr>
@@ -193,15 +178,7 @@
         </section>
     @empty
         <section class="sheet">
-            <div class="brand">
-                <img src="{{ asset('images/logoAzul.png') }}" alt="Rivera Construcciones" onerror="this.style.display='none';">
-                <div class="brand-text">
-                    <span class="rivera">RIVERA</span>
-                    <span class="construcciones">CONSTRUCCIONES</span>
-                </div>
-            </div>
-            <div class="title">REPOSICION DE CAJA CHICA</div>
-            <div class="rule"></div>
+            @include('impresion.cabecera', ['tituloDocumento' => 'REPOSICION DE CAJA CHICA'])
             <p class="center muted">No hay gastos para el periodo y filtros seleccionados.</p>
         </section>
     @endforelse
