@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     @php
+        $esPersonal = $requisicion->tipo?->item_type === 'empleado';
         $tituloRequisicion = match ($requisicion->tipo?->item_type) {
             'producto' => 'Requisición de material',
             'maquina' => 'Requisición de maquinaria',
@@ -110,13 +111,17 @@
             <tr>
                 <th style="width: 30px;" class="center">#</th>
                 <th>Partida</th>
-                <th style="width: 60px;">Tipo</th>
+                <th style="width: {{ $esPersonal ? 140 : 60 }}px;">{{ $esPersonal ? 'Puesto' : 'Tipo' }}</th>
                 <th style="width: 50px;">Unidad</th>
-                <th style="width: 68px;" class="right">Cantidad</th>
+                @unless($esPersonal)
+                    <th style="width: 68px;" class="right">Cantidad</th>
+                @endunless
                 @if($requisicion->tipo?->item_type === 'producto')
                     <th>Equipo destino</th>
                 @endif
-                <th style="width: 85px;">Estado</th>
+                @unless($esPersonal)
+                    <th style="width: 85px;">Estado</th>
+                @endunless
                 <th>Observaciones</th>
             </tr>
         </thead>
@@ -126,13 +131,15 @@
                     <td class="center">{{ $loop->iteration }}</td>
                     <td>
                         <div class="item-title">{{ $detalle->descripcion }}</div>
-                        @if($detalle->descripcion_snapshot)
+                        @if(! $esPersonal && $detalle->descripcion_snapshot)
                             <div class="snapshot">{{ $detalle->descripcion_snapshot }}</div>
                         @endif
                     </td>
-                    <td>{{ ucfirst((string) ($detalle->item_type ?? '-')) }}</td>
+                    <td>{{ $esPersonal ? (trim(explode(' - ', (string) $detalle->descripcion_snapshot, 2)[1] ?? '') ?: 'Sin puesto') : ucfirst((string) ($detalle->item_type ?? '-')) }}</td>
                     <td>{{ $detalle->unidad ?? '-' }}</td>
-                    <td class="right">{{ number_format((float) $detalle->cantidad_solicitada, 3) }}</td>
+                    @unless($esPersonal)
+                        <td class="right">{{ number_format((float) $detalle->cantidad_solicitada, 3) }}</td>
+                    @endunless
                     @if($requisicion->tipo?->item_type === 'producto')
                         <td>
                             @if($detalle->equipo_tipo)
@@ -145,12 +152,14 @@
                             @endif
                         </td>
                     @endif
-                    <td>{{ ucfirst(str_replace('_', ' ', (string) $detalle->estado)) }}</td>
+                    @unless($esPersonal)
+                        <td>{{ ucfirst(str_replace('_', ' ', (string) $detalle->estado)) }}</td>
+                    @endunless
                     <td>{{ $detalle->observaciones ?: '-' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="{{ $requisicion->tipo?->item_type === 'producto' ? 8 : 7 }}" class="center muted">Esta requisicion no tiene partidas.</td>
+                    <td colspan="{{ $esPersonal ? 5 : ($requisicion->tipo?->item_type === 'producto' ? 8 : 7) }}" class="center muted">Esta requisicion no tiene partidas.</td>
                 </tr>
             @endforelse
         </tbody>
