@@ -9,7 +9,7 @@
             <h1 class="text-2xl font-bold text-[#0B265A]">RCC-G-{{ str_pad($gasto->id, 5, '0', STR_PAD_LEFT) }}</h1>
             <p class="text-sm text-slate-500">Detalle del gasto y autorizacion individual.</p>
         </div>
-        <a href="{{ route('reposicion-caja-chica.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">Volver</a>
+        <a href="{{ route('reposicion-caja-chica.index', $gasto->origen_captura === 'obra_residente' ? ['origen_captura' => 'obra_residente', 'destino' => 'obra', 'obra_id' => $gasto->obra_id] : ['origen_captura' => 'almacen']) }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">Volver</a>
     </div>
 
     @if($modoEdicion ?? false)

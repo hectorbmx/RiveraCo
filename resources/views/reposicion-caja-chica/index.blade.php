@@ -4,6 +4,11 @@
 
 @section('content')
 @php
+    $esCajaChicaObra = request('origen_captura') === 'obra_residente';
+    $contextoCaptura = $esCajaChicaObra
+        ? ['origen_captura' => 'obra_residente', 'destino' => 'obra', 'obra_id' => request('obra_id')]
+        : ['origen_captura' => 'almacen'];
+    $obraActual = $esCajaChicaObra ? $obras->firstWhere('id', (int) request('obra_id')) : null;
     $puedeElegirAmbitoFirma = $puedeElegirAmbitoFirma ?? false;
     $ambitoFirmaSeleccionado = $puedeElegirAmbitoFirma
         ? request('ambito', $ambitoFirma ?? \App\Models\DocumentoFirmante::AMBITO_REPOSICION_GASTOS_ALMACEN)
@@ -16,8 +21,8 @@
 <div class="max-w-8xl mx-auto space-y-6">
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-[#0B265A]">Reposicion de caja chica</h1>
-            <p class="text-sm text-slate-500">Gastos capturados por ingenieria con autorizacion individual.</p>
+            <h1 class="text-2xl font-bold text-[#0B265A]">{{ $esCajaChicaObra ? 'Caja chica de la obra' : 'Reposición de caja chica · Almacén' }}</h1>
+            <p class="text-sm text-slate-500">{{ $esCajaChicaObra ? ($obraActual?->nombre ?? 'Obra seleccionada') . ' · Gastos capturados desde obra.' : 'Gastos capturados desde almacén. Los gastos del residente se consultan en su obra.' }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
             <div class="flex flex-wrap overflow-hidden rounded-lg border border-slate-300 bg-white">
@@ -40,9 +45,14 @@
                 <a id="reposicion-print-link" href="{{ route('reposicion-caja-chica.imprimir-formato-administrativo', $printQuery) }}" data-print-base="{{ route('reposicion-caja-chica.imprimir-formato-administrativo') }}" target="_blank" class="border-l border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Imprimir</a>
             </div>
             <a href="{{ route('reposicion-caja-chica.exportar-excel', request()->query()) }}" class="rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100">Exportar Excel</a>
-            <a href="{{ route('reposicion-caja-chica.revision') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Revision oficina</a>
+            <a href="{{ route('reposicion-caja-chica.revision', $contextoCaptura) }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Revision oficina</a>
+            @unless($esCajaChicaObra)
             <a href="{{ route('reposicion-caja-chica.relaciones.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Relaciones</a>
-            <a href="{{ route('reposicion-caja-chica.create') }}" class="rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white hover:bg-blue-900">Nuevo gasto</a>
+            @endunless
+            <a href="{{ route('reposicion-caja-chica.create', $contextoCaptura) }}" class="rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white hover:bg-blue-900">Nuevo gasto</a>
+            @if($esCajaChicaObra)
+                <a href="{{ route('obras.edit', ['obra' => request('obra_id'), 'tab' => 'caja-chica']) }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">Volver a la obra</a>
+            @endif
         </div>
     </div>
 
@@ -103,6 +113,7 @@
             placeholder="Todas"
             span="md:col-span-2" />
 
+        @unless($esCajaChicaObra)
         <x-filters.select
             name="destino"
             label="Destino"
@@ -118,6 +129,10 @@
             :options="$obras->mapWithKeys(fn ($obra) => [$obra->id => trim(($obra->clave_obra ? $obra->clave_obra . ' - ' : '') . $obra->nombre)])->all()"
             placeholder="Todas"
             span="md:col-span-2" />
+        @else
+            <input type="hidden" name="destino" value="obra">
+            <input type="hidden" name="obra_id" value="{{ request('obra_id') }}">
+        @endunless
 
         <input type="hidden" name="origen_captura" value="{{ request('origen_captura') }}">
 
@@ -134,7 +149,7 @@
 
         <x-filters.actions
             submit-label="Filtrar"
-            clear-url="{{ route('reposicion-caja-chica.index', array_filter(['ambito' => $ambitoFirmaSeleccionado, 'origen_captura' => request('origen_captura')])) }}"
+            clear-url="{{ route('reposicion-caja-chica.index', array_merge($contextoCaptura, ['ambito' => $ambitoFirmaSeleccionado])) }}"
             span="md:col-span-1" />
 
         <div class="md:col-span-12 flex flex-wrap justify-end gap-2 border-t border-white/10 pt-3">

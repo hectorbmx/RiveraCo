@@ -12,7 +12,7 @@
             <p class="text-sm text-slate-500">Arrastra tus archivos XML para importar automáticamente o agrega gastos sin factura en la hoja de captura.</p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ route('reposicion-caja-chica.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+            <a href="{{ route('reposicion-caja-chica.index', ($contextoObraResidente ?? false) ? ['origen_captura' => 'obra_residente', 'destino' => 'obra', 'obra_id' => $obraInicialId] : ['origen_captura' => 'almacen']) }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                 Volver a la bandeja
             </a>
         </div>

@@ -7,9 +7,9 @@
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
             <h1 class="text-2xl font-bold text-[#0B265A]">Revision de caja chica</h1>
-            <p class="text-sm text-slate-500">Autorizacion individual por gasto capturado.</p>
+            <p class="text-sm text-slate-500">{{ request('origen_captura') === 'obra_residente' ? 'Gastos capturados desde la obra seleccionada.' : 'Gastos capturados desde almacén.' }}</p>
         </div>
-        <a href="{{ route('reposicion-caja-chica.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">Gastos</a>
+        <a href="{{ route('reposicion-caja-chica.index', request()->only('origen_captura', 'destino', 'obra_id')) }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">Gastos</a>
     </div>
 
     @if ($errors->any())

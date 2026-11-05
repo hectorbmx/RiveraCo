@@ -532,7 +532,9 @@ class ReposicionCajaChicaController extends Controller
                 : "Se guardaron {$totalGastos} gasto(s) como borrador.";
 
             $redirect = redirect()
-                ->route('reposicion-caja-chica.index')
+                ->route('reposicion-caja-chica.index', $origenCaptura === 'obra_residente'
+                    ? ['origen_captura' => 'obra_residente', 'destino' => 'obra', 'obra_id' => $targetObraId]
+                    : ['origen_captura' => 'almacen'])
                 ->with('success', $msg);
 
             if ($proveedoresCreados !== []) {
@@ -855,6 +857,9 @@ class ReposicionCajaChicaController extends Controller
     public function destroy(Request $request, ReposicionCajaChicaGasto $gasto)
     {
         $this->authorizeAny(['caja_chica.delete.access'], 'No tienes permiso para eliminar gastos de caja chica.');
+        $contexto = $gasto->origen_captura === 'obra_residente'
+            ? ['origen_captura' => 'obra_residente', 'destino' => 'obra', 'obra_id' => $gasto->obra_id]
+            : ['origen_captura' => 'almacen'];
 
         if (in_array($gasto->estado_autorizacion, ['autorizado', 'autorizado_parcial'], true)) {
             return back()->with('error', 'No se puede eliminar un gasto autorizado.');
@@ -879,14 +884,18 @@ class ReposicionCajaChicaController extends Controller
         });
 
         return redirect()
-            ->route('reposicion-caja-chica.index', $request->query())
+            ->route('reposicion-caja-chica.index', array_merge($request->query(), $contexto))
             ->with('success', 'Gasto eliminado correctamente.');
     }
 
     public function revision(Request $request)
     {
+        $contexto = $this->contextoConsultaReposicion($request);
         $gastos = ReposicionCajaChicaGasto::query()
             ->with(['categoria', 'subcategoria', 'obra', 'almacen', 'maquina', 'vehiculo', 'solicitadoPor'])
+            ->where('origen_captura', $contexto['origen_captura'])
+            ->when($contexto['origen_captura'] === 'obra_residente', fn ($query) => $query
+                ->where('destino', 'obra')->where('obra_id', $contexto['obra_id']))
             ->whereIn('estado_autorizacion', ['pendiente', 'autorizado', 'autorizado_parcial', 'rechazado'])
             ->latest('id')
             ->paginate(20)
@@ -963,6 +972,7 @@ class ReposicionCajaChicaController extends Controller
     {
         $relaciones = ReposicionCajaChicaRelacion::query()
             ->with(['responsable', 'almacen'])
+            ->whereDoesntHave('gastos', fn ($query) => $query->where('origen_captura', 'obra_residente'))
             ->latest('id')
             ->paginate(20);
 
@@ -971,6 +981,8 @@ class ReposicionCajaChicaController extends Controller
 
     public function imprimirRelacion(ReposicionCajaChicaRelacion $relacion)
     {
+        abort_if($relacion->gastos()->where('origen_captura', 'obra_residente')->exists(), 422,
+            'Los gastos capturados en obra deben imprimirse desde la caja chica de su obra.');
         $relacion->load([
             'responsable',
             'almacen',
@@ -1175,6 +1187,10 @@ class ReposicionCajaChicaController extends Controller
     }
     private function destinosImpresionReposicion(Request $request, Carbon $fechaInicio, Carbon $fechaFin)
     {
+        if ($this->contextoConsultaReposicion($request)['origen_captura'] === 'obra_residente') {
+            return collect();
+        }
+
         $queryRequest = $request->duplicate(
             array_merge($request->query(), [
                 'destino' => null,
@@ -1228,8 +1244,11 @@ class ReposicionCajaChicaController extends Controller
     }
     private function gastosReporteQuery(Request $request, Carbon $fechaInicio, Carbon $fechaFin)
     {
+        $contexto = $this->contextoConsultaReposicion($request);
+
         return ReposicionCajaChicaGasto::query()
             ->with(['categoria', 'subcategoria', 'obra', 'almacen', 'maquina', 'vehiculo', 'solicitadoPor'])
+            ->where('origen_captura', $contexto['origen_captura'])
             ->whereBetween('created_at', [$fechaInicio, $fechaFin])
             ->when($request->filled('q'), function ($query) use ($request) {
                 $q = trim((string) $request->q);
@@ -1248,9 +1267,28 @@ class ReposicionCajaChicaController extends Controller
             ->when($request->filled('estado'), fn ($query) => $query->where('estado_autorizacion', $request->estado))
             ->when($request->filled('categoria_id'), fn ($query) => $query->where('categoria_id', $request->categoria_id))
             ->when($request->filled('destino'), fn ($query) => $query->where('destino', $request->destino))
-            ->when($request->filled('origen_captura'), fn ($query) => $query->where('origen_captura', $request->input('origen_captura')))
             ->when($request->filled('obra_id'), fn ($query) => $query->where('obra_id', $request->integer('obra_id')))
             ->when($request->filled('almacen_id'), fn ($query) => $query->where('almacen_id', $request->integer('almacen_id')));
+    }
+
+    private function contextoConsultaReposicion(Request $request): array
+    {
+        $origen = $request->input('origen_captura')
+            ?: ($request->input('ambito') === 'obra' ? 'obra_residente' : 'almacen');
+
+        abort_unless(in_array($origen, ['almacen', 'obra_residente'], true), 422, 'Origen de captura no válido.');
+
+        $contexto = ['origen_captura' => $origen];
+        if ($origen === 'obra_residente') {
+            abort_unless($request->integer('obra_id') > 0, 422,
+                'Selecciona una obra para consultar o imprimir sus gastos.');
+            $contexto += ['destino' => 'obra', 'obra_id' => $request->integer('obra_id')];
+            $request->query->remove('almacen_id');
+        }
+
+        $request->query->add($contexto);
+
+        return $contexto;
     }
 
     private function agruparGastosPorCategoria($gastos)
