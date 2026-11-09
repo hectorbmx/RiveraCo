@@ -2141,17 +2141,16 @@ foreach ($oc->detalles as $detalle) {
     $vobo1Nombre = $firmasImpresas->get(DocumentoFirmante::CAMPO_VOBO_1)?->user?->name ?? '';
     $vobo2Nombre = $firmasImpresas->get(DocumentoFirmante::CAMPO_VOBO_2)?->user?->name ?? '';
 
-    // Combinar ambos slots; si solo hay uno, no aparece el separador
-    $voboNombre = trim(implode("\n", array_filter([$vobo1Nombre, $vobo2Nombre])));
+    $voboNombres = array_values(array_filter(
+        array_map(fn ($nombre) => trim((string) $nombre), [$vobo1Nombre, $vobo2Nombre]),
+        fn ($nombre) => $nombre !== ''
+    ));
 
     $enteradoNombre = $firmasImpresas
         ->get(DocumentoFirmante::CAMPO_ENTERADO)
         ?->user
         ?->name
         ?? '';
-
-    $voboLineas = max(1, substr_count($voboNombre, "\n") + 1);
-    $enteradoLineas = max(1, substr_count($enteradoNombre, "\n") + 1);
 
     $pdf->SetFont('Arial', 'B', 8);
 
@@ -2176,13 +2175,11 @@ foreach ($oc->detalles as $detalle) {
     );
 
     $pdf->SetXY($X0 + 115, $Y + 14);
-    $pdf->MultiCell(
-        50,
-        5,
-        $utf8($voboNombre),
-        0,
-        'C'
-    );
+    foreach ($voboNombres ?: [''] as $nombre) {
+        $pdf->SetX($X0 + 115);
+        $pdf->MultiCell(50, 5, $utf8($nombre), 0, 'C');
+    }
+    $voboEtiquetaY = $pdf->GetY() + 2;
 
     $pdf->SetXY($X0 + 170, $Y + 14);
     $pdf->MultiCell(
@@ -2192,6 +2189,7 @@ foreach ($oc->detalles as $detalle) {
         0,
         'C'
     );
+    $enteradoEtiquetaY = $pdf->GetY() + 2;
 
     $pdf->SetTextColor(200, 0, 0);
     $pdf->SetFont('Arial', 'B', 8);
@@ -2216,7 +2214,7 @@ foreach ($oc->detalles as $detalle) {
         'C'
     );
 
-    $pdf->SetXY($X0 + 115, $Y + 14 + ($voboLineas * 5) + 2);
+    $pdf->SetXY($X0 + 115, $voboEtiquetaY);
     $pdf->Cell(
         50,
         5,
@@ -2226,7 +2224,7 @@ foreach ($oc->detalles as $detalle) {
         'C'
     );
 
-    $pdf->SetXY($X0 + 170, $Y + 14 + ($enteradoLineas * 5) + 2);
+    $pdf->SetXY($X0 + 170, $enteradoEtiquetaY);
     $pdf->Cell(
         35,
         5,

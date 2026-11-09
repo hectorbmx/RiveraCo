@@ -341,7 +341,7 @@
     <td class="px-3 py-2">
       <div class="flex items-center gap-2">
         <span class="font-semibold text-slate-900">
-          {{ $r->empleado?->Nombre ?? '' }} {{ $r->empleado?->Apellidos ?? '' }}
+          {{ trim(($r->empleado?->Apellidos ?? '') . ' ' . ($r->empleado?->Nombre ?? '')) }}
         </span>
         <span class="js-status-indicator text-[10px] text-slate-400">
           Guardado
