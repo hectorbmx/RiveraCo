@@ -69,7 +69,9 @@
         $elaboraNombre = $firmasImpresas->get(DocumentoFirmante::CAMPO_ELABORO)?->user?->name
             ?? $requisicion->solicitadoPor?->name
             ?? 'Elabora';
-        $autorizaNombre = $firmasImpresas->get(DocumentoFirmante::CAMPO_AUTORIZO)?->user?->name ?? 'Autoriza';
+        $autorizaNombre = $requisicion->autorizadoPor?->name
+            ?? $firmasImpresas->get(DocumentoFirmante::CAMPO_AUTORIZO)?->user?->name
+            ?? 'Autoriza';
         $voboNombre = $firmasImpresas->get(DocumentoFirmante::CAMPO_VOBO)?->user?->name ?? 'VoBo';
         $recibeNombre = $firmasImpresas->get('recibe')?->user?->name ?? 'Recibe';
     @endphp

@@ -256,6 +256,7 @@ class ObraRequisicionController extends Controller
     public function imprimir(Obra $obra, ObraRequisicion $requisicion)
     {
         $requisicion = $this->requisicionDeObra($obra, $requisicion);
+        $requisicion->load('autorizadoPor');
 
         $firmasImpresas = DocumentoFirmante::query()
             ->with('user:id,name')
@@ -276,8 +277,22 @@ class ObraRequisicionController extends Controller
 
         return view('obras.requisiciones.imprimir', compact('obra', 'requisicion', 'firmasImpresas'));
     }
+    public function autorizar(Request $request, Obra $obra, ObraRequisicion $requisicion)
+    {
+        $data = $request->validate([
+            'cantidades' => ['required', 'array', 'min:1'],
+            'cantidades.*' => ['required', 'numeric', 'min:0', 'decimal:0,3'],
+        ]);
+        app(\App\Services\Requisiciones\AutorizarRequisicionService::class)
+            ->autorizar($obra->id, $requisicion->id, $request->user(), $data['cantidades']);
+
+        return redirect()->route('obras.requisiciones.show', [$obra, $requisicion])
+            ->with('success', 'Autorización registrada. Las cantidades restantes siguen pendientes de autorización.');
+    }
     public function update(Request $request, Obra $obra, ObraRequisicion $requisicion)
     {
+        return DB::transaction(function () use ($request, $obra, $requisicion) {
+        $requisicion = ObraRequisicion::query()->whereKey($requisicion->id)->where('obra_id', $obra->id)->lockForUpdate()->firstOrFail();
         $requisicion = $this->requisicionDeObra($obra, $requisicion);
 
         if ($requisicion->estado !== ObraRequisicion::ESTADO_PENDIENTE_REVISION) {
@@ -326,9 +341,12 @@ class ObraRequisicionController extends Controller
         return redirect()
             ->route('obras.requisiciones.show', [$obra, $requisicion])
             ->with('success', "Requisicion {$requisicion->folio} actualizada correctamente.");
+        }, 3);
     }
     public function storeDetalle(Request $request, Obra $obra, ObraRequisicion $requisicion)
     {
+        return DB::transaction(function () use ($request, $obra, $requisicion) {
+        $requisicion = ObraRequisicion::query()->whereKey($requisicion->id)->where('obra_id', $obra->id)->lockForUpdate()->firstOrFail();
         $requisicion = $this->requisicionDeObra($obra, $requisicion);
 
         if ($requisicion->estado !== ObraRequisicion::ESTADO_PENDIENTE_REVISION) {
@@ -411,9 +429,12 @@ class ObraRequisicionController extends Controller
         return redirect()
             ->route('obras.requisiciones.edit', [$obra, $requisicion])
             ->with('success', $mensaje);
+        }, 3);
     }
     public function destroyDetalle(Obra $obra, ObraRequisicion $requisicion, ObraRequisicionDetalle $detalle)
     {
+        return DB::transaction(function () use ($obra, $requisicion, $detalle) {
+        $requisicion = ObraRequisicion::query()->whereKey($requisicion->id)->where('obra_id', $obra->id)->lockForUpdate()->firstOrFail();
         $requisicion = $this->requisicionDeObra($obra, $requisicion);
         abort_unless((int) $detalle->obra_requisicion_id === (int) $requisicion->id, 404);
 
@@ -439,6 +460,7 @@ class ObraRequisicionController extends Controller
         return redirect()
             ->route('obras.requisiciones.edit', [$obra, $requisicion])
             ->with('success', 'Partida eliminada correctamente.');
+        }, 3);
     }
     private function crearDetalleDesdeCatalogo(ObraRequisicion $requisicion, array $item, ?float $cantidad = null): void
     {

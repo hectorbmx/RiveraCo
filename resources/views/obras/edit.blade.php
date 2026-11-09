@@ -5904,10 +5904,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
-@endsection
-{{-- COLOCAR ESTO AL FINAL DEL ARCHIVO, FUERA DE LOS @if($tab) --}}
-
-<div id="modalPresupuestos" class="fixed inset-0 z-[100] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+<div id="modalPresupuestos" hidden class="fixed inset-0 z-[100] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 bg-slate-900/75 transition-opacity" onclick="closeModalPresupuestos()"></div>
 
@@ -5995,11 +5992,13 @@ document.addEventListener('DOMContentLoaded', function () {
 <script>
     function openModalPresupuestos() {
         const modal = document.getElementById('modalPresupuestos');
+        modal.hidden = false;
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden'; // Evita el scroll de fondo
     }
     function closeModalPresupuestos() {
         const modal = document.getElementById('modalPresupuestos');
+        modal.hidden = true;
         modal.classList.add('hidden');
         document.body.style.overflow = 'auto'; // Devuelve el scroll
     }
@@ -6134,6 +6133,8 @@ function calcularFila(idCampo) {
 //     });
 // });
 </script>
+
+@endsection
 
 
 

@@ -1174,6 +1174,7 @@ Route::prefix('pagos-proveedores')
         Route::post('/{obra}/requisiciones', [ObraRequisicionController::class, 'store'])->name('requisiciones.store');
         Route::get('/{obra}/requisiciones/{requisicion}/imprimir', [ObraRequisicionController::class, 'imprimir'])->name('requisiciones.imprimir');
         Route::get('/{obra}/requisiciones/{requisicion}', [ObraRequisicionController::class, 'show'])->name('requisiciones.show');
+        Route::post('/{obra}/requisiciones/{requisicion}/autorizar', [ObraRequisicionController::class, 'autorizar'])->middleware('permission:requisiciones.autorizar.access')->name('requisiciones.autorizar');
         Route::get('/{obra}/requisiciones/{requisicion}/edit', [ObraRequisicionController::class, 'edit'])->name('requisiciones.edit');
         Route::patch('/{obra}/requisiciones/{requisicion}', [ObraRequisicionController::class, 'update'])->name('requisiciones.update');
         Route::post('/{obra}/requisiciones/{requisicion}/detalles', [ObraRequisicionController::class, 'storeDetalle'])->name('requisiciones.detalles.store');
