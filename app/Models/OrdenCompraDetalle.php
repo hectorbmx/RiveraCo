@@ -27,6 +27,7 @@ class OrdenCompraDetalle extends Model
     // ];
     protected $fillable = [
     'orden_compra_id',
+    'obra_requisicion_detalle_id',
     'mantenimiento_abastecimiento_detalle_id',
     'producto_id',
     'civil_concept_id',
@@ -93,6 +94,11 @@ class OrdenCompraDetalle extends Model
     public function producto()
     {
         return $this->belongsTo(Producto::class, 'producto_id');
+    }
+
+    public function requisicionDetalle()
+    {
+        return $this->belongsTo(ObraRequisicionDetalle::class, 'obra_requisicion_detalle_id');
     }
     public function tipoRetencion()
     {

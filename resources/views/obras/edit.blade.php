@@ -59,6 +59,10 @@
             'caja-chica' => 'Caja chica obra',
         ];
 
+        if (auth()->user()?->can('obra.devoluciones.view.access')) {
+            $tabs['materiales-obra'] = 'Materiales en obra';
+        }
+
         if ((bool) $obra->usa_bentonita) {
             $tabs = array_slice($tabs, 0, 8, true)
                 + ['bentonita' => 'Bentonita']
@@ -2735,6 +2739,9 @@
 @endif
 
 {{-- TAB ORDENES DE COMPRA --}}
+@if($tab === 'materiales-obra')
+    @include('obras.partials.materiales.tab')
+@endif
 @if($tab === 'ordenes-compra')
     @include('obras.partials.ordenes_compra.tab')
 @endif

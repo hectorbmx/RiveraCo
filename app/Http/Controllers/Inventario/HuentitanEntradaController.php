@@ -196,6 +196,9 @@ class HuentitanEntradaController extends Controller
 
     private function validarOrdenCompraRecepcion(OrdenCompra $ordenCompra, ?Area $area): ?string
     {
+        if ($ordenCompra->modalidad_entrega === OrdenCompra::ENTREGA_OBRA_DIRECTA) {
+            return 'Esta OC tiene entrega directa a obra; registra su recepción desde Compras.';
+        }
         $ordenCompra->loadMissing('detalles.producto');
 
         if (strtoupper((string) $ordenCompra->estado) !== 'AUTORIZADA') {
@@ -305,6 +308,10 @@ class HuentitanEntradaController extends Controller
 
                 if (! $entrada->ordenCompra) {
                     throw new \RuntimeException('La entrada no tiene una orden de compra origen.');
+                }
+
+                if ($entrada->ordenCompra->modalidad_entrega === OrdenCompra::ENTREGA_OBRA_DIRECTA) {
+                    throw new \RuntimeException('Esta OC tiene entrega directa a obra; registra su recepción desde Compras.');
                 }
 
                 if ($entrada->detalles->isEmpty()) {
@@ -493,22 +500,7 @@ class HuentitanEntradaController extends Controller
     }
     private function actualizarEstadoRecepcionOrdenCompra(OrdenCompra $ordenCompra): void
     {
-        $detalles = $ordenCompra->detalles()->lockForUpdate()->get();
-
-        $cantidadOrdenada = (float) $detalles->sum(fn (OrdenCompraDetalle $detalle) => (float) $detalle->cantidad);
-        $cantidadRecibida = (float) $detalles->sum(fn (OrdenCompraDetalle $detalle) => (float) $detalle->cantidad_recibida);
-
-        if ($cantidadRecibida <= 0) {
-            $estadoRecepcion = 'pendiente';
-        } elseif ($cantidadRecibida + 0.0005 >= $cantidadOrdenada) {
-            $estadoRecepcion = 'recibida';
-        } else {
-            $estadoRecepcion = 'parcial';
-        }
-
-        $ordenCompra->forceFill([
-            'estado_recepcion' => $estadoRecepcion,
-        ])->save();
+        app(\App\Services\Compras\OrdenCompraRecepcionEstadoService::class)->sincronizar($ordenCompra);
     }
     public function cancelar(Request $request, HuentitanEntrada $entrada)
     {

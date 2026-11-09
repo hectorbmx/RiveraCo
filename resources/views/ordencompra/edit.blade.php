@@ -20,6 +20,11 @@
         </h1>
 
         <div class="space-x-2">
+            @if($oc->modalidad_entrega === 'obra_directa' && strtoupper((string) $oc->estado) === 'AUTORIZADA' && $oc->detalles->contains(fn ($detalle) => round((float) $detalle->cantidad - (float) $detalle->cantidad_recibida, 3) > 0))
+                @can(\App\Models\CompraRecepcionDirecta::PERMISO_CONFIRMAR)
+                    <a href="{{ route('ordenes_compra.recepciones_directas.create', $oc) }}" class="inline-flex rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white">Recibir directo en obra</a>
+                @endcan
+            @endif
             <!-- @if(!$bloqueado)
                 <form method="POST" action="{{ route('ordenes_compra.autorizar',$oc->id) }}" class="inline">
                     @csrf
@@ -282,6 +287,8 @@
             @error('area_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
         </div>
 
+        @include('ordencompra.partials.entrega', ['formId' => 'formEncabezadoOc'])
+
         <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Obra</label>
             <select form="formEncabezadoOc" name="obra_id" id="edit_obra_id" class="w-full border p-2 rounded" @disabled($bloqueado)>
@@ -400,18 +407,40 @@
     </div>
 
     {{-- Agregar detalle --}}
+    @can(\App\Models\CompraRecepcionDirecta::PERMISO_VER)
+        @if($oc->modalidad_entrega === \App\Models\OrdenCompra::ENTREGA_OBRA_DIRECTA)
+            @include('compras.recepciones-directas.partials.avance_orden')
+            @include('compras.recepciones-directas.partials.historial')
+        @endif
+    @endcan
     @if(!$bloqueado)
     <form method="POST" action="{{ route('ordenes_compra.detalles.store',$oc->id) }}"
           class="grid grid-cols-1 md:grid-cols-12 gap-2 mb-4" data-loading-form data-loading-message="Agregando producto a la orden...">
         @csrf
+        @if($oc->modalidad_entrega === \App\Models\OrdenCompra::ENTREGA_OBRA_DIRECTA)
+        <div class="md:col-span-12">
+            <label for="requisicion_partida" class="block text-sm">Partida de requisición (opcional)</label>
+            <select id="requisicion_partida" name="obra_requisicion_detalle_id" class="w-full border p-2 rounded">
+                <option value="">Compra sin requisición</option>
+                @foreach($partidasRequisicion as $partida)
+                    <option value="{{ $partida->id }}" @selected(old('obra_requisicion_detalle_id') == $partida->id)>
+                        {{ $partida->requisicion->folio }} · {{ $partida->descripcion }} · Saldo {{ number_format((float) $partida->cantidad_autorizada - (float) $partida->cantidad_surtida, 3) }} {{ $partida->unidad }}
+                    </option>
+                @endforeach
+            </select>
+            <p class="text-xs text-slate-500">Selecciona el mismo producto de catálogo. El saldo autorizado se descuenta al confirmar la entrega a obra.</p>
+        </div>
+        @endif
         
   <!-- <input id="descProducto" name="descripcion"class="border p-2 col-span-2" placeholder="Descripción / buscar producto..."  autocomplete="off"> -->
    <div class="col-span-2">
+        <div class="relative">
         <input id="descProducto" name="descripcion" class="w-full border p-2 rounded" placeholder="{{ $esObraCivil ? 'Descripcion / buscar insumo de la explosion...' : 'Descripcion / buscar producto...' }}" autocomplete="off">
+        <div id="sugerenciasProductos" class="absolute left-0 top-full z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow hidden max-h-60 overflow-auto"></div>
+        </div>
         <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">{{ $esObraCivil ? 'Insumo de explosion' : 'Descripcion del producto' }}</span>
         
         <div id="producto_meta" class="text-[11px] text-slate-400 mt-1 ml-1 leading-tight"></div>
-        <div id="sugerenciasProductos" class="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow hidden max-h-60 overflow-auto"></div>
     </div>
 
   <input type="hidden" name="producto_id" id="producto_id">
@@ -427,10 +456,6 @@
       </select>
       <span class="text-[10px] text-slate-400 block mt-1 ml-1 uppercase font-bold">Unidad</span>
       <span class="text-[10px] text-slate-400 block mt-1 ml-1 leading-tight">Si el producto viene sin unidad, capturala aqui antes de guardar.</span>
-  </div>
-
-  <div id="sugerenciasProductos"
-       class="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow hidden max-h-60 overflow-auto">
   </div>
 
 

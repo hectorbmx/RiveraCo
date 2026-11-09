@@ -99,6 +99,8 @@
                     <th class="px-4 py-3 text-left text-xs font-semibold text-white">SKU</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-white">Unidad</th>
                     <th class="px-4 py-3 text-right text-xs font-semibold text-white">Existencias</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-white" title="Incluye movimientos documentales de entrega directa">Última entrada</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-white" title="Incluye movimientos documentales de entrega directa">Última salida</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-white">Estatus</th>
                     <th class="px-4 py-3 text-right text-xs font-semibold text-white">Acciones</th>
                 </tr>
@@ -128,6 +130,9 @@
                             {{ number_format($exist, 3) }}
                         </td>
 
+                        @php($movimientos = $ultimosMovimientos->get($p->id))
+                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">{{ $movimientos?->ultima_entrada ? \Carbon\Carbon::parse($movimientos->ultima_entrada)->format('d/m/Y') : '—' }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-slate-700">{{ $movimientos?->ultima_salida ? \Carbon\Carbon::parse($movimientos->ultima_salida)->format('d/m/Y') : '—' }}</td>
                         <td class="px-4 py-3">
                             @if($p->activo)
                                 <span class="text-green-700 bg-green-100 px-2 py-1 rounded-lg text-xs font-semibold">Activo</span>
@@ -145,7 +150,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-6 text-center text-slate-500">
+                        <td colspan="9" class="px-4 py-6 text-center text-slate-500">
                             No hay productos con los filtros actuales.
                         </td>
                     </tr>

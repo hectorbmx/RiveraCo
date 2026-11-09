@@ -65,6 +65,12 @@ class UnidadMedidaCatalogo
         return $unidad !== '' ? $unidad : null;
     }
 
+    public static function equivalente(?string $unidad): ?string
+    {
+        $unidad = self::normalizar($unidad);
+        return in_array($unidad, ['LT', 'LTS', 'LTS.'], true) ? 'LT' : $unidad;
+    }
+
     public static function textoLegacy(?string $unidadCompra, mixed $cantidadPorUnidad, ?string $unidadBase): ?string
     {
         $unidadCompra = self::normalizar($unidadCompra);

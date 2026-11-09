@@ -11,6 +11,7 @@ class InventarioDocumentoDetalle extends Model
 
     protected $fillable = [
         'documento_id',
+        'compra_recepcion_directa_detalle_id',
         'producto_id',
         'vehiculo_id',
         'maquina_id',

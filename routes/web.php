@@ -464,6 +464,17 @@ Route::middleware('auth','verified')->group(function () {
             Route::post('/salidas/{salida}/cancelar', [HuentitanSalidaController::class, 'cancelar'])->middleware('permission:huentitan.salidas.cancel')->name('salidas.cancelar');
         });
     Route::prefix('inventario')->group(function () {
+        Route::get('devoluciones-obra', [\App\Http\Controllers\Inventario\ObraDevolucionPendienteController::class, 'index'])
+            ->middleware(['permission:obra.devoluciones.view.access', 'permission:obra.devoluciones.receive.access'])
+            ->name('inventario.devoluciones-obra.index');
+        Route::get('devoluciones-obra/{devolucion}/recibir', [\App\Http\Controllers\Inventario\ObraDevolucionPendienteController::class, 'create'])
+            ->middleware(['permission:obra.devoluciones.view.access', 'permission:obra.devoluciones.receive.access'])->name('inventario.devoluciones-obra.recibir');
+        Route::post('devoluciones-obra/{devolucion}/recibir', [\App\Http\Controllers\Inventario\ObraDevolucionPendienteController::class, 'store'])
+            ->middleware(['permission:obra.devoluciones.view.access', 'permission:obra.devoluciones.receive.access'])->name('inventario.devoluciones-obra.store');
+        Route::post('devoluciones-obra/recepciones/{recepcion}/aplicar', [\App\Http\Controllers\Inventario\ObraDevolucionPendienteController::class, 'aplicar'])
+            ->middleware(['permission:obra.devoluciones.view.access', 'permission:obra.devoluciones.receive.access'])->name('inventario.devoluciones-obra.aplicar');
+        Route::post('devoluciones-obra/recepciones/{recepcion}/pendiente-evaluacion', [\App\Http\Controllers\Inventario\ObraDevolucionPendienteController::class, 'registrarEvaluacion'])
+            ->middleware(['permission:obra.devoluciones.view.access', 'permission:obra.devoluciones.receive.access'])->name('inventario.devoluciones-obra.evaluacion');
     // STOCK
     // STOCK
         Route::middleware('permission:huentitan.access')->group(function () {
@@ -811,6 +822,21 @@ Route::middleware('auth','verified')->group(function () {
         Route::get('/horas-extras/{horaExtra}', [GiraldaController::class, 'redirectHoraExtra'])->name('horas-extras.redirect');
     });
     Route::resource('ordenes_compra', OrdenCompraController::class)->except(['show']);
+    Route::get('ordenes_compra/{ordenCompra}/recepciones-directas/create', [\App\Http\Controllers\CompraRecepcionDirectaController::class, 'create'])
+        ->middleware(['auth', 'permission:ordenes_compra.direct_receipts.confirm.access'])
+        ->name('ordenes_compra.recepciones_directas.create');
+    Route::post('ordenes_compra/{ordenCompra}/recepciones-directas', [\App\Http\Controllers\CompraRecepcionDirectaController::class, 'store'])
+        ->middleware(['auth', 'permission:ordenes_compra.direct_receipts.confirm.access'])
+        ->name('ordenes_compra.recepciones_directas.store');
+    Route::get('ordenes_compra/{ordenCompra}/recepciones-directas/{recepcion}', [\App\Http\Controllers\CompraRecepcionDirectaController::class, 'show'])
+        ->middleware(['auth', 'permission:ordenes_compra.direct_receipts.view.access'])
+        ->name('ordenes_compra.recepciones_directas.show');
+    Route::get('ordenes_compra/{ordenCompra}/recepciones-directas/{recepcion}/imprimir', [\App\Http\Controllers\CompraRecepcionDirectaController::class, 'imprimir'])
+        ->middleware(['auth', 'permission:ordenes_compra.direct_receipts.view.access'])->name('ordenes_compra.recepciones_directas.imprimir');
+    Route::post('ordenes_compra/{ordenCompra}/recepciones-directas/{recepcion}/revertir', [\App\Http\Controllers\CompraRecepcionDirectaController::class, 'revertir'])
+        ->middleware(['auth', 'permission:ordenes_compra.direct_receipts.reverse.access'])->name('ordenes_compra.recepciones_directas.revertir');
+    Route::get('ordenes_compra/{ordenCompra}/recepciones-directas/{recepcion}/evidencias/{archivo}', [\App\Http\Controllers\CompraRecepcionDirectaController::class, 'evidencia'])
+        ->middleware(['auth', 'permission:ordenes_compra.direct_receipts.view.access'])->name('ordenes_compra.recepciones_directas.evidencia');
     Route::post('ordenes_compra/{id}/autorizar', [OrdenCompraController::class, 'autorizar'])->name('ordenes_compra.autorizar');
     Route::post('ordenes_compra/{id}/revocar-autorizacion', [OrdenCompraController::class, 'revocarAutorizacion'])->name('ordenes_compra.revocar_autorizacion');
     Route::post('ordenes_compra/{id}/verificar', [OrdenCompraController::class, 'verificar'])->name('ordenes_compra.verificar');
@@ -1123,6 +1149,13 @@ Route::prefix('pagos-proveedores')
     ->name('obras.')
     ->middleware(['auth'])
     ->group(function () {
+        Route::get('/{obra}/finiquito-materiales', [ObraController::class, 'finiquitoMateriales'])->name('devoluciones.finiquito');
+        Route::get('/{obra}/finiquito-materiales/imprimir', [ObraController::class, 'imprimirFiniquitoMateriales'])->name('devoluciones.finiquito.imprimir');
+        Route::post('/{obra}/devoluciones', [ObraController::class, 'crearDevolucion'])->name('devoluciones.store');
+        Route::get('/{obra}/devoluciones/{devolucion}/imprimir', [ObraController::class, 'imprimirDevolucion'])->name('devoluciones.imprimir');
+        Route::post('/{obra}/devoluciones/{devolucion}/presentar', [ObraController::class, 'presentarDevolucion'])->name('devoluciones.presentar');
+        Route::patch('/{obra}/devoluciones/{devolucion}', [ObraController::class, 'actualizarDevolucion'])->name('devoluciones.update');
+        Route::post('/{obra}/devoluciones/{devolucion}/cancelar', [ObraController::class, 'cancelarDevolucion'])->name('devoluciones.cancelar');
         Route::get('/{obra}/reposicion-gastos', [ObraReposicionGastoController::class,'index'])->name('reposicion-gastos.index');
 
         Route::get('/{obra}/reposicion-gastos/buscar-cfdis', [ObraReposicionGastoController::class,'buscarCfdis'])->name('reposicion-gastos.buscar-cfdis');

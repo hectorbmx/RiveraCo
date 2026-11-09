@@ -13,6 +13,9 @@ class InventarioDocumentoService
 {
     public function aplicar(InventarioDocumento $doc): void
 {
+    if ($doc->compra_recepcion_directa_id) {
+        throw new RuntimeException('La recepción directa aplica sus documentos conjuntamente desde Compras.');
+    }
     DB::transaction(function () use ($doc) {
         $doc->refresh();
 
@@ -42,6 +45,12 @@ class InventarioDocumentoService
                 $ordenCompraId,
                 OrdenCompra::query()->whereKey($ordenCompraId)->lockForUpdate()->firstOrFail()
             );
+        }
+
+        if ($doc->tipo === 'entrada' && $ordenesCompra->contains(
+            fn ($ordenCompra) => $ordenCompra->modalidad_entrega === OrdenCompra::ENTREGA_OBRA_DIRECTA
+        )) {
+            throw new RuntimeException('Esta OC tiene entrega directa a obra; registra su recepción desde Compras.');
         }
 
         [$esEntrada, $esSalida, $tipoMovimiento] = $this->resolveDireccion($doc);
@@ -391,9 +400,27 @@ private function actualizarSolicitudesCompraPorEntrada(InventarioDocumento $doc)
 // }
 public function cancelar(InventarioDocumento $doc): void
 {
+    if ($doc->compra_recepcion_directa_id) {
+        throw new RuntimeException('La recepción directa requiere reversión conjunta con permiso especial.');
+    }
     DB::transaction(function () use ($doc) {
 
-        $doc->refresh();
+        $doc = InventarioDocumento::whereKey($doc->id)->lockForUpdate()->firstOrFail();
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('obra_devolucion_recepcion_detalles') && DB::table('obra_devolucion_recepcion_detalles as rd')
+            ->join('inventario_documento_detalles as dd', 'dd.id', '=', 'rd.inventario_documento_detalle_id')
+            ->where('dd.documento_id', $doc->id)->exists()) {
+            throw new RuntimeException('La devolución de obra requiere corrección conjunta; no puede cancelarse desde inventario.');
+        }
+
+        if ($doc->tipo === 'salida' && \Illuminate\Support\Facades\Schema::hasTable('obra_devolucion_detalles')
+            && DB::table('obra_devolucion_detalles as p')
+                ->join('obra_devoluciones as d', 'd.id', '=', 'p.devolucion_id')
+                ->join('inventario_movimientos as m', 'm.id', '=', 'p.inventario_movimiento_id')
+                ->where('m.documento_id', $doc->id)->where('m.almacen_id', $doc->almacen_id)
+                ->whereIn('d.estado', ['solicitada', 'recepcion_parcial', 'recibida'])->exists()) {
+            throw new RuntimeException('La salida tiene solicitudes de devolución presentadas; requiere revisión antes de cancelarla.');
+        }
 
         if ($doc->estado !== 'aplicado') {
             throw new RuntimeException("Solo se pueden cancelar documentos aplicados.");
@@ -640,28 +667,7 @@ private function revertirSolicitudAlmacen(InventarioDocumento $doc): void
 
     private function actualizarEstadoRecepcionOrdenCompra(OrdenCompra $ordenCompra): void
     {
-        $detalles = $ordenCompra->detalles()->lockForUpdate()->get();
-
-        foreach ($detalles as $detalle) {
-            $cantidadOrdenada = (float) ($detalle->cantidad ?? 0);
-            $cantidadRecibida = (float) ($detalle->cantidad_recibida ?? 0);
-            $estadoDetalle = $cantidadRecibida <= 0
-                ? 'pendiente'
-                : ($cantidadRecibida + 0.0005 >= $cantidadOrdenada ? 'recibida' : 'parcial');
-
-            if ($detalle->estado_recepcion !== $estadoDetalle) {
-                $detalle->forceFill(['estado_recepcion' => $estadoDetalle])->save();
-            }
-        }
-
-        $cantidadOrdenada = (float) $detalles->sum(fn (OrdenCompraDetalle $detalle) => (float) $detalle->cantidad);
-        $cantidadRecibida = (float) $detalles->sum(fn (OrdenCompraDetalle $detalle) => (float) $detalle->cantidad_recibida);
-
-        $estado = $cantidadRecibida <= 0
-            ? 'pendiente'
-            : ($cantidadRecibida + 0.0005 >= $cantidadOrdenada ? 'recibida' : 'parcial');
-
-        $ordenCompra->forceFill(['estado_recepcion' => $estado])->save();
+        app(\App\Services\Compras\OrdenCompraRecepcionEstadoService::class)->sincronizar($ordenCompra);
     }
     private function isEntrada(string $tipo): bool
     {

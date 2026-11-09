@@ -7,12 +7,17 @@ use App\Models\ObraPlaneacionGasto;
 
 class OrdenCompra extends Model
 {
+    public const ENTREGA_ALMACEN = 'almacen';
+    public const ENTREGA_OBRA_DIRECTA = 'obra_directa';
+
     protected $table = 'ordenes_compra';
 
     protected $fillable = [
         'folio',
         'proveedor_id',
         'obra_id',
+        'modalidad_entrega',
+        'almacen_destino_id',
         'centro_costo_id',
         'area_id',
         'es_caja_chica',
@@ -43,6 +48,7 @@ class OrdenCompra extends Model
     ];
 
     protected $casts = [
+        'almacen_destino_id' => 'integer',
         'fecha' => 'date',
         'fecha_autorizacion' => 'date',
         'fecha_verificacion' => 'datetime',
@@ -54,6 +60,24 @@ class OrdenCompra extends Model
         'total' => 'decimal:2',
         'tipo_cambio' => 'decimal:4',
     ];
+
+    protected static function booted(): void
+    {
+        static::updating(function (self $orden) {
+            if ($orden->isDirty(['modalidad_entrega', 'almacen_destino_id', 'obra_id', 'area_id'])
+                && ($orden->recepcionesDirectas()->exists()
+                    || $orden->detalles()->where('cantidad_recibida', '>', 0)->exists())) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'modalidad_entrega' => 'El destino de la OC no puede cambiar después de registrar una recepción.',
+                ]);
+            }
+        });
+    }
+
+    public function almacenDestino()
+    {
+        return $this->belongsTo(Almacen::class, 'almacen_destino_id');
+    }
 
     // Mapeo de estado legacy -> "nuevo"
     public function getEstadoNormalizadoAttribute(): string
@@ -91,6 +115,11 @@ class OrdenCompra extends Model
     public function detalles()
     {
         return $this->hasMany(OrdenCompraDetalle::class, 'orden_compra_id');
+    }
+
+    public function recepcionesDirectas()
+    {
+        return $this->hasMany(CompraRecepcionDirecta::class, 'orden_compra_id');
     }
 
     public function mantenimientoAbastecimiento()

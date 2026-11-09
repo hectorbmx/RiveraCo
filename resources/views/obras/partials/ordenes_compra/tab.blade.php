@@ -43,15 +43,22 @@
         </a>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Total de órdenes</p>
             <p class="mt-2 text-2xl font-bold text-[#0B265A]">{{ $totalOrdenes }}</p>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto total</p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Total de órdenes de compra</p>
             <p class="mt-2 text-2xl font-bold text-[#0B265A]">${{ number_format($montoTotal, 2) }}</p>
         </div>
+        @can(\App\Models\CompraRecepcionDirecta::PERMISO_VER)
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-800">Material directo neto · MXN</p>
+            <p class="mt-2 text-2xl font-bold text-emerald-900">${{ number_format((float) ($materialDirectoObra['total_mxn'] ?? 0), 2) }}</p>
+            <p class="text-xs text-slate-600">Incluido en las compras; no sumar de nuevo.</p>
+        </div>
+        @endcan
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Autorizadas / pendientes</p>
             <p class="mt-2 text-2xl font-bold text-[#0B265A]">{{ $ordenesAutorizadas }} / {{ $ordenesPendientes }}</p>
@@ -83,6 +90,8 @@
                             <tr class="border-t border-slate-200 hover:bg-slate-50">
                                 <td class="px-4 py-3 align-top">
                                     <div class="font-semibold text-[#0B265A]">{{ $orden->folio }}</div>
+                                    <div class="mt-1 text-xs text-slate-500">{{ $orden->modalidad_entrega === 'obra_directa' ? 'Entrega directa a obra' : 'Entrega a almacén' }}</div>
+                                    <button type="button" class="mt-1 text-xs font-semibold text-blue-700 underline" aria-controls="oc-trazabilidad-{{ $orden->id }}" aria-expanded="false" onclick="const row = document.getElementById(this.getAttribute('aria-controls')); row.hidden = !row.hidden; this.setAttribute('aria-expanded', String(!row.hidden)); this.textContent = row.hidden ? 'Ver movimientos' : 'Ocultar movimientos';">Ver movimientos</button>
                                     <div class="mt-1 flex flex-wrap gap-1">
                                         @if($orden->es_caja_chica)
                                             <span class="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700">Caja chica</span>
@@ -128,6 +137,11 @@
                                             PDF
                                         </a>
                                     </div>
+                                </td>
+                            </tr>
+                            <tr id="oc-trazabilidad-{{ $orden->id }}" hidden class="bg-slate-50">
+                                <td colspan="8" class="px-4 py-4">
+                                    @include('obras.partials.ordenes_compra.trazabilidad', ['ordenTrazada' => $orden])
                                 </td>
                             </tr>
                         @endforeach

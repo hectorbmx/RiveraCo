@@ -18,6 +18,7 @@ class InventarioDocumento extends Model
         'almacen_id',
         'obra_id',
         'orden_compra_id',
+        'compra_recepcion_directa_id',
         'mantenimiento_abastecimiento_id',
         'proveedor_id',
         'estado',             // borrador|aplicado|cancelado
@@ -50,6 +51,11 @@ class InventarioDocumento extends Model
     public function movimientos(): HasMany
     {
         return $this->hasMany(InventarioMovimiento::class, 'documento_id');
+    }
+
+    public function recepcionDirecta(): BelongsTo
+    {
+        return $this->belongsTo(CompraRecepcionDirecta::class, 'compra_recepcion_directa_id');
     }
 
     // Documento origen (ej. devolución -> resguardo)

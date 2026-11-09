@@ -13,10 +13,13 @@ class InventarioMovimiento extends Model
         'almacen_id',
         'producto_id',
         'documento_id',
+        'compra_recepcion_directa_id',
+        'compra_recepcion_directa_detalle_id',
         'fecha',
         'tipo_movimiento',   // in | out
         'cantidad',
         'costo_unitario',
+        'importe_costo',
         'saldo_cantidad',
         'obra_id',
         'residente_id',
@@ -48,6 +51,11 @@ class InventarioMovimiento extends Model
     public function documento(): BelongsTo
     {
         return $this->belongsTo(InventarioDocumento::class, 'documento_id');
+    }
+
+    public function recepcionDirecta(): BelongsTo
+    {
+        return $this->belongsTo(CompraRecepcionDirecta::class, 'compra_recepcion_directa_id');
     }
 
     // Opcionales / futuros

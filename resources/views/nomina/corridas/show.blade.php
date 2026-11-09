@@ -292,7 +292,15 @@
 <tbody class="divide-y divide-slate-100 bg-white">
 @php
   $recibosAgrupados = $corrida->recibos
-      ->sortBy(fn($recibo) => ($recibo->lista_raya_nombre ?? 'Sin clasificar') . '|' . ($recibo->empleado?->Nombre ?? ''))
+      ->sortBy(function ($recibo) {
+          $apellido = trim($recibo->empleado?->Apellidos ?? '');
+          $nombre = trim($recibo->empleado?->Nombre ?? '');
+          return ($recibo->lista_raya_nombre ?: 'Sin clasificar') . '|'
+              . ($apellido === '' ? '1' : '0') . '|'
+              . mb_strtolower(\Illuminate\Support\Str::ascii($apellido)) . '|'
+              . mb_strtolower(\Illuminate\Support\Str::ascii($nombre)) . '|'
+              . str_pad((string) $recibo->id, 20, '0', STR_PAD_LEFT);
+      })
       ->groupBy(fn($recibo) => $recibo->lista_raya_nombre ?: 'Sin clasificar');
 @endphp
 @foreach($recibosAgrupados as $listaRayaNombre => $recibosLista)

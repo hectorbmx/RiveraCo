@@ -32,6 +32,10 @@ class OrdenCompraDetalleController extends Controller
     logger()->info('OC Detalle request', $request->all());
 
     return DB::transaction(function () use ($request, $oc) {
+        $oc = OrdenCompra::whereKey($oc->id)->lockForUpdate()->firstOrFail();
+        if (in_array($oc->estado_normalizado, ['autorizada', 'verificada', 'cancelada'], true)) {
+            return back()->with('error', 'No puedes modificar una orden autorizada, verificada o cancelada.');
+        }
         $cantidad = (float) $request->cantidad;
         $precio = (float) $request->precio_unitario;
         $importes = $this->calcularImportesPartida($request, $cantidad, $precio);
@@ -77,6 +81,7 @@ class OrdenCompraDetalleController extends Controller
 
         $detalle = new OrdenCompraDetalle();
         $detalle->orden_compra_id = $oc->id;
+        $detalle->obra_requisicion_detalle_id = $request->input('obra_requisicion_detalle_id');
         $detalle->producto_id = $producto?->id;
         $detalle->civil_concept_id = $obraCivilInsumo ? null : $civilConcept?->id;
         $detalle->obra_civil_insumo_id = $obraCivilInsumo?->id;
@@ -136,6 +141,7 @@ class OrdenCompraDetalleController extends Controller
             $detalle->obra_civil_insumo_snapshot = $this->buildObraCivilInsumoSnapshot($obraCivilInsumo);
         }
 
+        app(\App\Services\Compras\CompraRequisicionSaldoService::class)->validarVinculo($oc, $detalle);
         $detalle->save();
 
         logger()->info('OC Detalle guardado', [
@@ -443,6 +449,21 @@ private function syncProductoProveedorDesdeDetalle(OrdenCompra $oc, OrdenCompraD
 
         return DB::transaction(function () use ($request, $oc, $detalle) {
 
+            $oc = OrdenCompra::whereKey($oc->id)->lockForUpdate()->firstOrFail();
+            if (in_array($oc->estado_normalizado, ['autorizada', 'verificada', 'cancelada'], true)) {
+                return back()->with('error', 'No puedes modificar una orden autorizada, verificada o cancelada.');
+            }
+            $detalle = $oc->detalles()->whereKey($detalle->id)->lockForUpdate()->firstOrFail();
+
+            if ((float) $detalle->cantidad_recibida > 0 && $detalle->obra_requisicion_detalle_id) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'obra_requisicion_detalle_id' => 'No puedes editar una partida vinculada que ya tiene recepciones.',
+                ]);
+            }
+            if ($request->exists('obra_requisicion_detalle_id')) {
+                $detalle->obra_requisicion_detalle_id = $request->input('obra_requisicion_detalle_id');
+            }
+
             $cantidad = (float)$request->cantidad;
             $precio   = (float)$request->precio_unitario;
             $importes = $this->calcularImportesPartida($request, $cantidad, $precio);
@@ -504,6 +525,7 @@ private function syncProductoProveedorDesdeDetalle(OrdenCompra $oc, OrdenCompraD
             // si quieres forzar que siempre siga el tipo_cambio del encabezado:
             $detalle->tipo_cambio = $oc->tipo_cambio;
 
+            app(\App\Services\Compras\CompraRequisicionSaldoService::class)->validarVinculo($oc, $detalle);
             $detalle->save();
 
             $this->syncProductoProveedorDesdeDetalle($oc, $detalle);

@@ -341,6 +341,8 @@ class OrdenCompraController extends Controller
     $tiposIva = TipoIva::where('activo', true)->orderBy('porcentaje')->get();
     $selectedAreaId = null;
     $huentitanAreaId = Area::where('codigo', 'HT')->value('id');
+    $almacenesEntrega = \App\Models\Almacen::where('activo', true)->orderBy('nombre')->get();
+
     $solicitudesMantenimientoPendientes = $this->solicitudesMantenimientoConSaldoCompra();
 
     if (request()->filled('area_codigo')) {
@@ -355,6 +357,8 @@ class OrdenCompraController extends Controller
         'tiposIva',
         'selectedAreaId',
         'huentitanAreaId',
+        'almacenesEntrega',
+
         'solicitudesMantenimientoPendientes'
     ));
 }
@@ -449,6 +453,8 @@ class OrdenCompraController extends Controller
 
             $oc->otros_impuestos = 0;
             $oc->total = 0;
+
+            app(\App\Services\Compras\OrdenCompraEntregaService::class)->asignar($oc, $request->all());
 
 
             $oc->save();
@@ -644,6 +650,22 @@ public function edit($id)
         2
     );
 
+    $almacenesEntrega = \App\Models\Almacen::where('activo', true)->orderBy('nombre')->get();
+    $partidasRequisicion = \App\Models\ObraRequisicionDetalle::with('requisicion')
+        ->where('item_type', 'producto')->whereColumn('cantidad_autorizada', '>', 'cantidad_surtida')
+        ->whereHas('requisicion', fn ($q) => $q->where('obra_id', $oc->obra_id)
+            ->whereIn('estado', \App\Services\Compras\CompraRequisicionSaldoService::ESTADOS_SURTIBLES)
+            ->whereNotNull('autorizado_por')->whereNotNull('autorizado_at')
+            ->whereColumn('autorizado_por', '<>', 'solicitado_por'))
+        ->orderBy('id')->get();
+    $entregaBloqueada = $oc->recepcionesDirectas()->exists()
+        || $oc->detalles->contains(fn ($detalle) => (float) $detalle->cantidad_recibida > 0);
+    $recepcionesDirectas = null;
+    if (auth()->user()?->can(\App\Models\CompraRecepcionDirecta::PERMISO_VER)) {
+        $oc->load('detalles.requisicionDetalle.requisicion');
+        $recepcionesDirectas = app(\App\Services\Compras\CompraRecepcionDirectaConsultaService::class)->porOrden((int) $oc->id);
+    }
+
     return view('ordencompra.edit', compact(
         'oc',
         'areas',
@@ -651,7 +673,11 @@ public function edit($id)
         'obras',
         'centrosCosto',
         'tiposIva',
-        'tiposRetencion'
+        'tiposRetencion',
+        'almacenesEntrega',
+        'partidasRequisicion',
+        'recepcionesDirectas',
+        'entregaBloqueada'
     ));
 }
 
@@ -672,6 +698,11 @@ public function edit($id)
         }
 
         return DB::transaction(function () use ($request, $oc) {
+
+            $oc = OrdenCompra::query()->whereKey($oc->id)->lockForUpdate()->firstOrFail();
+            if (in_array($oc->estado_normalizado, ['autorizada', 'verificada', 'cancelada'], true)) {
+                return back()->with('error', 'No puedes editar una orden autorizada o cancelada.');
+            }
 
             $area = Area::findOrFail($request->area_id);
             $esCajaChica = $request->boolean('es_caja_chica');
@@ -697,6 +728,7 @@ public function edit($id)
 
             $oc->fecha        = $request->fecha;
 
+            app(\App\Services\Compras\OrdenCompraEntregaService::class)->asignar($oc, $request->all());
             $oc->save();
 
             $actualizoIvaManual = false;
@@ -2110,13 +2142,16 @@ foreach ($oc->detalles as $detalle) {
     $vobo2Nombre = $firmasImpresas->get(DocumentoFirmante::CAMPO_VOBO_2)?->user?->name ?? '';
 
     // Combinar ambos slots; si solo hay uno, no aparece el separador
-    $voboNombre = trim(implode(' <br> ', array_filter([$vobo1Nombre, $vobo2Nombre])));
+    $voboNombre = trim(implode("\n", array_filter([$vobo1Nombre, $vobo2Nombre])));
 
     $enteradoNombre = $firmasImpresas
         ->get(DocumentoFirmante::CAMPO_ENTERADO)
         ?->user
         ?->name
         ?? '';
+
+    $voboLineas = max(1, substr_count($voboNombre, "\n") + 1);
+    $enteradoLineas = max(1, substr_count($enteradoNombre, "\n") + 1);
 
     $pdf->SetFont('Arial', 'B', 8);
 
@@ -2140,22 +2175,20 @@ foreach ($oc->detalles as $detalle) {
         'C'
     );
 
-    $pdf->SetXY($X0 + 115, $Y + 13);
-    $pdf->Cell(
+    $pdf->SetXY($X0 + 115, $Y + 14);
+    $pdf->MultiCell(
         50,
         5,
         $utf8($voboNombre),
         0,
-        0,
         'C'
     );
 
-    $pdf->SetXY($X0 + 170, $Y + 13);
-    $pdf->Cell(
+    $pdf->SetXY($X0 + 170, $Y + 14);
+    $pdf->MultiCell(
         35,
         5,
         $utf8($enteradoNombre),
-        0,
         0,
         'C'
     );
@@ -2183,7 +2216,7 @@ foreach ($oc->detalles as $detalle) {
         'C'
     );
 
-    $pdf->SetXY($X0 + 115, $Y + 18);
+    $pdf->SetXY($X0 + 115, $Y + 14 + ($voboLineas * 5) + 2);
     $pdf->Cell(
         50,
         5,
@@ -2193,7 +2226,7 @@ foreach ($oc->detalles as $detalle) {
         'C'
     );
 
-    $pdf->SetXY($X0 + 170, $Y + 18);
+    $pdf->SetXY($X0 + 170, $Y + 14 + ($enteradoLineas * 5) + 2);
     $pdf->Cell(
         35,
         5,

@@ -69,6 +69,13 @@ class ProductoController extends Controller
     $perPage = in_array($perPage, [20, 50, 100, 200], true) ? $perPage : 20;
 
     $productos = $q->paginate($perPage)->withQueryString();
+    $ultimosMovimientos = DB::table('inventario_movimientos')
+        ->where('almacen_id', $almacenGiralda?->id ?? 0)
+        ->whereIn('producto_id', $productos->getCollection()->pluck('id'))
+        ->select('producto_id')
+        ->selectRaw("MAX(CASE WHEN tipo_movimiento = 'in' THEN fecha END) as ultima_entrada")
+        ->selectRaw("MAX(CASE WHEN tipo_movimiento = 'out' THEN fecha END) as ultima_salida")
+        ->groupBy('producto_id')->get()->keyBy('producto_id');
 
     $solicitudesAlmacenPendientes = MantenimientoAbastecimiento::query()
         ->where('tipo', MantenimientoAbastecimiento::TIPO_ALMACEN)
@@ -77,7 +84,7 @@ class ProductoController extends Controller
             ->whereColumn('cantidad_solicitada', '>', 'cantidad_atendida'))
         ->count();
 
-    return view('productos.index', compact('productos', 'perPage', 'solicitudesAlmacenPendientes'));
+    return view('productos.index', compact('productos', 'perPage', 'solicitudesAlmacenPendientes', 'ultimosMovimientos'));
 }
 
 

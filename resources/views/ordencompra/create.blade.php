@@ -10,6 +10,15 @@
         </a>
     </div>
 
+    @if($errors->any())
+        <div role="alert" class="mb-4 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+            <p class="font-semibold">No se pudo crear la orden. Revisa lo siguiente:</p>
+            <ul class="mt-2 list-inside list-disc">
+                @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+            </ul>
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('ordenes_compra.store') }}" class="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm" data-loading-form data-loading-message="Creando orden de compra...">
         @csrf
 
@@ -26,6 +35,7 @@
         </div>
 
         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            @include('ordencompra.partials.entrega')
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">Área</label>
                 <select name="area_id" id="area_id" data-huentitan-area-id="{{ $huentitanAreaId ?? '' }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
@@ -64,6 +74,7 @@
                         </option>
                     @endforeach
                 </select>
+                @error('obra_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
 
             <div class="relative">
@@ -621,6 +632,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function syncHuentitanUi() {
         const active = isHuentitanArea();
+        const entregaDirecta = document.getElementById('modalidad_entrega')?.value === 'obra_directa';
+        for (const option of origenSelect.options) {
+            option.disabled = active && entregaDirecta && option.value !== 'obra';
+        }
+        if (active && entregaDirecta) origenSelect.value = 'obra';
         wrapper.classList.toggle('hidden', !active);
         origenField?.classList.toggle('hidden', !active);
 
@@ -667,6 +683,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     areaSelect.addEventListener('change', syncHuentitanUi);
+    document.getElementById('modalidad_entrega')?.addEventListener('change', syncHuentitanUi);
     origenSelect.addEventListener('change', () => {
         ordenSelect.value = '';
         salidaSelect.value = '';

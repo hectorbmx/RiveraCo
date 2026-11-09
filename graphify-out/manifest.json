@@ -390,8 +390,8 @@
     "semantic_hash": "4e27f21d653e72b5a53d1d39b1d59826"
   },
   "app/Http/Controllers/ObraController.php": {
-    "mtime": 1793893251.3784785,
-    "ast_hash": "13afa07b6ebaaa72e146521296a25b5b",
+    "mtime": 1794241702.479398,
+    "ast_hash": "d5dc5bb8ec70c4b07d79077410ca7778",
     "semantic_hash": ""
   },
   "app/Http/Controllers/ObraEmpleadoController.php": {
@@ -440,13 +440,13 @@
     "semantic_hash": "c21468edce01faf20e972131a2718608"
   },
   "app/Http/Controllers/OrdenCompraController.php": {
-    "mtime": 1793287176.6393833,
-    "ast_hash": "9c681834d1a25cfb08b720d575c7923f",
+    "mtime": 1793991460.6263463,
+    "ast_hash": "37ccc18749d2183f78d09e46ba4a0c52",
     "semantic_hash": ""
   },
   "app/Http/Controllers/OrdenCompraDetalleController.php": {
-    "mtime": 1789756122.7757065,
-    "ast_hash": "cefa930335bea79e3db97c811583ff1a",
+    "mtime": 1793980296.2951877,
+    "ast_hash": "871689cd3ed5f746c071103e95abad79",
     "semantic_hash": ""
   },
   "app/Http/Controllers/PagoProveedorController.php": {
@@ -460,8 +460,8 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/ProductoController.php": {
-    "mtime": 1793031073.3440418,
-    "ast_hash": "73dd4b49ce28cda05fd92223a625c507",
+    "mtime": 1793984548.2662637,
+    "ast_hash": "08e2c2722eaa91b696746c68dd409065",
     "semantic_hash": ""
   },
   "app/Http/Controllers/ProfileController.php": {
@@ -620,23 +620,23 @@
     "semantic_hash": "4dc24cadcf89ed567b66e998dc68d962"
   },
   "app/Http/Requests/StoreOrdenCompraDetalleRequest.php": {
-    "mtime": 1789756081.1985855,
-    "ast_hash": "9fc132fcba6e14afeaba82350f214509",
+    "mtime": 1793980154.8812573,
+    "ast_hash": "8c70d0a46a69d345485b1daf25c880e5",
     "semantic_hash": ""
   },
   "app/Http/Requests/StoreOrdenCompraRequest.php": {
-    "mtime": 1792511237.1971593,
-    "ast_hash": "d25bfed8954180666b288b6dae9980e5",
+    "mtime": 1793912998.555772,
+    "ast_hash": "c9c2ef77489b15c44155b0b2f46a6656",
     "semantic_hash": ""
   },
   "app/Http/Requests/UpdateOrdenCompraDetalleRequest.php": {
-    "mtime": 1789756081.203586,
-    "ast_hash": "5e02e34b0f3e45215948ff3f2af25067",
+    "mtime": 1793980156.2053769,
+    "ast_hash": "fa127951d7b9697b78313e1a6108a982",
     "semantic_hash": ""
   },
   "app/Http/Requests/UpdateOrdenCompraRequest.php": {
-    "mtime": 1788280150.2919395,
-    "ast_hash": "56ed0ab42e9422e32182805d660ad8b7",
+    "mtime": 1793912999.7869475,
+    "ast_hash": "4dde1954fd6a97c650067a2770d2e5fb",
     "semantic_hash": ""
   },
   "app/Jobs/Sat/ProcessSatCsfRequestJob.php": {
@@ -835,19 +835,19 @@
     "semantic_hash": "cf0fc62ed90173f756b6cd55ab9186eb"
   },
   "app/Models/InventarioDocumento.php": {
-    "mtime": 1792510887.7021177,
-    "ast_hash": "a5ce32a607694fee730079cbbb2db457",
+    "mtime": 1793912097.7654989,
+    "ast_hash": "e5f8b53ae8c8b80a9866162d7d96dc24",
     "semantic_hash": ""
   },
   "app/Models/InventarioDocumentoDetalle.php": {
-    "mtime": 1792004546.5056221,
-    "ast_hash": "cfa5074e193ee8fd2eba95bac787bf75",
+    "mtime": 1793979084.3924448,
+    "ast_hash": "bf1af97251ddb28347953e7fe20a9cbc",
     "semantic_hash": ""
   },
   "app/Models/InventarioMovimiento.php": {
-    "mtime": 1770401779.0446384,
-    "ast_hash": "ea101067dbe020cfd904b71626d1a498",
-    "semantic_hash": "ea101067dbe020cfd904b71626d1a498"
+    "mtime": 1793979083.143853,
+    "ast_hash": "9ce1774bd28b751d90ec91fa79c7e07f",
+    "semantic_hash": ""
   },
   "app/Models/InventarioStock.php": {
     "mtime": 1770401779.0456364,
@@ -1025,13 +1025,13 @@
     "semantic_hash": "4ffad704a1b59c9aa3085b6de1410433"
   },
   "app/Models/OrdenCompra.php": {
-    "mtime": 1792511234.1778135,
-    "ast_hash": "8fa7e1c518f926ae47d069a7475f1739",
+    "mtime": 1793912997.3265562,
+    "ast_hash": "c23bad8769e072efb5692ea66ca05d92",
     "semantic_hash": ""
   },
   "app/Models/OrdenCompraDetalle.php": {
-    "mtime": 1792598298.5719368,
-    "ast_hash": "ab417c5f48aa69b5f917484a6887d9bc",
+    "mtime": 1793980153.5711386,
+    "ast_hash": "f0d04dcdfa1482ee66645c5ee151a9ce",
     "semantic_hash": ""
   },
   "app/Models/PagoProveedor.php": {
@@ -1300,8 +1300,8 @@
     "semantic_hash": "c55700676dbe7dd78ef69909eceb766a"
   },
   "app/Services/Inventario/InventarioDocumentoService.php": {
-    "mtime": 1792598301.3557782,
-    "ast_hash": "87256b182376ea95e87b27e1c5432e3b",
+    "mtime": 1794239660.622691,
+    "ast_hash": "a9e8e774a959585632e9f58ea34979ee",
     "semantic_hash": ""
   },
   "app/Services/Maquinas/MaquinaService.php": {
@@ -2820,8 +2820,8 @@
     "semantic_hash": ""
   },
   "resources/views/inventario/documentos/index.blade.php": {
-    "mtime": 1792511137.260109,
-    "ast_hash": "e761d0cbd5870418259ec8863aa96989",
+    "mtime": 1794238619.5508285,
+    "ast_hash": "064738524838f86008d20d3244664fb6",
     "semantic_hash": ""
   },
   "resources/views/inventario/documentos/show.blade.php": {
@@ -2965,8 +2965,8 @@
     "semantic_hash": ""
   },
   "resources/views/obras/edit.blade.php": {
-    "mtime": 1792170079.0893638,
-    "ast_hash": "15e2b3420012c0e76ba4b70316bb2509",
+    "mtime": 1793992174.8607337,
+    "ast_hash": "2c6a786a489905e281bebc32f1f0e513",
     "semantic_hash": ""
   },
   "resources/views/obras/factura-borradores/print.blade.php": {
@@ -3010,13 +3010,13 @@
     "semantic_hash": ""
   },
   "resources/views/ordencompra/create.blade.php": {
-    "mtime": 1792524164.8045304,
-    "ast_hash": "a9c4076c1694d968a1c1f2ba7679bc60",
+    "mtime": 1793982891.9162295,
+    "ast_hash": "943bf5d32748d8dc4e203b94f189facf",
     "semantic_hash": ""
   },
   "resources/views/ordencompra/edit.blade.php": {
-    "mtime": 1791913932.538682,
-    "ast_hash": "eb6f91642f7584367b7f9533f1c749de",
+    "mtime": 1793984055.1390934,
+    "ast_hash": "dfac90fcae877a9a15ffd749bacb22f2",
     "semantic_hash": ""
   },
   "resources/views/ordencompra/index.blade.php": {
@@ -3065,8 +3065,8 @@
     "semantic_hash": "10b755dd52352bf07c28c59d850ce5a4"
   },
   "resources/views/productos/index.blade.php": {
-    "mtime": 1792514744.746633,
-    "ast_hash": "88e4fc37373e48cb855dabd99d1807b9",
+    "mtime": 1793984549.615183,
+    "ast_hash": "eff409f79277f674d8fc3b96fd2c5a4b",
     "semantic_hash": ""
   },
   "resources/views/productos/partials/_costos.blade.php": {
@@ -3370,8 +3370,8 @@
     "semantic_hash": "62bfb59371c073b4ec966528fdd9c3f9"
   },
   "routes/web.php": {
-    "mtime": 1793821649.426091,
-    "ast_hash": "48f7bd58f829312f53f6693959705f45",
+    "mtime": 1794241704.0581105,
+    "ast_hash": "75bd0022115b0b3447ef0c29f63bb9eb",
     "semantic_hash": ""
   },
   "tailwind.config.js": {
@@ -4985,8 +4985,8 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/Inventario/HuentitanEntradaController.php": {
-    "mtime": 1789055032.3456614,
-    "ast_hash": "c0f972242db6a8ed8db97b998350e29b",
+    "mtime": 1793917928.7325323,
+    "ast_hash": "03b01960fa939bf7869d15e2985eb0a4",
     "semantic_hash": ""
   },
   "app/Http/Controllers/Inventario/HuentitanInventarioController.php": {
@@ -5095,8 +5095,8 @@
     "semantic_hash": ""
   },
   "app/Support/Inventario/UnidadMedidaCatalogo.php": {
-    "mtime": 1792516502.5129776,
-    "ast_hash": "cfecf8d2ca73e63a54d6d000d2a55538",
+    "mtime": 1793983844.33991,
+    "ast_hash": "2b99f903d5b756b0c29297b1d4743896",
     "semantic_hash": ""
   },
   "database/migrations/2026_09_01_121600_create_documento_firma_definiciones_table.php": {
@@ -5325,8 +5325,8 @@
     "semantic_hash": ""
   },
   "resources/views/huentitan/entradas/index.blade.php": {
-    "mtime": 1788806418.5647864,
-    "ast_hash": "ac1bad4947ef004d9d8da1159da91c88",
+    "mtime": 1794238621.627428,
+    "ast_hash": "92095c8dc85be6df815307ef8d0950aa",
     "semantic_hash": ""
   },
   "resources/views/huentitan/entradas/show.blade.php": {
@@ -5440,8 +5440,8 @@
     "semantic_hash": ""
   },
   "resources/views/obras/partials/ordenes_compra/tab.blade.php": {
-    "mtime": 1792000012.1140876,
-    "ast_hash": "4500fc6fcbc533e7ea8f8dbd3b91b5f5",
+    "mtime": 1793990993.934377,
+    "ast_hash": "dc3af24412ed734655cbab1e1408b309",
     "semantic_hash": ""
   },
   "resources/views/privacidad/index.blade.php": {
@@ -6000,1402 +6000,1402 @@
     "semantic_hash": ""
   },
   "storage/framework/views/011c7d39696c13f24371e745a35cf3d4.php": {
-    "mtime": 1793822675.245457,
+    "mtime": 1794241970.205394,
     "ast_hash": "7d266b8689f9068125f86cc838aa702a",
     "semantic_hash": ""
   },
   "storage/framework/views/01e2aa40c39ff2c60dea03120415e75c.php": {
-    "mtime": 1793822673.767082,
+    "mtime": 1794241966.172852,
     "ast_hash": "199ff090c62602157a38990ac6ca167a",
     "semantic_hash": ""
   },
   "storage/framework/views/028dc767988a7a48c90a089103f3f403.php": {
-    "mtime": 1793822672.9280803,
+    "mtime": 1794241963.8660996,
     "ast_hash": "88030d620ee95813fa85aaff835f3658",
     "semantic_hash": ""
   },
   "storage/framework/views/0298f3b957d44c6ce01dfcb40a1c29d5.php": {
-    "mtime": 1793822674.564203,
+    "mtime": 1794241968.4221673,
     "ast_hash": "6b9b75f7ddd1cd675bdf561df4decea1",
     "semantic_hash": ""
   },
   "storage/framework/views/03c0b12df2a03c3bf0c00f04244f7a71.php": {
-    "mtime": 1793822673.9050703,
+    "mtime": 1794241966.3348536,
     "ast_hash": "7fe80993f9ddd5ba0b71370f1ff05399",
     "semantic_hash": ""
   },
   "storage/framework/views/041b97729d343863d6c6e7c9bd34e48f.php": {
-    "mtime": 1793822673.0183623,
+    "mtime": 1794241964.0778122,
     "ast_hash": "424ea21f1661a9fd4522983bd8cb4eda",
     "semantic_hash": ""
   },
   "storage/framework/views/053027c23ad5e15957ef8c5a758e5e96.php": {
-    "mtime": 1793822673.3245287,
+    "mtime": 1794241964.578586,
     "ast_hash": "68ea98fe2f6474b54070180fb2deb411",
     "semantic_hash": ""
   },
   "storage/framework/views/066dabb35ba4a846d55cb1ca03794fc6.php": {
-    "mtime": 1793822673.7601364,
+    "mtime": 1794241966.163861,
     "ast_hash": "aaa85669021bd929ddd69c64b8acd8bb",
     "semantic_hash": ""
   },
   "storage/framework/views/067f74674c0d5422d84870af9e92f1d2.php": {
-    "mtime": 1793822674.3896074,
+    "mtime": 1794241968.1052568,
     "ast_hash": "46cc1ef2b97684c3244ba2bc8f3eadcf",
     "semantic_hash": ""
   },
   "storage/framework/views/0730a29172fa8eb705dfce66665e1c41.php": {
-    "mtime": 1793822672.761469,
+    "mtime": 1794241963.070737,
     "ast_hash": "5d4a803a4087d625e14be6e16534d2c3",
     "semantic_hash": ""
   },
   "storage/framework/views/07479eb5e3b05d804b3bd6338762f776.php": {
-    "mtime": 1793822675.2237325,
+    "mtime": 1794241970.1742816,
     "ast_hash": "76e43b5a2e1b6fc2dcf63d32286da708",
     "semantic_hash": ""
   },
   "storage/framework/views/075c33260bc56e5c66bfe407585fbb18.php": {
-    "mtime": 1793822673.3855155,
+    "mtime": 1794241964.7205884,
     "ast_hash": "138f9379451eb01906a669f0516e651b",
     "semantic_hash": ""
   },
   "storage/framework/views/089b1ab5ea98edbc9a09c2023f8696d4.php": {
-    "mtime": 1793822673.1893601,
+    "mtime": 1794241964.4115868,
     "ast_hash": "aedc19658b443014a7d51cc59cb5f03c",
     "semantic_hash": ""
   },
   "storage/framework/views/08b85394fdc8795122036a58692b09ea.php": {
-    "mtime": 1793822674.1327488,
-    "ast_hash": "6e317cecb93700476f652756cfc1915e",
+    "mtime": 1794241967.2496789,
+    "ast_hash": "b91803ff1fbdbe5d4bff745715c68160",
     "semantic_hash": ""
   },
   "storage/framework/views/09774a685f5a0c5fd3076fc46d438059.php": {
-    "mtime": 1793822674.1086147,
+    "mtime": 1794241966.8375301,
     "ast_hash": "52d98f09082ed7ffdbb41ad298fe6e76",
     "semantic_hash": ""
   },
   "storage/framework/views/0bb3983cf4ed69f1bae58461bdb3e723.php": {
-    "mtime": 1793822675.4187896,
+    "mtime": 1794241970.9137125,
     "ast_hash": "cbca547a908cf8dd5d5023fa15d5fd5d",
     "semantic_hash": ""
   },
   "storage/framework/views/0bbd322949b629086b7a859e2ba2e0c7.php": {
-    "mtime": 1793822674.0959942,
+    "mtime": 1794241966.8275294,
     "ast_hash": "8630a794e34cd87c66e120f8ba1b1068",
     "semantic_hash": ""
   },
   "storage/framework/views/110b2a75b93acecbb63e2581bca4a0b7.php": {
-    "mtime": 1793822672.954076,
+    "mtime": 1794241963.9290936,
     "ast_hash": "b7a93d31bf6368c02c4f222ff06d62eb",
     "semantic_hash": ""
   },
   "storage/framework/views/119c863510e5addcb18815fec401e275.php": {
-    "mtime": 1793822674.2099152,
+    "mtime": 1794241967.49726,
     "ast_hash": "a61d851ca6b60eeb6f4a4de1beb27aac",
     "semantic_hash": ""
   },
   "storage/framework/views/124d2f64ee7bcb41142dfeef41b50361.php": {
-    "mtime": 1793822672.9500782,
+    "mtime": 1794241963.8811042,
     "ast_hash": "6df2a1b659d99f11d3f63814c925b60f",
     "semantic_hash": ""
   },
   "storage/framework/views/131b3b3c4d93999665edeff27fa86f7b.php": {
-    "mtime": 1793822674.337219,
+    "mtime": 1794241967.865259,
     "ast_hash": "71d14869d8bf5272584b7eaf6fd188aa",
     "semantic_hash": ""
   },
   "storage/framework/views/13f976f45581c31f7c742267fb18cce0.php": {
-    "mtime": 1793822674.1029916,
+    "mtime": 1794241966.8315206,
     "ast_hash": "806f28b7948617f639d4ad2762081ba1",
     "semantic_hash": ""
   },
   "storage/framework/views/157f6d971e97919e4f56d6feb2b919a8.php": {
-    "mtime": 1793822674.4860828,
+    "mtime": 1794241968.352292,
     "ast_hash": "4f3d4b6ee61de21ca487c205a70f5e36",
     "semantic_hash": ""
   },
   "storage/framework/views/158fb44eddc53caf5406295fd79144b2.php": {
-    "mtime": 1793822674.941481,
+    "mtime": 1794241969.3336723,
     "ast_hash": "b8810c818a72b9dce02f97a34bc3edd3",
     "semantic_hash": ""
   },
   "storage/framework/views/18068685a811adde50bec2c77f5b4f9e.php": {
-    "mtime": 1793822675.0354772,
+    "mtime": 1794241969.635839,
     "ast_hash": "9581e21e2f0f85be407255d9b496a2dd",
     "semantic_hash": ""
   },
   "storage/framework/views/1835e80e14c6b76abee3d5d8d5228a8d.php": {
-    "mtime": 1793822672.6665454,
+    "mtime": 1794241962.9940655,
     "ast_hash": "ca8751b9dc5adbe16d1b2504d5249ff4",
     "semantic_hash": ""
   },
   "storage/framework/views/185011fe98670727d1a59ec7236550c7.php": {
-    "mtime": 1793822674.0839942,
+    "mtime": 1794241966.8205218,
     "ast_hash": "2880ccee297e35e89131a33edd3671f1",
     "semantic_hash": ""
   },
   "storage/framework/views/196a710cb13d429540f7b02c130aff0c.php": {
-    "mtime": 1793822673.7860706,
+    "mtime": 1794241966.226859,
     "ast_hash": "17ea90c44e95dbb62b8bfe580f43b833",
     "semantic_hash": ""
   },
   "storage/framework/views/1a82d57f907547f813540df32e5e83de.php": {
-    "mtime": 1793822674.446082,
-    "ast_hash": "dbd92fc24cf504231ef4924ae56972ad",
+    "mtime": 1794241968.1552584,
+    "ast_hash": "031d216148c63cf88cb33562e575995f",
     "semantic_hash": ""
   },
   "storage/framework/views/2053c64407d0cd51b1a6e415de776be5.php": {
-    "mtime": 1793822674.0620713,
+    "mtime": 1794241966.8025246,
     "ast_hash": "2fa1ab0a27900ef2ae877ac18a9bf16c",
     "semantic_hash": ""
   },
   "storage/framework/views/20e025c0f8ca396ec9b548ce06c6e36a.php": {
-    "mtime": 1793822675.351918,
+    "mtime": 1794241970.7549515,
     "ast_hash": "ec750303124e5b52a9248737c99f474c",
     "semantic_hash": ""
   },
   "storage/framework/views/21891df1c2307a2a0e578068b1538399.php": {
-    "mtime": 1793822675.3559148,
+    "mtime": 1794241970.830286,
     "ast_hash": "67eac29f58db82355b55751af5ad37e8",
     "semantic_hash": ""
   },
   "storage/framework/views/21a9b6a78083ad3062240071c7123bfe.php": {
-    "mtime": 1793822673.5381322,
+    "mtime": 1794241965.3257213,
     "ast_hash": "b277eb3c007b8dde0f8b0198be9d88b7",
     "semantic_hash": ""
   },
   "storage/framework/views/2245dd3aa97fc47a270890bcaf72c56d.php": {
-    "mtime": 1793822674.041072,
+    "mtime": 1794241966.7089016,
     "ast_hash": "12fee73062155791226f34899befed11",
     "semantic_hash": ""
   },
   "storage/framework/views/2255aef76127c58a763132644a050950.php": {
-    "mtime": 1793822672.9430776,
+    "mtime": 1794241963.8761072,
     "ast_hash": "734d4d94695f86d1d3f1c99e2e4889c3",
     "semantic_hash": ""
   },
   "storage/framework/views/22609440b931a894afdda79aa88414c2.php": {
-    "mtime": 1793822672.7425244,
+    "mtime": 1794241963.056591,
     "ast_hash": "32a2bb3869a9e27c391c4c74ed9721e1",
     "semantic_hash": ""
   },
   "storage/framework/views/231d6c3cc20e4b5fe038534307b95229.php": {
-    "mtime": 1793822672.6625452,
+    "mtime": 1794241962.99005,
     "ast_hash": "5357a1e02b7a1973f0d749764f2e8b78",
     "semantic_hash": ""
   },
   "storage/framework/views/23a925f08e6ea278b8028d0ea2b87720.php": {
-    "mtime": 1793822675.3622406,
+    "mtime": 1794241970.8415968,
     "ast_hash": "5f21aae814df645c59d9c7fbf72620e6",
     "semantic_hash": ""
   },
   "storage/framework/views/2410fd0010f65b5ed0007e74524b82d8.php": {
-    "mtime": 1793822674.534143,
+    "mtime": 1794241968.3640983,
     "ast_hash": "e407abaaed0dd1371e5ca6de22f96be5",
     "semantic_hash": ""
   },
   "storage/framework/views/2417c1f7b5d8f8d3139e2da423b615d8.php": {
-    "mtime": 1793822672.859248,
+    "mtime": 1794241963.453308,
     "ast_hash": "333d53c5a3e511fc24f4d133c94ad187",
     "semantic_hash": ""
   },
   "storage/framework/views/24218242645ebf3bfa327e464c0c2343.php": {
-    "mtime": 1793822672.8469255,
+    "mtime": 1794241963.447124,
     "ast_hash": "5d7b90bab45358a5d8511a47514d62f3",
     "semantic_hash": ""
   },
   "storage/framework/views/24945f7316db35673d2d3919be1f3619.php": {
-    "mtime": 1793822674.2672455,
+    "mtime": 1794241967.622259,
     "ast_hash": "83ace79642fef1856bfcbaf4ec7b10e6",
     "semantic_hash": ""
   },
   "storage/framework/views/26b5bda497625e9d0c1e34f7fad5d9c7.php": {
-    "mtime": 1793822675.37752,
+    "mtime": 1794241970.8682146,
     "ast_hash": "b40883a8f65cf247e799905dad60296b",
     "semantic_hash": ""
   },
   "storage/framework/views/26e2110a6d67b774fc1bfccf9c6142b3.php": {
-    "mtime": 1793822674.800852,
+    "mtime": 1794241968.5666835,
     "ast_hash": "ea6691a4d6d182b234b3845d6bd4f68b",
     "semantic_hash": ""
   },
   "storage/framework/views/27a343e983712e1aaad36f35d0349954.php": {
-    "mtime": 1793822673.5321362,
+    "mtime": 1794241965.3207188,
     "ast_hash": "8f1b512faeae97e146c008df0639c38b",
     "semantic_hash": ""
   },
   "storage/framework/views/2835931cf67106a60001da8f9a702caf.php": {
-    "mtime": 1793822673.508519,
+    "mtime": 1794241965.2987204,
     "ast_hash": "c805ac07f7bf37644686c774167881b0",
     "semantic_hash": ""
   },
   "storage/framework/views/29c161bd06ce6273f943b8e1fef8e872.php": {
-    "mtime": 1793822672.8344355,
+    "mtime": 1794241963.2168283,
     "ast_hash": "0b9cc6d2255d4ae7219bc2081371d414",
     "semantic_hash": ""
   },
   "storage/framework/views/29cee1947e027f5730e87599e7e37eed.php": {
-    "mtime": 1793822674.2449088,
+    "mtime": 1794241967.6032586,
     "ast_hash": "6ba963d25f346763e5a0f7c60a240612",
     "semantic_hash": ""
   },
   "storage/framework/views/2cf1089c17bd7ebb7deee6a64183b24b.php": {
-    "mtime": 1793822674.3077075,
+    "mtime": 1794241967.8482585,
     "ast_hash": "11c376ef59ac2b8260fa0448a1e004b0",
     "semantic_hash": ""
   },
   "storage/framework/views/2d1fe3c7f3eb90ce7702850fba1d0b04.php": {
-    "mtime": 1793822674.883476,
+    "mtime": 1794241968.8740463,
     "ast_hash": "ee734de7f78583b812a8fc1b4cfd7280",
     "semantic_hash": ""
   },
   "storage/framework/views/2d323a8ad75556fd3a9d74487fddb95e.php": {
-    "mtime": 1793822674.2622454,
+    "mtime": 1794241967.6172564,
     "ast_hash": "7a11828f89e9eb281746cb7fcd79392a",
     "semantic_hash": ""
   },
   "storage/framework/views/2e14b26e7fdb0c3a518205c63e8fdbe7.php": {
-    "mtime": 1793822674.1645265,
+    "mtime": 1794241967.2892566,
     "ast_hash": "6e63aa7847d8837f4002687d5dc3660e",
     "semantic_hash": ""
   },
   "storage/framework/views/2ef0a0af204f94ec4f2b1fd70f9dc6f6.php": {
-    "mtime": 1793822672.93908,
+    "mtime": 1794241963.8721035,
     "ast_hash": "553fbe88d755aaf22679da520d5688ae",
     "semantic_hash": ""
   },
   "storage/framework/views/2fec91dc77630cd3d82aaf4b5e995c77.php": {
-    "mtime": 1793822675.3985217,
+    "mtime": 1794241970.8898313,
     "ast_hash": "d9c637d7313e4d1a3b1f6b9c7f146d52",
     "semantic_hash": ""
   },
   "storage/framework/views/3103ca16cdeaf4bbceeb4680baea21e7.php": {
-    "mtime": 1793822674.1226141,
+    "mtime": 1794241966.850523,
     "ast_hash": "17c75a6d195309c5a83ceb69d6c1b84b",
     "semantic_hash": ""
   },
   "storage/framework/views/326211a1c675a2058223a446ae282834.php": {
-    "mtime": 1793822675.077479,
+    "mtime": 1794241969.7228196,
     "ast_hash": "23f135069b5e00fcbc21e2cef54ee9e4",
     "semantic_hash": ""
   },
   "storage/framework/views/34651c33e68ff2bc96dc6343be374d7b.php": {
-    "mtime": 1793822674.5530617,
+    "mtime": 1794241968.412631,
     "ast_hash": "2f192d7188a08cf7dbf4f618d019a74e",
     "semantic_hash": ""
   },
   "storage/framework/views/354b6ff0212ef8a8621f5e5cc657e245.php": {
-    "mtime": 1793822672.7106266,
+    "mtime": 1794241963.0404458,
     "ast_hash": "76210cf5d84849a7b37bed7113f58dca",
     "semantic_hash": ""
   },
   "storage/framework/views/3683044567acecc97328003758029c3a.php": {
-    "mtime": 1793822674.215911,
-    "ast_hash": "db496931806540bf56898a284342154d",
+    "mtime": 1794241967.5032609,
+    "ast_hash": "dff5417c7325e37189c1a35e922f5e63",
     "semantic_hash": ""
   },
   "storage/framework/views/3701a69afb439c105e4ef6f6aebedadf.php": {
-    "mtime": 1793822674.7313173,
+    "mtime": 1794241968.4581373,
     "ast_hash": "3c449f7aa6b1eed0ba36867f4d8f1cf0",
     "semantic_hash": ""
   },
   "storage/framework/views/370da7db17bf64b58548d6e865a0f739.php": {
-    "mtime": 1793822674.9894762,
+    "mtime": 1794241969.4170687,
     "ast_hash": "5a2b3e55466fe64bf11eefc9eeeb2b37",
     "semantic_hash": ""
   },
   "storage/framework/views/37e5450a09fb2dd46650688dfb2fb8c2.php": {
-    "mtime": 1793822673.4955106,
+    "mtime": 1794241965.1185894,
     "ast_hash": "330aa22a792f697776f80c3292e86a1a",
     "semantic_hash": ""
   },
   "storage/framework/views/37ef0dc3b628ab7fa44625355c061ec9.php": {
-    "mtime": 1793822672.9100785,
+    "mtime": 1794241963.843418,
     "ast_hash": "8d5a7e4d30cf46d8a7b34065b7190048",
     "semantic_hash": ""
   },
   "storage/framework/views/387a2226053abe0024ccffbf666b34d8.php": {
-    "mtime": 1793822675.411522,
+    "mtime": 1794241970.908187,
     "ast_hash": "b5f28d3eb73df5d699376a9077307afc",
     "semantic_hash": ""
   },
   "storage/framework/views/388acb36efda95501c93145b79ccb7e4.php": {
-    "mtime": 1793822672.898081,
+    "mtime": 1794241963.8054633,
     "ast_hash": "d9ccfaeda47f4e64e8877da54e540ad8",
     "semantic_hash": ""
   },
   "storage/framework/views/38dc26e53cc98c2355b62427a4276876.php": {
-    "mtime": 1793822673.2103605,
+    "mtime": 1794241964.4295886,
     "ast_hash": "ebb04e44329aeff1ae85f7a53921cb9b",
     "semantic_hash": ""
   },
   "storage/framework/views/38e41ab7844f382e46ff91b196ca30bb.php": {
-    "mtime": 1793822674.9094782,
+    "mtime": 1794241968.8843858,
     "ast_hash": "3df731c1fbd885a3796dd698f681fcc3",
     "semantic_hash": ""
   },
   "storage/framework/views/3a111f6a3d93aeb374cb4ffb95d6b302.php": {
-    "mtime": 1793822673.4795141,
+    "mtime": 1794241965.0715911,
     "ast_hash": "deec583017fa41674810ff7c999c2b2c",
     "semantic_hash": ""
   },
   "storage/framework/views/3a3d0f7041b708aa9382af0f3fae87a6.php": {
-    "mtime": 1793822673.2053645,
+    "mtime": 1794241964.425591,
     "ast_hash": "92afffb6d48278ee6c12b76c309f54ac",
     "semantic_hash": ""
   },
   "storage/framework/views/3ad0c588eeda6cbbc28339642d4fbd7a.php": {
-    "mtime": 1793822674.2712488,
+    "mtime": 1794241967.8182597,
     "ast_hash": "c51610abe251a406d92ed513f64e0007",
     "semantic_hash": ""
   },
   "storage/framework/views/3ae4cc0de636927932278c653dcdab07.php": {
-    "mtime": 1793822673.7551322,
+    "mtime": 1794241966.1544738,
     "ast_hash": "a67f29d102d098b7de40ff870a4f9e33",
     "semantic_hash": ""
   },
   "storage/framework/views/3bea8c46f42dc3af9044af565587dba9.php": {
-    "mtime": 1793822674.7718518,
+    "mtime": 1794241968.4861348,
     "ast_hash": "2ba3a6ee2af8ab684b74ccd0b200f990",
     "semantic_hash": ""
   },
   "storage/framework/views/3f11dc73431c5a198122813f83f99976.php": {
-    "mtime": 1793822673.7041326,
+    "mtime": 1794241965.7907197,
     "ast_hash": "5d08593b08a1dfad8950b15ede96f350",
     "semantic_hash": ""
   },
   "storage/framework/views/40a655087dc129ae8df59d57d5f93b20.php": {
-    "mtime": 1793822674.5924919,
+    "mtime": 1794241968.4319415,
     "ast_hash": "e196ee82df104c2b235f11af1c5aa6c0",
     "semantic_hash": ""
   },
   "storage/framework/views/4136bf55cfe01d5f76278950a041a2d1.php": {
-    "mtime": 1793822672.902081,
+    "mtime": 1794241963.8055062,
     "ast_hash": "644f4e9a711e3804b51b6e9a5ca883c5",
     "semantic_hash": ""
   },
   "storage/framework/views/41831b5ae8df95de185f56c4f430760a.php": {
-    "mtime": 1793822674.158525,
+    "mtime": 1794241967.2832637,
     "ast_hash": "add66b56f0e5ef5cb77e4666d4e47be0",
     "semantic_hash": ""
   },
   "storage/framework/views/4354e0bf0b1dbe9582bad861245eb1de.php": {
-    "mtime": 1793822674.0689924,
+    "mtime": 1794241966.8085237,
     "ast_hash": "0099e49c149975b52084d7a4ec0091ab",
     "semantic_hash": ""
   },
   "storage/framework/views/4384f5594bae49d40331c795f6e0f92f.php": {
-    "mtime": 1793822673.4595108,
+    "mtime": 1794241965.0005906,
     "ast_hash": "4507d1227a7824afa5555811f4a8e5b6",
     "semantic_hash": ""
   },
   "storage/framework/views/4394fef98069d6ec33f01cd54e2aa709.php": {
-    "mtime": 1793822672.8800812,
+    "mtime": 1794241963.7772646,
     "ast_hash": "aee0029224da3666f31cd4267efa94a2",
     "semantic_hash": ""
   },
   "storage/framework/views/44609a8f584e3122ef54ec11c073965c.php": {
-    "mtime": 1793822673.159365,
+    "mtime": 1794241964.3815322,
     "ast_hash": "65fa10f28aa251967d4c59da81397bab",
     "semantic_hash": ""
   },
   "storage/framework/views/448b32d435ea559599ecf8fe94999607.php": {
-    "mtime": 1793822672.6865447,
+    "mtime": 1794241963.0174026,
     "ast_hash": "0d20a576f456272808ddb05da03b75d3",
     "semantic_hash": ""
   },
   "storage/framework/views/44f68e60e5c1514740a0fd2815a74fda.php": {
-    "mtime": 1793822674.5692039,
+    "mtime": 1794241968.4267895,
     "ast_hash": "6bb1bc2c5b50909a419e41d6ac359495",
     "semantic_hash": ""
   },
   "storage/framework/views/460382a6362a53cddf2b9a54979aa4b7.php": {
-    "mtime": 1793822674.6541953,
-    "ast_hash": "d581afb69bcf58b7e0577ed75b994043",
+    "mtime": 1794241968.4370613,
+    "ast_hash": "335567943577693d1b7d2bc3afbb528f",
     "semantic_hash": ""
   },
   "storage/framework/views/466b08675130ea2a6325b1109f6fe553.php": {
-    "mtime": 1793822673.5781384,
+    "mtime": 1794241965.4787202,
     "ast_hash": "ab2f2bed5533192e053bb7a56b8cc3e6",
     "semantic_hash": ""
   },
   "storage/framework/views/47867bc1f8bdb6ab80fc96196bd327a5.php": {
-    "mtime": 1793822673.3335145,
+    "mtime": 1794241964.5955873,
     "ast_hash": "a694d2133e1b680c2418a8e3f5fc8876",
     "semantic_hash": ""
   },
   "storage/framework/views/49ebf0a6162d022c8e40c3a192cff13f.php": {
-    "mtime": 1793822675.0914876,
+    "mtime": 1794241969.7489219,
     "ast_hash": "af4322b5f3ee5c9b91d3295c90674493",
     "semantic_hash": ""
   },
   "storage/framework/views/4c3b8192e91176ea8c193522317909de.php": {
-    "mtime": 1793822675.2644584,
+    "mtime": 1794241970.2257621,
     "ast_hash": "cdedee75f8218f28b4a86916cf9d6c8c",
     "semantic_hash": ""
   },
   "storage/framework/views/4c7af66ac662e87f94ef983106ee2315.php": {
-    "mtime": 1793822674.3031552,
+    "mtime": 1794241967.8422606,
     "ast_hash": "3e9d9fd76840ae358aafaa88bb0c7b3e",
     "semantic_hash": ""
   },
   "storage/framework/views/4d4d5045940b94ff7b87d6b50664b71f.php": {
-    "mtime": 1793822672.8880792,
+    "mtime": 1794241963.7953446,
     "ast_hash": "cdf5ba5b45fafb17981c1bf787ca54fc",
     "semantic_hash": ""
   },
   "storage/framework/views/4e2f996d4375d5d164ad983f951d830c.php": {
-    "mtime": 1793822675.3196704,
+    "mtime": 1794241970.667124,
     "ast_hash": "bcdfec9cdec2ec7b1b9ba84bbbeaf799",
     "semantic_hash": ""
   },
   "storage/framework/views/4e31e4b251920ee3587c965432cb31a2.php": {
-    "mtime": 1793822675.3905244,
+    "mtime": 1794241970.8802166,
     "ast_hash": "f8a591f0258fe6a32eb842b941ba9bbb",
     "semantic_hash": ""
   },
   "storage/framework/views/4f2f8e61dc15fff5a143c6a041ffb4b7.php": {
-    "mtime": 1793822675.0524766,
-    "ast_hash": "813f8ee4f81c0fa982ab286523401df7",
+    "mtime": 1794241969.702449,
+    "ast_hash": "d3a35072e3fa1e953b8dae0d89602985",
     "semantic_hash": ""
   },
   "storage/framework/views/4f6fadbb0d805077cd59d13b470854c6.php": {
-    "mtime": 1793822673.3955116,
+    "mtime": 1794241964.8705862,
     "ast_hash": "9a355ba4b8ab9f950b5a196cf80e6339",
     "semantic_hash": ""
   },
   "storage/framework/views/4fed1db4b2b14796cdb313f02d6af2e6.php": {
-    "mtime": 1793822672.9180834,
+    "mtime": 1794241963.8473227,
     "ast_hash": "01471578899aed8335d7556bcc839b6e",
     "semantic_hash": ""
   },
   "storage/framework/views/509ee6e87ec8865a66c35ac3a5c9eb42.php": {
-    "mtime": 1793822673.1943617,
+    "mtime": 1794241964.4145882,
     "ast_hash": "1128ca837acfc26b45e835f9069e3e1a",
     "semantic_hash": ""
   },
   "storage/framework/views/531e99c394bcfbcd8274ed07eb151ddf.php": {
-    "mtime": 1793822674.316703,
+    "mtime": 1794241967.8542628,
     "ast_hash": "ae8831d7921bb9786b1c37ed04f70eb4",
     "semantic_hash": ""
   },
   "storage/framework/views/55eedfaa99fa59c12cf46fc4d1635750.php": {
-    "mtime": 1793822675.3945205,
+    "mtime": 1794241970.8857598,
     "ast_hash": "d779602d9b383c6d4ba095322a0df156",
     "semantic_hash": ""
   },
   "storage/framework/views/565f12b3e9e27a06a1d0bca6514d4b28.php": {
-    "mtime": 1793822672.9923604,
+    "mtime": 1794241963.9877036,
     "ast_hash": "daeb780667db3889fb627b7c418bae4a",
     "semantic_hash": ""
   },
   "storage/framework/views/570f1579373e9afda90bf78a76bb6b31.php": {
-    "mtime": 1793822673.030362,
+    "mtime": 1794241964.0868118,
     "ast_hash": "6aadf126da23f7ce357dced66250a370",
     "semantic_hash": ""
   },
   "storage/framework/views/5b12d82573d03f0ad33b3e3c29397197.php": {
-    "mtime": 1793822673.5191338,
-    "ast_hash": "5ee9a7aa2d3eaa02d54dd9349b885d9c",
+    "mtime": 1794241965.3097184,
+    "ast_hash": "84001506cd3bbb8b53c96ee897d78ba9",
     "semantic_hash": ""
   },
   "storage/framework/views/5bd83986c99aeac166b047330586df90.php": {
-    "mtime": 1793822675.4055214,
+    "mtime": 1794241970.9014692,
     "ast_hash": "8136df1fe7077282bbca2b31b91027c9",
     "semantic_hash": ""
   },
   "storage/framework/views/5c66cbcff20d6499750a3084b2463891.php": {
-    "mtime": 1793822673.6331348,
+    "mtime": 1794241965.649719,
     "ast_hash": "c1c88df1f2ad7a780c62ec0131b1b07c",
     "semantic_hash": ""
   },
   "storage/framework/views/5c7f4074e2c3adae73b79077e6826d69.php": {
-    "mtime": 1793822673.676133,
+    "mtime": 1794241965.7097204,
     "ast_hash": "ca93ddd56e4d470e675a8db325100691",
     "semantic_hash": ""
   },
   "storage/framework/views/5cb961fcc1d5b8a24d71bbec0085309c.php": {
-    "mtime": 1793822673.6921365,
+    "mtime": 1794241965.7247221,
     "ast_hash": "30bfcd16067e046e9338c9d6c7b6ad7e",
     "semantic_hash": ""
   },
   "storage/framework/views/5df7afb262835ce2e4cb671dc9cc1188.php": {
-    "mtime": 1793822672.893077,
+    "mtime": 1794241963.7953446,
     "ast_hash": "812c70cd136032362031e72a457ca464",
     "semantic_hash": ""
   },
   "storage/framework/views/5fd8c27e8215f5d0f571e34b86161abe.php": {
-    "mtime": 1793822674.1535268,
+    "mtime": 1794241967.2797356,
     "ast_hash": "18b3f900b618749aed79a77df672f70b",
     "semantic_hash": ""
   },
   "storage/framework/views/60045fb7a583e4a522f3fce85bbaf891.php": {
-    "mtime": 1793822674.869485,
+    "mtime": 1794241968.866234,
     "ast_hash": "aa9a721b97ff48c558edfa499828538f",
     "semantic_hash": ""
   },
   "storage/framework/views/60d9307cda4f682ac5502ce6581e294d.php": {
-    "mtime": 1793822674.9744823,
+    "mtime": 1794241969.3938513,
     "ast_hash": "d58db47beae72836c6e7b0ec21d99aa7",
     "semantic_hash": ""
   },
   "storage/framework/views/60fac3066ec13c3a2a57338b9086797e.php": {
-    "mtime": 1793822675.294672,
+    "mtime": 1794241970.6056924,
     "ast_hash": "ce60c0c94082477b845b7211078ebe07",
     "semantic_hash": ""
   },
   "storage/framework/views/61fb6a002be41ea48351a2a445368ab8.php": {
-    "mtime": 1793822674.9204788,
+    "mtime": 1794241968.9223897,
     "ast_hash": "a6a579df4fa4bb4fa67ee6b4982511dd",
     "semantic_hash": ""
   },
   "storage/framework/views/629263c83234e3ef98af205efc180425.php": {
-    "mtime": 1793822675.365241,
+    "mtime": 1794241970.846685,
     "ast_hash": "6d729e1933b8e8cbc063e35c01cdedcd",
     "semantic_hash": ""
   },
   "storage/framework/views/62ac9c8a6c06307fd0085119c26d4223.php": {
-    "mtime": 1793822673.025363,
+    "mtime": 1794241964.0828109,
     "ast_hash": "8d4e3d71eabb333c5ce2e898ae172262",
     "semantic_hash": ""
   },
   "storage/framework/views/633d82b4797a80322718644d68987b6d.php": {
-    "mtime": 1793822674.1824071,
+    "mtime": 1794241967.434259,
     "ast_hash": "5a0ca62f60f46fcebbc7c1f044d05a4f",
     "semantic_hash": ""
   },
   "storage/framework/views/656587f19a8d6a9d140226a7f6877fc0.php": {
-    "mtime": 1793822672.8142068,
+    "mtime": 1794241963.1958218,
     "ast_hash": "991671e3e1914ced89508864c512b7f9",
     "semantic_hash": ""
   },
   "storage/framework/views/675961b7f7288651a0cd2e2cb830dde4.php": {
-    "mtime": 1793822673.138362,
+    "mtime": 1794241964.3615317,
     "ast_hash": "02552a32e7d5657d81baa33992f2eb4b",
     "semantic_hash": ""
   },
   "storage/framework/views/67e9c6dfcb0745fcaae47f3dfa948172.php": {
-    "mtime": 1793822673.3565147,
+    "mtime": 1794241964.677592,
     "ast_hash": "2db73536994c541920f64ae9bcd0ed6d",
     "semantic_hash": ""
   },
   "storage/framework/views/69e7bfd6153cf320384e0ac61ee301fa.php": {
-    "mtime": 1793822674.9684837,
+    "mtime": 1794241969.3761432,
     "ast_hash": "c2d67111b916dd8c64d7601e126a81a4",
     "semantic_hash": ""
   },
   "storage/framework/views/6be4eb890e390819059e5d45d0718472.php": {
-    "mtime": 1793822672.650702,
+    "mtime": 1794241962.9789152,
     "ast_hash": "5e57715395a05bfb74a72662fa07ba6f",
     "semantic_hash": ""
   },
   "storage/framework/views/6ce2e5ec7fe70f480d45906ae80b667a.php": {
-    "mtime": 1793822674.5600626,
+    "mtime": 1794241968.4191074,
     "ast_hash": "4a108f3fa466161af14b84d4f587ed39",
     "semantic_hash": ""
   },
   "storage/framework/views/6dc35812b5eba211ea39552f61dcc225.php": {
-    "mtime": 1793822675.3186715,
+    "mtime": 1794241970.63103,
     "ast_hash": "51b2eb035fbbc899e136fcd2eee2dde2",
     "semantic_hash": ""
   },
   "storage/framework/views/6dd0830337cb1e61165ff4282c7846cc.php": {
-    "mtime": 1793822675.119474,
+    "mtime": 1794241970.0052097,
     "ast_hash": "9816ac5b988386337a9692bf2f010853",
     "semantic_hash": ""
   },
   "storage/framework/views/6de23e22c125d989b65ee8c033042131.php": {
-    "mtime": 1793822674.9984784,
-    "ast_hash": "f79e30675303eabe59e91b2fe02b6226",
+    "mtime": 1794241969.4253147,
+    "ast_hash": "8027b03e090fff8858ca064cdd9c638e",
     "semantic_hash": ""
   },
   "storage/framework/views/6de81306233ffb1fe400e4f36f1dbee9.php": {
-    "mtime": 1793822673.2273629,
+    "mtime": 1794241964.4385877,
     "ast_hash": "25afc1a5b8693160036b1a29fc5ad3b3",
     "semantic_hash": ""
   },
   "storage/framework/views/6e4df3b93f4b191d0f9a24657b89eb00.php": {
-    "mtime": 1793822675.0184767,
-    "ast_hash": "0f1b7ef5760cb94420cccae704d31c60",
+    "mtime": 1794241969.6070428,
+    "ast_hash": "51e82f78e425ce09e91ebfea4d0877d5",
     "semantic_hash": ""
   },
   "storage/framework/views/6edcfe18ad199a37331c7c8311053aee.php": {
-    "mtime": 1793822675.4085257,
+    "mtime": 1794241970.9054687,
     "ast_hash": "7aef765c2b98898c65f7755da8b2be4b",
     "semantic_hash": ""
   },
   "storage/framework/views/6fba3d350b8105e28500083c89cd29db.php": {
-    "mtime": 1793822672.8008173,
+    "mtime": 1794241963.0906577,
     "ast_hash": "f32c51d92aff9549751f362a83cf7215",
     "semantic_hash": ""
   },
   "storage/framework/views/705920268c499af76f31ad012a274f95.php": {
-    "mtime": 1793822675.2494564,
+    "mtime": 1794241970.2089448,
     "ast_hash": "1bc548d9533f8a3d9d48445b26b02718",
     "semantic_hash": ""
   },
   "storage/framework/views/72a401fda6bab8257b5547f3768d80a6.php": {
-    "mtime": 1793822673.928073,
+    "mtime": 1794241966.407858,
     "ast_hash": "77b0a2afc422daf6ef4256545e7ee367",
     "semantic_hash": ""
   },
   "storage/framework/views/73dc962ee0f88f34ed9446bfedfcfbb1.php": {
-    "mtime": 1793822674.235908,
+    "mtime": 1794241967.5932553,
     "ast_hash": "888185966ee02dd5148597a7b0c1b10f",
     "semantic_hash": ""
   },
   "storage/framework/views/751996661fd006f5094ae921eb292e81.php": {
-    "mtime": 1793822673.5491333,
+    "mtime": 1794241965.4607184,
     "ast_hash": "3c404a21a00b1a073e44efd829e9bc7d",
     "semantic_hash": ""
   },
   "storage/framework/views/753b633251ec7dd7cd3019567e5fece3.php": {
-    "mtime": 1793822673.657139,
+    "mtime": 1794241965.6757193,
     "ast_hash": "4c59d2d33533a5e591c94798a446bed3",
     "semantic_hash": ""
   },
   "storage/framework/views/75ec95dd323ba392a8f77d6dba39d5e5.php": {
-    "mtime": 1793822672.958079,
+    "mtime": 1794241963.9644952,
     "ast_hash": "515840fdf57a559f6acfb506caa727fe",
     "semantic_hash": ""
   },
   "storage/framework/views/7993d50eda3ac71fc3377b21fe104ffa.php": {
-    "mtime": 1793822673.7660701,
+    "mtime": 1794241966.1698534,
     "ast_hash": "a8e8e73bf55405cc87dad7f4535273e1",
     "semantic_hash": ""
   },
   "storage/framework/views/79ee5449d6f97d338b92210509556c55.php": {
-    "mtime": 1793822674.4690828,
+    "mtime": 1794241968.1712582,
     "ast_hash": "4ed991df6286d71d8b8fd41401e24715",
     "semantic_hash": ""
   },
   "storage/framework/views/79f9fb83ba819c86cd31dab434bbc0a1.php": {
-    "mtime": 1793822673.1993637,
+    "mtime": 1794241964.419589,
     "ast_hash": "a4312df66a5702345a094b74358bc854",
     "semantic_hash": ""
   },
   "storage/framework/views/7a4591d57a0a42b9c34245be88a2d8b6.php": {
-    "mtime": 1793822673.417514,
+    "mtime": 1794241964.8895912,
     "ast_hash": "ffc3f2d73b76de352aea943c6e436e24",
     "semantic_hash": ""
   },
   "storage/framework/views/7ada1cf3e64e284f5bec1f70d77acc32.php": {
-    "mtime": 1793822672.886077,
+    "mtime": 1794241963.7932622,
     "ast_hash": "4f0b87674227c49cbfa719456c8350e0",
     "semantic_hash": ""
   },
   "storage/framework/views/7b3bb46718b555bc4b559ce2231654a3.php": {
-    "mtime": 1793822675.1444788,
+    "mtime": 1794241970.063399,
     "ast_hash": "f097fea0c53fd10ebc111ab8cad46229",
     "semantic_hash": ""
   },
   "storage/framework/views/7c5233ba2ca90acb47a83f7c70406ddc.php": {
-    "mtime": 1793822674.9264872,
+    "mtime": 1794241968.9273896,
     "ast_hash": "d9001fd6f121e731b492a6ccef47ccab",
     "semantic_hash": ""
   },
   "storage/framework/views/7ce34cc61e8d92e130a23827d62c20c1.php": {
-    "mtime": 1793822673.5871375,
+    "mtime": 1794241965.4807198,
     "ast_hash": "c56b46eb679aeb85377ce1ccd06c60f1",
     "semantic_hash": ""
   },
   "storage/framework/views/7d5cba02a789c597617818e2c1c6e79f.php": {
-    "mtime": 1793822673.4685104,
+    "mtime": 1794241965.0085871,
     "ast_hash": "761616bd9d3a28e5b1869f94311d7820",
     "semantic_hash": ""
   },
   "storage/framework/views/7d75059e871b980ccdaa8772582df5fa.php": {
-    "mtime": 1793822672.914078,
+    "mtime": 1794241963.8473227,
     "ast_hash": "887bb3442166383411bf1ca20376f7ca",
     "semantic_hash": ""
   },
   "storage/framework/views/7d758ff3c7b23a02b27c2cd9e8639174.php": {
-    "mtime": 1793822673.0723617,
+    "mtime": 1794241964.2372167,
     "ast_hash": "14e7f8d7617cb5bc0afc429bb15e9980",
     "semantic_hash": ""
   },
   "storage/framework/views/7e757a1511d5d90df5a2a03b27433389.php": {
-    "mtime": 1793822673.3675132,
-    "ast_hash": "3329e962bf898e29c19db2ff1490ba9a",
+    "mtime": 1794241964.686587,
+    "ast_hash": "f2ca65f7967969aa2df501b823571123",
     "semantic_hash": ""
   },
   "storage/framework/views/7e8d5a1ba8c7f7b8391df1c8a043e169.php": {
-    "mtime": 1793822674.0749922,
+    "mtime": 1794241966.811524,
     "ast_hash": "34b41ee2693cbbe7fa0667a75c90a14e",
     "semantic_hash": ""
   },
   "storage/framework/views/7feacbf54662ca1ea08277456ea919c9.php": {
-    "mtime": 1793822675.0594769,
-    "ast_hash": "d84f1d89bc5a515c1ff3f061412d38fd",
+    "mtime": 1794241969.7065046,
+    "ast_hash": "0788c5644d048559dc70635e348bbbbd",
     "semantic_hash": ""
   },
   "storage/framework/views/81b055cee568f82ea6d776b9b346cc4a.php": {
-    "mtime": 1793822673.0663607,
+    "mtime": 1794241964.2312198,
     "ast_hash": "d352d3ca7da83dfdd3fb6f880589dff9",
     "semantic_hash": ""
   },
   "storage/framework/views/8327398cafa3297271ac44227e0594f0.php": {
-    "mtime": 1793822674.0879896,
+    "mtime": 1794241966.8235235,
     "ast_hash": "33d5ea3685c240370c548cd5b08bfe7d",
     "semantic_hash": ""
   },
   "storage/framework/views/838b4e611c85af485a35f0335dc63eef.php": {
-    "mtime": 1793822672.873079,
+    "mtime": 1794241963.6846423,
     "ast_hash": "34b5da36a7eb492580dbb70c5685b030",
     "semantic_hash": ""
   },
   "storage/framework/views/8506903b0ada05271e9cade3c159cced.php": {
-    "mtime": 1793822673.6001358,
+    "mtime": 1794241965.6227212,
     "ast_hash": "319448615d178b4249c6c568f1dbe22b",
     "semantic_hash": ""
   },
   "storage/framework/views/857ac3eb888b49738cd8929d767efde0.php": {
-    "mtime": 1793822675.311675,
+    "mtime": 1794241970.6238809,
     "ast_hash": "5971924efcf38de081f4a781d3f2b2b5",
     "semantic_hash": ""
   },
   "storage/framework/views/8611a54b0c83444681c804f5d64e33db.php": {
-    "mtime": 1793822673.083362,
+    "mtime": 1794241964.2452166,
     "ast_hash": "861afb2375c90b74adfa4a0079cbb62f",
     "semantic_hash": ""
   },
   "storage/framework/views/865ebcc1111237e23bcd85504b878020.php": {
-    "mtime": 1793822674.7868514,
+    "mtime": 1794241968.5310159,
     "ast_hash": "31f1529285fdd1d85bf2885e59447e14",
     "semantic_hash": ""
   },
   "storage/framework/views/88479662a4b37ed09dc77f0b4a2da7ec.php": {
-    "mtime": 1793822673.9190705,
+    "mtime": 1794241966.3918543,
     "ast_hash": "a8f5812fcdc7dba18aa9d2e2f3b9cba9",
     "semantic_hash": ""
   },
   "storage/framework/views/88e51df7a7be701973959a7349a29d3e.php": {
-    "mtime": 1793822672.9650786,
+    "mtime": 1794241963.9734964,
     "ast_hash": "a78c88bcbbe5c3639091a362672c2016",
     "semantic_hash": ""
   },
   "storage/framework/views/897f000987152b4954d46dd69711b2db.php": {
-    "mtime": 1793822675.0304756,
+    "mtime": 1794241969.6170392,
     "ast_hash": "94fe7f96307c6526123a838b687c332c",
     "semantic_hash": ""
   },
   "storage/framework/views/8da64b2a31c5a39d51a082943eac46d0.php": {
-    "mtime": 1793822673.3775144,
+    "mtime": 1794241964.69659,
     "ast_hash": "ee4517404145872fcfad533af494b17e",
     "semantic_hash": ""
   },
   "storage/framework/views/8e4a706f922cf60d562056d70209fee5.php": {
-    "mtime": 1793822672.6419363,
+    "mtime": 1794241962.9719198,
     "ast_hash": "68fd911db07aa5d98e326fc59de9745d",
     "semantic_hash": ""
   },
   "storage/framework/views/8eebb20e41f844ec28c53c8646b5ca4f.php": {
-    "mtime": 1793822674.7223325,
+    "mtime": 1794241968.455136,
     "ast_hash": "493ab7c4b978a051e339a01610bfc374",
     "semantic_hash": ""
   },
   "storage/framework/views/8f3c52e9aac2e53545662feef642cbbb.php": {
-    "mtime": 1793822674.2319105,
+    "mtime": 1794241967.5182574,
     "ast_hash": "e8c18c6226e646f373061613873c830f",
     "semantic_hash": ""
   },
   "storage/framework/views/8f604c6fc1bfb0c53db5647bc3128f59.php": {
-    "mtime": 1793822675.1114812,
+    "mtime": 1794241969.9980116,
     "ast_hash": "5e512c89edde311a6c9d4c35f9d98a74",
     "semantic_hash": ""
   },
   "storage/framework/views/8fa1d71c997913ea36a7e14e6b0f28db.php": {
-    "mtime": 1793822673.36151,
+    "mtime": 1794241964.681589,
     "ast_hash": "36ae988dfc64182a74c399f54098f9e4",
     "semantic_hash": ""
   },
   "storage/framework/views/8faacf5ccba601f7c95a6d4fdbc9e573.php": {
-    "mtime": 1793822675.0464766,
+    "mtime": 1794241969.6983883,
     "ast_hash": "96dffd8d6fd6af6cc83ffd0bc8739b35",
     "semantic_hash": ""
   },
   "storage/framework/views/8ff9a4fa69b1a954e54d00866e0d458f.php": {
-    "mtime": 1793822674.9854834,
+    "mtime": 1794241969.4068892,
     "ast_hash": "d0ae66306d0faa768b3010ae278d0dc5",
     "semantic_hash": ""
   },
   "storage/framework/views/91016373ef4d13d13fc1a8b3254304f0.php": {
-    "mtime": 1793822673.7401352,
+    "mtime": 1794241965.950718,
     "ast_hash": "ad27beb45b04876f41bb17b96473c1b5",
     "semantic_hash": ""
   },
   "storage/framework/views/93bbc293f6a94593acef53a9ee3a5d8b.php": {
-    "mtime": 1793822673.6381342,
+    "mtime": 1794241965.6557188,
     "ast_hash": "bc0e380a9efd81789fc9f131b3602faf",
     "semantic_hash": ""
   },
   "storage/framework/views/9424d4a23947940ef3e847b69872160f.php": {
-    "mtime": 1793822673.5751374,
+    "mtime": 1794241965.4757187,
     "ast_hash": "2b0bff40b6332a4c0f421ccff6a09c15",
     "semantic_hash": ""
   },
   "storage/framework/views/94669aa9b0797f7163b7cb0490aac862.php": {
-    "mtime": 1793822675.2087371,
+    "mtime": 1794241970.0945706,
     "ast_hash": "d1d308db648d12b002b190fb60424e96",
     "semantic_hash": ""
   },
   "storage/framework/views/9673e98098c3fb58d66ac3d8cecd20bd.php": {
-    "mtime": 1793822675.08348,
+    "mtime": 1794241969.747819,
     "ast_hash": "8dbf6cdb5185f967b0b0bc5d183adfb7",
     "semantic_hash": ""
   },
   "storage/framework/views/9733e1481abb3b462631e0605119cce1.php": {
-    "mtime": 1793822673.1483638,
+    "mtime": 1794241964.373535,
     "ast_hash": "317312062e1b5f8d00f94d2f7760356e",
     "semantic_hash": ""
   },
   "storage/framework/views/9acac99cb95915a60e816b262414a8e4.php": {
-    "mtime": 1793822673.3445168,
+    "mtime": 1794241964.6685872,
     "ast_hash": "13954d4ce2290de80a12ce3d7b9c75ac",
     "semantic_hash": ""
   },
   "storage/framework/views/9ba150a6cb5b5a04550d5c3b1ff57b47.php": {
-    "mtime": 1793822675.1144774,
+    "mtime": 1794241970.0004108,
     "ast_hash": "35a6d47d94022bc79a46794293c20da5",
     "semantic_hash": ""
   },
   "storage/framework/views/9c21ee232aab08b04260f39cfaf1ef48.php": {
-    "mtime": 1793822672.9963622,
+    "mtime": 1794241963.9978788,
     "ast_hash": "dc810cabc6d55b5575075ba726f5040f",
     "semantic_hash": ""
   },
   "storage/framework/views/9c2c481eb2630abe95f6342f88b85d3b.php": {
-    "mtime": 1793822674.1286166,
-    "ast_hash": "f73d58994c31e74e0c0905f1be4f71fa",
+    "mtime": 1794241967.0675206,
+    "ast_hash": "a3819e1aefd72a708ffdf593f39fb5fc",
     "semantic_hash": ""
   },
   "storage/framework/views/9c980c2e13aecd9e33c29c50018e57f2.php": {
-    "mtime": 1793822672.9744508,
+    "mtime": 1794241963.981495,
     "ast_hash": "e647c96d60c04b9349a3a014554d9349",
     "semantic_hash": ""
   },
   "storage/framework/views/9cfa90c963883a6624c2475ef0ed12cd.php": {
-    "mtime": 1793822673.4835107,
+    "mtime": 1794241965.0775895,
     "ast_hash": "4593e4683e9b6a6df3dfe0ded3a1918c",
     "semantic_hash": ""
   },
   "storage/framework/views/9ecb6ce854e12f53954e803ad8780313.php": {
-    "mtime": 1793822672.9610777,
+    "mtime": 1794241963.9704983,
     "ast_hash": "b062388130b9663e3c42f97245acebde",
     "semantic_hash": ""
   },
   "storage/framework/views/9f0ff8caf63c7d6414e22d1a0aded135.php": {
-    "mtime": 1793822673.4335148,
+    "mtime": 1794241964.9055882,
     "ast_hash": "dc0f16175c7133eb0f01e1a6b5488d52",
     "semantic_hash": ""
   },
   "storage/framework/views/a00276f7aab11d784f966c4ff5fa25e8.php": {
-    "mtime": 1793822674.1884093,
+    "mtime": 1794241967.4462576,
     "ast_hash": "47699458c646246007d9197459cb80b5",
     "semantic_hash": ""
   },
   "storage/framework/views/a2e79ffac0e1710c263a720ec1b15bba.php": {
-    "mtime": 1793822673.3095126,
-    "ast_hash": "eb250f8ccfd66451441001c6a8651f95",
+    "mtime": 1794241964.5725882,
+    "ast_hash": "efe6be3709ae57508dc54d441a8dc45e",
     "semantic_hash": ""
   },
   "storage/framework/views/a390cac88daec20ccf57fb19dfc9d453.php": {
-    "mtime": 1793822675.0414793,
-    "ast_hash": "de8e27d48fed30ff8532dad0a2616de1",
+    "mtime": 1794241969.6438339,
+    "ast_hash": "3ea2497a42c59397dd1988b0774ab49e",
     "semantic_hash": ""
   },
   "storage/framework/views/a3a3f5b5412b555f215757bb748a0d63.php": {
-    "mtime": 1793822672.6975257,
+    "mtime": 1794241963.026346,
     "ast_hash": "e5fe48659964a8cc821d3884933ec5b2",
     "semantic_hash": ""
   },
   "storage/framework/views/a4e4e2be50f85a66828966f9111f15cd.php": {
-    "mtime": 1793822674.4790857,
+    "mtime": 1794241968.3485928,
     "ast_hash": "7e042196eecc96362d2b0a74ae72a6cd",
     "semantic_hash": ""
   },
   "storage/framework/views/a556cb0fe2f9e06be29f11bcb4caadbb.php": {
-    "mtime": 1793822674.2209146,
-    "ast_hash": "76f9238beb14ca6400e9869f05dc3ca5",
+    "mtime": 1794241967.5082557,
+    "ast_hash": "449c32004cce71db97ee49016ede1552",
     "semantic_hash": ""
   },
   "storage/framework/views/a57759603a0b151ca603e40a1dfab7ad.php": {
-    "mtime": 1793822672.8449268,
+    "mtime": 1794241963.4461195,
     "ast_hash": "85f7bc25138898675f7208cad017d832",
     "semantic_hash": ""
   },
   "storage/framework/views/a5bb9d7f0a59354452f0c49a407acac5.php": {
-    "mtime": 1793822675.159476,
+    "mtime": 1794241970.0744257,
     "ast_hash": "063dc96a907875f123a9c2a73dce04a8",
     "semantic_hash": ""
   },
   "storage/framework/views/a5f78b22f5294ca0f026accef4985ae8.php": {
-    "mtime": 1793822674.375288,
+    "mtime": 1794241968.0912554,
     "ast_hash": "e95d6ef6ebaffa448d20df7d9b6c519d",
     "semantic_hash": ""
   },
   "storage/framework/views/a6e1b60d8d0b40ddc4a0ebba1a505a79.php": {
-    "mtime": 1793822674.17753,
+    "mtime": 1794241967.2922592,
     "ast_hash": "97a8f138be4d5ac5aa2964645eefa1a9",
     "semantic_hash": ""
   },
   "storage/framework/views/a88d1a58905faf6973be98862f691d79.php": {
-    "mtime": 1793822674.383282,
+    "mtime": 1794241968.0992587,
     "ast_hash": "c2605094a8e1a2449500a994a23193c5",
     "semantic_hash": ""
   },
   "storage/framework/views/a8a09dc69f0db3f1c8f052609fcb3704.php": {
-    "mtime": 1793822674.1854093,
+    "mtime": 1794241967.43926,
     "ast_hash": "11e7c2636f1aa77ecbd7e647a79ffc1b",
     "semantic_hash": ""
   },
   "storage/framework/views/a8f3687e8f1956dbffb2cc49a16e4bce.php": {
-    "mtime": 1793822673.3505094,
-    "ast_hash": "83c59d71f78768fcac88084317f21d41",
+    "mtime": 1794241964.673594,
+    "ast_hash": "52664f45960ac2a9d6ec88c7b8b530f9",
     "semantic_hash": ""
   },
   "storage/framework/views/a938b8309da7fd03aba279636080b74d.php": {
-    "mtime": 1793822673.1313627,
+    "mtime": 1794241964.3485322,
     "ast_hash": "2515b9916a606d556fdfa1b20807cbfb",
     "semantic_hash": ""
   },
   "storage/framework/views/aa3bcf1bdb6f6215c768afb040698c67.php": {
-    "mtime": 1793822673.4215112,
+    "mtime": 1794241964.8915863,
     "ast_hash": "227b37f6a768ea4b4ad354ebee7dec2c",
     "semantic_hash": ""
   },
   "storage/framework/views/ab19398995bea37b541f9808a767284b.php": {
-    "mtime": 1793822674.6641965,
+    "mtime": 1794241968.4431374,
     "ast_hash": "4efc0c0f5f15f0110b29acd415fc71c1",
     "semantic_hash": ""
   },
   "storage/framework/views/ab4d4633961945cf0fda4eb33cc79d45.php": {
-    "mtime": 1793822674.2399116,
+    "mtime": 1794241967.5982575,
     "ast_hash": "23896eedcd9ddf344dcb73df54698df8",
     "semantic_hash": ""
   },
   "storage/framework/views/ac592921f667ea760702dc8b9151845f.php": {
-    "mtime": 1793822675.3396735,
+    "mtime": 1794241970.7434387,
     "ast_hash": "1f9f4d6d4649253871d8c9cd58de96dd",
     "semantic_hash": ""
   },
   "storage/framework/views/ade92659a6cca2e49b3feb71c28a71f9.php": {
-    "mtime": 1793822673.6051345,
+    "mtime": 1794241965.6277199,
     "ast_hash": "349f80c5fce731953eebf04b913fbafe",
     "semantic_hash": ""
   },
   "storage/framework/views/ae95365666085d391e44ff6f0e98f4ca.php": {
-    "mtime": 1793822674.2782454,
+    "mtime": 1794241967.8332636,
     "ast_hash": "285639b8c611bdf8f8f6b4f093d676fa",
     "semantic_hash": ""
   },
   "storage/framework/views/af7b85ae224497ddc025cca8096a7a0e.php": {
-    "mtime": 1793822673.0603623,
+    "mtime": 1794241964.2262163,
     "ast_hash": "3472a311be2ac6a6592d09084689f52f",
     "semantic_hash": ""
   },
   "storage/framework/views/b0832d0a6c91bff5d1dfa474b524e08c.php": {
-    "mtime": 1793822674.4730854,
+    "mtime": 1794241968.3418083,
     "ast_hash": "a10af0f9ef417e88d11db382f2170be1",
     "semantic_hash": ""
   },
   "storage/framework/views/b0cf913682ef8d545b340a4e95175cfb.php": {
-    "mtime": 1793822673.7910838,
+    "mtime": 1794241966.230868,
     "ast_hash": "e8eba86ad1f6feb455a00ea79aabb8fe",
     "semantic_hash": ""
   },
   "storage/framework/views/b1a22fa1fee72f447a201dc55372cef8.php": {
-    "mtime": 1793822672.8229742,
+    "mtime": 1794241963.2058237,
     "ast_hash": "12538282a9e067abb4e0d74360d11d77",
     "semantic_hash": ""
   },
   "storage/framework/views/b377f4987820690cfde281efbb0507ac.php": {
-    "mtime": 1793822674.9344811,
+    "mtime": 1794241969.3262122,
     "ast_hash": "9a2a7f1790c44f511775c6378a93403c",
     "semantic_hash": ""
   },
   "storage/framework/views/b51ee67de476d7609793d7c0d5ccea3b.php": {
-    "mtime": 1793822674.4099078,
-    "ast_hash": "fb8b142170220a5f68a64e338467669a",
+    "mtime": 1794241968.115255,
+    "ast_hash": "092ee818c027c2a3461f3fdd009952a5",
     "semantic_hash": ""
   },
   "storage/framework/views/b63c2776b5d8d8646eb4fb3cf5931408.php": {
-    "mtime": 1793822673.7810698,
+    "mtime": 1794241966.220859,
     "ast_hash": "f2f2b123143ccc3c1c2144b42957366f",
     "semantic_hash": ""
   },
   "storage/framework/views/b66605e7296773f46259bce6aec58f19.php": {
-    "mtime": 1793822674.8248565,
+    "mtime": 1794241968.8541095,
     "ast_hash": "8c0b3ac31125ee5f82e9f6563d841165",
     "semantic_hash": ""
   },
   "storage/framework/views/b6aa77115c367eac564875149a8cabbf.php": {
-    "mtime": 1793822674.0659938,
+    "mtime": 1794241966.8065279,
     "ast_hash": "72831fccf1f65361787e59dc88f18921",
     "semantic_hash": ""
   },
   "storage/framework/views/ba01a147810830b25769d8fd9c60370c.php": {
-    "mtime": 1793822675.4025235,
+    "mtime": 1794241970.8978293,
     "ast_hash": "e8932924807a660eee50a1e9392febd9",
     "semantic_hash": ""
   },
   "storage/framework/views/ba0efb96f6b0a125c69024078bc564c2.php": {
-    "mtime": 1793822673.338515,
-    "ast_hash": "5265d6f3d78322f3f6447bca3f849ff0",
+    "mtime": 1794241964.6655886,
+    "ast_hash": "8af8e478503d0637f083fd34e6d96681",
     "semantic_hash": ""
   },
   "storage/framework/views/ba60f07b02fdf6bb9f84719a34d57212.php": {
-    "mtime": 1793822673.3745108,
+    "mtime": 1794241964.693588,
     "ast_hash": "b33e3cc70d4813c9a660158291590e12",
     "semantic_hash": ""
   },
   "storage/framework/views/bffb72c0098f426abda47f0a4424a138.php": {
-    "mtime": 1793822673.4035196,
+    "mtime": 1794241964.8775878,
     "ast_hash": "1d293d18f721a4c796ec4fa19e2b67c4",
     "semantic_hash": ""
   },
   "storage/framework/views/c0bd673f60b88bc4264785d98bcbf6b7.php": {
-    "mtime": 1793822675.1504793,
+    "mtime": 1794241970.069481,
     "ast_hash": "463f4560200370bc960ce375a0a6b01a",
     "semantic_hash": ""
   },
   "storage/framework/views/c2164681c55b146918a6998fecfb786d.php": {
-    "mtime": 1793822674.3672822,
+    "mtime": 1794241968.0832582,
     "ast_hash": "6b47e89bfaff9a5ab7f6cb70140bd0a6",
     "semantic_hash": ""
   },
   "storage/framework/views/c2d64271f21a21d98e8cd0583953047d.php": {
-    "mtime": 1793822673.5431347,
+    "mtime": 1794241965.4557216,
     "ast_hash": "3defd11bb166d88127e290a4bebeca35",
     "semantic_hash": ""
   },
   "storage/framework/views/c38503a2baee41f1d1c4bcc7e1d53aff.php": {
-    "mtime": 1793822674.194409,
+    "mtime": 1794241967.4532583,
     "ast_hash": "833b3b894e56ef2a413cd9a943b4e712",
     "semantic_hash": ""
   },
   "storage/framework/views/c467c4a30337f94793661e2856f3b2f3.php": {
-    "mtime": 1793822673.3995159,
+    "mtime": 1794241964.8735888,
     "ast_hash": "9b45d42d475b2e21b11e42bff56a2c84",
     "semantic_hash": ""
   },
   "storage/framework/views/c559c05534377c7dbd1a6e298969f499.php": {
-    "mtime": 1793822672.8092096,
+    "mtime": 1794241963.1918314,
     "ast_hash": "22198252afe3268423538f3cbaae3181",
     "semantic_hash": ""
   },
   "storage/framework/views/c597a80eb4dcf94f815985bb07fef733.php": {
-    "mtime": 1793822675.3855214,
+    "mtime": 1794241970.8752153,
     "ast_hash": "cb865f0b558b5080773e57cb70437b02",
     "semantic_hash": ""
   },
   "storage/framework/views/c693b0378877925780c2d44c99c0ce7f.php": {
-    "mtime": 1793822673.6511328,
+    "mtime": 1794241965.6707187,
     "ast_hash": "5f2d4388c317c5e82c2153fe898438d1",
     "semantic_hash": ""
   },
   "storage/framework/views/c7c01395c67f86c784b01e219499430e.php": {
-    "mtime": 1793822674.4980843,
+    "mtime": 1794241968.3592885,
     "ast_hash": "6f2c80ab716af9e651d04a5713d68e80",
     "semantic_hash": ""
   },
   "storage/framework/views/c9c54716f515e7c7a8c735766c15ab94.php": {
-    "mtime": 1793822673.8040721,
+    "mtime": 1794241966.2428567,
     "ast_hash": "651d0dc07dee5ad4b50845125c74bf43",
     "semantic_hash": ""
   },
   "storage/framework/views/ca157b1c8dbeec771507d5275ff3fa0a.php": {
-    "mtime": 1793822672.9450817,
+    "mtime": 1794241963.8780951,
     "ast_hash": "9827351ba0a7d36b2a16fba166ce12bb",
     "semantic_hash": ""
   },
   "storage/framework/views/ca58e13f115dc155d2891c43dd27afc9.php": {
-    "mtime": 1793822672.675549,
+    "mtime": 1794241963.003868,
     "ast_hash": "ea42f98066c621b7513c688973ce9459",
     "semantic_hash": ""
   },
   "storage/framework/views/cb3a318e69ab198b339196896e2b2d17.php": {
-    "mtime": 1793822672.8510466,
+    "mtime": 1794241963.4511213,
     "ast_hash": "fb9d5927793fc0e66a693bb5248abdec",
     "semantic_hash": ""
   },
   "storage/framework/views/cb71da6c953f072c92d60b7b3c15b326.php": {
-    "mtime": 1793822675.2381556,
+    "mtime": 1794241970.1982799,
     "ast_hash": "b7960b4a9a3efbfef18f7caf927dafe9",
     "semantic_hash": ""
   },
   "storage/framework/views/cb844ac56409cd66e7dd1fcbece6bbc9.php": {
-    "mtime": 1793822673.144366,
+    "mtime": 1794241964.3645306,
     "ast_hash": "9088c994c18c72414b9b7358b68cd7a6",
     "semantic_hash": ""
   },
   "storage/framework/views/cc07063ee9c4561355c48bb05fe18cf1.php": {
-    "mtime": 1793822673.1683638,
+    "mtime": 1794241964.390528,
     "ast_hash": "d17e0668e1075b6a83d41840a4c8a5f3",
     "semantic_hash": ""
   },
   "storage/framework/views/cc42f366ec099b52d8a6557e9bc249ac.php": {
-    "mtime": 1793822674.250909,
+    "mtime": 1794241967.6092575,
     "ast_hash": "4fad73d2f27615f08f733315245471c2",
     "semantic_hash": ""
   },
   "storage/framework/views/cc947f5bf7d8ee30a3dc650012958921.php": {
-    "mtime": 1793822674.1397395,
+    "mtime": 1794241967.2556777,
     "ast_hash": "a11041018bc3e60aa6fe0168a016a02a",
     "semantic_hash": ""
   },
   "storage/framework/views/ccaadd6ecb0c6dcd70b56d2fb40431e9.php": {
-    "mtime": 1793822674.6681962,
+    "mtime": 1794241968.447137,
     "ast_hash": "75666a46ba6ecb9c5cb79a284d56b820",
     "semantic_hash": ""
   },
   "storage/framework/views/cf710d8aa68a47d049f5c906263380e7.php": {
-    "mtime": 1793822673.380511,
+    "mtime": 1794241964.7035885,
     "ast_hash": "327d64eb41212f7d1bc502f8f057aaa0",
     "semantic_hash": ""
   },
   "storage/framework/views/d0ca89ccea67ee982009dbf67c0aaece.php": {
-    "mtime": 1793822674.2034092,
+    "mtime": 1794241967.4752553,
     "ast_hash": "ec89e8434a39bc72c2b4993643543495",
     "semantic_hash": ""
   },
   "storage/framework/views/d2551933959c3aa8b6a75829914b0e34.php": {
-    "mtime": 1793822674.8138556,
+    "mtime": 1794241968.5786877,
     "ast_hash": "e3f6395137a0f02f9f7b683f28be4145",
     "semantic_hash": ""
   },
   "storage/framework/views/d2ddc0fbb2979dc108723898761bf3c1.php": {
-    "mtime": 1793822673.6961334,
+    "mtime": 1794241965.7327197,
     "ast_hash": "58fece613d8074215dc165c6c5203f85",
     "semantic_hash": ""
   },
   "storage/framework/views/d389261d70df257d9087b609f964a678.php": {
-    "mtime": 1793822673.5271358,
+    "mtime": 1794241965.314721,
     "ast_hash": "775f2e57dd5c2e025592910ebe3b0ead",
     "semantic_hash": ""
   },
   "storage/framework/views/d40250715162510f13f39bb8dc30cec2.php": {
-    "mtime": 1793822674.9494824,
+    "mtime": 1794241969.3358364,
     "ast_hash": "0100bda19bd11ea562131b13db6d8e83",
     "semantic_hash": ""
   },
   "storage/framework/views/d4cdc13421e423e84cf7d8aafba44014.php": {
-    "mtime": 1793822673.4085147,
+    "mtime": 1794241964.881588,
     "ast_hash": "b830ffa1b9a3182f7333504dd75570b6",
     "semantic_hash": ""
   },
   "storage/framework/views/d83fc1cfc36bc0099acbbf3a425c6402.php": {
-    "mtime": 1793822674.1176097,
+    "mtime": 1794241966.8455234,
     "ast_hash": "5c6c42ebfe21f33707d4a0265f206f47",
     "semantic_hash": ""
   },
   "storage/framework/views/da0a938b6c34e5113c518052a889a253.php": {
-    "mtime": 1793822673.4245186,
+    "mtime": 1794241964.894588,
     "ast_hash": "6eb249179e0e1301893a10931c4b1583",
     "semantic_hash": ""
   },
   "storage/framework/views/daef75e3ddb68de90136301734b06e67.php": {
-    "mtime": 1793822673.5671337,
+    "mtime": 1794241965.4737194,
     "ast_hash": "9f8a005d182df4ef1b06188f40142d21",
     "semantic_hash": ""
   },
   "storage/framework/views/dafecb31a09f8ca459b02d8d5886cd5a.php": {
-    "mtime": 1793822673.472514,
+    "mtime": 1794241965.0325875,
     "ast_hash": "db1976b9f1c0bf5678e7cfce0299ab8a",
     "semantic_hash": ""
   },
   "storage/framework/views/dc231f37f05b899fe01e0117d0b737d1.php": {
-    "mtime": 1793822674.0310695,
+    "mtime": 1794241966.6979053,
     "ast_hash": "a25c99243cb0d68abb28bd420b5d108d",
     "semantic_hash": ""
   },
   "storage/framework/views/dc3d8fb84b9a70a15c6a1b8ef76c9b64.php": {
-    "mtime": 1793822675.2886722,
+    "mtime": 1794241970.3955345,
     "ast_hash": "0bb2bd652d66bf7cc63413f342db839d",
     "semantic_hash": ""
   },
   "storage/framework/views/dc66c01f505d5bdcd8f68d81a0dac1c5.php": {
-    "mtime": 1793822673.0103602,
+    "mtime": 1794241964.0598114,
     "ast_hash": "6bdebeebb9fd702ba489c4bc187df39c",
     "semantic_hash": ""
   },
   "storage/framework/views/dc747657fdaa25be9ea4ec14c651deb6.php": {
-    "mtime": 1793822673.1643653,
+    "mtime": 1794241964.3875287,
     "ast_hash": "1f9710dcb7c4f5cbc6f6a1c9779548e6",
     "semantic_hash": ""
   },
   "storage/framework/views/dd0cf097989a4927327b4005843adac3.php": {
-    "mtime": 1793822673.0873797,
+    "mtime": 1794241964.2492158,
     "ast_hash": "d09043a5f9d5582bf3a1076399aca063",
     "semantic_hash": ""
   },
   "storage/framework/views/dd790a9a4e7024874932f9b536bc9523.php": {
-    "mtime": 1793822672.9684474,
+    "mtime": 1794241963.9764977,
     "ast_hash": "d0643827d5baf6566f3f492e423c1b6c",
     "semantic_hash": ""
   },
   "storage/framework/views/df1bfb0b6a0910a0c90983bee7c5b2c1.php": {
-    "mtime": 1793822673.8010714,
+    "mtime": 1794241966.238854,
     "ast_hash": "69b66c1f801483f3e9ce4bbf019060cf",
     "semantic_hash": ""
   },
   "storage/framework/views/df68d3332255eab4a551ec2d2047e960.php": {
-    "mtime": 1793822675.3692434,
+    "mtime": 1794241970.856134,
     "ast_hash": "721611f3b7876c9d2162a2870e5a4ee1",
     "semantic_hash": ""
   },
   "storage/framework/views/e0871686449e4840ea7e8088c6e8df7c.php": {
-    "mtime": 1793822675.2584589,
+    "mtime": 1794241970.21815,
     "ast_hash": "a3bff8533be8510a9c824a18e5b6066c",
     "semantic_hash": ""
   },
   "storage/framework/views/e151eaac439128703d8a50df79e36e9b.php": {
-    "mtime": 1793822673.1823592,
+    "mtime": 1794241964.4025848,
     "ast_hash": "13504a02ff62af61f00133483079f9ac",
     "semantic_hash": ""
   },
   "storage/framework/views/e26a8a2a0a2ea3432ba3366cb8b227c0.php": {
-    "mtime": 1793822673.6421378,
+    "mtime": 1794241965.6637218,
     "ast_hash": "ab13f0b402ebe0b21b421fca6e114efd",
     "semantic_hash": ""
   },
   "storage/framework/views/e382d055310fe554ac0f18fa72de4a7c.php": {
-    "mtime": 1793822675.02348,
+    "mtime": 1794241969.6130414,
     "ast_hash": "8ac74789dea415d784c5e084198a03dc",
     "semantic_hash": ""
   },
   "storage/framework/views/e3dd21e73b21c2e39830be6bcbf9443e.php": {
-    "mtime": 1793822673.6181347,
+    "mtime": 1794241965.6347218,
     "ast_hash": "6e668eca02e0ae16c3a88aaccda980e9",
     "semantic_hash": ""
   },
   "storage/framework/views/e532b624c843c47e618b56b766f6d14f.php": {
-    "mtime": 1793822673.7291322,
+    "mtime": 1794241965.8307207,
     "ast_hash": "bd56fd6db59af8d1946626452bd8665b",
     "semantic_hash": ""
   },
   "storage/framework/views/e6c2b6d47ff8248532db8afed31dc909.php": {
-    "mtime": 1793822672.9350767,
+    "mtime": 1794241963.8680992,
     "ast_hash": "d6d117288dc83761265fd28ac5604cc3",
     "semantic_hash": ""
   },
   "storage/framework/views/e6feb4dc719edef6af58242b16728e77.php": {
-    "mtime": 1793822673.7750766,
+    "mtime": 1794241966.1808696,
     "ast_hash": "8267e064269bbd7f3c99ad31b53a37a7",
     "semantic_hash": ""
   },
   "storage/framework/views/e938aae38a2c8191f404a5ff462bb1b3.php": {
-    "mtime": 1793822675.0684783,
+    "mtime": 1794241969.7147365,
     "ast_hash": "9e60c308bde9b7b7a611996f80984b99",
     "semantic_hash": ""
   },
   "storage/framework/views/e9cb8ec7faa9c5f33145fb19228d7f43.php": {
-    "mtime": 1793822673.4275131,
+    "mtime": 1794241964.896588,
     "ast_hash": "95c872ff5cfd0c5a1763c9e53dde418d",
     "semantic_hash": ""
   },
   "storage/framework/views/ea160694ae28c5aa9390122e898bae08.php": {
-    "mtime": 1793822674.0550704,
+    "mtime": 1794241966.7985213,
     "ast_hash": "543361e0f12401163c28af114c650819",
     "semantic_hash": ""
   },
   "storage/framework/views/eb9e43c12cf7262aeaa8d2928a8b5de8.php": {
-    "mtime": 1793822675.3076756,
+    "mtime": 1794241970.6201377,
     "ast_hash": "dbef6243d2e16b327b658b911a1ab5ee",
     "semantic_hash": ""
   },
   "storage/framework/views/ed6fb20ac52b140ba74b85c187597724.php": {
-    "mtime": 1793822675.3166747,
+    "mtime": 1794241970.6268818,
     "ast_hash": "55e5c1a48b0c2dde47664aceee0c1384",
     "semantic_hash": ""
   },
   "storage/framework/views/ed748f933e222bba9a43c114e067312f.php": {
-    "mtime": 1793822674.7173176,
+    "mtime": 1794241968.4511364,
     "ast_hash": "c181585a23ff400c65427a3f274a11f8",
     "semantic_hash": ""
   },
   "storage/framework/views/f0d969f65fbc552b2efe558194df7de2.php": {
-    "mtime": 1793822673.7221336,
+    "mtime": 1794241965.8257182,
     "ast_hash": "1595d91d3501ff246517078198556e37",
     "semantic_hash": ""
   },
   "storage/framework/views/f2396640d0a3436afa636b0a1f7a905f.php": {
-    "mtime": 1793822674.9804797,
+    "mtime": 1794241969.4009035,
     "ast_hash": "466c298c163ad0ccbf26ba6bb691ee61",
     "semantic_hash": ""
   },
   "storage/framework/views/f2df45dd60c08160805363df4c79f749.php": {
-    "mtime": 1793822672.8642447,
+    "mtime": 1794241963.4604325,
     "ast_hash": "182fd24d98e6f72d87be4a883e01ddf1",
     "semantic_hash": ""
   },
   "storage/framework/views/f3319f1e17a85455d34d6f2fa4c2698d.php": {
-    "mtime": 1793822675.1384804,
+    "mtime": 1794241970.053242,
     "ast_hash": "3b1bf39befca9f6aad1e70748b3321d0",
     "semantic_hash": ""
   },
   "storage/framework/views/f37061bce8a57ed14398ee1a7dca478b.php": {
-    "mtime": 1793822674.1495292,
+    "mtime": 1794241967.2634132,
     "ast_hash": "53b2cac1c6290e3d9137f4f37d4c0a39",
     "semantic_hash": ""
   },
   "storage/framework/views/f4e9abf729efec2681e367be212647a4.php": {
-    "mtime": 1793822672.92108,
+    "mtime": 1794241963.856567,
     "ast_hash": "3dd0725264afa1018c1462e46df3b15a",
     "semantic_hash": ""
   },
   "storage/framework/views/f58de869de492e690a4312bda9e1f14a.php": {
-    "mtime": 1793822673.080363,
+    "mtime": 1794241964.2432194,
     "ast_hash": "4dcabd02d646a430e5808ef85452df6b",
     "semantic_hash": ""
   },
   "storage/framework/views/f711b003ae10e03e99736845f789bd46.php": {
-    "mtime": 1793822674.9304812,
+    "mtime": 1794241969.3222127,
     "ast_hash": "f908dc78b2e1f96ef55699c8126e92b6",
     "semantic_hash": ""
   },
   "storage/framework/views/f7348e075e3d9624c6f57fb252eda5d8.php": {
-    "mtime": 1793822675.1054766,
+    "mtime": 1794241969.9950118,
     "ast_hash": "15bc03a069c66086195be8e2aaedfa20",
     "semantic_hash": ""
   },
   "storage/framework/views/f7d6ba10ca15b2c97928e2714ecdb9a6.php": {
-    "mtime": 1793822674.9624777,
+    "mtime": 1794241969.3738768,
     "ast_hash": "ccf40f6b246ec6dbcbb84fee18392f67",
     "semantic_hash": ""
   },
   "storage/framework/views/f849e730b1364b7f3dcc84515894f9d1.php": {
-    "mtime": 1793822675.1984801,
+    "mtime": 1794241970.0854983,
     "ast_hash": "406c74d6e5ad436089eb318e9ca511bb",
     "semantic_hash": ""
   },
   "storage/framework/views/f857a85f9747fc3cd854e855edcb28d4.php": {
-    "mtime": 1793822674.0250733,
-    "ast_hash": "75bead1f6442cb81df99c75175b0a0c4",
+    "mtime": 1794241966.6909018,
+    "ast_hash": "9651c18b998ed4e1aabc5df853f00867",
     "semantic_hash": ""
   },
   "storage/framework/views/f96be5e6a69feca327fabd42b607776a.php": {
-    "mtime": 1793822673.6991348,
+    "mtime": 1794241965.7857182,
     "ast_hash": "cdad0311e90eef72cd08431d20010994",
     "semantic_hash": ""
   },
   "storage/framework/views/f9f29eccbfd6f376a2e68e564f18853e.php": {
-    "mtime": 1793822675.1644773,
+    "mtime": 1794241970.0785296,
     "ast_hash": "fbe53dd2639fc88875c3124048a1e69d",
     "semantic_hash": ""
   },
   "storage/framework/views/fa61431d8dcce3ba5aea0fce66587c5c.php": {
-    "mtime": 1793822672.905078,
+    "mtime": 1794241963.8055062,
     "ast_hash": "2bcfe57e7e6c1fc6d8cfc6110f20bb53",
     "semantic_hash": ""
   },
   "storage/framework/views/fb109cbc61ce1d54b0388d4f8eea72a0.php": {
-    "mtime": 1793822673.5125246,
+    "mtime": 1794241965.3017201,
     "ast_hash": "2e185ba8492c18aa0570bce507ac0880",
     "semantic_hash": ""
   },
   "storage/framework/views/ff312738df1900a815882ba1cea204aa.php": {
-    "mtime": 1793822672.883078,
+    "mtime": 1794241963.7832623,
     "ast_hash": "d448a4cd05750d0dfe261aee829ee703",
     "semantic_hash": ""
   },
@@ -8350,7 +8350,7 @@
     "semantic_hash": ""
   },
   "storage/framework/views/5b8db23723bdac5148199d070973f26c.php": {
-    "mtime": 1793822673.6861308,
+    "mtime": 1794241965.7197247,
     "ast_hash": "5e8cc345844ccbf65f014797fe2e2a2f",
     "semantic_hash": ""
   },
@@ -8635,7 +8635,7 @@
     "semantic_hash": ""
   },
   "storage/framework/views/dbca6910ad559496d5a0575686ab437b.php": {
-    "mtime": 1793822673.0453613,
+    "mtime": 1794241964.0928102,
     "ast_hash": "1bab87e0f33b1a8b1c5f5b1966bacfbb",
     "semantic_hash": ""
   },
@@ -8667,21 +8667,6 @@
   "docs/ajustes_horas_extras_giralda.md": {
     "mtime": 1793040355.7856047,
     "ast_hash": "eb6d9c2aed7617927b0aa9533626142a",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/8fc7db6e51eeb4f2e7e0e31c90707655.php": {
-    "mtime": 1793822697.2269943,
-    "ast_hash": "6057db3c4046cfea0e6260174858246c",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/a516dce8a06141d97a7edf80992e3c75.php": {
-    "mtime": 1793822697.2139943,
-    "ast_hash": "58063deb4733d11934379fc80e2f6101",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/f30fae91b7f964826e30b99a32dff0f5.php": {
-    "mtime": 1793822681.9377182,
-    "ast_hash": "deeb37270ea455329ae4d6cadd8c9113",
     "semantic_hash": ""
   },
   "docs/REVISION_FORMULARIO_MECANICO_2026_10_28.md": {
@@ -8909,44 +8894,14 @@
     "ast_hash": "7e712e174146a866f782d855a7389a57",
     "semantic_hash": ""
   },
-  "storage/framework/views/1dc60e87902c0d6c5b80c6cff721740d.php": {
-    "mtime": 1793822687.3857586,
-    "ast_hash": "6423a666bce37c8144da6950b0b4197f",
-    "semantic_hash": ""
-  },
   "storage/framework/views/1e395fbfcddbafbabb16d882f2f2357c.php": {
-    "mtime": 1793822673.152366,
+    "mtime": 1794241964.3775282,
     "ast_hash": "cf5d28a01556f63770e4c234af0d0639",
     "semantic_hash": ""
   },
-  "storage/framework/views/30afb0c14c82256909f376a4a55ae3df.php": {
-    "mtime": 1793822687.4741316,
-    "ast_hash": "2ee584228fe9d091208818214a19b4cb",
-    "semantic_hash": ""
-  },
   "storage/framework/views/3293af54c91bca08f3d913974b8878f3.php": {
-    "mtime": 1793822673.6811333,
+    "mtime": 1794241965.7157204,
     "ast_hash": "d74bcb814f92222a7e643a6c383e2c18",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/61795d6c4418649df76bd9f6b34e169b.php": {
-    "mtime": 1793822686.500584,
-    "ast_hash": "955c6a3b49e4bbf34db802a4e3905154",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/7d360909e107ba1bdef324239f3ed04d.php": {
-    "mtime": 1793822687.478131,
-    "ast_hash": "91c8b8935537d0c2a89c18e0fa462b16",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/a7fa9ebdb2ae80273a44d989626d8237.php": {
-    "mtime": 1793822687.2001708,
-    "ast_hash": "9f5e2bd79ada0570149348e660b0b169",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/f302735659e8bffc5e731eb6eea4382a.php": {
-    "mtime": 1793822687.2840164,
-    "ast_hash": "49ff12e29076bde24078225268d2b935",
     "semantic_hash": ""
   },
   "app/Services/Comisiones/ComisionEtapaRules.php": {
@@ -8990,7 +8945,7 @@
     "semantic_hash": ""
   },
   "storage/framework/views/1cee7200d6f0a02a1969af3e1bb37680.php": {
-    "mtime": 1793822673.8790715,
+    "mtime": 1794241966.3288567,
     "ast_hash": "1c3b1941e11f34b806de79b14f275e1a",
     "semantic_hash": ""
   },
@@ -9005,7 +8960,7 @@
     "semantic_hash": ""
   },
   "storage/framework/views/3cf66844788bef7d32a6e9860255e31b.php": {
-    "mtime": 1793822673.8100708,
+    "mtime": 1794241966.2488585,
     "ast_hash": "76b79fc0aa690b53764dbd53e884e3d6",
     "semantic_hash": ""
   },
@@ -9015,7 +8970,7 @@
     "semantic_hash": ""
   },
   "storage/framework/views/8010ea592ef31a6eb7266dc3d4585be8.php": {
-    "mtime": 1793822673.8530736,
+    "mtime": 1794241966.3108552,
     "ast_hash": "a64b5a1db096bcc62146c76b58a1154c",
     "semantic_hash": ""
   },
@@ -9045,12 +9000,12 @@
     "semantic_hash": ""
   },
   "storage/framework/views/5374b6d662e57554f9789f40dd187d0a.php": {
-    "mtime": 1793822673.8270693,
+    "mtime": 1794241966.2558603,
     "ast_hash": "bce325e7e5e6d897855778341ce199af",
     "semantic_hash": ""
   },
   "storage/framework/views/ca86190132e41fcae3733919fee16b50.php": {
-    "mtime": 1793822673.7890742,
+    "mtime": 1794241966.2288554,
     "ast_hash": "cb3d6672c09ee412ee87b747c1bddbec",
     "semantic_hash": ""
   },
@@ -9065,7 +9020,7 @@
     "semantic_hash": ""
   },
   "storage/framework/views/a46950710d2a50e1fa5f40313d35ba54.php": {
-    "mtime": 1793822673.869071,
+    "mtime": 1794241966.3208635,
     "ast_hash": "8fff81276a76822293cafbbbfcfd2eec",
     "semantic_hash": ""
   },
@@ -9080,12 +9035,12 @@
     "semantic_hash": ""
   },
   "storage/framework/views/897d1fa0e179987c713abedb61786907.php": {
-    "mtime": 1793822673.8620763,
+    "mtime": 1794241966.3128555,
     "ast_hash": "4539a20fecbdc9cef24ac744691c3461",
     "semantic_hash": ""
   },
   "storage/framework/views/f176230c37835b949f5db8369cc647f8.php": {
-    "mtime": 1793822673.873072,
+    "mtime": 1794241966.3238564,
     "ast_hash": "81ef1260522e3f54e3bac6f1a3a902f1",
     "semantic_hash": ""
   },
@@ -9095,7 +9050,7 @@
     "semantic_hash": ""
   },
   "storage/framework/views/d839df1ab989c031c812b15d5792311e.php": {
-    "mtime": 1793822673.8750718,
+    "mtime": 1794241966.325855,
     "ast_hash": "5d306e6e5a17240d380afea83d1a6571",
     "semantic_hash": ""
   },
@@ -9135,17 +9090,17 @@
     "semantic_hash": ""
   },
   "storage/framework/views/88bb17a5e6b89ff1a0ffad37317b224d.php": {
-    "mtime": 1793822673.8660831,
+    "mtime": 1794241966.3168566,
     "ast_hash": "d79228564ed20e8df2324a1e52dd3d8e",
     "semantic_hash": ""
   },
   "storage/framework/views/a45d878de6d22bc8bfb692ce8b7cea68.php": {
-    "mtime": 1793822673.8130732,
+    "mtime": 1794241966.2508543,
     "ast_hash": "dc284020c28d8670772c1519b8e207e2",
     "semantic_hash": ""
   },
   "storage/framework/views/c85e67bcafff1145f5dfe158dabe7856.php": {
-    "mtime": 1793822673.807074,
+    "mtime": 1794241966.2458558,
     "ast_hash": "eaa7c0071130f02ee4aa824a82e7c768",
     "semantic_hash": ""
   },
@@ -9155,7 +9110,7 @@
     "semantic_hash": ""
   },
   "storage/framework/views/038f43ee28d278937f0fbabc47393f87.php": {
-    "mtime": 1793822674.539826,
+    "mtime": 1794241968.4086223,
     "ast_hash": "2f1234cfbfb6bad771bb0afe1021cd8d",
     "semantic_hash": ""
   },
@@ -9167,11 +9122,6 @@
   "storage/app/public/comisiones/88/perforacion/fa01ff21-89bf-49fe-b706-eca9fc36e184.webp": {
     "mtime": 1793813740.1101701,
     "ast_hash": "58730259113dfdc9aed43db61a59c16f",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/feac7e9d859789ab087db5189081da25.php": {
-    "mtime": 1793822681.7423048,
-    "ast_hash": "3dc7ec6e96cd1df9b44fd16bd6447a57",
     "semantic_hash": ""
   },
   "tests/Feature/ObraMaquinariaCierreTest.php": {
@@ -9209,49 +9159,9 @@
     "ast_hash": "b9dc970e425c94908afab1b7d82f3088",
     "semantic_hash": ""
   },
-  "storage/framework/views/010cc23c827c7f4e1c7ecf6d1a84fda9.php": {
-    "mtime": 1793822685.9573016,
-    "ast_hash": "3f96697f0e5d1b4e1c3a9ea02c33fd63",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/41eac0b421ea370bb17d5cbdd84d4832.php": {
-    "mtime": 1793822685.11488,
-    "ast_hash": "f52fb506006bbeab0ba9b36bf94612cf",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/5acc112cd3f56b9754b9989636657c4f.php": {
-    "mtime": 1793822685.858302,
-    "ast_hash": "76a03e64ee8e6012a58fe98e11043c2b",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/a6cc69d0243ac14d0f695b5e3c29ba47.php": {
-    "mtime": 1793822685.752299,
-    "ast_hash": "349f8c2b191e327504c54a7cad91ee4f",
-    "semantic_hash": ""
-  },
   "storage/framework/views/a75b196d8cdcf9b0f6be1294acb4e58f.php": {
-    "mtime": 1793822673.662134,
+    "mtime": 1794241965.6807206,
     "ast_hash": "bac9b26df696d67f859df94dbbd96843",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/bd8bcc87553bf7a614cd75508306a304.php": {
-    "mtime": 1793822683.8030562,
-    "ast_hash": "83e5db5fa0c22b7d31deec94d7e39e23",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/cd43adc221585e8e0f51b00cc182689c.php": {
-    "mtime": 1793822685.7573006,
-    "ast_hash": "002ba5ad45f25e3bb38bed65915216cb",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/eab9c92b4ee4a60063b4653f557d1cd0.php": {
-    "mtime": 1793822686.05687,
-    "ast_hash": "b78c26ca6ec5dd5cc20297bb54f721cf",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/fdef57f438fe631d7f2b855041ee1e86.php": {
-    "mtime": 1793822685.1499538,
-    "ast_hash": "4ae6aa9fdd58b507bf07ac78927656b5",
     "semantic_hash": ""
   },
   "tests/Feature/MaquinaPreventivoReferenciaTest.php": {
@@ -9264,94 +9174,9 @@
     "ast_hash": "9ced94d9ae4b45f021eb9f9a3f473a0f",
     "semantic_hash": ""
   },
-  "storage/framework/views/2cde056176c0aba5617b0a1fbdeeee14.blade.php": {
-    "mtime": 1793822709.0086513,
-    "ast_hash": "d8f154330c1645c5a7718420011d2f6d",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/300a828d64b10200ce300ba06b3f76b1.php": {
-    "mtime": 1793892569.9159496,
-    "ast_hash": "4bfcdc3bbcf54c2d6f11df02fca720ad",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/5827909a30b075290f686bb00eb74d55.php": {
-    "mtime": 1793897047.9906976,
-    "ast_hash": "a44959225eb91c174c772a0118b5297b",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/6995b253bcff9d7292f1930ce7b5fa2a.php": {
-    "mtime": 1793892794.684921,
-    "ast_hash": "a04fb3a98ccef9d21d5737d330e1a346",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/6a2cd42352527a6acb1a6fd285ce1209.php": {
-    "mtime": 1793892563.6200454,
-    "ast_hash": "adb0d7d49dae0585b2cbb0540539ae63",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/7f4be6b5030023dbdad5533439b29d4c.php": {
-    "mtime": 1793822681.7020583,
-    "ast_hash": "e4378870c32ceb29a693891c1bac54f7",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/82a4c41cd14a1c197adb766318be34bb.php": {
-    "mtime": 1793893258.974735,
-    "ast_hash": "7c02ee900db2dac9942d31b145db277e",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/84fa833d21854a22db99371ccf34c80f.php": {
-    "mtime": 1793822681.686021,
-    "ast_hash": "7cec64ed68fc58195c1fee7220bf6329",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/92699fb55b9efb166cdcf4169351f6ec.php": {
-    "mtime": 1793822709.2299974,
-    "ast_hash": "80ab552d32370683c6a337e56e6bd7e7",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/a72fc05cb56dd72741c40e37e0798c6c.php": {
-    "mtime": 1793892570.5441425,
-    "ast_hash": "a7373728b53419145c73efbcdd681167",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/c6f45a51c77a237e03f7c068e7faab89.php": {
-    "mtime": 1793892600.9996047,
-    "ast_hash": "621b789dfe9d01c64eb68044fc8b79a0",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/e2c323524f7c5c831768be0e7ca38b3b.php": {
-    "mtime": 1793822709.0196493,
-    "ast_hash": "cdf7358734f7191caf9ae74f9c4e7353",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/e70e878b96efa4fbb205a331fdd47aa7.php": {
-    "mtime": 1793892512.952242,
-    "ast_hash": "8476a0f8ba9064da0d456fbbb67a02cc",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/ebe1817c1d8bd51c47548b4157efa816.php": {
-    "mtime": 1793892511.809763,
-    "ast_hash": "d04456d3a6d3b94819e90aedf9c8a2e8",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/ee7ad4945054b48521a92681bbd18e70.php": {
-    "mtime": 1793822681.694567,
-    "ast_hash": "cc0e63c8622d44a6b8604bee7288636e",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/f155307debd1fe51f304d3d8d31ad3f6.php": {
-    "mtime": 1793822680.8224554,
-    "ast_hash": "53ae5dcec1e4dd5eb9802482be53dc71",
-    "semantic_hash": ""
-  },
   "resources/views/obras/partials/requisiciones/acciones.blade.php": {
     "mtime": 1793893253.9315405,
     "ast_hash": "72ab7b70b5c3f441f4fca97867a99aaa",
-    "semantic_hash": ""
-  },
-  "storage/framework/views/25ae0d57f61c52f724ee1c28b1179cbe.php": {
-    "mtime": 1793893256.1370668,
-    "ast_hash": "546cd37b3a2ad5d4c46489035585b283",
     "semantic_hash": ""
   },
   "resources/views/impresion/cabecera-estilos.blade.php": {
@@ -9364,64 +9189,669 @@
     "ast_hash": "531cad09c46667823eb24ecca213f388",
     "semantic_hash": ""
   },
-  "storage/framework/views/0fa42f7ca363c84d8c13d2f1d42fff20.php": {
-    "mtime": 1793893863.482527,
-    "ast_hash": "3adbb3ce6802710c428a6673d7774795",
+  "tests/Feature/ReposicionCajaChicaOrigenTest.php": {
+    "mtime": 1793906629.8841352,
+    "ast_hash": "74cc7294652d63db5b26d99f66160a2b",
+    "semantic_hash": ""
+  },
+  "app/Http/Requests/StoreCompraRecepcionDirectaRequest.php": {
+    "mtime": 1793980237.0393572,
+    "ast_hash": "171be82442212394b78a20049be0e41d",
+    "semantic_hash": ""
+  },
+  "tests/Feature/CompraRecepcionDirectaRequestTest.php": {
+    "mtime": 1793911291.0507326,
+    "ast_hash": "1328c23dabd4a6d31f33943e061e5a99",
+    "semantic_hash": ""
+  },
+  "docs/PLAN_RECEPCION_DIRECTA_OBRA.md": {
+    "mtime": 1794242270.99586,
+    "ast_hash": "c575bca0aae67e6c11dc424a834f29f9",
+    "semantic_hash": ""
+  },
+  "app/Models/CompraRecepcionDirecta.php": {
+    "mtime": 1793917147.6977277,
+    "ast_hash": "ab170f9f08a4b864a31d64e458b628c8",
+    "semantic_hash": ""
+  },
+  "app/Models/CompraRecepcionDirectaArchivo.php": {
+    "mtime": 1793912094.093695,
+    "ast_hash": "476dc07009994fef87f4f1eaaaf58e58",
+    "semantic_hash": ""
+  },
+  "app/Models/CompraRecepcionDirectaDetalle.php": {
+    "mtime": 1793916215.308841,
+    "ast_hash": "9fc261450befdee893e4f2ca15575aef",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_05_205300_create_compra_recepciones_directas_tables.php": {
+    "mtime": 1793912090.323243,
+    "ast_hash": "3a143e018029de2eeaba10688c22a5ca",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_05_205301_link_direct_receipts_to_inventory_movements.php": {
+    "mtime": 1793912216.1583521,
+    "ast_hash": "75da40425eea7d3a5a2f007c2f09aebb",
+    "semantic_hash": ""
+  },
+  "database/seeders/CompraRecepcionDirectaPermisosSeeder.php": {
+    "mtime": 1793912095.310258,
+    "ast_hash": "f132640282f8c9ac3b2304b588fcf93d",
+    "semantic_hash": ""
+  },
+  "tests/Feature/CompraRecepcionDirectaSchemaTest.php": {
+    "mtime": 1793912219.8132708,
+    "ast_hash": "352d4bb9a7bf5c004ee7a49bdbb14146",
+    "semantic_hash": ""
+  },
+  "app/Services/Compras/OrdenCompraEntregaService.php": {
+    "mtime": 1793913041.2864904,
+    "ast_hash": "1ae20549a537b91adf43d9be8698e6df",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_05_210800_add_delivery_destination_to_ordenes_compra.php": {
+    "mtime": 1793912992.344324,
+    "ast_hash": "cca25b76bc1d1119b5dea2128db29d3f",
+    "semantic_hash": ""
+  },
+  "resources/views/ordencompra/partials/entrega.blade.php": {
+    "mtime": 1793913005.305835,
+    "ast_hash": "edc77bdeb4ff30cbfb9f2275185ee1c2",
+    "semantic_hash": ""
+  },
+  "tests/Feature/OrdenCompraEntregaTest.php": {
+    "mtime": 1793913101.3106961,
+    "ast_hash": "539446fde93399c7814cba859ff57503",
+    "semantic_hash": ""
+  },
+  "app/Http/Controllers/CompraRecepcionDirectaController.php": {
+    "mtime": 1793985899.8553076,
+    "ast_hash": "d13ef53ad9f6dddc65eb73be9cbaf336",
+    "semantic_hash": ""
+  },
+  "resources/views/compras/recepciones-directas/create.blade.php": {
+    "mtime": 1793917150.19522,
+    "ast_hash": "d25943fb49af386d5cd06640c233e456",
+    "semantic_hash": ""
+  },
+  "tests/Feature/CompraRecepcionDirectaCaptureTest.php": {
+    "mtime": 1793916221.4423964,
+    "ast_hash": "c44ce796c55d57d9618059d89adc9be3",
+    "semantic_hash": ""
+  },
+  "app/Services/Compras/CompraRecepcionDirectaPartidasService.php": {
+    "mtime": 1793914603.420711,
+    "ast_hash": "33a6d75b8f336bd779802315a5868039",
+    "semantic_hash": ""
+  },
+  "tests/Unit/CompraRecepcionDirectaPartidasTest.php": {
+    "mtime": 1793914608.7702663,
+    "ast_hash": "3b44467a3bddec8176b96f47bb398905",
+    "semantic_hash": ""
+  },
+  "app/Services/Compras/CompraRecepcionDirectaValidacionService.php": {
+    "mtime": 1793983845.7378962,
+    "ast_hash": "80803fdbbb758860ff38e6158a093821",
+    "semantic_hash": ""
+  },
+  "tests/Unit/CompraRecepcionDirectaValidacionTest.php": {
+    "mtime": 1793915369.8492343,
+    "ast_hash": "f89d6f0984b2238275341773d576e3cd",
+    "semantic_hash": ""
+  },
+  "app/Services/Compras/CompraRecepcionDirectaCostoService.php": {
+    "mtime": 1793979085.7103891,
+    "ast_hash": "a0724e7cdbc92b1f1899917bfe0471dc",
+    "semantic_hash": ""
+  },
+  "app/Services/Compras/CompraRecepcionDirectaService.php": {
+    "mtime": 1793980158.687805,
+    "ast_hash": "6b37cced13830e7fac7dfd001661e9bd",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_05_220000_add_base_quantity_and_exact_cost_to_direct_receipts.php": {
+    "mtime": 1793916211.6468115,
+    "ast_hash": "d761f4fdf05253818e5ef628ff2488db",
+    "semantic_hash": ""
+  },
+  "tests/Concerns/BuildsCompraRecepcionDirectaDatabase.php": {
+    "mtime": 1793991354.7668953,
+    "ast_hash": "7d373093ad280c18d331e32cc2429064",
+    "semantic_hash": ""
+  },
+  "tests/Feature/CompraRecepcionDirectaAplicacionTest.php": {
+    "mtime": 1793916387.1337237,
+    "ast_hash": "ec7f59bc1134fe3caa19f6daa13bb273",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_05_221800_add_request_hash_to_direct_receipts.php": {
+    "mtime": 1793917146.3577385,
+    "ast_hash": "e46e5e30c5014178d35c7c557c0975c6",
+    "semantic_hash": ""
+  },
+  "tests/Feature/CompraRecepcionDirectaIdempotenciaTest.php": {
+    "mtime": 1793917204.9074328,
+    "ast_hash": "ffc67a5e676106dad2bc8824c0ae36e0",
+    "semantic_hash": ""
+  },
+  "app/Services/Compras/OrdenCompraRecepcionEstadoService.php": {
+    "mtime": 1793917925.6839654,
+    "ast_hash": "daf0acc4c813c76d1a97eaf04175a75e",
+    "semantic_hash": ""
+  },
+  "tests/Feature/OrdenCompraRecepcionEstadoTest.php": {
+    "mtime": 1793917965.8855052,
+    "ast_hash": "30f1e8c42e3390c819973557b9e98ab7",
+    "semantic_hash": ""
+  },
+  "tests/Feature/CompraRecepcionDirectaParcialesTest.php": {
+    "mtime": 1793983861.2890787,
+    "ast_hash": "95d20c42ffbca469415a8dc96722af74",
+    "semantic_hash": ""
+  },
+  "app/Services/Compras/CompraRecepcionDirectaObraService.php": {
+    "mtime": 1793979081.8417294,
+    "ast_hash": "e9f731aad3b816dae593d70e1578a983",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_06_000100_link_direct_receipt_lines_to_inventory_costs.php": {
+    "mtime": 1793979080.41333,
+    "ast_hash": "fa9c79b61557e1c85fd3a8ba45558462",
+    "semantic_hash": ""
+  },
+  "resources/views/obras/partials/ordenes_compra/material_directo.blade.php": {
+    "mtime": 1793980686.407617,
+    "ast_hash": "2078c9e4420bdd234806f45f8e094a16",
+    "semantic_hash": ""
+  },
+  "tests/Feature/CompraRecepcionDirectaCostoObraTest.php": {
+    "mtime": 1793979254.9462166,
+    "ast_hash": "36bf89b82df7eb37b4babdf82c263724",
+    "semantic_hash": ""
+  },
+  "app/Services/Compras/CompraRequisicionSaldoService.php": {
+    "mtime": 1793983847.1246002,
+    "ast_hash": "a2bfe271654a404843434e40a9a24719",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_06_010000_link_purchase_lines_to_obra_requisiciones.php": {
+    "mtime": 1793980119.348319,
+    "ast_hash": "3fe4f2dc6944f9bee9be23f1a4b794e1",
+    "semantic_hash": ""
+  },
+  "tests/Feature/CompraRecepcionDirectaRequisicionTest.php": {
+    "mtime": 1793980238.2889593,
+    "ast_hash": "89543a883af551d7f73956201a0764fb",
+    "semantic_hash": ""
+  },
+  "app/Services/Compras/CompraRecepcionDirectaConsultaService.php": {
+    "mtime": 1793990950.8805103,
+    "ast_hash": "d9c689677987b590f239a91b1f4d66a7",
+    "semantic_hash": ""
+  },
+  "resources/views/compras/recepciones-directas/partials/avance_orden.blade.php": {
+    "mtime": 1793980779.6198308,
+    "ast_hash": "3e4ad9057ea734f3c2197ca66fb69513",
+    "semantic_hash": ""
+  },
+  "resources/views/compras/recepciones-directas/partials/detalle.blade.php": {
+    "mtime": 1793980782.6783128,
+    "ast_hash": "c9ada354508ea0368299a0e6ded8fcfd",
+    "semantic_hash": ""
+  },
+  "resources/views/compras/recepciones-directas/partials/historial.blade.php": {
+    "mtime": 1793990436.81121,
+    "ast_hash": "0a3cebb95dacbc98e761b3ab30d51875",
+    "semantic_hash": ""
+  },
+  "resources/views/compras/recepciones-directas/partials/requisicion.blade.php": {
+    "mtime": 1793980776.2718656,
+    "ast_hash": "2e74fda5f6358421e7a4c7a2a70d97df",
+    "semantic_hash": ""
+  },
+  "resources/views/compras/recepciones-directas/show.blade.php": {
+    "mtime": 1793986012.4470189,
+    "ast_hash": "fcb4b5894a6ff474770c36046ade0b8b",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/52b83f58c6d4d715fd355c758a4fbdc0.php": {
+    "mtime": 1794241967.2447016,
+    "ast_hash": "452de2ae0dfc545da9536d6624462576",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/696c78f1d2e805f3f2a39ccc6f7bce45.php": {
+    "mtime": 1794241968.3382442,
+    "ast_hash": "65556615f946f861a580cb3573141d63",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/75f08f106f7aca270c03b302169a3883.php": {
+    "mtime": 1794241965.1215894,
+    "ast_hash": "a47234f058198ba069a33fcf3bcc2914",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ba3601b4564d76db0f1e7ca3a4832b1b.php": {
+    "mtime": 1794241966.8655233,
+    "ast_hash": "210a9a98b43df2880af638840a3c584f",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/d5f0a490e456449fca03f660bcb0c07a.php": {
+    "mtime": 1794241965.1255944,
+    "ast_hash": "b0249d485e53abcbdb1a683931545d08",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/d830a322c119f718f50e597a52a3391a.php": {
+    "mtime": 1794241963.9010978,
+    "ast_hash": "183e0cb8d59dfb26b3e18849e42d0f60",
+    "semantic_hash": ""
+  },
+  "tests/Feature/CompraRecepcionDirectaConsultaTest.php": {
+    "mtime": 1793991356.2143488,
+    "ast_hash": "ff70b10d114933ae90483f785aed4c85",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/0926fb4bafdf973d15ebdfe89c047a1a.php": {
+    "mtime": 1794241963.9270966,
+    "ast_hash": "10b04ad33a19efef9334931b773fc95f",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/17c45560ab563a0d923bd0cc8b1fdcc8.php": {
+    "mtime": 1794241963.9090962,
+    "ast_hash": "17ac11bbf63e97f3ea29d9d4dda04a71",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/92c11b4459e7eaaf136553ae0f5de70b.php": {
+    "mtime": 1794241963.9180994,
+    "ast_hash": "188571ac67a022b94e7779803fba4ea3",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/ab49d3344666d444ddb038afd95f12b4.php": {
+    "mtime": 1794241963.9210963,
+    "ast_hash": "e6d9d6cc58ad3ee7a728f144962784ea",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f79cb0029003287b115c08cb06424bd0.php": {
+    "mtime": 1794241963.9140964,
+    "ast_hash": "7b1757d7e5ae1bd64329842f3a62b41a",
+    "semantic_hash": ""
+  },
+  "resources/views/compras/recepciones-directas/imprimir.blade.php": {
+    "mtime": 1793981194.294099,
+    "ast_hash": "10a569035325b75a6cc72a2ac36dadaa",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/4fe0b29c7407670ce1d9d4fa0c74f65e.php": {
+    "mtime": 1794241963.9060972,
+    "ast_hash": "0a8b9aac47079bfaad86f81fa5efa555",
+    "semantic_hash": ""
+  },
+  "storage/app/compras/recepciones-directas/2917769e-8bd4-40ed-8e2e-cc220a31c4fb/mcc5QD3Vor1R8f5ppx28QleEwM9Qv4kd3mIALqp0.jpg": {
+    "mtime": 1793983953.955681,
+    "ast_hash": "c4358e651064a294f37c9f414f44b669",
+    "semantic_hash": ""
+  },
+  "app/Services/Compras/CompraRecepcionDirectaReversionService.php": {
+    "mtime": 1793992660.0263944,
+    "ast_hash": "48d2ab82a79a92b661b337670421e647",
+    "semantic_hash": ""
+  },
+  "tests/Feature/CompraRecepcionDirectaReversionTest.php": {
+    "mtime": 1793986062.7904186,
+    "ast_hash": "83a9a12f87537015a1235db4e51d3ffe",
+    "semantic_hash": ""
+  },
+  "storage/app/compras/recepciones-directas/d216f5c8-905f-4b5b-a507-ccaa7820291e/yPHqnDuEFIYA2Q3aAKe0FmTofIvqhZnFKoTJuN51.pdf": {
+    "mtime": 1793986043.6720054,
+    "ast_hash": "1561dd53a0113ffc509cf3d3e767cf56",
+    "semantic_hash": ""
+  },
+  "storage/app/prueba-reversion-26ad517e-f3db-43d8-b051-3fcac9c992a7.pdf": {
+    "mtime": 1793986043.5281494,
+    "ast_hash": "1561dd53a0113ffc509cf3d3e767cf56",
+    "semantic_hash": ""
+  },
+  "app/Models/ObraDevolucion.php": {
+    "mtime": 1794238153.0399253,
+    "ast_hash": "1fe363e5337e12b36267bdbb4cdb4588",
+    "semantic_hash": ""
+  },
+  "app/Models/ObraDevolucionDetalle.php": {
+    "mtime": 1793989843.0225625,
+    "ast_hash": "7ebe760cc7b6d6cf93472f7bc1412e11",
+    "semantic_hash": ""
+  },
+  "app/Models/ObraDevolucionRecepcion.php": {
+    "mtime": 1793989844.383467,
+    "ast_hash": "79454a4e65bed8cd8f29be2600d24935",
+    "semantic_hash": ""
+  },
+  "app/Models/ObraDevolucionRecepcionDetalle.php": {
+    "mtime": 1793989845.7655737,
+    "ast_hash": "7710ce493a5b9e0b0a4d0e696d166fb9",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_06_020000_create_obra_devoluciones_tables.php": {
+    "mtime": 1793989757.8848448,
+    "ast_hash": "eb3acb16f96df4a7fd7a33ea18fbb291",
+    "semantic_hash": ""
+  },
+  "tests/Feature/ObraDevolucionSchemaTest.php": {
+    "mtime": 1793989788.436243,
+    "ast_hash": "7f2b92fe781435bffff2570c64dd5c00",
+    "semantic_hash": ""
+  },
+  "app/Services/Obras/MaterialEntregadoConsultaService.php": {
+    "mtime": 1793991345.1912408,
+    "ast_hash": "8abe8ed93ffb8e54f0ecb8d5c01848c2",
+    "semantic_hash": ""
+  },
+  "tests/Feature/MaterialEntregadoConsultaTest.php": {
+    "mtime": 1793991398.3570826,
+    "ast_hash": "430272d85a8299e08670235e0f8a5817",
+    "semantic_hash": ""
+  },
+  "resources/views/obras/partials/ordenes_compra/trazabilidad.blade.php": {
+    "mtime": 1793991427.5803294,
+    "ast_hash": "8c9b6fbf68b15c4d393be0e6d25b4bba",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/e868c9752908435cd3ad8a7f7fa868ac.php": {
+    "mtime": 1794241967.075524,
+    "ast_hash": "c75493bcc49977744d276bf7ebeb14ac",
+    "semantic_hash": ""
+  },
+  "app/Services/Obras/MaterialEntregadoTrazabilidadService.php": {
+    "mtime": 1793991426.0105772,
+    "ast_hash": "81cc3cb817f13e15c6180721786524a9",
+    "semantic_hash": ""
+  },
+  "app/Services/Obras/MaterialDevolucionSaldoService.php": {
+    "mtime": 1794240695.0277197,
+    "ast_hash": "85fd05cc4c94a7c3b67fbed2a7276a17",
+    "semantic_hash": ""
+  },
+  "tests/Feature/MaterialDevolucionSaldoTest.php": {
+    "mtime": 1794238268.6324067,
+    "ast_hash": "ffe3ee9fefacc3a2ce6960345499dcec",
+    "semantic_hash": ""
+  },
+  "resources/views/obras/partials/materiales/tab.blade.php": {
+    "mtime": 1794241361.5222778,
+    "ast_hash": "5af75f7897e8c017b692a04db4eacce6",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/964a99a20fc1ec564ef167cbadfba08a.php": {
+    "mtime": 1794241966.8615212,
+    "ast_hash": "6469f05396e94764f5eb008cc65c48af",
+    "semantic_hash": ""
+  },
+  "app/Services/Obras/ObraDevolucionSolicitudService.php": {
+    "mtime": 1794238962.70718,
+    "ast_hash": "3e7704c7a80f90b9280e8cb7c9a9deb1",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_06_030000_add_obra_devolucion_idempotency.php": {
+    "mtime": 1793992420.272216,
+    "ast_hash": "d4c149c55da05caafa3c3696990c4ed4",
+    "semantic_hash": ""
+  },
+  "storage/app/compras/recepciones-directas/058a9053-78e0-43ca-b6dc-ed9914aefdfe/skHMhk93udZhOtvQ058q2mTL02djgKjRxqAGgpFj.pdf": {
+    "mtime": 1793993299.8197262,
+    "ast_hash": "1561dd53a0113ffc509cf3d3e767cf56",
+    "semantic_hash": ""
+  },
+  "storage/app/compras/recepciones-directas/99079f9b-2527-4948-8c2f-ed60a3a1c55e/BcxXVCBGLt764Xibt73jdbkB8trSP6yzusDVEM1q.pdf": {
+    "mtime": 1793992847.2022066,
+    "ast_hash": "1561dd53a0113ffc509cf3d3e767cf56",
+    "semantic_hash": ""
+  },
+  "storage/app/compras/recepciones-directas/f58e8485-589a-4959-955f-d1a1cc9fd49b/Hl7sOB7n47T2SKJ2RGKH6kR6fPBdiWm5B00jyuLS.pdf": {
+    "mtime": 1793993107.786089,
+    "ast_hash": "1561dd53a0113ffc509cf3d3e767cf56",
+    "semantic_hash": ""
+  },
+  "storage/app/test-concurrencia-91B7A72A.pdf": {
+    "mtime": 1793993107.7234368,
+    "ast_hash": "1561dd53a0113ffc509cf3d3e767cf56",
+    "semantic_hash": ""
+  },
+  "storage/app/test-concurrencia-AA19889E.pdf": {
+    "mtime": 1793992847.1078677,
+    "ast_hash": "1561dd53a0113ffc509cf3d3e767cf56",
+    "semantic_hash": ""
+  },
+  "storage/app/test-concurrencia-EB43D77B.pdf": {
+    "mtime": 1793993299.7544482,
+    "ast_hash": "1561dd53a0113ffc509cf3d3e767cf56",
+    "semantic_hash": ""
+  },
+  "resources/views/obras/devoluciones/imprimir.blade.php": {
+    "mtime": 1794238163.1401417,
+    "ast_hash": "6acd7e21803c02c0e74eae9d34849409",
+    "semantic_hash": ""
+  },
+  "app/Http/Controllers/Inventario/ObraDevolucionPendienteController.php": {
+    "mtime": 1794240901.5768802,
+    "ast_hash": "688a0e6f1789a64e60535a35983eb77f",
+    "semantic_hash": ""
+  },
+  "app/Services/Obras/ObraDevolucionPendienteConsultaService.php": {
+    "mtime": 1794240719.30426,
+    "ast_hash": "fb6a544073a9b3ca36de41642fab0e43",
+    "semantic_hash": ""
+  },
+  "resources/views/inventario/devoluciones-obra/index.blade.php": {
+    "mtime": 1794240145.5923986,
+    "ast_hash": "e54be5ae1a4b1519d213bdeca7b86f57",
+    "semantic_hash": ""
+  },
+  "resources/views/inventario/devoluciones-obra/partials/lista.blade.php": {
+    "mtime": 1794240902.8271894,
+    "ast_hash": "3afffb796fe8e0a06e93e9ff74885ab9",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/4300f9615941ce4f27d3299ffebe2250.php": {
+    "mtime": 1794241965.1305883,
+    "ast_hash": "5fded6e9cb0d14c50c1503dbd2bc00a6",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/7e9a4bf7b5295915b8f592a97f127660.php": {
+    "mtime": 1794241965.1405885,
+    "ast_hash": "f7bc585b2cf64ed55e58bc651be5f279",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/9e287db305b83db8845f2913dc33ea84.php": {
+    "mtime": 1794241966.4228551,
+    "ast_hash": "2134f7d67eef8e6ee2e32333d2b25c78",
+    "semantic_hash": ""
+  },
+  "tests/Feature/ObraDevolucionPendienteConsultaTest.php": {
+    "mtime": 1794242167.2762785,
+    "ast_hash": "0ee9d6767179af6fdc4b48f2c4a7323b",
+    "semantic_hash": ""
+  },
+  "app/Services/Obras/ObraDevolucionRecepcionService.php": {
+    "mtime": 1794238997.375827,
+    "ast_hash": "b40ed1bc67d82b71dbdac034bf193779",
+    "semantic_hash": ""
+  },
+  "resources/views/inventario/devoluciones-obra/recibir.blade.php": {
+    "mtime": 1794239067.5922203,
+    "ast_hash": "b9dff219bb5e8804cf767f46cf4cc922",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/549f435ab39a5a57ac2bb76d5d370b88.php": {
+    "mtime": 1794241965.1937206,
+    "ast_hash": "67ca230fc3501f49d000f25337b163d4",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f086a68714b590462e640dfb3d4f45fa.php": {
+    "mtime": 1794241966.1748526,
+    "ast_hash": "1300e1748500cdec7d45de01ac761960",
+    "semantic_hash": ""
+  },
+  "app/Services/Obras/ObraDevolucionEntradaPreparacionService.php": {
+    "mtime": 1794240732.952144,
+    "ast_hash": "5befe70f884787f79d462e0e5c97adda",
     "semantic_hash": ""
   },
   "storage/framework/views/4aec946f21a656a6130a19bbe76478d3.php": {
-    "mtime": 1793894004.7864752,
+    "mtime": 1794241972.3435762,
     "ast_hash": "858b2310fd1b7fde0b8488c374c35215",
     "semantic_hash": ""
   },
   "storage/framework/views/709c7493acd50038402484a647af8ae1.php": {
-    "mtime": 1793894004.7691467,
+    "mtime": 1794241972.3405793,
     "ast_hash": "a365365e96894b87f5b57e6bf73dfe8c",
     "semantic_hash": ""
   },
-  "storage/framework/views/9617060365e34319ec7d59bc8f710518.php": {
-    "mtime": 1793893859.301893,
-    "ast_hash": "3bec6bf640997c44e3a315a04d140e0a",
+  "app/Services/Obras/ObraDevolucionAplicacionService.php": {
+    "mtime": 1794240676.238062,
+    "ast_hash": "4c7bc25f26dae07f0456b63142f08e2b",
     "semantic_hash": ""
   },
-  "storage/framework/views/9d6599f9721e4da322eeb84404db4be7.php": {
-    "mtime": 1793894004.8291802,
-    "ast_hash": "1f77a163b489185779cdc8076271b12b",
+  "app/Services/Obras/ObraDevolucionEvaluacionPendienteService.php": {
+    "mtime": 1794240047.55574,
+    "ast_hash": "664fd56b1c3fb271a75f65cce4ab1394",
     "semantic_hash": ""
   },
-  "storage/framework/views/e1292c01e3ffe518408335c05ee71803.php": {
-    "mtime": 1793893858.2142344,
-    "ast_hash": "4837fa9acca71f780600cdddcb8f672c",
+  "database/migrations/2026_11_09_010000_add_evaluacion_custodia_a_devoluciones.php": {
+    "mtime": 1794240206.6526322,
+    "ast_hash": "e799132b944c6ee6dd4177a88aae9b11",
     "semantic_hash": ""
   },
-  "storage/framework/views/ea2a92cf8d3061b86f89378c4b26fdf0.php": {
-    "mtime": 1793893899.9667206,
-    "ast_hash": "09d07f652a4d10442360176aa4ef98f6",
+  "app/Services/Obras/ObraDevolucionDiferenciasConsultaService.php": {
+    "mtime": 1794240696.3847685,
+    "ast_hash": "8913417dd67acec165372e098ebd09c0",
     "semantic_hash": ""
   },
-  "storage/framework/views/6a32d9438aaf4500381987d075cd5111.php": {
-    "mtime": 1793894583.5887403,
-    "ast_hash": "9ba58346a0d8f7d9686a664688b0327f",
+  "resources/views/obras/devoluciones/partials/seguimiento.blade.php": {
+    "mtime": 1794240427.3362887,
+    "ast_hash": "acb34be52794887244c91864187c936b",
     "semantic_hash": ""
   },
-  "storage/framework/views/ad07ec800633dcc99db3e529479c87c8.php": {
-    "mtime": 1793894552.3308575,
-    "ast_hash": "5ae52c45d6d90d585d41017df17d0238",
+  "storage/framework/views/52d5dd7feb5bdedee59b467f88c2040e.php": {
+    "mtime": 1794241968.513609,
+    "ast_hash": "89bb692dd95ec6f2c4ae3b33d5e61f42",
     "semantic_hash": ""
   },
-  "storage/framework/views/7ff7b9939e5722dc53aeda1dcf30a7b1.php": {
-    "mtime": 1793906039.5427504,
-    "ast_hash": "ec9ae8b1a38605132e10017061ea8240",
+  "storage/framework/views/792bb8b2a8c6d9a9a6ba1c74d2e3a295.php": {
+    "mtime": 1794241966.4448564,
+    "ast_hash": "ac28867f9a19706580cec04ea9fcb5ee",
     "semantic_hash": ""
   },
-  "storage/framework/views/f393a3fd847e901c132a0f476ad5ddf6.php": {
-    "mtime": 1793906429.7486165,
-    "ast_hash": "0f9eddadf0d5efb0f0f06c130f07d8bb",
+  "app/Services/Obras/ObraDevolucionEstadoPartida.php": {
+    "mtime": 1794240659.041054,
+    "ast_hash": "15fef4606f8507f5c06927d6951d8e7c",
     "semantic_hash": ""
   },
-  "tests/Feature/ReposicionCajaChicaOrigenTest.php": {
-    "mtime": 1793906629.8841352,
-    "ast_hash": "74cc7294652d63db5b26d99f66160a2b",
+  "tools/validar_devolucion_concurrencia_local.php": {
+    "mtime": 1794240853.2310421,
+    "ast_hash": "4e7afc56e48e533567998043d53d8574",
+    "semantic_hash": ""
+  },
+  "app/Services/Obras/FiniquitoMaterialConsultaService.php": {
+    "mtime": 1794241335.1784692,
+    "ast_hash": "dcb81b797b3217649ac3b6167c34b8b0",
+    "semantic_hash": ""
+  },
+  "resources/views/obras/devoluciones/finiquito.blade.php": {
+    "mtime": 1794241530.1736667,
+    "ast_hash": "82428944baccd5e05c00b613dc5bc757",
+    "semantic_hash": ""
+  },
+  "resources/views/obras/devoluciones/partials/finiquito_contenido.blade.php": {
+    "mtime": 1794241845.0625377,
+    "ast_hash": "eb4369caa46e8d9ea2d645534b0ed63c",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/4b0bd8d06f02ec1050e33bff59ef307c.php": {
+    "mtime": 1794241971.27391,
+    "ast_hash": "32f3e2358c58160a9dffb727ea6c25cd",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/c00e39d1825d8c5f43ded428d475ee80.php": {
+    "mtime": 1794241966.4398568,
+    "ast_hash": "0b6c92bfcc4211cf99af101b7f950997",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/c69d55c0299a23e7fa4edc1f5c5b6870.php": {
+    "mtime": 1794241966.4098551,
+    "ast_hash": "5f6133ef2baf2875b65b5dace1dcbd59",
+    "semantic_hash": ""
+  },
+  "resources/views/obras/devoluciones/finiquito_imprimir.blade.php": {
+    "mtime": 1794241946.7703109,
+    "ast_hash": "2f5a2e443010cb3ef7e4b1573454cbf6",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/43de91983ee4eba01605257a0e4793b7.php": {
+    "mtime": 1794241971.8217807,
+    "ast_hash": "265cb49c375c905bc798544c48bcfe9b",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/df103db20433b85956286b355afc3e87.php": {
+    "mtime": 1794241966.4188585,
+    "ast_hash": "2ea8dec36921d3a788ae49aef6587d76",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/3025e7a336725f9438e57180f1a6bbff.php": {
+    "mtime": 1794242244.8604083,
+    "ast_hash": "2ee6533b1f97b3252b438774b053b2a3",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/46f38214b946e1ef6c5288eb016227c2.php": {
+    "mtime": 1794242245.111008,
+    "ast_hash": "2bf723dc05db9e6f8b61c6c5a4119590",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/5ff223e7dd1ad689503e3c946c74b258.php": {
+    "mtime": 1794242243.3042383,
+    "ast_hash": "c9db8f295a1a3a16c088518c2c274b62",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/6944bd02bce9253de7d21611355dd8b7.php": {
+    "mtime": 1794242243.9349325,
+    "ast_hash": "0e69592a780b0c12cead2aa40331c249",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/73f649dae8f2f94c8615c7ad64fb4c2b.php": {
+    "mtime": 1794242251.4212604,
+    "ast_hash": "dd1c78a0369893fd83848fe3cce470ed",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/7e4f0ba99ebb59b4f91deba1be0b7afc.php": {
+    "mtime": 1794242243.9803,
+    "ast_hash": "c621059f594351a64e8ea01d8e20546c",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/8b0f7edbe86efdd2b9460794c64d9e4c.php": {
+    "mtime": 1794242243.7992036,
+    "ast_hash": "45983cb7f1dfc7de745d68ef0e781d65",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/9cf6eb62e953e81dbd275ff102a8227b.php": {
+    "mtime": 1794242242.3981605,
+    "ast_hash": "611d17b8196ceec0c2e9996aeb1a3e36",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/c15922ba9c62a6930a5235c623c416ec.php": {
+    "mtime": 1794242248.7012157,
+    "ast_hash": "c252118a398ae1c2eed69312248798eb",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f15981051f29f1055c31008053844e64.php": {
+    "mtime": 1794242241.6850367,
+    "ast_hash": "81205031aedbf6d7357fd1b3f683e7d3",
+    "semantic_hash": ""
+  },
+  "storage/framework/views/f30fae91b7f964826e30b99a32dff0f5.php": {
+    "mtime": 1794242244.175704,
+    "ast_hash": "deeb37270ea455329ae4d6cadd8c9113",
+    "semantic_hash": ""
+  },
+  "tools/validar_finiquito_integral_local.php": {
+    "mtime": 1794242217.1847444,
+    "ast_hash": "e21134cccd251bc6a53312cf7af11f19",
     "semantic_hash": ""
   }
 }

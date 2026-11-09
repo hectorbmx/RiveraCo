@@ -15,6 +15,7 @@ class StoreOrdenCompraDetalleRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'obra_requisicion_detalle_id' => ['nullable', 'integer', 'exists:obra_requisicion_detalles,id'],
             'producto_id' => [
                 'nullable',
                 'integer',

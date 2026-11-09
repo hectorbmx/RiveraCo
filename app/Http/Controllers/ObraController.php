@@ -522,6 +522,70 @@ private function kpisObrasEjecutivos(): array
 }
 
 
+public function finiquitoMateriales(Request $request, Obra $obra, \App\Services\Obras\FiniquitoMaterialConsultaService $consulta)
+{
+    $this->abortarSiObraFueraDeArea($obra);
+    abort_unless($request->user()?->can('obra.devoluciones.view.access'), 403);
+    $finiquito = $consulta->consultar($obra);
+    return view('obras.devoluciones.finiquito', compact('obra', 'finiquito'));
+}
+
+public function imprimirFiniquitoMateriales(Request $request, Obra $obra, \App\Services\Obras\FiniquitoMaterialConsultaService $consulta)
+{
+    $this->abortarSiObraFueraDeArea($obra);
+    abort_unless($request->user()?->can('obra.devoluciones.view.access'), 403);
+    $finiquito = $consulta->consultar($obra);
+    $generadoEn = now();
+    return view('obras.devoluciones.finiquito_imprimir', compact('obra', 'finiquito', 'generadoEn'));
+}
+
+public function crearDevolucion(Request $request, Obra $obra, \App\Services\Obras\ObraDevolucionSolicitudService $service)
+{
+    $this->abortarSiObraFueraDeArea($obra);
+    abort_unless($request->user()?->can('obra.devoluciones.create.access') && $request->user()?->can('obra.devoluciones.view.access'), 403);
+    $lineas = collect($request->input('partidas', []))->filter(fn ($p) => is_array($p) && ($p['seleccionada'] ?? null) === '1')->values()->all();
+    $solicitud = $service->crear($obra, $request->user(), ['operacion_uuid' => $request->input('operacion_uuid'), 'accion' => $request->input('accion'), 'observaciones' => $request->input('observaciones'), 'partidas' => $lineas]);
+    return redirect()->route('obras.edit', ['obra' => $obra->id, 'tab' => 'materiales-obra'])->with('success', 'Solicitud '.$solicitud->folio.' registrada como '.$solicitud->estado.'.');
+}
+
+public function imprimirDevolucion(Request $request, Obra $obra, \App\Models\ObraDevolucion $devolucion)
+{
+    $this->abortarSiObraFueraDeArea($obra);
+    abort_unless($request->user()?->can('obra.devoluciones.view.access'), 403);
+    abort_unless((int) $devolucion->obra_id === (int) $obra->id, 404);
+    $devolucion->load(['creadoPor', 'presentadoPor', 'detalles.recepcionDirectaDetalle.recepcion', 'detalles.movimientoOrigen.documento', 'detalles.salidaHuentitanDetalle.salida']);
+    return view('obras.devoluciones.imprimir', compact('obra', 'devolucion'));
+}
+
+public function presentarDevolucion(Request $request, Obra $obra, \App\Models\ObraDevolucion $devolucion, \App\Services\Obras\ObraDevolucionSolicitudService $service)
+{
+    $this->abortarSiObraFueraDeArea($obra);
+    abort_unless($request->user()?->can('obra.devoluciones.create.access') && $request->user()?->can('obra.devoluciones.view.access'), 403);
+    abort_unless((int) $devolucion->obra_id === (int) $obra->id, 404);
+    $service->presentar($obra, $devolucion, $request->user());
+    return redirect()->route('obras.edit', ['obra' => $obra->id, 'tab' => 'materiales-obra'])->with('success', 'Solicitud '.$devolucion->folio.' presentada.');
+}
+
+public function actualizarDevolucion(Request $request, Obra $obra, \App\Models\ObraDevolucion $devolucion, \App\Services\Obras\ObraDevolucionSolicitudService $service)
+{
+    $this->abortarSiObraFueraDeArea($obra);
+    abort_unless($request->user()?->can('obra.devoluciones.create.access') && $request->user()?->can('obra.devoluciones.view.access'), 403);
+    abort_unless((int) $devolucion->obra_id === (int) $obra->id, 404);
+    $datos = $request->validate(['cantidades' => ['required', 'array'], 'cantidades.*' => ['required', 'numeric', 'gt:0', 'decimal:0,3'], 'condiciones' => ['required', 'array'], 'condiciones.*' => ['required', 'in:bueno,danado,desgastado'], 'observaciones_partidas' => ['nullable', 'array'], 'observaciones_partidas.*' => ['nullable', 'string', 'max:2000'], 'observaciones' => ['nullable', 'string', 'max:2000']]);
+    $service->actualizarBorrador($obra, $devolucion, $request->user(), $datos['cantidades'], $datos['observaciones'] ?? null, $datos['condiciones'], $datos['observaciones_partidas'] ?? []);
+    return redirect()->route('obras.edit', ['obra' => $obra->id, 'tab' => 'materiales-obra'])->with('success', 'Borrador '.$devolucion->folio.' actualizado.');
+}
+
+public function cancelarDevolucion(Request $request, Obra $obra, \App\Models\ObraDevolucion $devolucion, \App\Services\Obras\ObraDevolucionSolicitudService $service)
+{
+    $this->abortarSiObraFueraDeArea($obra);
+    abort_unless($request->user()?->can('obra.devoluciones.create.access') && $request->user()?->can('obra.devoluciones.view.access'), 403);
+    abort_unless((int) $devolucion->obra_id === (int) $obra->id, 404);
+    $datos = $request->validate(['motivo' => ['required', 'string', 'max:2000']]);
+    $service->cancelar($obra, $devolucion, $request->user(), $datos['motivo']);
+    return redirect()->route('obras.edit', ['obra' => $obra->id, 'tab' => 'materiales-obra'])->with('success', 'Solicitud '.$devolucion->folio.' cancelada.');
+}
+
 public function edit(Request $request, Obra $obra)
 {
     $this->abortarSiObraFueraDeArea($obra);
@@ -616,6 +680,9 @@ $planeacion = \App\Models\ObraPlaneacionSemanal::query()
     ]);
 
     $tab = $request->query('tab', 'general');
+    if ($tab === 'materiales-obra') {
+        abort_unless(auth()->user()?->can('obra.devoluciones.view.access'), 403);
+    }
 
    // Cambiamos $id por $obra->id para evitar el error de variable indefinida
 $presupuestosDisponibles = Presupuesto::whereDoesntHave('obras', function($query) use ($obra) {
@@ -1515,6 +1582,52 @@ if ($tab === 'vehiculos') {
                 ->get()
             : collect();
 
+        $materialDirectoObra = $tab === 'ordenes-compra' && auth()->user()?->can(\App\Models\CompraRecepcionDirecta::PERMISO_VER)
+            ? app(\App\Services\Compras\CompraRecepcionDirectaObraService::class)->resumen((int) $obra->id)
+            : ['partidas' => collect(), 'total_mxn' => 0];
+
+        $materialesObra = $tab === 'materiales-obra'
+            ? app(\App\Services\Obras\MaterialDevolucionSaldoService::class)->porObra((int) $obra->id)
+            : null;
+        $solicitudesDevolucion = $tab === 'materiales-obra'
+            ? \App\Models\ObraDevolucion::where('obra_id', $obra->id)->with(['detalles.recepcionDirectaDetalle.recepcion', 'detalles.movimientoOrigen.documento', 'detalles.salidaHuentitanDetalle.salida', 'recepciones.detalles', 'recepciones.almacen'])->orderByDesc('id')->get()
+            : collect();
+        if ($tab === 'materiales-obra') app(\App\Services\Obras\ObraDevolucionDiferenciasConsultaService::class)->anexar($solicitudesDevolucion);
+
+        $recepcionesPorOrden = $tab === 'ordenes-compra' && auth()->user()?->can(\App\Models\CompraRecepcionDirecta::PERMISO_VER)
+            ? app(\App\Services\Compras\CompraRecepcionDirectaConsultaService::class)->todasPorObra((int) $obra->id)
+            : collect();
+
+        $documentosPorOrden = collect();
+        $entradasHuentitanPorOrden = collect();
+        $salidasHuentitanPorOrden = collect();
+        if ($tab === 'ordenes-compra' && $ordenesCompraObra->isNotEmpty()) {
+            $ordenIds = $ordenesCompraObra->modelKeys();
+            $documentos = \App\Models\InventarioDocumento::query()->with('detalles')
+                ->whereNull('compra_recepcion_directa_id')->whereIn('tipo', ['entrada', 'salida'])
+                ->where(function ($q) use ($ordenIds) {
+                    $q->whereIn('orden_compra_id', $ordenIds)->orWhereHas('detalles', fn ($d) => $d->whereIn('orden_compra_id', $ordenIds));
+                })->where(fn ($q) => $q->where('tipo', 'entrada')->orWhere('obra_id', $obra->id))
+                ->orderByDesc('id')->get();
+            foreach ($documentos as $documento) {
+                $ids = $documento->detalles->pluck('orden_compra_id')->push($documento->orden_compra_id)->filter()
+                    ->map(fn ($id) => (int) $id)->unique()->intersect($ordenIds);
+                foreach ($ids as $id) $documentosPorOrden->put($id, ($documentosPorOrden->get($id) ?? collect())->push($documento));
+            }
+            if (auth()->user()?->can('huentitan.entradas.view')) {
+                $entradasHuentitanPorOrden = \App\Models\HuentitanEntrada::whereIn('orden_compra_id', $ordenIds)->orderByDesc('id')->get()->groupBy('orden_compra_id');
+            }
+            if (auth()->user()?->can('huentitan.salidas.view')) {
+                $ordenesCompraObra->load('detalles.huentitanSalidaDetalle.salida');
+                foreach ($ordenesCompraObra as $orden) {
+                    $salidasHuentitanPorOrden->put($orden->id, $orden->detalles
+                        ->map(fn ($detalle) => $detalle->huentitanSalidaDetalle?->salida)
+                        ->filter(fn ($salida) => $salida && (int) $salida->obra_id === (int) $obra->id)
+                        ->unique('id')->values());
+                }
+            }
+        }
+
 // Totales de facturacion (para resumen y barras)
 // $totalFacturado = (float) $obra->facturas()->sum('monto');                         // todas las facturas emitidas
 // $totalPagado    = (float) $obra->facturas()->whereNotNull('fecha_pago')->sum('monto'); // solo las pagadas
@@ -1589,6 +1702,13 @@ return view('obras.edit', [
     'facturaBorradores'           => $facturaBorradores,
     'facturaBorradoresHistoricos' => $facturaBorradoresHistoricos,
     'ordenesCompraObra'           => $ordenesCompraObra,
+    'materialDirectoObra'         => $materialDirectoObra,
+    'materialesObra'              => $materialesObra,
+    'solicitudesDevolucion'       => $solicitudesDevolucion,
+    'recepcionesPorOrden'         => $recepcionesPorOrden,
+    'documentosPorOrden'          => $documentosPorOrden,
+    'entradasHuentitanPorOrden'   => $entradasHuentitanPorOrden,
+    'salidasHuentitanPorOrden'    => $salidasHuentitanPorOrden,
     'satConceptos'                => $satConceptos,
     'usosCfdi'                    => $usosCfdi,
     'metodosPagoCfdi'             => $metodosPagoCfdi,

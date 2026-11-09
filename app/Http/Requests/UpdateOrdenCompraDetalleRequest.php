@@ -15,6 +15,7 @@ class UpdateOrdenCompraDetalleRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'obra_requisicion_detalle_id' => ['nullable', 'integer', 'exists:obra_requisicion_detalles,id'],
             'producto_id'     => ['nullable','integer','exists:productos,id'],
             'civil_concept_id' => ['nullable','integer','exists:civil_concepts,id'],
             'obra_civil_insumo_id' => ['nullable','integer','exists:obra_civil_insumos,id'],

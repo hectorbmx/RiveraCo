@@ -19,6 +19,8 @@ class StoreOrdenCompraRequest extends FormRequest
         'gastos_sin_factura'   => ['nullable', 'boolean'],
         'proveedor_id'         => ['nullable', Rule::requiredIf(fn() => !$this->boolean('es_caja_chica') && !$this->boolean('gastos_sin_factura')), 'integer', 'exists:proveedores,id'],
         'obra_id'              => ['nullable', 'integer', 'exists:obras,id'],
+        'modalidad_entrega' => ['nullable', Rule::in(['almacen', 'obra_directa'])],
+        'almacen_destino_id' => ['nullable', 'integer', 'exists:almacenes,id'],
         'mantenimiento_abastecimiento_id' => ['nullable', 'integer', 'exists:mantenimiento_abastecimientos,id'],
         'centro_costo_id'      => ['nullable', 'integer', 'exists:centros_costo,id'],
         'planeacion_gasto_id'  => ['nullable', 'integer', 'exists:obra_planeacion_gastos,id'],
