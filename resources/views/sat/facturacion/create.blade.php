@@ -318,15 +318,7 @@
                                 <label class="block text-sm font-medium text-slate-700">
                                     Tipo de Relación
                                 </label>
-                                <select name="relacion_tipo" class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="04">04 - Sustitución de los CFDI previos</option>
-                                    <option value="01">01 - Nota de crédito de los documentos relacionados</option>
-                                    <option value="02">02 - Nota de débito de los documentos relacionados</option>
-                                    <option value="03">03 - Devolución de mercancía sobre facturas o traslados previos</option>
-                                    <option value="05">05 - Traslados de mercancias facturados previamente</option>
-                                    <option value="06">06 - Factura generada por los traslados previos</option>
-                                    <option value="07">07 - CFDI por aplicación de anticipo</option>
-                                </select>
+                                @include('sat.facturacion._tipo_relacion')
                             </div>
 
                             <div>

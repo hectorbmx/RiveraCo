@@ -680,6 +680,21 @@ private function normalizeRfc(?string $rfc): string
     return preg_replace('/[^A-Z0-9&Ñ]/u', '', strtoupper(trim((string) $rfc))) ?? '';
 }
 
+private function agregarDocumentosRelacionados(array &$payload, Request $request, array $data): void
+{
+    if (! $request->boolean('usar_relacion') || empty($data['relacion_uuids'])) {
+        return;
+    }
+
+    $uuids = array_values(array_filter(array_map('trim', explode(',', $data['relacion_uuids']))));
+    if ($uuids) {
+        $payload['related_documents'] = [[
+            'relationship' => $data['relacion_tipo'],
+            'documents' => $uuids,
+        ]];
+    }
+}
+
 private function buildFacturapiPreviewPayload(Request $request, array $data, Cliente $cliente, string $rfc): array
 {
     $tipoIva = $data['tipo_iva'];
@@ -747,18 +762,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
         'use' => $data['uso_cfdi'],
     ];
 
-    if ($request->boolean('usar_relacion') && !empty($data['relacion_uuids'])) {
-        $uuids = array_values(array_filter(array_map('trim', explode(',', $data['relacion_uuids']))));
-
-        if ($uuids) {
-            $payload['related'] = [
-                [
-                    'relation' => $data['relacion_tipo'],
-                    'receipts' => $uuids,
-                ],
-            ];
-        }
-    }
+    $this->agregarDocumentosRelacionados($payload, $request, $data);
 
     if ($request->boolean('usar_complemento_construccion')) {
         $cc = $request->input('complemento_construccion', []);
@@ -1119,15 +1123,7 @@ if ($usarComplementoConstruccion) {
             'use' => $data['uso_cfdi'],
         ];
 
-        if ($request->boolean('usar_relacion') && !empty($data['relacion_uuids'])) {
-            $uuids = array_map('trim', explode(',', $data['relacion_uuids']));
-            $payload['related'] = [
-                [
-                    'relation' => $data['relacion_tipo'],
-                    'receipts' => array_values(array_filter($uuids))
-                ]
-            ];
-        }
+        $this->agregarDocumentosRelacionados($payload, $request, $data);
 
 if ($usarComplementoConstruccion) {
     $payload['complements'] = [

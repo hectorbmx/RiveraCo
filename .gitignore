@@ -23,6 +23,7 @@ yarn-error.log
 
 # Local code graph artifacts for Codex/graphify; not needed on production.
 /graphify-out/
+/.codex/skills/graphify/
 
 docs/riverac3_v2.sql 
 docs/*.sql
