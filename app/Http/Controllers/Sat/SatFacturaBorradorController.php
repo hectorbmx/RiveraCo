@@ -14,6 +14,7 @@ class SatFacturaBorradorController extends Controller
 
         $borradores = SatFacturaBorrador::query()
             ->with(['cliente', 'obra', 'empresa', 'user'])
+            ->where('tipo_comprobante', 'I')
             ->where('estado', 'borrador')
             ->whereNull('sat_factura_id')
             ->when($busqueda !== '', function ($query) use ($busqueda) {

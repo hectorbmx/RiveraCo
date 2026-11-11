@@ -47,6 +47,7 @@ class SatFacturacionController extends Controller
             : null;
 
         $facturasTimbradas = SatFactura::with(['cliente', 'obra', 'ordenCompra', 'empresa'])
+            ->where('tipo_comprobante', 'I')
             ->latest()
             ->get();
 
@@ -103,15 +104,15 @@ class SatFacturacionController extends Controller
             ]
         );
 
-        $totalFacturado = SatFactura::where('estado', 'timbrada')->sum('total');
+        $totalFacturado = SatFactura::where('tipo_comprobante', 'I')->where('estado', 'timbrada')->sum('total');
         $totalFacturas = $facturasTimbradas->count() + $borradoresObra->count();
 
-        $timbradas = SatFactura::where('estado', 'timbrada')->count();
-        $pendientes = SatFactura::where('estado', 'borrador')->count()
+        $timbradas = SatFactura::where('tipo_comprobante', 'I')->where('estado', 'timbrada')->count();
+        $pendientes = SatFactura::where('tipo_comprobante', 'I')->where('estado', 'borrador')->count()
             + ObraFacturaBorrador::whereNull('sat_factura_id')
                 ->where('estatus', ObraFacturaBorrador::ESTATUS_AUTORIZADO)
                 ->count();
-        $canceladas = SatFactura::where('estado', 'cancelada')->count();
+        $canceladas = SatFactura::where('tipo_comprobante', 'I')->where('estado', 'cancelada')->count();
 
         return view('sat.facturacion.index', compact(
             'facturas',
@@ -145,12 +146,14 @@ class SatFacturacionController extends Controller
     public function clienteResumen(Cliente $cliente)
     {
         $facturasVigentes = SatFactura::with(['empresa', 'obra'])
+            ->where('tipo_comprobante', 'I')
             ->where('cliente_id', $cliente->id)
             ->whereIn('estado', ['timbrada', 'cancelacion_solicitada'])
             ->latest('fecha_emision')
             ->get();
 
         $facturasCanceladas = SatFactura::with(['empresa', 'obra'])
+            ->where('tipo_comprobante', 'I')
             ->where('cliente_id', $cliente->id)
             ->where('estado', 'cancelada')
             ->latest('fecha_cancelacion')
@@ -205,6 +208,7 @@ class SatFacturacionController extends Controller
 
     if ($request->filled('cfdi_borrador_id')) {
         $cfdiBorrador = SatFacturaBorrador::with(['cliente', 'obra', 'empresa'])
+            ->where('tipo_comprobante', 'I')
             ->where('estado', 'borrador')
             ->findOrFail($request->integer('cfdi_borrador_id'));
 
@@ -263,6 +267,7 @@ class SatFacturacionController extends Controller
     }
 
     $cfdiBorradores = SatFacturaBorrador::with(['cliente', 'obra', 'empresa'])
+        ->where('tipo_comprobante', 'I')
         ->where('estado', 'borrador')
         ->where(function ($query) {
             $query->whereNull('user_id')
@@ -308,7 +313,7 @@ public function storeBorrador(Request $request)
     $borrador = null;
 
     if ($request->filled('cfdi_borrador_id')) {
-        $borrador = SatFacturaBorrador::where('estado', 'borrador')
+        $borrador = SatFacturaBorrador::where('tipo_comprobante', 'I')->where('estado', 'borrador')
             ->where(function ($query) {
                 $query->whereNull('user_id')
                     ->orWhere('user_id', auth()->id());
@@ -341,7 +346,7 @@ public function storeBorrador(Request $request)
 public function destroyBorrador(SatFacturaBorrador $borrador)
 {
     abort_unless(auth()->user()?->can('sat.borradores.access'), 403);
-    abort_unless($borrador->estado === 'borrador' && !$borrador->sat_factura_id, 404);
+    abort_unless($borrador->tipo_comprobante === 'I' && $borrador->estado === 'borrador' && !$borrador->sat_factura_id, 404);
 
     $user = auth()->user();
     $puedeBorrar = $user?->hasRole('super-admin')
@@ -491,6 +496,7 @@ public function relacionables(Request $request)
         'q' => ['nullable', 'string', 'max:120'],
         'cliente_id' => ['nullable', 'exists:clientes,id'],
         'sat_empresa_id' => ['nullable', 'exists:sat_empresas,id'],
+        'tipo_comprobante' => ['nullable', 'in:I'],
     ]);
 
     $q = trim((string) ($data['q'] ?? ''));
@@ -501,6 +507,7 @@ public function relacionables(Request $request)
 
     $facturas = SatFactura::query()
         ->with(['empresa', 'cliente'])
+        ->when(!empty($data['tipo_comprobante']), fn ($query) => $query->where('tipo_comprobante', $data['tipo_comprobante']))
         ->whereNotNull('uuid')
         ->where('uuid', '!=', '')
         ->whereIn('estado', ['timbrada', 'cancelacion_solicitada'])
@@ -540,6 +547,7 @@ public function relacionables(Request $request)
         ]);
 
     $cfdis = SatCfdi::query()
+        ->when(!empty($data['tipo_comprobante']), fn ($query) => $query->where('tipo_comprobante', $data['tipo_comprobante']))
         ->whereNotNull('uuid')
         ->where('uuid', '!=', '')
         ->when($clienteRfc, function ($query) use ($clienteRfc) {
@@ -822,7 +830,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
                 'cliente_id' => ['required', $this->clienteActivoRule()],
                 'obra_id' => ['nullable', 'exists:obras,id'],
                 'obra_factura_borrador_id' => ['nullable', 'exists:obra_factura_borradores,id'],
-                'cfdi_borrador_id' => ['nullable', 'exists:sat_factura_borradores,id'],
+                'cfdi_borrador_id' => ['nullable', Rule::exists('sat_factura_borradores', 'id')->where('tipo_comprobante', 'I')],
 
                 'uso_cfdi' => ['required', 'string', 'max:10'],
                 'metodo_pago' => ['required', 'string', 'max:10'],

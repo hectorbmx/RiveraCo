@@ -210,7 +210,9 @@
                                     <select :name="'gastos[' + index + '][categoria_id]'" 
                                             x-model="row.categoria_id" 
                                             @change="onCategoriaChange(row)"
+                                            required
                                             class="w-full rounded border-slate-300 text-xs py-1 px-1.5 focus:ring-1 focus:ring-blue-500">
+                                        <option value="">Selecciona...</option>
                                         <template x-for="cat in categorias" :key="cat.id">
                                             <option :value="String(cat.id)" x-text="cat.nombre" :selected="row.categoria_id == cat.id"></option>
                                         </template>
@@ -354,11 +356,14 @@
                                 <td class="px-2 py-2">
                                     <select :name="'gastos[' + index + '][forma_pago]'" 
                                             x-model="row.forma_pago" 
+                                            required
                                             class="w-full rounded border-slate-300 text-xs py-1 px-1.5">
+                                        <option value="">Selecciona...</option>
                                         <option value="efectivo">Efectivo</option>
                                         <option value="tarjeta">Tarjeta</option>
                                         <option value="transferencia">Transferencia</option>
                                     </select>
+                                    <p x-show="row.requiere_clasificacion_manual" class="mt-1 text-[10px] text-amber-700" x-text="'Forma SAT: ' + (row.forma_pago_sat || 'no indicada') + '. Selecciona cómo se pagó.'"></p>
                                 </td>
 
                                 {{-- IMPORTE REGISTRADO --}}
@@ -603,7 +608,7 @@ function reposicionCajaChicaExcel() {
             const cat = this.categorias.find(c => c.id == row.categoria_id);
             if (cat) {
                 row.requiere_factura = cat.requiere_factura;
-                if (cat.forma_pago_base && !row.forma_pago) {
+                if (cat.forma_pago_base && !row.forma_pago && !row.requiere_clasificacion_manual) {
                     row.forma_pago = cat.forma_pago_base;
                 }
                 const subs = this.getSubcategorias(cat.id);
@@ -798,7 +803,7 @@ function reposicionCajaChicaExcel() {
                 if (res.ok && res.data) {
                     res.data.forEach((cfdi, i) => {
                         const sourceFile = files[cfdi.file_index ?? i];
-                        const formaPagoSat = String(cfdi.forma_pago_sat || '').padStart(2, '0');
+                        const formaPagoSat = String(cfdi.forma_pago_sat || '');
                         const categoriasPorFormaPago = {
                             efectivo: 'efectivo_factura',
                             tarjeta: 'tarjeta_factura',
@@ -807,18 +812,9 @@ function reposicionCajaChicaExcel() {
 
 
                         const codigoCat = categoriasPorFormaPago[cfdi.forma_pago];
-                        if (!codigoCat) {
-                            this.xmlErrores.push((cfdi.filename || sourceFile?.name || 'XML') + ': Forma de pago SAT no permitida o no reconocida para caja chica. Solo se aceptan efectivo, tarjeta y transferencia.');
-                            return;
-                        }
-
                         const cat = this.categorias.find(c => c.codigo === codigoCat);
-                        if (!cat) {
-                            this.xmlErrores.push((cfdi.filename || sourceFile?.name || 'XML') + ': No existe una categoría activa para ' + codigoCat + '.');
-                            return;
-                        }
-
-                        const subs = this.getSubcategorias(cat.id);
+                        const requiereClasificacionManual = !codigoCat || !cat;
+                        const subs = cat ? this.getSubcategorias(cat.id) : [];
                         const folioFactura = [cfdi.serie, cfdi.folio].filter(Boolean).join('-');
 
                         const newRowIndex = this.rows.length;
@@ -843,7 +839,9 @@ function reposicionCajaChicaExcel() {
                             proveedor_dropdown_style: '',
                             factura_folio: folioFactura,
                             concepto: cfdi.concepto || 'Gasto con factura',
-                            forma_pago: cfdi.forma_pago || 'efectivo',
+                            forma_pago: requiereClasificacionManual ? '' : cfdi.forma_pago,
+                            forma_pago_sat: formaPagoSat,
+                            requiere_clasificacion_manual: requiereClasificacionManual,
                             importe_registrado: parseFloat(cfdi.total) || 0,
                             motivo_sin_factura: '',
                             es_para_activo: false,

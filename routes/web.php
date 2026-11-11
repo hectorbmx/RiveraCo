@@ -82,6 +82,7 @@ use App\Http\Controllers\Sat\SatCaptchaController;
 use App\Http\Controllers\Sat\SatCfdiEstadisticaController;
 use App\Http\Controllers\Sat\SatCfdiPagoController;
 use App\Http\Controllers\Sat\SatFacturacionController;
+use App\Http\Controllers\Sat\SatNotaCreditoController;
 use App\Http\Controllers\Sat\SatFacturaBorradorController;
 use App\Http\Controllers\Sat\SatCatalogoController;
 use App\Http\Controllers\Sat\SatFacturaPagoController;
@@ -243,6 +244,28 @@ Route::middleware(['auth', 'verified'])
             Route::post('/pagos/{pago}/enviar', [SatFacturaPagoController::class, 'enviar'])->name('pagos.enviar');
             Route::post('/pagos/{pago}/cancelar', [SatFacturaPagoController::class, 'cancelar'])->name('pagos.cancelar');
         });
+
+        Route::get('/notas-credito', [SatNotaCreditoController::class, 'index'])
+            ->middleware('permission:sat.facturacion.access')
+            ->name('notas-credito.index');
+        Route::get('/notas-credito/facturas', [SatNotaCreditoController::class, 'facturas'])
+            ->middleware('permission:sat.facturacion.access')
+            ->name('notas-credito.facturas');
+        Route::post('/notas-credito/borradores', [SatNotaCreditoController::class, 'guardarBorrador'])
+            ->middleware('permission:sat.facturacion.access')
+            ->name('notas-credito.borradores.store');
+        Route::put('/notas-credito/borradores/{borrador}', [SatNotaCreditoController::class, 'actualizarBorrador'])
+            ->middleware('permission:sat.facturacion.access')->name('notas-credito.borradores.update');
+        Route::delete('/notas-credito/borradores/{borrador}', [SatNotaCreditoController::class, 'eliminarBorrador'])
+            ->middleware('permission:sat.facturacion.access')->name('notas-credito.borradores.destroy');
+        Route::get('/notas-credito/borradores/{borrador}/previsualizar', [SatNotaCreditoController::class, 'previsualizar'])
+            ->middleware('permission:sat.facturacion.access')->name('notas-credito.borradores.preview');
+        Route::post('/notas-credito/borradores/{borrador}/timbrar', [SatNotaCreditoController::class, 'timbrar'])
+            ->middleware('permission:sat.facturacion.access')->name('notas-credito.borradores.timbrar');
+        Route::post('/notas-credito/borradores/{borrador}/consultar', [SatNotaCreditoController::class, 'consultarEmision'])
+            ->middleware('permission:sat.facturacion.access')->name('notas-credito.borradores.consultar');
+        Route::get('/notas-credito/{factura}/archivo/{formato}', [SatNotaCreditoController::class, 'descargarArchivo'])
+            ->middleware('permission:sat.facturacion.access')->whereIn('formato', ['xml', 'pdf'])->name('notas-credito.archivo');
 
         Route::prefix('complementos-pago')->name('complementos-pago.')->group(function () {
             Route::get('/', [SatComplementoPagoController::class, 'index'])->name('index');

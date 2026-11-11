@@ -15,6 +15,7 @@ class SatFacturaBorrador extends Model
         'obra_id',
         'obra_factura_borrador_id',
         'sat_factura_id',
+        'tipo_comprobante',
         'titulo',
         'payload',
         'estado',

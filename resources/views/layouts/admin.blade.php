@@ -229,6 +229,10 @@
             class="block px-4 py-2 rounded-lg hover:bg-blue-900/40 {{ request()->routeIs('sat.facturacion.*') ? 'bg-blue-900/60 text-white' : 'text-blue-100' }}">
                 Facturación
             </a>
+        <a href="{{ route('sat.notas-credito.index') }}"
+            class="block px-4 py-2 rounded-lg hover:bg-blue-900/40 {{ request()->routeIs('sat.notas-credito.*') ? 'bg-blue-900/60 text-white' : 'text-blue-100' }}">
+                Notas de crédito
+            </a>
           @endif
 
     </div>

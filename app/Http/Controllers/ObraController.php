@@ -484,6 +484,7 @@ private function kpisObrasEjecutivos(): array
     });
 
     $facturasFacturapi = SatFactura::query()
+        ->where('tipo_comprobante', 'I')
         ->whereNotNull('obra_id')
         ->whereHas('obra')
         ->where(function ($query) {
@@ -497,6 +498,7 @@ private function kpisObrasEjecutivos(): array
         ]);
 
     $facturasSat = SatCfdi::query()
+        ->where('tipo_comprobante', 'I')
         ->whereNotNull('obra_id')
         ->whereHas('obra')
         ->get(['id', 'uuid', 'total'])
@@ -2600,6 +2602,7 @@ private function facturasSatObra(Obra $obra): Collection
             'cliente',
             'pagos' => fn ($query) => $query->whereIn('estado', ['timbrado', 'registrado']),
         ])
+        ->where('tipo_comprobante', 'I')
         ->where('obra_id', $obra->id)
         ->whereNotNull('uuid')
         ->orderByDesc('fecha_emision')
@@ -2628,6 +2631,7 @@ private function facturasSatObra(Obra $obra): Collection
         ]);
 
     $cfdisSat = SatCfdi::where('obra_id', $obra->id)
+        ->where('tipo_comprobante', 'I')
         ->whereNotNull('uuid')
         ->orderByDesc('fecha_emision')
         ->get()
@@ -2715,6 +2719,7 @@ private function facturasDisponiblesParaObra(string $rfcCliente, ?int $clienteId
     $esSuperAdmin = auth()->user()?->hasRole('super-admin') || auth()->user()?->hasRole('Super Admin') || auth()->user()?->hasRole('superadmin');
 
     $facturasApi = SatFactura::whereNull('obra_id')
+        ->where('tipo_comprobante', 'I')
         ->whereNotNull('uuid')
         ->when(! $esSuperAdmin, function ($query) use ($rfcCliente, $clienteId) {
             $query->where(function ($subquery) use ($rfcCliente, $clienteId) {
@@ -2741,6 +2746,7 @@ private function facturasDisponiblesParaObra(string $rfcCliente, ?int $clienteId
         ]);
 
     $cfdisSat = SatCfdi::whereNull('obra_id')
+        ->where('tipo_comprobante', 'I')
         ->whereNotNull('uuid')
         ->when(! $esSuperAdmin, function ($query) use ($rfcCliente) {
             $query->where(function ($subquery) use ($rfcCliente) {
@@ -2797,8 +2803,8 @@ public function storeFacturaPago(Request $request, Obra $obra)
             ->with('success', 'Pago registrado correctamente.');
     }
 
-    $factura = SatFactura::where('obra_id', $obra->id)->where('uuid', $uuid)->first();
-    $cfdi = $factura ? null : SatCfdi::where('obra_id', $obra->id)->where('uuid', $uuid)->first();
+    $factura = SatFactura::where('tipo_comprobante', 'I')->where('obra_id', $obra->id)->where('uuid', $uuid)->first();
+    $cfdi = $factura ? null : SatCfdi::where('tipo_comprobante', 'I')->where('obra_id', $obra->id)->where('uuid', $uuid)->first();
 
     if (!$factura && !$cfdi) {
         return back()->with('error', 'La factura no esta ligada a esta obra.');
