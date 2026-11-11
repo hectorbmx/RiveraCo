@@ -31,13 +31,12 @@ class MaquinaService
             // No permitir doble asignación activa
             $activa = ObraMaquina::query()
                 ->where('maquina_id', $maquina->id)
-                ->where('estado', 'activa')
-                ->whereNull('fecha_fin')
+                ->abiertas()
                 ->lockForUpdate()
                 ->first();
 
             if ($activa) {
-                throw new \RuntimeException('La máquina ya tiene una asignación activa.');
+                throw new \RuntimeException('La máquina tiene una asignación abierta. Revisa su ubicación y asignaciones antes de asignarla.');
             }
 
             if ($obra->estatus_nuevo === null || in_array((int) $obra->estatus_nuevo, [Obra::ESTATUS_TERMINADA, Obra::ESTATUS_CANCELADA], true)) {

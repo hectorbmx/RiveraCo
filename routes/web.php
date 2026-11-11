@@ -1094,6 +1094,9 @@ Route::middleware('auth','verified')->group(function () {
     Route::post('empleados/{empleado}/documentos', [EmpleadoDocumentoController::class, 'store'])
         ->name('empleados.documentos.store');
 
+    Route::post('empleados/{empleado}/documentos/descargar-seleccion', [EmpleadoDocumentoController::class, 'descargarSeleccion'])
+        ->middleware('permission:empleados.access')->name('empleados.documentos.descargar-seleccion');
+
     Route::delete('empleados/{empleado}/documentos/{documento}', [EmpleadoDocumentoController::class, 'destroy'])
         ->name('empleados.documentos.destroy');
 

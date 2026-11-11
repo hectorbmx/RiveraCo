@@ -61,7 +61,33 @@ class InventarioDocumentoController extends Controller
             'cancelado' => 'Cancelado',
         ];
 
-        return view('inventario.documentos.index', compact('docs','almacenes','almacenId','tipo','estado','q','tipos','estados'));
+        $devolucionesObra = null;
+        $referenciasDevolucion = collect();
+        if ($tipo === 'devolucion' && $request->user()?->can('obra.devoluciones.view.access') && $request->user()?->can('obra.devoluciones.receive.access')) {
+            $filtros = $request->validate([
+                'obra_material_id' => ['nullable', 'integer', 'exists:obras,id'],
+                'solicitudes_q' => ['nullable', 'string', 'max:120'],
+            ]);
+            $obrasConMaterial = app(\App\Services\Obras\ObrasConMaterialEnUsoService::class)->consultar();
+            $obraMaterial = ! empty($filtros['obra_material_id']) ? $obrasConMaterial->firstWhere('id', (int) $filtros['obra_material_id']) : null;
+            $devolucionesObra = [
+                'obras' => $obrasConMaterial,
+                'obra' => $obraMaterial,
+                'obra_no_disponible' => ! empty($filtros['obra_material_id']) && ! $obraMaterial,
+                'finiquito' => $obraMaterial ? app(\App\Services\Obras\FiniquitoMaterialConsultaService::class)->consultar($obraMaterial) : null,
+                'busqueda' => $filtros['solicitudes_q'] ?? '',
+                'solicitudes' => app(\App\Services\Obras\ObraDevolucionPendienteConsultaService::class)->consultarPreparadas($filtros['solicitudes_q'] ?? null, 'solicitudes_page'),
+            ];
+            $referenciasDevolucion = DB::table('obra_devolucion_recepcion_detalles as rd')
+                ->join('inventario_documento_detalles as idd', 'idd.id', '=', 'rd.inventario_documento_detalle_id')
+                ->join('obra_devolucion_recepciones as r', 'r.id', '=', 'rd.recepcion_id')
+                ->join('obra_devoluciones as dev', 'dev.id', '=', 'r.devolucion_id')
+                ->whereIn('idd.documento_id', $docs->getCollection()->pluck('id'))
+                ->select('idd.documento_id', 'dev.id as solicitud_id', 'dev.folio as solicitud_folio', 'r.folio as recepcion_folio')
+                ->distinct()->get()->groupBy('documento_id');
+        }
+
+        return view('inventario.documentos.index', compact('docs','almacenes','almacenId','tipo','estado','q','tipos','estados','devolucionesObra','referenciasDevolucion'));
     }
 public function create(Request $request)
 {

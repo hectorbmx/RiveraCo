@@ -19,6 +19,17 @@
             default => str_replace('_', ' ', ucfirst((string) $estado)),
         };
     };
+
+    $estadoBadgeClass = function ($estado) {
+        return match ((string) $estado) {
+            ObraRequisicion::ESTADO_AUTORIZADA => 'inline-flex items-center rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800 ring-1 ring-inset ring-green-200',
+            ObraRequisicion::ESTADO_PENDIENTE_REVISION => 'inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-inset ring-amber-200',
+            ObraRequisicion::ESTADO_RECHAZADA => 'inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800 ring-1 ring-inset ring-red-200',
+            ObraRequisicion::ESTADO_EN_SURTIDO, ObraRequisicion::ESTADO_SURTIDA_PARCIAL, ObraRequisicion::ESTADO_SURTIDA, ObraRequisicion::ESTADO_RECIBIDA => 'inline-flex items-center rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800 ring-1 ring-inset ring-blue-200',
+            ObraRequisicion::ESTADO_CANCELADA => 'inline-flex items-center rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-300',
+            default => 'inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-200',
+        };
+    };
 @endphp
 
 <div class="max-w-7xl mx-auto space-y-6">
@@ -94,7 +105,9 @@
                                 <td class="px-4 py-3 text-slate-600">{{ optional($requisicion->fecha_requerida)->format('d/m/Y') ?? '-' }}</td>
                                 <td class="px-4 py-3 text-slate-600">{{ $requisicion->detalles_count ?? $requisicion->detalles->count() }}</td>
                                 <td class="px-4 py-3 text-slate-600">{{ $requisicion->solicitadoPor?->name ?? '-' }}</td>
-                                <td class="px-4 py-3 text-slate-700">{{ $estadoLabel($requisicion->estado) }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="{{ $estadoBadgeClass($requisicion->estado) }}">{{ $estadoLabel($requisicion->estado) }}</span>
+                                </td>
                                 <td class="px-4 py-3">@include('obras.partials.requisiciones.acciones', ['obra' => $obra, 'requisicion' => $requisicion])</td>
                             </tr>
                         @endforeach

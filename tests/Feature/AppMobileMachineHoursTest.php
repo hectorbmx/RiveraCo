@@ -81,6 +81,9 @@ class AppMobileMachineHoursTest extends TestCase
             $t->string('estado'); $t->date('fecha_inicio')->nullable(); $t->date('fecha_fin')->nullable();
             $t->decimal('horometro_inicio', 10, 2)->nullable(); $t->decimal('horometro_fin', 10, 2)->nullable(); $t->timestamps();
         });
+        Schema::create('maquina_movimientos', function (Blueprint $t) {
+            $t->id(); $t->unsignedBigInteger('maquina_id');
+        });
         Schema::create('obra_maquina_registros', function (Blueprint $t) {
             $t->id();
             foreach (['maquina_id', 'obra_maquina_id', 'obra_id'] as $campo) { $t->unsignedBigInteger($campo); }
@@ -250,7 +253,7 @@ class AppMobileMachineHoursTest extends TestCase
         $this->asignar();
         $this->getJson($this->url.'/opciones-operacion')->assertOk()->assertJsonPath('data.contexto.asignacion_esperada_id', 81)
             ->assertJsonPath('data.acciones_permitidas.registrar_horas', true)->assertJsonPath('data.acciones_permitidas.ajustar_horometro', false);
-        $this->getJson($this->url.'/opciones-operacion?uso=asignacion')->assertUnprocessable()->assertJsonPath('ok', false);
+        $this->getJson($this->url.'/opciones-operacion?uso=asignacion')->assertForbidden();
     }
 
     public function test_permission_is_enforced_before_model_resolution_including_retries(): void

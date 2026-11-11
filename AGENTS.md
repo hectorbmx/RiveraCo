@@ -18,6 +18,10 @@ Rules:
 - All source, Blade, config, route, docs, and test files must stay UTF-8. Do not save files as Windows-1252/ANSI.
 - Before finishing changes that touch user-facing Spanish text, run `php tools/check_mojibake.php <touched files>` and fix any `Ã`, `Â`, `â€`, or replacement-character output. Run `php tools/check_mojibake.php` for a full cleanup/release gate.
 
+## Production deployment
+
+- Keep automated tests in the repository and run appropriate checks before release, but exclude the `tests/` directory and test-only artifacts from production deployment packages and file transfers. A `.gitignore` rule does not exclude files already tracked by Git or prevent a production `git pull` from fetching them; use the deployment mechanism's exclusion rules instead.
+
 ## Sandbox local de Codex
 
 - En este equipo es frecuente que el sandbox local de Codex bloquee lecturas, escrituras o validaciones con errores tipo `deny-read ACLs`, aun cuando los archivos pertenezcan al proyecto.

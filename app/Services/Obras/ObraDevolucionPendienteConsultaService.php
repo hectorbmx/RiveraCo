@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class ObraDevolucionPendienteConsultaService
 {
-    public function consultar(?string $busqueda = null, ?int $solicitudId = null): LengthAwarePaginator
+    public function consultar(?string $busqueda = null, ?int $solicitudId = null, string $pageName = 'page'): LengthAwarePaginator
     {
         $busqueda = trim((string) $busqueda);
         $solicitudes = ObraDevolucion::query()->whereIn('estado', ['solicitada', 'recepcion_parcial'])
@@ -18,7 +18,7 @@ class ObraDevolucionPendienteConsultaService
                 'detalles.salidaHuentitanDetalle.salida.almacen', 'detalles.recepcionesDetalle.recepcion'])
             ->when($busqueda !== '', fn ($q) => $q->where(fn ($w) => $w->where('folio', 'like', '%'.$busqueda.'%')
                 ->orWhereHas('obra', fn ($o) => $o->where('nombre', 'like', '%'.$busqueda.'%')->orWhere('clave_obra', 'like', '%'.$busqueda.'%'))))
-            ->orderBy('presentado_at')->orderBy('id')->paginate(20)->withQueryString();
+            ->orderBy('presentado_at')->orderBy('id')->paginate(20, ['*'], $pageName)->withQueryString();
 
         $documentos = $solicitudes->getCollection()->flatMap(fn ($s) => $s->detalles)
             ->map(fn ($d) => $d->movimientoOrigen?->documento_id)->filter()->unique();
@@ -63,6 +63,21 @@ class ObraDevolucionPendienteConsultaService
             }
         }
         app(ObraDevolucionDiferenciasConsultaService::class)->anexar($solicitudes->getCollection());
+        return $solicitudes;
+    }
+
+    public function consultarPreparadas(?string $busqueda = null, string $pageName = 'page'): LengthAwarePaginator
+    {
+        $solicitudes = $this->consultar($busqueda, null, $pageName);
+        foreach ($solicitudes as $solicitud) {
+            foreach ($solicitud->recepciones->where('estado', 'pendiente_aplicacion') as $recepcion) {
+                try {
+                    $recepcion->setAttribute('entrada_preparada', app(ObraDevolucionEntradaPreparacionService::class)->preparar($recepcion, $solicitud));
+                } catch (\Illuminate\Validation\ValidationException $e) {
+                    $recepcion->setAttribute('entrada_requiere_revision', true);
+                }
+            }
+        }
         return $solicitudes;
     }
 }

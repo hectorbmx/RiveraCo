@@ -2122,6 +2122,19 @@ foreach ($oc->detalles as $detalle) {
         ?? $oc->usuario_registro
         ?? '';
 
+    $firmaSolicitante = \App\Support\Impresion\FirmaUsuario::ruta($oc->registradoPor);
+    if ($firmaSolicitante) {
+        [$anchoFirma, $altoFirma] = getimagesize($firmaSolicitante);
+        $escalaFirma = min(46 / $anchoFirma, 10 / $altoFirma);
+        $anchoFirmaMm = $anchoFirma * $escalaFirma;
+        $altoFirmaMm = $altoFirma * $escalaFirma;
+        try {
+            $pdf->Image($firmaSolicitante, $X0 + 5 + (50 - $anchoFirmaMm) / 2, $Y + 12 - $altoFirmaMm, $anchoFirmaMm, $altoFirmaMm, 'PNG');
+        } catch (\Exception $e) {
+            \Log::warning('No se pudo incluir la firma del creador en la orden de compra.', ['orden_compra_id' => $oc->id]);
+        }
+    }
+
     $autorizaNombre = $oc->autorizadoPor->name
         ?? $oc->usuario_autoriza
         ?? '';

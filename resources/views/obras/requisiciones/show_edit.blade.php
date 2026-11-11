@@ -18,6 +18,15 @@
         default => str_replace('_', ' ', ucfirst((string) $requisicion->estado)),
     };
 
+    $estadoBadgeClass = match ((string) $requisicion->estado) {
+        ObraRequisicion::ESTADO_AUTORIZADA => 'inline-flex items-center rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800 ring-1 ring-inset ring-green-200',
+        ObraRequisicion::ESTADO_PENDIENTE_REVISION => 'inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-inset ring-amber-200',
+        ObraRequisicion::ESTADO_RECHAZADA => 'inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800 ring-1 ring-inset ring-red-200',
+        ObraRequisicion::ESTADO_EN_SURTIDO, ObraRequisicion::ESTADO_SURTIDA_PARCIAL, ObraRequisicion::ESTADO_SURTIDA, ObraRequisicion::ESTADO_RECIBIDA => 'inline-flex items-center rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800 ring-1 ring-inset ring-blue-200',
+        ObraRequisicion::ESTADO_CANCELADA => 'inline-flex items-center rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-300',
+        default => 'inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-200',
+    };
+
     $catalogoItems = $catalogoItems ?? collect();
     $maquinas = $maquinas ?? collect();
     $vehiculos = $vehiculos ?? collect();
@@ -107,7 +116,9 @@
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Estado</p>
-                <p class="mt-2 text-sm font-semibold text-slate-800">{{ $estadoLabel }}</p>
+                <div class="mt-2">
+                    <span class="{{ $estadoBadgeClass }}">{{ $estadoLabel }}</span>
+                </div>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Fecha solicitud</p>

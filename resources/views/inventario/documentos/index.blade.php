@@ -1,6 +1,10 @@
 @extends('layouts.admin')
 
 @section('content')
+@php
+    $devolucionesObra = $devolucionesObra ?? null;
+    $referenciasDevolucion = $referenciasDevolucion ?? collect();
+@endphp
 <div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
 
     <div class="flex items-start justify-between gap-4">
@@ -13,8 +17,8 @@
             Ver Stock
         </a>
     </div>
-    @if(auth()->user()?->can('obra.devoluciones.view.access') && auth()->user()?->can('obra.devoluciones.receive.access'))
-        <a href="{{ route('inventario.devoluciones-obra.index') }}" class="inline-flex rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-800">Devoluciones de obra pendientes</a>
+    @if(request('tipo') !== 'devolucion' && auth()->user()?->can('obra.devoluciones.view.access') && auth()->user()?->can('obra.devoluciones.receive.access'))
+        <a href="{{ route('inventario.documentos.index', ['tipo' => 'devolucion']) }}" class="inline-flex rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-800">Devoluciones de obra pendientes</a>
     @endif
 @php
   // Tipo activo (default: entrada)
@@ -67,8 +71,16 @@
         </div>
     @endif
 
+    @if($devolucionesObra)
+        @include('inventario.documentos.partials.devoluciones-obra', ['datos' => $devolucionesObra])
+        <div><h2 class="text-lg font-semibold text-slate-800">Documentos de devolución</h2><p class="text-sm text-slate-500">Historial de documentos de inventario, incluidos los generados al aplicar una devolución de obra.</p></div>
+    @endif
+
     {{-- Filtros --}}
     <form method="GET" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+        <input type="hidden" name="tipo" value="{{ $tipo }}">
+        @if($devolucionesObra && $devolucionesObra['obra'])<input type="hidden" name="obra_material_id" value="{{ $devolucionesObra['obra']->id }}">@endif
+        @if($devolucionesObra && $devolucionesObra['busqueda'] !== '')<input type="hidden" name="solicitudes_q" value="{{ $devolucionesObra['busqueda'] }}">@endif
         <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
             <div>
                 <label class="text-xs font-medium text-slate-600">Almacén</label>
@@ -151,6 +163,9 @@
                                             : '—');
                                 @endphp
                                 <div class="font-medium text-slate-900">{{ $folioMostrar }}</div>
+                                @foreach($referenciasDevolucion->get($d->id, collect()) as $referenciaDevolucion)
+                                    <div class="text-xs text-slate-500">Solicitud: {{ $referenciaDevolucion->solicitud_folio }} · Recepción: {{ $referenciaDevolucion->recepcion_folio }}</div>
+                                @endforeach
                                 @if($d->mantenimientoAbastecimiento)
                                     <a href="{{ route('mantenimiento.mantenimientos.edit', $d->mantenimientoAbastecimiento->mantenimiento_id) }}"
                                        class="text-xs font-semibold text-[#0B265A] hover:underline">
@@ -213,7 +228,7 @@
                                     @endif
 
                                     {{-- Cancelar (solo si ya aplicado y no cancelado) --}}
-                                    @if($isAplicado && !$isCancelado && !$isCancelacion)
+                                    @if($isAplicado && !$isCancelado && !$isCancelacion && !$referenciasDevolucion->has($d->id))
                                         <form method="POST" action="{{ route('inventario.documentos.cancelar', $d) }}"
                                               onsubmit="return confirm('¿Cancelar documento #{{ $d->id }}? Se generará reversa (cancelación).');">
                                             @csrf

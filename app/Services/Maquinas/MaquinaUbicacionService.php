@@ -96,7 +96,7 @@ class MaquinaUbicacionService
     {
         // No convertir una asignación a obra cancelada/terminada en «sin obra».
         $activas = ObraMaquina::query()->where('maquina_id', $maquina->id)
-            ->where('estado', 'activa')->whereNull('fecha_fin')->orderByDesc('id')->lockForUpdate()->get();
+            ->abiertas()->orderByDesc('id')->lockForUpdate()->get();
         $activa = $activas->first();
         $coherente = $activas->count() <= 1 && (! $activa || $maquina->asignacionActiva()->whereKey($activa->id)->exists());
 

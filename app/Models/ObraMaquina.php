@@ -65,11 +65,15 @@ class ObraMaquina extends Model
         return $this->hasMany(ComisionDetalle::class, 'obra_maquina_id');
     }
 
-    // Scope para asignaciones activas
+    public function scopeAbiertas($query)
+    {
+        return $query->where('estado', 'activa')->whereNull('fecha_fin');
+    }
+
+    // Asignaciones abiertas cuyas obras siguen vigentes para operación.
     public function scopeActivas($query)
     {
-        return $query->where('estado', 'activa')
-            ->whereNull('fecha_fin')
+        return $query->abiertas()
             ->whereHas('obra', function ($obra) {
                 $obra->whereNotIn('estatus_nuevo', [
                     Obra::ESTATUS_TERMINADA,

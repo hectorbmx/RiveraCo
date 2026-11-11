@@ -1,52 +1,41 @@
 <div class="space-y-6">
 
     {{-- Header --}}
-    <div>
-        <h2 class="text-lg font-semibold text-[#0B265A]">Documentos del empleado</h2>
-        <p class="text-sm text-slate-500">
-            Aquí puedes cargar, consultar y administrar el expediente documental del empleado.
-        </p>
+    <div class="flex flex-wrap items-start justify-between gap-3">
+        <div><h2 class="text-lg font-semibold text-[#0B265A]">Documentos del empleado</h2>
+        <p class="text-sm text-slate-500">Aquí puedes cargar, consultar y administrar el expediente documental del empleado.</p></div>
+        <button type="button" id="abrir-modal-documento" class="rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white hover:bg-blue-900">+ Nuevo documento</button>
     </div>
 
     {{-- Errores del formulario de documentos --}}
-    @if ($errors->any() && old())
+    @if ($errors->any() && old('_formulario') === 'documento')
         <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             Revisa los campos del formulario de documentos.
         </div>
     @endif
 
     {{-- Formulario de carga --}}
-    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-        <h3 class="text-sm font-semibold text-slate-700 mb-4">Subir nuevo documento</h3>
-<div 
-    id="loadingOverlay" 
-    class="hidden fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-md transition-all duration-300"
->
-    <div class="relative flex items-center justify-center">
-        <div class="h-20 w-20 rounded-full border-4 border-slate-200/30 border-t-blue-500 animate-spin"></div>
-        <div class="absolute text-xl">📄</div>
-    </div>
-    <h3 class="mt-6 text-xl font-black text-white tracking-widest uppercase text-center px-4">
-        Subiendo Documento
-    </h3>
-    <p class="mt-2 text-slate-300 text-sm font-medium animate-pulse">
-        Estamos procesando el archivo, espera un momento...
-    </p>
-</div>
+    <dialog id="modal-documento" aria-labelledby="titulo-modal-documento" class="w-[calc(100%-2rem)] max-w-3xl max-h-[90vh] rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl backdrop:bg-slate-900/60">
+        <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-4">
+            <h3 id="titulo-modal-documento" class="text-lg font-semibold text-[#0B265A]">Subir nuevo documento</h3>
+            <button type="button" id="cerrar-modal-documento" class="rounded-lg px-3 py-1 text-xl text-slate-500 hover:bg-slate-100" aria-label="Cerrar">&times;</button>
+        </div>
         <form 
                 method="POST"
                 action="{{ route('empleados.documentos.store', $empleado) }}"
                 enctype="multipart/form-data"
-                class="space-y-4"
-                onsubmit="document.getElementById('loadingOverlay').classList.remove('hidden')"
+                class="space-y-4 p-6"
+                onsubmit="const boton = this.querySelector('[type=submit]'); boton.disabled = true; boton.textContent = 'Guardando documento...';"
             >
             @csrf
+            <input type="hidden" name="_formulario" value="documento">
+            @if($errors->any() && old('_formulario') === 'documento')<div role="alert" class="rounded-lg bg-red-50 p-3 text-sm text-red-700">Revisa los datos indicados. Si seleccionaste un archivo, vuelve a elegirlo.</div>@endif
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                 {{-- Tipo --}}
                 <div>
-                    <label for="tipo_documento" class="block text-sm font-medium text-slate-700 mb-1">
+                    <label for="documento_tipo_id" class="block text-sm font-medium text-slate-700 mb-1">
                         Tipo de documento <span class="text-red-500">*</span>
                     </label>
 
@@ -77,7 +66,7 @@
     @endforeach
 </select>
 
-                    @error('tipo_documento')
+                    @error('documento_tipo_id')
                         <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
@@ -181,43 +170,37 @@
                 </div>
             </div>
 
-            <div class="pt-2">
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" id="cancelar-modal-documento" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancelar</button>
                 <button type="submit"
                         class="inline-flex items-center rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-medium text-white hover:bg-[#091f47]">
                     Guardar documento
                 </button>
             </div>
         </form>
-    </div>
-{{-- MODAL DE CARGA (LOADING) --}}
-<div 
-    id="loadingOverlay" 
-    class="hidden fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-md transition-all duration-300"
->
-    {{-- Spinner Animado --}}
-    <div class="relative flex items-center justify-center">
-        <div class="h-20 w-20 rounded-full border-4 border-slate-200/30 border-t-blue-500 animate-spin"></div>
-        <div class="absolute text-xl">📄</div>
-    </div>
-    
-    <h3 class="mt-6 text-xl font-black text-white tracking-widest uppercase">
-        Guardando documento
-    </h3>
-    <p class="mt-2 text-slate-300 text-sm font-medium animate-pulse">
-        Por favor, no cierres la ventana...
-    </p>
-</div>
+    </dialog>
     {{-- Tabla de documentos --}}
     <div class="rounded-2xl border border-slate-200 overflow-hidden">
-        <div class="px-4 py-3 bg-white border-b border-slate-200">
+        <div class="px-4 py-3 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
             <h3 class="text-sm font-semibold text-slate-700">Historial de documentos</h3>
+            @can('empleados.access')
+                @if(($documentos ?? collect())->count())
+                    <form id="descargar-documentos-seleccion" method="POST" action="{{ route('empleados.documentos.descargar-seleccion', $empleado) }}">
+                        @csrf
+                        <button type="submit" class="rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white hover:bg-blue-900">Descargar seleccionados en ZIP</button>
+                    </form>
+                @endif
+            @endcan
         </div>
+
+        @error('documentos')<div role="alert" class="bg-red-50 px-4 py-3 text-sm text-red-700">{{ $message }}</div>@enderror
 
         @if(($documentos ?? collect())->count())
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm">
                     <thead class="bg-[#0B265A] text-white">
                         <tr>
+                            @can('empleados.access')<th class="px-4 py-3 text-left"><label class="inline-flex items-center gap-2"><input type="checkbox" id="seleccionar-todos-documentos" aria-label="Seleccionar todos los documentos"> Todos</label></th>@endcan
                             <th class="px-4 py-3 text-left font-semibold">Tipo</th>
                             <th class="px-4 py-3 text-left font-semibold">Nombre</th>
                             <th class="px-4 py-3 text-left font-semibold">Fecha</th>
@@ -237,6 +220,7 @@
                             @endphp
 
                             <tr class="hover:bg-slate-50">
+                                @can('empleados.access')<td class="px-4 py-3 align-top"><input type="checkbox" form="descargar-documentos-seleccion" name="documentos[]" value="{{ $doc->id }}" class="seleccion-documento" aria-label="Seleccionar {{ $nombreMostrar }}" @disabled(!$fileUrl)></td>@endcan
                                 <td class="px-4 py-3 align-top">
                                     {{ str_replace('_', ' ', $doc->tipo_documento) }}
                                 </td>
@@ -354,3 +338,24 @@
         @endif
     </div>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const modal = document.getElementById('modal-documento');
+        const abrir = document.getElementById('abrir-modal-documento');
+        abrir?.addEventListener('click', () => modal.showModal());
+        document.getElementById('cerrar-modal-documento')?.addEventListener('click', () => modal.close());
+        document.getElementById('cancelar-modal-documento')?.addEventListener('click', () => modal.close());
+        modal?.addEventListener('click', event => { if (event.target === modal) modal.close(); });
+        if (@json($errors->any() && old('_formulario') === 'documento')) modal?.showModal();
+        const todos = document.getElementById('seleccionar-todos-documentos');
+        const opciones = Array.from(document.querySelectorAll('.seleccion-documento:not(:disabled)'));
+        if (!todos) return;
+        const actualizar = function () {
+            const seleccionados = opciones.filter(opcion => opcion.checked).length;
+            todos.checked = opciones.length > 0 && seleccionados === opciones.length;
+            todos.indeterminate = seleccionados > 0 && seleccionados < opciones.length;
+        };
+        todos.addEventListener('change', function () { opciones.forEach(opcion => { opcion.checked = todos.checked; }); actualizar(); });
+        opciones.forEach(opcion => opcion.addEventListener('change', actualizar));
+    });
+</script>

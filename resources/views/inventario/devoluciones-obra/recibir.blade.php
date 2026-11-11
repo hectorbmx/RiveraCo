@@ -24,7 +24,7 @@
             @endforeach
         </tbody></table></div>
         <label class="block">Observaciones generales <textarea name="observaciones" maxlength="2000" class="mt-1 w-full rounded-lg border-slate-300">{{ old('observaciones') }}</textarea></label>
-        <div class="flex gap-3"><button class="rounded-lg bg-[#0B265A] px-4 py-2 font-semibold text-white">Confirmar recepción física</button><a href="{{ route('inventario.devoluciones-obra.index') }}" class="rounded-lg border px-4 py-2">Cancelar</a></div>
+        <div class="flex gap-3"><button class="rounded-lg bg-[#0B265A] px-4 py-2 font-semibold text-white">Confirmar recepción física</button><a href="{{ route('inventario.documentos.index', ['tipo' => 'devolucion', 'obra_material_id' => $solicitud->obra_id]) }}" class="rounded-lg border px-4 py-2">Cancelar</a></div>
     </form>
 </div>
 @endsection

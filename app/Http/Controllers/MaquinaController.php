@@ -49,7 +49,7 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
 
     // Lista
     $maquinasQuery = Maquina::query()
-        ->with(['asignacionActiva.obra:id,nombre', 'asignacionAbierta.obra:id,nombre', 'seguros'])
+        ->with(['asignacionActiva.obra:id,nombre', 'asignacionesAbiertas.obra' => fn ($q) => $q->withTrashed()->select('id', 'nombre', 'estatus_nuevo', 'deleted_at'), 'seguros'])
         ->when($search !== '', function ($query) use ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('codigo', 'like', "%{$search}%")
@@ -77,6 +77,7 @@ public function index(Request $request, PreventivoMaquinaService $preventivoServ
     }
 
     $maquinas = $maquinasQuery->get();
+    $maquinas->each(fn ($maquina) => $maquina->setRelation('asignacionAbierta', $maquina->asignacionesAbiertas->first()));
 
     $config = EmpresaConfig::first();
     $preventivos = $preventivoService->calcularParaColeccion($maquinas, $config);
@@ -144,7 +145,7 @@ public function show(
     ];
 
     // Siempre cargamos la asignación activa + obra (para mostrar contexto)
-    $maquina->load(['asignacionActiva.obra']);
+    $maquina->load(['asignacionActiva.obra', 'asignacionesAbiertas.obra' => fn ($q) => $q->withTrashed()->select('id', 'nombre', 'estatus_nuevo', 'deleted_at')]);
 
     if ($tab === 'fotos') {
         $maquina->load([

@@ -19,6 +19,7 @@ class MaterialDevolucionSaldoTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp(); $this->buildDirectReceiptDatabase();
+        Schema::table('obra_requisicion_detalles', function (Blueprint $t) { $t->decimal('cantidad_solicitada', 15, 3)->default(0); });
         Schema::create('huentitan_salidas', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('almacen_id'); $t->unsignedBigInteger('obra_id'); $t->string('estado'); $t->string('folio'); $t->dateTime('fecha'); });
         Schema::create('huentitan_salida_detalles', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('huentitan_salida_id'); $t->unsignedBigInteger('producto_id'); $t->string('descripcion'); $t->string('unidad'); $t->decimal('cantidad_salida', 15, 3); $t->decimal('costo_unitario', 15, 4); $t->decimal('importe', 15, 2); });
         (require base_path('database/migrations/2026_11_06_020000_create_obra_devoluciones_tables.php'))->up();
@@ -311,6 +312,8 @@ class MaterialDevolucionSaldoTest extends TestCase
         $this->assertStringContainsString('RDO-00000001', $html);
         $this->assertStringContainsString('Desgastado', $html);
         $this->assertStringContainsString('Revisar mango', $html);
+        $this->assertStringContainsString('Sin requisición vinculada', $html);
+        $this->assertStringContainsString('10.000 PZA', $html);
         $this->assertStringContainsString('La firma física no sustituye la confirmación', $html);
         $this->withSession([]);
         $tab = view('obras.partials.materiales.tab', ['obra' => $obra, 'materialesObra' => app(MaterialDevolucionSaldoService::class)->porObra(41), 'solicitudesDevolucion' => collect([$request])])->render();
@@ -319,6 +322,22 @@ class MaterialDevolucionSaldoTest extends TestCase
         $cancelada = app(\App\Http\Controllers\ObraController::class)->imprimirDevolucion($http, $obra, $request)->render();
         $this->assertStringContainsString('SOLICITUD CANCELADA', $cancelada);
         $this->assertStringContainsString('Prueba de cancelación', $cancelada);
+    }
+
+    public function test_printable_shows_only_the_linked_requisition_and_requested_quantity(): void
+    {
+        $origin = $this->source();
+        DB::table('obra_requisiciones')->insert(['id' => 1, 'obra_id' => 41, 'estado' => 'autorizada', 'folio' => 'REQ-PRUEBA']);
+        DB::table('obra_requisicion_detalles')->insert(['id' => 1, 'obra_requisicion_id' => 1, 'item_type' => 'producto', 'item_id' => 1, 'unidad' => 'PZA', 'cantidad_solicitada' => 12]);
+        DB::table('compra_recepcion_directa_detalles')->where('id', $origin)->update(['obra_requisicion_detalle_id' => 1]);
+        [$requestId] = $this->requestLine($origin, 'solicitada', 2);
+        $user = $this->buyer(); $user->shouldReceive('hasAnyRole')->andReturn(true); auth()->setUser($user);
+        $http = \Illuminate\Http\Request::create('/'); $http->setUserResolver(fn () => $user);
+        $html = app(\App\Http\Controllers\ObraController::class)->imprimirDevolucion($http, \App\Models\Obra::findOrFail(41), \App\Models\ObraDevolucion::findOrFail($requestId))->render();
+        $this->assertStringContainsString('REQ-PRUEBA', $html);
+        $this->assertStringContainsString('12.000 PZA', $html);
+        $this->assertStringContainsString('10.000 PZA', $html);
+        $this->assertStringContainsString('2.000 PZA', $html);
     }
 
     public function test_printable_requires_permission_and_the_correct_work(): void

@@ -40,6 +40,46 @@ class ObraDevolucionPendienteConsultaTest extends TestCase
         ]);
     }
 
+    public function test_unified_returns_view_shows_applied_delivery_and_pending_request(): void
+    {
+        $source = app(CompraRecepcionDirectaService::class)->confirmar(OrdenCompra::findOrFail(1), $this->receiptInput(10), $this->buyer());
+        $request = $this->createRequest($source->detalles()->sole()->id, 'solicitar', 4);
+        $obra = Obra::findOrFail(41);
+        auth()->setUser($this->buyer()); $this->withSession([]);
+        $solicitudes = app(ObraDevolucionPendienteConsultaService::class)->consultarPreparadas(null, 'solicitudes_page');
+        $datos = ['obra' => $obra, 'obras' => collect([$obra]), 'busqueda' => '',
+            'solicitudes' => $solicitudes, 'finiquito' => app(\App\Services\Obras\FiniquitoMaterialConsultaService::class)->consultar($obra)];
+        $html = view('inventario.documentos.partials.devoluciones-obra', compact('datos'))->render();
+        $this->assertStringContainsString('Material entregado a obra', $html);
+        $this->assertStringContainsString($source->folio, $html);
+        $this->assertStringContainsString('10.000', $html);
+        $this->assertStringContainsString($request->folio, $html);
+        $this->assertStringContainsString('Registrar recepción física', $html);
+        $this->assertSame('solicitudes_page', $solicitudes->getPageName());
+    }
+
+    public function test_work_selector_includes_only_outstanding_deliveries_and_removes_fully_returned_work(): void
+    {
+        $selector = app(\App\Services\Obras\ObrasConMaterialEnUsoService::class);
+        DB::table('obras')->insert(['id' => 42, 'nombre' => 'Sin entrega', 'estatus_nuevo' => 2]);
+        DB::table('obra_requisiciones')->insert(['id' => 1, 'obra_id' => 42, 'estado' => 'autorizada']);
+        $this->assertCount(0, $selector->consultar());
+
+        $source = app(CompraRecepcionDirectaService::class)->confirmar(OrdenCompra::findOrFail(1), $this->receiptInput(10), $this->buyer());
+        $this->assertSame([41], $selector->consultar()->pluck('id')->all());
+        $request = app(ObraDevolucionSolicitudService::class)->crear(Obra::findOrFail(41), $this->buyer(), [
+            'operacion_uuid' => (string) Str::uuid(), 'accion' => 'solicitar',
+            'partidas' => [['origen_tipo' => 'recepcion_directa', 'origen_id' => $source->detalles()->sole()->id, 'cantidad' => 10, 'condicion' => 'bueno']],
+        ]);
+        $receipt = app(\App\Services\Obras\ObraDevolucionRecepcionService::class)->confirmar($request, $this->buyer(), [
+            'operacion_uuid' => (string) Str::uuid(), 'almacen_id' => 1, 'fecha_recepcion' => now()->toDateString(),
+            'partidas' => [['id' => $request->detalles()->sole()->id, 'cantidad' => 10, 'condicion' => 'bueno']],
+        ]);
+        $this->assertSame([41], $selector->consultar()->pluck('id')->all());
+        app(\App\Services\Obras\ObraDevolucionAplicacionService::class)->aplicar($receipt, $this->buyer());
+        $this->assertCount(0, $selector->consultar());
+    }
+
     public function test_list_includes_submitted_and_partial_only_and_counts_applied_receipts(): void
     {
         $source = app(CompraRecepcionDirectaService::class)->confirmar(OrdenCompra::findOrFail(1), $this->receiptInput(10), $this->buyer());

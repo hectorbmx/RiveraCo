@@ -13,6 +13,64 @@ use Illuminate\Validation\Rule;
 
 class EmpleadoDocumentoController extends Controller
 {
+    public function descargarSeleccion(Request $request, Empleado $empleado)
+    {
+        $data = $request->validate([
+            'documentos' => ['required', 'array', 'min:1'],
+            'documentos.*' => ['required', 'integer', 'distinct'],
+        ], ['documentos.required' => 'Selecciona al menos un documento para descargar.']);
+
+        if (! class_exists(\ZipArchive::class)) {
+            return back()->withErrors(['documentos' => 'El servidor no tiene habilitada la extensión ZIP.']);
+        }
+
+        $documentos = EmpleadoDocumento::query()->where('empleado_id', $empleado->id_Empleado)
+            ->whereIn('id', $data['documentos'])->orderBy('id')->get();
+        if ($documentos->count() !== count($data['documentos'])) {
+            abort(404);
+        }
+
+        $disco = Storage::disk('public');
+        $base = realpath($disco->path('empleados/'.$empleado->id_Empleado.'/documentos'));
+        $archivos = [];
+        foreach ($documentos as $documento) {
+            $ruta = $documento->archivo_path ? realpath($disco->path($documento->archivo_path)) : false;
+            if (! $base || ! $ruta || ! str_starts_with($ruta, $base.DIRECTORY_SEPARATOR) || ! is_file($ruta) || ! is_readable($ruta)) {
+                return back()->withErrors(['documentos' => 'No se encontró uno de los archivos seleccionados. Revisa el expediente antes de descargar.']);
+            }
+            $extension = strtolower(pathinfo($ruta, PATHINFO_EXTENSION));
+            $nombre = Str::slug($documento->nombre_mostrar ?: 'documento', '_') ?: 'documento';
+            $archivos[] = [$ruta, $nombre.'_'.$documento->id.($extension !== '' ? '.'.$extension : '')];
+        }
+
+        $temporal = tempnam(sys_get_temp_dir(), 'expediente_');
+        if ($temporal === false) {
+            return back()->withErrors(['documentos' => 'No fue posible preparar el archivo ZIP.']);
+        }
+        $zip = new \ZipArchive();
+        try {
+            if ($zip->open($temporal, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+                throw new \RuntimeException('No se pudo abrir el archivo ZIP.');
+            }
+            foreach ($archivos as [$ruta, $nombre]) {
+                if (! $zip->addFile($ruta, $nombre)) {
+                    throw new \RuntimeException('No se pudo agregar un archivo al ZIP.');
+                }
+            }
+            if (! $zip->close()) {
+                throw new \RuntimeException('No se pudo terminar el archivo ZIP.');
+            }
+        } catch (\Throwable $e) {
+            @$zip->close();
+            @unlink($temporal);
+            report($e);
+            return back()->withErrors(['documentos' => 'No fue posible generar el archivo ZIP.']);
+        }
+
+        return response()->download($temporal, 'documentos_empleado_'.$empleado->id_Empleado.'.zip', ['Content-Type' => 'application/zip'])
+            ->deleteFileAfterSend(true);
+    }
+
     public function store(Request $request, Empleado $empleado)
     {
         $data = $request->validate([

@@ -33,7 +33,7 @@ class MaquinaAsignacionService
     public function asignacionParaRetiro(Maquina $maquina, bool $bloquear = false): ?ObraMaquina
     {
         $query = ObraMaquina::query()->with('obra:id,nombre,clave_obra,estatus_nuevo')
-            ->where('maquina_id', $maquina->id)->where('estado', 'activa')->whereNull('fecha_fin')->orderByDesc('id')->limit(2);
+            ->where('maquina_id', $maquina->id)->abiertas()->orderByDesc('id')->limit(2);
         if ($bloquear) {
             $query->lockForUpdate();
         }

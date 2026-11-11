@@ -136,6 +136,8 @@
                             $fechaUltimaLectura = $fechasUltimasLecturas[$m->id] ?? null;
                             $asignacionActiva = $m->asignacionActiva;
                             $asignacionUbicacion = $m->asignacionAbierta;
+                            $asignacionesAbiertas = $m->asignacionesAbiertas;
+                            $variasAsignacionesAbiertas = $asignacionesAbiertas->count() > 1;
                             $nombreMaquina = trim(($m->codigo ?? '') . ' ' . ($m->nombre ?? '')) ?: 'Maquina';
                             $canRegistrarHoras = auth()->user()?->can('maquinas.horas.create.access') ?? false;
                             $canAsignarObra = auth()->user()?->can('maquinas.asignar_obra.access') ?? false;
@@ -160,7 +162,7 @@
                                 'maquina' => $nombreMaquina,
                                 'horometroInicio' => (float) ($horometroActual ?? $m->horometro_base ?? 0),
                             ], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) : '{}';
-                            $bajaObraPayload = ($puedeDarBaja && $asignacionUbicacion) ? json_encode([
+                            $bajaObraPayload = ($puedeDarBaja && $asignacionUbicacion && !$variasAsignacionesAbiertas) ? json_encode([
                                 'action' => route('maquinas.bajaObra', $m),
                                 'maquina' => $nombreMaquina,
                                 'obra' => $asignacionUbicacion->obra?->nombre ?? 'Obra actual',
@@ -242,17 +244,26 @@
                                     };
                                 @endphp
 
-                                @if($obraActual && $puedeDarBaja)
+                                @if($variasAsignacionesAbiertas)
+                                    <div class="rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
+                                        <strong>Requiere revisión: {{ $asignacionesAbiertas->count() }} asignaciones abiertas</strong>
+                                        <div>Ubicación registrada: {{ $ubicLabel }}</div>
+                                        @foreach($asignacionesAbiertas as $abierta)
+                                            <div>Asignación #{{ $abierta->id }} · {{ $abierta->obra?->nombre ?? 'Obra no disponible (#'.$abierta->obra_id.')' }}@if($abierta->obra?->deleted_at) (obra eliminada)@endif</div>
+                                        @endforeach
+                                        <div>Regulariza las asignaciones antes de volver a asignar.</div>
+                                    </div>
+                                @elseif($asignacionUbicacion && $puedeDarBaja)
                                     <button type="button"
                                             class="inline-flex w-fit items-center gap-1.5 rounded-lg border px-2 py-1 text-left text-xs font-medium {{ $ubicClass }} hover:bg-blue-100 hover:border-blue-300 transition"
                                             title="Administrar ubicación de la máquina"
                                             @click.stop='openBajaModal({!! $bajaObraPayload !!})'>
-                                        <span>{{ $ubicLabel }} · {{ $obraActual->nombre ?? 'Obra' }}</span>
+                                        <span>{{ $ubicLabel }} · {{ $obraActual->nombre ?? 'Obra no disponible (#'.$asignacionUbicacion->obra_id.')' }}@if($obraActual?->deleted_at) (obra eliminada)@endif</span>
                                         <span aria-hidden="true">↗</span>
                                     </button>
-                                @elseif($obraActual)
+                                @elseif($asignacionUbicacion)
                                     <span class="inline-flex w-fit items-center rounded-lg border px-2 py-1 text-xs font-medium {{ $ubicClass }}">
-                                        {{ $ubicLabel }} · {{ $obraActual->nombre ?? 'Obra' }}
+                                        {{ $ubicLabel }} · {{ $obraActual->nombre ?? 'Obra no disponible (#'.$asignacionUbicacion->obra_id.')' }}@if($obraActual?->deleted_at) (obra eliminada)@endif · Asignación abierta
                                     </span>
                                 @elseif($puedeAsignarObra)
                                     <button type="button"
@@ -268,6 +279,15 @@
                                     <span class="inline-flex w-fit items-center px-2 py-1 rounded-lg border text-xs {{ $ubicClass }}" title="Solo máquinas operativas pueden asignarse desde esta vista">
                                         {{ $ubicLabel }}
                                     </span>
+                                @endif
+                                @if($asignacionUbicacion && !$variasAsignacionesAbiertas)
+                                    <div class="mt-1 text-xs font-medium text-amber-800">
+                                        @if($m->ubicacion === 'en_patio')Ubicación en patio con asignación abierta. @endif
+                                        @if($obraActual?->deleted_at)Obra eliminada; retiro pendiente.
+                                        @elseif(!$obraActual)Obra no disponible; retiro pendiente.
+                                        @elseif(in_array((int) $obraActual->estatus_nuevo, [\App\Models\Obra::ESTATUS_TERMINADA, \App\Models\Obra::ESTATUS_CANCELADA], true))Obra cerrada; retiro pendiente.
+                                        @elseLa máquina no está disponible hasta registrar su retiro.@endif
+                                    </div>
                                 @endif
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap">

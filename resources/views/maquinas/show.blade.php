@@ -17,10 +17,13 @@
                 Ubicación: <span class="font-medium text-slate-700">{{ $maquina->ubicacion ?? '—' }}</span>
             </p>
 
-            @if($maquina->asignacionActiva && $maquina->asignacionActiva->obra)
-                <p class="mt-1 text-sm text-slate-600">
-                    Asignada a: <span class="font-semibold">{{ $maquina->asignacionActiva->obra->nombre ?? 'Obra' }}</span>
-                </p>
+            @if($maquina->asignacionesAbiertas->isNotEmpty())
+                <div class="mt-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                    <p class="font-semibold">{{ $maquina->asignacionesAbiertas->count() > 1 ? 'Requiere revisión: varias asignaciones abiertas' : 'Asignación abierta' }}</p>
+                    @foreach($maquina->asignacionesAbiertas as $abierta)
+                        <p>Asignación #{{ $abierta->id }} · {{ $abierta->obra?->nombre ?? 'Obra no disponible (#'.$abierta->obra_id.')' }}@if($abierta->obra?->deleted_at) (obra eliminada)@elseif($abierta->obra && in_array((int) $abierta->obra->estatus_nuevo, [\App\Models\Obra::ESTATUS_TERMINADA, \App\Models\Obra::ESTATUS_CANCELADA], true)) (obra cerrada)@endif</p>
+                    @endforeach
+                </div>
             @endif
         </div>
 
@@ -180,7 +183,7 @@
                     <div class="flex items-center justify-between">
                         <span class="text-slate-600">Asignación activa</span>
                         <span class="font-medium text-slate-900">
-                            {{ $maquina->asignacionActiva ? 'Sí' : 'No' }}
+                            {{ $maquina->asignacionesAbiertas->isNotEmpty() ? 'Sí' : 'No' }}
                         </span>
                     </div>
                 </div>

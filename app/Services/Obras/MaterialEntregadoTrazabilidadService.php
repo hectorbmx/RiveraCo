@@ -7,6 +7,42 @@ use Illuminate\Support\Facades\DB;
 
 class MaterialEntregadoTrazabilidadService
 {
+    /** Requisiciones vinculadas a las partidas concretas que originaron una devolución. */
+    public function requisicionesDeDevolucion(int $devolucionId, int $obraId): Collection
+    {
+        $directas = DB::table('obra_devolucion_detalles as d')
+            ->join('obra_devoluciones as dev', 'dev.id', '=', 'd.devolucion_id')
+            ->join('compra_recepcion_directa_detalles as p', 'p.id', '=', 'd.recepcion_directa_detalle_id')
+            ->join('compra_recepciones_directas as r', 'r.id', '=', 'p.recepcion_id')
+            ->join('obra_requisicion_detalles as rd', function ($join) {
+                $join->on('rd.id', '=', 'p.obra_requisicion_detalle_id')->on('rd.item_id', '=', 'd.producto_id')->on('rd.item_id', '=', 'p.producto_id')->where('rd.item_type', '=', 'producto');
+            })
+            ->join('obra_requisiciones as rq', 'rq.id', '=', 'rd.obra_requisicion_id')
+            ->where('d.devolucion_id', $devolucionId)->where('dev.obra_id', $obraId)
+            ->where('r.obra_id', $obraId)->where('rq.obra_id', $obraId)
+            ->select('d.id as devolucion_detalle_id', 'rd.id as requisicion_detalle_id', 'rq.folio', 'rd.cantidad_solicitada', 'rd.unidad')
+            ->get();
+
+        $huentitan = DB::table('obra_devolucion_detalles as d')
+            ->join('obra_devoluciones as dev', 'dev.id', '=', 'd.devolucion_id')
+            ->join('huentitan_salida_detalles as sd', 'sd.id', '=', 'd.huentitan_salida_detalle_id')
+            ->join('huentitan_salidas as s', 's.id', '=', 'sd.huentitan_salida_id')
+            ->join('orden_compra_detalles as cd', 'cd.huentitan_salida_detalle_id', '=', 'sd.id')
+            ->join('ordenes_compra as oc', 'oc.id', '=', 'cd.orden_compra_id')
+            ->join('obra_requisicion_detalles as rd', function ($join) {
+                $join->on('rd.id', '=', 'cd.obra_requisicion_detalle_id')->on('rd.item_id', '=', 'd.producto_id')->on('rd.item_id', '=', 'sd.producto_id')->on('rd.item_id', '=', 'cd.producto_id')->where('rd.item_type', '=', 'producto');
+            })
+            ->join('obra_requisiciones as rq', 'rq.id', '=', 'rd.obra_requisicion_id')
+            ->where('d.devolucion_id', $devolucionId)->where('dev.obra_id', $obraId)
+            ->where('s.obra_id', $obraId)->where('oc.obra_id', $obraId)->where('rq.obra_id', $obraId)
+            ->select('d.id as devolucion_detalle_id', 'rd.id as requisicion_detalle_id', 'rq.folio', 'rd.cantidad_solicitada', 'rd.unidad')
+            ->get();
+
+        return $directas->concat($huentitan)
+            ->unique(fn ($row) => $row->devolucion_detalle_id.':'.$row->requisicion_detalle_id)
+            ->groupBy('devolucion_detalle_id');
+    }
+
     /** Adjunta referencias documentadas sin duplicar ni modificar las cantidades entregadas. */
     public function anexar(Collection $entregas, int $obraId): Collection
     {

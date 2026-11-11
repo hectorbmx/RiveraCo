@@ -26,7 +26,7 @@
     </div>
 
     @if(auth()->user()?->can('obra.devoluciones.view.access') && auth()->user()?->can('obra.devoluciones.receive.access'))
-        <a href="{{ route('inventario.devoluciones-obra.index') }}" class="inline-flex rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-800">Devoluciones de obra pendientes</a>
+        <a href="{{ route('inventario.documentos.index', ['tipo' => 'devolucion']) }}" class="inline-flex rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-800">Devoluciones de obra pendientes</a>
     @endif
 
     {{-- Alertas --}}

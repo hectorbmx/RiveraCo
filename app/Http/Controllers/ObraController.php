@@ -554,7 +554,8 @@ public function imprimirDevolucion(Request $request, Obra $obra, \App\Models\Obr
     abort_unless($request->user()?->can('obra.devoluciones.view.access'), 403);
     abort_unless((int) $devolucion->obra_id === (int) $obra->id, 404);
     $devolucion->load(['creadoPor', 'presentadoPor', 'detalles.recepcionDirectaDetalle.recepcion', 'detalles.movimientoOrigen.documento', 'detalles.salidaHuentitanDetalle.salida']);
-    return view('obras.devoluciones.imprimir', compact('obra', 'devolucion'));
+    $requisicionesPorPartida = app(\App\Services\Obras\MaterialEntregadoTrazabilidadService::class)->requisicionesDeDevolucion($devolucion->id, $obra->id);
+    return view('obras.devoluciones.imprimir', compact('obra', 'devolucion', 'requisicionesPorPartida'));
 }
 
 public function presentarDevolucion(Request $request, Obra $obra, \App\Models\ObraDevolucion $devolucion, \App\Services\Obras\ObraDevolucionSolicitudService $service)
@@ -1209,14 +1210,10 @@ if ($tab === 'caja-chica') {
         $maquinasAsignadasActivas    = $asignacionesMaquina->where('estado', 'activa');
         $maquinasAsignadasHistoricas = $asignacionesMaquina->where('estado', 'finalizada');
 
-        // IDs de máquinas actualmente activas en cualquier obra
-        $maquinasOcupadasIds = ObraMaquina::activas()
-            ->pluck('maquina_id');
-
-        // Máquinas operativas y no ocupadas
+        // La asignación abierta bloquea incluso si la obra fue cerrada o eliminada.
         $maquinasDisponibles = Maquina::query()
             ->where('estado', 'operativa')
-            ->whereNotIn('id', $maquinasOcupadasIds)
+            ->whereDoesntHave('asignacionesAbiertas')
             ->orderBy('nombre')
             ->get();
 

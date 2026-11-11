@@ -27,16 +27,16 @@
     <table><tbody>
         <tr><td class="label">Obra</td><td colspan="3">{{ $obra->nombre }}@if($obra->clave_obra) · {{ $obra->clave_obra }}@endif</td></tr>
         <tr><td class="label">Folio</td><td>{{ $devolucion->folio }}</td><td class="label">Estado</td><td>{{ $estados[$devolucion->estado] ?? $devolucion->estado }}</td></tr>
-        <tr><td class="label">Creada</td><td>{{ $devolucion->created_at?->format('d/m/Y H:i') ?? 'Sin fecha' }}</td><td class="label">Creada por</td><td>{{ $devolucion->creadoPor?->name ?? 'Sin registro' }}</td></tr>
+        <tr><td class="label">Creada</td><td>{{ $devolucion->created_at?->format('d/m/Y H:i') ?? 'Sin fecha' }}</td><td class="label">Creada por</td><td>{{ $devolucion->creadoPor?->name ?? 'Sin registro' }} @include('impresion.firma-creador', ['usuarioFirma' => $devolucion->creadoPor])</td></tr>
         <tr><td class="label">Presentada</td><td>{{ $devolucion->presentado_at?->format('d/m/Y H:i') ?? 'Sin presentar' }}</td><td class="label">Presentada por</td><td>{{ $devolucion->presentadoPor?->name ?? 'Sin presentar' }}</td></tr>
     </tbody></table>
     @if($devolucion->estado === 'borrador')<div class="notice">BORRADOR: esta solicitud todavía no ha sido presentada a almacén.</div>
     @elseif($devolucion->estado === 'cancelada')<div class="notice">SOLICITUD CANCELADA: {{ $devolucion->motivo_cancelacion ?: 'Sin motivo registrado' }}</div>
     @else<div class="notice">Las cantidades y condiciones siguientes son declaradas por obra. La recepción física y la condición serán verificadas por almacén.</div>@endif
-    <table><thead><tr><th>#</th><th>Material / origen</th><th>Cantidad solicitada</th><th>Condición declarada</th><th>Observaciones</th></tr></thead><tbody>
+    <table><thead><tr><th>#</th><th>Material / origen</th><th>Requisición / cantidad solicitada</th><th>Entregado a obra</th><th>Solicitado a devolver</th><th>Condición declarada</th><th>Observaciones</th></tr></thead><tbody>
     @forelse($devolucion->detalles as $partida)
-        <tr><td>{{ $loop->iteration }}</td><td>{{ $partida->descripcion }}<br><small>Origen: {{ $partida->recepcionDirectaDetalle?->recepcion?->folio ?? $partida->movimientoOrigen?->documento?->folio ?? $partida->salidaHuentitanDetalle?->salida?->folio ?? 'No disponible' }}</small></td><td class="right">{{ number_format((float) $partida->cantidad_solicitada, 3) }} {{ $partida->unidad }}</td><td>{{ $condiciones[$partida->condicion_declarada] ?? 'Sin definir' }}</td><td>{{ $partida->observaciones ?: '—' }}</td></tr>
-    @empty <tr><td colspan="5">Sin partidas registradas.</td></tr> @endforelse
+        <tr><td>{{ $loop->iteration }}</td><td>{{ $partida->descripcion }}<br><small>Origen: {{ $partida->recepcionDirectaDetalle?->recepcion?->folio ?? $partida->movimientoOrigen?->documento?->folio ?? $partida->salidaHuentitanDetalle?->salida?->folio ?? 'No disponible' }}</small></td><td>@forelse($requisicionesPorPartida->get($partida->id, collect()) as $requisicion){{ $requisicion->folio }}: {{ number_format((float) $requisicion->cantidad_solicitada, 3) }} {{ $requisicion->unidad }}@if(!$loop->last)<br>@endif @empty Sin requisición vinculada @endforelse</td><td class="right">{{ number_format((float) $partida->cantidad_entregada_snapshot, 3) }} {{ $partida->unidad }}</td><td class="right">{{ number_format((float) $partida->cantidad_solicitada, 3) }} {{ $partida->unidad }}</td><td>{{ $condiciones[$partida->condicion_declarada] ?? 'Sin definir' }}</td><td>{{ $partida->observaciones ?: '—' }}</td></tr>
+    @empty <tr><td colspan="7">Sin partidas registradas.</td></tr> @endforelse
     </tbody></table>
     <p><strong>Observaciones de la solicitud:</strong> {{ $devolucion->observaciones ?: 'Sin observaciones' }}</p>
     <div class="signatures"><div class="signature">Entrega en obra<br>Nombre y firma</div><div class="signature">Recibe en almacén<br>Nombre y firma</div></div>

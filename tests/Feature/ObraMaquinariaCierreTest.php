@@ -121,6 +121,41 @@ class ObraMaquinariaCierreTest extends TestCase
         $this->assertStringNotContainsString('title="Asignar a una obra"', $html);
     }
 
+    public function test_obra_eliminada_no_hace_disponible_la_maquina_y_permite_identificar_retiro_pendiente(): void
+    {
+        DB::table('obras')->where('id', 7)->update(['deleted_at' => now()]);
+        DB::table('maquinas')->where('id', 16)->update(['ubicacion' => 'en_patio']);
+        $this->assertFalse(Maquina::whereKey(16)->whereDoesntHave('asignacionesAbiertas')->exists());
+        $this->assertNull(Maquina::findOrFail(16)->asignacionActiva);
+
+        $preventivos = Mockery::mock(PreventivoMaquinaService::class);
+        $preventivos->shouldReceive('calcularParaColeccion')->andReturn([]);
+        $data = app(MaquinaController::class)->index(Request::create('/maquinas'), $preventivos, app(MaquinaHorometroService::class))->getData();
+        preg_match("/@section\('content'\)([\\s\\S]*?)@endsection/", file_get_contents(resource_path('views/maquinas/index.blade.php')), $matches);
+        $html = Blade::render($matches[1], $data + ['errors' => new ViewErrorBag()]);
+        $this->assertStringContainsString('FRESCO VALLE IMPERIAL', $html);
+        $this->assertStringContainsString('obra eliminada', $html);
+        $this->assertStringContainsString('openBajaModal(', $html);
+        $this->assertStringNotContainsString('title="Asignar a una obra"', $html);
+    }
+
+    public function test_varias_asignaciones_abiertas_se_muestran_para_revision_sin_retiro_automatico(): void
+    {
+        DB::table('obras')->insert(['id' => 8, 'cliente_id' => 1, 'nombre' => 'OBRA ANTERIOR', 'clave_obra' => 'PI-8', 'tipo_obra' => 'PILAS', 'area_id' => 1, 'estatus_nuevo' => Obra::ESTATUS_CANCELADA, 'deleted_at' => now()]);
+        DB::table('obra_maquina')->insert(['id' => 8, 'maquina_id' => 16, 'obra_id' => 8, 'estado' => 'activa', 'fecha_inicio' => '2026-05-27']);
+        DB::table('maquinas')->where('id', 16)->update(['ubicacion' => 'en_patio']);
+        $preventivos = Mockery::mock(PreventivoMaquinaService::class);
+        $preventivos->shouldReceive('calcularParaColeccion')->andReturn([]);
+        $data = app(MaquinaController::class)->index(Request::create('/maquinas'), $preventivos, app(MaquinaHorometroService::class))->getData();
+        preg_match("/@section\('content'\)([\\s\\S]*?)@endsection/", file_get_contents(resource_path('views/maquinas/index.blade.php')), $matches);
+        $html = Blade::render($matches[1], $data + ['errors' => new ViewErrorBag()]);
+        $this->assertStringContainsString('Requiere revisión: 2 asignaciones abiertas', $html);
+        $this->assertStringContainsString('OBRA ANTERIOR', $html);
+        $this->assertStringContainsString('FRESCO VALLE IMPERIAL', $html);
+        $this->assertNull(app(\App\Services\Maquinas\MaquinaAsignacionService::class)->asignacionParaRetiro(Maquina::findOrFail(16)));
+        $this->assertSame(2, ObraMaquina::abiertas()->count());
+    }
+
     public function test_terminar_obra_libera_maquina_y_guarda_baja_con_actor(): void
     {
         $this->cerrar(Obra::ESTATUS_TERMINADA)->assertSessionHasNoErrors()->assertRedirect(route('obras.index'));

@@ -47,6 +47,11 @@ class Maquina extends Model
         return $this->hasMany(ObraMaquina::class, 'maquina_id');
     }
 
+    public function asignacionesAbiertas()
+    {
+        return $this->hasMany(ObraMaquina::class, 'maquina_id')->abiertas()->orderByDesc('id');
+    }
+
     public function horometroAjustes()
     {
         return $this->hasMany(MaquinaHorometroAjuste::class, 'maquina_id');
@@ -75,8 +80,7 @@ class Maquina extends Model
     public function asignacionActiva()
     {
         return $this->hasOne(ObraMaquina::class, 'maquina_id')
-            ->where('estado', 'activa')
-            ->whereNull('fecha_fin')
+            ->abiertas()
             ->whereHas('obra', function ($obra) {
                 $obra->whereNotIn('estatus_nuevo', [
                     Obra::ESTATUS_TERMINADA,
@@ -90,8 +94,7 @@ class Maquina extends Model
     public function asignacionAbierta()
     {
         return $this->hasOne(ObraMaquina::class, 'maquina_id')
-            ->where('estado', 'activa')
-            ->whereNull('fecha_fin')
+            ->abiertas()
             ->latest('id');
     }
 // Movimientos (bitácora)

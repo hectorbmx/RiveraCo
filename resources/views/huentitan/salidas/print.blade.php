@@ -68,6 +68,7 @@
             <div class="box">
                 <div class="label">Solicito</div>
                 <div class="value">{{ $salida->usuario?->name ?? 'Sistema' }}</div>
+                @include('impresion.firma-creador', ['usuarioFirma' => $salida->usuario])
             </div>
             <div class="box">
                 <div class="label">Aplico</div>
