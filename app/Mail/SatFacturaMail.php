@@ -25,9 +25,10 @@ class SatFacturaMail extends Mailable
     public function build()
     {
         $esComplemento = $this->pago !== null;
+        $esNotaCredito = ! $esComplemento && $this->factura->tipo_comprobante === 'E';
         $documento = $this->pago ?? $this->factura;
         $uuid = $documento->uuid ?? $documento->id;
-        $prefijo = $esComplemento ? 'complemento-pago' : 'factura';
+        $prefijo = $esComplemento ? 'complemento-pago' : ($esNotaCredito ? 'nota-credito' : 'factura');
 
         $mail = $this->from(
                 config('services.facturacion_mail.from_address', config('mail.from.address')),
@@ -35,7 +36,7 @@ class SatFacturaMail extends Mailable
             )
             ->subject($esComplemento
                 ? 'Complemento de pago CFDI ' . $uuid
-                : 'Factura CFDI ' . $this->factura->serie . '-' . $this->factura->folio
+                : ($esNotaCredito ? 'Nota de crédito CFDI ' : 'Factura CFDI ') . $this->factura->serie . '-' . $this->factura->folio
             )
             ->view('emails.sat.factura')
             ->with([

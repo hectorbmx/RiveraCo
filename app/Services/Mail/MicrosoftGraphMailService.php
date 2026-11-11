@@ -67,12 +67,13 @@ class MicrosoftGraphMailService
 
         $documento = $pago ?? $factura;
         $esComplemento = $pago !== null;
+        $esNotaCredito = ! $esComplemento && $factura->tipo_comprobante === 'E';
         $uuid = $documento->uuid ?? $documento->id;
-        $prefijo = $esComplemento ? 'complemento-pago' : 'factura';
+        $prefijo = $esComplemento ? 'complemento-pago' : ($esNotaCredito ? 'nota-credito' : 'factura');
 
         $subject = $esComplemento
             ? 'Complemento de pago CFDI ' . $uuid
-            : 'Factura CFDI ' . $factura->serie . '-' . $factura->folio;
+            : ($esNotaCredito ? 'Nota de crédito CFDI ' : 'Factura CFDI ') . $factura->serie . '-' . $factura->folio;
 
         $html = view('emails.sat.factura', [
             'factura' => $factura,

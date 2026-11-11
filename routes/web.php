@@ -128,6 +128,9 @@ Route::get('/privacidad', function () {
     return view('privacidad.index');
 })->name('privacidad');
 
+Route::get('/sat/notas-credito/{factura}/zip', [SatNotaCreditoController::class, 'descargarZip'])
+    ->middleware('signed')->name('sat.notas-credito.zip');
+
 Route::middleware(['auth', 'verified'])
     ->prefix('sat')
     ->name('sat.')
@@ -266,6 +269,10 @@ Route::middleware(['auth', 'verified'])
             ->middleware('permission:sat.facturacion.access')->name('notas-credito.borradores.consultar');
         Route::get('/notas-credito/{factura}/archivo/{formato}', [SatNotaCreditoController::class, 'descargarArchivo'])
             ->middleware('permission:sat.facturacion.access')->whereIn('formato', ['xml', 'pdf'])->name('notas-credito.archivo');
+        Route::get('/notas-credito/{factura}', [SatNotaCreditoController::class, 'show'])
+            ->middleware('permission:sat.facturacion.access')->name('notas-credito.show');
+        Route::post('/notas-credito/{factura}/enviar', [SatNotaCreditoController::class, 'enviar'])
+            ->middleware('permission:sat.facturacion.access')->name('notas-credito.enviar');
 
         Route::prefix('complementos-pago')->name('complementos-pago.')->group(function () {
             Route::get('/', [SatComplementoPagoController::class, 'index'])->name('index');

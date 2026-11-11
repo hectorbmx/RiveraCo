@@ -10,15 +10,61 @@ use App\Models\Cliente;
 use App\Services\Facturacion\FacturapiService;
 use App\Services\Facturacion\NotaCreditoPreviewService;
 use App\Services\Facturacion\NotaCreditoTimbradoService;
+use App\Services\Mail\MicrosoftGraphMailService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class SatNotaCreditoController extends Controller
 {
+    public function show(SatFactura $factura): View
+    {
+        abort_unless($factura->tipo_comprobante === 'E', 404);
+        $factura->load(['empresa', 'cliente', 'obra', 'conceptos', 'timbradoPor']);
+        $relaciones = DB::table('sat_factura_relaciones')->where('sat_factura_id', $factura->id)->get();
+        $zipUrl = URL::temporarySignedRoute('sat.notas-credito.zip', now()->addMinutes(30), ['factura' => $factura->id]);
+        $folio = trim(($factura->serie ? $factura->serie.'-' : '').($factura->folio ?: $factura->id));
+        $mensaje = implode("\n", ['Nota de crédito '.$folio, 'Cliente: '.($factura->receptor_nombre ?: 'N/A'), 'Total: '.$factura->moneda.' '.number_format((float) $factura->total, 2), 'Descarga PDF y XML aquí:', $zipUrl, '', 'Este enlace expira en 30 minutos.']);
+        $whatsappUrl = 'https://wa.me/?text='.rawurlencode($mensaje);
+        return view('sat.notas-credito.show', compact('factura', 'relaciones', 'whatsappUrl'));
+    }
+
+    public function enviar(Request $request, SatFactura $factura, MicrosoftGraphMailService $graphMail, FacturapiService $facturapi)
+    {
+        abort_unless($factura->tipo_comprobante === 'E' && $factura->estado === 'timbrada', 404);
+        try {
+            $this->asegurarArchivos($factura, $facturapi);
+        } catch (\Throwable $e) {
+            report($e);
+            return back()->with('error', 'No se pudieron obtener ambos archivos de la nota para enviarlos.');
+        }
+        return app(SatFacturacionController::class)->enviar($request, $factura, $graphMail);
+    }
+
+    public function descargarZip(SatFactura $factura, FacturapiService $facturapi)
+    {
+        abort_unless($factura->tipo_comprobante === 'E' && $factura->estado === 'timbrada', 404);
+        $this->asegurarArchivos($factura, $facturapi);
+        return app(SatFacturacionController::class)->downloadZip($factura);
+    }
+
+    private function asegurarArchivos(SatFactura $factura, FacturapiService $facturapi): void
+    {
+        foreach (['xml', 'pdf'] as $formato) {
+            $campo = $formato.'_path';
+            if ($factura->$campo && Storage::exists($factura->$campo)) continue;
+            if (! $factura->facturapi_invoice_id || ! $factura->uuid) throw new \RuntimeException('Nota sin identificador de Facturapi.');
+            $contenido = $formato === 'xml' ? $facturapi->client()->Invoices->downloadXml($factura->facturapi_invoice_id) : $facturapi->client()->Invoices->downloadPdf($factura->facturapi_invoice_id);
+            $ruta = 'sat/facturas/'.$factura->empresa->rfc.'/'.$factura->uuid.'/'.$factura->uuid.'.'.$formato;
+            if (! $contenido || ! Storage::put($ruta, $contenido)) throw new \RuntimeException('No se pudo almacenar el archivo.');
+            $factura->update([$campo => $ruta]);
+        }
+    }
+
     public function descargarArchivo(SatFactura $factura, string $formato, FacturapiService $facturapi)
     {
         abort_unless($factura->tipo_comprobante === 'E' && in_array($formato, ['xml', 'pdf'], true), 404);

@@ -196,10 +196,9 @@
                                         </form>
                                     @endcan
                                 @elseif(!$esBorrador && $nota->estado === 'timbrada')
-                                    <div class="flex justify-end gap-3">
-                                        <a class="font-semibold text-blue-700 hover:underline" href="{{ route('sat.notas-credito.archivo', [$nota, 'pdf']) }}">PDF</a>
-                                        <a class="font-semibold text-blue-700 hover:underline" href="{{ route('sat.notas-credito.archivo', [$nota, 'xml']) }}">XML</a>
-                                    </div>
+                                    <a href="{{ route('sat.notas-credito.show', $nota) }}" title="Detalles" aria-label="Detalles de la nota de crédito" class="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-lg text-blue-700 hover:bg-blue-50">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.5-6 9.75-6 9.75 6 9.75 6-3.5 6-9.75 6-9.75-6-9.75-6Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    </a>
                                 @else
                                     <span class="block text-right text-slate-400">—</span>
                                 @endif

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>{{ !empty($esComplemento) ? 'Complemento de pago CFDI' : 'Factura CFDI' }}</title>
+    <title>{{ !empty($esComplemento) ? 'Complemento de pago CFDI' : ($factura->tipo_comprobante === 'E' ? 'Nota de crédito CFDI' : 'Factura CFDI') }}</title>
 </head>
 <body style="margin:0; padding:0; background:#f1f5f9; font-family:Arial, Helvetica, sans-serif; color:#0f172a;">
 
@@ -12,7 +12,7 @@
 
             <div style="background:#0f172a; padding:24px 28px;">
                 <h1 style="margin:0; color:#ffffff; font-size:22px;">
-                    {{ !empty($esComplemento) ? 'Complemento de pago CFDI' : 'Factura CFDI' }}
+                    {{ !empty($esComplemento) ? 'Complemento de pago CFDI' : ($factura->tipo_comprobante === 'E' ? 'Nota de crédito CFDI' : 'Factura CFDI') }}
                 </h1>
                 <p style="margin:6px 0 0; color:#cbd5e1; font-size:14px;">
                     Rivera Construcciones
@@ -26,7 +26,7 @@
                 </p>
 
                 <p style="font-size:15px; line-height:1.6; margin:0 0 24px; color:#334155;">
-                    Adjuntamos los archivos XML y PDF correspondientes a {{ !empty($esComplemento) ? 'su complemento de pago CFDI' : 'su factura CFDI' }}.
+                    Adjuntamos los archivos XML y PDF correspondientes a {{ !empty($esComplemento) ? 'su complemento de pago CFDI' : ($factura->tipo_comprobante === 'E' ? 'su nota de crédito CFDI' : 'su factura CFDI') }}.
                 </p>
 
                 <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:18px; margin-bottom:24px;">

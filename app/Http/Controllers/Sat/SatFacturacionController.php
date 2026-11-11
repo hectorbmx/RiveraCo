@@ -1699,7 +1699,7 @@ public function enviar(Request $request, SatFactura $factura, MicrosoftGraphMail
     if (!$email) {
         return back()->with(
             'error',
-            'La factura no tiene correo destino.'
+            $factura->tipo_comprobante === 'E' ? 'La nota de crédito no tiene correo destino.' : 'La factura no tiene correo destino.'
         );
     }
 
@@ -1729,14 +1729,14 @@ public function enviar(Request $request, SatFactura $factura, MicrosoftGraphMail
 
         return back()->with(
             'success',
-            'Factura enviada correctamente.'
+            $factura->tipo_comprobante === 'E' ? 'Nota de crédito enviada correctamente.' : 'Factura enviada correctamente.'
         );
 
     } catch (\Throwable $e) {
 
         return back()->with(
             'error',
-            'Error al enviar factura: ' . $e->getMessage()
+            ($factura->tipo_comprobante === 'E' ? 'Error al enviar nota de crédito: ' : 'Error al enviar factura: ') . $e->getMessage()
         );
     }
 }
