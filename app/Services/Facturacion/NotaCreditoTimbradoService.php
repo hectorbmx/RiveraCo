@@ -28,7 +28,7 @@ class NotaCreditoTimbradoService
             $aplicado = (float) DB::table('sat_factura_relaciones')
                 ->join('sat_facturas', 'sat_facturas.id', '=', 'sat_factura_relaciones.sat_factura_id')
                 ->where('sat_factura_relaciones.factura_relacionada_id', $facturaOrigen->id)
-                ->where('sat_facturas.tipo_comprobante', 'E')->where('sat_facturas.estado', 'timbrada')
+                ->where('sat_facturas.tipo_comprobante', 'E')->whereIn('sat_facturas.estado', ['timbrada', 'cancelacion_solicitada'])
                 ->sum('sat_facturas.total');
             $reservado = SatFacturaBorrador::where('tipo_comprobante', 'E')
                 ->whereIn('estado', ['enviando', 'pendiente_facturapi', 'revision_emision'])->whereNull('sat_factura_id')

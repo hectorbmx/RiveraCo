@@ -273,6 +273,10 @@ Route::middleware(['auth', 'verified'])
             ->middleware('permission:sat.facturacion.access')->name('notas-credito.show');
         Route::post('/notas-credito/{factura}/enviar', [SatNotaCreditoController::class, 'enviar'])
             ->middleware('permission:sat.facturacion.access')->name('notas-credito.enviar');
+        Route::post('/notas-credito/{factura}/cancelar', [SatNotaCreditoController::class, 'cancelar'])
+            ->middleware('permission:sat.facturacion.access')->name('notas-credito.cancelar');
+        Route::post('/notas-credito/{factura}/consultar-cancelacion', [SatNotaCreditoController::class, 'consultarCancelacion'])
+            ->middleware('permission:sat.facturacion.access')->name('notas-credito.cancelacion.consultar');
 
         Route::prefix('complementos-pago')->name('complementos-pago.')->group(function () {
             Route::get('/', [SatComplementoPagoController::class, 'index'])->name('index');

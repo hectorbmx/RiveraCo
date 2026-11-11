@@ -145,11 +145,15 @@
                             <td class="px-5 py-4">{{ $nota->obra?->nombre ?: '—' }}</td>
                             <td class="px-5 py-4">
                                 @if($esBorrador)
-                                    <div class="text-xs text-slate-600">{{ $datosBorrador['tipo_relacion'] ?? '—' }} · {{ $datosBorrador['uuid_relacionado'] ?? '—' }}</div>
+                                    @php $relacionUuid = $datosBorrador['uuid_relacionado'] ?? ''; $origen = $foliosRelacionados->get(strtoupper($relacionUuid)); @endphp
+                                    <div class="font-semibold text-slate-800">{{ $origen ? (trim(($origen->serie ? $origen->serie.'-' : '').($origen->folio ?: '')) ?: 'Sin folio') : 'Folio no disponible' }}</div>
+                                    <div class="text-xs text-slate-500">{{ $relacionUuid ?: '—' }}</div>
                                     <div class="mt-1 text-xs text-slate-500">{{ ['anticipo' => 'Aplicación de anticipo', 'descuento' => 'Descuento o bonificación', 'devolucion' => 'Devolución'][$datosBorrador['motivo'] ?? ''] ?? '' }}</div>
                                 @else
                                 @forelse($relaciones->get($nota->id, collect()) as $relacion)
-                                    <div class="text-xs text-slate-600">{{ $relacion->tipo_relacion }} · {{ $relacion->uuid_relacionado }}</div>
+                                    @php $origen = $foliosRelacionados->get(strtoupper($relacion->uuid_relacionado)); @endphp
+                                    <div class="font-semibold text-slate-800">{{ $origen ? (trim(($origen->serie ? $origen->serie.'-' : '').($origen->folio ?: '')) ?: 'Sin folio') : 'Folio no disponible' }}</div>
+                                    <div class="text-xs text-slate-500">{{ $relacion->uuid_relacionado }}</div>
                                 @empty
                                     <span class="text-slate-400">Sin relación registrada</span>
                                 @endforelse
@@ -195,10 +199,17 @@
                                             <button type="submit" class="font-semibold text-blue-700 hover:underline">Consultar estado</button>
                                         </form>
                                     @endcan
-                                @elseif(!$esBorrador && $nota->estado === 'timbrada')
-                                    <a href="{{ route('sat.notas-credito.show', $nota) }}" title="Detalles" aria-label="Detalles de la nota de crédito" class="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-lg text-blue-700 hover:bg-blue-50">
+                                @elseif(!$esBorrador)
+                                    <div class="flex justify-end gap-2">
+                                    <a href="{{ route('sat.notas-credito.show', $nota) }}" title="Detalles" aria-label="Detalles de la nota de crédito" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-blue-700 hover:bg-blue-50">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.5-6 9.75-6 9.75 6 9.75 6-3.5 6-9.75 6-9.75-6-9.75-6Z"/><circle cx="12" cy="12" r="3"/></svg>
                                     </a>
+                                    @if($nota->estado === 'timbrada')
+                                    <a href="{{ Illuminate\Support\Facades\URL::temporarySignedRoute('sat.notas-credito.zip', now()->addMinutes(30), ['factura' => $nota->id]) }}" title="Descargar ZIP" aria-label="Descargar XML y PDF en ZIP" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-indigo-700 hover:bg-indigo-50">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg>
+                                    </a>
+                                    @endif
+                                    </div>
                                 @else
                                     <span class="block text-right text-slate-400">—</span>
                                 @endif

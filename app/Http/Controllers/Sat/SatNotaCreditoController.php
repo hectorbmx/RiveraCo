@@ -16,11 +16,83 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class SatNotaCreditoController extends Controller
 {
+    public function cancelar(Request $request, SatFactura $factura, FacturapiService $facturapi)
+    {
+        abort_unless($request->user()?->can('sat.cfdi_autoriza.access'), 403);
+        $data = $request->validate([
+            'motivo_cancelacion' => ['required', Rule::in(['01', '02', '03', '04'])],
+            'sustitucion_uuid' => ['nullable', 'required_if:motivo_cancelacion,01', 'uuid'],
+        ]);
+        abort_unless($factura->tipo_comprobante === 'E' && $factura->facturapi_invoice_id, 404);
+        try {
+            $empresa = $factura->empresa;
+            $organizacion = $facturapi->client()->Organizations->retrieve('me');
+            if (! $empresa || strtoupper(trim((string) $empresa->rfc)) !== strtoupper(trim((string) ($organizacion->legal->tax_id ?? $organizacion->tax_id ?? '')))) {
+                return back()->with('error', 'El emisor de Facturapi no coincide con la empresa de la nota.');
+            }
+            $reservada = DB::transaction(function () use ($factura, $data) {
+                $actual = SatFactura::whereKey($factura->id)->lockForUpdate()->firstOrFail();
+                if ($actual->tipo_comprobante !== 'E' || $actual->estado !== 'timbrada') return false;
+                $respuesta = $actual->facturapi_response ?? [];
+                $respuesta['_local']['cancelacion_nota'] = ['motivo' => $data['motivo_cancelacion'], 'sustitucion' => $data['sustitucion_uuid'] ?? null, 'solicitada_at' => now()->toIso8601String()];
+                $actual->update(['estado' => 'cancelacion_solicitada', 'facturapi_response' => $respuesta]);
+                return true;
+            });
+            if (! $reservada) return back()->with('error', 'La nota ya no está disponible para cancelar.');
+            $parametros = ['motive' => $data['motivo_cancelacion']];
+            if ($data['motivo_cancelacion'] === '01') $parametros['substitution'] = $data['sustitucion_uuid'];
+            $body = json_decode(json_encode($facturapi->client()->Invoices->cancel($factura->facturapi_invoice_id, $parametros)), true);
+            $estado = $this->actualizarEstadoCancelacion($factura, $body ?: []);
+            return back()->with('success', $estado === 'cancelada' ? 'Nota de crédito cancelada correctamente.' : 'Solicitud enviada; consulta el estado de cancelación.');
+        } catch (\Throwable $e) {
+            report($e);
+            return back()->with('error', 'No se pudo confirmar el resultado. Consulta el estado antes de solicitar otra cancelación.');
+        }
+    }
+
+    public function consultarCancelacion(Request $request, SatFactura $factura, FacturapiService $facturapi)
+    {
+        abort_unless($request->user()?->can('sat.cfdi_autoriza.access'), 403);
+        abort_unless($factura->tipo_comprobante === 'E' && $factura->facturapi_invoice_id, 404);
+        try {
+            $organizacion = $facturapi->client()->Organizations->retrieve('me');
+            $rfcEmisor = strtoupper(trim((string) $factura->empresa?->rfc));
+            if ($rfcEmisor === '' || $rfcEmisor !== strtoupper(trim((string) ($organizacion->legal->tax_id ?? $organizacion->tax_id ?? '')))) {
+                return back()->with('error', 'El emisor de Facturapi no coincide con la empresa de la nota.');
+            }
+            $response = Http::withBasicAuth(config('services.facturapi.secret_key'), '')->timeout(30)
+                ->put('https://www.facturapi.io/v2/invoices/'.$factura->facturapi_invoice_id.'/status');
+            if (! $response->successful()) return back()->with('error', 'No se pudo actualizar el estado de la cancelación.');
+            $estado = $this->actualizarEstadoCancelacion($factura, $response->json() ?: []);
+            return back()->with('success', $estado === 'cancelada' ? 'Nota de crédito cancelada.' : ($estado === 'timbrada' ? 'La nota continúa vigente.' : 'La cancelación continúa pendiente de confirmación.'));
+        } catch (\Throwable $e) {
+            report($e);
+            return back()->with('error', 'No fue posible consultar el estado; intenta nuevamente.');
+        }
+    }
+
+    private function actualizarEstadoCancelacion(SatFactura $factura, array $body): string
+    {
+        return DB::transaction(function () use ($factura, $body) {
+            $actual = SatFactura::whereKey($factura->id)->lockForUpdate()->firstOrFail();
+            $estado = match (true) {
+                ($body['status'] ?? null) === 'canceled' => 'cancelada',
+                in_array($body['cancellation_status'] ?? null, ['rejected', 'expired'], true) && ($body['status'] ?? null) === 'valid' => 'timbrada',
+                default => $actual->estado === 'timbrada' ? 'timbrada' : 'cancelacion_solicitada',
+            };
+            $local = data_get($actual->facturapi_response, '_local');
+            $body['_local'] = $local;
+            $actual->update(['estado' => $estado, 'fecha_cancelacion' => $estado === 'cancelada' ? ($actual->fecha_cancelacion ?? now()) : null, 'facturapi_response' => $body]);
+            return $estado;
+        });
+    }
+
     public function show(SatFactura $factura): View
     {
         abort_unless($factura->tipo_comprobante === 'E', 404);
@@ -324,11 +396,16 @@ class SatNotaCreditoController extends Controller
         $relaciones = DB::table('sat_factura_relaciones')
             ->whereIn('sat_factura_id', $notasPorId->keys())
             ->orderBy('id')->get(['sat_factura_id', 'tipo_relacion', 'uuid_relacionado'])->groupBy('sat_factura_id');
+        $uuidsRelacionados = $relaciones->flatten(1)->pluck('uuid_relacionado')
+            ->merge($notas->filter(fn ($nota) => $nota instanceof SatFacturaBorrador)->map(fn ($nota) => $nota->payload['uuid_relacionado'] ?? null))
+            ->filter()->unique();
+        $foliosRelacionados = SatFactura::whereIn('uuid', $uuidsRelacionados)->get(['uuid', 'serie', 'folio'])
+            ->keyBy(fn ($factura) => strtoupper($factura->uuid));
 
         $empresas = SatEmpresa::where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'rfc']);
         $clientes = Cliente::where('activo', true)->orderBy('razon_social')->orderBy('nombre_comercial')
             ->get(['id', 'razon_social', 'nombre_comercial', 'rfc']);
 
-        return view('sat.notas-credito.index', compact('notas', 'relaciones', 'busqueda', 'estado', 'estados', 'empresas', 'clientes'));
+        return view('sat.notas-credito.index', compact('notas', 'relaciones', 'foliosRelacionados', 'busqueda', 'estado', 'estados', 'empresas', 'clientes'));
     }
 }
