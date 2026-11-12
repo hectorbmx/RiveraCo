@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Exports\ObrasExport;
-use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Collection;
 use App\Models\Obra;
 use App\Models\Cliente;
@@ -130,8 +129,14 @@ class ObraController extends Controller
             ->orderBy('created_at', 'desc')
             ->orderByDesc('id');
 
-        if ($request->query('exportar') === 'xlsx') {
-            return Excel::download(new ObrasExport($consultaObras->get()), 'obras-' . now()->format('Y-m-d') . '.xlsx');
+        if (in_array($request->query('exportar'), ['csv', 'xlsx'], true)) {
+            $exportacion = new ObrasExport($consultaObras->get());
+
+            return response()->streamDownload(function () use ($exportacion) {
+                $archivo = fopen('php://output', 'w');
+                $exportacion->escribirCsv($archivo);
+                fclose($archivo);
+            }, 'obras-' . now()->format('Y-m-d') . '.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
         }
 
         $obrasParaResumen = (clone $consultaObras)->setEagerLoads([])->get(['id', 'estatus_nuevo', 'tipo_obra']);

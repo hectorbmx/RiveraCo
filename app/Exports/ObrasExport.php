@@ -4,17 +4,7 @@ namespace App\Exports;
 
 use App\Services\Obras\ReporteObrasService;
 use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithColumnFormatting;
-use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithStyles;
-use PhpOffice\PhpSpreadsheet\Cell\Cell;
-use PhpOffice\PhpSpreadsheet\Cell\DataType;
-use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-
-class ObrasExport extends DefaultValueBinder implements FromCollection, WithHeadings, WithColumnFormatting, WithStyles, WithCustomValueBinder
+class ObrasExport
 {
     public function __construct(private Collection $obras) {}
 
@@ -42,29 +32,20 @@ class ObrasExport extends DefaultValueBinder implements FromCollection, WithHead
         });
     }
 
-    public function bindValue(Cell $cell, $value): bool
+    public function escribirCsv($archivo): void
     {
-        if (is_string($value)) {
-            $cell->setValueExplicit($value, DataType::TYPE_STRING);
-            return true;
+        fwrite($archivo, "\xEF\xBB\xBF");
+        fputcsv($archivo, $this->headings(), ',', '"', '');
+
+        foreach ($this->collection() as $fila) {
+            $fila = array_map(function ($valor) {
+                if (is_string($valor) && preg_match('/^[\s\x00-\x1F]*[=+\-@]/u', $valor)) {
+                    return "'" . $valor;
+                }
+
+                return $valor;
+            }, $fila);
+            fputcsv($archivo, $fila, ',', '"', '');
         }
-
-        return parent::bindValue($cell, $value);
-    }
-
-    public function columnFormats(): array
-    {
-        return array_fill_keys(['F', 'G', 'H', 'I', 'J'], '#,##0.00');
-    }
-
-    public function styles(Worksheet $sheet): array
-    {
-        foreach (range('A', 'L') as $column) {
-            $sheet->getColumnDimension($column)->setAutoSize(true);
-        }
-        $sheet->freezePane('A2');
-        $sheet->setAutoFilter($sheet->calculateWorksheetDimension());
-
-        return [1 => ['font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => '0B265A']]]];
     }
 }

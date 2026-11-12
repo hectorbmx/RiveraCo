@@ -64,9 +64,9 @@
             Filtrar
         </button>
         <a href="{{ route('obras.index') }}" class="px-4 py-2 rounded-xl text-sm border border-white/25 bg-white/10 text-white hover:bg-white/20 shadow-sm">Limpiar</a>
-        <button type="submit" name="exportar" value="xlsx" class="inline-flex items-center gap-2 whitespace-nowrap rounded-xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm hover:bg-emerald-50">
+        <button type="submit" name="exportar" value="csv" class="inline-flex items-center gap-2 whitespace-nowrap rounded-xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm hover:bg-emerald-50">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg>
-            Exportar a Excel
+            Exportar CSV
         </button>
     </div>
 </x-filters.card>
