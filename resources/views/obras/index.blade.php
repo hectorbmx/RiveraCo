@@ -27,7 +27,7 @@
 @endphp
 
 <x-filters.card action="{{ route('obras.index') }}" class="mb-6">
-    <div class="md:col-span-7">
+    <div class="md:col-span-4">
         <x-filters.input
             name="search"
             label="Buscar"
@@ -37,8 +37,8 @@
             glow />
     </div>
 
-    <div class="md:col-start-9 md:col-span-2 flex justify-end">
-        <div class="w-full md:max-w-48">
+    <div class="md:col-span-2">
+        <div class="w-full">
             <x-filters.select
                 name="status"
                 label="Estatus"
@@ -48,8 +48,8 @@
         </div>
     </div>
 
-    <div class="md:col-start-11 md:col-span-2 flex justify-end">
-        <div class="w-full md:max-w-52">
+    <div class="md:col-span-2">
+        <div class="w-full">
             <x-filters.select
                 name="area_id"
                 label="Área"
@@ -59,14 +59,12 @@
         </div>
     </div>
 
-    <div class="md:col-start-13 md:col-span-2 flex justify-end">
-        <x-filters.actions
-            submit-label="Filtrar"
-            clear-url="{{ route('obras.index') }}"
-            span="w-full" />
-    </div>
-    <div class="md:col-span-full flex justify-end">
-        <button type="submit" name="exportar" value="xlsx" class="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-2 font-semibold text-emerald-700 shadow-sm hover:bg-emerald-50">
+    <div class="md:col-span-4 flex flex-wrap items-center gap-2 md:justify-end">
+        <button type="submit" class="bg-[#FFC107] text-[#0B265A] font-semibold px-4 py-2 rounded-xl text-sm hover:opacity-90 shadow-sm">
+            Filtrar
+        </button>
+        <a href="{{ route('obras.index') }}" class="px-4 py-2 rounded-xl text-sm border border-white/25 bg-white/10 text-white hover:bg-white/20 shadow-sm">Limpiar</a>
+        <button type="submit" name="exportar" value="xlsx" class="inline-flex items-center gap-2 whitespace-nowrap rounded-xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm hover:bg-emerald-50">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg>
             Exportar a Excel
         </button>
