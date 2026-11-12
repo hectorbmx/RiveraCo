@@ -1,0 +1,70 @@
+<?php
+
+namespace App\Exports;
+
+use App\Services\Obras\ReporteObrasService;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+
+class ObrasExport extends DefaultValueBinder implements FromCollection, WithHeadings, WithColumnFormatting, WithStyles, WithCustomValueBinder
+{
+    public function __construct(private Collection $obras) {}
+
+    public function headings(): array
+    {
+        return ['Clave', 'Nombre', 'Cliente', 'Máquinas asignadas', 'Estatus', 'Valor obra', 'Facturado', 'Cobrado', 'Gastado', 'Por facturar', 'Avance financiero (%)', 'Avance de obra (%)'];
+    }
+
+    public function collection(): Collection
+    {
+        $reporte = app(ReporteObrasService::class);
+
+        return $this->obras->map(function ($obra) use ($reporte) {
+            $indicadores = $reporte->indicadores($obra);
+            $maquinas = $obra->maquinasAsignadas->filter(fn ($asignacion) => $asignacion->maquina)
+                ->map(fn ($asignacion) => collect([$asignacion->maquina->nombre, $asignacion->maquina->codigo, $asignacion->maquina->modelo])->filter()->join(' · '))
+                ->join(', ');
+
+            return [
+                $obra->clave_obra, $obra->nombre, $obra->cliente?->nombre_comercial,
+                $maquinas ?: 'Sin máquina', $obra->estatus_label,
+                $indicadores['valorObra'], $indicadores['facturado'], $indicadores['cobrado'],
+                $indicadores['gastado'], $indicadores['porFacturar'], $indicadores['avancePct'], $indicadores['avancePilasPct'],
+            ];
+        });
+    }
+
+    public function bindValue(Cell $cell, $value): bool
+    {
+        if (is_string($value)) {
+            $cell->setValueExplicit($value, DataType::TYPE_STRING);
+            return true;
+        }
+
+        return parent::bindValue($cell, $value);
+    }
+
+    public function columnFormats(): array
+    {
+        return array_fill_keys(['F', 'G', 'H', 'I', 'J'], '#,##0.00');
+    }
+
+    public function styles(Worksheet $sheet): array
+    {
+        foreach (range('A', 'L') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+        $sheet->freezePane('A2');
+        $sheet->setAutoFilter($sheet->calculateWorksheetDimension());
+
+        return [1 => ['font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => '0B265A']]]];
+    }
+}

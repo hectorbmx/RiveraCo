@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 
 use Illuminate\Http\Request;
+use App\Exports\ObrasExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Collection;
 use App\Models\Obra;
 use App\Models\Cliente;
@@ -76,14 +78,11 @@ class ObraController extends Controller
         $search = $request->query('search');
         $status = $request->query('status');
         $areaId = $request->query('area_id');
-        $kpisObras = auth()->user()?->hasRole('super-admin')
-            ? $this->kpisObrasEjecutivos()
-            : null;
 
         $statusMap = Obra::estatusSlugs();
         $areas = Area::orderBy('nombre')->get();
 
-        $obras = Obra::with([
+        $consultaObras = Obra::with([
             'cliente',
             'responsable',
             'area',
@@ -129,7 +128,16 @@ class ObraController extends Controller
                 $query->where('area_id', $areaId);
             })
             ->orderBy('created_at', 'desc')
-            ->paginate(20)
+            ->orderByDesc('id');
+
+        if ($request->query('exportar') === 'xlsx') {
+            return Excel::download(new ObrasExport($consultaObras->get()), 'obras-' . now()->format('Y-m-d') . '.xlsx');
+        }
+
+        $obrasParaResumen = (clone $consultaObras)->setEagerLoads([])->get(['id', 'estatus_nuevo', 'tipo_obra']);
+        $kpisObras = app(\App\Services\Obras\ReporteObrasService::class)->resumen($obrasParaResumen);
+
+        $obras = $consultaObras->paginate(20)
             ->withQueryString();
 
         return view('obras.index', compact('obras', 'search', 'status', 'areaId', 'kpisObras', 'areas'));

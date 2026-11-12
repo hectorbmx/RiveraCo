@@ -65,47 +65,36 @@
             clear-url="{{ route('obras.index') }}"
             span="w-full" />
     </div>
-</x-filters.card>
-{{--
-KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtros.
-
-@if($kpisObras)
-    @php
-        $money = fn ($value) => '$' . number_format((float) $value, 2);
-    @endphp
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 mb-6">
-        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <div class="text-xs font-semibold text-slate-500 uppercase">Obras en ejecución</div>
-            <div class="mt-2 text-2xl font-bold text-[#0B265A]">{{ number_format($kpisObras['obras_ejecucion']) }}</div>
-            <div class="mt-1 text-xs text-slate-500">Activas actualmente</div>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <div class="text-xs font-semibold text-slate-500 uppercase">Monto vendido</div>
-            <div class="mt-2 text-2xl font-bold text-[#0B265A]">{{ $money($kpisObras['monto_vendido']) }}</div>
-            <div class="mt-1 text-xs text-slate-500">Obras en ejecución</div>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <div class="text-xs font-semibold text-slate-500 uppercase">Facturado</div>
-            <div class="mt-2 text-2xl font-bold text-[#0B265A]">{{ $money($kpisObras['monto_facturado']) }}</div>
-            <div class="mt-1 text-xs text-slate-500">Facturas ligadas a obra</div>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <div class="text-xs font-semibold text-slate-500 uppercase">Cobrado</div>
-            <div class="mt-2 text-2xl font-bold text-emerald-700">{{ $money($kpisObras['monto_cobrado']) }}</div>
-            <div class="mt-1 text-xs text-slate-500">Pagos registrados</div>
-        </div>
-
-        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <div class="text-xs font-semibold text-slate-500 uppercase">Pendiente por cobrar</div>
-            <div class="mt-2 text-2xl font-bold text-amber-700">{{ $money($kpisObras['pendiente_cobrar']) }}</div>
-            <div class="mt-1 text-xs text-slate-500">Facturado menos cobrado</div>
-        </div>
+    <div class="md:col-span-full flex justify-end">
+        <button type="submit" name="exportar" value="xlsx" class="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-2 font-semibold text-emerald-700 shadow-sm hover:bg-emerald-50">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg>
+            Exportar a Excel
+        </button>
     </div>
-@endif
---}}
+</x-filters.card>
+<details open class="mb-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-[#0B265A]">
+        <span>Resumen de obras <span class="ml-1 font-normal text-slate-500">· Según los filtros aplicados</span></span>
+        <span class="text-xs font-medium text-slate-500">Mostrar / ocultar ▾</span>
+    </summary>
+    <div class="grid grid-cols-2 gap-2 border-t border-slate-100 p-3 md:grid-cols-4">
+        @foreach([
+            ['En ejecución', number_format($kpisObras['ejecucion']), 'text-blue-700'],
+            ['Terminadas', number_format($kpisObras['terminadas']), 'text-emerald-700'],
+            ['Obras Pilas', number_format($kpisObras['pilas']), 'text-[#0B265A]'],
+            ['Obras Pozos', number_format($kpisObras['pozos']), 'text-[#0B265A]'],
+            ['Facturado', '$' . number_format($kpisObras['facturado'], 2), 'text-blue-700'],
+            ['Cobrado', '$' . number_format($kpisObras['cobrado'], 2), 'text-emerald-700'],
+            ['Por cobrar', '$' . number_format($kpisObras['por_cobrar'], 2), 'text-amber-700'],
+        ] as [$etiqueta, $valor, $color])
+            <div class="min-w-0 rounded-lg bg-slate-50 px-3 py-2">
+                <div class="text-xs font-medium text-slate-500">{{ $etiqueta }}</div>
+                <div class="mt-0.5 break-words text-base font-bold {{ $color }}">{{ $valor }}</div>
+            </div>
+        @endforeach
+    </div>
+</details>
+
 
 <div class="bg-white rounded-2xl shadow p-6">
 
@@ -168,55 +157,12 @@ KPIs ejecutivos comentados temporalmente mientras se homologa la vista de filtro
             <tbody>
                 @forelse($obras as $obra)
                     @php
-                        $valorObra = (float) ($obra->monto_contratado ?? 0);
-
-                        $facturasSat = \App\Models\SatFactura::query()
-                            ->where('obra_id', $obra->id)
-                            ->whereNotNull('uuid')
-                            ->where(function ($query) {
-                                $query->whereNull('estado')
-                                    ->orWhere('estado', '!=', 'cancelada');
-                            })
-                            ->get(['uuid', 'total'])
-                            ->map(fn ($factura) => [
-                                'uuid' => strtoupper((string) ($factura->uuid ?? '')),
-                                'total' => (float) ($factura->total ?? 0),
-                            ])
-                            ->filter(fn ($factura) => $factura['uuid'] !== '')
-                            ->unique('uuid')
-                            ->sum('total');
-
-                        $cfdisSat = \App\Models\SatCfdi::query()
-                            ->where('obra_id', $obra->id)
-                            ->whereNotNull('uuid')
-                            ->get(['uuid', 'total'])
-                            ->map(fn ($cfdi) => [
-                                'uuid' => strtoupper((string) ($cfdi->uuid ?? '')),
-                                'total' => (float) ($cfdi->total ?? 0),
-                            ])
-                            ->filter(fn ($cfdi) => $cfdi['uuid'] !== '')
-                            ->unique('uuid')
-                            ->sum('total');
-
-                        $facturado = (float) \App\Models\ObraFactura::where('obra_id', $obra->id)
-                            ->where('estado', '!=', 'cancelada')
-                            ->sum('monto') + $facturasSat + $cfdisSat;
-                        $cobrado = (float) \App\Models\ObraFacturaPago::where('obra_id', $obra->id)->sum('monto');
-                        $gastado = (float) \App\Models\OrdenCompra::where('obra_id', $obra->id)
-                            ->whereNotIn('estado', ['cancelada'])
-                            ->sum('total');
-                        $porFacturar = max(0, $valorObra - $facturado);
-                        $porCobrar = max(0, $facturado - $cobrado);
-                        $avancePct = $valorObra > 0 ? min(100, round(($facturado / $valorObra) * 100)) : 0;
-
-                        $pilasProgramadas = (int) $obra->pilas()->sum('cantidad_programada');
-                        $pilasEjecutadas = (float) $obra->pilas()
-                            ->withSum('detallesComision as cantidad_ejecutada', 'cantidad')
-                            ->get()
-                            ->sum('cantidad_ejecutada');
-                        $avancePilasPct = $pilasProgramadas > 0
-                            ? min(100, round(($pilasEjecutadas / $pilasProgramadas) * 100))
-                            : 0;
+                        [
+                            'valorObra' => $valorObra, 'facturado' => $facturado,
+                            'cobrado' => $cobrado, 'gastado' => $gastado,
+                            'porFacturar' => $porFacturar, 'avancePct' => $avancePct,
+                            'avancePilasPct' => $avancePilasPct,
+                        ] = app(\App\Services\Obras\ReporteObrasService::class)->indicadores($obra);
 
                         $money = fn ($value) => '$' . number_format((float) $value, 2);
                     @endphp

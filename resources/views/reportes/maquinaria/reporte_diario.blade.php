@@ -14,6 +14,9 @@
     <div>
         <h1 class="text-2xl font-semibold text-gray-900">Reporte diario de maquinaria</h1>
         <p class="text-sm text-gray-600">Fecha: {{ $fecha }}</p>
+        @if($fecha !== now()->toDateString())
+            <p class="text-sm text-amber-700">La ubicación, asignación y horómetro corresponden al estado actual, no a la fecha consultada.</p>
+        @endif
     </div>
 
     <div class="flex items-center gap-2">
@@ -44,18 +47,21 @@
                 <thead class="bg-gray-50 text-gray-700">
                     <tr>
                         <th class="text-left px-3 py-3 whitespace-nowrap">#</th>    
-                        <th class="text-left px-4 py-3 whitespace-nowrap">Obra</th>
+                        <th class="text-left px-4 py-3 whitespace-nowrap">Obra asignada</th>
+                        <th class="text-left px-4 py-3 whitespace-nowrap">Ubicación física</th>
+                        <th class="text-left px-4 py-3 whitespace-nowrap">Estado de máquina</th>
                         <th class="text-left px-4 py-3 whitespace-nowrap">Residente</th>
                         <th class="text-left px-4 py-3 whitespace-nowrap">Pilas x Obra</th>
                         <th class="text-left px-4 py-3 whitespace-nowrap">Hechas</th>
                         <th class="text-left px-4 py-3 whitespace-nowrap">Avance</th>
-                        <th class="text-left px-4 py-3 whitespace-nowrap">horoInicio</th>
-                        <th class="text-left px-4 py-3 whitespace-nowrap">trabajadas</th>
+                        <th class="text-left px-4 py-3 whitespace-nowrap">Horómetro inicial</th>
+                        <th class="text-left px-4 py-3 whitespace-nowrap">Horómetro actual</th>
+                        <th class="text-left px-4 py-3 whitespace-nowrap">Horas en asignación</th>
                         <th class="text-left px-4 py-3 whitespace-nowrap">Equipo</th>
                         <th class="text-left px-4 py-3 whitespace-nowrap">Cliente</th>
                         <th class="text-left px-4 py-3 whitespace-nowrap">Pagado</th>
                         <th class="text-left px-4 py-3 whitespace-nowrap">Observaciones</th>
-                        <th class="text-left px-4 py-3 whitespace-nowrap">Estado</th>
+                        <th class="text-left px-4 py-3 whitespace-nowrap">Reporte diario</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y">
@@ -63,7 +69,7 @@
                         <tr class="hover:bg-gray-50">
                             <td class="px-4 py-3 whitespace-nowrap">{{ $r['maquina_codigo'] }}</td>    
                             <td class="px-4 py-3 whitespace-nowrap">
-                                @if(!empty($r['obra_id']))
+                                @if(!empty($r['obra_id']) && !$r['obra_no_disponible'])
                                     <a href="{{ route('obras.edit', $r['obra_id']) }}"
                                     class="text-blue-600 hover:text-blue-800 font-medium">
                                         {{ $r['obra_nombre'] }}
@@ -73,7 +79,18 @@
                                         {{ $r['obra_nombre'] }}
                                     </span>
                                 @endif
+                                @if($r['requiere_revision'])
+                                    <div class="text-amber-700 text-xs font-semibold">Requiere revisión</div>
+                                    @if($r['asignaciones_abiertas']->count() > 1)
+                                        <div class="text-amber-700 text-xs">Varias asignaciones abiertas; las demás columnas corresponden a la más reciente:</div>
+                                    @endif
+                                    @foreach($r['asignaciones_abiertas'] as $asignacion)
+                                        <div class="text-xs text-gray-600">{{ $asignacion['nombre'] }}@if($asignacion['motivo']) ({{ $asignacion['motivo'] }})@endif</div>
+                                    @endforeach
+                                @endif
                             </td>
+                            <td class="px-4 py-3 whitespace-nowrap">{{ $r['ubicacion'] }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap">{{ $r['estado_maquina'] }}</td>
 
                             <td class="px-4 py-3 whitespace-nowrap">{{ $r['residente_nombre'] }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-center">{{ $r['pilas_programadas'] }}</td>
@@ -94,7 +111,8 @@
                                     </span>
                                 </div>
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap">{{ $r['horometro_inicio'] }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap">{{ $r['horometro_inicio'] ?? '—' }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap">{{ $r['horometro_actual'] ?? '—' }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-center">{{ $r['horas_trabajadas'] }}</td>
                             <td class="px-4 py-3 min-w-[170px]">
                                 @php $equipo = $r['equipo'] ?? collect(); @endphp
@@ -159,7 +177,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="13" class="px-4 py-6 text-center text-gray-500">
+                            <td colspan="16" class="px-4 py-6 text-center text-gray-500">
                                 No hay máquinas activas asignadas para este reporte.
                             </td>
                         </tr>

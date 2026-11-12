@@ -7,6 +7,7 @@ use App\Models\Maquina;
 use App\Models\MaquinaReporteDiario;
 use App\Models\MaquinariaReporteSnapshot;
 use App\Models\MaquinariaReporteSnapshotItem;
+use App\Services\Maquinas\MaquinaHorometroService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -54,11 +55,13 @@ class MaquinasReporteDiarioController extends Controller
                 ->select('obra_id', DB::raw('SUM(COALESCE(monto,0)) as monto_cobrado'))
                 ->groupBy('obra_id');
 
+        $ultimaAsignacion = DB::table('obra_maquina')
+            ->where('estado', 'activa')->whereNull('fecha_fin')
+            ->selectRaw('maquina_id, MAX(id) as asignacion_id')->groupBy('maquina_id');
+
         $asignaciones = DB::table('maquinas as m')
-            ->leftJoin('obra_maquina as om', function ($join) {
-                $join->on('om.maquina_id', '=', 'm.id')
-                    ->where('om.estado', '=', 'activa');
-            })
+            ->leftJoinSub($ultimaAsignacion, 'om_actual', fn ($join) => $join->on('om_actual.maquina_id', '=', 'm.id'))
+            ->leftJoin('obra_maquina as om', 'om.id', '=', 'om_actual.asignacion_id')
             ->leftJoin('obras as o', 'o.id', '=', 'om.obra_id')
             ->leftJoinSub($cobradoPorObra, 'co', function ($join) {
                     $join->on('co.obra_id', '=', 'o.id');
@@ -72,7 +75,6 @@ class MaquinasReporteDiarioController extends Controller
                     $join->on('pe.obra_id', '=', 'o.id');
                 })
 
-            ->leftJoin('obras_pilas as op', 'op.obra_id', '=', 'o.id')
             //agregar la columna de la hora inicial
 
             ->leftJoin('obra_empleado as oe', function ($join) use ($rolResidenteId) {
@@ -115,9 +117,9 @@ class MaquinasReporteDiarioController extends Controller
                     END as avance_global_pct
                 "),
 
-                DB::raw("COALESCE(o.nombre, 'LA GIRALDA') as obra_nombre"),
+                DB::raw("COALESCE(o.nombre, 'Sin asignación') as obra_nombre"),
                 'o.cliente_id',
-                DB::raw("COALESCE(CONCAT(e.nombre,' ',IFNULL(e.Apellidos,'')), '') as residente_nombre"),
+                DB::raw("GROUP_CONCAT(DISTINCT NULLIF(TRIM(CONCAT(e.nombre, ' ', IFNULL(e.Apellidos, ''))), '') SEPARATOR ' / ') as residente_nombre"),
                 // DB::raw('COALESCE(SUM(op.cantidad_programada), 0) as pilas_programadas'),
 
                         'm.nombre as maquina_nombre',
@@ -157,8 +159,6 @@ class MaquinasReporteDiarioController extends Controller
                 'om.horometro_fin',
                 'o.nombre',
                 'o.cliente_id',
-                'e.nombre',
-                'e.Apellidos',
                 'm.nombre',
                 'm.codigo',
                 'm.placas',
@@ -220,7 +220,7 @@ class MaquinasReporteDiarioController extends Controller
 
         // Si no hay asignaciones, retornamos vacío
         if ($keys->isEmpty()) {
-            return view('reportes.maquinaria.reporte_diario', [
+            return view($request->boolean('embed') ? 'reportes.maquinaria.reporte_diario_embed' : 'reportes.maquinaria.reporte_diario', [
                 'fecha' => $fecha,
                 'rows'  => collect(),
             ]);
@@ -246,8 +246,25 @@ class MaquinasReporteDiarioController extends Controller
         /**
          * Armar filas para la vista.
          */
-        $rows = $asignaciones->map(function ($a) use ($fecha, $mrdHoy, $prev, $equipoPorObra) {
+        $maquinas = Maquina::with(['asignacionesAbiertas.obra' => fn ($query) => $query->withTrashed()])->get()->keyBy('id');
+        $horometros = app(MaquinaHorometroService::class);
+        $rows = $asignaciones->map(function ($a) use ($fecha, $mrdHoy, $prev, $equipoPorObra, $maquinas, $horometros) {
             $k = $a->obra_id.'-'.$a->maquina_id;
+
+            $maquina = $maquinas->get($a->maquina_id);
+            $abiertas = $maquina->asignacionesAbiertas;
+            $obrasAbiertas = $abiertas->map(function ($asignacion) {
+                $obra = $asignacion->obra;
+                $invalida = ! $obra || $obra->trashed() || in_array($obra->estatus_nuevo, [Obra::ESTATUS_TERMINADA, Obra::ESTATUS_CANCELADA], true);
+                return [
+                    'nombre' => $obra?->nombre ?? 'Obra no disponible',
+                    'invalida' => $invalida,
+                    'motivo' => ! $obra || $obra->trashed() ? 'eliminada o no disponible' : ($invalida ? 'terminada o cancelada' : null),
+                ];
+            });
+            $revision = $abiertas->count() > 1 || $obrasAbiertas->contains('invalida', true)
+                || ($abiertas->isNotEmpty() && $maquina->ubicacion === Maquina::UBIC_EN_PATIO)
+                || ($abiertas->isEmpty() && $maquina->ubicacion === Maquina::UBIC_EN_OBRA);
 
             $hoy = $mrdHoy->get($k);
             $last = $prev->get($k);
@@ -259,6 +276,23 @@ class MaquinasReporteDiarioController extends Controller
 
                 'obra_id' => $a->obra_id,
                 'obra_nombre' => $a->obra_nombre,
+                'asignaciones_abiertas' => $obrasAbiertas,
+                'requiere_revision' => $revision,
+                'obra_no_disponible' => $obrasAbiertas->first()['invalida'] ?? false,
+                'ubicacion' => match ($maquina->ubicacion) {
+                    Maquina::UBIC_EN_PATIO => 'En patio',
+                    Maquina::UBIC_EN_OBRA => 'En obra',
+                    Maquina::UBIC_EN_CAMINO => 'En camino',
+                    Maquina::UBIC_EN_REPARACION => 'En reparación',
+                    default => 'Sin ubicación registrada',
+                },
+                'estado_maquina' => match ($maquina->estado) {
+                    Maquina::ESTADO_OPERATIVA => 'Operativa',
+                    Maquina::ESTADO_FUERA_SERVICIO, 'fuera_de_servicio' => 'Fuera de servicio',
+                    Maquina::ESTADO_BAJA_DEFINITIVA => 'Baja definitiva',
+                    Maquina::ESTADO_EN_REPARACION => 'En reparación',
+                    default => $maquina->estado ?: 'Sin estado',
+                },
                 'cliente_id' => $a->cliente_id,
                 'maquina_id' => $a->maquina_id,
                 'maquina_nombre' => $a->maquina_nombre,
@@ -268,7 +302,7 @@ class MaquinasReporteDiarioController extends Controller
                 'placas' => $a->placas,
                 'color' => $a->color,
 
-                'horometro_actual' => $a->horometro_actual ?? null,
+                'horometro_actual' => $horometros->horometroActual($maquina),
                 'horas_trabajadas' => (float) ($a->horas_trabajadas ?? 0),
 
                 
