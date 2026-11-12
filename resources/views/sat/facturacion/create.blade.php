@@ -136,6 +136,9 @@
                                        autocomplete="off"
                                        class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
 
+                                <p x-show="clienteId" x-cloak class="mt-1 text-xs text-emerald-700"
+                                   x-text="'Régimen fiscal: ' + regimenCliente()"></p>
+
                                 <div x-show="clienteOpen"
                                      x-cloak
                                      class="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
@@ -1119,6 +1122,9 @@
             'id' => (string) $cliente->id,
             'nombre' => $nombre,
             'rfc' => $cliente->rfc,
+            'regimen_fiscal' => $cliente->regimen_fiscal
+                ? (config('sat_catalogs.regimenes_fiscales')[$cliente->regimen_fiscal] ?? $cliente->regimen_fiscal)
+                : 'Sin registrar',
             'search' => trim($nombre . ' ' . $cliente->rfc),
         ];
     })->values();
@@ -1244,6 +1250,10 @@ function facturaForm() {
             setTimeout(() => {
                 this.loadingTimbrar = false;
             }, 1500);
+        },
+
+        regimenCliente() {
+            return this.clientes.find((cliente) => cliente.id === this.clienteId)?.regimen_fiscal || 'Sin registrar';
         },
 
         clientesFiltrados() {
