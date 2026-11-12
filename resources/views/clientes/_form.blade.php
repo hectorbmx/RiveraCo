@@ -73,6 +73,7 @@
             '603' => '603 - Personas Morales con Fines no Lucrativos',
             '605' => '605 - Sueldos y Salarios e Ingresos Asimilados a Salarios',
             '606' => '606 - Arrendamiento',
+            '611' => '611 - Ingresos por Dividendos (socios y accionistas)',
             '612' => '612 - Personas Físicas con Actividades Empresariales y Profesionales',
             '616' => '616 - Sin obligaciones fiscales',
             '621' => '621 - Incorporación Fiscal',
