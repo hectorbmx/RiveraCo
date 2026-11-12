@@ -59,6 +59,7 @@
 
     <form method="POST"
           action="{{ route('sat.facturacion.store') }}"
+          data-no-loading="true"
           @submit="handleSubmit($event)">
 
         @csrf
@@ -1082,6 +1083,7 @@
 </div>
 
 <div x-show="loadingTimbrar"
+     x-cloak
      x-transition.opacity
      class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
 
@@ -1176,9 +1178,6 @@ function facturaForm() {
             window.addEventListener('pageshow', () => {
                 this.loadingTimbrar = false;
             });
-            window.addEventListener('focus', () => {
-                this.loadingTimbrar = false;
-            });
 
             this.conceptosSeleccionados = (this.conceptosSeleccionados || []).map((item) => ({
                 id: item.id ?? item.sat_concepto_id ?? null,
@@ -1227,29 +1226,11 @@ function facturaForm() {
             const formAction = submitter?.getAttribute?.('formaction') || '';
 
             if (action === 'preview' || action === 'borrador' || formAction.includes('preview')) {
-                this.resetLoadingTimbrarSoon();
+                this.loadingTimbrar = false;
                 return;
             }
 
             this.loadingTimbrar = action === 'timbrar';
-        },
-
-        resetLoadingTimbrarSoon() {
-            this.loadingTimbrar = false;
-
-            if (window.queueMicrotask) {
-                queueMicrotask(() => {
-                    this.loadingTimbrar = false;
-                });
-            }
-
-            setTimeout(() => {
-                this.loadingTimbrar = false;
-            }, 500);
-
-            setTimeout(() => {
-                this.loadingTimbrar = false;
-            }, 1500);
         },
 
         regimenCliente() {
