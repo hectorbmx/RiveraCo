@@ -117,6 +117,7 @@
         <th class="py-3 px-3 text-right">Cobrado</th>
         <th class="py-3 px-3 text-right">Gastado</th>
         <th class="py-3 px-3 text-right">Por facturar</th>
+        <th class="py-3 px-3 text-center">Perforaciones</th>
 
         <!-- Columna Avance con ícono de ordenamiento y enlace dinámico -->
         <th class="py-3 px-3 text-center">
@@ -159,6 +160,7 @@
                             'valorObra' => $valorObra, 'facturado' => $facturado,
                             'cobrado' => $cobrado, 'gastado' => $gastado,
                             'porFacturar' => $porFacturar, 'avancePct' => $avancePct,
+                            'pilasProgramadas' => $pilasProgramadas, 'pilasEjecutadas' => $pilasEjecutadas,
                             'avancePilasPct' => $avancePilasPct,
                         ] = app(\App\Services\Obras\ReporteObrasService::class)->indicadores($obra);
 
@@ -240,6 +242,11 @@
                             {{ $money($porFacturar) }}
                         </td>
 
+                        <td class="py-3 px-2 text-center whitespace-nowrap">
+                            <div class="text-xs text-slate-500">Programadas: <span class="font-semibold text-slate-700">{{ number_format($pilasProgramadas) }}</span></div>
+                            <div class="text-xs text-slate-500">Ejecutadas: <span class="font-semibold text-emerald-700">{{ rtrim(rtrim(number_format($pilasEjecutadas, 3, '.', ','), '0'), '.') }}</span></div>
+                        </td>
+
                         <td class="py-3 px-2">
                             <div class="min-w-[140px] space-y-2">
                                 <div class="space-y-1">
@@ -285,7 +292,7 @@
 
                 @empty
                     <tr>
-                        <td colspan="11" class="py-6 text-center text-slate-500">
+                        <td colspan="13" class="py-6 text-center text-slate-500">
                             No hay obras registradas aún.
                         </td>
                     </tr>

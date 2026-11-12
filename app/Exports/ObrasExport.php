@@ -10,7 +10,7 @@ class ObrasExport
 
     public function headings(): array
     {
-        return ['Clave', 'Nombre', 'Cliente', 'Máquinas asignadas', 'Estatus', 'Valor obra', 'Facturado', 'Cobrado', 'Gastado', 'Por facturar', 'Avance financiero (%)', 'Avance de obra (%)'];
+        return ['Clave', 'Nombre', 'Cliente', 'Máquinas asignadas', 'Estatus', 'Valor obra', 'Facturado', 'Cobrado', 'Gastado', 'Por facturar', 'Perforaciones programadas', 'Perforaciones ejecutadas', 'Avance financiero (%)', 'Avance de obra (%)'];
     }
 
     public function collection(): Collection
@@ -27,7 +27,7 @@ class ObrasExport
                 $obra->clave_obra, $obra->nombre, $obra->cliente?->nombre_comercial,
                 $maquinas ?: 'Sin máquina', $obra->estatus_label,
                 $indicadores['valorObra'], $indicadores['facturado'], $indicadores['cobrado'],
-                $indicadores['gastado'], $indicadores['porFacturar'], $indicadores['avancePct'], $indicadores['avancePilasPct'],
+                $indicadores['gastado'], $indicadores['porFacturar'], $indicadores['pilasProgramadas'], $indicadores['pilasEjecutadas'], $indicadores['avancePct'], $indicadores['avancePilasPct'],
             ];
         });
     }

@@ -103,6 +103,6 @@ class ReporteObrasService
             ? min(100, round(($pilasEjecutadas / $pilasProgramadas) * 100))
             : 0;
 
-        return compact('valorObra', 'facturado', 'cobrado', 'gastado', 'porFacturar', 'avancePct', 'avancePilasPct');
+        return compact('valorObra', 'facturado', 'cobrado', 'gastado', 'porFacturar', 'pilasProgramadas', 'pilasEjecutadas', 'avancePct', 'avancePilasPct');
     }
 }
