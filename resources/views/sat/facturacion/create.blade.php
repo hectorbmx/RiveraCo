@@ -487,8 +487,8 @@
 
                         <table class="w-full text-sm">
 
-                            <thead class="bg-slate-50 border-b border-slate-200">
-                                <tr>
+                            <thead class="bg-[#0B265A] border-b border-[#0B265A] text-white">
+                                <tr class="text-white uppercase text-xs tracking-wide">
                                     <th class="px-4 py-3 text-left">Descripción</th>
                                     <th class="px-4 py-3 text-right">Cant.</th>
                                     <th class="px-4 py-3 text-right">P.U.</th>
@@ -1023,8 +1023,7 @@
      x-cloak
      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
 
-    <div @click.away="closeEditDesc()"
-         class="w-full max-w-2xl rounded-2xl bg-white shadow-xl border border-slate-200 flex flex-col">
+    <div class="w-full max-w-2xl rounded-2xl bg-white shadow-xl border border-slate-200 flex flex-col">
 
         <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
             <div>

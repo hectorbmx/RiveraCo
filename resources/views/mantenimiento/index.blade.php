@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="max-w-6xl mx-auto py-8">
+    <div class="max-w-8xl mx-auto py-8">
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h1 class="text-2xl font-semibold text-slate-800">Mantenimientos</h1>
@@ -22,19 +22,19 @@
             </div>
         @endif
 
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead class="bg-[#0B265A] text-white">
                     <tr>
-                        <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">ID</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Activo</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Tipo</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Categoria</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Mecanico</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Estatus</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Lectura</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500">Fecha del servicio</th>
-                        <th class="px-4 py-2 text-right text-xs font-semibold text-slate-500">Acciones</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold text-white">ID</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold text-white">Activo</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold text-white">Tipo</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold text-white">Categoría</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold text-white">Mecánico</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold text-white">Estatus</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold text-white">Lectura</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold text-white">Fecha del servicio</th>
+                        <th class="px-4 py-2 text-right text-xs font-semibold text-white">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>

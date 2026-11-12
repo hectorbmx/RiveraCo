@@ -58,49 +58,48 @@
         span="md:col-span-3" />
 </x-filters.card>
 {{-- TABLA --}}
-<div class="bg-white rounded-2xl shadow p-6">
-
-    @if (session('success'))
-        <div class="mb-4 p-3 rounded-lg bg-green-100 text-green-700 text-sm">
-            {{ session('success') }}
-        </div>
-    @endif
+@if (session('success'))
+    <div class="mb-4 p-3 rounded-lg bg-green-100 text-green-700 text-sm">
+        {{ session('success') }}
+    </div>
+@endif
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
 
     <div class="overflow-x-auto">
         <table class="w-full min-w-[820px] text-sm">
-            <thead class="bg-[#0B265A] text-white">
-                <tr class="font-medium">
-                    <th class="py-3 px-2 text-left">Nombre Comercial</th>
-                    <th class="py-3 px-2 text-left">Razon Social</th>
-                    <th class="py-3 px-2 text-left">RFC</th>
-                    <th class="py-3 px-2 text-left">Telefono</th>
-                    <th class="py-3 px-2 text-left">Activo</th>
-                    <th class="py-3 px-2 text-left">Docs obligatorios</th>
-                    <th class="py-3 px-2 text-right">Acciones</th>
+            <thead class="bg-[#0B265A] border-b border-[#0B265A] text-white">
+                <tr class="text-white uppercase text-xs tracking-wide">
+                    <th class="px-5 py-4 text-left">Nombre comercial</th>
+                    <th class="px-5 py-4 text-left">Razón social</th>
+                    <th class="px-5 py-4 text-left">RFC</th>
+                    <th class="px-5 py-4 text-left">Teléfono</th>
+                    <th class="px-5 py-4 text-left">Activo</th>
+                    <th class="px-5 py-4 text-left">Docs obligatorios</th>
+                    <th class="px-5 py-4 text-right">Acciones</th>
                 </tr>
             </thead>
 
-            <tbody>
+            <tbody class="divide-y divide-slate-100">
                 @forelse($clientes as $cliente)
-                    <tr class="border-b hover:bg-slate-50">
-                        <td class="py-3 px-2">
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-5 py-4">
                             @if($cliente->nombre_comercial)
                                 <a href="{{ route('clientes.edit', $cliente) }}" class="font-semibold text-blue-700 hover:text-blue-900 hover:underline">{{ $cliente->nombre_comercial }}</a>
                             @else
                                 <span class="text-slate-400">—</span>
                             @endif
                         </td>
-                        <td class="py-3 px-2">
+                        <td class="px-5 py-4">
                             @if($cliente->razon_social)
                                 <a href="{{ route('clientes.edit', $cliente) }}" class="font-semibold text-blue-700 hover:text-blue-900 hover:underline">{{ $cliente->razon_social }}</a>
                             @else
                                 <span class="text-slate-400">—</span>
                             @endif
                         </td>
-                        <td class="py-3 px-2">{{ $cliente->rfc ?? '-' }}</td>
-                        <td class="py-3 px-2">{{ $cliente->telefono ?? '-' }}</td>
+                        <td class="px-5 py-4">{{ $cliente->rfc ?? '-' }}</td>
+                        <td class="px-5 py-4">{{ $cliente->telefono ?? '-' }}</td>
 
-                        <td class="py-3 px-2">
+                        <td class="px-5 py-4">
                             @if($cliente->activo)
                                 <span class="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs">Activo</span>
                             @else
@@ -108,7 +107,7 @@
                             @endif
                         </td>
 
-                        <td class="py-3 px-2">
+                        <td class="px-5 py-4">
                             @php
                                 $totalObligatorios = $totalDocumentosObligatoriosCliente ?? 0;
                                 $cargadosObligatorios = min((int) ($cliente->documentos_obligatorios_cargados_count ?? 0), $totalObligatorios);
@@ -136,7 +135,7 @@
                             </a>
                         </td>
 
-                        <td class="py-3 px-2 text-right space-x-2">
+                        <td class="px-5 py-4 text-right whitespace-nowrap space-x-2">
 
                             {{-- EDITAR --}}
                             <a href="{{ route('clientes.edit', $cliente) }}"
@@ -173,7 +172,7 @@
 
 
     {{-- PAGINACION --}}
-    <div class="mt-4">
+    <div class="border-t border-slate-200 px-5 py-4">
         {{ $clientes->links() }}
     </div>
 

@@ -3,7 +3,7 @@
 @section('title', 'Maquinas')
 
 @section('content')
-<div class="max-w-7xl mx-auto" x-data="maquinasHorasModal()">
+<div class="max-w-8xl mx-auto" x-data="maquinasHorasModal()">
 
     {{-- Header --}}
     <div class="flex items-center justify-between mb-4">
