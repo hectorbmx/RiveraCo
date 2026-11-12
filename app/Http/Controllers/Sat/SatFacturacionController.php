@@ -944,6 +944,11 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
             $cliente->facturapi_customer_id = $customer->id;
             $cliente->save();
             \Log::info('CUSTOMER OK');
+        } else {
+            // Facturapi conserva sus propios datos fiscales aunque el cliente se edite en SIRICO.
+            $facturapi->Customers->update($cliente->facturapi_customer_id, [
+                'tax_system' => $regimenFiscal,
+            ]);
         }
 
         /*
