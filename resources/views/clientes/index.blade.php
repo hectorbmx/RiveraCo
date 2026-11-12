@@ -68,8 +68,8 @@
 
     <div class="overflow-x-auto">
         <table class="w-full min-w-[820px] text-sm">
-            <thead>
-                <tr class="border-b text-slate-500 font-medium">
+            <thead class="bg-[#0B265A] text-white">
+                <tr class="font-medium">
                     <th class="py-3 px-2 text-left">Nombre Comercial</th>
                     <th class="py-3 px-2 text-left">Razon Social</th>
                     <th class="py-3 px-2 text-left">RFC</th>
@@ -83,8 +83,20 @@
             <tbody>
                 @forelse($clientes as $cliente)
                     <tr class="border-b hover:bg-slate-50">
-                        <td class="py-3 px-2">{{ $cliente->nombre_comercial }}</td>
-                        <td class="py-3 px-2">{{ $cliente->razon_social ?? '-' }}</td>
+                        <td class="py-3 px-2">
+                            @if($cliente->nombre_comercial)
+                                <a href="{{ route('clientes.edit', $cliente) }}" class="font-semibold text-blue-700 hover:text-blue-900 hover:underline">{{ $cliente->nombre_comercial }}</a>
+                            @else
+                                <span class="text-slate-400">—</span>
+                            @endif
+                        </td>
+                        <td class="py-3 px-2">
+                            @if($cliente->razon_social)
+                                <a href="{{ route('clientes.edit', $cliente) }}" class="font-semibold text-blue-700 hover:text-blue-900 hover:underline">{{ $cliente->razon_social }}</a>
+                            @else
+                                <span class="text-slate-400">—</span>
+                            @endif
+                        </td>
                         <td class="py-3 px-2">{{ $cliente->rfc ?? '-' }}</td>
                         <td class="py-3 px-2">{{ $cliente->telefono ?? '-' }}</td>
 
@@ -128,19 +140,20 @@
 
                             {{-- EDITAR --}}
                             <a href="{{ route('clientes.edit', $cliente) }}"
-                               class="text-blue-600 hover:text-blue-800 font-medium text-sm">
-                                Editar
+                               title="Editar cliente" aria-label="Editar cliente"
+                               class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-blue-600 hover:bg-blue-50 hover:text-blue-800">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 3.487a2.1 2.1 0 0 1 2.97 2.97L8.25 18.04l-4.125 1.179L5.303 15.1 16.862 3.487z"/></svg>
                             </a>
 
                             {{-- ELIMINAR --}}
                             <form action="{{ route('clientes.destroy', $cliente) }}"
                                   method="POST"
                                   class="inline-block"
-                                  onsubmit="return confirm('Eliminar este cliente?')">
+                                  onsubmit="return confirm('¿Eliminar este cliente?')">
                                 @csrf
                                 @method('DELETE')
-                                <button class="text-red-600 hover:text-red-800 font-medium text-sm">
-                                    Eliminar
+                                <button type="submit" title="Eliminar cliente" aria-label="Eliminar cliente" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 hover:bg-red-50 hover:text-red-800">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg>
                                 </button>
                             </form>
 
