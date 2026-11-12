@@ -297,7 +297,7 @@ private function aplicarVisibilidadObras($query): void
 
     $areaUsuarioId = $this->areaUsuarioActualId();
 
-    if (!$areaUsuarioId || auth()->user()?->hasRole('admin-rivera') || $this->usuarioActualEsResidente()) {
+    if (!$areaUsuarioId || auth()->user()?->hasAnyRole(['super-admin', 'admin-rivera']) || $this->usuarioActualEsResidente()) {
         return $tipos;
     }
 
