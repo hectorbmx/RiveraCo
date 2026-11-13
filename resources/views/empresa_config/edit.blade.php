@@ -116,11 +116,6 @@
         'desc' => 'Tarifa diaria e histórico'
     ],
 
-    'reglas' => [
-        'label' => 'Reglas',
-        'desc' => 'Políticas y flujos'
-    ],
-
     'alertas' => [
         'label' => 'Alertas',
         'desc' => 'Notificaciones y avisos'
@@ -1178,7 +1173,13 @@ function cuentasBancoTab() {
               {{-- ======================
                             RRHH
                     ======================= --}}
-<div x-show="tab === 'rrhh'" x-cloak class="space-y-6">
+<div x-show="tab === 'rrhh'" x-cloak class="space-y-6" x-data="{
+    busquedaPuesto: '',
+    coincidePuesto(texto) {
+        const normalizar = valor => valor.toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        return normalizar(texto || '').includes(normalizar(this.busquedaPuesto));
+    }
+}">
 
     <div class="flex items-center justify-between">
         <div>
@@ -1194,9 +1195,15 @@ function cuentasBancoTab() {
         </a>
     </div>
 
+    <div>
+        <label for="buscar-puesto" class="block text-sm font-medium text-gray-700 mb-1">Buscar puesto</label>
+        <input id="buscar-puesto" type="search" x-model="busquedaPuesto" placeholder="Nombre o clave del puesto"
+               class="w-full max-w-md rounded-xl border-gray-300 text-sm focus:border-[#0B265A] focus:ring-[#0B265A]">
+    </div>
+
     <div class="rounded-xl border border-gray-200 bg-white overflow-hidden">
         <table class="min-w-full text-sm">
-            <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+            <thead class="bg-[#0B265A] text-white text-xs uppercase tracking-wide">
                 <tr>
                     <th class="text-left px-4 py-3">ROL_KEY</th>
                     <th class="text-left px-4 py-3">Nombre</th>
@@ -1206,9 +1213,9 @@ function cuentasBancoTab() {
                 </tr>
             </thead>
 
-            <tbody class="divide-y divide-gray-100">
+            <tbody x-ref="filasPuestos" class="divide-y divide-gray-100">
                 @forelse($catalogoRoles as $rol)
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-gray-50" data-puesto="{{ $rol->rol_key }} {{ $rol->nombre }}" x-show="coincidePuesto($el.dataset.puesto)">
                         <td class="px-4 py-3 font-mono text-xs text-gray-700">
                             {{ $rol->rol_key }}
                         </td>
@@ -1235,11 +1242,16 @@ function cuentasBancoTab() {
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-4 py-6 text-center text-gray-400 text-sm">
+                        <td colspan="4" class="px-4 py-6 text-center text-gray-400 text-sm">
                             No hay puestos registrados.
                         </td>
                     </tr>
                 @endforelse
+                @if($catalogoRoles->isNotEmpty())
+                    <tr x-cloak x-show="busquedaPuesto.trim() !== '' && !Array.from($refs.filasPuestos.querySelectorAll('[data-puesto]')).some(fila => coincidePuesto(fila.dataset.puesto))">
+                        <td colspan="4" class="px-4 py-6 text-center text-gray-400 text-sm">No se encontraron puestos.</td>
+                    </tr>
+                @endif
             </tbody>
         </table>
     </div>
@@ -1898,7 +1910,7 @@ function cuentasBancoTab() {
 
         <div class="overflow-x-auto">
             <table class="w-full text-sm border-collapse">
-                <thead class="bg-gray-100 text-xs uppercase text-gray-500">
+                <thead class="bg-[#0B265A] text-xs uppercase text-white">
                     <tr>
                         <th class="p-3 border text-left">Importe diario</th>
                         <th class="p-3 border text-left">Vigencia desde</th>
