@@ -40,7 +40,7 @@ class OrdenCompraEntregaService
 
         if ($almacenId) {
             $almacen = Almacen::query()->whereKey($almacenId)->where('activo', true)->first();
-            if (! $almacen || ($almacen->area_id && (int) $almacen->area_id !== (int) $orden->area_id)) {
+            if (! $almacen || ! app(AreaAlmacenCompraService::class)->permite($orden->area_id ? (int) $orden->area_id : null, $almacen->area_id ? (int) $almacen->area_id : null)) {
                 throw ValidationException::withMessages(['almacen_destino_id' => 'El almacén debe estar activo y corresponder al área de la orden.']);
             }
         }

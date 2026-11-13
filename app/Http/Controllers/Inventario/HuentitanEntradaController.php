@@ -9,6 +9,7 @@ use App\Models\HuentitanEntrada;
 use App\Models\HuentitanEntradaDetalle;
 use App\Models\OrdenCompra;
 use App\Models\OrdenCompraDetalle;
+use App\Services\Compras\AreaAlmacenCompraService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -77,12 +78,15 @@ class HuentitanEntradaController extends Controller
             ->with(['proveedor', 'detalles.producto'])
             ->where('estado', 'AUTORIZADA')
             ->whereIn('estado_recepcion', ['pendiente', 'parcial'])
+            ->where(fn ($q) => $q->whereNull('modalidad_entrega')->orWhere('modalidad_entrega', '!=', OrdenCompra::ENTREGA_OBRA_DIRECTA))
+            ->where(fn ($q) => $q->whereNull('almacen_destino_id')->orWhere('almacen_destino_id', $almacen->id))
             ->whereHas('detalles', function ($dQuery) {
                 $dQuery->whereRaw('cantidad > cantidad_recibida');
             })
             ->when($area, function ($q) use ($area) {
                 $q->where(function ($sub) use ($area) {
                     $sub->where('area_id', $area->id)
+                        ->orWhereIn('area_id', Area::query()->where('codigo', 'PZ')->select('id'))
                         ->orWhere('area', 'like', '%HUENTITAN%')
                         ->orWhere('area', 'like', '%HUNTITAN%')
                         ->orWhere('area', 'HT');
@@ -199,6 +203,10 @@ class HuentitanEntradaController extends Controller
         if ($ordenCompra->modalidad_entrega === OrdenCompra::ENTREGA_OBRA_DIRECTA) {
             return 'Esta OC tiene entrega directa a obra; registra su recepción desde Compras.';
         }
+        $almacen = $this->almacenHuentitan();
+        if ($ordenCompra->almacen_destino_id && (int) $ordenCompra->almacen_destino_id !== (int) $almacen->id) {
+            return 'La orden de compra tiene otro almacén de destino.';
+        }
         $ordenCompra->loadMissing('detalles.producto');
 
         if (strtoupper((string) $ordenCompra->estado) !== 'AUTORIZADA') {
@@ -251,6 +259,10 @@ class HuentitanEntradaController extends Controller
     private function ordenCompraPerteneceHuentitan(OrdenCompra $ordenCompra, ?Area $area): bool
     {
         if ($area && (int) $ordenCompra->area_id === (int) $area->id) {
+            return true;
+        }
+
+        if ($area && app(AreaAlmacenCompraService::class)->permite($ordenCompra->area_id ? (int) $ordenCompra->area_id : null, (int) $area->id)) {
             return true;
         }
 
@@ -312,6 +324,9 @@ class HuentitanEntradaController extends Controller
 
                 if ($entrada->ordenCompra->modalidad_entrega === OrdenCompra::ENTREGA_OBRA_DIRECTA) {
                     throw new \RuntimeException('Esta OC tiene entrega directa a obra; registra su recepción desde Compras.');
+                }
+                if ($entrada->ordenCompra->almacen_destino_id && (int) $entrada->ordenCompra->almacen_destino_id !== (int) $entrada->almacen_id) {
+                    throw new \RuntimeException('La orden de compra tiene otro almacén de destino.');
                 }
 
                 if ($entrada->detalles->isEmpty()) {

@@ -18,6 +18,13 @@ class OrdenCompraEntregaTest extends TestCase
         if (! extension_loaded('pdo_sqlite')) $this->markTestSkipped('Requiere pdo_sqlite.');
         config(['database.default' => 'sqlite', 'database.connections.sqlite.database' => ':memory:']);
         DB::purge('sqlite');
+        Schema::create('areas', function (Blueprint $t) {
+            $t->id(); $t->string('codigo');
+        });
+        DB::table('areas')->insert([
+            ['id' => 1, 'codigo' => 'PZ'], ['id' => 2, 'codigo' => 'GL'],
+            ['id' => 3, 'codigo' => 'HT'], ['id' => 4, 'codigo' => 'PL'],
+        ]);
         Schema::create('obras', function (Blueprint $t) {
             $t->id(); $t->integer('estatus_nuevo'); $t->softDeletes();
         });
@@ -39,6 +46,7 @@ class OrdenCompraEntregaTest extends TestCase
             ['id' => 1, 'activo' => true, 'area_id' => 1],
             ['id' => 2, 'activo' => false, 'area_id' => 1],
             ['id' => 3, 'activo' => true, 'area_id' => 2],
+            ['id' => 4, 'activo' => true, 'area_id' => 3],
         ]);
     }
 
@@ -80,6 +88,24 @@ class OrdenCompraEntregaTest extends TestCase
         $order->obra_id = 42;
         $this->expectException(ValidationException::class);
         $order->save();
+    }
+
+    public function test_parent_areas_can_choose_their_warehouse_without_enabling_reverse_or_cross_access(): void
+    {
+        $service = app(OrdenCompraEntregaService::class);
+        foreach ([[1, 4], [4, 3], [1, 1]] as [$area, $almacen]) {
+            $order = new OrdenCompra(['area_id' => $area]);
+            $service->asignar($order, ['modalidad_entrega' => 'almacen', 'almacen_destino_id' => $almacen]);
+            $this->assertSame($almacen, $order->almacen_destino_id);
+        }
+        foreach ([[3, 1], [1, 3], [4, 4]] as [$area, $almacen]) {
+            try {
+                $service->asignar(new OrdenCompra(['area_id' => $area]), ['modalidad_entrega' => 'almacen', 'almacen_destino_id' => $almacen]);
+                $this->fail('No debe aceptar una relación de almacén distinta a la autorizada.');
+            } catch (ValidationException $e) {
+                $this->assertNotEmpty($e->errors());
+            }
+        }
     }
 
     public function test_destination_cannot_change_after_normal_receipt_either(): void

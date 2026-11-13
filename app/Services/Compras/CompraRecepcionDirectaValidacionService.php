@@ -30,7 +30,7 @@ class CompraRecepcionDirectaValidacionService
             $this->error('obra', 'La obra fijada en la OC ya no está disponible para recibir material.');
         }
         $almacen = $orden->almacenDestino;
-        if (! $almacen || ! $almacen->activo || ($almacen->area_id && (int) $almacen->area_id !== (int) $orden->area_id)) {
+        if (! $almacen || ! $almacen->activo || ! app(AreaAlmacenCompraService::class)->permite($orden->area_id ? (int) $orden->area_id : null, $almacen->area_id ? (int) $almacen->area_id : null)) {
             $this->error('almacen', 'El almacén fijado en la OC no está activo o no corresponde al área de la orden.');
         }
 

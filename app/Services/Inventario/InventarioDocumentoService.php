@@ -53,6 +53,12 @@ class InventarioDocumentoService
             throw new RuntimeException('Esta OC tiene entrega directa a obra; registra su recepción desde Compras.');
         }
 
+        if ($doc->tipo === 'entrada' && $ordenesCompra->contains(
+            fn ($ordenCompra) => $ordenCompra->almacen_destino_id && (int) $ordenCompra->almacen_destino_id !== (int) $doc->almacen_id
+        )) {
+            throw new RuntimeException('La orden de compra tiene otro almacén de destino.');
+        }
+
         [$esEntrada, $esSalida, $tipoMovimiento] = $this->resolveDireccion($doc);
 
         foreach ($doc->detalles as $det) {
