@@ -31,56 +31,64 @@
 @endphp
 
 <div x-show="tab === 'equipos_computo'" x-cloak x-data="equipoComputoUi()" class="space-y-6">
-    <div>
-        <h2 class="text-lg font-semibold text-gray-900">Equipo de computo</h2>
-        <p class="text-sm text-gray-600">Inventario interno, responsables asignados y kardex de cambios.</p>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div><h2 class="text-lg font-semibold text-gray-900">Equipo de cómputo</h2>
+        <p class="text-sm text-gray-600">Inventario interno, responsables asignados y kardex de cambios.</p></div>
+        <button type="button" @click="nuevoEquipoAbierto = true" class="px-4 py-2 rounded-xl bg-[#0B265A] text-white text-sm font-semibold hover:bg-blue-900">+ Nuevo equipo</button>
     </div>
 
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div x-show="nuevoEquipoAbierto" x-cloak @keydown.escape.window="nuevoEquipoAbierto = false" class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 p-4" role="dialog" aria-modal="true" aria-labelledby="titulo-nuevo-equipo">
+      <div @click.self="nuevoEquipoAbierto = false" class="absolute inset-0"></div>
+      <div class="relative bg-white rounded-2xl border border-slate-200 shadow-sm w-full max-w-6xl max-h-[90vh] overflow-y-auto">
         <div class="px-6 py-5 border-b border-slate-200">
-            <h3 class="text-base font-semibold text-slate-900">Nuevo equipo</h3>
+            <button type="button" @click="nuevoEquipoAbierto = false" aria-label="Cerrar" class="float-right text-slate-500 hover:text-slate-900 text-2xl">&times;</button>
+            <h3 id="titulo-nuevo-equipo" class="text-base font-semibold text-slate-900">Nuevo equipo</h3>
             <p class="text-sm text-slate-500 mt-1">Captura datos de compra, factura, ubicacion y responsable inicial.</p>
         </div>
 
         <form method="POST" action="{{ route('empresa_config.equipos-computo.store') }}" enctype="multipart/form-data"
               class="p-6 grid grid-cols-1 md:grid-cols-6 gap-4 bg-slate-50">
             @csrf
+            <input type="hidden" name="_formulario" value="equipo_computo_crear">
+            @if(old('_formulario') === 'equipo_computo_crear' && $errors->any())
+                <div class="md:col-span-6 rounded-lg bg-red-50 p-3 text-sm text-red-700"><ul class="list-disc pl-5">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul><p>Vuelve a seleccionar los archivos adjuntos.</p></div>
+            @endif
 
             <div>
                 <label class="block text-xs text-slate-600 mb-1">Codigo</label>
-                <input type="text" name="codigo_inventario" class="w-full rounded-xl border-slate-300" placeholder="LAP-001">
+                <input type="text" name="codigo_inventario" value="{{ old('codigo_inventario') }}" class="w-full rounded-xl border-slate-300" placeholder="LAP-001">
             </div>
             <div>
                 <label class="block text-xs text-slate-600 mb-1">Tipo</label>
                 <select name="tipo" class="w-full rounded-xl border-slate-300">
                     @foreach($tiposEquipo as $value => $label)
-                        <option value="{{ $value }}">{{ $label }}</option>
+                        <option value="{{ $value }}" @selected(old('tipo', 'laptop') === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
             <div>
                 <label class="block text-xs text-slate-600 mb-1">Marca</label>
-                <input type="text" name="marca" required class="w-full rounded-xl border-slate-300">
+                <input type="text" name="marca" value="{{ old('marca') }}" required class="w-full rounded-xl border-slate-300">
             </div>
             <div>
                 <label class="block text-xs text-slate-600 mb-1">Modelo</label>
-                <input type="text" name="modelo" class="w-full rounded-xl border-slate-300">
+                <input type="text" name="modelo" value="{{ old('modelo') }}" class="w-full rounded-xl border-slate-300">
             </div>
             <div>
                 <label class="block text-xs text-slate-600 mb-1">Serie</label>
-                <input type="text" name="numero_serie" class="w-full rounded-xl border-slate-300">
+                <input type="text" name="numero_serie" value="{{ old('numero_serie') }}" class="w-full rounded-xl border-slate-300">
             </div>
             <div>
                 <label class="block text-xs text-slate-600 mb-1">Precio</label>
-                <input type="number" step="0.01" min="0" name="precio" class="w-full rounded-xl border-slate-300">
+                <input type="number" step="0.01" min="0" name="precio" value="{{ old('precio') }}" class="w-full rounded-xl border-slate-300">
             </div>
             <div>
                 <label class="block text-xs text-slate-600 mb-1">Fecha compra</label>
-                <input type="date" name="fecha_compra" class="w-full rounded-xl border-slate-300">
+                <input type="date" name="fecha_compra" value="{{ old('fecha_compra') }}" class="w-full rounded-xl border-slate-300">
             </div>
             <div>
                 <label class="block text-xs text-slate-600 mb-1">Factura folio</label>
-                <input type="text" name="factura_folio" class="w-full rounded-xl border-slate-300">
+                <input type="text" name="factura_folio" value="{{ old('factura_folio') }}" class="w-full rounded-xl border-slate-300">
             </div>
             <div>
                 <label class="block text-xs text-slate-600 mb-1">Factura UUID</label>
@@ -114,14 +122,14 @@
             </div>
             <div>
                 <label class="block text-xs text-slate-600 mb-1">Ubicacion</label>
-                <input type="text" name="ubicacion" class="w-full rounded-xl border-slate-300">
+                <input type="text" name="ubicacion" value="{{ old('ubicacion') }}" class="w-full rounded-xl border-slate-300">
             </div>
             <div>
                 <label class="block text-xs text-slate-600 mb-1">Area</label>
                 <select name="area_id" class="w-full rounded-xl border-slate-300">
                     <option value="">Sin area</option>
                     @foreach($areas as $area)
-                        <option value="{{ $area->id }}">{{ $area->nombre }}</option>
+                        <option value="{{ $area->id }}" @selected((string) old('area_id') === (string) $area->id)>{{ $area->nombre }}</option>
                     @endforeach
                 </select>
             </div>
@@ -148,35 +156,39 @@
                 <label class="block text-xs text-slate-600 mb-1">Estatus</label>
                 <select name="estatus" class="w-full rounded-xl border-slate-300">
                     @foreach($estatusEquipo as $value => $label)
-                        <option value="{{ $value }}">{{ $label }}</option>
+                        <option value="{{ $value }}" @selected(old('estatus', 'activo') === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
             <div class="md:col-span-3">
                 <label class="block text-xs text-slate-600 mb-1">Notas</label>
-                <input type="text" name="notas" class="w-full rounded-xl border-slate-300" placeholder="Cargador, condicion, accesorios, etc.">
+                <input type="text" name="notas" value="{{ old('notas') }}" class="w-full rounded-xl border-slate-300" placeholder="Cargador, condicion, accesorios, etc.">
             </div>
             <div class="md:col-span-3">
                 <label class="block text-xs text-slate-600 mb-1">Fotos del equipo (maximo 3)</label>
                 <input type="file" name="fotos[]" accept="image/*" multiple @change="validarFotos($event)" class="w-full text-sm">
             </div>
-            <div class="md:col-span-6 flex justify-end">
+            <div class="md:col-span-6 flex justify-end gap-2">
+                <button type="button" @click="nuevoEquipoAbierto = false" class="px-4 py-2 rounded-xl text-sm border border-slate-300 text-slate-700">Cancelar</button>
                 <button type="submit" class="px-4 py-2 rounded-xl text-sm bg-gray-900 text-white hover:bg-gray-800">
                     Guardar equipo
                 </button>
             </div>
         </form>
+      </div>
     </div>
 
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-6 py-5 border-b border-slate-200">
             <h3 class="text-base font-semibold text-slate-900">Inventario de computo</h3>
             <p class="text-sm text-slate-500 mt-1">{{ $equiposComputo->count() }} equipo(s) registrados.</p>
+            <label for="buscar-equipo-computo" class="block mt-4 mb-1 text-sm font-medium text-slate-700">Buscar equipo</label>
+            <input id="buscar-equipo-computo" type="search" x-model="busquedaEquipo" placeholder="Código, tipo, serie, responsable o ubicación" class="w-full max-w-md rounded-xl border-slate-300 text-sm">
         </div>
 
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
-                <thead class="bg-slate-50 text-slate-600">
+                <thead class="bg-[#0B265A] text-white">
                     <tr>
                         <th class="px-4 py-3 text-left font-semibold">Equipo</th>
                         <th class="px-4 py-3 text-left font-semibold">Serie</th>
@@ -187,9 +199,9 @@
                         <th class="px-4 py-3 text-right font-semibold">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y">
+                <tbody class="divide-y" x-ref="filasEquipos">
                 @forelse($equiposComputo as $equipo)
-                    <tr class="hover:bg-slate-50">
+                    <tr class="hover:bg-slate-50" data-equipo="{{ implode(' ', array_filter([$equipo->codigo_inventario, $equipo->tipo, $equipo->nombre, $equipo->numero_serie, $equipo->responsableActual?->nombre_completo, $equipo->ubicacion, $equipo->area?->nombre, $equipo->factura_folio, $equipo->factura_uuid, $estatusEquipo[$equipo->estatus] ?? $equipo->estatus])) }}" x-show="coincideEquipo($el.dataset.equipo)">
                         <td class="px-4 py-3">
                             <div class="font-semibold text-slate-900">{{ $equipo->codigo_inventario ?: 'Sin codigo' }}</div>
                             <div class="text-xs text-slate-500">{{ ucfirst($equipo->tipo) }} | {{ $equipo->nombre }}</div>
@@ -450,6 +462,9 @@
                         <td colspan="7" class="px-4 py-10 text-center text-slate-500">No hay equipos de computo registrados.</td>
                     </tr>
                 @endforelse
+                @if($equiposComputo->isNotEmpty())
+                    <tr x-cloak x-show="busquedaEquipo.trim() !== '' && !Array.from($refs.filasEquipos.querySelectorAll('[data-equipo]')).some(fila => coincideEquipo(fila.dataset.equipo))"><td colspan="7" class="px-4 py-8 text-center text-slate-500">No se encontraron equipos.</td></tr>
+                @endif
                 </tbody>
             </table>
         </div>
@@ -465,12 +480,18 @@ function equipoComputoUi() {
     };
 
     return {
+        nuevoEquipoAbierto: @json(old('_formulario') === 'equipo_computo_crear'),
+        busquedaEquipo: '',
+        coincideEquipo(texto) {
+            const normalizar = valor => (valor || '').toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+            return normalizar(texto).includes(normalizar(this.busquedaEquipo));
+        },
         empleados: config.empleados || [],
         facturasUrl: config.facturasUrl,
-        responsableSearch: { create: '' },
-        responsableSelected: { create: null },
+        responsableSearch: { create: @json($empleadosBuscador->firstWhere('id', (int) old('responsable_actual_id'))['nombre'] ?? '') },
+        responsableSelected: { create: @json($empleadosBuscador->firstWhere('id', (int) old('responsable_actual_id'))) },
         responsableOpen: { create: false },
-        facturaSearch: { create: '' },
+        facturaSearch: { create: @json(old('factura_uuid', '')) },
         facturaSelected: { create: null },
         facturaOpen: { create: false },
         facturaLoading: { create: false },
