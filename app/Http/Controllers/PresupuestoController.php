@@ -853,7 +853,7 @@ class PresupuestoController extends Controller
             'diametro' => [$captura, 'numeric', 'decimal:0,3', 'between:0.15,99999.999'],
             'piezas' => [$captura, 'integer', 'between:1,4294967295'],
             'longitud_l0' => [$captura, 'numeric', 'decimal:0,3', 'between:0.001,99999.999'],
-            'avance_metros_por_jornal' => [$captura, 'numeric', 'decimal:0,5', 'between:0.00001,999999999.99999'],
+            'avance_metros_por_jornal' => ['sometimes', $captura, 'numeric', 'decimal:0,5', 'between:0.00001,999999999.99999'],
             'longitud_l1' => ['nullable', 'numeric', 'decimal:0,3', 'between:0,99999.999'],
             'longitud_l2' => ['nullable', 'numeric', 'decimal:0,3', 'between:0,99999.999'],
             'intervalo_l0' => ['nullable', 'numeric', 'decimal:0,3', 'between:0,99999.999'],
@@ -861,14 +861,27 @@ class PresupuestoController extends Controller
             'intervalo_l2' => ['nullable', 'numeric', 'decimal:0,3', 'between:0,99999.999'],
             'varillas_l0' => ['nullable', 'integer', 'between:0,4294967295'],
             'varillas_l1' => ['nullable', 'integer', 'between:0,4294967295'],
+            'calibre_varilla_l0' => ['nullable', Rule::in(array_keys(PresupuestoVolPila::PESOS_VARILLA))],
+            'calibre_varilla_l1' => ['nullable', Rule::in(array_keys(PresupuestoVolPila::PESOS_VARILLA))],
             'acero_kg_por_pila' => ['nullable', 'numeric', 'decimal:0,3', 'between:0,9999999.999'],
         ], [], [
             'longitud_l0' => 'longitud L0',
             'avance_metros_por_jornal' => 'avance en metros por jornal',
+            'calibre_varilla_l0' => 'calibre de varilla L0',
+            'calibre_varilla_l1' => 'calibre de varilla L1',
         ]);
 
         foreach (['longitud_l1', 'longitud_l2', 'intervalo_l0', 'intervalo_l1', 'intervalo_l2', 'varillas_l0', 'varillas_l1'] as $campo) {
             $datos[$campo] ??= 0;
+        }
+        $datos['avance_metros_por_jornal'] ??= $anterior
+            ? max(0.00001, round($anterior->volumetria()['avance_metros_por_jornal'], 5))
+            : PresupuestoVolPila::AVANCE_PREDETERMINADO;
+        foreach (['calibre_varilla_l0', 'calibre_varilla_l1'] as $campo) {
+            $datos[$campo] ??= $anterior ? $anterior->{$campo} : PresupuestoVolPila::CALIBRE_PREDETERMINADO;
+            if ($datos[$campo] !== null) {
+                $datos[$campo] = (string) $datos[$campo];
+            }
         }
         $datos['acero_kg_por_pila'] ??= null;
         // Una pila existente conserva la longitud exacta calculada hasta que se edita su geometría.

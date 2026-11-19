@@ -5,7 +5,7 @@
             'tipo' => ['Tipo de pila', 'text', null, null, null, 'Po1', true],
             'diametro' => ['Diámetro (m)', 'number', '0.15', '99999.999', '0.001', '0.80', true],
             'piezas' => ['Piezas', 'number', '1', '4294967295', '1', '2', true],
-            'avance_metros_por_jornal' => ['Avance (m por jornal)', 'number', '0.00001', '999999999.99999', '0.00001', '60', true],
+            'avance_metros_por_jornal' => ['Avance (ML por jornal)', 'number', '0.00001', '999999999.99999', '0.00001', \App\Models\PresupuestoVolPila::AVANCE_PREDETERMINADO, true],
         ],
         'Profundidad' => [
             'longitud_l0' => ['Longitud L0 (m)', 'number', '0.001', '99999.999', '0.001', '13', true],
@@ -19,10 +19,12 @@
         ],
         'Varillas longitudinales' => [
             'varillas_l0' => ['Varillas L0', 'number', '0', '4294967295', '1', '0', false],
+            'calibre_varilla_l0' => ['Calibre de varilla L0', 'select', null, null, null, null, true],
             'varillas_l1' => ['Varillas L1', 'number', '0', '4294967295', '1', '0', false],
+            'calibre_varilla_l1' => ['Calibre de varilla L1', 'select', null, null, null, null, true],
         ],
         'Volúmenes y peso' => [
-            'acero_kg_por_pila' => ['Acero por pieza (kg)', 'number', '0', '9999999.999', '0.001', 'Captura manual', false],
+            'acero_kg_por_pila' => ['Acero por pieza manual (kg)', 'number', '0', '9999999.999', '0.001', 'Automático', false],
         ],
     ];
     $coloresVol = [
@@ -38,6 +40,7 @@
             'vol.area' => ['Área (m²)', 3],
             'vol.perimetro' => ['Perímetro (m)', 3],
             'pila.piezas' => ['Pzas', 0],
+            'vol.avance_metros_por_jornal' => ['Avance (ML/jornal)', 3],
             'vol.pilas_por_jornal' => ['Pilas / jornal', 3],
             'vol.jornales' => ['Jornales', 3],
         ],
@@ -59,8 +62,8 @@
         'Varillas longitudinales' => [
             'pila.varillas_l0' => ['Varillas L0', 0],
             'pila.varillas_l1' => ['Varillas L1', 0],
-            'vol.peso_varillas_l0' => ['L0 (kg)', 3],
-            'vol.peso_varillas_l1' => ['L1 (kg)', 3],
+            'vol.peso_varillas_l0' => ['Zona L0 (kg)', 3],
+            'vol.peso_varillas_l1' => ['Zona L1 (kg)', 3],
             'vol.traslape_varillas' => ['Traslape (kg)', 3],
         ],
         'Volúmenes y peso' => [
@@ -69,12 +72,12 @@
             'vol.concreto' => ['Concreto (m³)', 3],
             'vol.bentonita' => ['Bentonita (m³)', 3],
             'vol.retiro' => ['Retiro (m³)', 3],
-            'pila.acero_kg_por_pila' => ['Acero por pieza (kg)', 3],
+            'vol.acero_kg_por_pila' => ['Acero por pieza (kg)', 3],
             'vol.acero' => ['Acero total (kg)', 3],
         ],
     ];
     $resultadosPorSeccion = collect($columnasVol)->map(fn ($columnas) => collect($columnas)
-        ->filter(fn ($etiqueta, $campo) => str_starts_with($campo, 'vol.'))
+        ->filter(fn ($etiqueta, $campo) => str_starts_with($campo, 'vol.') && $campo !== 'vol.avance_metros_por_jornal')
         ->mapWithKeys(fn ($etiqueta, $campo) => [substr($campo, 4) => $etiqueta]));
     $resumenVol = [
         'piezas' => ['Pilas', 0],
@@ -89,10 +92,8 @@
         'acero' => ['Acero total (kg)', 3],
     ];
     $urlVol = route('presupuesto.show', [$presupuesto, 'tab' => 'pilas']);
-    $avanceVol = $editarVol?->avance_metros_por_jornal
-        ?? ($editarVol?->longitud_l0 > 0 && $editarVol?->pilas_por_jornal > 0
-            ? max(0.00001, round($editarVol->longitud_l0 * $editarVol->pilas_por_jornal, 5))
-            : 60);
+    $avanceVol = $editarVol?->volumetria()['avance_metros_por_jornal']
+        ?? \App\Models\PresupuestoVolPila::AVANCE_PREDETERMINADO;
     $avanceVol = rtrim(rtrim(number_format($avanceVol, 5, '.', ''), '0'), '.');
 @endphp
 
@@ -158,15 +159,30 @@
                         @foreach($campos as $nombre => [$etiqueta, $tipo, $minimo, $maximo, $paso, $ejemplo, $requerido])
                             <div>
                                 <label for="vol-{{ $nombre }}" class="block text-sm font-medium text-slate-700">{{ $etiqueta }}</label>
-                                <input id="vol-{{ $nombre }}" name="{{ $nombre }}" type="{{ $tipo }}" value="{{ old($nombre, $nombre === 'avance_metros_por_jornal' ? $avanceVol : $editarVol?->{$nombre}) }}"
+                                @if($tipo === 'select')
+                                    <select id="vol-{{ $nombre }}" name="{{ $nombre }}" required
+                                            @if($errors->pilaVol->has($nombre)) aria-invalid="true" aria-describedby="vol-error-{{ $nombre }}" @endif
+                                            class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+                                        @foreach(\App\Models\PresupuestoVolPila::PESOS_VARILLA as $calibre => $peso)
+                                            <option value="{{ $calibre }}" @selected((string) old($nombre, $editarVol?->{$nombre} ?? \App\Models\PresupuestoVolPila::CALIBRE_PREDETERMINADO) === (string) $calibre)>
+                                                #{{ $calibre }} · {{ number_format($peso, 3) }} kg/m
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                @else
+                                    <input id="vol-{{ $nombre }}" name="{{ $nombre }}" type="{{ $tipo }}" value="{{ old($nombre, $nombre === 'avance_metros_por_jornal' ? $avanceVol : $editarVol?->{$nombre}) }}"
                                        placeholder="{{ $ejemplo }}"
                                        @if($tipo === 'number') min="{{ $minimo }}" max="{{ $maximo }}" step="{{ $paso }}" @else maxlength="80" @endif
                                        @required($requerido)
                                        @if($errors->pilaVol->has($nombre)) aria-invalid="true" aria-describedby="vol-error-{{ $nombre }}" @endif
                                        class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+                                @endif
                                 @error($nombre, 'pilaVol')
                                     <p id="vol-error-{{ $nombre }}" class="mt-1 text-sm text-red-700">{{ $message }}</p>
                                 @enderror
+                                @if($nombre === 'avance_metros_por_jornal')
+                                    <p class="mt-1 text-xs text-slate-600">Pilas por jornal = avance ÷ (L0 + L1 + L2).</p>
+                                @endif
                             </div>
                         @endforeach
                     </div>
@@ -181,7 +197,7 @@
                 </fieldset>
             @endforeach
             <p class="text-sm text-red-700" role="status" x-show="error" x-text="error" x-cloak></p>
-            <p class="text-sm text-slate-600">Usa cero para un intervalo sin zunchos. El acero total usa los kg por pieza capturados, como en el machote.</p>
+            <p class="text-sm text-slate-600">Usa cero para un intervalo sin zunchos. Deja vacío el acero por pieza manual para calcularlo con el armado.</p>
             <div class="flex items-center gap-4">
                 <button type="submit" class="rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white hover:bg-blue-900">Guardar tipo de pila</button>
                 @if($editarVol)
@@ -201,7 +217,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     @foreach(\App\Models\PresupuestoVolPila::PESOS_VARILLA as $numero => $peso)
-                        <tr><th scope="row" class="p-2 text-left">{{ $numero }}</th><td class="p-2 text-right">{{ number_format($peso, 3) }}</td><td class="p-2">{{ [3 => 'Zunchos L0 y traslapes de zunchos', 4 => 'Zunchos L1 y L2', 6 => 'Varillas longitudinales'][$numero] ?? '—' }}</td></tr>
+                        <tr><th scope="row" class="p-2 text-left">{{ $numero }}</th><td class="p-2 text-right">{{ number_format($peso, 3) }}</td><td class="p-2">{{ [3 => 'Zunchos L0 y traslapes L0 y L2', 4 => 'Zunchos L1 y L2 y traslape L1', 6 => 'Calibre inicial de varillas longitudinales'][$numero] ?? '—' }}</td></tr>
                     @endforeach
                 </tbody>
             </table>
@@ -220,11 +236,12 @@
         <form action="{{ route('presupuesto.pilas-vol.traslape', $presupuesto) }}" method="POST" class="border-t border-slate-200 p-4">
             @csrf
             @method('PATCH')
-            <label for="vol-traslape-varilla" class="block text-sm font-medium text-slate-700">Longitud de traslape (m)</label>
+            <label for="vol-traslape-varilla" class="block text-sm font-medium text-slate-700">Ajuste de traslape longitudinal (m)</label>
             <input id="vol-traslape-varilla" name="vol_traslape_varilla" type="number" required min="0" max="99999.99999" step="0.00001"
                    value="{{ old('vol_traslape_varilla', $presupuesto->vol_traslape_varilla) }}"
                    class="mt-1 rounded-lg border-slate-300 text-sm">
             <button type="submit" class="ml-2 rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white">Guardar traslape</button>
+            <p class="mt-1 text-xs text-slate-600">Con cero, los tipos de pila con calibre capturado usan el traslape de su varilla L0.</p>
             @error('vol_traslape_varilla', 'traslapeVol')
                 <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
             @enderror
