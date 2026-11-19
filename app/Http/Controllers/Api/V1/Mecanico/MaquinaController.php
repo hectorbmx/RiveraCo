@@ -52,8 +52,7 @@ class MaquinaController extends Controller
             $query = Obra::query()->select('id', 'nombre', 'clave_obra')
                 ->where('estatus_nuevo', '!=', Obra::ESTATUS_CANCELADA)->orderBy('nombre')->orderBy('id');
             if ($filtros['uso'] === 'asignacion') {
-                $query->where('estatus_nuevo', '!=', Obra::ESTATUS_TERMINADA)
-                    ->whereHas('pilas', fn ($q) => $q->where('activo', true));
+                $query->where('estatus_nuevo', '!=', Obra::ESTATUS_TERMINADA);
             }
             if (! empty($filtros['q'])) {
                 $term = trim($filtros['q']);

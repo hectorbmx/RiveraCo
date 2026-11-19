@@ -43,14 +43,6 @@ class MaquinaService
                 throw ValidationException::withMessages(['obra_id' => 'Selecciona una obra vigente.']);
             }
 
-            $tienePilasActivas = $obra->pilas()
-                ->where('activo', true)
-                ->exists();
-
-            if (! $tienePilasActivas) {
-                throw new \RuntimeException('La obra seleccionada no tiene pilas activas asignadas.');
-            }
-
             $horometroService = app(MaquinaHorometroService::class);
             $actual = $horometroService->horometroActual($maquina);
             $data['fecha_inicio'] = $data['fecha_inicio'] ?? now()->toDateString();

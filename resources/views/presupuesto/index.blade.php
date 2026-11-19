@@ -7,12 +7,9 @@
     .presupuestos-table tbody tr:focus-within { background: #dce9fa; }
 </style>
 <div class="p-6">
-    <div class="flex justify-between mb-4">
-        <h1 class="text-xl font-semibold">Presupuestos Sincronizados (Excel)</h1>
-        {{-- Mantenemos la coherencia visual con tus otros botones --}}
-        <div class="flex gap-2">
-            <span class="text-xs text-gray-500 self-center">Sincronizado desde APUPI.xlsm</span>
-        </div>
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h1 class="text-xl font-semibold">Presupuestos</h1>
+        <a href="{{ route('presupuesto.create') }}" class="rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">Nuevo presupuesto</a>
     </div>
 
 @php
@@ -52,7 +49,9 @@
                     <th class="p-2 border font-semibold text-center">Costo Directo</th>
                     <th class="p-2 border font-semibold text-center">Total Presupuesto</th>
                     <th class="p-2 border font-semibold text-center">Estado</th>
-                    <th class="p-2 border font-semibold text-center">Fecha Sinc.</th>
+                    <th class="p-2 border font-semibold text-left">Seguimiento</th>
+                    <th class="p-2 border font-semibold text-center">Origen</th>
+                    <th class="p-2 border font-semibold text-center">Fecha de alta</th>
                     <th class="p-2 border font-semibold text-center"></th>
                 </tr>
             </thead>
@@ -63,7 +62,7 @@
                         {{ $presupuesto->codigo_proyecto }}
                     </td>
                     <td class="p-2 border text-left">
-                        {{ $presupuesto->nombre_cliente }}
+                        {{ $presupuesto->nombreClienteVisible() }}
                     </td>
                     <td class="p-2 border text-center">
                         ${{ number_format($presupuesto->total_costo_directo, 2) }}
@@ -75,6 +74,26 @@
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border {{ $estadoBadge($presupuesto->estatus) }}">
                             {{ ucfirst($presupuesto->estatus) }}
                         </span>
+                    </td>
+                    <td class="p-2 border">
+                        @if($presupuesto->ultimoMovimiento)
+                            @php($movimiento = $presupuesto->ultimoMovimiento)
+                            <a href="{{ route('presupuesto.versiones.show', [$presupuesto, $movimiento->version]) }}#seguimiento" class="font-semibold text-[#0B265A] hover:underline">
+                                {{ $movimiento->etiqueta() }} · {{ $movimiento->version->folio() }}
+                            </a>
+                            <p class="text-xs text-slate-500">{{ $movimiento->created_at->format('d/m/Y H:i') }}</p>
+                            @if($presupuesto->aceptacionVigente)
+                                @php($aceptada = $presupuesto->aceptacionVigente->version)
+                                <a href="{{ route('presupuesto.versiones.show', [$presupuesto, $aceptada]) }}#seguimiento" class="mt-1 block text-sm font-medium text-emerald-700 hover:underline">
+                                    Versión aceptada {{ $aceptada->folio() }}
+                                </a>
+                            @endif
+                        @else
+                            <span class="text-slate-500">—</span>
+                        @endif
+                    </td>
+                    <td class="p-2 border text-center text-gray-600">
+                        {{ $presupuesto->esImportado() ? 'Excel' : 'SIRICO' }}
                     </td>
                     <td class="p-2 border text-center text-gray-600">
                         {{ $presupuesto->created_at->format('d/m/Y H:i') }}
@@ -113,8 +132,8 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="px-5 py-10 text-center text-slate-500">
-                        {{ $buscar !== '' ? 'No se encontraron presupuestos con ese cliente o código.' : 'Aún no hay presupuestos sincronizados.' }}
+                    <td colspan="9" class="px-5 py-10 text-center text-slate-500">
+                        {{ $buscar !== '' ? 'No se encontraron presupuestos con ese cliente o código.' : 'Aún no hay presupuestos.' }}
                     </td>
                 </tr>
             @endforelse

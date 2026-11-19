@@ -89,7 +89,7 @@ class MaquinaAsignacionService
                 if ($asignar) {
                     $obra = Obra::query()->lockForUpdate()->find($data['obra_id']);
                     if (! $obra) {
-                        throw ValidationException::withMessages(['obra_id' => 'Selecciona una obra vigente con pilas activas.']);
+                        throw ValidationException::withMessages(['obra_id' => 'Selecciona una obra vigente.']);
                     }
                     $asignacion = $this->maquinas->asignarAObra($maquina, $obra, $data, $user);
                 } else {

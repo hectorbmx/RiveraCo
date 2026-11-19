@@ -187,15 +187,24 @@ public function store(Request $request)
 {
     return DB::transaction(function () use ($request) {
         // 1. CABECERA: Sincronización principal
-        $presupuesto = Presupuesto::updateOrCreate(
+        $cabecera = [
+            'nombre_cliente' => $request->nombre_cliente,
+            'total_costo_directo' => $request->total_costo_directo,
+            'total_presupuesto' => $request->total_presupuesto,
+            'estatus' => 'Sincronizado',
+        ];
+        $presupuesto = Presupuesto::createOrFirst(
             ['codigo_proyecto' => $request->codigo_proyecto],
-            [
-                'nombre_cliente'      => $request->nombre_cliente,
-                'total_costo_directo' => $request->total_costo_directo,
-                'total_presupuesto'   => $request->total_presupuesto,
-                'estatus'             => 'Sincronizado'
-            ]
+            $cabecera + ['origen' => Presupuesto::ORIGEN_EXCEL],
         );
+        $presupuesto = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+        if (! $presupuesto->esImportado()) {
+            return response()->json(['error' => 'El folio pertenece a un presupuesto creado en SIRICO.'], 409);
+        }
+        if ($presupuesto->version_origen_borrador_id !== null) {
+            return response()->json(['error' => 'El presupuesto tiene una revisión en curso. Guarda la versión antes de sincronizar desde Excel.'], 409);
+        }
+        $presupuesto->update($cabecera);
 
         // 2. DETALLES GENERALES (Primer bloque)
         $presupuesto->detalles()->delete();
@@ -243,6 +252,6 @@ public function store(Request $request)
             'status' => 'success', 
             'message' => 'Sincronización total exitosa (Detalles, Pilas y Resumen)'
         ]);
-    });
+    }, 3);
 }
 }

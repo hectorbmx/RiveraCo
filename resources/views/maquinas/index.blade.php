@@ -533,16 +533,6 @@
                     return;
                 }
 
-                if (this.obraSinPilas) {
-                    event.preventDefault();
-
-                    this.errorObra = 'La obra seleccionada no tiene pilas activas asignadas.';
-                    this.mostrarOpciones = false;
-
-                    this.$nextTick(() => {
-                        this.$refs.buscarObraInput?.focus();
-                    });
-                }
             },
 
             formatearCantidad(valor) {
@@ -793,11 +783,11 @@
                                 class="mt-2 text-xs text-amber-700 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2"
                             >
                                 La obra seleccionada no tiene pilas activas asignadas.
-                                No se puede asignar la máquina.
+                                La máquina puede asignarse de todos modos.
                             </p>
 
                             <p
-                                x-show="obraSeleccionada && !obraSinPilas"
+                                x-show="obraSeleccionada"
                                 x-cloak
                                 class="mt-2 text-xs text-emerald-700"
                             >
@@ -1107,20 +1097,10 @@
 
                         <button
                             type="submit"
-                            :disabled="cargandoPilas || obraSinPilas || !obraId"
+                            :disabled="!obraId"
                             class="rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            <span x-show="!cargandoPilas && !obraSinPilas">
-                                Asignar a obra
-                            </span>
-
-                            <span x-show="cargandoPilas && !obraSinPilas" x-cloak>
-                                Consultando...
-                            </span>
-
-                            <span x-show="obraSinPilas && !cargandoPilas" x-cloak>
-                                No disponible
-                            </span>
+                            Asignar a obra
                         </button>
                     </div>
                 </form>

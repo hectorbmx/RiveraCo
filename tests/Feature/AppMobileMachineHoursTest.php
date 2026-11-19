@@ -256,6 +256,17 @@ class AppMobileMachineHoursTest extends TestCase
         $this->getJson($this->url.'/opciones-operacion?uso=asignacion')->assertForbidden();
     }
 
+    public function test_assignment_options_include_active_worksites_without_drilling_and_exclude_closed_worksites(): void
+    {
+        $this->permisos[] = 'maquinas.asignar_obra.access';
+        Gate::define('maquinas.asignar_obra.access', fn () => true);
+
+        $this->getJson($this->url.'/opciones-operacion?uso=asignacion')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.obras.0.id', 9);
+    }
+
     public function test_permission_is_enforced_before_model_resolution_including_retries(): void
     {
         $this->postJson($this->url.'/horas', $this->ajuste())->assertCreated();

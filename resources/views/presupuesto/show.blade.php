@@ -5,10 +5,126 @@
     $pestanas = ['pilas' => 'Pilas / VOL', 'apupi' => 'APUPI', 'presupuesto' => 'Presupuesto', 'gastos' => 'Relación de gastos'];
     $solicitada = request()->query('tab');
     $tabInicial = is_string($solicitada) && array_key_exists($solicitada, $pestanas) ? $solicitada : 'presupuesto';
-    $totalVenta = $presupuesto->resumenes->where('cantidad', '>', 0)->sum('importe') + $presupuesto->pilas->where('cantidad', '>', 0)->sum('total');
+    $revisionEnCurso = $presupuesto->version_origen_borrador_id !== null;
+    $siguienteRevision = $revisionEnCurso ? $versionGuardada->revision + 1 : 0;
 @endphp
 <div class="space-y-5" x-data="{
     tab: @js($tabInicial),
+    presentacion: @js($presentacion),
+    unidadesCapturadas: @js(old('unidades', $presupuesto->presentacion_comercial['unidades'] ?? [])),
+    urlConcepto: @js(route('presupuesto.presentacion.conceptos.update', [$presupuesto, '__renglon__'])),
+    encabezadoPerforacion: @js(\App\Support\PresentacionPresupuesto::ENCABEZADO_PERFORACION),
+    csrf: @js(csrf_token()),
+    cola: Promise.resolve(),
+    mensajeGuardado: '',
+    errorGuardado: false,
+    temporizadorGuardado: null,
+    guardandoVersion: false,
+    errorVersion: '',
+    avisar(mensaje, error = false) {
+        clearTimeout(this.temporizadorGuardado);
+        this.mensajeGuardado = mensaje;
+        this.errorGuardado = error;
+        this.temporizadorGuardado = setTimeout(() => this.mensajeGuardado = '', error ? 5000 : 2600);
+    },
+    guardarConcepto(campo, clave) {
+        const original = campo.value;
+        const concepto = original.trim();
+        this.cola = this.cola.then(async () => {
+            if (!concepto || concepto.length > 1000) {
+                campo.setAttribute('aria-invalid', 'true');
+                this.avisar('Captura una descripción de hasta 1000 caracteres.', true);
+                return;
+            }
+            if (concepto === campo.dataset.conceptoGuardado) {
+                if (campo.value === original) campo.value = concepto;
+                campo.removeAttribute('aria-invalid');
+                return;
+            }
+            try {
+                const respuesta = await fetch(this.urlConcepto.replace('__renglon__', encodeURIComponent(clave)), {
+                    method: 'PATCH',
+                    keepalive: true,
+                    headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrf },
+                    body: JSON.stringify({ concepto })
+                });
+                if (!respuesta.ok) {
+                    const datos = await respuesta.json().catch(() => ({}));
+                    throw new Error(datos.errors?.concepto?.[0] || 'No se pudo guardar el concepto. Vuelve a salir del campo para reintentar.');
+                }
+                const datos = await respuesta.json();
+                campo.dataset.conceptoGuardado = datos.concepto;
+                if (campo.value === original) campo.value = datos.concepto;
+                campo.removeAttribute('aria-invalid');
+                if (clave === this.encabezadoPerforacion) {
+                    this.presentacion.descripcion_perforacion = datos.concepto;
+                } else if (this.presentacion.filas[clave]) {
+                    this.presentacion.filas[clave].concepto = datos.concepto;
+                }
+                this.avisar('Concepto guardado');
+            } catch (error) {
+                campo.setAttribute('aria-invalid', 'true');
+                this.avisar(error.message || 'No se pudo guardar el concepto.', true);
+            }
+        });
+    },
+    async esperarCambios() {
+        this.errorVersion = '';
+        if (this.$root.contains(document.activeElement) && document.activeElement.matches('[data-guardado], [data-concepto-guardado]')) {
+            document.activeElement.blur();
+        }
+        let pendiente;
+        do {
+            pendiente = this.cola;
+            await pendiente;
+        } while (pendiente !== this.cola);
+        const campos = this.$root.querySelectorAll('input[data-guardado]');
+        if (Array.from(campos).some(campo => !campo.validity.valid
+            || campo.getAttribute('aria-invalid') === 'true' || Number(campo.value) !== Number(campo.dataset.guardado))) {
+            this.errorVersion = 'Revisa los campos de APUPI pendientes de guardar y vuelve a intentarlo.';
+            return false;
+        }
+        const conceptos = this.$root.querySelectorAll('[data-concepto-guardado]');
+        if (Array.from(conceptos).some(campo => campo.getAttribute('aria-invalid') === 'true'
+            || campo.value.trim() !== campo.dataset.conceptoGuardado)) {
+            this.cambiar('presupuesto');
+            this.errorVersion = 'Revisa los conceptos pendientes de guardar y vuelve a intentarlo.';
+            return false;
+        }
+        const comerciales = this.$root.querySelectorAll('[data-formato-comercial] input:not([type=hidden]), [data-formato-comercial] textarea');
+        if (Array.from(comerciales).some(campo => campo.value !== (campo.dataset.inicial ?? campo.defaultValue))) {
+            this.cambiar('presupuesto');
+            this.$refs.datosImpresion.open = true;
+            this.errorVersion = 'Guarda los datos para impresión antes de continuar.';
+            return false;
+        }
+        return true;
+    },
+    async guardarVersion(formulario) {
+        if (this.guardandoVersion) return;
+        this.guardandoVersion = true;
+        if (await this.esperarCambios()) {
+            formulario.submit();
+        } else {
+            this.guardandoVersion = false;
+        }
+    },
+    async exportarPdf(url) {
+        const ventana = window.open('about:blank', '_blank');
+        if (ventana) ventana.opener = null;
+        if (!await this.esperarCambios()) {
+            ventana?.close();
+            return;
+        }
+        if (ventana) {
+            ventana.location.replace(url);
+        } else {
+            window.location.assign(url);
+        }
+    },
+    formatoImporte(valor) {
+        return '$' + Number(valor).toLocaleString('en-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    },
     cambiar(id) {
         this.tab = id;
         const url = new URL(window.location.href);
@@ -23,21 +139,73 @@
         botones[siguiente].focus();
     }
 }">
+    <div role="status" aria-live="polite" x-show="mensajeGuardado" x-cloak x-text="mensajeGuardado"
+         :class="errorGuardado ? 'bg-red-700' : 'bg-emerald-700'"
+         class="fixed bottom-6 right-6 z-50 rounded-lg px-4 py-3 text-sm font-semibold text-white shadow-lg"></div>
     <div class="flex flex-wrap items-center justify-between gap-3">
         <a href="{{ route('presupuesto.index') }}" class="text-sm font-medium text-[#0B265A] hover:underline">← Volver a presupuestos</a>
-        <a href="{{ route('presupuesto.pdf', $presupuesto->id) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-            Exportar PDF
-        </a>
+        <div class="flex flex-wrap items-center gap-3">
+            @if($versionGuardada)
+                <a href="{{ route('presupuesto.versiones.index', $presupuesto) }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-[#0B265A] hover:bg-slate-50">Historial de versiones</a>
+            @endif
+            @if(!$versionGuardada || $revisionEnCurso)
+                <form method="POST" action="{{ route('presupuesto.versiones.store', $presupuesto) }}" @submit.prevent="guardarVersion($el)">
+                    @csrf
+                    <input type="hidden" name="revision" value="{{ $siguienteRevision }}">
+                    <button type="submit" :disabled="guardandoVersion" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-[#0B265A] hover:bg-slate-50 disabled:opacity-60"
+                            x-text="guardandoVersion ? 'Guardando…' : 'Guardar versión'">Guardar versión</button>
+                </form>
+            @endif
+            <a href="{{ route('presupuesto.pdf', $presupuesto->id) }}" target="_blank" rel="noopener" @click.prevent="exportarPdf($el.href)" class="inline-flex items-center gap-2 rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                Exportar PDF
+            </a>
+        </div>
     </div>
+    <p role="alert" x-show="errorVersion" x-cloak x-text="errorVersion" class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800"></p>
+    @if($errors->versionPresupuesto->any())
+        <p role="alert" class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">{{ $errors->versionPresupuesto->first() }}</p>
+    @endif
+    @if($revisionEnCurso)
+        <div class="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+            <p class="font-semibold">Borrador #{{ $presupuesto->consecutivo_cliente }}.{{ $siguienteRevision }}</p>
+            @if($presupuesto->motivo_borrador_revision)
+                <p class="mt-1">{{ $presupuesto->motivo_borrador_revision }}</p>
+            @endif
+        </div>
+    @endif
     <header class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-5">
-            <div><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Presupuesto sincronizado</span><h1 class="mt-1 text-2xl font-bold text-[#0B265A]">{{ $presupuesto->codigo_proyecto }}</h1><p class="mt-1 text-base text-slate-600">{{ $presupuesto->nombre_cliente }}</p></div>
-            <div class="flex flex-wrap gap-6">
-                <div><p class="text-xs uppercase text-slate-500">Costo directo</p><p class="mt-1 text-xl font-semibold text-slate-700">${{ number_format($presupuesto->total_costo_directo, 2) }}</p></div>
-                <div><p class="text-xs uppercase text-slate-500">Total venta</p><p class="mt-1 text-xl font-bold text-emerald-700">${{ number_format($presupuesto->total_presupuesto, 2) }}</p></div>
+            <div>
+                <h1 class="text-lg font-semibold text-slate-800">Datos del presupuesto</h1>
+                <p class="mt-1 text-2xl font-bold text-[#0B265A]">{{ $presupuesto->codigo_proyecto }}</p>
+                <p class="mt-1 text-base text-slate-700">{{ $presupuesto->nombreClienteVisible() }}</p>
+                @if($presupuesto->esImportado() && $presupuesto->cliente_id)
+                    <p class="mt-1 text-sm text-slate-500">Cliente importado: {{ $presupuesto->nombre_cliente }}</p>
+                @endif
+                <p class="mt-1 text-sm text-slate-500">{{ $presupuesto->esImportado() ? 'Sincronizado desde Excel' : 'Creado en SIRICO' }}</p>
+                <dl class="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                    <div><dt class="font-medium text-slate-600">Nombre de obra</dt><dd>{{ $presupuesto->nombre_obra ?? 'Por definir' }}</dd></div>
+                    <div><dt class="font-medium text-slate-600">Equipo propuesto</dt><dd>{{ \App\Models\Presupuesto::EQUIPOS_PROPUESTOS[$presupuesto->equipo_propuesto] ?? 'Por definir' }}</dd></div>
+                </dl>
+            </div>
+            <div class="w-full lg:w-auto">
+                <div class="flex flex-wrap gap-6 lg:justify-end">
+                    <div><p class="text-xs uppercase text-slate-500">Costo directo</p><p class="mt-1 text-xl font-semibold text-slate-700">${{ number_format($presupuesto->total_costo_directo, 2) }}</p></div>
+                    <div><p class="text-xs uppercase text-slate-500">Total venta</p><p class="mt-1 text-xl font-bold text-emerald-700">${{ number_format($presupuesto->total_presupuesto, 2) }}</p></div>
+                </div>
+                @include('presupuesto.partials.duracion-apupi')
             </div>
         </div>
+        @if(session('estadoPresupuesto'))
+            <p role="status" class="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('estadoPresupuesto') }}</p>
+        @endif
+        <details class="mt-4 border-t border-slate-200 pt-4" @if($errors->datosPresupuesto->any() || $errors->versionPresupuesto->has('cliente_id')) open @endif>
+            <summary class="cursor-pointer text-sm font-semibold text-[#0B265A]">Editar datos del presupuesto</summary>
+            <div class="mt-4">
+                @include('presupuesto.partials.datos')
+            </div>
+        </details>
     </header>
     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div class="overflow-x-auto border-b border-slate-200 bg-slate-50">
@@ -51,36 +219,29 @@
             </div>
         </div>
         <section id="panel-pilas" role="tabpanel" aria-labelledby="tab-pilas" tabindex="0" x-show="tab === 'pilas'" @if($tabInicial !== 'pilas') x-cloak @endif>
-            <div class="p-5"><h2 class="text-lg font-semibold text-slate-800">Pilas / VOL</h2><p class="mt-1 text-sm text-slate-500">Cantidades y conceptos de perforación importados del Excel.</p></div>
-            @include('presupuesto.partials.tabla-escenarios', ['filas' => $presupuesto->pilas, 'esPila' => true])
+            @include('presupuesto.partials.pilas-vol')
         </section>
         <section id="panel-apupi" role="tabpanel" aria-labelledby="tab-apupi" tabindex="0" x-show="tab === 'apupi'" @if($tabInicial !== 'apupi') x-cloak @endif>
-            <div class="p-5"><h2 class="text-lg font-semibold text-slate-800">APUPI · Análisis de costos</h2><p class="mt-1 text-sm text-slate-500">Equipo, personal, materiales y demás costos, con sus escenarios importados.</p></div>
-            @include('presupuesto.partials.tabla-escenarios', ['filas' => $presupuesto->detalles, 'esPila' => false])
+            <div class="space-y-3 p-5">
+                <h2 class="text-lg font-semibold text-slate-800">APUPI · Análisis de costos</h2>
+                @if($volumetria['filas']->isNotEmpty())
+                    <h3 class="text-sm font-semibold text-slate-700">Base de Pilas / VOL</h3>
+                    <dl class="flex flex-wrap gap-3 text-sm">
+                        @foreach(['piezas' => ['Pilas', 0], 'jornales' => ['Jornales', 3], 'metros_lineales' => ['Perforación (ML)', 3], 'concreto' => ['Concreto (m³)', 3]] as $campo => [$etiqueta, $decimales])
+                            <div class="rounded-lg bg-slate-100 px-3 py-2">
+                                <dt class="text-slate-600">{{ $etiqueta }}</dt>
+                                <dd class="font-semibold">{{ number_format($volumetria['totales'][$campo], $decimales) }}</dd>
+                            </div>
+                        @endforeach
+                    </dl>
+                @else
+                    <p class="text-sm text-slate-500">Captura los tipos de pila en Pilas / VOL para obtener la base de APUPI.</p>
+                @endif
+            </div>
+            @include('presupuesto.partials.costos-apupi')
         </section>
         <section id="panel-presupuesto" role="tabpanel" aria-labelledby="tab-presupuesto" tabindex="0" x-show="tab === 'presupuesto'" @if($tabInicial !== 'presupuesto') x-cloak @endif>
-            <div class="p-5"><h2 class="text-lg font-semibold text-slate-800">Presupuesto · Resumen de venta</h2><p class="mt-1 text-sm text-slate-500">Partidas de venta y perforación que integran la propuesta al cliente.</p></div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="bg-[#0B265A] text-white"><tr><th class="px-4 py-3 text-left">Partida</th><th class="px-4 py-3 text-left">Concepto</th><th class="px-4 py-3 text-center">Unidad</th><th class="px-4 py-3 text-right">Cantidad</th><th class="px-4 py-3 text-right">P.U. venta</th><th class="px-4 py-3 text-right">Importe</th></tr></thead>
-                    <tbody class="divide-y divide-slate-100">
-                        @foreach($presupuesto->resumenes as $res)
-                            @if($res->cantidad > 0 && $res->precio_unitario > 0)
-                                <tr class="hover:bg-blue-50"><td class="px-4 py-3 text-xs font-semibold text-slate-500">{{ $res->partida }}</td><td class="px-4 py-3 text-slate-700">{{ $res->concepto }}</td><td class="px-4 py-3 text-center text-slate-500">{{ $res->unidad }}</td><td class="px-4 py-3 text-right">{{ number_format($res->cantidad, 2) }}</td><td class="px-4 py-3 text-right whitespace-nowrap">${{ number_format($res->precio_unitario, 2) }}</td><td class="px-4 py-3 text-right font-semibold whitespace-nowrap">${{ number_format($res->importe, 2) }}</td></tr>
-                            @endif
-                        @endforeach
-                        @foreach($presupuesto->pilas as $pila)
-                            @if($pila->cantidad > 0 && $pila->costo > 0)
-                                <tr class="hover:bg-blue-50"><td class="px-4 py-3 text-xs font-semibold text-[#0B265A]">PERFORACIÓN</td><td class="px-4 py-3 text-slate-700">{{ $pila->concepto }}</td><td class="px-4 py-3 text-center text-slate-500">{{ $pila->unidad }}</td><td class="px-4 py-3 text-right">{{ number_format($pila->cantidad, 2) }}</td><td class="px-4 py-3 text-right whitespace-nowrap">${{ number_format($pila->costo, 2) }}</td><td class="px-4 py-3 text-right font-semibold whitespace-nowrap">${{ number_format($pila->total, 2) }}</td></tr>
-                            @endif
-                        @endforeach
-                        @if($presupuesto->resumenes->where('cantidad', '>', 0)->where('precio_unitario', '>', 0)->isEmpty() && $presupuesto->pilas->where('cantidad', '>', 0)->where('costo', '>', 0)->isEmpty())
-                            <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">No hay conceptos de venta importados.</td></tr>
-                        @endif
-                    </tbody>
-                    <tfoot class="bg-slate-100"><tr><th colspan="5" class="px-4 py-4 text-right text-slate-700">Total general de venta</th><td class="px-4 py-4 text-right text-lg font-bold text-[#0B265A] whitespace-nowrap">${{ number_format($totalVenta, 2) }}</td></tr></tfoot>
-                </table>
-            </div>
+            @include('presupuesto.partials.presentacion-comercial')
         </section>
         <section id="panel-gastos" role="tabpanel" aria-labelledby="tab-gastos" tabindex="0" x-show="tab === 'gastos'" @if($tabInicial !== 'gastos') x-cloak @endif>
             <div class="p-5"><h2 class="text-lg font-semibold text-slate-800">Relación de gastos · Base presupuestada</h2><p class="mt-1 text-sm text-slate-500">Conceptos previstos de gasto importados del Excel.</p></div>

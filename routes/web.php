@@ -413,9 +413,37 @@ Route::middleware('auth','verified')->group(function () {
 
     Route::prefix('presupuesto')->group(function(){
         Route::get('presupuestos', [App\Http\Controllers\PresupuestoController::class, 'index'])->name('presupuesto.index');
+        Route::get('presupuestos/nuevo', [App\Http\Controllers\PresupuestoController::class, 'create'])->name('presupuesto.create');
+        Route::get('clientes/buscar', [App\Http\Controllers\PresupuestoController::class, 'buscarClientes'])->name('presupuesto.clientes.buscar');
+        Route::post('presupuestos', [App\Http\Controllers\PresupuestoController::class, 'store'])->name('presupuesto.store');
+        Route::patch('presupuestos/{presupuesto}', [App\Http\Controllers\PresupuestoController::class, 'update'])->name('presupuesto.update');
+        Route::patch('presupuestos/{presupuesto}/presentacion', [App\Http\Controllers\PresupuestoController::class, 'updatePresentacion'])->name('presupuesto.presentacion.update');
+        Route::patch('presupuestos/{presupuesto}/presentacion/conceptos/{renglon}', [App\Http\Controllers\PresupuestoController::class, 'updateConceptoPresentacion'])
+            ->where('renglon', '[a-z0-9-]+')->name('presupuesto.presentacion.conceptos.update');
+        Route::patch('presupuestos/{presupuesto}/duracion-apupi', [App\Http\Controllers\PresupuestoController::class, 'updateDuracionApupi'])->name('presupuesto.duracion-apupi.update');
+        Route::patch('presupuestos/{presupuesto}/apupi/indirecto-traslado', [App\Http\Controllers\PresupuestoController::class, 'updateIndirectoTrasladoApupi'])->name('presupuesto.apupi.indirecto-traslado.update');
+        Route::patch('presupuestos/{presupuesto}/apupi/propuesta/{renglon}', [App\Http\Controllers\PresupuestoController::class, 'updateRenglonPropuestaApupi'])
+            ->where('renglon', '[a-z0-9-]+')->name('presupuesto.apupi.propuesta.update');
+        Route::patch('presupuestos/{presupuesto}/apupi/{detalle}', [App\Http\Controllers\PresupuestoController::class, 'updateCostoApupi'])
+            ->where('detalle', '[0-9]+|apupi-[0-9]+|traslado-[a-z0-9-]+')->name('presupuesto.apupi.update');
         // Ruta para ver el detalle de uno especifico (la usaremos despues)
         Route::get('presupuestos/{id}', [App\Http\Controllers\PresupuestoController::class, 'show'])->name('presupuesto.show');
+        Route::post('presupuestos/{presupuesto}/versiones', [App\Http\Controllers\PresupuestoController::class, 'storeVersion'])->name('presupuesto.versiones.store');
+        Route::get('presupuestos/{presupuesto}/versiones', [App\Http\Controllers\PresupuestoController::class, 'historialVersiones'])->name('presupuesto.versiones.index');
+        Route::post('presupuestos/{presupuesto}/versiones/{version}/revision', [App\Http\Controllers\PresupuestoController::class, 'crearRevision'])
+            ->whereNumber('version')->name('presupuesto.versiones.revisar');
+        Route::get('presupuestos/{presupuesto}/versiones/{version}', [App\Http\Controllers\PresupuestoController::class, 'showVersion'])
+            ->whereNumber('version')->name('presupuesto.versiones.show');
+        Route::get('presupuestos/{presupuesto}/versiones/{version}/pdf', [App\Http\Controllers\PresupuestoController::class, 'exportVersionPdf'])
+            ->whereNumber('version')->name('presupuesto.versiones.pdf');
+        Route::post('presupuestos/{presupuesto}/versiones/{version}/seguimiento', [App\Http\Controllers\PresupuestoController::class, 'storeSeguimiento'])
+            ->whereNumber('version')->name('presupuesto.versiones.seguimiento.store');
         Route::get('presupuestos/{id}/pdf', [App\Http\Controllers\PresupuestoController::class, 'exportPdf'])->name('presupuesto.pdf');
+        Route::post('presupuestos/{presupuesto}/pilas-vol', [App\Http\Controllers\PresupuestoController::class, 'storePilaVol'])->name('presupuesto.pilas-vol.store');
+        Route::post('presupuestos/{presupuesto}/pilas-vol/calcular', [App\Http\Controllers\PresupuestoController::class, 'previewPilaVol'])->name('presupuesto.pilas-vol.calcular');
+        Route::patch('presupuestos/{presupuesto}/pilas-vol/traslape', [App\Http\Controllers\PresupuestoController::class, 'updateTraslapeVol'])->name('presupuesto.pilas-vol.traslape');
+        Route::patch('presupuestos/{presupuesto}/pilas-vol/{pilaVol}', [App\Http\Controllers\PresupuestoController::class, 'updatePilaVol'])->whereNumber('pilaVol')->name('presupuesto.pilas-vol.update');
+        Route::delete('presupuestos/{presupuesto}/pilas-vol/{pilaVol}', [App\Http\Controllers\PresupuestoController::class, 'destroyPilaVol'])->whereNumber('pilaVol')->name('presupuesto.pilas-vol.destroy');
         Route::delete('presupuestos/{id}', [App\Http\Controllers\PresupuestoController::class, 'destroy'])->name('presupuesto.destroy');
 
         });

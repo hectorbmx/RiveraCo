@@ -19,6 +19,9 @@ class PlaneacionGastosController extends Controller
     if (!$presupuesto) {
         return response()->json(['error' => 'No existe presupuesto para este código. Sincroniza primero el presupuesto.'], 422);
     }
+    if (! $presupuesto->esImportado()) {
+        return response()->json(['error' => 'El folio pertenece a un presupuesto creado en SIRICO.'], 409);
+    }
 
     try {
         return DB::transaction(function () use ($request, $presupuesto) {

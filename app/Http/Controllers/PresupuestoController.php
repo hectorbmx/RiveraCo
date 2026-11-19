@@ -2,77 +2,709 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cliente;
+use App\Models\ObraPlaneacionGasto;
 use App\Models\Presupuesto;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 use Illuminate\Support\Facades\DB;
 use App\Models\PresupuestoDetalle;
+use App\Models\PresupuestoEvento;
 use App\Models\PresupuestoPila;
 use App\Models\PresupuestoResumen;
+use App\Models\PresupuestoVolPila;
+use App\Models\PresupuestoVersion;
+use App\Support\DatosPresupuestoVersion;
+use App\Support\PresentacionPresupuesto;
+use App\Support\PropuestaApupi;
+use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 class PresupuestoController extends Controller
 {
     public function index(Request $request)
     {
         $request->validate(['buscar' => ['nullable', 'string', 'max:255']]);
         $buscar = trim((string) $request->input('buscar', ''));
+        $movimientos = PresupuestoEvento::query()
+            ->select('presupuesto_eventos.id')
+            ->join('presupuesto_versiones', 'presupuesto_versiones.id', '=', 'presupuesto_eventos.presupuesto_version_id')
+            ->whereColumn('presupuesto_versiones.presupuesto_id', 'presupuestos.id')
+            ->orderByDesc('presupuesto_eventos.id')->limit(1);
+        $aceptacion = (clone $movimientos)->where('presupuesto_eventos.tipo', PresupuestoEvento::ACEPTADO)
+            ->whereNotExists(function ($posterior) {
+                $posterior->selectRaw('1')->from('presupuesto_eventos as posterior')
+                    ->whereColumn('posterior.presupuesto_version_id', 'presupuesto_eventos.presupuesto_version_id')
+                    ->whereColumn('posterior.id', '>', 'presupuesto_eventos.id');
+            });
         $presupuestos = Presupuesto::query()
+            ->addSelect(['ultimo_movimiento_id' => $movimientos, 'aceptacion_vigente_id' => $aceptacion])
+            ->with([
+                'cliente:id,nombre_comercial',
+                'ultimoMovimiento.version:id,presupuesto_id,revision',
+                'aceptacionVigente.version:id,presupuesto_id,revision',
+            ])
             ->when($buscar !== '', function ($query) use ($buscar) {
                 $literal = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $buscar);
                 $query->where(function ($query) use ($literal) {
                     $query->whereRaw("nombre_cliente LIKE ? ESCAPE '!'", ['%' . $literal . '%'])
-                        ->orWhereRaw("codigo_proyecto LIKE ? ESCAPE '!'", ['%' . $literal . '%']);
+                        ->orWhereRaw("codigo_proyecto LIKE ? ESCAPE '!'", ['%' . $literal . '%'])
+                        ->orWhereHas('cliente', fn ($cliente) => $cliente->whereRaw(
+                            "nombre_comercial LIKE ? ESCAPE '!'", ['%' . $literal . '%']
+                        ));
                 });
             })
             ->orderBy('created_at', 'desc')
             ->get();
+        $presupuestos->each(function (Presupuesto $presupuesto) {
+            $presupuesto->ultimoMovimiento?->version?->setRelation('presupuesto', $presupuesto);
+            $presupuesto->aceptacionVigente?->version?->setRelation('presupuesto', $presupuesto);
+        });
         
         return view('presupuesto.index', compact('presupuestos', 'buscar'));
     }
+    public function create(Request $request)
+    {
+        $presupuesto = new Presupuesto(['origen' => Presupuesto::ORIGEN_SIRICO]);
 
+        return view('presupuesto.create', [
+            'presupuesto' => $presupuesto,
+            'clienteSeleccionado' => $this->clienteSeleccionado($request, $presupuesto),
+        ]);
+    }
 
+    public function buscarClientes(Request $request)
+    {
+        $datos = $request->validate(['q' => ['required', 'string', 'min:2', 'max:255']]);
+        $literal = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $datos['q']);
+        $filtro = '%' . $literal . '%';
+        $clientes = Cliente::query()->where(function ($query) use ($filtro) {
+            $query->whereRaw("nombre_comercial LIKE ? ESCAPE '!'", [$filtro])
+                ->orWhereRaw("razon_social LIKE ? ESCAPE '!'", [$filtro])
+                ->orWhereRaw("rfc LIKE ? ESCAPE '!'", [$filtro]);
+        })->orderBy('nombre_comercial')->orderBy('id')->limit(12)
+            ->get(['id', 'nombre_comercial', 'razon_social', 'rfc']);
 
-    public function show($id)
+        return response()->json($clientes);
+    }
+
+    public function store(Request $request)
+    {
+        $presupuesto = new Presupuesto(['origen' => Presupuesto::ORIGEN_SIRICO, 'estatus' => 'borrador']);
+        $this->guardarDatos($request, $presupuesto);
+
+        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'pilas'])
+            ->with('estadoPresupuesto', 'Presupuesto creado.');
+    }
+
+    public function update(Request $request, Presupuesto $presupuesto)
+    {
+        DB::transaction(function () use ($request, $presupuesto) {
+            $this->guardarDatos($request, Presupuesto::lockForUpdate()->findOrFail($presupuesto->id));
+        }, 3);
+
+        return $this->volverAlDetalle($request, $presupuesto, 'Datos del presupuesto actualizados.');
+    }
+
+    public function updatePresentacion(Request $request, Presupuesto $presupuesto)
+    {
+        $datos = $request->validateWithBag('presentacionPresupuesto', [
+            'domicilio' => ['nullable', 'string', 'max:500'],
+            'atencion' => ['nullable', 'string', 'max:160'],
+            'telefono' => ['nullable', 'string', 'max:80'],
+            'correo' => ['nullable', 'email', 'max:160'],
+            'ubicacion' => ['nullable', 'string', 'max:500'],
+            'descripcion_perforacion' => ['nullable', 'string', 'max:1000'],
+            'anticipo' => ['nullable', 'numeric', 'decimal:0,2', 'between:0,100'],
+            'condiciones_pago' => ['nullable', 'string', 'max:1000'],
+            'plazo_semanas' => ['nullable', 'numeric', 'decimal:0,2', 'between:0,99999'],
+            'iva' => ['nullable', 'numeric', 'decimal:0,2', 'between:0,100'],
+            'notas' => ['nullable', 'string', 'max:10000'],
+            'descripciones' => ['sometimes', 'array', 'max:300'],
+            'descripciones.*' => ['nullable', 'string', 'max:1000'],
+            'unidades' => ['sometimes', 'array', 'max:300'],
+            'unidades.*' => ['nullable', 'string', 'max:32'],
+        ]);
+        if (isset($datos['notas'])) {
+            $datos['notas'] = PresentacionPresupuesto::notaPorRenglon($datos['notas']);
+        }
+
+        DB::transaction(function () use ($presupuesto, $datos) {
+            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $anteriores = $actual->presentacion_comercial ?? [];
+            $actualizados = array_replace($anteriores, $datos);
+            foreach (['descripciones', 'unidades'] as $campo) {
+                $valores = array_replace($anteriores[$campo] ?? [], $datos[$campo] ?? []);
+                $actualizados[$campo] = array_filter($valores, fn ($texto) => $texto !== null);
+            }
+            $actual->presentacion_comercial = $actualizados;
+            $actual->save();
+        }, 3);
+
+        return $this->volverAlDetalle($request, $presupuesto, 'Datos para impresión actualizados.');
+    }
+
+    public function updateConceptoPresentacion(Request $request, Presupuesto $presupuesto, string $renglon)
+    {
+        $datos = $request->validate(['concepto' => ['required', 'string', 'max:1000']]);
+        DB::transaction(function () use ($presupuesto, $renglon, $datos) {
+            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $vol = $actual->calcularVolumetria();
+            $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+            $filas = $this->filasPropuesta($actual, $vol, $duracion)
+                ->filter(fn (array $fila) => $fila['cantidad'] > 0 && $fila['precio_unitario'] > 0);
+            $captura = $actual->presentacion_comercial ?? [];
+
+            if ($renglon === PresentacionPresupuesto::ENCABEZADO_PERFORACION) {
+                abort_unless($filas->contains('partida', 'perforacion'), 404);
+                $captura['descripcion_perforacion'] = $datos['concepto'];
+            } else {
+                abort_unless($filas->has($renglon), 404);
+                $captura['descripciones'][$renglon] = $datos['concepto'];
+            }
+
+            $actual->presentacion_comercial = $captura;
+            $actual->save();
+        }, 3);
+
+        return response()->json($datos);
+    }
+
+    public function updateDuracionApupi(Request $request, Presupuesto $presupuesto)
+    {
+        $datos = $request->validateWithBag('duracionApupi', [
+            'duracion' => ['required', 'array:realista,optimista,pesimista', 'required_array_keys:realista,optimista,pesimista'],
+            'duracion.*' => ['required', 'array:jornales,dias,semanas'],
+            'duracion.*.jornales' => ['present', 'nullable', 'numeric', 'decimal:0,2', 'between:0,999999'],
+            'duracion.*.dias' => ['present', 'nullable', 'integer', 'between:0,999999'],
+            'duracion.*.semanas' => ['present', 'nullable', 'integer', 'between:0,999999'],
+        ], [], [
+            'duracion.*.jornales' => 'jornales de trabajo',
+            'duracion.*.dias' => 'días calendario',
+            'duracion.*.semanas' => 'semanas',
+        ]);
+
+        $duracion = [];
+        foreach (Presupuesto::ESCENARIOS_APUPI as $escenario) {
+            foreach ($datos['duracion'][$escenario] as $campo => $valor) {
+                if ($valor !== null) {
+                    $duracion[$escenario][$campo] = $campo === 'jornales' ? (float) $valor : (int) $valor;
+                }
+            }
+        }
+        $presupuesto->duracion_apupi = $duracion ?: null;
+        $presupuesto->save();
+
+        return $this->volverAlDetalle($request, $presupuesto, 'Duración de obra actualizada.');
+    }
+
+    public function updateCostoApupi(Request $request, Presupuesto $presupuesto, string $detalle)
+    {
+        $datos = $request->validateWithBag('costoApupi', [
+            'cantidad' => ['required_without:precio_unitario', 'numeric', 'decimal:0,2', 'between:0,9999999999999.99'],
+            'precio_unitario' => ['required_without:cantidad', 'numeric', 'decimal:0,2', 'between:0,9999999999999.99'],
+        ], [], ['precio_unitario' => 'costo unitario']);
+
+        DB::transaction(function () use ($presupuesto, $detalle, $datos) {
+            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $vol = $actual->calcularVolumetria();
+            $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+            $propuesta = $this->filasPropuesta($actual, $vol, $duracion);
+            $filas = $actual->filasApupi($duracion, PropuestaApupi::totalVenta($propuesta));
+            $fila = $filas->get($detalle) ?? (ctype_digit($detalle) ? $filas->firstWhere('detalle.id', '===', (int) $detalle) : null);
+            abort_if($fila === null, 404);
+            $ajustes = $actual->ajustes_apupi ?? [];
+            $cambios = $ajustes[$fila['clave']] ?? $ajustes[$fila['clave_anterior'] ?? ''] ?? [];
+            if (isset($fila['clave_anterior'])) {
+                unset($ajustes[$fila['clave_anterior']]);
+            }
+            $original = $fila['detalle'];
+            foreach ($datos as $campo => $valor) {
+                if ((float) $valor !== (float) $original->{$campo}) {
+                    $cambios[$campo] = $valor;
+                } else {
+                    unset($cambios[$campo]);
+                }
+            }
+
+            if ($cambios === []) {
+                unset($ajustes[$fila['clave']]);
+            } else {
+                $ajustes[$fila['clave']] = $cambios;
+            }
+
+            $actual->ajustes_apupi = $ajustes ?: null;
+            $actual->save();
+        }, 3);
+
+        return $this->respuestaCostoApupi($request, $presupuesto);
+    }
+
+    public function updateIndirectoTrasladoApupi(Request $request, Presupuesto $presupuesto)
+    {
+        $datos = $request->validateWithBag('indirectoApupi', [
+            'porcentaje' => ['required', 'numeric', 'decimal:0,2', 'between:0,999.99'],
+        ]);
+
+        $presupuesto->indirecto_traslado_apupi = $datos['porcentaje'];
+        $presupuesto->save();
+
+        return $this->respuestaCostoApupi($request, $presupuesto);
+    }
+
+    public function updateRenglonPropuestaApupi(Request $request, Presupuesto $presupuesto, string $renglon)
+    {
+        $datos = $request->validate([
+            'cantidad' => ['required_without:precio_unitario', 'numeric', 'decimal:0,2', 'between:0,9999999999999.99'],
+            'precio_unitario' => ['required_without:cantidad', 'numeric', 'decimal:0,2', 'between:0,9999999999999.99'],
+        ], [], ['precio_unitario' => 'precio unitario de venta']);
+
+        DB::transaction(function () use ($presupuesto, $renglon, $datos) {
+            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $vol = $actual->calcularVolumetria();
+            if ($renglon === 'venta-215') {
+                $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+                $filas = $this->filasPropuesta($actual, $vol, $duracion);
+            } else {
+                $filas = PropuestaApupi::filas($actual, $vol['porDiametro']);
+            }
+            $fila = $filas->get($renglon);
+            abort_if($fila === null, 404);
+            $ajustes = $actual->ajustes_propuesta_apupi ?? [];
+            $anterior = $fila['clave_anterior'];
+            $cambios = $ajustes[$renglon] ?? $ajustes[$anterior ?? ''] ?? [];
+            if ($anterior !== null) {
+                unset($ajustes[$anterior]);
+            }
+            foreach ($datos as $campo => $valor) {
+                if ((float) $valor === (float) $fila['base'][$campo]) {
+                    unset($cambios[$campo]);
+                } else {
+                    $cambios[$campo] = $valor;
+                }
+            }
+
+            if ($cambios === []) {
+                unset($ajustes[$renglon]);
+            } else {
+                $ajustes[$renglon] = $cambios;
+            }
+            $actual->ajustes_propuesta_apupi = $ajustes ?: null;
+            $actual->save();
+        }, 3);
+
+        return $this->respuestaCostoApupi($request, $presupuesto);
+    }
+
+    private function filasPropuesta(Presupuesto $presupuesto, array $vol, array $duracion): Collection
+    {
+        // La venta usa el mínimo de traslado y los precios capturados de fianza y financiamiento.
+        $resumen = $presupuesto->resumenApupi($presupuesto->filasApupi($duracion), $vol['totales']['perforacion']);
+
+        return PropuestaApupi::filas($presupuesto, $vol['porDiametro'], $resumen['realista']['minimos'][PresupuestoDetalle::PARTIDA_TRASLADO]);
+    }
+
+    private function calcularApupi(Presupuesto $presupuesto, array $vol, array $duracion): array
+    {
+        $filas = $this->filasPropuesta($presupuesto, $vol, $duracion);
+        $costos = $presupuesto->filasApupi($duracion, PropuestaApupi::totalVenta($filas));
+        $resumen = $presupuesto->resumenApupi($costos, $vol['totales']['perforacion']);
+        $resumen['propuesta'] = PropuestaApupi::calcular($filas, $vol, $resumen, $costos, $duracion);
+
+        return [$costos, $resumen];
+    }
+
+    private function respuestaCostoApupi(Request $request, Presupuesto $presupuesto)
+    {
+        if ($request->expectsJson()) {
+            $presupuesto->refresh();
+            $vol = $presupuesto->calcularVolumetria();
+            $duracion = $presupuesto->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+
+            [$costos, $resumen] = $this->calcularApupi($presupuesto, $vol, $duracion);
+            $resumen['presentacion'] = PresentacionPresupuesto::preparar($presupuesto, $costos, $resumen, $duracion);
+
+            return response()->json($resumen);
+        }
+
+        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'apupi'])
+            ->with('estadoApupi', 'APUPI actualizado.');
+    }
+
+    private function volverAlDetalle(Request $request, Presupuesto $presupuesto, string $mensaje)
+    {
+        $tab = $request->input('tab');
+        return redirect()->route('presupuesto.show', [
+            $presupuesto,
+            'tab' => in_array($tab, ['pilas', 'apupi', 'presupuesto', 'gastos'], true) ? $tab : 'apupi',
+        ])->with('estadoPresupuesto', $mensaje);
+    }
+
+    private function guardarDatos(Request $request, Presupuesto $presupuesto): void
+    {
+        $importado = $presupuesto->esImportado();
+        $folioUnico = Rule::unique('presupuestos', 'codigo_proyecto');
+        if ($presupuesto->exists) {
+            $folioUnico->ignore($presupuesto);
+        }
+        $datos = $request->validateWithBag('datosPresupuesto', [
+            'codigo_proyecto' => $importado ? ['prohibited'] : ['required', 'string', 'max:255', $folioUnico],
+            'cliente_id' => [$importado ? 'nullable' : 'required', 'integer', Rule::exists('clientes', 'id')],
+            'nombre_obra' => [$importado ? 'nullable' : 'required', 'string', 'max:255'],
+            'equipo_propuesto' => ['nullable', Rule::in(array_keys(Presupuesto::EQUIPOS_PROPUESTOS))],
+        ], [], ['codigo_proyecto' => 'folio', 'cliente_id' => 'cliente', 'nombre_obra' => 'nombre de obra', 'equipo_propuesto' => 'equipo propuesto']);
+
+        if ($importado) {
+            unset($datos['codigo_proyecto']);
+        } else {
+            $datos['nombre_cliente'] = Cliente::findOrFail($datos['cliente_id'])->nombre_comercial;
+        }
+
+        try {
+            $presupuesto->fill($datos)->save();
+        } catch (UniqueConstraintViolationException $e) {
+            if ($importado) {
+                throw $e;
+            }
+
+            throw ValidationException::withMessages(['codigo_proyecto' => 'Este folio ya está en uso.'])
+                ->errorBag('datosPresupuesto');
+        }
+    }
+
+    private function clienteSeleccionado(Request $request, Presupuesto $presupuesto): ?Cliente
+    {
+        $id = filter_var($request->old('cliente_id', $presupuesto->cliente_id), FILTER_VALIDATE_INT);
+
+        return $id ? Cliente::find($id, ['id', 'nombre_comercial', 'razon_social', 'rfc']) : null;
+    }
+
+    public function show(Request $request, $id)
     {
         // Aquí usamos Eager Loading para traer todas las tablas relacionadas de un golpe
         $presupuesto = Presupuesto::with(['detalles', 'pilas', 'resumenes'])->findOrFail($id);
-        $gastosBase = \App\Models\ObraPlaneacionGasto::where('presupuesto_id', $presupuesto->id)
-            ->where('numero_semana', 0)->orderBy('id')->get();
-        
-        return view('presupuesto.show', compact('presupuesto', 'gastosBase'));
+        $gastosBase = $this->gastosBase($presupuesto);
+        $volumetria = $presupuesto->calcularVolumetria();
+        $duracionApupi = $presupuesto->duracionApupi($volumetria['filas']->isEmpty() ? null : $volumetria['totales']['jornales']);
+        $editarVol = $volumetria['filas']->firstWhere('pila.id', $request->integer('editar_pila'))['pila'] ?? null;
+
+        $clienteSeleccionado = $this->clienteSeleccionado($request, $presupuesto);
+        [$filasApupi, $resumenApupi] = $this->calcularApupi($presupuesto, $volumetria, $duracionApupi);
+        $presentacion = PresentacionPresupuesto::preparar($presupuesto, $filasApupi, $resumenApupi, $duracionApupi);
+        $versionGuardada = $presupuesto->versiones()->orderByDesc('revision')->first(['id', 'revision']);
+
+        return view('presupuesto.show', compact('presupuesto', 'gastosBase', 'volumetria', 'editarVol', 'clienteSeleccionado', 'duracionApupi', 'filasApupi', 'resumenApupi', 'versionGuardada', 'presentacion'));
     }
-   public function exportPdf($id)
+
+    public function storeVersion(Request $request, Presupuesto $presupuesto)
     {
-        $presupuesto = Presupuesto::with(['resumenes', 'pilas'])->findOrFail($id);
+        $datos = $request->validateWithBag('versionPresupuesto', ['revision' => ['sometimes', 'required', 'integer', 'min:0']]);
+        $revision = (int) ($datos['revision'] ?? 0);
+        $version = DB::transaction(function () use ($request, $presupuesto, $revision): PresupuestoVersion {
+            if ($revision === 0 && $presupuesto->consecutivo_cliente === null) {
+                try {
+                    (clone $presupuesto)->asignarConsecutivoCliente();
+                } catch (ValidationException $e) {
+                    throw $e->errorBag('versionPresupuesto');
+                }
+            }
 
-        // Preparamos la data unificada para la tabla del PDF
-        $resumenes = $presupuesto->resumenes->where('cantidad', '>', 0)->map(function($i) {
-            return [
-                'concepto' => $i->concepto, 
-                'unidad' => $i->unidad, 
-                'cantidad' => $i->cantidad, 
-                'precio' => $i->precio_unitario, 
-                'importe' => $i->importe
-            ];
-        });
+            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $guardada = $actual->versiones()->where('revision', $revision)->lockForUpdate()->first(['id']);
+            if ($guardada !== null) {
+                return $guardada;
+            }
+            $origen = $actual->version_origen_borrador_id;
+            if ($revision > 0 && ($origen === null || $revision !== (int) $actual->versiones()->max('revision') + 1)) {
+                throw ValidationException::withMessages([
+                    'revision' => 'El borrador de esta revisión ya no está disponible. Abre el historial para ver su estado.',
+                ])->errorBag('versionPresupuesto');
+            }
 
-        $pilas = $presupuesto->pilas->where('cantidad', '>', 0)->map(function($i) {
-            return [
-                'concepto' => $i->concepto, 
-                'unidad' => $i->unidad, 
-                'cantidad' => $i->cantidad, 
-                'precio' => $i->costo, 
-                'importe' => $i->total
-            ];
-        });
+            $actual->load(['cliente', 'detalles', 'pilas', 'resumenes']);
+            $vol = $actual->calcularVolumetria();
+            $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+            [$costos, $resumen] = $this->calcularApupi($actual, $vol, $duracion);
+            $autor = $request->user()->getKey();
+            $version = $actual->versiones()->create([
+                'revision' => $revision,
+                'version_origen_id' => $origen,
+                'motivo' => $actual->motivo_borrador_revision,
+                'creado_por' => $autor,
+                'datos' => DatosPresupuestoVersion::capturar($actual, $vol, $duracion, $costos, $resumen, $this->gastosBase($actual)),
+                'total_venta' => $resumen['propuesta']['total'],
+            ]);
+            $version->eventos()->create(['tipo' => PresupuestoEvento::GUARDADO, 'registrado_por' => $autor]);
+            if ($origen !== null) {
+                $actual->forceFill(['version_origen_borrador_id' => null, 'motivo_borrador_revision' => null])->save();
+            }
 
-        $tablaConsolidada = $resumenes->concat($pilas);
-        $totalGeneral = $tablaConsolidada->sum('importe');
+            return $version;
+        }, 3);
 
-        // IMPORTANTE: Cambia "PDF::" por "Pdf::" (en minúsculas la d y f si usas la versión reciente)
-        $pdf = Pdf::loadView('presupuesto.pdf_template', compact('presupuesto', 'tablaConsolidada', 'totalGeneral'));
-        
-        return $pdf->stream("Presupuesto_{$presupuesto->codigo_proyecto}.pdf");
+        return redirect()->route('presupuesto.versiones.show', [$presupuesto, $version]);
+    }
+
+    public function historialVersiones(Presupuesto $presupuesto)
+    {
+        $versiones = $presupuesto->versiones()->with(['autor:id,name', 'ultimoEvento'])->orderByDesc('revision')
+            ->get(['id', 'presupuesto_id', 'revision', 'creado_por', 'motivo', 'total_venta', 'created_at']);
+        $versiones->each(fn (PresupuestoVersion $version) => $version->setRelation('presupuesto', $presupuesto));
+
+        return view('presupuesto.versiones', compact('presupuesto', 'versiones'));
+    }
+
+    public function crearRevision(Request $request, Presupuesto $presupuesto, int $version)
+    {
+        $datos = $request->validateWithBag('revisionPresupuesto', [
+            'ultima_revision' => ['required', 'integer', 'min:0'],
+            'motivo' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $creado = DB::transaction(function () use ($presupuesto, $version, $datos): bool {
+            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $origen = $actual->versiones()->findOrFail($version);
+            if ($actual->version_origen_borrador_id !== null) {
+                return false;
+            }
+            if ((int) $datos['ultima_revision'] !== (int) $actual->versiones()->max('revision')) {
+                throw ValidationException::withMessages([
+                    'ultima_revision' => 'Hay una versión más reciente. Actualiza el historial y vuelve a elegir la versión de origen.',
+                ])->errorBag('revisionPresupuesto');
+            }
+
+            DatosPresupuestoVersion::restaurar($actual, $origen->datos);
+            $actual->forceFill([
+                'version_origen_borrador_id' => $origen->id,
+                'motivo_borrador_revision' => $datos['motivo'] ?? null,
+            ])->save();
+
+            return true;
+        }, 3);
+
+        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'pilas'])
+            ->with('estadoPresupuesto', $creado ? 'Borrador de revisión creado.' : 'Ya hay un borrador de revisión en curso.');
+    }
+
+    public function showVersion(Presupuesto $presupuesto, int $version)
+    {
+        $version = $presupuesto->versiones()->with([
+            'autor:id,name',
+            'origen:id,presupuesto_id,revision',
+            'eventos' => fn ($eventos) => $eventos->with('autor:id,name')->latest('id'),
+        ])->findOrFail($version);
+        $version->setRelation('presupuesto', $presupuesto);
+        $version->origen?->setRelation('presupuesto', $presupuesto);
+
+        return view('presupuesto.version', compact('presupuesto', 'version'));
+    }
+
+    public function storeSeguimiento(Request $request, Presupuesto $presupuesto, int $version)
+    {
+        $datos = $request->validateWithBag('seguimientoPresupuesto', [
+            'tipo' => ['required', Rule::in(array_keys(PresupuestoEvento::TIPOS_SEGUIMIENTO))],
+            'nota' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $autor = $request->user()->getKey();
+        DB::transaction(function () use ($presupuesto, $version, $datos, $autor) {
+            $guardada = $presupuesto->versiones()->lockForUpdate()->findOrFail($version, ['id']);
+            $ultimo = $guardada->eventos()->latest('id')->first();
+            $nota = $datos['nota'] ?? null;
+            if ($ultimo?->tipo === $datos['tipo'] && $ultimo->nota === $nota && (int) $ultimo->registrado_por === (int) $autor) {
+                return;
+            }
+
+            $guardada->eventos()->create([
+                'tipo' => $datos['tipo'],
+                'nota' => $nota,
+                'registrado_por' => $autor,
+            ]);
+        }, 3);
+
+        return redirect()->to(route('presupuesto.versiones.show', [$presupuesto, $version]) . '#seguimiento')
+            ->with('estadoSeguimiento', 'Movimiento registrado.');
+    }
+
+    private function gastosBase(Presupuesto $presupuesto): Collection
+    {
+        if ($presupuesto->version_origen_borrador_id !== null) {
+            return collect($presupuesto->origenBorrador->datos['gastos'])->map(fn (array $fila) => new ObraPlaneacionGasto($fila));
+        }
+
+        return ObraPlaneacionGasto::where('presupuesto_id', $presupuesto->id)
+            ->where('numero_semana', 0)->orderBy('id')->get();
+    }
+
+    public function storePilaVol(Request $request, Presupuesto $presupuesto)
+    {
+        $datos = $this->validarPilaVol($request);
+        DB::transaction(function () use ($presupuesto, $datos) {
+            Presupuesto::lockForUpdate()->findOrFail($presupuesto->id)->pilasVol()->create($datos);
+        }, 3);
+
+        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'pilas'])
+            ->with('estadoVol', 'Tipo de pila agregado.');
+    }
+
+    public function updatePilaVol(Request $request, Presupuesto $presupuesto, int $pilaVol)
+    {
+        DB::transaction(function () use ($request, $presupuesto, $pilaVol) {
+            $pila = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id)->pilasVol()->findOrFail($pilaVol);
+            $pila->update($this->validarPilaVol($request, anterior: $pila));
+        }, 3);
+
+        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'pilas'])
+            ->with('estadoVol', 'Tipo de pila actualizado.');
+    }
+
+    public function updateTraslapeVol(Request $request, Presupuesto $presupuesto)
+    {
+        $datos = $request->validateWithBag('traslapeVol', [
+            'vol_traslape_varilla' => ['required', 'numeric', 'decimal:0,5', 'between:0,99999.99999'],
+        ]);
+        $presupuesto->vol_traslape_varilla = $datos['vol_traslape_varilla'];
+        $presupuesto->save();
+
+        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'pilas'])
+            ->with('estadoVol', 'Traslape de varilla actualizado.');
+    }
+
+    public function previewPilaVol(Request $request, Presupuesto $presupuesto)
+    {
+        $idPila = $request->integer('pila_vol');
+        $anterior = $idPila ? $presupuesto->pilasVol()->findOrFail($idPila) : null;
+        $pila = new PresupuestoVolPila($this->validarPilaVol($request, permitirIncompleto: true, anterior: $anterior));
+
+        return response()->json($pila->volumetria((float) $presupuesto->vol_traslape_varilla));
+    }
+
+    private function validarPilaVol(Request $request, bool $permitirIncompleto = false, ?PresupuestoVolPila $anterior = null): array
+    {
+        $captura = $permitirIncompleto ? 'nullable' : 'required';
+        $datos = $request->validateWithBag('pilaVol', [
+            'tipo' => [$captura, 'string', 'max:80'],
+            'diametro' => [$captura, 'numeric', 'decimal:0,3', 'between:0.15,99999.999'],
+            'piezas' => [$captura, 'integer', 'between:1,4294967295'],
+            'longitud_l0' => [$captura, 'numeric', 'decimal:0,3', 'between:0.001,99999.999'],
+            'avance_metros_por_jornal' => [$captura, 'numeric', 'decimal:0,5', 'between:0.00001,999999999.99999'],
+            'longitud_l1' => ['nullable', 'numeric', 'decimal:0,3', 'between:0,99999.999'],
+            'longitud_l2' => ['nullable', 'numeric', 'decimal:0,3', 'between:0,99999.999'],
+            'intervalo_l0' => ['nullable', 'numeric', 'decimal:0,3', 'between:0,99999.999'],
+            'intervalo_l1' => ['nullable', 'numeric', 'decimal:0,3', 'between:0,99999.999'],
+            'intervalo_l2' => ['nullable', 'numeric', 'decimal:0,3', 'between:0,99999.999'],
+            'varillas_l0' => ['nullable', 'integer', 'between:0,4294967295'],
+            'varillas_l1' => ['nullable', 'integer', 'between:0,4294967295'],
+            'acero_kg_por_pila' => ['nullable', 'numeric', 'decimal:0,3', 'between:0,9999999.999'],
+        ], [], [
+            'longitud_l0' => 'longitud L0',
+            'avance_metros_por_jornal' => 'avance en metros por jornal',
+        ]);
+
+        foreach (['longitud_l1', 'longitud_l2', 'intervalo_l0', 'intervalo_l1', 'intervalo_l2', 'varillas_l0', 'varillas_l1'] as $campo) {
+            $datos[$campo] ??= 0;
+        }
+        $datos['acero_kg_por_pila'] ??= null;
+        // Una pila existente conserva la longitud exacta calculada hasta que se edita su geometría.
+        $mismaGeometria = $anterior?->volumen_objetivo !== null
+            && isset($datos['diametro'], $datos['longitud_l0'])
+            && (float) $datos['diametro'] === (float) $anterior->diametro
+            && (float) $datos['longitud_l0'] === (float) $anterior->longitud_l0;
+        $datos['volumen_objetivo'] = $mismaGeometria ? $anterior->volumen_objetivo : null;
+        if (! $permitirIncompleto) {
+            $vol = (new PresupuestoVolPila($datos))->volumetria();
+            if ($vol['pilas_por_jornal'] > 99999.999) {
+                throw ValidationException::withMessages([
+                    'avance_metros_por_jornal' => 'Las pilas por jornal calculadas superan el rango de captura.',
+                ])->errorBag('pilaVol');
+            }
+            $datos['pilas_por_jornal'] = round($vol['pilas_por_jornal'], 3);
+        }
+
+        return $datos;
+    }
+
+    public function destroyPilaVol(Presupuesto $presupuesto, int $pilaVol)
+    {
+        DB::transaction(function () use ($presupuesto, $pilaVol) {
+            Presupuesto::lockForUpdate()->findOrFail($presupuesto->id)->pilasVol()->findOrFail($pilaVol)->delete();
+        }, 3);
+
+        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'pilas'])
+            ->with('estadoVol', 'Tipo de pila eliminado.');
+    }
+    public function exportVersionPdf(Presupuesto $presupuesto, int $version)
+    {
+        $version = $presupuesto->versiones()->findOrFail($version);
+        $version->setRelation('presupuesto', $presupuesto);
+        $datos = $version->datos;
+        $origen = $datos['presupuesto'];
+        $folio = $version->folio();
+        $cabecera = [
+            'cliente' => ($datos['cliente']['nombre_comercial'] ?? null) ?: $origen['nombre_cliente'],
+            'obra' => $origen['nombre_obra'],
+            'equipo' => $origen['equipo'],
+            'folio' => $folio,
+            'referencia' => $origen['codigo_proyecto'],
+            'fecha' => $version->created_at->format('d/m/Y'),
+        ];
+        $archivo = $this->nombrePdf($origen['codigo_proyecto'], ltrim($folio, '#'));
+
+        if (isset($datos['presentacion'])) {
+            return $this->imprimirPresentacion($cabecera, $datos['presentacion'], $archivo);
+        }
+
+        $tablaConsolidada = collect($datos['propuesta']['filas'])->where('cantidad', '>', 0);
+        $totalGeneral = $version->total_venta;
+        $esVersion = true;
+
+        return Pdf::loadView('presupuesto.pdf_template', compact('cabecera', 'tablaConsolidada', 'totalGeneral', 'esVersion'))
+            ->stream($archivo);
+    }
+
+    public function exportPdf($id)
+    {
+        $presupuesto = Presupuesto::with(['detalles', 'resumenes', 'pilas', 'cliente'])->findOrFail($id);
+        $vol = $presupuesto->calcularVolumetria();
+        $duracion = $presupuesto->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+        [$costos, $resumen] = $this->calcularApupi($presupuesto, $vol, $duracion);
+        $presentacion = PresentacionPresupuesto::preparar($presupuesto, $costos, $resumen, $duracion);
+        $cabecera = [
+            'cliente' => $presupuesto->nombreClienteVisible(),
+            'obra' => $presupuesto->nombre_obra,
+            'equipo' => Presupuesto::EQUIPOS_PROPUESTOS[$presupuesto->equipo_propuesto] ?? null,
+            'folio' => $presupuesto->codigo_proyecto,
+            'referencia' => null,
+            'fecha' => now()->format('d/m/Y'),
+        ];
+
+        return $this->imprimirPresentacion($cabecera, $presentacion, $this->nombrePdf($presupuesto->codigo_proyecto));
+    }
+
+    private function imprimirPresentacion(array $cabecera, array $presentacion, string $archivo)
+    {
+        $presentacion['filas'] = PresentacionPresupuesto::numerar(collect($presentacion['filas']))->all();
+        $pdf = Pdf::loadView('presupuesto.pdf-comercial', compact('cabecera', 'presentacion'))->setPaper('letter');
+        $pdf->render();
+        $dompdf = $pdf->getDomPDF();
+        $lienzo = $dompdf->getCanvas();
+        $lienzo->page_text(
+            $lienzo->get_width() / 2 - 23,
+            $lienzo->get_height() - 22,
+            'Hoja {PAGE_NUM} de {PAGE_COUNT}',
+            $dompdf->getFontMetrics()->getFont('DejaVu Sans'),
+            7
+        );
+
+        return $pdf->stream($archivo);
+    }
+
+    private function nombrePdf(string $referencia, ?string $revision = null): string
+    {
+        $referencia = substr(preg_replace('/[^A-Za-z0-9_-]+/', '_', $referencia), 0, 90);
+        $sufijo = $revision === null ? '' : "_{$revision}";
+
+        return "Presupuesto_{$referencia}{$sufijo}.pdf";
     }
 
     public function destroy($id)
@@ -80,7 +712,13 @@ class PresupuestoController extends Controller
         DB::beginTransaction();
 
         try {
-            $presupuesto = Presupuesto::findOrFail($id);
+            $presupuesto = Presupuesto::lockForUpdate()->findOrFail($id);
+            if ($presupuesto->versiones()->exists()) {
+                DB::rollBack();
+
+                return redirect()->route('presupuesto.index')
+                    ->with('error', 'El presupuesto tiene versiones guardadas y no se puede eliminar.');
+            }
 
             // Borrar tablas hijas
             PresupuestoDetalle::where('presupuesto_id', $presupuesto->id)->delete();
