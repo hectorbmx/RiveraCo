@@ -256,13 +256,7 @@ class ResidenteReposicionGastoController extends Controller
 
     private function partidasBase(Obra $obra)
     {
-        $presupuestoIds = $obra->presupuestos_vinculados()->pluck('presupuestos.id');
-
-        return ObraPlaneacionGasto::query()
-            ->where(function ($query) use ($obra, $presupuestoIds) {
-                $query->where('obra_id', $obra->id)
-                    ->orWhereIn('presupuesto_id', $presupuestoIds);
-            })
+        return ObraPlaneacionGasto::query()->paraObra($obra)
             ->where('numero_semana', 0)
             ->orderBy('partida')
             ->orderBy('concepto')

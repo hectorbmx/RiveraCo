@@ -18,6 +18,8 @@ class DatosPresupuestoVersion
             'ajustes_apupi', 'ajustes_propuesta_apupi', 'total_costo_directo', 'total_presupuesto',
         ]));
         $presupuesto->presentacion_comercial = $datos['presupuesto']['presentacion_comercial'] ?? null;
+        $presupuesto->datos_previo = $datos['presupuesto']['datos_previo'] ?? null;
+        $presupuesto->ajustes_gastos_semanales = $datos['presupuesto']['ajustes_gastos_semanales'] ?? null;
 
         foreach ([
             'detalles' => $datos['importacion']['detalles'],
@@ -35,12 +37,12 @@ class DatosPresupuestoVersion
         $captura = fn (Model $fila) => $fila->only(array_diff($fila->getFillable(), ['presupuesto_id']));
 
         return [
-            'estructura' => 2,
+            'estructura' => 3,
             'presupuesto' => $presupuesto->only([
                 'codigo_proyecto', 'origen', 'nombre_cliente', 'nombre_obra', 'descripcion',
                 'equipo_propuesto', 'vol_traslape_varilla', 'duracion_apupi', 'indirecto_traslado_apupi',
                 'ajustes_apupi', 'ajustes_propuesta_apupi', 'total_costo_directo', 'total_presupuesto',
-                'presentacion_comercial',
+                'presentacion_comercial', 'datos_previo', 'ajustes_gastos_semanales',
             ]) + [
                 'equipo' => Presupuesto::EQUIPOS_PROPUESTOS[$presupuesto->equipo_propuesto] ?? null,
                 'indirecto_traslado_efectivo' => $presupuesto->indirectoTrasladoApupi(),
@@ -75,6 +77,8 @@ class DatosPresupuestoVersion
             ],
             'propuesta' => $resumen['propuesta'],
             'presentacion' => PresentacionPresupuesto::preparar($presupuesto, $costos, $resumen, $duracion),
+            'previo' => PrevioPresupuesto::preparar($presupuesto, $costos, $resumen['propuesta'], $duracion),
+            'relacion_gastos' => RelacionGastosPresupuesto::preparar($gastos, $costos, $duracion, $presupuesto->ajustes_gastos_semanales ?? []),
             'gastos' => $gastos->map(fn ($gasto) => $gasto->only([
                 'partida', 'concepto', 'unidad', 'cantidad', 'precio_unitario', 'monto_programado',
             ]))->all(),

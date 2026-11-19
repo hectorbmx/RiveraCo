@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Obra;
 use App\Models\ObraSolicitudGasto;
 use App\Models\ObraSolicitudGastoDetalle;
-use App\Models\ObraPlaneacionGasto;
 use App\Models\ObraPlaneacionSemanal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,17 +22,8 @@ class ObraSolicitudGastoController extends Controller
     {
         $semana = $request->query('semana');
         
-        // Obtenemos los IDs de presupuestos vinculados a la obra
-        $presupuestoIds = $obra->presupuestos_vinculados()->pluck('presupuestos.id');
-
-        // Obtenemos los conceptos planeados para esa semana que tengan monto > 0
         $conceptosPlaneados = ObraPlaneacionSemanal::query()
-            ->whereHas('gastoBase', function($q) use ($obra, $presupuestoIds) {
-                $q->where(function($sub) use ($obra, $presupuestoIds) {
-                    $sub->where('obra_id', $obra->id)
-                        ->orWhereIn('presupuesto_id', $presupuestoIds);
-                });
-            })
+            ->whereHas('gastoBase', fn ($q) => $q->paraObra($obra))
             ->where('numero_semana', $semana)
             ->where('monto_programado', '>', 0)
             ->with('gastoBase')

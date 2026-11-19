@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class ObraPlaneacionGasto extends Model
@@ -55,6 +56,15 @@ class ObraPlaneacionGasto extends Model
     public function scopePorSemana($query, $semana)
     {
         return $query->where('numero_semana', $semana);
+    }
+
+    public function scopeParaObra(Builder $query, Obra $obra): Builder
+    {
+        $presupuestosPendientes = $obra->presupuestos_vinculados()
+            ->wherePivotNull('planeacion_version_id')->pluck('presupuestos.id');
+
+        return $query->where(fn (Builder $filas) => $filas->where('obra_id', $obra->id)
+            ->orWhereIn('presupuesto_id', $presupuestosPendientes));
     }
 
     public function semanas()

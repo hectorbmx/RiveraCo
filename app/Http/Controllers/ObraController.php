@@ -617,20 +617,7 @@ public function edit(Request $request, Obra $obra)
     $desde =$request->query('asist_desde');
     $hasta =$request->query('asist_hasta');
     $semanas = $obra->semanas_totales;
-    // Por esto:
-// $presupuestoIds = $obra->presupuestos_vinculados->pluck('id');
-$presupuestoIds = $obra->presupuestos_vinculados()->pluck('presupuestos.id');
-
-$registrosPlaneacion = \App\Models\ObraPlaneacionGasto::query()
-    ->where(function ($q) use ($obra, $presupuestoIds) {
-        $q->where('obra_id', $obra->id)
-          ->orWhereIn('presupuesto_id', $presupuestoIds);
-    })
-    ->get();
-
-$gastosBase = $registrosPlaneacion
-    ->where('numero_semana', 0)
-    ->values();
+    $gastosBase = ObraPlaneacionGasto::query()->paraObra($obra)->porSemana(0)->get();
 
 $cfdisDisponibles = $request->query('tab', 'general') === 'facturacion'
     ? SatCfdi::whereNull('obra_id')
@@ -646,6 +633,7 @@ $planeacion = \App\Models\ObraPlaneacionSemanal::query()
     ->map(function ($group) {
         return $group->keyBy('numero_semana');
     });
+    $semanas = max($semanas, (int) $planeacion->max(fn ($grupo) => $grupo->keys()->max()));
 
     if (!$desde && !$hasta) {
     $start = Carbon::now('America/Mexico_City')->startOfWeek(Carbon::MONDAY);
@@ -2548,10 +2536,10 @@ public function guardarPlaneacion(Request $request, $id)
     try {
         \DB::beginTransaction();
 
+        Obra::query()->lockForUpdate()->findOrFail($obra->id);
+        $gastosBase = ObraPlaneacionGasto::query()->paraObra($obra)->porSemana(0)->get(['id'])->keyBy('id');
         foreach ($datos as $gasto_id => $semanas) {
-            $gastoBase = \App\Models\ObraPlaneacionGasto::where('id', $gasto_id)
-                ->where('numero_semana', 0)
-                ->first();
+            $gastoBase = $gastosBase->get($gasto_id);
 
             if (!$gastoBase) {
                 \Log::warning("No se encontró gasto base para ID: {$gasto_id}");

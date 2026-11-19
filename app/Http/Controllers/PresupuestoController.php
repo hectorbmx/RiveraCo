@@ -3,7 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
+use App\Models\Obra;
 use App\Models\ObraPlaneacionGasto;
+use App\Models\ObraReposicionGasto;
+use App\Models\ObraReposicionGastoDetalle;
+use App\Models\ObraSolicitudGastoDetalle;
+use App\Models\OrdenCompra;
 use App\Models\Presupuesto;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -18,8 +23,12 @@ use App\Models\PresupuestoVolPila;
 use App\Models\PresupuestoVersion;
 use App\Support\DatosPresupuestoVersion;
 use App\Support\PresentacionPresupuesto;
+use App\Support\PrevioPresupuesto;
 use App\Support\PropuestaApupi;
+use App\Support\RelacionGastosPresupuesto;
+use App\Support\PlaneacionSemanalPresupuesto;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 class PresupuestoController extends Controller
@@ -170,6 +179,109 @@ class PresupuestoController extends Controller
         }, 3);
 
         return response()->json($datos);
+    }
+
+    public function updatePrevio(Request $request, Presupuesto $presupuesto)
+    {
+        abort_unless($request->user()->hasAnyRole(PrevioPresupuesto::ADMINISTRADORES), 403);
+        $porcentaje = ['sometimes', 'required', 'numeric', 'decimal:0,2', 'between:0,99.99'];
+        $datos = $request->validateWithBag('previoPresupuesto', [
+            'escenario' => ['required', Rule::in(Presupuesto::ESCENARIOS_APUPI)],
+            'porcentajes' => ['sometimes', 'array:administracion,imss,comisiones,margen_objetivo'],
+            'porcentajes.administracion' => $porcentaje,
+            'porcentajes.imss' => $porcentaje,
+            'porcentajes.comisiones' => $porcentaje,
+            'porcentajes.margen_objetivo' => ['nullable', 'numeric', 'decimal:0,2', 'between:0,99.99'],
+            'pendiente' => ['sometimes', 'array:realista,optimista,pesimista'],
+            'pendiente.*' => ['nullable', 'numeric', 'decimal:0,2', 'between:0,9999999999999.99'],
+            'personal' => ['sometimes', 'array:' . implode(',', array_keys(PrevioPresupuesto::PERSONAL))],
+            'personal.*' => ['nullable', 'string', 'max:180'],
+            'firmas' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $actual = DB::transaction(function () use ($presupuesto, $datos): Presupuesto {
+            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $configuracion = array_replace_recursive($actual->datos_previo ?? [], $datos);
+            $porcentajes = array_replace(PrevioPresupuesto::PORCENTAJES, $configuracion['porcentajes'] ?? []);
+            if (array_sum($porcentajes) >= 100) {
+                throw ValidationException::withMessages([
+                    'porcentajes.margen_objetivo' => 'Los porcentajes de gastos y el margen objetivo deben sumar menos de 100 %.',
+                ])->errorBag('previoPresupuesto');
+            }
+            $actual->datos_previo = $configuracion;
+            $actual->save();
+
+            return $actual;
+        }, 3);
+
+        if ($request->expectsJson()) {
+            [, $previo] = $this->calcularPrevio($actual);
+
+            return response()->json($previo);
+        }
+
+        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'previo'])
+            ->with('estadoPresupuesto', 'Simulación actualizada.');
+    }
+
+    public function aplicarPrevio(Request $request, Presupuesto $presupuesto)
+    {
+        abort_unless($request->user()->hasAnyRole(PrevioPresupuesto::ADMINISTRADORES), 403);
+        $datos = $request->validateWithBag('previoPresupuesto', [
+            'escenario' => ['required', Rule::in(Presupuesto::ESCENARIOS_APUPI)],
+            'objetivo' => ['required', 'numeric', 'decimal:0,2', 'between:0.01,9999999999999.99'],
+        ]);
+        $total = DB::transaction(function () use ($presupuesto, $datos): float {
+            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            [$propuesta, $previo] = $this->calcularPrevio($actual);
+            $escenario = $previo['escenario'];
+            $objetivo = $previo['escenarios'][$escenario]['venta_objetivo'];
+            if ($escenario !== $datos['escenario'] || $objetivo === null || (float) $datos['objetivo'] !== $objetivo) {
+                throw ValidationException::withMessages([
+                    'objetivo' => 'La simulación cambió. Revisa la venta objetivo actual antes de aplicarla.',
+                ])->errorBag('previoPresupuesto');
+            }
+
+            $filas = collect($propuesta['filas']);
+            $precios = PrevioPresupuesto::ajustarPrecios($filas, $objetivo);
+            if ($precios === [] || max($precios) > 9999999999999.99) {
+                throw ValidationException::withMessages([
+                    'objetivo' => 'Para aplicar la venta objetivo necesitas conceptos cobrables con precios dentro del rango de captura.',
+                ])->errorBag('previoPresupuesto');
+            }
+
+            $ajustes = $actual->ajustes_propuesta_apupi ?? [];
+            foreach ($precios as $clave => $precio) {
+                $fila = $filas[$clave];
+                if ($precio === $fila['precio_unitario']) {
+                    continue;
+                }
+                $anterior = $fila['clave_anterior'];
+                $cambios = $ajustes[$clave] ?? $ajustes[$anterior ?? ''] ?? [];
+                if ($anterior !== null) {
+                    unset($ajustes[$anterior]);
+                }
+                $cambios['precio_unitario'] = $precio;
+                $ajustes[$clave] = $cambios;
+            }
+            $actual->ajustes_propuesta_apupi = $ajustes ?: null;
+            $actual->save();
+            [, $resultado] = $this->calcularPrevio($actual);
+
+            return $resultado['venta_actual'];
+        }, 3);
+
+        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'previo'])
+            ->with('estadoPresupuesto', 'Propuesta 1 actualizada a $' . number_format($total, 2) . ' sin IVA.');
+    }
+
+    private function calcularPrevio(Presupuesto $presupuesto): array
+    {
+        $vol = $presupuesto->calcularVolumetria();
+        $duracion = $presupuesto->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+        [$costos, $resumen] = $this->calcularApupi($presupuesto, $vol, $duracion);
+
+        return [$resumen['propuesta'], PrevioPresupuesto::preparar($presupuesto, $costos, $resumen['propuesta'], $duracion)];
     }
 
     public function updateDuracionApupi(Request $request, Presupuesto $presupuesto)
@@ -325,6 +437,8 @@ class PresupuestoController extends Controller
 
             [$costos, $resumen] = $this->calcularApupi($presupuesto, $vol, $duracion);
             $resumen['presentacion'] = PresentacionPresupuesto::preparar($presupuesto, $costos, $resumen, $duracion);
+            $resumen['previo'] = PrevioPresupuesto::preparar($presupuesto, $costos, $resumen['propuesta'], $duracion);
+            $resumen['relacion_gastos'] = $this->relacionGastos($presupuesto, $costos, $duracion);
 
             return response()->json($resumen);
         }
@@ -338,7 +452,7 @@ class PresupuestoController extends Controller
         $tab = $request->input('tab');
         return redirect()->route('presupuesto.show', [
             $presupuesto,
-            'tab' => in_array($tab, ['pilas', 'apupi', 'presupuesto', 'gastos'], true) ? $tab : 'apupi',
+            'tab' => in_array($tab, ['pilas', 'apupi', 'presupuesto', 'previo', 'gastos'], true) ? $tab : 'apupi',
         ])->with('estadoPresupuesto', $mensaje);
     }
 
@@ -385,17 +499,18 @@ class PresupuestoController extends Controller
     {
         // Aquí usamos Eager Loading para traer todas las tablas relacionadas de un golpe
         $presupuesto = Presupuesto::with(['detalles', 'pilas', 'resumenes'])->findOrFail($id);
-        $gastosBase = $this->gastosBase($presupuesto);
         $volumetria = $presupuesto->calcularVolumetria();
         $duracionApupi = $presupuesto->duracionApupi($volumetria['filas']->isEmpty() ? null : $volumetria['totales']['jornales']);
         $editarVol = $volumetria['filas']->firstWhere('pila.id', $request->integer('editar_pila'))['pila'] ?? null;
 
         $clienteSeleccionado = $this->clienteSeleccionado($request, $presupuesto);
         [$filasApupi, $resumenApupi] = $this->calcularApupi($presupuesto, $volumetria, $duracionApupi);
+        $relacionGastos = $this->relacionGastos($presupuesto, $filasApupi, $duracionApupi);
         $presentacion = PresentacionPresupuesto::preparar($presupuesto, $filasApupi, $resumenApupi, $duracionApupi);
+        $previo = PrevioPresupuesto::preparar($presupuesto, $filasApupi, $resumenApupi['propuesta'], $duracionApupi);
         $versionGuardada = $presupuesto->versiones()->orderByDesc('revision')->first(['id', 'revision']);
 
-        return view('presupuesto.show', compact('presupuesto', 'gastosBase', 'volumetria', 'editarVol', 'clienteSeleccionado', 'duracionApupi', 'filasApupi', 'resumenApupi', 'versionGuardada', 'presentacion'));
+        return view('presupuesto.show', compact('presupuesto', 'relacionGastos', 'volumetria', 'editarVol', 'clienteSeleccionado', 'duracionApupi', 'filasApupi', 'resumenApupi', 'versionGuardada', 'presentacion', 'previo'));
     }
 
     public function storeVersion(Request $request, Presupuesto $presupuesto)
@@ -497,7 +612,79 @@ class PresupuestoController extends Controller
         $version->setRelation('presupuesto', $presupuesto);
         $version->origen?->setRelation('presupuesto', $presupuesto);
 
-        return view('presupuesto.version', compact('presupuesto', 'version'));
+        $obrasPlaneacion = $presupuesto->obras()->withPivot('planeacion_version_id')
+            ->orderBy('obras.nombre')->get(['obras.id', 'obras.nombre'])->unique('id');
+
+        return view('presupuesto.version', compact('presupuesto', 'version', 'obrasPlaneacion'));
+    }
+
+    public function aplicarPlaneacionSemanal(Request $request, Presupuesto $presupuesto, int $version)
+    {
+        abort_unless($request->user()->hasAnyRole(PrevioPresupuesto::ADMINISTRADORES), 403);
+        $datos = $request->validateWithBag('planeacionSemanal', ['obra_id' => ['required', 'integer']]);
+        $guardada = $presupuesto->versiones()->findOrFail($version);
+        $relacion = $guardada->datos['relacion_gastos'] ?? [];
+        abort_unless($relacion['planeacion']['publicable'] ?? false, 422, 'La versión requiere una programación semanal completa.');
+        $filas = collect($relacion['partidas'])->flatMap(fn (array $grupo) => collect($grupo['filas'])
+            ->map(fn (array $fila) => $fila + ['partida' => $grupo['partida']]))
+            ->filter(fn (array $fila) => $fila['monto_programado'] != 0);
+        $error = fn (string $mensaje) => ValidationException::withMessages(['obra_id' => $mensaje])->errorBag('planeacionSemanal');
+
+        if ($filas->contains(fn (array $fila) => $fila['monto_programado'] < 0
+            || max($fila['monto_programado'], $fila['cantidad'], $fila['precio_unitario']) > 9999999999999.99)) {
+            throw $error('La planeación de Obra requiere importes positivos y valores dentro del rango de captura.');
+        }
+
+        $obra = DB::transaction(function () use ($presupuesto, $guardada, $datos, $filas, $error): Obra {
+            $obra = Obra::lockForUpdate()->findOrFail($datos['obra_id']);
+            $vinculo = DB::table('obra_presupuesto')->where('obra_id', $obra->id)->where('presupuesto_id', $presupuesto->id);
+            $versiones = (clone $vinculo)->lockForUpdate()->pluck('planeacion_version_id');
+            if ($versiones->isEmpty()) {
+                throw $error('Vincula el presupuesto con la obra antes de aplicar su planeación.');
+            }
+            if ($versiones->contains($guardada->id)) {
+                return $obra;
+            }
+            if ($versiones->filter()->isNotEmpty()) {
+                throw $error('Esta obra ya tiene una versión aplicada de este presupuesto.');
+            }
+
+            $base = ObraPlaneacionGasto::query()->where('presupuesto_id', $presupuesto->id)->porSemana(0);
+            $ids = $base->pluck('id');
+            $conceptos = $filas->mapWithKeys(fn (array $fila) => [Str::slug($fila['concepto']) => true]);
+            $locales = $obra->planeacionGastos()->porSemana(0)->pluck('concepto');
+            if ($locales->contains(fn ($concepto) => $conceptos->has(Str::slug($concepto)))
+                || $base->whereHas('semanas', fn ($q) => $q->where('monto_programado', '<>', 0))->exists()
+                || OrdenCompra::whereIn('planeacion_gasto_id', $ids)->exists()
+                || ObraSolicitudGastoDetalle::whereIn('planeacion_gasto_id', $ids)->exists()
+                || ObraReposicionGasto::whereIn('partida_id', $ids)->exists()
+                || ObraReposicionGastoDetalle::whereIn('partida_id', $ids)->exists()) {
+                throw $error('Hay conceptos que ya tienen planeación o movimientos en Obra. Revisa la planeación vigente antes de aplicar esta versión.');
+            }
+
+            foreach ($filas as $fila) {
+                $gasto = $obra->planeacionGastos()->create([
+                    'partida' => $fila['partida'],
+                    'concepto' => $fila['concepto'],
+                    'unidad' => $fila['unidad'],
+                    'cantidad' => $fila['cantidad'] ?? 0,
+                    'precio_unitario' => $fila['precio_unitario'],
+                    'monto_programado' => $fila['monto_programado'],
+                    'numero_semana' => 0,
+                ]);
+                $semanas = [];
+                foreach ($fila['planeacion']['montos'] as $semana => $centavos) {
+                    $semanas[] = ['numero_semana' => $semana, 'monto_programado' => $centavos / 100];
+                }
+                $gasto->semanas()->createMany($semanas);
+            }
+            $vinculo->update(['planeacion_version_id' => $guardada->id]);
+
+            return $obra;
+        }, 3);
+
+        return redirect()->route('obras.edit', [$obra, 'tab' => 'planeacion'])
+            ->with('success', 'Planeación de la versión aplicada a la obra.');
     }
 
     public function storeSeguimiento(Request $request, Presupuesto $presupuesto, int $version)
@@ -534,6 +721,85 @@ class PresupuestoController extends Controller
 
         return ObraPlaneacionGasto::where('presupuesto_id', $presupuesto->id)
             ->where('numero_semana', 0)->orderBy('id')->get();
+    }
+
+    private function relacionGastos(Presupuesto $presupuesto, Collection $costos, array $duracion): array
+    {
+        return RelacionGastosPresupuesto::preparar(
+            $this->gastosBase($presupuesto), $costos, $duracion, $presupuesto->ajustes_gastos_semanales ?? [],
+        );
+    }
+
+    public function updateGastoSemanal(Request $request, Presupuesto $presupuesto)
+    {
+        $reglas = [
+            'concepto' => ['required', 'string', 'max:70'],
+            'semana' => ['required', 'integer', 'min:1', 'max:' . PlaneacionSemanalPresupuesto::LIMITE_SEMANAS],
+            'monto' => ['present', 'nullable', 'numeric', 'decimal:0,2', 'between:0,9999999999999.99'],
+        ];
+        $lote = $request->has('cambios');
+        $restablecer = $request->boolean('restablecer');
+        $validacion = match (true) {
+            $lote => [
+                'cambios' => ['bail', 'required', 'array', function ($atributo, $valor, $fallar) {
+                    if (! array_is_list($valor)) {
+                        $fallar('Envía una lista de cambios semanales.');
+                    }
+                }],
+                'cambios.*' => ['required', 'array:concepto,semana,monto'],
+            ]
+                + collect($reglas)->mapWithKeys(fn (array $regla, string $campo) => ['cambios.*.' . $campo => $regla])->all(),
+            $restablecer => [],
+            default => $reglas,
+        };
+        $datos = $request->validate($validacion + ['restablecer' => ['sometimes', 'accepted']]);
+        $cambios = $lote ? $datos['cambios'] : ($restablecer ? [] : [$datos]);
+
+        $relacion = DB::transaction(function () use ($presupuesto, $cambios, $restablecer): array {
+            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $vol = $actual->calcularVolumetria();
+            $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+            [$costos] = $this->calcularApupi($actual, $vol, $duracion);
+            $base = $this->gastosBase($actual);
+            $ajustes = $restablecer ? [] : ($actual->ajustes_gastos_semanales ?? []);
+            if ($cambios !== []) {
+                $anterior = RelacionGastosPresupuesto::preparar($base, $costos, $duracion, $ajustes);
+                $filas = collect($anterior['partidas'])->pluck('filas')->collapse()->keyBy('id');
+                $semanas = array_column($anterior['planeacion']['semanas'], 'jornales', 'numero');
+                foreach ($cambios as $cambio) {
+                    $this->ajustarGastoSemanal($ajustes, $filas->get($cambio['concepto']), $semanas, $cambio);
+                }
+            }
+
+            $actual->ajustes_gastos_semanales = $ajustes ?: null;
+            $actual->save();
+
+            return RelacionGastosPresupuesto::preparar($base, $costos, $duracion, $ajustes);
+        }, 3);
+
+        return response()->json($relacion);
+    }
+
+    private function ajustarGastoSemanal(array &$ajustes, ?array $fila, array $semanas, array $cambio): void
+    {
+        $semana = (int) $cambio['semana'];
+        if ($fila === null || ! $fila['planeacion']['editable'] || ! array_key_exists($semana, $semanas)) {
+            throw ValidationException::withMessages(['monto' => 'Este concepto o semana ya no está disponible para programar.']);
+        }
+        $id = $fila['id'];
+        $tope = PlaneacionSemanalPresupuesto::centavos($fila['monto_programado'] ?? 0);
+        $monto = $cambio['monto'] === null ? null : PlaneacionSemanalPresupuesto::centavos($cambio['monto']);
+        $concepto = $fila['concepto'] . ' · Semana ' . $semana;
+        if ($monto !== null && $monto > $tope) {
+            throw ValidationException::withMessages(['monto' => $concepto . '. El importe supera el monto previsto.']);
+        }
+        if ($monto !== null && count($semanas) === 1 && $monto !== $tope) {
+            throw ValidationException::withMessages(['monto' => $concepto . '. La única semana debe cubrir todo el importe previsto.']);
+        }
+        $ajustes[$id] = PlaneacionSemanalPresupuesto::ajustarSemana($tope, $semanas, $ajustes[$id] ?? [], $semana, $monto);
+        if ($ajustes[$id] === []) {
+            unset($ajustes[$id]);
+        }
     }
 
     public function storePilaVol(Request $request, Presupuesto $presupuesto)

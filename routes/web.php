@@ -420,7 +420,10 @@ Route::middleware('auth','verified')->group(function () {
         Route::patch('presupuestos/{presupuesto}/presentacion', [App\Http\Controllers\PresupuestoController::class, 'updatePresentacion'])->name('presupuesto.presentacion.update');
         Route::patch('presupuestos/{presupuesto}/presentacion/conceptos/{renglon}', [App\Http\Controllers\PresupuestoController::class, 'updateConceptoPresentacion'])
             ->where('renglon', '[a-z0-9-]+')->name('presupuesto.presentacion.conceptos.update');
+        Route::patch('presupuestos/{presupuesto}/previo', [App\Http\Controllers\PresupuestoController::class, 'updatePrevio'])->name('presupuesto.previo.update');
+        Route::post('presupuestos/{presupuesto}/previo/aplicar', [App\Http\Controllers\PresupuestoController::class, 'aplicarPrevio'])->name('presupuesto.previo.aplicar');
         Route::patch('presupuestos/{presupuesto}/duracion-apupi', [App\Http\Controllers\PresupuestoController::class, 'updateDuracionApupi'])->name('presupuesto.duracion-apupi.update');
+        Route::patch('presupuestos/{presupuesto}/gastos-semanales', [App\Http\Controllers\PresupuestoController::class, 'updateGastoSemanal'])->name('presupuesto.gastos-semanales.update');
         Route::patch('presupuestos/{presupuesto}/apupi/indirecto-traslado', [App\Http\Controllers\PresupuestoController::class, 'updateIndirectoTrasladoApupi'])->name('presupuesto.apupi.indirecto-traslado.update');
         Route::patch('presupuestos/{presupuesto}/apupi/propuesta/{renglon}', [App\Http\Controllers\PresupuestoController::class, 'updateRenglonPropuestaApupi'])
             ->where('renglon', '[a-z0-9-]+')->name('presupuesto.apupi.propuesta.update');
@@ -432,6 +435,8 @@ Route::middleware('auth','verified')->group(function () {
         Route::get('presupuestos/{presupuesto}/versiones', [App\Http\Controllers\PresupuestoController::class, 'historialVersiones'])->name('presupuesto.versiones.index');
         Route::post('presupuestos/{presupuesto}/versiones/{version}/revision', [App\Http\Controllers\PresupuestoController::class, 'crearRevision'])
             ->whereNumber('version')->name('presupuesto.versiones.revisar');
+        Route::post('presupuestos/{presupuesto}/versiones/{version}/planeacion-semanal', [App\Http\Controllers\PresupuestoController::class, 'aplicarPlaneacionSemanal'])
+            ->whereNumber('version')->name('presupuesto.versiones.planeacion.aplicar');
         Route::get('presupuestos/{presupuesto}/versiones/{version}', [App\Http\Controllers\PresupuestoController::class, 'showVersion'])
             ->whereNumber('version')->name('presupuesto.versiones.show');
         Route::get('presupuestos/{presupuesto}/versiones/{version}/pdf', [App\Http\Controllers\PresupuestoController::class, 'exportVersionPdf'])

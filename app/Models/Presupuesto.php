@@ -55,6 +55,8 @@ class Presupuesto extends Model
      */
     protected $casts = [
         'presentacion_comercial' => 'array',
+        'datos_previo' => 'array',
+        'ajustes_gastos_semanales' => 'array',
         'consecutivo_cliente' => 'integer',
         'total_costo_directo' => 'decimal:2',
         'total_presupuesto'   => 'decimal:2',

@@ -2556,15 +2556,9 @@ foreach ($oc->detalles as $detalle) {
 
 private function partidasPlaneacionPorObra(Obra $obra)
 {
-    // IDs de presupuestos vinculados a esta obra
-    $presupuestoIds = $obra->presupuestos_vinculados()->pluck('presupuestos.id');
-
     // Filas base (numero_semana = 0) de la planeacion de esta obra
     $gastos = \App\Models\ObraPlaneacionGasto::query()
-        ->where(function ($q) use ($obra, $presupuestoIds) {
-            $q->where('obra_id', $obra->id)
-              ->orWhereIn('presupuesto_id', $presupuestoIds);
-        })
+        ->paraObra($obra)
         ->where('numero_semana', 0)
         ->get();
 
@@ -2577,7 +2571,7 @@ private function partidasPlaneacionPorObra(Obra $obra)
         ->pluck('total_gastado', 'planeacion_gasto_id');
 
     return $gastos->map(function ($g) use ($gastadoPorPartida) {
-        $tope     = (float) $g->precio_unitario * (float) $g->cantidad;
+        $tope     = (float) $g->monto_programado;
         $gastado  = (float) ($gastadoPorPartida[$g->id] ?? 0);
         $disponible = max(0, $tope - $gastado);
 

@@ -56,6 +56,8 @@
                 }
                 this.resumen = await respuesta.json();
                 this.presentacion = this.resumen.presentacion;
+                this.previo = this.resumen.previo;
+                this.relacionGastos = this.resumen.relacion_gastos;
                 input.dataset.guardado = valor;
                 input.removeAttribute('aria-invalid');
                 this.sincronizarPrecios();

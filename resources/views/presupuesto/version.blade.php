@@ -53,6 +53,58 @@
         </dl>
     </header>
     @include('presupuesto.partials.seguimiento-version')
+    @if(isset($datos['relacion_gastos']))
+        <details class="overflow-hidden rounded-2xl border border-slate-200 bg-white"
+                 @if($errors->planeacionSemanal->any()) open @endif
+                 x-data="{ relacionGastos: @js($datos['relacion_gastos']) }">
+            <summary class="cursor-pointer p-5 font-semibold text-slate-800">Relación de gastos guardada</summary>
+            @include('presupuesto.partials.relacion-gastos')
+            @if(auth()->user()->hasAnyRole(\App\Support\PrevioPresupuesto::ADMINISTRADORES) && ($datos['relacion_gastos']['planeacion']['publicable'] ?? false))
+                @php $disponibles = $obrasPlaneacion->filter(fn ($obra) => !$obra->pivot->planeacion_version_id); @endphp
+                <div class="border-t border-slate-200 p-5">
+                    @foreach($obrasPlaneacion->where('pivot.planeacion_version_id', $version->id) as $obra)
+                        <p class="mb-2 text-sm text-emerald-700">Planeación aplicada en {{ $obra->nombre }}.</p>
+                    @endforeach
+                    @foreach($obrasPlaneacion->filter(fn ($obra) => $obra->pivot->planeacion_version_id && (int) $obra->pivot->planeacion_version_id !== $version->id) as $obra)
+                        <p class="mb-2 text-sm text-slate-600">{{ $obra->nombre }} ya tiene otra versión aplicada.</p>
+                    @endforeach
+                    @if($errors->planeacionSemanal->any())
+                        <p role="alert" class="mb-2 text-sm text-red-700">{{ $errors->planeacionSemanal->first() }}</p>
+                    @endif
+                    @if($disponibles->isNotEmpty())
+                        <form method="POST" action="{{ route('presupuesto.versiones.planeacion.aplicar', [$presupuesto, $version]) }}"
+                              onsubmit="return confirm('¿Aplicar la planeación de esta versión a la obra seleccionada?')"
+                              class="flex flex-wrap items-end gap-3">
+                            @csrf
+                            <label class="text-sm font-medium">Obra vinculada
+                                <select name="obra_id" required class="mt-1 block rounded-lg border-slate-300 text-sm">
+                                    @foreach($disponibles as $obra)
+                                        <option value="{{ $obra->id }}">{{ $obra->nombre }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                            <button type="submit" class="rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white">Aplicar a planeación de Obra</button>
+                        </form>
+                    @elseif($obrasPlaneacion->isEmpty())
+                        <p class="text-sm text-slate-600">Vincula el presupuesto a una obra para aplicar esta versión.</p>
+                    @endif
+                </div>
+            @endif
+        </details>
+    @endif
+    @if(!empty($datos['previo']))
+        <details class="overflow-hidden rounded-2xl border border-slate-200 bg-white"
+                 x-data="{
+                     previo: @js($datos['previo']),
+                     escenarioPrevio: @js($datos['previo']['escenario']),
+                     formatoImporte(valor) {
+                         return '$' + Number(valor).toLocaleString('en-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                     }
+                 }">
+            <summary class="cursor-pointer p-5 font-semibold text-slate-800">PREVIO guardado</summary>
+            @include('presupuesto.partials.previo', ['previo' => $datos['previo'], 'puedeEditarPrevio' => false])
+        </details>
+    @endif
     <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white" aria-labelledby="venta-version">
         <h2 id="venta-version" class="p-5 text-lg font-semibold text-slate-800">Propuesta 1</h2>
         <div class="overflow-x-auto">

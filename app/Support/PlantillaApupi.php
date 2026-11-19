@@ -10,6 +10,11 @@ class PlantillaApupi
 {
     public const FIANZAS = 'FIANZAS Y SEGURO DE RESPONSABILIDAD CIVIL';
     public const INDIRECTO = 33;
+    public const TASAS_FIANZA = [
+        'apupi-154' => 0.0075,
+        'apupi-155' => 0.003,
+        'apupi-156' => 0.0045,
+    ];
 
     // El número de fila del machote es la clave de cada concepto. Las claves de Traslado ya existen en los ajustes guardados.
     private const PARTIDAS = [
@@ -206,9 +211,7 @@ class PlantillaApupi
             'apupi-64', 'apupi-85' => $filas['apupi-33']['precio_unitario'],
             'apupi-72', 'apupi-89' => $filas['apupi-54']['precio_unitario'],
             'apupi-107' => $filas['apupi-106']['precio_unitario'] * 0.5,
-            'apupi-154' => $venta * 0.5 * 0.015,
-            'apupi-155' => $venta * 0.2 * 0.015,
-            'apupi-156' => $venta * 0.3 * 0.015,
+            'apupi-154', 'apupi-155', 'apupi-156' => $venta * self::TASAS_FIANZA[$codigo],
             default => $base,
         }, 2);
     }

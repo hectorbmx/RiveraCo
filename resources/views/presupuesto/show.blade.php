@@ -2,7 +2,7 @@
 @section('title', 'Presupuesto ' . $presupuesto->codigo_proyecto)
 @section('content')
 @php
-    $pestanas = ['pilas' => 'Pilas / VOL', 'apupi' => 'APUPI', 'presupuesto' => 'Presupuesto', 'gastos' => 'Relación de gastos'];
+    $pestanas = ['pilas' => 'Pilas / VOL', 'apupi' => 'APUPI', 'presupuesto' => 'Presupuesto', 'previo' => 'PREVIO', 'gastos' => 'Relación de gastos'];
     $solicitada = request()->query('tab');
     $tabInicial = is_string($solicitada) && array_key_exists($solicitada, $pestanas) ? $solicitada : 'presupuesto';
     $revisionEnCurso = $presupuesto->version_origen_borrador_id !== null;
@@ -11,11 +11,20 @@
 <div class="space-y-5" x-data="{
     tab: @js($tabInicial),
     presentacion: @js($presentacion),
+    previo: @js($previo),
+    relacionGastos: @js($relacionGastos),
+    escenarioPrevio: @js($previo['escenario']),
     unidadesCapturadas: @js(old('unidades', $presupuesto->presentacion_comercial['unidades'] ?? [])),
     urlConcepto: @js(route('presupuesto.presentacion.conceptos.update', [$presupuesto, '__renglon__'])),
+    urlSemanas: @js(route('presupuesto.gastos-semanales.update', $presupuesto)),
     encabezadoPerforacion: @js(\App\Support\PresentacionPresupuesto::ENCABEZADO_PERFORACION),
     csrf: @js(csrf_token()),
     cola: Promise.resolve(),
+    cambiosSemanales: [],
+    loteSemanal: null,
+    restablecerSemanal: false,
+    temporizadorSemanal: null,
+    errorSemanal: '',
     mensajeGuardado: '',
     errorGuardado: false,
     temporizadorGuardado: null,
@@ -26,6 +35,68 @@
         this.mensajeGuardado = mensaje;
         this.errorGuardado = error;
         this.temporizadorGuardado = setTimeout(() => this.mensajeGuardado = '', error ? 5000 : 2600);
+    },
+    get semanasPendientes() {
+        return this.restablecerSemanal || this.cambiosSemanales.length > 0;
+    },
+    programarGastoSemanal(cambio) {
+        this.cambiosSemanales = this.cambiosSemanales.filter(item => item.concepto !== cambio.concepto || item.semana !== cambio.semana);
+        this.cambiosSemanales.push(cambio);
+        this.errorSemanal = '';
+        clearTimeout(this.temporizadorSemanal);
+        this.temporizadorSemanal = setTimeout(() => this.enviarSemanas(), 700);
+    },
+    descartarSemanas() {
+        clearTimeout(this.temporizadorSemanal);
+        this.temporizadorSemanal = null;
+        this.cambiosSemanales = [];
+        this.restablecerSemanal = false;
+        this.errorSemanal = '';
+    },
+    reiniciarSemanas() {
+        if (this.loteSemanal) return;
+        this.descartarSemanas();
+        this.restablecerSemanal = true;
+        this.enviarSemanas();
+    },
+    enviarSemanas() {
+        clearTimeout(this.temporizadorSemanal);
+        this.temporizadorSemanal = null;
+        if (this.loteSemanal || !this.semanasPendientes) return;
+
+        const cambios = this.cambiosSemanales;
+        const restablecer = this.restablecerSemanal;
+        const datos = restablecer ? {restablecer: true} : {};
+        if (cambios.length) datos.cambios = cambios;
+        this.loteSemanal = {cambios, restablecer};
+        this.descartarSemanas();
+
+        this.cola = this.cola.then(async () => {
+            try {
+                const respuesta = await fetch(this.urlSemanas, {
+                    method: 'PATCH',
+                    headers: {Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrf},
+                    body: JSON.stringify(datos)
+                });
+                const contenido = await respuesta.json().catch(() => ({}));
+                if (!respuesta.ok) throw new Error(Object.values(contenido.errors ?? {})[0]?.[0] || 'No se pudo guardar la programación.');
+                this.relacionGastos = contenido;
+                this.avisar('Programación semanal guardada');
+            } catch (error) {
+                const posteriores = this.cambiosSemanales;
+                this.cambiosSemanales = cambios.filter(item => !posteriores.some(nuevo => nuevo.concepto === item.concepto && nuevo.semana === item.semana)).concat(posteriores);
+                this.restablecerSemanal = restablecer;
+                this.errorSemanal = error.message || 'No se pudo guardar la programación.';
+                clearTimeout(this.temporizadorSemanal);
+                this.temporizadorSemanal = null;
+                this.avisar(this.errorSemanal, true);
+            } finally {
+                this.loteSemanal = null;
+                if (!this.errorSemanal && this.temporizadorSemanal === null && this.semanasPendientes) {
+                    this.enviarSemanas();
+                }
+            }
+        });
     },
     guardarConcepto(campo, clave) {
         const original = campo.value;
@@ -68,16 +139,50 @@
             }
         });
     },
+    guardarPrevio(formulario) {
+        const datos = new URLSearchParams(new FormData(formulario));
+        const firma = datos.toString();
+        this.cola = this.cola.then(async () => {
+            if (firma === formulario.dataset.configuracionGuardada) return;
+            if (!formulario.checkValidity()) {
+                this.avisar('Revisa los datos de PREVIO antes de guardar.', true);
+                return;
+            }
+            try {
+                const respuesta = await fetch(formulario.action, {
+                    method: 'POST',
+                    headers: { Accept: 'application/json' },
+                    body: datos
+                });
+                const contenido = await respuesta.json().catch(() => ({}));
+                if (!respuesta.ok) {
+                    throw new Error(Object.values(contenido.errors ?? {})[0]?.[0] || 'No se pudo guardar la simulación.');
+                }
+                this.previo = contenido;
+                formulario.dataset.configuracionGuardada = firma;
+                this.avisar('Simulación guardada');
+            } catch (error) {
+                this.avisar(error.message || 'No se pudo guardar la simulación.', true);
+            }
+        });
+    },
     async esperarCambios() {
         this.errorVersion = '';
-        if (this.$root.contains(document.activeElement) && document.activeElement.matches('[data-guardado], [data-concepto-guardado]')) {
+        if (this.$root.contains(document.activeElement)
+            && document.activeElement.matches('[data-guardado], [data-concepto-guardado], [data-gasto-semanal], [data-previo-config] :is(input, select, textarea)')) {
             document.activeElement.blur();
         }
         let pendiente;
         do {
+            this.enviarSemanas();
             pendiente = this.cola;
             await pendiente;
-        } while (pendiente !== this.cola);
+        } while (!this.errorSemanal && (pendiente !== this.cola || this.semanasPendientes));
+        if (this.errorSemanal) {
+            this.cambiar('gastos');
+            this.errorVersion = 'Corrige o reintenta los importes semanales pendientes antes de continuar.';
+            return false;
+        }
         const campos = this.$root.querySelectorAll('input[data-guardado]');
         if (Array.from(campos).some(campo => !campo.validity.valid
             || campo.getAttribute('aria-invalid') === 'true' || Number(campo.value) !== Number(campo.dataset.guardado))) {
@@ -96,6 +201,12 @@
             this.cambiar('presupuesto');
             this.$refs.datosImpresion.open = true;
             this.errorVersion = 'Guarda los datos para impresión antes de continuar.';
+            return false;
+        }
+        const previoFormulario = this.$refs.formularioPrevio;
+        if (previoFormulario && new URLSearchParams(new FormData(previoFormulario)).toString() !== previoFormulario.dataset.configuracionGuardada) {
+            this.cambiar('previo');
+            this.errorVersion = 'Guarda los datos de PREVIO antes de continuar.';
             return false;
         }
         return true;
@@ -122,6 +233,18 @@
             window.location.assign(url);
         }
     },
+    async aplicarPrevio(formulario) {
+        const escenario = this.escenarioPrevio;
+        const objetivo = this.previo.escenarios[escenario].venta_objetivo;
+        if (!await this.esperarCambios()) return;
+        if (objetivo <= 0 || objetivo !== this.previo.escenarios[escenario].venta_objetivo) {
+            this.avisar('Revisa la venta objetivo actual antes de aplicarla.', true);
+            return;
+        }
+        formulario.elements.escenario.value = escenario;
+        formulario.elements.objetivo.value = objetivo.toFixed(2);
+        formulario.submit();
+    },
     formatoImporte(valor) {
         return '$' + Number(valor).toLocaleString('en-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     },
@@ -138,7 +261,7 @@
         botones[siguiente].click();
         botones[siguiente].focus();
     }
-}">
+}" @beforeunload.window="if (semanasPendientes || loteSemanal) { $event.preventDefault(); $event.returnValue = ''; }">
     <div role="status" aria-live="polite" x-show="mensajeGuardado" x-cloak x-text="mensajeGuardado"
          :class="errorGuardado ? 'bg-red-700' : 'bg-emerald-700'"
          class="fixed bottom-6 right-6 z-50 rounded-lg px-4 py-3 text-sm font-semibold text-white shadow-lg"></div>
@@ -212,7 +335,7 @@
             <div role="tablist" aria-label="Secciones del presupuesto" x-ref="pestanas" class="flex min-w-max gap-1 px-3 pt-3">
                 @foreach($pestanas as $id => $nombre)
                     <button type="button" role="tab" id="tab-{{ $id }}" aria-controls="panel-{{ $id }}" :aria-selected="tab === '{{ $id }}'" :tabindex="tab === '{{ $id }}' ? 0 : -1"
-                            @click="cambiar('{{ $id }}')" @keydown.arrow-right.prevent="mover($event, 1)" @keydown.arrow-left.prevent="mover($event, -1)" @keydown.home.prevent="mover($event, 0, 0)" @keydown.end.prevent="mover($event, 0, 3)"
+                            @click="cambiar('{{ $id }}')" @keydown.arrow-right.prevent="mover($event, 1)" @keydown.arrow-left.prevent="mover($event, -1)" @keydown.home.prevent="mover($event, 0, 0)" @keydown.end.prevent="mover($event, 0, {{ count($pestanas) - 1 }})"
                             :class="tab === '{{ $id }}' ? 'border-[#0B265A] bg-white text-[#0B265A]' : 'border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'"
                             class="rounded-t-xl border-b-4 px-5 py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0B265A]">{{ $nombre }}</button>
                 @endforeach
@@ -243,21 +366,11 @@
         <section id="panel-presupuesto" role="tabpanel" aria-labelledby="tab-presupuesto" tabindex="0" x-show="tab === 'presupuesto'" @if($tabInicial !== 'presupuesto') x-cloak @endif>
             @include('presupuesto.partials.presentacion-comercial')
         </section>
+        <section id="panel-previo" role="tabpanel" aria-labelledby="tab-previo" tabindex="0" x-show="tab === 'previo'" @if($tabInicial !== 'previo') x-cloak @endif>
+            @include('presupuesto.partials.previo', ['puedeEditarPrevio' => auth()->user()->hasAnyRole(\App\Support\PrevioPresupuesto::ADMINISTRADORES)])
+        </section>
         <section id="panel-gastos" role="tabpanel" aria-labelledby="tab-gastos" tabindex="0" x-show="tab === 'gastos'" @if($tabInicial !== 'gastos') x-cloak @endif>
-            <div class="p-5"><h2 class="text-lg font-semibold text-slate-800">Relación de gastos · Base presupuestada</h2><p class="mt-1 text-sm text-slate-500">Conceptos previstos de gasto importados del Excel.</p></div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="bg-[#0B265A] text-white"><tr><th class="px-4 py-3 text-left">Partida</th><th class="px-4 py-3 text-left">Concepto</th><th class="px-4 py-3 text-center">Unidad</th><th class="px-4 py-3 text-right">Cantidad</th><th class="px-4 py-3 text-right">P.U.</th><th class="px-4 py-3 text-right">Monto previsto</th></tr></thead>
-                    <tbody class="divide-y divide-slate-100">
-                        @forelse($gastosBase as $gasto)
-                            <tr class="hover:bg-blue-50"><td class="px-4 py-3 text-xs font-semibold text-slate-500">{{ $gasto->partida }}</td><td class="px-4 py-3 text-slate-700">{{ $gasto->concepto }}</td><td class="px-4 py-3 text-center text-slate-500">{{ $gasto->unidad }}</td><td class="px-4 py-3 text-right">{{ number_format($gasto->cantidad, 2) }}</td><td class="px-4 py-3 text-right whitespace-nowrap">${{ number_format($gasto->precio_unitario, 2) }}</td><td class="px-4 py-3 text-right font-semibold whitespace-nowrap">${{ number_format($gasto->monto_programado, 2) }}</td></tr>
-                        @empty
-                            <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">Este presupuesto todavía no tiene una relación de gastos importada.</td></tr>
-                        @endforelse
-                    </tbody>
-                    <tfoot class="bg-slate-100"><tr><th colspan="5" class="px-4 py-4 text-right text-slate-700">Total de gastos previstos</th><td class="px-4 py-4 text-right font-bold text-[#0B265A] whitespace-nowrap">${{ number_format($gastosBase->sum('monto_programado'), 2) }}</td></tr></tfoot>
-                </table>
-            </div>
+            @include('presupuesto.partials.relacion-gastos', ['editarSemanas' => true])
         </section>
     </div>
 </div>
