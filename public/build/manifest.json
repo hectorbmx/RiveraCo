@@ -1,13 +1,25 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-BH75-uNm.css",
+    "file": "assets/app-CX3RmYjw.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-BkRTH15v.js",
+    "file": "assets/app-grXXusBM.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
+    "isEntry": true,
+    "dynamicImports": [
+      "resources/js/presupuesto-nota-ejecucion.js"
+    ]
+  },
+  "resources/js/presupuesto-nota-ejecucion.js": {
+    "file": "assets/presupuesto-nota-ejecucion-D0Ds5yoh.js",
+    "name": "presupuesto-nota-ejecucion",
+    "src": "resources/js/presupuesto-nota-ejecucion.js",
+    "isDynamicEntry": true,
+    "css": [
+      "assets/presupuesto-nota-ejecucion-BzY4kI8E.css"
+    ]
   }
 }

@@ -1,8 +1,8 @@
 import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
 
-export default defineConfig({
-    base: '/v2/public/',
+export default defineConfig(({ command }) => ({
+    base: command === 'build' ? './' : '/v2/public/',
     plugins: [
         laravel({
             input: [
@@ -12,4 +12,4 @@ export default defineConfig({
             refresh: true,
         }),
     ],
-});
+}));

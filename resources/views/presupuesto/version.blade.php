@@ -12,8 +12,12 @@
 <div class="space-y-5">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <a href="{{ route('presupuesto.versiones.index', $presupuesto) }}" class="text-sm font-medium text-[#0B265A] hover:underline">← Historial de versiones</a>
-        <a href="{{ route('presupuesto.versiones.pdf', [$presupuesto, $version]) }}" target="_blank" rel="noopener"
-           class="rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">Exportar PDF</a>
+        <div class="flex flex-wrap items-center gap-3">
+            <a href="{{ route('presupuesto.show', [$presupuesto, 'tab' => 'apupi', 'borrador' => 1]) }}"
+               class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-[#0B265A] hover:bg-slate-50">Editar en APUPI</a>
+            <a href="{{ route('presupuesto.versiones.pdf', [$presupuesto, $version]) }}" target="_blank" rel="noopener"
+               class="rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">Exportar PDF</a>
+        </div>
     </div>
     <header class="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6">
         <div>

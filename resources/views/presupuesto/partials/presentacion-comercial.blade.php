@@ -87,9 +87,23 @@
             </td></tr>
         </tbody>
         <tfoot class="bg-slate-100">
-            <tr><th colspan="5" class="px-4 py-2 text-right">Subtotal</th><td class="px-4 py-2 text-right" x-text="formatoImporte(presentacion.subtotal)"></td></tr>
-            <tr><th colspan="5" class="px-4 py-2 text-right" x-text="'IVA ' + presentacion.tasa_iva + '%'"></th><td class="px-4 py-2 text-right" x-text="formatoImporte(presentacion.iva)"></td></tr>
-            <tr><th colspan="5" class="px-4 py-2 text-right">Total</th><td class="px-4 py-2 text-right font-bold text-[#0B265A]" x-text="formatoImporte(presentacion.total)"></td></tr>
+            <tr>
+                <td colspan="4" rowspan="3" class="px-4 py-3 align-top">
+                    <div class="max-w-4xl space-y-2">
+                        <h3 id="titulo-nota-ejecucion" class="font-semibold text-slate-800">Notas de ejecución</h3>
+                        <div class="bg-white [&_.ql-editor]:min-h-24"
+                             x-init="$iniciarNotaEjecucion($el, JSON.parse(notaEjecucion), programarNotaEjecucion.bind($data)).catch(() => errorEditorNota = true)"></div>
+                        <p x-show="errorEditorNota" x-cloak role="alert" class="text-red-700">No se pudo cargar el editor de notas.</p>
+                        <p x-show="notaPendiente || notaEnviada !== null" x-cloak role="status" class="text-slate-700">
+                            <span x-text="errorNota || (notaEnviada !== null ? 'Guardando notas…' : 'Cambios de notas pendientes')"></span>
+                            <button type="button" x-show="errorNota" @click="enviarNotaEjecucion()" class="ml-2 font-semibold underline">Reintentar</button>
+                        </p>
+                    </div>
+                </td>
+                <th class="px-4 py-2 text-right align-top">Subtotal</th><td class="px-4 py-2 text-right align-top" x-text="formatoImporte(presentacion.subtotal)"></td>
+            </tr>
+            <tr><th class="px-4 py-2 text-right align-top" x-text="'IVA ' + presentacion.tasa_iva + '%'"></th><td class="px-4 py-2 text-right align-top" x-text="formatoImporte(presentacion.iva)"></td></tr>
+            <tr><th class="px-4 py-2 text-right align-top">Total</th><td class="px-4 py-2 text-right align-top font-bold text-[#0B265A]" x-text="formatoImporte(presentacion.total)"></td></tr>
         </tfoot>
     </table>
 </div>

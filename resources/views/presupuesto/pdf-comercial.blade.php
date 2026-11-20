@@ -30,6 +30,10 @@
         .anticipo { color: #a41111; font-weight: bold; }
         .totales td { padding: 1pt 0 2pt 5pt; }
         .totales .total { font-weight: bold; border-top: .6pt solid #111; }
+        .nota-ejecucion { margin: 4pt 0 7pt; overflow-wrap: break-word; }
+        .nota-ejecucion p, .nota-ejecucion ol, .nota-ejecucion ul { margin: 0 0 3pt; }
+        .nota-ejecucion ol, .nota-ejecucion ul { padding-left: 15pt; }
+        .nota-ejecucion h2 { font-size: 7.5pt; margin: 0 0 3pt; page-break-after: avoid; }
         .notas h2 { text-align: center; border: 1pt solid #111; font-size: 7.9pt; letter-spacing: 1.8pt; margin: 8pt 0 3pt; page-break-after: avoid; }
         .notas ol { margin: 0; padding-left: 26pt; font-size: 6.7pt; line-height: 1.1; }
         .notas li { padding-left: 3pt; margin-bottom: 0; }
@@ -127,6 +131,12 @@
         </td>
     </tr>
 </table>
+@if(!empty($presentacion['nota_ejecucion']))
+    <section class="nota-ejecucion">
+        <h2>Notas de ejecución</h2>
+        {!! \App\Support\PresentacionPresupuesto::htmlNotaEjecucion($presentacion['nota_ejecucion']) !!}
+    </section>
+@endif
 @if($presentacion['notas'])
     <div class="notas">
         <h2>NOTAS IMPORTANTES</h2>

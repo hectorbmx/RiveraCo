@@ -159,6 +159,39 @@ class PresupuestoController extends Controller
         return $this->volverAlDetalle($request, $presupuesto, 'Datos para impresión actualizados.');
     }
 
+    public function updateNotaEjecucion(Request $request, Presupuesto $presupuesto)
+    {
+        // Los saltos de línea y los espacios entre fragmentos forman parte del Delta de Quill.
+        $entrada = $request->validate(['nota_ejecucion' => ['required', 'string', 'max:200000', 'json']]);
+        $datos = validator(['nota_ejecucion' => json_decode($entrada['nota_ejecucion'], true)], [
+            'nota_ejecucion' => ['present', 'array', 'max:1500'],
+            'nota_ejecucion.*' => ['required', 'array:insert,attributes'],
+            'nota_ejecucion.*.insert' => ['present', 'string', 'max:10000'],
+            'nota_ejecucion.*.attributes' => ['sometimes', 'array:bold,italic,list'],
+            'nota_ejecucion.*.attributes.bold' => ['sometimes', 'boolean'],
+            'nota_ejecucion.*.attributes.italic' => ['sometimes', 'boolean'],
+            'nota_ejecucion.*.attributes.list' => ['sometimes', 'in:ordered,bullet'],
+        ], [], ['nota_ejecucion' => 'notas de ejecución'])->validate();
+
+        $nota = $datos['nota_ejecucion'];
+        $texto = implode('', array_column($nota, 'insert'));
+        if (!array_is_list($nota) || mb_strlen($texto) > 10000) {
+            throw ValidationException::withMessages([
+                'nota_ejecucion' => 'Las notas de ejecución admiten hasta 10,000 caracteres.',
+            ]);
+        }
+
+        DB::transaction(function () use ($presupuesto, $nota, $texto) {
+            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $presentacion = $actual->presentacion_comercial ?? [];
+            $presentacion['nota_ejecucion'] = trim($texto) === '' ? [] : $nota;
+            $actual->presentacion_comercial = $presentacion;
+            $actual->save();
+        }, 3);
+
+        return response()->json(['ok' => true]);
+    }
+
     public function updateConceptoPresentacion(Request $request, Presupuesto $presupuesto, string $renglon)
     {
         $datos = $request->validate(['concepto' => ['required', 'string', 'max:1000']]);
@@ -549,7 +582,7 @@ class PresupuestoController extends Controller
     {
         $datos = $request->validateWithBag('versionPresupuesto', ['revision' => ['sometimes', 'required', 'integer', 'min:0']]);
         $revision = (int) ($datos['revision'] ?? 0);
-        $version = DB::transaction(function () use ($request, $presupuesto, $revision): PresupuestoVersion {
+        [$version, $creada] = DB::transaction(function () use ($request, $presupuesto, $revision): array {
             if ($revision === 0 && $presupuesto->consecutivo_cliente === null) {
                 try {
                     (clone $presupuesto)->asignarConsecutivoCliente();
@@ -561,15 +594,18 @@ class PresupuestoController extends Controller
             $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
             $guardada = $actual->versiones()->where('revision', $revision)->lockForUpdate()->first(['id']);
             if ($guardada !== null) {
-                return $guardada;
+                return [$guardada, false];
             }
-            $origen = $actual->version_origen_borrador_id;
-            if ($revision > 0 && ($origen === null || $revision !== (int) $actual->versiones()->max('revision') + 1)) {
+
+            $ultima = $actual->versiones()->orderByDesc('revision')->first(['id', 'revision']);
+            $siguiente = $ultima ? $ultima->revision + 1 : 0;
+            if ($revision !== $siguiente) {
                 throw ValidationException::withMessages([
-                    'revision' => 'El borrador de esta revisión ya no está disponible. Abre el historial para ver su estado.',
+                    'revision' => 'El número de versión cambió. Recarga el presupuesto para guardar la siguiente versión.',
                 ])->errorBag('versionPresupuesto');
             }
 
+            $origenBorrador = $actual->version_origen_borrador_id;
             $actual->load(['cliente', 'detalles', 'pilas', 'resumenes']);
             $vol = $actual->calcularVolumetria();
             $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
@@ -577,21 +613,26 @@ class PresupuestoController extends Controller
             $autor = $request->user()->getKey();
             $version = $actual->versiones()->create([
                 'revision' => $revision,
-                'version_origen_id' => $origen,
+                'version_origen_id' => $origenBorrador ?? $ultima?->id,
                 'motivo' => $actual->motivo_borrador_revision,
                 'creado_por' => $autor,
                 'datos' => DatosPresupuestoVersion::capturar($actual, $vol, $duracion, $costos, $resumen, $this->gastosBase($actual)),
                 'total_venta' => $resumen['propuesta']['total'],
             ]);
             $version->eventos()->create(['tipo' => PresupuestoEvento::GUARDADO, 'registrado_por' => $autor]);
-            if ($origen !== null) {
+            if ($origenBorrador !== null) {
                 $actual->forceFill(['version_origen_borrador_id' => null, 'motivo_borrador_revision' => null])->save();
             }
 
-            return $version;
+            return [$version, true];
         }, 3);
 
-        return redirect()->route('presupuesto.versiones.show', [$presupuesto, $version]);
+        $mensaje = $creada
+            ? "Versión {$version->folio()} guardada. Puedes seguir editando el borrador."
+            : 'Ese número de versión ya estaba guardado. Puedes guardar el borrador actual como la siguiente versión.';
+
+        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'apupi', 'borrador' => 1])
+            ->with('estadoPresupuesto', $mensaje);
     }
 
     public function historialVersiones(Presupuesto $presupuesto)

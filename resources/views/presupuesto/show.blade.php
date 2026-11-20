@@ -6,7 +6,7 @@
     $solicitada = request()->query('tab');
     $tabInicial = is_string($solicitada) && array_key_exists($solicitada, $pestanas) ? $solicitada : 'presupuesto';
     $revisionEnCurso = $presupuesto->version_origen_borrador_id !== null;
-    $siguienteRevision = $revisionEnCurso ? $versionGuardada->revision + 1 : 0;
+    $siguienteRevision = $versionGuardada ? $versionGuardada->revision + 1 : 0;
     $pdfBorrador = route('presupuesto.pdf', $presupuesto);
     $mostrarVersionUnica = $versionUnica && !request()->boolean('borrador');
     $pdfVersion = $mostrarVersionUnica ? route('presupuesto.versiones.pdf', [$presupuesto, $versionUnica]) : null;
@@ -23,6 +23,13 @@
     escenarioPrevio: @js($previo['escenario']),
     unidadesCapturadas: @js(old('unidades', $presupuesto->presentacion_comercial['unidades'] ?? [])),
     urlConcepto: @js(route('presupuesto.presentacion.conceptos.update', [$presupuesto, '__renglon__'])),
+    urlNotaEjecucion: @js(route('presupuesto.presentacion.nota-ejecucion.update', $presupuesto)),
+    notaEjecucion: JSON.stringify(@js($presentacion['nota_ejecucion'])),
+    notaGuardada: JSON.stringify(@js($presentacion['nota_ejecucion'])),
+    notaEnviada: null,
+    temporizadorNota: null,
+    errorNota: '',
+    errorEditorNota: false,
     urlSemanas: @js(route('presupuesto.gastos-semanales.update', $presupuesto)),
     encabezadoPerforacion: @js(\App\Support\PresentacionPresupuesto::ENCABEZADO_PERFORACION),
     csrf: @js(csrf_token()),
@@ -45,6 +52,43 @@
     },
     get semanasPendientes() {
         return this.restablecerSemanal || this.cambiosSemanales.length > 0;
+    },
+    get notaPendiente() {
+        return this.notaEjecucion !== this.notaGuardada;
+    },
+    programarNotaEjecucion(operaciones) {
+        this.notaEjecucion = JSON.stringify(operaciones);
+        this.errorNota = '';
+        clearTimeout(this.temporizadorNota);
+        this.temporizadorNota = setTimeout(() => this.enviarNotaEjecucion(), 800);
+    },
+    enviarNotaEjecucion() {
+        clearTimeout(this.temporizadorNota);
+        if (!this.notaPendiente || this.notaEnviada !== null) return;
+
+        const nota = this.notaEnviada = this.notaEjecucion;
+        this.errorNota = '';
+        this.cola = this.cola.then(async () => {
+            try {
+                const respuesta = await fetch(new URL(this.urlNotaEjecucion, location.href).pathname, {
+                    method: 'PATCH',
+                    headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrf },
+                    body: JSON.stringify({ nota_ejecucion: nota })
+                });
+                const datos = await respuesta.json().catch(() => ({}));
+                if (!respuesta.ok || !datos.ok) {
+                    throw new Error(Object.values(datos.errors ?? {})[0]?.[0] || 'No se pudieron guardar las notas.');
+                }
+                this.notaGuardada = nota;
+                if (!this.notaPendiente) this.avisar('Notas de ejecución guardadas.');
+            } catch (error) {
+                this.errorNota = error instanceof TypeError ? 'No se pudo conectar para guardar las notas.' : error.message;
+                this.avisar(this.errorNota, true);
+            } finally {
+                this.notaEnviada = null;
+                if (this.notaEjecucion !== nota && this.notaPendiente) this.enviarNotaEjecucion();
+            }
+        });
     },
     programarGastoSemanal(cambio) {
         this.cambiosSemanales = this.cambiosSemanales.filter(item => item.concepto !== cambio.concepto || item.semana !== cambio.semana);
@@ -182,9 +226,16 @@
         let pendiente;
         do {
             this.enviarSemanas();
+            this.enviarNotaEjecucion();
             pendiente = this.cola;
             await pendiente;
-        } while (!this.errorSemanal && (pendiente !== this.cola || this.semanasPendientes));
+        } while (pendiente !== this.cola || (!this.errorSemanal && this.semanasPendientes)
+            || (!this.errorNota && this.notaPendiente));
+        if (this.notaPendiente) {
+            this.cambiar('presupuesto');
+            this.errorVersion = 'Guarda las notas de ejecución antes de continuar.';
+            return false;
+        }
         if (this.errorSemanal) {
             this.cambiar('gastos');
             this.errorVersion = 'Corrige o reintenta los importes semanales pendientes antes de continuar.';
@@ -272,7 +323,7 @@
         botones[siguiente].click();
         botones[siguiente].focus();
     }
-}" @beforeunload.window="if (semanasPendientes || loteSemanal) { $event.preventDefault(); $event.returnValue = ''; }">
+}" @beforeunload.window="if (semanasPendientes || loteSemanal || notaPendiente || notaEnviada !== null) { $event.preventDefault(); $event.returnValue = ''; }">
     <div role="status" aria-live="polite" x-show="mensajeGuardado" x-cloak x-text="mensajeGuardado"
          :class="errorGuardado ? 'bg-red-700' : 'bg-emerald-700'"
          class="fixed bottom-6 right-6 z-50 rounded-lg px-4 py-3 text-sm font-semibold text-white shadow-lg"></div>
@@ -282,14 +333,12 @@
             @if($versionGuardada)
                 <a href="{{ route('presupuesto.versiones.index', $presupuesto) }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-[#0B265A] hover:bg-slate-50">Historial de versiones</a>
             @endif
-            @if(!$versionGuardada || $revisionEnCurso)
-                <form method="POST" action="{{ route('presupuesto.versiones.store', $presupuesto) }}" @submit.prevent="guardarVersion($el)">
-                    @csrf
-                    <input type="hidden" name="revision" value="{{ $siguienteRevision }}">
-                    <button type="submit" :disabled="guardandoVersion" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-[#0B265A] hover:bg-slate-50 disabled:opacity-60"
-                            x-text="guardandoVersion ? 'Guardando…' : 'Guardar versión'">Guardar versión</button>
-                </form>
-            @endif
+            <form method="POST" action="{{ route('presupuesto.versiones.store', $presupuesto) }}" @submit.prevent="guardarVersion($el)">
+                @csrf
+                <input type="hidden" name="revision" value="{{ $siguienteRevision }}">
+                <button type="submit" :disabled="guardandoVersion" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-[#0B265A] hover:bg-slate-50 disabled:opacity-60"
+                        x-text="guardandoVersion ? 'Guardando…' : 'Guardar versión'">Guardar versión</button>
+            </form>
             <a href="{{ $tabInicial === 'presupuesto' && $pdfVersion ? $pdfVersion : $pdfBorrador }}"
                @if($pdfVersion) :href="tab === 'presupuesto' ? @js($pdfVersion) : @js($pdfBorrador)" @endif
                target="_blank" rel="noopener" @click.prevent="exportarPdf($el.href)" class="inline-flex items-center gap-2 rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">

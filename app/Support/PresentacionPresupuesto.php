@@ -59,6 +59,7 @@ class PresentacionPresupuesto
             'anticipo' => $captura['anticipo'] ?? null,
             'condiciones_pago' => $captura['condiciones_pago'] ?? null,
             'plazo_semanas' => $captura['plazo_semanas'] ?? $duracion['realista']['semanas'],
+            'nota_ejecucion' => $captura['nota_ejecucion'] ?? [],
             'notas' => $captura['notas'] ?? self::notas($equipoPesado, $filas),
             'filas' => self::numerar($filas)->all(),
             'subtotal' => $subtotal,
@@ -86,6 +87,61 @@ class PresentacionPresupuesto
 
             return $fila + ['numero' => $numero, 'numero_encabezado' => $encabezado];
         });
+    }
+
+    public static function htmlNotaEjecucion(array $operaciones): string
+    {
+        $html = '';
+        $renglon = '';
+        $lista = null;
+
+        foreach ($operaciones as $operacion) {
+            $atributos = $operacion['attributes'] ?? [];
+            $fragmentos = explode("\n", $operacion['insert']);
+            foreach ($fragmentos as $indice => $fragmento) {
+                if ($indice > 0) {
+                    $tipo = match ($atributos['list'] ?? null) {
+                        'ordered' => 'ol',
+                        'bullet' => 'ul',
+                        default => null,
+                    };
+                    if ($tipo !== $lista) {
+                        if ($lista !== null) {
+                            $html .= "</{$lista}>";
+                        }
+                        if ($tipo !== null) {
+                            $html .= "<{$tipo}>";
+                        }
+                        $lista = $tipo;
+                    }
+
+                    $etiqueta = $lista === null ? 'p' : 'li';
+                    $html .= "<{$etiqueta}>" . ($renglon === '' ? '<br>' : $renglon) . "</{$etiqueta}>";
+                    $renglon = '';
+                }
+
+                if ($fragmento === '') {
+                    continue;
+                }
+                $texto = e($fragmento);
+                if ($atributos['italic'] ?? false) {
+                    $texto = "<em>{$texto}</em>";
+                }
+                if ($atributos['bold'] ?? false) {
+                    $texto = "<strong>{$texto}</strong>";
+                }
+                $renglon .= $texto;
+            }
+        }
+
+        if ($lista !== null) {
+            $html .= "</{$lista}>";
+        }
+        if ($renglon !== '') {
+            $html .= "<p>{$renglon}</p>";
+        }
+
+        return $html;
     }
 
     private static function letrasSubpartida(int $indice): string

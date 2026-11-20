@@ -7,6 +7,10 @@ import { comisionAltaFormulario } from './comision-alta-form';
 window.Alpine = Alpine;
 Alpine.data('comisionEtapaFormulario', comisionEtapaFormulario);
 Alpine.data('comisionAltaFormulario', comisionAltaFormulario);
+Alpine.magic('iniciarNotaEjecucion', () => async (...argumentos) => {
+    const { iniciarEditorNotaEjecucion } = await import('./presupuesto-nota-ejecucion');
+    iniciarEditorNotaEjecucion(...argumentos);
+});
 
 Alpine.start();
 function showGlobalSubmitLoader(message = 'Procesando...') {

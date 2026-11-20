@@ -41,19 +41,19 @@
             { etiqueta: this.utilidadDirecta < 0 ? 'Pérdida esperada' : 'Utilidad esperada', color: this.utilidadDirecta < 0 ? '#c52f41' : '#84c84a', importe: this.utilidadDirecta },
         ];
     },
-    get gradientePrevio() {
-        if (this.previo.venta_actual <= 0 || this.hoja.directo == null) return '';
-        const segmentos = this.segmentosPrevio.filter(({ importe }) => importe > 0);
-        const total = segmentos.reduce((suma, { importe }) => suma + importe, 0);
-        if (total <= 0) return '';
+    get arcosPrevio() {
+        if (this.previo.venta_actual <= 0 || this.hoja.directo == null) return [];
+        const segmentos = this.segmentosPrevio.filter(({ importe }) => Number.isFinite(Number(importe)) && importe > 0);
+        const total = segmentos.reduce((suma, { importe }) => suma + Number(importe), 0);
+        if (total <= 0) return [];
+
         let inicio = 0;
-        const sectores = segmentos.map(({ importe, color }) => {
-            const fin = inicio + importe / total * 100;
-            const sector = color + ' ' + inicio + '% ' + fin + '%';
-            inicio = fin;
-            return sector;
+        return segmentos.map(({ importe, color }) => {
+            const longitud = importe / total * 100;
+            const arco = { color, longitud, inicio };
+            inicio += longitud;
+            return arco;
         });
-        return 'conic-gradient(' + sectores.join(', ') + ')';
     }
 }">
     <div class="overflow-x-auto rounded-lg border border-slate-300">
@@ -94,11 +94,16 @@
             <figcaption class="mb-3 font-semibold text-slate-800"
                         x-text="segmentosPrevio.some(segmento => segmento.importe < 0) ? 'Distribución de costos y deducciones' : 'Distribución de la venta sin IVA'">Distribución de la venta sin IVA</figcaption>
             <div class="flex flex-wrap items-center justify-center gap-4">
-                <div aria-hidden="true" x-show="gradientePrevio"
-                     :style="{ backgroundImage: gradientePrevio }"
-                     class="relative h-40 w-40 shrink-0 rounded-full">
-                    <div class="absolute inset-1/4 rounded-full bg-white"></div>
-                </div>
+                <svg aria-hidden="true" x-show="arcosPrevio.length" class="shrink-0"
+                     width="160" height="160" viewBox="0 0 100 100" fill="none">
+                    @for($indice = 0; $indice < count($partidasPrevio) + count($deduccionesPrevio) + 1; $indice++)
+                        <circle cx="50" cy="50" r="37.5" pathLength="100" stroke-width="25"
+                                transform="rotate(-90 50 50)"
+                                :stroke="arcosPrevio[{{ $indice }}]?.color ?? 'none'"
+                                :stroke-dasharray="(arcosPrevio[{{ $indice }}]?.longitud ?? 0) + ' 100'"
+                                :stroke-dashoffset="-(arcosPrevio[{{ $indice }}]?.inicio ?? 0)"/>
+                    @endfor
+                </svg>
                 <ul class="min-w-52 flex-1 space-y-1 text-sm">
                     <template x-for="segmento in segmentosPrevio" :key="segmento.etiqueta">
                         <li class="flex items-center gap-2">
@@ -109,14 +114,14 @@
                     </template>
                 </ul>
             </div>
-            <div x-show="!gradientePrevio" class="mt-3 text-sm text-slate-600">
+            <div x-show="!arcosPrevio.length" class="mt-3 text-sm text-slate-600">
                 <p x-text="previo.venta_actual <= 0 ? 'La gráfica y el margen se calculan cuando hay un importe de venta en Propuesta 1.' : 'Completa los costos de APUPI para ver la gráfica.'"></p>
                 @if($puedeAbrirPropuesta ?? false)
                     <a x-show="previo.venta_actual <= 0" href="{{ route('presupuesto.show', [$presupuesto, 'tab' => 'apupi']) }}#propuesta-apupi"
                        @click.prevent="abrirPropuesta()" class="mt-2 inline-block font-semibold text-[#0B265A] underline">Ir a Propuesta 1</a>
                 @endif
             </div>
-            <p x-show="gradientePrevio && segmentosPrevio.some(segmento => segmento.importe < 0)" class="mt-3 text-xs text-slate-600">La dona reparte los importes positivos. Los porcentajes de la leyenda se calculan sobre la venta.</p>
+            <p x-show="arcosPrevio.length && segmentosPrevio.some(segmento => segmento.importe < 0)" class="mt-3 text-xs text-slate-600">La dona reparte los importes positivos. Los porcentajes de la leyenda se calculan sobre la venta.</p>
         </figure>
 
         <dl class="overflow-hidden rounded-lg border border-slate-300 text-sm tabular-nums">
