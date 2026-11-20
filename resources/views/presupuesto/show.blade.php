@@ -254,6 +254,10 @@
         url.searchParams.set('tab', id);
         window.history.replaceState({}, '', url);
     },
+    abrirPropuesta() {
+        this.cambiar('apupi');
+        this.$nextTick(() => document.getElementById('propuesta-apupi')?.focus());
+    },
     mover(event, salto, extremo = null) {
         const botones = Array.from(this.$refs.pestanas.querySelectorAll('[role=tab]'));
         const actual = botones.indexOf(event.target);
@@ -314,8 +318,15 @@
             </div>
             <div class="w-full lg:w-auto">
                 <div class="flex flex-wrap gap-6 lg:justify-end">
-                    <div><p class="text-xs uppercase text-slate-500">Costo directo</p><p class="mt-1 text-xl font-semibold text-slate-700">${{ number_format($presupuesto->total_costo_directo, 2) }}</p></div>
-                    <div><p class="text-xs uppercase text-slate-500">Total venta</p><p class="mt-1 text-xl font-bold text-emerald-700">${{ number_format($presupuesto->total_presupuesto, 2) }}</p></div>
+                    @if($presupuesto->esImportado())
+                        <div><p class="text-xs uppercase text-slate-500">Costo directo</p><p class="mt-1 text-xl font-semibold text-slate-700">${{ number_format($presupuesto->total_costo_directo, 2) }}</p></div>
+                        <div><p class="text-xs uppercase text-slate-500">Total venta</p><p class="mt-1 text-xl font-bold text-emerald-700">${{ number_format($presupuesto->total_presupuesto, 2) }}</p></div>
+                    @else
+                        <div><p class="text-xs uppercase text-slate-500">Costo directo realista</p><p class="mt-1 text-xl font-semibold text-slate-700"
+                            x-text="previo.escenarios.realista.directo == null ? '—' : formatoImporte(previo.escenarios.realista.directo)">{{ $previo['escenarios']['realista']['directo'] === null ? '—' : '$' . number_format($previo['escenarios']['realista']['directo'], 2) }}</p></div>
+                        <div><p class="text-xs uppercase text-slate-500">Venta sin IVA</p><p class="mt-1 text-xl font-bold text-emerald-700"
+                            x-text="formatoImporte(presentacion.subtotal)">${{ number_format($presentacion['subtotal'], 2) }}</p></div>
+                    @endif
                 </div>
                 @include('presupuesto.partials.duracion-apupi')
             </div>
@@ -367,7 +378,7 @@
             @include('presupuesto.partials.presentacion-comercial')
         </section>
         <section id="panel-previo" role="tabpanel" aria-labelledby="tab-previo" tabindex="0" x-show="tab === 'previo'" @if($tabInicial !== 'previo') x-cloak @endif>
-            @include('presupuesto.partials.previo', ['puedeEditarPrevio' => auth()->user()->hasAnyRole(\App\Support\PrevioPresupuesto::ADMINISTRADORES)])
+            @include('presupuesto.partials.previo', ['puedeEditarPrevio' => auth()->user()->hasAnyRole(\App\Support\PrevioPresupuesto::ADMINISTRADORES), 'puedeAbrirPropuesta' => true])
         </section>
         <section id="panel-gastos" role="tabpanel" aria-labelledby="tab-gastos" tabindex="0" x-show="tab === 'gastos'" @if($tabInicial !== 'gastos') x-cloak @endif>
             @include('presupuesto.partials.relacion-gastos', ['editarSemanas' => true])

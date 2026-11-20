@@ -80,7 +80,11 @@
             </tbody>
         </template>
         <tbody x-show="Object.keys(presentacion.filas).length === 0">
-            <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">No hay partidas de venta cobrables.</td></tr>
+            <tr><td colspan="6" class="px-4 py-8 text-center text-slate-600">
+                <p>Captura una cantidad y un precio unitario de venta en Propuesta 1 para generar el presupuesto comercial.</p>
+                <a href="{{ route('presupuesto.show', [$presupuesto, 'tab' => 'apupi']) }}#propuesta-apupi"
+                   @click.prevent="abrirPropuesta()" class="mt-2 inline-block font-semibold text-[#0B265A] underline">Ir a Propuesta 1</a>
+            </td></tr>
         </tbody>
         <tfoot class="bg-slate-100">
             <tr><th colspan="5" class="px-4 py-2 text-right">Subtotal</th><td class="px-4 py-2 text-right" x-text="formatoImporte(presentacion.subtotal)"></td></tr>

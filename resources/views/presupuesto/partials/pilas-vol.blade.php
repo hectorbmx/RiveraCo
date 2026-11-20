@@ -110,7 +110,7 @@
     <details id="captura-vol" class="rounded-xl border border-slate-200 bg-slate-50" @if($editarVol || $errors->pilaVol->any()) open @endif>
         <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-[#0B265A]">{{ $editarVol ? 'Editar tipo de pila' : 'Agregar tipo de pila' }}</summary>
         <form action="{{ $editarVol ? route('presupuesto.pilas-vol.update', [$presupuesto, $editarVol]) : route('presupuesto.pilas-vol.store', $presupuesto) }}"
-              method="POST" class="space-y-4 border-t border-slate-200 p-4"
+              method="POST" autocomplete="off" class="space-y-4 border-t border-slate-200 p-4"
               data-calcular-url="{{ route('presupuesto.pilas-vol.calcular', [$presupuesto, 'pila_vol' => $editarVol?->id]) }}"
               x-data="{
                   resultados: {},
@@ -155,6 +155,9 @@
             @foreach($camposVol as $seccion => $campos)
                 <fieldset class="rounded-xl border border-slate-200 bg-white px-4 pb-4">
                     <legend class="rounded-md px-3 py-1 text-sm font-semibold text-slate-950" style="background-color: {{ $coloresVol[$seccion] }}">{{ $seccion }}</legend>
+                    @if($seccion === 'Zunchos')
+                        <p class="mt-2 text-xs text-slate-600">Captura aquí la separación entre zunchos de cada tramo.</p>
+                    @endif
                     <div class="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         @foreach($campos as $nombre => [$etiqueta, $tipo, $minimo, $maximo, $paso, $ejemplo, $requerido])
                             <div>

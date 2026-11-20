@@ -109,7 +109,13 @@
                     </template>
                 </ul>
             </div>
-            <p x-show="!gradientePrevio" class="mt-3 text-xs text-slate-600">Captura la venta y los costos para ver la gráfica.</p>
+            <div x-show="!gradientePrevio" class="mt-3 text-sm text-slate-600">
+                <p x-text="previo.venta_actual <= 0 ? 'La gráfica y el margen se calculan cuando hay un importe de venta en Propuesta 1.' : 'Completa los costos de APUPI para ver la gráfica.'"></p>
+                @if($puedeAbrirPropuesta ?? false)
+                    <a x-show="previo.venta_actual <= 0" href="{{ route('presupuesto.show', [$presupuesto, 'tab' => 'apupi']) }}#propuesta-apupi"
+                       @click.prevent="abrirPropuesta()" class="mt-2 inline-block font-semibold text-[#0B265A] underline">Ir a Propuesta 1</a>
+                @endif
+            </div>
             <p x-show="gradientePrevio && segmentosPrevio.some(segmento => segmento.importe < 0)" class="mt-3 text-xs text-slate-600">La dona reparte los importes positivos. Los porcentajes de la leyenda se calculan sobre la venta.</p>
         </figure>
 

@@ -4,7 +4,7 @@
 @endphp
 
 <section class="space-y-4 border-t border-slate-200 p-5" aria-labelledby="propuesta-apupi">
-    <h2 id="propuesta-apupi" class="border border-slate-400 px-3 py-2 text-sm font-bold uppercase text-slate-900" style="background-color: #DDEBF7">
+    <h2 id="propuesta-apupi" tabindex="-1" class="scroll-mt-20 border border-slate-400 px-3 py-2 text-sm font-bold uppercase text-slate-900" style="background-color: #DDEBF7">
         Propuesta 1: {{ $equipo }}
     </h2>
     <div class="overflow-x-auto" role="region" aria-label="Renglones de venta de la propuesta" tabindex="0">

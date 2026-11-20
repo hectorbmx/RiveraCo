@@ -19,6 +19,17 @@
         return valor == null ? '—' : '$' + Number(valor).toLocaleString('en-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     },
     @if($editarSemanas ?? false)
+        puedeRetrocederSemanas: false,
+        puedeAvanzarSemanas: false,
+        medirTablaGastos() {
+            const tabla = this.$refs.tablaGastos;
+            this.puedeRetrocederSemanas = tabla.scrollLeft > 0;
+            this.puedeAvanzarSemanas = tabla.scrollLeft + tabla.clientWidth < tabla.scrollWidth - 1;
+        },
+        desplazarSemanas(direccion) {
+            const tabla = this.$refs.tablaGastos;
+            tabla.scrollBy({left: direccion * tabla.clientWidth * 0.8});
+        },
         cambioSemana(fila, semana) {
             const coincide = cambio => cambio.concepto === String(fila.id) && cambio.semana === semana;
             return this.cambiosSemanales.find(coincide) ?? this.loteSemanal?.cambios.find(coincide);
@@ -52,13 +63,24 @@
             input.value = this.textoSemana(fila, semana);
         },
     @endif
-}">
+}" @if($editarSemanas ?? false)
+    x-effect="if (tab === 'gastos' && semanasGasto) $nextTick(() => medirTablaGastos())"
+    @resize.window="if (tab === 'gastos') medirTablaGastos()"
+@endif>
     <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
         <div>
             <h2 class="text-lg font-semibold text-slate-800">Relación de gastos</h2>
             <p class="mt-1 text-sm text-slate-600">Base presupuestada · Escenario realista</p>
         </div>
         <div class="flex flex-wrap items-center gap-3 text-sm">
+            @if($editarSemanas ?? false)
+                <div x-cloak x-show="puedeRetrocederSemanas || puedeAvanzarSemanas" class="flex gap-2">
+                    <button type="button" :disabled="!puedeRetrocederSemanas" @click="desplazarSemanas(-1)"
+                            class="rounded-lg border border-slate-300 px-3 py-2 font-medium text-[#0B265A] disabled:opacity-50">← Semanas</button>
+                    <button type="button" :disabled="!puedeAvanzarSemanas" @click="desplazarSemanas(1)"
+                            class="rounded-lg border border-slate-300 px-3 py-2 font-medium text-[#0B265A] disabled:opacity-50">Semanas →</button>
+                </div>
+            @endif
             <label class="flex items-center gap-2 font-medium text-slate-700">
                 <input type="checkbox" x-model="soloUsados" class="rounded border-slate-300 text-[#0B265A]">
                 Solo conceptos usados
@@ -87,10 +109,16 @@
             <button type="button" class="font-semibold underline" @click="if (confirm('¿Descartar los importes que quedaron pendientes?')) descartarSemanas()">Descartar pendientes</button>
         </div>
     @endif
-    <p x-show="planSemanal?.error" class="mx-5 mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900" x-text="planSemanal?.error"></p>
+    <div x-show="planSemanal?.error" class="mx-5 mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <p x-text="planSemanal?.error"></p>
+        @if($editarSemanas ?? false)
+            <button type="button" @click="$dispatch('editar-semanas')" class="font-semibold underline">Editar semanas del escenario realista</button>
+        @endif
+    </div>
     <p x-show="!planSemanal?.error && planSemanal?.pendientes > 0" class="mx-5 mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900"
        x-text="planSemanal?.pendientes + ' conceptos o ajustes requieren revisión antes de aplicar la planeación a Obra.'"></p>
-    <div class="overflow-x-auto" role="region" aria-label="Base presupuestada de gastos" tabindex="0">
+    <div class="overflow-x-auto" role="region" aria-label="Base presupuestada de gastos" tabindex="0"
+         @if($editarSemanas ?? false) x-ref="tablaGastos" @scroll.passive="medirTablaGastos()" @endif>
         <table class="w-full text-sm">
             <thead class="bg-[#0B265A] text-white">
                 <tr>

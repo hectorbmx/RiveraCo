@@ -843,7 +843,7 @@ class PresupuestoController extends Controller
             $pila->update($this->validarPilaVol($request, anterior: $pila));
         }, 3);
 
-        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'pilas'])
+        return redirect()->to(route('presupuesto.show', [$presupuesto, 'tab' => 'pilas', 'editar_pila' => $pilaVol]) . '#captura-vol')
             ->with('estadoVol', 'Tipo de pila actualizado.');
     }
 

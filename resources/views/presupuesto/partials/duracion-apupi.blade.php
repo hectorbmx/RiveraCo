@@ -4,7 +4,8 @@
 @endphp
 
 <form method="POST" action="{{ route('presupuesto.duracion-apupi.update', $presupuesto) }}"
-      x-data="{ editando: @js($errors->duracionApupi->any()) }" class="mt-4">
+      x-data="{ editando: @js($errors->duracionApupi->any()) }"
+      @editar-semanas.window="editando = true; $nextTick(() => $refs.semanasRealistas.focus())" class="mt-4">
     @csrf
     @method('PATCH')
     <input type="hidden" name="tab" value="{{ $tabInicial }}" :value="tab">
@@ -41,6 +42,7 @@
                                        placeholder="{{ $manual === null ? $valor ?? '—' : '—' }}"
                                        aria-label="{{ $etiqueta }} · {{ ucfirst($escenario) }}"
                                        @if($campo === 'jornales' && $escenario === 'realista') x-ref="primerPlazo" @endif
+                                       @if($campo === 'semanas' && $escenario === 'realista') x-ref="semanasRealistas" @endif
                                        x-show="editando" x-cloak
                                        class="w-full rounded-md border-slate-300 px-1 py-1 text-center text-sm">
                             </td>
