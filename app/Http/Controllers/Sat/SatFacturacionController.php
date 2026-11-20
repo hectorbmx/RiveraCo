@@ -14,6 +14,7 @@ use App\Models\SatCfdi;
 use App\Models\SatFacturaBorrador;
 use App\Models\ObraFacturaBorrador;
 use App\Services\Facturacion\FacturapiService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Services\Mail\MicrosoftGraphMailService;
 use Facturapi\Exceptions\FacturapiException;
 use Illuminate\Support\Facades\DB;
@@ -613,7 +614,7 @@ public function relacionables(Request $request)
     ]);
 }
 
-public function preview(Request $request, FacturapiService $facturapiService)
+public function preview(Request $request)
 {
     $data = $request->validate([
         'sat_empresa_id' => ['required', 'exists:sat_empresas,id'],
@@ -664,7 +665,36 @@ public function preview(Request $request, FacturapiService $facturapiService)
         $rfc = $this->normalizeRfc($cliente->rfc);
 
         $payload = $this->buildFacturapiPreviewPayload($request, $data, $cliente, $rfc);
-        $pdf = $facturapiService->client()->Invoices->previewPdf($payload);
+        if ($request->query('formato') === 'revision') {
+            $empresa = SatEmpresa::findOrFail($data['sat_empresa_id']);
+            $conceptos = collect($payload['items'])->map(function (array $item): array {
+                $importe = round($item['quantity'] * $item['product']['price'], 6);
+                $base = $importe - $item['discount'];
+                $impuestos = collect($item['product']['taxes'])->map(fn ($impuesto) => $impuesto + [
+                    'importe' => round($base * $impuesto['rate'], 6),
+                ]);
+
+                return $item + ['importe' => $importe, 'base' => $base, 'impuestos' => $impuestos];
+            });
+
+            if ($conceptos->contains(fn ($concepto) => $concepto['base'] < 0)) {
+                return back()->withInput()->with('error', 'El descuento aplicado supera el importe de un concepto.');
+            }
+
+            return Pdf::loadView('sat.facturacion.preview-revision', [
+                'empresa' => $empresa,
+                'payload' => $payload,
+                'conceptos' => $conceptos,
+                'subtotal' => round($conceptos->sum('importe'), 2),
+                'descuento' => round($conceptos->sum('discount'), 2),
+                'iva' => round($conceptos->sum(fn ($concepto) => $concepto['impuestos']->sum('importe')), 2),
+                'complemento' => $request->boolean('usar_complemento_construccion')
+                    ? $data['complemento_construccion']
+                    : null,
+            ])->setPaper('letter')->stream('preview-factura-revision.pdf');
+        }
+
+        $pdf = app(FacturapiService::class)->client()->Invoices->previewPdf($payload);
 
         return response($pdf, 200, [
             'Content-Type' => 'application/pdf',
@@ -734,7 +764,7 @@ private function buildFacturapiPreviewPayload(Request $request, array $data, Cli
             'description' => $concepto['descripcion'],
             'product_key' => $concepto['clave_producto_servicio'],
             'unit_key' => $concepto['clave_unidad'] ?: 'H87',
-            'unit_name' => $concepto['unidad'] ?: 'Pieza',
+            'unit_name' => ($concepto['unidad'] ?? '') ?: 'Pieza',
             'price' => (float) $concepto['precio_unitario'],
             'tax_included' => false,
             'taxability' => $tipoIva === 'sin_iva' ? '01' : '02',

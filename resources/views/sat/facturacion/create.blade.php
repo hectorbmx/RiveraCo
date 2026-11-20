@@ -757,7 +757,7 @@
                             <button type="submit"
                                     data-action="preview"
                                     @click="loadingTimbrar = false"
-                                    formaction="{{ route('sat.facturacion.preview') }}"
+                                    formaction="{{ route('sat.facturacion.preview', ['formato' => 'revision']) }}"
                                     formmethod="POST"
                                     formtarget="_blank"
                                     :disabled="loadingTimbrar"
@@ -769,6 +769,12 @@
                                     </svg>
                                     Previsualizar PDF
                                 </span>
+                            </button>
+                            <button type="submit" data-action="preview"
+                                    formaction="{{ route('sat.facturacion.preview') }}" formmethod="POST" formtarget="_blank"
+                                    :disabled="loadingTimbrar"
+                                    class="w-full px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white hover:underline disabled:opacity-50">
+                                Vista previa de Facturapi
                             </button>
                         </div>
 

@@ -5,7 +5,6 @@ namespace App\Support;
 use App\Models\Presupuesto;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 class PresentacionPresupuesto
 {
@@ -80,13 +79,25 @@ class PresentacionPresupuesto
                 if ($subpartida === 0) {
                     $encabezado = (string) ++$partida;
                 }
-                $numero = strtolower(Coordinate::stringFromColumnIndex(++$subpartida));
+                $numero = self::letrasSubpartida(++$subpartida);
             } else {
                 $numero = (string) ++$partida;
             }
 
             return $fila + ['numero' => $numero, 'numero_encabezado' => $encabezado];
         });
+    }
+
+    private static function letrasSubpartida(int $indice): string
+    {
+        $letras = '';
+        while ($indice > 0) {
+            $indice--;
+            $letras = chr(ord('a') + $indice % 26) . $letras;
+            $indice = intdiv($indice, 26);
+        }
+
+        return $letras;
     }
 
     public static function descripcion(string $clave, array $fila): string

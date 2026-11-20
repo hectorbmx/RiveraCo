@@ -3,10 +3,77 @@
     $camposApupi = ['cantidad' => 'Cantidad', 'precio_unitario' => 'Costo unitario'];
     $escenariosApupi = \App\Models\Presupuesto::ESCENARIOS_APUPI;
     $sugerenciasCantidad = \App\Support\PlantillaApupi::sugerenciasCantidad($volumetria, $duracionApupi);
+    $claveRespaldoApupi = implode(':', ['apupi-pendiente', auth()->id(), $presupuesto->id, $versionGuardada?->id, $presupuesto->version_origen_borrador_id]);
 @endphp
 <div x-data="{
     resumen: @js($resumenApupi),
     plegadas: {},
+    claveRespaldo: @js($claveRespaldoApupi),
+    pendientesApupi: {},
+    respaldoDisponible: true,
+    errorApupi: '',
+    init() {
+        this.pendientesApupi = this.cargarRespaldo();
+        for (const input of this.camposApupi()) {
+            const clave = this.claveCampo(input);
+            if (!Object.hasOwn(this.pendientesApupi, clave)) continue;
+            const valor = this.pendientesApupi[clave];
+            if (valor !== '' && Number(valor) === Number(input.dataset.guardado)) {
+                this.confirmarCampo(input, valor);
+            } else {
+                input.value = valor;
+            }
+        }
+    },
+    cargarRespaldo() {
+        try {
+            return JSON.parse(localStorage.getItem(this.claveRespaldo) || '{}') || {};
+        } catch {
+            this.respaldoDisponible = false;
+            return {};
+        }
+    },
+    camposApupi() {
+        return [...this.$root.querySelectorAll('input[data-url][data-guardado]')];
+    },
+    claveCampo(input) {
+        return new URL(input.dataset.url, location.href).pathname + ':' + input.name;
+    },
+    actualizarRespaldo(clave, valor, confirmado = false) {
+        if (confirmado && this.pendientesApupi[clave] !== valor) return;
+        this.pendientesApupi = { ...this.pendientesApupi };
+        if (confirmado) delete this.pendientesApupi[clave];
+        else this.pendientesApupi[clave] = valor;
+        if (!this.respaldoDisponible) return;
+        try {
+            const respaldo = this.cargarRespaldo();
+            if (!this.respaldoDisponible) return;
+            if (!confirmado) respaldo[clave] = valor;
+            else if (respaldo[clave] === valor) delete respaldo[clave];
+            if (Object.keys(respaldo).length) localStorage.setItem(this.claveRespaldo, JSON.stringify(respaldo));
+            else localStorage.removeItem(this.claveRespaldo);
+        } catch {
+            this.respaldoDisponible = false;
+        }
+    },
+    respaldarCampo(input) {
+        this.actualizarRespaldo(this.claveCampo(input), input.value);
+    },
+    confirmarCampo(input, valor) {
+        this.actualizarRespaldo(this.claveCampo(input), valor, true);
+        if (!Object.keys(this.pendientesApupi).length) this.errorApupi = '';
+    },
+    irAlPendiente() {
+        const input = this.camposApupi().find(campo => Object.hasOwn(this.pendientesApupi, this.claveCampo(campo)));
+        if (!input) return;
+        this.plegadas = {};
+        this.$nextTick(() => input.focus());
+    },
+    reenviarApupi() {
+        for (const input of this.camposApupi()) {
+            if (Object.hasOwn(this.pendientesApupi, this.claveCampo(input))) this.guardar(input);
+        }
+    },
     moneda(valor) {
         return valor == null ? '—' : '$' + Number(valor).toLocaleString('en-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     },
@@ -24,7 +91,8 @@
             const precio = costo.dataset.precioPropuesta
                 ? this.resumen.propuesta.filas[costo.dataset.precioPropuesta]?.precio_unitario
                 : this.resumen.precios[costo.dataset.precioApupi];
-            if (precio == null || costo === document.activeElement || Number(costo.value) !== Number(costo.dataset.guardado)) continue;
+            if (precio == null || costo === document.activeElement || Object.hasOwn(this.pendientesApupi, this.claveCampo(costo))
+                || Number(costo.value) !== Number(costo.dataset.guardado)) continue;
             costo.value = precio;
             costo.dataset.guardado = costo.value;
         }
@@ -32,44 +100,66 @@
     guardar(input) {
         const valor = input.value;
         const valido = input.validity.valid;
+        this.respaldarCampo(input);
         this.cola = this.cola.then(async () => {
             if (!valido) {
                 input.setAttribute('aria-invalid', 'true');
-                this.avisar('Captura un número válido para guardar.', true);
+                this.errorApupi = 'Captura un número válido para guardar.';
+                this.avisar(this.errorApupi, true);
                 return;
             }
             if (Number(valor) === Number(input.dataset.guardado)) {
+                this.confirmarCampo(input, valor);
                 input.removeAttribute('aria-invalid');
                 this.sincronizarPrecios();
                 return;
             }
             try {
-                const respuesta = await fetch(input.dataset.url, {
+                const respuesta = await fetch(new URL(input.dataset.url, location.href).pathname, {
                     method: 'PATCH',
                     keepalive: true,
                     headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrf },
                     body: JSON.stringify({ [input.name]: valor })
                 });
-                if (!respuesta.ok) {
-                    const datos = await respuesta.json().catch(() => ({}));
-                    throw new Error(datos.errors?.[input.name]?.[0] || 'No se pudo guardar. Vuelve a salir del campo para reintentar.');
+                const datos = await respuesta.json().catch(() => null);
+                if (!respuesta.ok || !datos?.propuesta) {
+                    const detalle = respuesta.status === 419 || respuesta.status === 401 || respuesta.redirected
+                        ? 'La sesión expiró. Vuelve a iniciar sesión y reintenta el guardado.'
+                        : 'El servidor no confirmó el guardado (HTTP ' + respuesta.status + ').';
+                    throw new Error(datos?.errors?.[input.name]?.[0] || detalle);
                 }
-                this.resumen = await respuesta.json();
+                this.resumen = datos;
                 this.presentacion = this.resumen.presentacion;
                 this.previo = this.resumen.previo;
                 this.relacionGastos = this.resumen.relacion_gastos;
                 input.dataset.guardado = valor;
+                this.confirmarCampo(input, valor);
                 input.removeAttribute('aria-invalid');
                 this.sincronizarPrecios();
                 this.avisar('Guardado');
             } catch (error) {
                 input.setAttribute('aria-invalid', 'true');
-                this.avisar(error.message || 'No se pudo guardar.', true);
+                this.errorApupi = error instanceof TypeError
+                    ? 'No se pudo conectar con el servidor.'
+                    : error.message;
+                this.avisar(this.errorApupi, true);
             }
         });
     }
-}">
+}" @input="if ($event.target.matches('input[data-url][data-guardado]')) respaldarCampo($event.target)"
+   @beforeunload.window="if (!respaldoDisponible && Object.keys(pendientesApupi).length) { $event.preventDefault(); $event.returnValue = ''; }">
     <p class="px-5 pb-3 text-sm text-slate-600">Los cambios se guardan al salir del campo.</p>
+    <div x-show="Object.keys(pendientesApupi).length" x-cloak
+         class="sticky top-0 z-10 mx-5 mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+        <div role="status">
+            <p x-text="respaldoDisponible ? 'Cambios pendientes respaldados en este navegador.' : 'Cambios pendientes. El respaldo del navegador no está disponible.'"></p>
+            <p x-show="errorApupi" x-text="errorApupi"></p>
+        </div>
+        <div class="flex gap-3 font-semibold">
+            <button type="button" class="underline" @click="irAlPendiente()">Ir al primer campo</button>
+            <button type="button" class="underline" @click="reenviarApupi()">Reintentar guardado</button>
+        </div>
+    </div>
 
     <div class="overflow-x-auto" role="region" aria-label="Costos por partida de APUPI" tabindex="0">
         <table class="w-full text-sm">
