@@ -451,7 +451,8 @@ Route::middleware('auth','verified')->group(function () {
         Route::patch('presupuestos/{presupuesto}/pilas-vol/traslape', [App\Http\Controllers\PresupuestoController::class, 'updateTraslapeVol'])->name('presupuesto.pilas-vol.traslape');
         Route::patch('presupuestos/{presupuesto}/pilas-vol/{pilaVol}', [App\Http\Controllers\PresupuestoController::class, 'updatePilaVol'])->whereNumber('pilaVol')->name('presupuesto.pilas-vol.update');
         Route::delete('presupuestos/{presupuesto}/pilas-vol/{pilaVol}', [App\Http\Controllers\PresupuestoController::class, 'destroyPilaVol'])->whereNumber('pilaVol')->name('presupuesto.pilas-vol.destroy');
-        Route::delete('presupuestos/{id}', [App\Http\Controllers\PresupuestoController::class, 'destroy'])->name('presupuesto.destroy');
+        Route::delete('presupuestos/{id}', [App\Http\Controllers\PresupuestoController::class, 'destroy'])
+            ->middleware('permission:presupuestos.delete.access')->name('presupuesto.destroy');
 
         });
 

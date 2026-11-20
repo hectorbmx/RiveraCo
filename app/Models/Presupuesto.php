@@ -271,6 +271,11 @@ class Presupuesto extends Model
         return $this->origen === self::ORIGEN_EXCEL;
     }
 
+    public function esBorrador(): bool
+    {
+        return strtolower(trim((string) $this->estatus)) === 'borrador';
+    }
+
     public function nombreClienteVisible(): string
     {
         return $this->cliente?->nombre_comercial ?: $this->nombre_cliente;

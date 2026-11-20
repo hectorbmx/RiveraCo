@@ -12,13 +12,12 @@ use App\Models\OrdenCompra;
 use App\Models\Presupuesto;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 
 use Illuminate\Support\Facades\DB;
 use App\Models\PresupuestoDetalle;
 use App\Models\PresupuestoEvento;
-use App\Models\PresupuestoPila;
-use App\Models\PresupuestoResumen;
 use App\Models\PresupuestoVolPila;
 use App\Models\PresupuestoVersion;
 use App\Support\DatosPresupuestoVersion;
@@ -51,6 +50,10 @@ class PresupuestoController extends Controller
             });
         $presupuestos = Presupuesto::query()
             ->addSelect(['ultimo_movimiento_id' => $movimientos, 'aceptacion_vigente_id' => $aceptacion])
+            ->withExists([
+                'eventos as tiene_seguimiento' => fn ($eventos) => $eventos->whereIn('tipo', array_keys(PresupuestoEvento::TIPOS_SEGUIMIENTO)),
+                'obras',
+            ])
             ->with([
                 'cliente:id,nombre_comercial',
                 'ultimoMovimiento.version:id,presupuesto_id,revision',
@@ -724,7 +727,8 @@ class PresupuestoController extends Controller
         ]);
         $autor = $request->user()->getKey();
         DB::transaction(function () use ($presupuesto, $version, $datos, $autor) {
-            $guardada = $presupuesto->versiones()->lockForUpdate()->findOrFail($version, ['id']);
+            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $guardada = $actual->versiones()->lockForUpdate()->findOrFail($version, ['id']);
             $ultimo = $guardada->eventos()->latest('id')->first();
             $nota = $datos['nota'] ?? null;
             if ($ultimo?->tipo === $datos['tipo'] && $ultimo->nota === $nota && (int) $ultimo->registrado_por === (int) $autor) {
@@ -1017,36 +1021,43 @@ class PresupuestoController extends Controller
 
     public function destroy($id)
     {
-        DB::beginTransaction();
-
         try {
-            $presupuesto = Presupuesto::lockForUpdate()->findOrFail($id);
-            if ($presupuesto->versiones()->exists()) {
-                DB::rollBack();
+            $error = DB::transaction(function () use ($id): ?string {
+                $presupuesto = Presupuesto::lockForUpdate()->findOrFail($id);
 
-                return redirect()->route('presupuesto.index')
-                    ->with('error', 'El presupuesto tiene versiones guardadas y no se puede eliminar.');
-            }
+                if (!$presupuesto->esBorrador()) {
+                    return 'Solo se pueden eliminar presupuestos en estado de borrador.';
+                }
 
-            // Borrar tablas hijas
-            PresupuestoDetalle::where('presupuesto_id', $presupuesto->id)->delete();
-            PresupuestoPila::where('presupuesto_id', $presupuesto->id)->delete();
-            PresupuestoResumen::where('presupuesto_id', $presupuesto->id)->delete();
+                if ($presupuesto->eventos()->whereIn('tipo', array_keys(PresupuestoEvento::TIPOS_SEGUIMIENTO))->exists()) {
+                    return 'Este presupuesto ya tiene seguimiento comercial.';
+                }
 
-            // Borrar cabecera
-            $presupuesto->delete();
+                if ($presupuesto->obras()->exists()) {
+                    return 'Este presupuesto está vinculado a una obra.';
+                }
 
-            DB::commit();
+                if ($presupuesto->version_origen_borrador_id !== null) {
+                    $presupuesto->forceFill(['version_origen_borrador_id' => null])->save();
+                }
 
-            return redirect()
-                ->route('presupuesto.index')
-                ->with('success', 'Presupuesto eliminado correctamente.');
-        } catch (\Throwable $e) {
-            DB::rollBack();
+                $versiones = $presupuesto->versiones()->orderByDesc('revision')->get(['id']);
+                foreach ($versiones as $version) {
+                    $version->eventos()->delete();
+                    // Las versiones se eliminan juntas al borrar el borrador completo.
+                    $presupuesto->versiones()->whereKey($version->id)->delete();
+                }
 
-            return redirect()
-                ->route('presupuesto.index')
-                ->with('error', 'Ocurrió un error al eliminar el presupuesto.');
+                $presupuesto->delete();
+
+                return null;
+            }, 3);
+        } catch (QueryException $e) {
+            report($e);
+            $error = 'Ocurrió un error al eliminar el presupuesto.';
         }
+
+        return redirect()->route('presupuesto.index')
+            ->with($error === null ? 'success' : 'error', $error ?? 'Presupuesto eliminado correctamente.');
     }
 }
