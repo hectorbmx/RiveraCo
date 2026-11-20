@@ -7,6 +7,13 @@
     $tabInicial = is_string($solicitada) && array_key_exists($solicitada, $pestanas) ? $solicitada : 'presupuesto';
     $revisionEnCurso = $presupuesto->version_origen_borrador_id !== null;
     $siguienteRevision = $revisionEnCurso ? $versionGuardada->revision + 1 : 0;
+    $pdfBorrador = route('presupuesto.pdf', $presupuesto);
+    $mostrarVersionUnica = $versionUnica && !request()->boolean('borrador');
+    $pdfVersion = $mostrarVersionUnica ? route('presupuesto.versiones.pdf', [$presupuesto, $versionUnica]) : null;
+    $totalesVersion = $versionUnica?->datos['presentacion'] ?? null;
+    $directoVersion = $versionUnica?->datos['previo']['escenarios']['realista']['directo']
+        ?? $versionUnica?->datos['presupuesto']['total_costo_directo']
+        ?? null;
 @endphp
 <div class="space-y-5" x-data="{
     tab: @js($tabInicial),
@@ -283,7 +290,9 @@
                             x-text="guardandoVersion ? 'Guardando…' : 'Guardar versión'">Guardar versión</button>
                 </form>
             @endif
-            <a href="{{ route('presupuesto.pdf', $presupuesto->id) }}" target="_blank" rel="noopener" @click.prevent="exportarPdf($el.href)" class="inline-flex items-center gap-2 rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">
+            <a href="{{ $tabInicial === 'presupuesto' && $pdfVersion ? $pdfVersion : $pdfBorrador }}"
+               @if($pdfVersion) :href="tab === 'presupuesto' ? @js($pdfVersion) : @js($pdfBorrador)" @endif
+               target="_blank" rel="noopener" @click.prevent="exportarPdf($el.href)" class="inline-flex items-center gap-2 rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 Exportar PDF
             </a>
@@ -317,7 +326,13 @@
                 </dl>
             </div>
             <div class="w-full lg:w-auto">
-                <div class="flex flex-wrap gap-6 lg:justify-end">
+                @if($mostrarVersionUnica)
+                    <div class="flex flex-wrap gap-6 lg:justify-end" x-show="tab === 'presupuesto'" @if($tabInicial !== 'presupuesto') x-cloak @endif>
+                        <div><p class="text-xs uppercase text-slate-500">Costo directo realista</p><p class="mt-1 text-xl font-semibold text-slate-700">{{ $directoVersion === null ? '—' : '$' . number_format($directoVersion, 2) }}</p></div>
+                        <div><p class="text-xs uppercase text-slate-500">{{ $totalesVersion ? 'Venta sin IVA' : 'Total venta' }}</p><p class="mt-1 text-xl font-bold text-emerald-700">${{ number_format($totalesVersion['subtotal'] ?? $versionUnica->total_venta, 2) }}</p></div>
+                    </div>
+                @endif
+                <div class="flex flex-wrap gap-6 lg:justify-end" @if($mostrarVersionUnica) x-show="tab !== 'presupuesto'" @if($tabInicial === 'presupuesto') x-cloak @endif @endif>
                     @if($presupuesto->esImportado())
                         <div><p class="text-xs uppercase text-slate-500">Costo directo</p><p class="mt-1 text-xl font-semibold text-slate-700">${{ number_format($presupuesto->total_costo_directo, 2) }}</p></div>
                         <div><p class="text-xs uppercase text-slate-500">Total venta</p><p class="mt-1 text-xl font-bold text-emerald-700">${{ number_format($presupuesto->total_presupuesto, 2) }}</p></div>
@@ -375,7 +390,30 @@
             @include('presupuesto.partials.costos-apupi')
         </section>
         <section id="panel-presupuesto" role="tabpanel" aria-labelledby="tab-presupuesto" tabindex="0" x-show="tab === 'presupuesto'" @if($tabInicial !== 'presupuesto') x-cloak @endif>
-            @include('presupuesto.partials.presentacion-comercial')
+            @if($mostrarVersionUnica)
+                <div class="flex flex-wrap items-center justify-between gap-3 p-5">
+                    <h2 class="text-lg font-semibold text-slate-800">Propuesta 1 · Versión {{ $versionUnica->folio() }}</h2>
+                    <div class="flex flex-wrap gap-4 text-sm font-semibold text-[#0B265A]">
+                        <a class="hover:underline" href="{{ route('presupuesto.versiones.show', [$presupuesto, $versionUnica]) }}">Ver versión completa</a>
+                        <a class="hover:underline" href="{{ route('presupuesto.show', [$presupuesto, 'tab' => 'presupuesto', 'borrador' => 1]) }}">Ver borrador</a>
+                    </div>
+                </div>
+                @include('presupuesto.partials.propuesta-version', ['version' => $versionUnica])
+                @if($totalesVersion)
+                    <dl class="grid grid-cols-[1fr_auto] gap-x-6 gap-y-2 bg-slate-100 px-5 py-4 text-right text-sm">
+                        <dt>Subtotal</dt><dd>${{ number_format($totalesVersion['subtotal'], 2) }}</dd>
+                        <dt>IVA {{ (float) $totalesVersion['tasa_iva'] }} %</dt><dd>${{ number_format($totalesVersion['iva'], 2) }}</dd>
+                        <dt class="font-semibold">Total</dt><dd class="font-semibold">${{ number_format($totalesVersion['total'], 2) }}</dd>
+                    </dl>
+                @endif
+            @else
+                @if($versionUnica)
+                    <div class="px-5 pt-5 text-sm font-semibold text-[#0B265A]">
+                        <a class="hover:underline" href="{{ route('presupuesto.show', [$presupuesto, 'tab' => 'presupuesto']) }}">Volver a la versión {{ $versionUnica->folio() }}</a>
+                    </div>
+                @endif
+                @include('presupuesto.partials.presentacion-comercial')
+            @endif
         </section>
         <section id="panel-previo" role="tabpanel" aria-labelledby="tab-previo" tabindex="0" x-show="tab === 'previo'" @if($tabInicial !== 'previo') x-cloak @endif>
             @include('presupuesto.partials.previo', ['puedeEditarPrevio' => auth()->user()->hasAnyRole(\App\Support\PrevioPresupuesto::ADMINISTRADORES), 'puedeAbrirPropuesta' => true])

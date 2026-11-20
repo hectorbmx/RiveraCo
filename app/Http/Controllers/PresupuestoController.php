@@ -531,9 +531,15 @@ class PresupuestoController extends Controller
         $relacionGastos = $this->relacionGastos($presupuesto, $filasApupi, $duracionApupi);
         $presentacion = PresentacionPresupuesto::preparar($presupuesto, $filasApupi, $resumenApupi, $duracionApupi);
         $previo = PrevioPresupuesto::preparar($presupuesto, $filasApupi, $resumenApupi['propuesta'], $duracionApupi);
-        $versionGuardada = $presupuesto->versiones()->orderByDesc('revision')->first(['id', 'revision']);
+        $versiones = $presupuesto->versiones()->orderByDesc('revision')->limit(2)->get(['id', 'revision']);
+        $versionGuardada = $versiones->first();
+        $versionUnica = null;
+        if ($versiones->count() === 1 && $presupuesto->version_origen_borrador_id === null) {
+            $versionUnica = $presupuesto->versiones()->find($versionGuardada->id);
+            $versionUnica?->setRelation('presupuesto', $presupuesto);
+        }
 
-        return view('presupuesto.show', compact('presupuesto', 'relacionGastos', 'volumetria', 'editarVol', 'clienteSeleccionado', 'duracionApupi', 'filasApupi', 'resumenApupi', 'versionGuardada', 'presentacion', 'previo'));
+        return view('presupuesto.show', compact('presupuesto', 'relacionGastos', 'volumetria', 'editarVol', 'clienteSeleccionado', 'duracionApupi', 'filasApupi', 'resumenApupi', 'versionGuardada', 'versionUnica', 'presentacion', 'previo'));
     }
 
     public function storeVersion(Request $request, Presupuesto $presupuesto)
