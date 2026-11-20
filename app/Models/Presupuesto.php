@@ -171,6 +171,7 @@ class Presupuesto extends Model
     public function duracionApupi(?float $jornalesVol): array
     {
         $manual = $this->duracion_apupi ?? [];
+        $equipos = (int) ($manual['equipos'] ?? 1);
         $realista = $manual['realista']['jornales'] ?? ($jornalesVol === null ? null : ceil($jornalesVol));
         // APUPI F7:H9: las duraciones de cada escenario parten de sus jornales.
         $jornales = [
@@ -187,6 +188,7 @@ class Presupuesto extends Model
                 'jornales' => $jornalesEscenario,
                 'dias' => $dias,
                 'semanas' => $manual[$escenario]['semanas'] ?? ($dias === null ? null : ceil($dias / 7)),
+                'equipos' => $equipos,
             ];
         }
 

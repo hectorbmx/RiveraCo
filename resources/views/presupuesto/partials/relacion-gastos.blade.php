@@ -91,11 +91,30 @@
     </div>
     @if($editarSemanas ?? false)
         <div class="flex flex-wrap items-start justify-between gap-3 px-5 pb-4">
-            <dl class="flex flex-wrap gap-3 text-sm">
-                <div class="rounded-lg bg-slate-100 px-3 py-2"><dt>Jornales de trabajo</dt><dd class="font-semibold" x-text="planSemanal?.jornales ?? '—'"></dd></div>
-                <div class="rounded-lg bg-slate-100 px-3 py-2"><dt>Días calendario</dt><dd class="font-semibold" x-text="planSemanal?.dias ?? '—'"></dd></div>
-                <div class="rounded-lg bg-slate-100 px-3 py-2"><dt>Semanas</dt><dd class="font-semibold" x-text="planSemanal?.numero_semanas ?? '—'"></dd></div>
-            </dl>
+            <div class="flex flex-wrap gap-3 text-sm">
+                <dl class="flex flex-wrap gap-3">
+                    <div class="rounded-lg bg-slate-100 px-3 py-2"><dt>Jornales de trabajo</dt><dd class="font-semibold" x-text="planSemanal?.jornales ?? '—'"></dd></div>
+                    <div class="rounded-lg bg-slate-100 px-3 py-2"><dt>Días calendario base</dt><dd class="font-semibold" x-text="planSemanal?.dias ?? '—'"></dd></div>
+                    <div class="rounded-lg bg-slate-100 px-3 py-2"><dt>Semanas de ejecución</dt><dd class="font-semibold" x-text="planSemanal?.numero_semanas ?? '—'"></dd></div>
+                </dl>
+                <form method="POST" action="{{ route('presupuesto.gastos-semanales.equipos.update', $presupuesto) }}"
+                      @submit.prevent="guardarEquiposPlaneacion($el)"
+                      class="rounded-lg bg-slate-100 px-3 py-2">
+                    @csrf
+                    @method('PATCH')
+                    <label for="equipos-planeacion" class="block">Número de equipos</label>
+                    <div class="mt-1 flex items-center gap-2">
+                        <input id="equipos-planeacion" name="equipos" type="number" min="1" max="999999" step="1" required
+                               value="{{ $errors->equiposPlaneacion->any() ? old('equipos') : ($relacionGastos['planeacion']['equipos'] ?? 1) }}"
+                               class="w-24 rounded-md border-slate-300 px-2 py-1 text-sm">
+                        <button type="submit" :disabled="guardandoEquipos"
+                                class="rounded-md bg-[#0B265A] px-2 py-1 font-semibold text-white disabled:opacity-50">Guardar equipos</button>
+                    </div>
+                    @error('equipos', 'equiposPlaneacion')
+                        <p role="alert" class="mt-1 text-red-700">{{ $message }}</p>
+                    @enderror
+                </form>
+            </div>
             <button type="button" x-show="planSemanal?.tiene_ajustes || semanasPendientes" :disabled="!!loteSemanal"
                     @click="if (confirm('¿Restablecer el reparto automático de todos los conceptos?')) reiniciarSemanas()"
                     class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-[#0B265A] disabled:opacity-50">Restablecer reparto</button>
@@ -130,7 +149,7 @@
                     <template x-for="semana in semanasGasto" :key="semana.numero">
                         <th scope="col" class="min-w-[135px] whitespace-nowrap px-4 py-3 text-right">
                             <span x-text="'Semana ' + semana.numero"></span>
-                            <span class="block text-xs font-normal" x-text="semana.jornales + ' jornales'"></span>
+                            <span class="block text-xs font-normal" x-text="semana.jornales + ((planSemanal?.equipos ?? 1) > 1 ? ' jornales de equipo' : ' jornales')"></span>
                         </th>
                     </template>
                     <th x-show="semanasGasto.length" scope="col" class="whitespace-nowrap px-4 py-3 text-right">Por programar</th>

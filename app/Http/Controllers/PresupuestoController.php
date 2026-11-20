@@ -343,10 +343,35 @@ class PresupuestoController extends Controller
                 }
             }
         }
-        $presupuesto->duracion_apupi = $duracion ?: null;
-        $presupuesto->save();
+        DB::transaction(function () use ($presupuesto, $duracion) {
+            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $anterior = $actual->duracion_apupi ?? [];
+            if (isset($anterior['equipos'])) {
+                $duracion['equipos'] = $anterior['equipos'];
+            }
+            $actual->duracion_apupi = $duracion ?: null;
+            $actual->save();
+        }, 3);
 
         return $this->volverAlDetalle($request, $presupuesto, 'Duración de obra actualizada.');
+    }
+
+    public function updateEquiposPlaneacion(Request $request, Presupuesto $presupuesto)
+    {
+        $datos = $request->validateWithBag('equiposPlaneacion', [
+            'equipos' => ['required', 'integer', 'between:1,999999'],
+        ], [], ['equipos' => 'número de equipos']);
+
+        DB::transaction(function () use ($presupuesto, $datos) {
+            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $duracion = $actual->duracion_apupi ?? [];
+            $duracion['equipos'] = (int) $datos['equipos'];
+            $actual->duracion_apupi = $duracion;
+            $actual->save();
+        }, 3);
+
+        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'gastos', 'borrador' => 1])
+            ->with('estadoPresupuesto', 'Número de equipos actualizado.');
     }
 
     public function updateCostoApupi(Request $request, Presupuesto $presupuesto, string $detalle)

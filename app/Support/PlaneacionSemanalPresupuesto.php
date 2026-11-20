@@ -7,22 +7,33 @@ class PlaneacionSemanalPresupuesto
     public const JORNALES_SEMANA = 5.5;
     public const LIMITE_SEMANAS = 520;
 
+    public static function semanasEjecucion(?float $jornales, ?int $semanasBase, int $equipos): ?int
+    {
+        if ($jornales === null || $jornales <= 0) {
+            return null;
+        }
+
+        $minimo = (int) ceil($jornales / self::JORNALES_SEMANA);
+
+        return (int) ceil(max($semanasBase ?? 0, $minimo) / $equipos);
+    }
+
     public static function preparar(array $relacion, array $duracion, array $ajustes): array
     {
         $jornales = $duracion['jornales'];
-        $numero = (int) $duracion['semanas'];
-        $minimo = (int) ceil((float) $jornales / self::JORNALES_SEMANA);
+        $equipos = $duracion['equipos'] ?? 1;
+        $numero = self::semanasEjecucion($jornales, $duracion['semanas'], $equipos);
+        $capacidad = (int) (self::JORNALES_SEMANA * 100) * $equipos;
         $semanas = [];
         $error = match (true) {
             $numero > self::LIMITE_SEMANAS => 'La cuadrícula admite hasta ' . self::LIMITE_SEMANAS . ' semanas.',
-            $jornales === null || $jornales <= 0 || $numero < 1 => 'Captura los jornales y las semanas del escenario realista para programar los gastos.',
-            $numero < $minimo => 'Para cubrir los jornales hacen falta al menos ' . $minimo . ' semanas con un máximo de ' . self::JORNALES_SEMANA . ' jornales por semana.',
+            $numero === null => 'Captura los jornales del escenario realista para programar los gastos.',
             default => null,
         };
         $restantes = (int) round((float) $jornales * 100);
-        if ($numero <= self::LIMITE_SEMANAS) {
+        if ($error === null) {
             for ($semana = 1; $semana <= $numero; $semana++) {
-                $semanas[$semana] = min((int) (self::JORNALES_SEMANA * 100), $restantes);
+                $semanas[$semana] = min($capacidad, $restantes);
                 $restantes -= $semanas[$semana];
             }
         }
@@ -60,7 +71,8 @@ class PlaneacionSemanalPresupuesto
         $relacion['planeacion'] = [
             'jornales' => $jornales,
             'dias' => $duracion['dias'],
-            'numero_semanas' => $duracion['semanas'],
+            'numero_semanas' => $numero,
+            'equipos' => $equipos,
             'semanas' => collect($semanas)->map(fn ($peso, $semana) => ['numero' => $semana, 'jornales' => $peso / 100])->values()->all(),
             'totales' => $totales,
             'error' => $error,

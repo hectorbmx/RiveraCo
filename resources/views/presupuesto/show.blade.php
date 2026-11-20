@@ -43,6 +43,7 @@
     errorGuardado: false,
     temporizadorGuardado: null,
     guardandoVersion: false,
+    guardandoEquipos: false,
     errorVersion: '',
     avisar(mensaje, error = false) {
         clearTimeout(this.temporizadorGuardado);
@@ -277,6 +278,24 @@
         } else {
             this.guardandoVersion = false;
         }
+    },
+    async guardarEquiposPlaneacion(formulario) {
+        if (this.guardandoEquipos) return;
+        this.guardandoEquipos = true;
+        this.enviarSemanas();
+
+        let pendiente;
+        do {
+            pendiente = this.cola;
+            await pendiente;
+        } while (!this.errorSemanal && (pendiente !== this.cola || this.semanasPendientes));
+
+        if (this.errorSemanal) {
+            this.guardandoEquipos = false;
+            return;
+        }
+
+        formulario.submit();
     },
     async exportarPdf(url) {
         const ventana = window.open('about:blank', '_blank');

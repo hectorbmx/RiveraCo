@@ -1,6 +1,6 @@
 @php
     $coloresDuracion = ['realista' => '#FFF2CC', 'optimista' => '#E2EFDA', 'pesimista' => '#FFC7CE'];
-    $camposDuracion = ['jornales' => ['Jornales de trabajo', '0.01'], 'dias' => ['Días calendario', '1'], 'semanas' => ['Semanas', '1']];
+    $camposDuracion = ['jornales' => ['Jornales de trabajo', '0.01'], 'dias' => ['Días calendario base', '1'], 'semanas' => ['Semanas base', '1']];
 @endphp
 
 <form method="POST" action="{{ route('presupuesto.duracion-apupi.update', $presupuesto) }}"
@@ -49,6 +49,14 @@
                         @endforeach
                     </tr>
                 @endforeach
+                <tr x-show="!editando">
+                    <th scope="row" class="px-2 py-1.5 text-left font-medium text-slate-700">Semanas de ejecución</th>
+                    @foreach($duracionApupi as $escenario => $duracion)
+                        <td class="px-3 py-1.5 text-center font-medium" style="background-color: {{ $coloresDuracion[$escenario] }}">
+                            {{ \App\Support\PlaneacionSemanalPresupuesto::semanasEjecucion($duracion['jornales'], $duracion['semanas'], $duracion['equipos']) ?? '—' }}
+                        </td>
+                    @endforeach
+                </tr>
             </tbody>
         </table>
     </div>
