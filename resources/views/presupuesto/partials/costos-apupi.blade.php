@@ -170,27 +170,21 @@
                     </tr>
                     @if($tieneIndirecto)
                         @php
-                            $porcentaje = $presupuesto->indirectoTrasladoApupi();
+                            $porcentaje = $resumenApupi['porcentajes_indirectos'][$partida];
+                            $claveIndirecto = \Illuminate\Support\Str::slug($partida);
+                            $idIndirecto = 'indirecto-apupi-' . $claveIndirecto;
                         @endphp
                         <tr x-show="!plegadas[@js($plegable)]" class="bg-slate-50">
                             <th scope="row" colspan="3" class="px-4 py-2.5 text-right font-semibold text-slate-700">
-                                @if($esTraslado)
-                                    <label for="indirecto-traslado-porcentaje">Indirecto y utilidad</label>
-                                @else
-                                    Indirecto y utilidad
-                                @endif
+                                <label for="{{ $idIndirecto }}">Indirecto y utilidad</label>
                             </th>
                             <td class="whitespace-nowrap px-4 py-2.5 text-right">
-                                @if($esTraslado)
-                                    <input id="indirecto-traslado-porcentaje" name="porcentaje"
+                                <input id="{{ $idIndirecto }}" name="porcentaje"
                                        type="number" required min="0" max="999.99" step="0.01"
                                        value="{{ $porcentaje }}" data-guardado="{{ $porcentaje }}"
-                                       data-url="{{ route('presupuesto.apupi.indirecto-traslado.update', $presupuesto) }}"
-                                       @blur="guardar($el)" @keydown.enter.prevent="$el.blur()"
+                                       data-url="{{ route('presupuesto.apupi.indirecto.update', [$presupuesto, $claveIndirecto]) }}"
+                                       aria-label="Indirecto y utilidad · {{ $nombrePartida }}" @blur="guardar($el)" @keydown.enter.prevent="$el.blur()"
                                        class="w-24 rounded-md border-slate-300 px-2 py-1 text-right text-sm"> %
-                                @else
-                                    {{ \App\Support\PlantillaApupi::INDIRECTO }} %
-                                @endif
                             </td>
                             @foreach($escenariosApupi as $escenario)
                                 @php

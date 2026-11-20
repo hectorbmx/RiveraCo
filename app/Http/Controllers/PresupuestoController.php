@@ -22,6 +22,7 @@ use App\Models\PresupuestoResumen;
 use App\Models\PresupuestoVolPila;
 use App\Models\PresupuestoVersion;
 use App\Support\DatosPresupuestoVersion;
+use App\Support\PlantillaApupi;
 use App\Support\PresentacionPresupuesto;
 use App\Support\PrevioPresupuesto;
 use App\Support\PropuestaApupi;
@@ -356,12 +357,34 @@ class PresupuestoController extends Controller
 
     public function updateIndirectoTrasladoApupi(Request $request, Presupuesto $presupuesto)
     {
+        return $this->guardarIndirectoApupi($request, $presupuesto, PresupuestoDetalle::PARTIDA_TRASLADO);
+    }
+
+    public function updateIndirectoApupi(Request $request, Presupuesto $presupuesto, string $partida)
+    {
+        $nombre = collect(PlantillaApupi::partidasConIndirecto())->first(fn (string $nombre) => Str::slug($nombre) === $partida);
+        abort_if($nombre === null, 404);
+
+        return $this->guardarIndirectoApupi($request, $presupuesto, $nombre);
+    }
+
+    private function guardarIndirectoApupi(Request $request, Presupuesto $presupuesto, string $partida)
+    {
         $datos = $request->validateWithBag('indirectoApupi', [
             'porcentaje' => ['required', 'numeric', 'decimal:0,2', 'between:0,999.99'],
         ]);
 
-        $presupuesto->indirecto_traslado_apupi = $datos['porcentaje'];
-        $presupuesto->save();
+        DB::transaction(function () use ($presupuesto, $partida, $datos) {
+            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            if ($partida === PresupuestoDetalle::PARTIDA_TRASLADO) {
+                $actual->indirecto_traslado_apupi = $datos['porcentaje'];
+            } else {
+                $porcentajes = $actual->indirectos_por_partida_apupi ?? [];
+                $porcentajes[$partida] = (float) $datos['porcentaje'];
+                $actual->indirectos_por_partida_apupi = $porcentajes;
+            }
+            $actual->save();
+        }, 3);
 
         return $this->respuestaCostoApupi($request, $presupuesto);
     }

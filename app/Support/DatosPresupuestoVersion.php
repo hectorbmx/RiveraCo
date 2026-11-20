@@ -19,6 +19,7 @@ class DatosPresupuestoVersion
         ]));
         $presupuesto->presentacion_comercial = $datos['presupuesto']['presentacion_comercial'] ?? null;
         $presupuesto->datos_previo = $datos['presupuesto']['datos_previo'] ?? null;
+        $presupuesto->indirectos_por_partida_apupi = $datos['presupuesto']['indirectos_por_partida_apupi'] ?? null;
         $presupuesto->ajustes_gastos_semanales = $datos['presupuesto']['ajustes_gastos_semanales'] ?? null;
 
         foreach ([
@@ -42,7 +43,7 @@ class DatosPresupuestoVersion
                 'codigo_proyecto', 'origen', 'nombre_cliente', 'nombre_obra', 'descripcion',
                 'equipo_propuesto', 'vol_traslape_varilla', 'duracion_apupi', 'indirecto_traslado_apupi',
                 'ajustes_apupi', 'ajustes_propuesta_apupi', 'total_costo_directo', 'total_presupuesto',
-                'presentacion_comercial', 'datos_previo', 'ajustes_gastos_semanales',
+                'presentacion_comercial', 'datos_previo', 'ajustes_gastos_semanales', 'indirectos_por_partida_apupi',
             ]) + [
                 'equipo' => Presupuesto::EQUIPOS_PROPUESTOS[$presupuesto->equipo_propuesto] ?? null,
                 'indirecto_traslado_efectivo' => $presupuesto->indirectoTrasladoApupi(),

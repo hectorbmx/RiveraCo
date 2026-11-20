@@ -425,6 +425,8 @@ Route::middleware('auth','verified')->group(function () {
         Route::patch('presupuestos/{presupuesto}/duracion-apupi', [App\Http\Controllers\PresupuestoController::class, 'updateDuracionApupi'])->name('presupuesto.duracion-apupi.update');
         Route::patch('presupuestos/{presupuesto}/gastos-semanales', [App\Http\Controllers\PresupuestoController::class, 'updateGastoSemanal'])->name('presupuesto.gastos-semanales.update');
         Route::patch('presupuestos/{presupuesto}/apupi/indirecto-traslado', [App\Http\Controllers\PresupuestoController::class, 'updateIndirectoTrasladoApupi'])->name('presupuesto.apupi.indirecto-traslado.update');
+        Route::patch('presupuestos/{presupuesto}/apupi/indirectos/{partida}', [App\Http\Controllers\PresupuestoController::class, 'updateIndirectoApupi'])
+            ->where('partida', '[a-z0-9-]+')->name('presupuesto.apupi.indirecto.update');
         Route::patch('presupuestos/{presupuesto}/apupi/propuesta/{renglon}', [App\Http\Controllers\PresupuestoController::class, 'updateRenglonPropuestaApupi'])
             ->where('renglon', '[a-z0-9-]+')->name('presupuesto.apupi.propuesta.update');
         Route::patch('presupuestos/{presupuesto}/apupi/{detalle}', [App\Http\Controllers\PresupuestoController::class, 'updateCostoApupi'])

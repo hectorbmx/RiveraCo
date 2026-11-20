@@ -64,6 +64,7 @@ class Presupuesto extends Model
         'ajustes_apupi' => 'array',
         'ajustes_propuesta_apupi' => 'array',
         'indirecto_traslado_apupi' => 'decimal:2',
+        'indirectos_por_partida_apupi' => 'array',
     ];
 
     public function filasApupi(array $duracion, float $ventaPropuesta = 0): Collection
@@ -113,6 +114,13 @@ class Presupuesto extends Model
         return (float) ($this->indirecto_traslado_apupi ?? PlantillaApupi::INDIRECTO);
     }
 
+    public function porcentajeIndirectoApupi(string $partida): float
+    {
+        return $partida === PresupuestoDetalle::PARTIDA_TRASLADO
+            ? $this->indirectoTrasladoApupi()
+            : (float) ($this->indirectos_por_partida_apupi[$partida] ?? PlantillaApupi::INDIRECTO);
+    }
+
     public function resumenApupi(Collection $filas, float $volumenPerforacion): array
     {
         $sumar = fn (Collection $grupo) => collect(self::ESCENARIOS_APUPI)->mapWithKeys(function ($escenario) use ($grupo) {
@@ -121,8 +129,10 @@ class Presupuesto extends Model
             return [$escenario => $importes->isEmpty() ? null : round($importes->sum(), 2)];
         });
         $subtotales = $filas->groupBy(fn ($fila) => $fila['detalle']->partidaApupi())->map($sumar);
-        $indirectos = $subtotales->only(PlantillaApupi::partidasConIndirecto())->map(function (Collection $valores, string $partida) {
-            $porcentaje = $partida === PresupuestoDetalle::PARTIDA_TRASLADO ? $this->indirectoTrasladoApupi() : PlantillaApupi::INDIRECTO;
+        $subtotalesConIndirecto = $subtotales->only(PlantillaApupi::partidasConIndirecto());
+        $porcentajesIndirectos = $subtotalesConIndirecto->map(fn (Collection $valores, string $partida) => $this->porcentajeIndirectoApupi($partida));
+        $indirectos = $subtotalesConIndirecto->map(function (Collection $valores, string $partida) use ($porcentajesIndirectos) {
+            $porcentaje = $porcentajesIndirectos[$partida];
 
             return $valores->map(fn ($subtotal) => $subtotal === null ? null : round($subtotal * $porcentaje / 100, 2));
         });
@@ -143,6 +153,7 @@ class Presupuesto extends Model
             'precios' => $filas->map(fn ($fila) => $fila['precio_unitario']),
             'subtotales' => $subtotales,
             'indirectos' => $indirectos,
+            'porcentajes_indirectos' => $porcentajesIndirectos,
             'totales_partida' => $totalesPartida,
             'total' => $total,
             'realista' => [
