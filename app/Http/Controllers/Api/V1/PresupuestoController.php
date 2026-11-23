@@ -193,11 +193,14 @@ public function store(Request $request)
             'total_presupuesto' => $request->total_presupuesto,
             'estatus' => 'Sincronizado',
         ];
-        $presupuesto = Presupuesto::createOrFirst(
+        $presupuesto = Presupuesto::where('codigo_proyecto', $request->codigo_proyecto)->first() ?? Presupuesto::createOrFirst(
             ['codigo_proyecto' => $request->codigo_proyecto],
             $cabecera + ['origen' => Presupuesto::ORIGEN_EXCEL],
         );
         $presupuesto = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+        if ($presupuesto->estaAprobado()) {
+            return response()->json(['error' => 'El presupuesto aprobado está bloqueado.'], 409);
+        }
         if (! $presupuesto->esImportado()) {
             return response()->json(['error' => 'El folio pertenece a un presupuesto creado en SIRICO.'], 409);
         }

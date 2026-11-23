@@ -32,6 +32,7 @@ class PresupuestoVolPila extends Model
         'tipo', 'diametro', 'piezas', 'pilas_por_jornal',
         'longitud_l0', 'longitud_l1', 'longitud_l2', 'acero_kg_por_pila',
         'intervalo_l0', 'intervalo_l1', 'intervalo_l2', 'varillas_l0', 'varillas_l1',
+        'calibre_zuncho_l0', 'calibre_zuncho_l1', 'calibre_zuncho_l2',
         'calibre_varilla_l0', 'calibre_varilla_l1',
         'volumen_objetivo', 'avance_metros_por_jornal',
     ];
@@ -60,13 +61,14 @@ class PresupuestoVolPila extends Model
         $armadoPorCalibre = $this->calibre_varilla_l0 !== null || $this->calibre_varilla_l1 !== null;
         $calibreL0 = (string) ($this->calibre_varilla_l0 ?? self::CALIBRE_PREDETERMINADO);
         $calibreL1 = (string) ($this->calibre_varilla_l1 ?? self::CALIBRE_PREDETERMINADO);
-        $zunchosL0 = $metrosZunchoL0 * self::PESOS_VARILLA[3];
-        $zunchosL1 = $metrosZunchoL1 * self::PESOS_VARILLA[4];
-        $zunchosL2 = $metrosZunchoL2 * self::PESOS_VARILLA[4];
+        $zunchosL0 = $metrosZunchoL0 * self::PESOS_VARILLA[$this->calibre_zuncho_l0 ?? 3];
+        $zunchosL1 = $metrosZunchoL1 * self::PESOS_VARILLA[$this->calibre_zuncho_l1 ?? 4];
+        $zunchosL2 = $metrosZunchoL2 * self::PESOS_VARILLA[$this->calibre_zuncho_l2 ?? 4];
         // VOL R usa #4 para el traslape del zuncho L1 y #3 para los de L0 y L2.
-        $traslapeZunchos = $this->pesoTraslapeZuncho($metrosZunchoL0, 3)
-            + $this->pesoTraslapeZuncho($metrosZunchoL1, $armadoPorCalibre ? 4 : 3)
-            + $this->pesoTraslapeZuncho($metrosZunchoL2, 3);
+        $traslapeZunchoL0 = $this->pesoTraslapeZuncho($metrosZunchoL0, (int) ($this->calibre_zuncho_l0 ?? 3));
+        $traslapeZunchoL1 = $this->pesoTraslapeZuncho($metrosZunchoL1, (int) ($this->calibre_zuncho_l1 ?? ($armadoPorCalibre ? 4 : 3)));
+        $traslapeZunchoL2 = $this->pesoTraslapeZuncho($metrosZunchoL2, (int) ($this->calibre_zuncho_l2 ?? 3));
+        $traslapeZunchos = $traslapeZunchoL0 + $traslapeZunchoL1 + $traslapeZunchoL2;
         $anclaje = $diametro * 0.4;
         $varillasL0 = $this->varillas_l0 ?? 0;
         $varillasL1 = $this->varillas_l1 ?? 0;
@@ -81,7 +83,9 @@ class PresupuestoVolPila extends Model
         $pesoTraslapeVarillas = $traslapeVarilla * $pesoL0 * $varillasL0;
         $aceroCalculado = $zunchosL0 + $zunchosL1 + $zunchosL2 + $traslapeZunchos
             + $pesoVarillasL0 + $pesoVarillasL1 + $pesoTraslapeVarillas;
-        $aceroPorPila = $this->acero_kg_por_pila ?? ($armadoPorCalibre ? $aceroCalculado : 0);
+        $calculoAutomatico = $armadoPorCalibre || $this->calibre_zuncho_l0 !== null
+            || $this->calibre_zuncho_l1 !== null || $this->calibre_zuncho_l2 !== null;
+        $aceroPorPila = $this->acero_kg_por_pila ?? ($calculoAutomatico ? $aceroCalculado : 0);
 
         // VOL usa el mismo volumen teórico para perforación, concreto y bentonita.
         return [
@@ -95,6 +99,9 @@ class PresupuestoVolPila extends Model
             'zunchos_l0' => $zunchosL0,
             'zunchos_l1' => $zunchosL1,
             'zunchos_l2' => $zunchosL2,
+            'traslape_zunchos_l0' => $traslapeZunchoL0,
+            'traslape_zunchos_l1' => $traslapeZunchoL1,
+            'traslape_zunchos_l2' => $traslapeZunchoL2,
             'traslape_zunchos' => $traslapeZunchos,
             'calibre_varilla_l0' => (float) $calibreL0,
             'calibre_varilla_l1' => (float) $calibreL1,

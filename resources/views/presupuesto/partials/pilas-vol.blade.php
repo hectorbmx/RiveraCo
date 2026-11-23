@@ -3,7 +3,7 @@
     $camposVol = [
         'Geometría y rendimiento' => [
             'tipo' => ['Tipo de pila', 'text', null, null, null, 'Po1', true],
-            'diametro' => ['Diámetro (m)', 'number', '0.15', '99999.999', '0.001', '0.80', true],
+            'diametro' => ['Diámetro (m)', 'select', null, null, null, null, true],
             'piezas' => ['Piezas', 'number', '1', '4294967295', '1', '2', true],
             'avance_metros_por_jornal' => ['Avance (ML por jornal)', 'number', '0.00001', '999999999.99999', '0.00001', \App\Models\PresupuestoVolPila::AVANCE_PREDETERMINADO, true],
         ],
@@ -14,13 +14,16 @@
         ],
         'Zunchos' => [
             'intervalo_l0' => ['Intervalo de zuncho L0 (m)', 'number', '0', '99999.999', '0.001', '0', false],
+            'calibre_zuncho_l0' => ['Calibre de zuncho L0', 'select', null, null, null, null, false],
             'intervalo_l1' => ['Intervalo de zuncho L1 (m)', 'number', '0', '99999.999', '0.001', '0', false],
+            'calibre_zuncho_l1' => ['Calibre de zuncho L1', 'select', null, null, null, null, false],
             'intervalo_l2' => ['Intervalo de zuncho L2 (m)', 'number', '0', '99999.999', '0.001', '0', false],
+            'calibre_zuncho_l2' => ['Calibre de zuncho L2', 'select', null, null, null, null, false],
         ],
         'Varillas longitudinales' => [
-            'varillas_l0' => ['Varillas L0', 'number', '0', '4294967295', '1', '0', false],
+            'varillas_l0' => ['Cantidad de Varillas L0', 'number', '0', '4294967295', '1', '0', false],
             'calibre_varilla_l0' => ['Calibre de varilla L0', 'select', null, null, null, null, true],
-            'varillas_l1' => ['Varillas L1', 'number', '0', '4294967295', '1', '0', false],
+            'varillas_l1' => ['Cantodad de Varillas L1', 'number', '0', '4294967295', '1', '0', false],
             'calibre_varilla_l1' => ['Calibre de varilla L1', 'select', null, null, null, null, true],
         ],
         'Volúmenes y peso' => [
@@ -95,22 +98,41 @@
     $avanceVol = $editarVol?->volumetria()['avance_metros_por_jornal']
         ?? \App\Models\PresupuestoVolPila::AVANCE_PREDETERMINADO;
     $avanceVol = rtrim(rtrim(number_format($avanceVol, 5, '.', ''), '0'), '.');
+    $diametroGuardado = $editarVol ? number_format($editarVol->diametro, 3, '.', '') : null;
+    $diametroSeleccionado = old('diametro', $diametroGuardado);
+    $diametroSeleccionado = is_numeric($diametroSeleccionado)
+        ? number_format($diametroSeleccionado, 3, '.', '')
+        : null;
+    $abrirCapturaVol = $editarVol !== null || $errors->pilaVol->any();
 @endphp
 
-<div class="space-y-4 p-5">
-    <div>
-        <h2 class="text-lg font-semibold text-slate-800">Pilas / VOL</h2>
-        <p class="mt-1 text-sm text-slate-500">Cada renglón es un tipo de pila, como Po1 o Po1.1. Piezas indica cuántas pilas comparten esa geometría y armado.</p>
+<div class="space-y-4 p-5" x-data="{ capturaAbierta: @js($abrirCapturaVol) }">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+            <h2 class="text-lg font-semibold text-slate-800">Pilas / VOL</h2>
+            <p class="mt-1 text-sm text-slate-500">Cada renglón es un tipo de pila, como Po1 o Po1.1. Piezas indica cuántas pilas comparten esa geometría y armado.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <button type="button" aria-controls="captura-vol" :aria-expanded="capturaAbierta"
+                    @click="capturaAbierta = !capturaAbierta"
+                    class="rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white hover:bg-blue-900">
+                {{ $editarVol ? 'Editar tipo de pila' : 'Agregar tipo de pila' }}
+            </button>
+            <button type="button" aria-haspopup="dialog" aria-controls="tablas-varillas-vol"
+                    @click="$refs.tablasVarillas.showModal()"
+                    class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#0B265A] hover:bg-slate-50">
+                Tablas de varillas y traslapes
+            </button>
+        </div>
     </div>
 
     @if(session('estadoVol'))
         <p role="status" class="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('estadoVol') }}</p>
     @endif
 
-    <details id="captura-vol" class="rounded-xl border border-slate-200 bg-slate-50" @if($editarVol || $errors->pilaVol->any()) open @endif>
-        <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-[#0B265A]">{{ $editarVol ? 'Editar tipo de pila' : 'Agregar tipo de pila' }}</summary>
+    <div id="captura-vol" class="scroll-mt-24 rounded-xl border border-slate-200 bg-slate-50" x-show="capturaAbierta" @unless($abrirCapturaVol) x-cloak @endunless>
         <form action="{{ $editarVol ? route('presupuesto.pilas-vol.update', [$presupuesto, $editarVol]) : route('presupuesto.pilas-vol.store', $presupuesto) }}"
-              method="POST" autocomplete="off" class="space-y-4 border-t border-slate-200 p-4"
+              method="POST" autocomplete="off" class="space-y-4 p-4"
               data-calcular-url="{{ route('presupuesto.pilas-vol.calcular', [$presupuesto, 'pila_vol' => $editarVol?->id]) }}"
               x-data="{
                   resultados: {},
@@ -158,19 +180,49 @@
                     @if($seccion === 'Zunchos')
                         <p class="mt-2 text-xs text-slate-600">Captura aquí la separación entre zunchos de cada tramo.</p>
                     @endif
-                    <div class="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div class="mt-2 grid gap-4 sm:grid-cols-2 {{ in_array($seccion, ['Zunchos', 'Varillas longitudinales'], true) ? 'md:grid-cols-3' : 'lg:grid-cols-4' }}">
                         @foreach($campos as $nombre => [$etiqueta, $tipo, $minimo, $maximo, $paso, $ejemplo, $requerido])
+                            @php
+                                $esZuncho = str_starts_with($nombre, 'calibre_zuncho_');
+                                $esVarilla = str_starts_with($nombre, 'calibre_varilla_');
+                            @endphp
                             <div>
                                 <label for="vol-{{ $nombre }}" class="block text-sm font-medium text-slate-700">{{ $etiqueta }}</label>
                                 @if($tipo === 'select')
-                                    <select id="vol-{{ $nombre }}" name="{{ $nombre }}" required
+                                    @php
+                                        $longitudinalHeredado = $editarVol && $esVarilla && $editarVol->{$nombre} === null;
+                                    @endphp
+                                    <select id="vol-{{ $nombre }}" name="{{ $nombre }}" @required($requerido && !$longitudinalHeredado)
                                             @if($errors->pilaVol->has($nombre)) aria-invalid="true" aria-describedby="vol-error-{{ $nombre }}" @endif
                                             class="mt-1 w-full rounded-lg border-slate-300 text-sm">
-                                        @foreach(\App\Models\PresupuestoVolPila::PESOS_VARILLA as $calibre => $peso)
-                                            <option value="{{ $calibre }}" @selected((string) old($nombre, $editarVol?->{$nombre} ?? \App\Models\PresupuestoVolPila::CALIBRE_PREDETERMINADO) === (string) $calibre)>
-                                                #{{ $calibre }} · {{ number_format($peso, 3) }} kg/m
-                                            </option>
-                                        @endforeach
+                                        @if($nombre === 'diametro')
+                                            <option value="">Selecciona un diámetro</option>
+                                            @if($diametroGuardado !== null && !$diametrosVol->containsStrict($diametroGuardado))
+                                                <option value="{{ $diametroGuardado }}" @selected($diametroSeleccionado === $diametroGuardado)>
+                                                    {{ $diametroGuardado }} m (guardado)
+                                                </option>
+                                            @endif
+                                            @foreach($diametrosVol as $diametro)
+                                                <option value="{{ $diametro }}" @selected($diametroSeleccionado === $diametro)>
+                                                    {{ number_format($diametro, 2) }} m
+                                                </option>
+                                            @endforeach
+                                        @else
+                                            @php
+                                                $pesos = \App\Models\PresupuestoVolPila::PESOS_VARILLA;
+                                                $calibres = $esZuncho ? array_intersect_key($pesos, \App\Models\PresupuestoVolPila::TRASLAPES_METROS) : $pesos;
+                                                $inicial = ($esZuncho || $longitudinalHeredado) ? null : \App\Models\PresupuestoVolPila::CALIBRE_PREDETERMINADO;
+                                                $seleccionado = (string) old($nombre, $editarVol?->{$nombre} ?? $inicial);
+                                            @endphp
+                                            @if($esZuncho || $longitudinalHeredado)
+                                                <option value="" @selected($seleccionado === '')>Predeterminado{{ $longitudinalHeredado ? ' (#' . \App\Models\PresupuestoVolPila::CALIBRE_PREDETERMINADO . ')' : '' }}</option>
+                                            @endif
+                                            @foreach($calibres as $calibre => $peso)
+                                                <option value="{{ $calibre }}" @selected($seleccionado === (string) $calibre)>
+                                                    #{{ $calibre }} · {{ number_format($peso, 3) }} kg/m
+                                                </option>
+                                            @endforeach
+                                        @endif
                                     </select>
                                 @else
                                     <input id="vol-{{ $nombre }}" name="{{ $nombre }}" type="{{ $tipo }}" value="{{ old($nombre, $nombre === 'avance_metros_por_jornal' ? $avanceVol : $editarVol?->{$nombre}) }}"
@@ -187,6 +239,24 @@
                                     <p class="mt-1 text-xs text-slate-600">Pilas por jornal = avance ÷ (L0 + L1 + L2).</p>
                                 @endif
                             </div>
+                            @if($esZuncho || $esVarilla)
+                                @php
+                                    $tramo = substr($nombre, -2);
+                                    $campoPeso = $esZuncho ? "zunchos_{$tramo}" : "peso_varillas_{$tramo}";
+                                    $campoTraslape = $esZuncho ? "traslape_zunchos_{$tramo}" : ($tramo === 'l0' ? 'traslape_varillas' : null);
+                                @endphp
+                                <dl class="flex flex-wrap items-center gap-x-6 gap-y-2 self-start rounded-lg bg-slate-50 px-3 py-2 text-sm sm:col-span-2 md:col-span-1"
+                                    aria-label="Resultado del tramo {{ strtoupper($tramo) }}">
+                                    <div>
+                                        <dt class="text-slate-600">Peso (kg)</dt>
+                                        <dd class="font-semibold tabular-nums text-slate-900" x-text="mostrar('{{ $campoPeso }}', 3)">—</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-slate-600">Traslape (kg)</dt>
+                                        <dd class="font-semibold tabular-nums text-slate-900" @if($campoTraslape) x-text="mostrar('{{ $campoTraslape }}', 3)" @endif>—</dd>
+                                    </div>
+                                </dl>
+                            @endif
                         @endforeach
                     </div>
                     <dl class="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3 text-sm">
@@ -208,10 +278,18 @@
                 @endif
             </div>
         </form>
-    </details>
+    </div>
 
-    <details class="rounded-xl border border-slate-200 bg-slate-50" @if($errors->traslapeVol->any()) open @endif>
-        <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-[#0B265A]">Tablas de varillas y traslapes</summary>
+    <dialog id="tablas-varillas-vol" x-ref="tablasVarillas" aria-labelledby="titulo-tablas-varillas-vol"
+            @if($errors->traslapeVol->any()) x-init="$el.showModal()" @endif
+            class="m-auto max-h-[85vh] w-[calc(100%-2rem)] max-w-3xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-slate-900/50">
+        <div class="flex items-center justify-between gap-3 px-4 py-3">
+            <h3 id="titulo-tablas-varillas-vol" class="text-base font-semibold text-slate-800">Tablas de varillas y traslapes</h3>
+            <button type="button" @click="$refs.tablasVarillas.close()" autofocus
+                    class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-[#0B265A] hover:bg-slate-50">
+                Cerrar
+            </button>
+        </div>
         <div class="grid gap-4 border-t border-slate-200 p-4 sm:grid-cols-2">
             <table class="w-full text-sm">
                 <caption class="mb-2 text-left font-semibold text-slate-800">Tabla de varillas</caption>
@@ -220,18 +298,18 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     @foreach(\App\Models\PresupuestoVolPila::PESOS_VARILLA as $numero => $peso)
-                        <tr><th scope="row" class="p-2 text-left">{{ $numero }}</th><td class="p-2 text-right">{{ number_format($peso, 3) }}</td><td class="p-2">{{ [3 => 'Zunchos L0 y traslapes L0 y L2', 4 => 'Zunchos L1 y L2 y traslape L1', 6 => 'Calibre inicial de varillas longitudinales'][$numero] ?? '—' }}</td></tr>
+                        <tr><th scope="row" class="p-2 text-left">{{ $numero }}</th><td class="p-2 text-right">{{ number_format($peso, 3) }}</td><td class="p-2">{{ isset(\App\Models\PresupuestoVolPila::TRASLAPES_METROS[$numero]) ? 'Zunchos y varillas longitudinales' : 'Varillas longitudinales' }}</td></tr>
                     @endforeach
                 </tbody>
             </table>
             <table class="w-full self-start text-sm">
                 <caption class="mb-2 text-left font-semibold text-slate-800">Tabla de traslapes</caption>
                 <thead class="bg-slate-100">
-                    <tr><th scope="col" class="p-2 text-left">N.º</th><th scope="col" class="p-2 text-right">Longitud (m)</th><th scope="col" class="p-2 text-left">Uso en VOL</th></tr>
+                    <tr><th scope="col" class="p-2 text-left">N.º</th><th scope="col" class="p-2 text-right">Longitud (m)</th></tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     @foreach(\App\Models\PresupuestoVolPila::TRASLAPES_METROS as $numero => $longitud)
-                        <tr><th scope="row" class="p-2 text-left">{{ $numero }}</th><td class="p-2 text-right">{{ number_format($longitud, 5) }}</td><td class="p-2">{{ $numero === 3 ? 'Traslapes de zunchos' : '—' }}</td></tr>
+                        <tr><th scope="row" class="p-2 text-left">{{ $numero }}</th><td class="p-2 text-right">{{ number_format($longitud, 5) }}</td></tr>
                     @endforeach
                 </tbody>
             </table>
@@ -250,7 +328,7 @@
             @enderror
             <p class="mt-2 text-sm text-slate-600">Aplica a todos los tipos de pila del presupuesto. Equivale a U32 en VOL.</p>
         </form>
-    </details>
+    </dialog>
 </div>
 
 @if($pilasVol->isEmpty())

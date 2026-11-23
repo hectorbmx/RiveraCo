@@ -25,6 +25,10 @@ class PlaneacionGastosController extends Controller
 
     try {
         return DB::transaction(function () use ($request, $presupuesto) {
+            $presupuesto = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            if ($presupuesto->estaAprobado()) {
+                return response()->json(['error' => 'El presupuesto aprobado está bloqueado.'], 409);
+            }
             
             // 2. Limpiar planeación base previa (semana 0)
             ObraPlaneacionGasto::where('presupuesto_id', $presupuesto->id)

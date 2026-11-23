@@ -15,7 +15,7 @@
     @if($errors->revisionPresupuesto->any())
         <p role="alert" class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">{{ $errors->revisionPresupuesto->first() }}</p>
     @endif
-    @if($revisionEnCurso)
+    @if($revisionEnCurso && !$presupuesto->estaAprobado())
         <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
             <span>Borrador #{{ $presupuesto->consecutivo_cliente }}.{{ $ultimaRevision + 1 }} en curso</span>
             <a href="{{ route('presupuesto.show', [$presupuesto, 'tab' => 'pilas']) }}" class="font-semibold hover:underline">Continuar borrador</a>
@@ -43,7 +43,7 @@
                             <a href="{{ route('presupuesto.versiones.show', [$presupuesto, $version]) }}" class="font-semibold text-[#0B265A] hover:underline">Abrir</a>
                             <a href="{{ route('presupuesto.versiones.pdf', [$presupuesto, $version]) }}" target="_blank" rel="noopener"
                                aria-label="PDF de {{ $version->folio() }}" class="ml-2 font-semibold text-[#0B265A] hover:underline">PDF</a>
-                            @unless($revisionEnCurso)
+                            @unless($revisionEnCurso || $presupuesto->estaAprobado())
                                 <details class="mt-2">
                                     <summary class="cursor-pointer font-semibold text-[#0B265A]">Crear revisión</summary>
                                     <form method="POST" action="{{ route('presupuesto.versiones.revisar', [$presupuesto, $version]) }}" class="mt-2 max-w-sm space-y-2">

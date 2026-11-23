@@ -31,6 +31,7 @@ use App\Models\ObraMaquina;
 use App\Models\Maquina;
 use App\Models\Pila;
 use App\Models\Presupuesto;
+use App\Models\PresupuestoEvento;
 use App\Models\ObraPila;
 use App\Models\CatalogoPila;
 use Illuminate\Support\Facades\DB;
@@ -53,6 +54,7 @@ use App\Notifications\FacturaBorradorRechazado;
 use App\Services\Maquinas\MaquinaService;
 use App\Services\Mobile\AppMobileContextService;
 use App\Services\Image\InterventionImageOptimizer;
+use App\Support\PlaneacionVersionObra;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
@@ -199,22 +201,122 @@ class ObraController extends Controller
         'concreto_total'           => ['nullable', 'numeric', 'min:0'],
     ]);
 
-    $obra = DB::transaction(function () use ($data) {
-        $data['clave_obra'] = $this->resolverClaveObra($data['tipo_obra'] ?? null, $data['clave_obra'] ?? null);
-        $data['area_id'] = $this->areaIdParaTipoObra($data['tipo_obra']);
-
-        if ($data['clave_obra'] === '' || Obra::where('clave_obra', $data['clave_obra'])->exists()) {
-            throw ValidationException::withMessages([
-                'clave_obra' => 'No se pudo generar una clave de obra disponible.',
-            ]);
-        }
-
-        return Obra::create($data);
-    });
+    $obra = DB::transaction(fn () => $this->crearRegistroObra($data));
 
     return redirect()->route('obras.edit', $obra)
         ->with('success', 'Obra creada correctamente.');
 }
+
+    private function crearRegistroObra(array $datos): Obra
+    {
+        $datos['clave_obra'] = $this->resolverClaveObra($datos['tipo_obra'], $datos['clave_obra'] ?? null);
+        $datos['area_id'] = $this->areaIdParaTipoObra($datos['tipo_obra']);
+
+        if ($datos['clave_obra'] === '' || Obra::where('clave_obra', $datos['clave_obra'])->exists()) {
+            throw ValidationException::withMessages(['clave_obra' => 'No se pudo generar una clave de obra disponible.']);
+        }
+
+        return Obra::create($datos);
+    }
+
+    public function confirmarAprobacionPresupuesto(Presupuesto $presupuesto, int $version)
+    {
+        $guardada = $presupuesto->versiones()->findOrFail($version);
+        if ($presupuesto->estaAprobado()) {
+            return redirect()->route('obras.edit', $presupuesto->obra_generada_id);
+        }
+
+        $guardada->setRelation('presupuesto', $presupuesto);
+        $tipos = $this->tiposObraDisponibles();
+        $responsables = Empleado::where('Estatus', 1)->orderBy('Nombre')->orderBy('Apellidos')->get();
+        $obrasVinculadas = $presupuesto->obras()->orderBy('obras.nombre')->get(['obras.id', 'obras.nombre', 'obras.clave_obra']);
+
+        return view('presupuesto.aprobar', compact('presupuesto', 'guardada', 'tipos', 'responsables', 'obrasVinculadas'));
+    }
+
+    public function aprobarPresupuesto(Request $request, Presupuesto $presupuesto, int $version)
+    {
+        $datos = $request->validate([
+            'tipo_obra' => ['required', Rule::in(array_keys($this->tiposObraDisponibles()))],
+            'responsable_id' => ['nullable', Rule::exists('empleados', 'id_Empleado')->where('Estatus', 1)],
+            'fecha_inicio_programada' => ['nullable', 'date'],
+        ]);
+
+        [$obra, $creada, $planeada] = DB::transaction(function () use ($presupuesto, $version, $datos, $request): array {
+            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $guardada = $actual->versiones()->findOrFail($version);
+            if ($actual->estaAprobado()) {
+                return [$actual->obraGenerada, false, false];
+            }
+            if ($actual->obras()->exists()) {
+                throw ValidationException::withMessages(['presupuesto' => 'Este presupuesto ya está vinculado a una obra. Revisa el vínculo antes de crear otra.']);
+            }
+
+            $captura = $guardada->datos;
+            $clienteId = $captura['cliente']['id'] ?? null;
+            $nombre = trim((string) ($captura['presupuesto']['nombre_obra'] ?? ''));
+            if (!$clienteId || !Cliente::whereKey($clienteId)->exists() || $nombre === '') {
+                throw ValidationException::withMessages(['presupuesto' => 'Captura el cliente oficial y el nombre de obra en el borrador, y guarda una versión con esos datos.']);
+            }
+
+            $presentacion = $captura['presentacion'] ?? [];
+            $monto = $presentacion['subtotal'] ?? $guardada->total_venta;
+            if ($monto <= 0 || $monto > 9999999999999.99) {
+                throw ValidationException::withMessages(['presupuesto' => 'La versión debe tener un subtotal de venta válido para crear la obra.']);
+            }
+
+            $totales = $captura['vol']['totales'] ?? [];
+            $usaBentonita = collect($captura['apupi']['filas'] ?? [])->contains(
+                fn (array $fila) => $fila['partida'] === 'BENTONITA' && $fila['cantidad'] > 0
+            );
+            $relacion = $captura['relacion_gastos'] ?? [];
+            $planeada = (bool) ($relacion['planeacion']['publicable'] ?? false);
+            $gastos = PlaneacionVersionObra::filas($relacion, 'presupuesto', 'default');
+            if (mb_strlen($presentacion['ubicacion'] ?? '') > 255 || ($totales['metros_lineales'] ?? 0) > 99999999.99
+                || max($totales['acero'] ?? 0, $totales['concreto'] ?? 0, $totales['bentonita'] ?? 0) > 9999999999999.99) {
+                throw ValidationException::withMessages(['presupuesto' => 'La ubicación o la volumetría excede el espacio disponible en la ficha de obra.']);
+            }
+
+            $obra = $this->crearRegistroObra($datos + [
+                'cliente_id' => $clienteId,
+                'nombre' => $nombre,
+                'descripcion' => $captura['presupuesto']['descripcion'] ?? null,
+                'ubicacion' => $presentacion['ubicacion'] ?? null,
+                'estatus_nuevo' => Obra::ESTATUS_PLANEACION,
+                'monto_contratado' => $monto,
+                'profundidad_total' => $totales['metros_lineales'] ?? null,
+                'kg_acero_total' => $totales['acero'] ?? null,
+                'concreto_total' => $totales['concreto'] ?? null,
+                'usa_bentonita' => $usaBentonita,
+                'bentonita_total' => $usaBentonita ? ($totales['bentonita'] ?? null) : null,
+            ]);
+
+            PlaneacionVersionObra::copiar($obra, $gastos, $planeada);
+            $obra->presupuestos_vinculados()->attach($actual->id, [
+                'planeacion_version_id' => $planeada ? $guardada->id : null,
+            ]);
+            $guardada->eventos()->create([
+                'tipo' => PresupuestoEvento::APROBADO,
+                'registrado_por' => $request->user()->getKey(),
+                'nota' => 'Obra ' . $obra->clave_obra,
+            ]);
+            $actual->forceFill([
+                'estatus' => PresupuestoEvento::APROBADO,
+                'version_aprobada_id' => $guardada->id,
+                'obra_generada_id' => $obra->id,
+            ])->save();
+
+            return [$obra, true, $planeada];
+        }, 3);
+
+        $mensaje = match (true) {
+            !$creada => 'Este presupuesto ya fue aprobado. Aquí está su obra.',
+            $planeada => 'Presupuesto aprobado. Obra creada con su planeación semanal.',
+            default => 'Presupuesto aprobado. Obra creada con planeación semanal pendiente.',
+        };
+
+        return redirect()->route('obras.edit', $obra)->with('success', $mensaje);
+    }
 
 private function areaUsuarioActualId(): ?int
 {
@@ -680,7 +782,8 @@ $planeacion = \App\Models\ObraPlaneacionSemanal::query()
         'maquinasAsignadas.maquina',
         'presupuestos',
         'presupuestos_vinculados.resumenes',
-        'presupuestos_vinculados.pilas'
+        'presupuestos_vinculados.pilas',
+        'presupuestos_vinculados.versionAprobada',
     ]);
 
     $tab = $request->query('tab', 'general');
@@ -689,7 +792,7 @@ $planeacion = \App\Models\ObraPlaneacionSemanal::query()
     }
 
    // Cambiamos $id por $obra->id para evitar el error de variable indefinida
-$presupuestosDisponibles = Presupuesto::whereDoesntHave('obras', function($query) use ($obra) {
+$presupuestosDisponibles = Presupuesto::whereNull('version_aprobada_id')->whereDoesntHave('obras', function($query) use ($obra) {
     $query->where('obras.id', $obra->id);
 })
 // Usamos el nombre del cliente de la relacion de la obra
@@ -2502,6 +2605,11 @@ private function resolverEstadoCampoSemanal(bool $planeado, $entrada, $salida, ?
     {
         $this->abortarSiObraFueraDeArea($obra);
 
+        if (Presupuesto::where('obra_generada_id', $obra->id)->exists()) {
+            return redirect()->route('obras.edit', $obra)
+                ->with('error', 'La obra está vinculada a un presupuesto aprobado.');
+        }
+
         $obra->delete();
 
         return redirect()->route('obras.index')
@@ -2513,11 +2621,14 @@ private function resolverEstadoCampoSemanal(bool $planeado, $entrada, $salida, ?
  public function vincularPresupuesto(Request $request, $id)
 {
     $obra = \App\Models\Obra::findOrFail($id);
-    
-    if ($request->has('presupuestos')) {
-        // attach agrega los registros a la tabla pivote obra_presupuesto
-        $obra->presupuestos_vinculados()->attach($request->presupuestos);
-    }
+    $datos = $request->validate(['presupuestos' => ['sometimes', 'array'], 'presupuestos.*' => ['integer', 'exists:presupuestos,id']]);
+    DB::transaction(function () use ($obra, $datos) {
+        $presupuestos = Presupuesto::whereIn('id', $datos['presupuestos'] ?? [])->orderBy('id')->lockForUpdate()->get();
+        foreach ($presupuestos as $presupuesto) {
+            abort_if($presupuesto->estaAprobado(), 409, 'El presupuesto aprobado ya tiene obra asignada.');
+        }
+        $obra->presupuestos_vinculados()->syncWithoutDetaching($presupuestos->modelKeys());
+    }, 3);
 
     return redirect()->route('obras.edit', ['obra' => $id, 'tab' => 'presupuestos'])
                      ->with('success', 'Presupuesto vinculado correctamente.');

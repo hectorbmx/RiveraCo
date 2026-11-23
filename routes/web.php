@@ -445,6 +445,12 @@ Route::middleware('auth','verified')->group(function () {
             ->whereNumber('version')->name('presupuesto.versiones.planeacion.aplicar');
         Route::get('presupuestos/{presupuesto}/versiones/{version}', [App\Http\Controllers\PresupuestoController::class, 'showVersion'])
             ->whereNumber('version')->name('presupuesto.versiones.show');
+        Route::middleware('permission:presupuestos.approve.access')->group(function () {
+            Route::get('presupuestos/{presupuesto}/versiones/{version}/aprobar', [ObraController::class, 'confirmarAprobacionPresupuesto'])
+                ->whereNumber('version')->name('presupuesto.versiones.aprobar.confirmar');
+            Route::post('presupuestos/{presupuesto}/versiones/{version}/aprobar', [ObraController::class, 'aprobarPresupuesto'])
+                ->whereNumber('version')->name('presupuesto.versiones.aprobar');
+        });
         Route::get('presupuestos/{presupuesto}/versiones/{version}/pdf', [App\Http\Controllers\PresupuestoController::class, 'exportVersionPdf'])
             ->whereNumber('version')->name('presupuesto.versiones.pdf');
         Route::post('presupuestos/{presupuesto}/versiones/{version}/seguimiento', [App\Http\Controllers\PresupuestoController::class, 'storeSeguimiento'])

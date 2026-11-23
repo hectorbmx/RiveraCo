@@ -61,7 +61,7 @@ class ObraPlaneacionGasto extends Model
     public function scopeParaObra(Builder $query, Obra $obra): Builder
     {
         $presupuestosPendientes = $obra->presupuestos_vinculados()
-            ->wherePivotNull('planeacion_version_id')->pluck('presupuestos.id');
+            ->wherePivotNull('planeacion_version_id')->whereNull('presupuestos.version_aprobada_id')->pluck('presupuestos.id');
 
         return $query->where(fn (Builder $filas) => $filas->where('obra_id', $obra->id)
             ->orWhereIn('presupuesto_id', $presupuestosPendientes));

@@ -10,6 +10,7 @@ class PresupuestoEvento extends Model
     public const UPDATED_AT = null;
     public const GUARDADO = 'guardado';
     public const ACEPTADO = 'aceptado';
+    public const APROBADO = 'aprobado';
     public const TIPOS_SEGUIMIENTO = [
         'enviado' => 'Enviado',
         'cambios_solicitados' => 'Cambios solicitados',
@@ -23,6 +24,10 @@ class PresupuestoEvento extends Model
 
     public function etiqueta(): string
     {
+        if ($this->tipo === self::APROBADO) {
+            return 'Aprobado para obra';
+        }
+
         return self::TIPOS_SEGUIMIENTO[$this->tipo] ?? ucfirst($this->tipo);
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CatalogoPila;
 use App\Models\Cliente;
 use App\Models\Obra;
 use App\Models\ObraPlaneacionGasto;
@@ -27,6 +28,7 @@ use App\Support\PrevioPresupuesto;
 use App\Support\PropuestaApupi;
 use App\Support\RelacionGastosPresupuesto;
 use App\Support\PlaneacionSemanalPresupuesto;
+use App\Support\PlaneacionVersionObra;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -115,7 +117,7 @@ class PresupuestoController extends Controller
     public function update(Request $request, Presupuesto $presupuesto)
     {
         DB::transaction(function () use ($request, $presupuesto) {
-            $this->guardarDatos($request, Presupuesto::lockForUpdate()->findOrFail($presupuesto->id));
+            $this->guardarDatos($request, $this->bloquearBorrador($presupuesto));
         }, 3);
 
         return $this->volverAlDetalle($request, $presupuesto, 'Datos del presupuesto actualizados.');
@@ -145,7 +147,7 @@ class PresupuestoController extends Controller
         }
 
         DB::transaction(function () use ($presupuesto, $datos) {
-            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $actual = $this->bloquearBorrador($presupuesto);
             $anteriores = $actual->presentacion_comercial ?? [];
             $actualizados = array_replace($anteriores, $datos);
             foreach (['descripciones', 'unidades'] as $campo) {
@@ -182,7 +184,7 @@ class PresupuestoController extends Controller
         }
 
         DB::transaction(function () use ($presupuesto, $nota, $texto) {
-            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $actual = $this->bloquearBorrador($presupuesto);
             $presentacion = $actual->presentacion_comercial ?? [];
             $presentacion['nota_ejecucion'] = trim($texto) === '' ? [] : $nota;
             $actual->presentacion_comercial = $presentacion;
@@ -196,7 +198,7 @@ class PresupuestoController extends Controller
     {
         $datos = $request->validate(['concepto' => ['required', 'string', 'max:1000']]);
         DB::transaction(function () use ($presupuesto, $renglon, $datos) {
-            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $actual = $this->bloquearBorrador($presupuesto);
             $vol = $actual->calcularVolumetria();
             $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
             $filas = $this->filasPropuesta($actual, $vol, $duracion)
@@ -237,7 +239,7 @@ class PresupuestoController extends Controller
         ]);
 
         $actual = DB::transaction(function () use ($presupuesto, $datos): Presupuesto {
-            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $actual = $this->bloquearBorrador($presupuesto);
             $configuracion = array_replace_recursive($actual->datos_previo ?? [], $datos);
             $porcentajes = array_replace(PrevioPresupuesto::PORCENTAJES, $configuracion['porcentajes'] ?? []);
             if (array_sum($porcentajes) >= 100) {
@@ -269,7 +271,7 @@ class PresupuestoController extends Controller
             'objetivo' => ['required', 'numeric', 'decimal:0,2', 'between:0.01,9999999999999.99'],
         ]);
         $total = DB::transaction(function () use ($presupuesto, $datos): float {
-            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $actual = $this->bloquearBorrador($presupuesto);
             [$propuesta, $previo] = $this->calcularPrevio($actual);
             $escenario = $previo['escenario'];
             $objetivo = $previo['escenarios'][$escenario]['venta_objetivo'];
@@ -344,7 +346,7 @@ class PresupuestoController extends Controller
             }
         }
         DB::transaction(function () use ($presupuesto, $duracion) {
-            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $actual = $this->bloquearBorrador($presupuesto);
             $anterior = $actual->duracion_apupi ?? [];
             if (isset($anterior['equipos'])) {
                 $duracion['equipos'] = $anterior['equipos'];
@@ -363,7 +365,7 @@ class PresupuestoController extends Controller
         ], [], ['equipos' => 'número de equipos']);
 
         DB::transaction(function () use ($presupuesto, $datos) {
-            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $actual = $this->bloquearBorrador($presupuesto);
             $duracion = $actual->duracion_apupi ?? [];
             $duracion['equipos'] = (int) $datos['equipos'];
             $actual->duracion_apupi = $duracion;
@@ -382,7 +384,7 @@ class PresupuestoController extends Controller
         ], [], ['precio_unitario' => 'costo unitario']);
 
         DB::transaction(function () use ($presupuesto, $detalle, $datos) {
-            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $actual = $this->bloquearBorrador($presupuesto);
             $vol = $actual->calcularVolumetria();
             $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
             $propuesta = $this->filasPropuesta($actual, $vol, $duracion);
@@ -436,7 +438,7 @@ class PresupuestoController extends Controller
         ]);
 
         DB::transaction(function () use ($presupuesto, $partida, $datos) {
-            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $actual = $this->bloquearBorrador($presupuesto);
             if ($partida === PresupuestoDetalle::PARTIDA_TRASLADO) {
                 $actual->indirecto_traslado_apupi = $datos['porcentaje'];
             } else {
@@ -458,7 +460,7 @@ class PresupuestoController extends Controller
         ], [], ['precio_unitario' => 'precio unitario de venta']);
 
         DB::transaction(function () use ($presupuesto, $renglon, $datos) {
-            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $actual = $this->bloquearBorrador($presupuesto);
             $vol = $actual->calcularVolumetria();
             if ($renglon === 'venta-215') {
                 $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
@@ -540,6 +542,14 @@ class PresupuestoController extends Controller
         ])->with('estadoPresupuesto', $mensaje);
     }
 
+    private function bloquearBorrador(Presupuesto $presupuesto): Presupuesto
+    {
+        $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+        abort_if($actual->estaAprobado(), 409, 'El presupuesto aprobado está bloqueado.');
+
+        return $actual;
+    }
+
     private function guardarDatos(Request $request, Presupuesto $presupuesto): void
     {
         $importado = $presupuesto->esImportado();
@@ -583,9 +593,13 @@ class PresupuestoController extends Controller
     {
         // Aquí usamos Eager Loading para traer todas las tablas relacionadas de un golpe
         $presupuesto = Presupuesto::with(['detalles', 'pilas', 'resumenes'])->findOrFail($id);
+        if ($presupuesto->estaAprobado()) {
+            return redirect()->route('presupuesto.versiones.show', [$presupuesto, $presupuesto->version_aprobada_id]);
+        }
         $volumetria = $presupuesto->calcularVolumetria();
         $duracionApupi = $presupuesto->duracionApupi($volumetria['filas']->isEmpty() ? null : $volumetria['totales']['jornales']);
         $editarVol = $volumetria['filas']->firstWhere('pila.id', $request->integer('editar_pila'))['pila'] ?? null;
+        $diametrosVol = $this->diametrosPilasVol();
 
         $clienteSeleccionado = $this->clienteSeleccionado($request, $presupuesto);
         [$filasApupi, $resumenApupi] = $this->calcularApupi($presupuesto, $volumetria, $duracionApupi);
@@ -600,11 +614,12 @@ class PresupuestoController extends Controller
             $versionUnica?->setRelation('presupuesto', $presupuesto);
         }
 
-        return view('presupuesto.show', compact('presupuesto', 'relacionGastos', 'volumetria', 'editarVol', 'clienteSeleccionado', 'duracionApupi', 'filasApupi', 'resumenApupi', 'versionGuardada', 'versionUnica', 'presentacion', 'previo'));
+        return view('presupuesto.show', compact('presupuesto', 'relacionGastos', 'volumetria', 'editarVol', 'diametrosVol', 'clienteSeleccionado', 'duracionApupi', 'filasApupi', 'resumenApupi', 'versionGuardada', 'versionUnica', 'presentacion', 'previo'));
     }
 
     public function storeVersion(Request $request, Presupuesto $presupuesto)
     {
+        abort_if($presupuesto->estaAprobado(), 409, 'El presupuesto aprobado está bloqueado.');
         $datos = $request->validateWithBag('versionPresupuesto', ['revision' => ['sometimes', 'required', 'integer', 'min:0']]);
         $revision = (int) ($datos['revision'] ?? 0);
         [$version, $creada] = DB::transaction(function () use ($request, $presupuesto, $revision): array {
@@ -616,7 +631,7 @@ class PresupuestoController extends Controller
                 }
             }
 
-            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $actual = $this->bloquearBorrador($presupuesto);
             $guardada = $actual->versiones()->where('revision', $revision)->lockForUpdate()->first(['id']);
             if ($guardada !== null) {
                 return [$guardada, false];
@@ -676,7 +691,7 @@ class PresupuestoController extends Controller
             'motivo' => ['nullable', 'string', 'max:2000'],
         ]);
         $creado = DB::transaction(function () use ($presupuesto, $version, $datos): bool {
-            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $actual = $this->bloquearBorrador($presupuesto);
             $origen = $actual->versiones()->findOrFail($version);
             if ($actual->version_origen_borrador_id !== null) {
                 return false;
@@ -723,17 +738,15 @@ class PresupuestoController extends Controller
         $guardada = $presupuesto->versiones()->findOrFail($version);
         $relacion = $guardada->datos['relacion_gastos'] ?? [];
         abort_unless($relacion['planeacion']['publicable'] ?? false, 422, 'La versión requiere una programación semanal completa.');
-        $filas = collect($relacion['partidas'])->flatMap(fn (array $grupo) => collect($grupo['filas'])
-            ->map(fn (array $fila) => $fila + ['partida' => $grupo['partida']]))
-            ->filter(fn (array $fila) => $fila['monto_programado'] != 0);
+        $filas = PlaneacionVersionObra::filas($relacion, 'obra_id', 'planeacionSemanal');
         $error = fn (string $mensaje) => ValidationException::withMessages(['obra_id' => $mensaje])->errorBag('planeacionSemanal');
 
-        if ($filas->contains(fn (array $fila) => $fila['monto_programado'] < 0
-            || max($fila['monto_programado'], $fila['cantidad'], $fila['precio_unitario']) > 9999999999999.99)) {
-            throw $error('La planeación de Obra requiere importes positivos y valores dentro del rango de captura.');
-        }
-
         $obra = DB::transaction(function () use ($presupuesto, $guardada, $datos, $filas, $error): Obra {
+            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            if ($actual->estaAprobado()
+                && ((int) $actual->version_aprobada_id !== $guardada->id || (int) $actual->obra_generada_id !== (int) $datos['obra_id'])) {
+                throw $error('La planeación debe corresponder a la versión aprobada y a su obra.');
+            }
             $obra = Obra::lockForUpdate()->findOrFail($datos['obra_id']);
             $vinculo = DB::table('obra_presupuesto')->where('obra_id', $obra->id)->where('presupuesto_id', $presupuesto->id);
             $versiones = (clone $vinculo)->lockForUpdate()->pluck('planeacion_version_id');
@@ -760,22 +773,7 @@ class PresupuestoController extends Controller
                 throw $error('Hay conceptos que ya tienen planeación o movimientos en Obra. Revisa la planeación vigente antes de aplicar esta versión.');
             }
 
-            foreach ($filas as $fila) {
-                $gasto = $obra->planeacionGastos()->create([
-                    'partida' => $fila['partida'],
-                    'concepto' => $fila['concepto'],
-                    'unidad' => $fila['unidad'],
-                    'cantidad' => $fila['cantidad'] ?? 0,
-                    'precio_unitario' => $fila['precio_unitario'],
-                    'monto_programado' => $fila['monto_programado'],
-                    'numero_semana' => 0,
-                ]);
-                $semanas = [];
-                foreach ($fila['planeacion']['montos'] as $semana => $centavos) {
-                    $semanas[] = ['numero_semana' => $semana, 'monto_programado' => $centavos / 100];
-                }
-                $gasto->semanas()->createMany($semanas);
-            }
+            PlaneacionVersionObra::copiar($obra, $filas);
             $vinculo->update(['planeacion_version_id' => $guardada->id]);
 
             return $obra;
@@ -793,7 +791,7 @@ class PresupuestoController extends Controller
         ]);
         $autor = $request->user()->getKey();
         DB::transaction(function () use ($presupuesto, $version, $datos, $autor) {
-            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $actual = $this->bloquearBorrador($presupuesto);
             $guardada = $actual->versiones()->lockForUpdate()->findOrFail($version, ['id']);
             $ultimo = $guardada->eventos()->latest('id')->first();
             $nota = $datos['nota'] ?? null;
@@ -855,7 +853,7 @@ class PresupuestoController extends Controller
         $cambios = $lote ? $datos['cambios'] : ($restablecer ? [] : [$datos]);
 
         $relacion = DB::transaction(function () use ($presupuesto, $cambios, $restablecer): array {
-            $actual = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $actual = $this->bloquearBorrador($presupuesto);
             $vol = $actual->calcularVolumetria();
             $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
             [$costos] = $this->calcularApupi($actual, $vol, $duracion);
@@ -905,7 +903,7 @@ class PresupuestoController extends Controller
     {
         $datos = $this->validarPilaVol($request);
         DB::transaction(function () use ($presupuesto, $datos) {
-            Presupuesto::lockForUpdate()->findOrFail($presupuesto->id)->pilasVol()->create($datos);
+            $this->bloquearBorrador($presupuesto)->pilasVol()->create($datos);
         }, 3);
 
         return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'pilas'])
@@ -915,11 +913,11 @@ class PresupuestoController extends Controller
     public function updatePilaVol(Request $request, Presupuesto $presupuesto, int $pilaVol)
     {
         DB::transaction(function () use ($request, $presupuesto, $pilaVol) {
-            $pila = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id)->pilasVol()->findOrFail($pilaVol);
+            $pila = $this->bloquearBorrador($presupuesto)->pilasVol()->findOrFail($pilaVol);
             $pila->update($this->validarPilaVol($request, anterior: $pila));
         }, 3);
 
-        return redirect()->to(route('presupuesto.show', [$presupuesto, 'tab' => 'pilas', 'editar_pila' => $pilaVol]) . '#captura-vol')
+        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'pilas'])
             ->with('estadoVol', 'Tipo de pila actualizado.');
     }
 
@@ -928,8 +926,11 @@ class PresupuestoController extends Controller
         $datos = $request->validateWithBag('traslapeVol', [
             'vol_traslape_varilla' => ['required', 'numeric', 'decimal:0,5', 'between:0,99999.99999'],
         ]);
-        $presupuesto->vol_traslape_varilla = $datos['vol_traslape_varilla'];
-        $presupuesto->save();
+        DB::transaction(function () use ($presupuesto, $datos) {
+            $actual = $this->bloquearBorrador($presupuesto);
+            $actual->vol_traslape_varilla = $datos['vol_traslape_varilla'];
+            $actual->save();
+        }, 3);
 
         return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'pilas'])
             ->with('estadoVol', 'Traslape de varilla actualizado.');
@@ -944,12 +945,32 @@ class PresupuestoController extends Controller
         return response()->json($pila->volumetria((float) $presupuesto->vol_traslape_varilla));
     }
 
+    private function diametrosPilasVol(): Collection
+    {
+        return CatalogoPila::where('activa', true)
+            ->where('diametro_cm', '>=', 15)
+            ->distinct()
+            ->orderBy('diametro_cm')
+            ->pluck('diametro_cm')
+            ->map(fn ($diametro) => number_format($diametro / 100, 3, '.', ''));
+    }
+
     private function validarPilaVol(Request $request, bool $permitirIncompleto = false, ?PresupuestoVolPila $anterior = null): array
     {
         $captura = $permitirIncompleto ? 'nullable' : 'required';
+        $reglasCalibreZuncho = ['nullable', Rule::in(array_keys(PresupuestoVolPila::TRASLAPES_METROS))];
         $datos = $request->validateWithBag('pilaVol', [
             'tipo' => [$captura, 'string', 'max:80'],
-            'diametro' => [$captura, 'numeric', 'decimal:0,3', 'between:0.15,99999.999'],
+            'diametro' => ['bail', $captura, 'numeric', 'decimal:0,3', 'between:0.15,99999.999',
+                function ($atributo, $valor, $fallar) use ($anterior): void {
+                    if ($anterior && (float) $valor === (float) $anterior->diametro) {
+                        return;
+                    }
+                    if (!$this->diametrosPilasVol()->containsStrict(number_format((float) $valor, 3, '.', ''))) {
+                        $fallar('Selecciona un diámetro activo del catálogo.');
+                    }
+                },
+            ],
             'piezas' => [$captura, 'integer', 'between:1,4294967295'],
             'longitud_l0' => [$captura, 'numeric', 'decimal:0,3', 'between:0.001,99999.999'],
             'avance_metros_por_jornal' => ['sometimes', $captura, 'numeric', 'decimal:0,5', 'between:0.00001,999999999.99999'],
@@ -958,6 +979,9 @@ class PresupuestoController extends Controller
             'intervalo_l0' => ['nullable', 'numeric', 'decimal:0,3', 'between:0,99999.999'],
             'intervalo_l1' => ['nullable', 'numeric', 'decimal:0,3', 'between:0,99999.999'],
             'intervalo_l2' => ['nullable', 'numeric', 'decimal:0,3', 'between:0,99999.999'],
+            'calibre_zuncho_l0' => $reglasCalibreZuncho,
+            'calibre_zuncho_l1' => $reglasCalibreZuncho,
+            'calibre_zuncho_l2' => $reglasCalibreZuncho,
             'varillas_l0' => ['nullable', 'integer', 'between:0,4294967295'],
             'varillas_l1' => ['nullable', 'integer', 'between:0,4294967295'],
             'calibre_varilla_l0' => ['nullable', Rule::in(array_keys(PresupuestoVolPila::PESOS_VARILLA))],
@@ -966,6 +990,9 @@ class PresupuestoController extends Controller
         ], [], [
             'longitud_l0' => 'longitud L0',
             'avance_metros_por_jornal' => 'avance en metros por jornal',
+            'calibre_zuncho_l0' => 'calibre de zuncho L0',
+            'calibre_zuncho_l1' => 'calibre de zuncho L1',
+            'calibre_zuncho_l2' => 'calibre de zuncho L2',
             'calibre_varilla_l0' => 'calibre de varilla L0',
             'calibre_varilla_l1' => 'calibre de varilla L1',
         ]);
@@ -976,6 +1003,11 @@ class PresupuestoController extends Controller
         $datos['avance_metros_por_jornal'] ??= $anterior
             ? max(0.00001, round($anterior->volumetria()['avance_metros_por_jornal'], 5))
             : PresupuestoVolPila::AVANCE_PREDETERMINADO;
+        foreach (['calibre_zuncho_l0', 'calibre_zuncho_l1', 'calibre_zuncho_l2'] as $campo) {
+            if (! array_key_exists($campo, $datos)) {
+                $datos[$campo] = $anterior?->{$campo};
+            }
+        }
         foreach (['calibre_varilla_l0', 'calibre_varilla_l1'] as $campo) {
             $datos[$campo] ??= $anterior ? $anterior->{$campo} : PresupuestoVolPila::CALIBRE_PREDETERMINADO;
             if ($datos[$campo] !== null) {
@@ -1005,7 +1037,7 @@ class PresupuestoController extends Controller
     public function destroyPilaVol(Presupuesto $presupuesto, int $pilaVol)
     {
         DB::transaction(function () use ($presupuesto, $pilaVol) {
-            Presupuesto::lockForUpdate()->findOrFail($presupuesto->id)->pilasVol()->findOrFail($pilaVol)->delete();
+            $this->bloquearBorrador($presupuesto)->pilasVol()->findOrFail($pilaVol)->delete();
         }, 3);
 
         return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'pilas'])
@@ -1043,6 +1075,9 @@ class PresupuestoController extends Controller
     public function exportPdf($id)
     {
         $presupuesto = Presupuesto::with(['detalles', 'resumenes', 'pilas', 'cliente'])->findOrFail($id);
+        if ($presupuesto->estaAprobado()) {
+            return $this->exportVersionPdf($presupuesto, $presupuesto->version_aprobada_id);
+        }
         $vol = $presupuesto->calcularVolumetria();
         $duracion = $presupuesto->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
         [$costos, $resumen] = $this->calcularApupi($presupuesto, $vol, $duracion);

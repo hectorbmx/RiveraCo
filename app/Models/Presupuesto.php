@@ -217,6 +217,21 @@ class Presupuesto extends Model
         return $this->hasMany(PresupuestoVersion::class);
     }
 
+    public function versionAprobada(): BelongsTo
+    {
+        return $this->belongsTo(PresupuestoVersion::class, 'version_aprobada_id');
+    }
+
+    public function obraGenerada(): BelongsTo
+    {
+        return $this->belongsTo(Obra::class, 'obra_generada_id');
+    }
+
+    public function estaAprobado(): bool
+    {
+        return $this->version_aprobada_id !== null;
+    }
+
     public function origenBorrador(): BelongsTo
     {
         return $this->belongsTo(PresupuestoVersion::class, 'version_origen_borrador_id');

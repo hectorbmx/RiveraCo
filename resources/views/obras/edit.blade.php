@@ -1410,6 +1410,24 @@
             <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Desglose Técnico Consolidado</h3>
             
             @forelse($obra->presupuestos_vinculados as $pv)
+                @if($pv->versionAprobada)
+                    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3">
+                            <div>
+                                <h4 class="font-semibold">Presupuesto aprobado · {{ $pv->codigo_proyecto }}</h4>
+                                <span class="text-sm text-slate-600">Versión {{ $pv->versionAprobada->folio() }}</span>
+                                @if(!($pv->versionAprobada->datos['relacion_gastos']['planeacion']['publicable'] ?? false))
+                                    <p class="text-sm text-amber-800">La versión se aprobó con programación semanal pendiente.</p>
+                                @endif
+                            </div>
+                            <div class="flex flex-wrap gap-3 text-sm font-semibold text-[#0B265A]">
+                                <a class="hover:underline" href="{{ route('presupuesto.versiones.show', [$pv, $pv->versionAprobada]) }}">Ver versión aprobada</a>
+                                <a class="hover:underline" href="{{ route('presupuesto.versiones.pdf', [$pv, $pv->versionAprobada]) }}" target="_blank" rel="noopener">Exportar PDF</a>
+                            </div>
+                        </div>
+                        @include('presupuesto.partials.propuesta-version', ['version' => $pv->versionAprobada])
+                    </div>
+                @else
                 <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                     {{-- Encabezado del Presupuesto Vinculado --}}
                     <div class="bg-slate-50 px-4 py-3 border-b flex justify-between items-center">
@@ -1450,6 +1468,7 @@
                         </tbody>
                     </div>
                 </div>
+                @endif
             @empty
                 <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center">
                     <p class="text-slate-500">No hay presupuestos maestros vinculados a esta obra.</p>

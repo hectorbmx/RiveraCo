@@ -20,6 +20,7 @@
                 <li class="py-2.5 text-sm text-slate-500">Aún no hay movimientos registrados.</li>
             @endforelse
         </ol>
+        @unless($presupuesto->estaAprobado())
         <form method="POST" action="{{ route('presupuesto.versiones.seguimiento.store', [$presupuesto, $version]) }}" class="space-y-3 rounded-xl bg-slate-50 p-4">
             @csrf
             @if($errors->seguimientoPresupuesto->any())
@@ -38,5 +39,6 @@
                 Registrar movimiento
             </button>
         </form>
+        @endunless
     </div>
 </section>

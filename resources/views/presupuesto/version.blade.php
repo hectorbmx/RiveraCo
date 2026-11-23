@@ -13,15 +13,23 @@
     <div class="flex flex-wrap items-center justify-between gap-3">
         <a href="{{ route('presupuesto.versiones.index', $presupuesto) }}" class="text-sm font-medium text-[#0B265A] hover:underline">← Historial de versiones</a>
         <div class="flex flex-wrap items-center gap-3">
-            <a href="{{ route('presupuesto.show', [$presupuesto, 'tab' => 'apupi', 'borrador' => 1]) }}"
-               class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-[#0B265A] hover:bg-slate-50">Editar en APUPI</a>
+            @if($presupuesto->estaAprobado())
+                <a href="{{ route('obras.edit', $presupuesto->obra_generada_id) }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-[#0B265A]">Ver obra</a>
+            @else
+                <a href="{{ route('presupuesto.show', [$presupuesto, 'tab' => 'apupi', 'borrador' => 1]) }}"
+                   class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-[#0B265A] hover:bg-slate-50">Editar en APUPI</a>
+                @can('presupuestos.approve.access')
+                    <a href="{{ route('presupuesto.versiones.aprobar.confirmar', [$presupuesto, $version]) }}"
+                       class="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white">Aprobar y crear obra</a>
+                @endcan
+            @endif
             <a href="{{ route('presupuesto.versiones.pdf', [$presupuesto, $version]) }}" target="_blank" rel="noopener"
                class="rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">Exportar PDF</a>
         </div>
     </div>
     <header class="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6">
         <div>
-            <p class="text-sm font-medium text-slate-600">Versión guardada</p>
+            <p class="text-sm font-medium text-slate-600">{{ (int) $presupuesto->version_aprobada_id === $version->id ? 'Versión aprobada' : 'Versión guardada' }}</p>
             <h1 class="mt-1 text-2xl font-bold text-[#0B265A]">Presupuesto {{ $version->folio() }}</h1>
             <p class="mt-1 text-slate-800">{{ ($datos['cliente']['nombre_comercial'] ?? null) ?: $cabecera['nombre_cliente'] }}</p>
             @if($cabecera['nombre_obra'])
