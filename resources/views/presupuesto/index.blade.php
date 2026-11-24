@@ -65,10 +65,10 @@
                         {{ $presupuesto->nombreClienteVisible() }}
                     </td>
                     <td class="p-2 border text-center">
-                        ${{ number_format($presupuesto->total_costo_directo, 2) }}
+                        {{ $importes[$presupuesto->id]['directo'] === null ? '—' : '$' . number_format($importes[$presupuesto->id]['directo'], 2) }}
                     </td>
                     <td class="p-2 border text-center font-semibold">
-                        ${{ number_format($presupuesto->total_presupuesto, 2) }}
+                        ${{ number_format($importes[$presupuesto->id]['total'], 2) }}
                     </td>
                     <td class="p-2 border text-center">
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border {{ $estadoBadge($presupuesto->estatus) }}">

@@ -17,7 +17,7 @@
                     <th scope="col" class="border border-slate-400 px-3 py-2 text-right">Cantidad</th>
                     <th scope="col" class="border border-slate-400 px-3 py-2 text-right">P.U. de venta</th>
                     <th scope="col" class="border border-slate-400 px-3 py-2 text-right">Importe</th>
-                    <th scope="col" class="border border-slate-400 px-3 py-2 text-right">P.U. sugerido</th>
+                    <th scope="col" class="border border-slate-400 px-3 py-2 text-right">Mínimo de partida</th>
                     <th scope="col" class="border border-slate-400 px-3 py-2 text-right">Dif. $</th>
                     <th scope="col" class="border border-slate-400 px-3 py-2 text-right">Dif. %</th>
                 </tr>
@@ -45,8 +45,8 @@
                             <td class="whitespace-nowrap border border-slate-300 px-3 py-2 text-center text-slate-600">{{ $fila['unidad'] }}</td>
                             @foreach(['cantidad' => 'Cantidad', 'precio_unitario' => 'P.U. de venta'] as $campo => $etiqueta)
                                 <td class="whitespace-nowrap border border-slate-300 px-3 py-1.5 text-right tabular-nums">
-                                    <input type="number" min="0" step="0.01" max="9999999999999.99" required name="{{ $campo }}"
-                                           @if($campo === 'precio_unitario' && $clave === 'venta-215') data-precio-propuesta="{{ $clave }}" @endif
+                                    <input type="number" min="0" step="0.01" max="9999999999999.99" @required($campo === 'cantidad') name="{{ $campo }}"
+                                           data-renglon-propuesta="{{ $clave }}"
                                            value="{{ $fila[$campo] }}" data-guardado="{{ $fila[$campo] }}" data-url="{{ $url }}"
                                            aria-label="{{ $etiqueta }} · {{ $fila['concepto'] }}"
                                            @blur="guardar($el)" @keydown.enter.prevent="$el.blur()"
@@ -55,16 +55,17 @@
                                         <span x-show="(resumen.propuesta.filas[@js($clave)]?.referencia ?? 0) > 0"
                                               x-text="'Base: ' + numero(resumen.propuesta.filas[@js($clave)]?.referencia)"
                                               class="mt-1 block text-xs text-slate-500" x-cloak></span>
+                                    @else
+                                        <span x-show="resumen.propuesta.filas[@js($clave)]?.sugerido != null"
+                                              x-text="'Precio sugerido: ' + moneda(resumen.propuesta.filas[@js($clave)]?.sugerido)"
+                                              class="mt-1 block text-xs text-slate-500" x-cloak></span>
                                     @endif
                                 </td>
                             @endforeach
                             <td x-text="moneda(resumen.propuesta.filas[@js($clave)]?.importe)" class="whitespace-nowrap border border-slate-300 px-3 py-2 text-right font-semibold tabular-nums">
                                 ${{ number_format($fila['importe'], 2) }}
                             </td>
-                            <td x-text="moneda(resumen.propuesta.filas[@js($clave)]?.sugerido)" class="whitespace-nowrap border border-slate-300 px-3 py-2 text-right tabular-nums text-slate-600">
-                                {{ $fila['sugerido'] === null ? '—' : '$' . number_format($fila['sugerido'], 2) }}
-                            </td>
-                            <td colspan="2" class="border border-slate-300"></td>
+                            <td colspan="3" class="border border-slate-300"></td>
                         </tr>
                     @endforeach
                     <tr style="background-color: #E2EFDA">
@@ -73,7 +74,7 @@
                             ${{ number_format($partida['importe'], 2) }}
                         </td>
                         <td class="whitespace-nowrap border border-slate-400 px-3 py-2 text-right text-xs">
-                            <span class="text-slate-600">Mínimo: </span><span x-text="moneda(resumen.propuesta.partidas[@js($clavePartida)]?.minimo)">{{ $partida['minimo'] === null ? '—' : '$' . number_format($partida['minimo'], 2) }}</span>
+                            <span x-text="moneda(resumen.propuesta.partidas[@js($clavePartida)]?.minimo)">{{ $partida['minimo'] === null ? '—' : '$' . number_format($partida['minimo'], 2) }}</span>
                         </td>
                         <td x-text="moneda(resumen.propuesta.partidas[@js($clavePartida)]?.diferencia)" class="whitespace-nowrap border border-slate-400 px-3 py-2 text-right tabular-nums">
                             {{ $partida['diferencia'] === null ? '—' : '$' . number_format($partida['diferencia'], 2) }}

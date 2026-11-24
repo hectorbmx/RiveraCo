@@ -70,4 +70,13 @@ class PresupuestoVersion extends Model
 
         return $this->revision === 0 ? "#{$base}" : "#{$base}.{$this->revision}";
     }
+
+    public function tieneVenta(): bool
+    {
+        $presentacion = $this->datos['presentacion'] ?? null;
+
+        return $presentacion === null
+            ? (float) $this->total_venta > 0
+            : !empty($presentacion['filas']) && ($presentacion['subtotal'] ?? 0) > 0;
+    }
 }

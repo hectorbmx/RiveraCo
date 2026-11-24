@@ -7,11 +7,12 @@
     $tabInicial = is_string($solicitada) && array_key_exists($solicitada, $pestanas) ? $solicitada : 'presupuesto';
     $revisionEnCurso = $presupuesto->version_origen_borrador_id !== null;
     $siguienteRevision = $versionGuardada ? $versionGuardada->revision + 1 : 0;
-    $pdfBorrador = route('presupuesto.pdf', $presupuesto);
+    $pdfBorrador = route('presupuesto.pdf', [$presupuesto, 'borrador' => 1]);
     $mostrarVersionUnica = $versionUnica && !request()->boolean('borrador');
     $pdfVersion = $mostrarVersionUnica ? route('presupuesto.versiones.pdf', [$presupuesto, $versionUnica]) : null;
     $totalesVersion = $versionUnica?->datos['presentacion'] ?? null;
     $directoVersion = $versionUnica?->datos['previo']['escenarios']['realista']['directo']
+        ?? $versionUnica?->datos['apupi']['resumen']['realista']['total_directo']
         ?? $versionUnica?->datos['presupuesto']['total_costo_directo']
         ?? null;
 @endphp
@@ -358,8 +359,7 @@
                 <button type="submit" :disabled="guardandoVersion" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-[#0B265A] hover:bg-slate-50 disabled:opacity-60"
                         x-text="guardandoVersion ? 'Guardando…' : 'Guardar versión'">Guardar versión</button>
             </form>
-            <a href="{{ $tabInicial === 'presupuesto' && $pdfVersion ? $pdfVersion : $pdfBorrador }}"
-               @if($pdfVersion) :href="tab === 'presupuesto' ? @js($pdfVersion) : @js($pdfBorrador)" @endif
+            <a href="{{ $pdfVersion ?? $pdfBorrador }}"
                target="_blank" rel="noopener" @click.prevent="exportarPdf($el.href)" class="inline-flex items-center gap-2 rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 Exportar PDF
@@ -367,6 +367,9 @@
         </div>
     </div>
     <p role="alert" x-show="errorVersion" x-cloak x-text="errorVersion" class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800"></p>
+    @if(session('errorPdfPresupuesto'))
+        <p role="alert" class="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">{{ session('errorPdfPresupuesto') }}</p>
+    @endif
     @if($errors->versionPresupuesto->any())
         <p role="alert" class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">{{ $errors->versionPresupuesto->first() }}</p>
     @endif
@@ -444,7 +447,7 @@
                 @if($volumetria['filas']->isNotEmpty())
                     <h3 class="text-sm font-semibold text-slate-700">Base de Pilas / VOL</h3>
                     <dl class="flex flex-wrap gap-3 text-sm">
-                        @foreach(['piezas' => ['Pilas', 0], 'jornales' => ['Jornales', 3], 'metros_lineales' => ['Perforación (ML)', 3], 'concreto' => ['Concreto (m³)', 3]] as $campo => [$etiqueta, $decimales])
+                        @foreach(['piezas' => ['Pilas', 0], 'jornales' => ['Jornales', 0], 'metros_lineales' => ['Perforación (ML)', 3], 'concreto' => ['Concreto (m³)', 3]] as $campo => [$etiqueta, $decimales])
                             <div class="rounded-lg bg-slate-100 px-3 py-2">
                                 <dt class="text-slate-600">{{ $etiqueta }}</dt>
                                 <dd class="font-semibold">{{ number_format($volumetria['totales'][$campo], $decimales) }}</dd>

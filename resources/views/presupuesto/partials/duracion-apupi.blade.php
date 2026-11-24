@@ -1,6 +1,6 @@
 @php
     $coloresDuracion = ['realista' => '#FFF2CC', 'optimista' => '#E2EFDA', 'pesimista' => '#FFC7CE'];
-    $camposDuracion = ['jornales' => ['Jornales de trabajo', '0.01'], 'dias' => ['Días calendario base', '1'], 'semanas' => ['Semanas base', '1']];
+    $camposDuracion = ['jornales' => 'Jornales de trabajo', 'dias' => 'Días calendario base', 'semanas' => 'Semanas base'];
 @endphp
 
 <form method="POST" action="{{ route('presupuesto.duracion-apupi.update', $presupuesto) }}"
@@ -26,18 +26,18 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-white">
-                @foreach($camposDuracion as $campo => [$etiqueta, $paso])
+                @foreach($camposDuracion as $campo => $etiqueta)
                     <tr>
                         <th scope="row" class="px-2 py-1.5 text-left font-medium text-slate-700">{{ $etiqueta }}</th>
                         @foreach(\App\Models\Presupuesto::ESCENARIOS_APUPI as $escenario)
                             @php
                                 $clave = "duracion.$escenario.$campo";
                                 $valor = $duracionApupi[$escenario][$campo];
-                                $manual = $presupuesto->duracion_apupi[$escenario][$campo] ?? null;
+                                $manual = isset($presupuesto->duracion_apupi[$escenario][$campo]) ? $valor : null;
                             @endphp
                             <td class="px-2 py-1.5 text-center font-medium tabular-nums" style="background-color: {{ $coloresDuracion[$escenario] }}">
-                                <span x-show="!editando">{{ $valor === null ? '—' : number_format($valor, $paso === '1' ? 0 : 2) }}</span>
-                                <input type="number" min="0" max="999999" step="{{ $paso }}" name="duracion[{{ $escenario }}][{{ $campo }}]"
+                                <span x-show="!editando">{{ $valor === null ? '—' : number_format($valor) }}</span>
+                                <input type="number" min="0" max="999999" step="1" name="duracion[{{ $escenario }}][{{ $campo }}]"
                                        value="{{ $errors->duracionApupi->any() ? old($clave) : $manual }}"
                                        placeholder="{{ $manual === null ? $valor ?? '—' : '—' }}"
                                        aria-label="{{ $etiqueta }} · {{ ucfirst($escenario) }}"

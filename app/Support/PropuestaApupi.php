@@ -59,8 +59,10 @@ class PropuestaApupi
         ]],
     ];
 
-    public static function filas(Presupuesto $presupuesto, Collection $porDiametro, ?float $minimoTraslado = null): Collection
+    public static function filas(Presupuesto $presupuesto, array $vol, Collection $costos, ?float $semanas): Collection
     {
+        $porDiametro = $vol['porDiametro'];
+        $referencias = self::referencias($vol['totales'], $costos, $semanas);
         $catalogo = [];
         $indices = [];
         foreach (self::PARTIDAS as $partida => [, , $conceptos]) {
@@ -133,9 +135,10 @@ class PropuestaApupi
                 $catalogo[$clave] = ['partida' => $partida, 'concepto' => $fila->concepto, 'unidad' => $fila->unidad];
             }
 
+            $precio = $fila->precio_unitario ?? $fila->costo;
             $importados[$clave] = [
                 'cantidad' => (float) $fila->cantidad,
-                'precio_unitario' => (float) ($fila->precio_unitario ?? $fila->costo),
+                'precio_unitario' => $precio === null ? null : (float) $precio,
                 'importe' => (float) ($fila->importe ?? $fila->total),
             ];
         }
@@ -144,7 +147,9 @@ class PropuestaApupi
         sort($diametros, SORT_NUMERIC);
         $perforacion = [];
         foreach ($diametros as $diametro) {
-            $perforacion['diametro-' . $diametro] = [
+            $clave = 'diametro-' . $diametro;
+            $referencias[$clave] = $porDiametro[number_format($diametro / 1000, 3, '.', '')]['metros_lineales'] ?? 0;
+            $perforacion[$clave] = [
                 'partida' => 'perforacion',
                 'concepto' => 'Perforación en ' . ($diametro / 10) . ' cm',
                 'unidad' => 'ML',
@@ -152,22 +157,25 @@ class PropuestaApupi
             ];
         }
 
-        return collect($perforacion + $catalogo)->map(function (array $concepto, string $clave) use ($importados, $ajustes, $clavesAnteriores, $minimoTraslado) {
+        return collect($perforacion + $catalogo)->map(function (array $concepto, string $clave) use ($importados, $ajustes, $clavesAnteriores, $referencias, $vol) {
+            $referencia = $referencias[$clave] ?? null;
             $base = $importados[$clave] ?? [
-                'cantidad' => 0,
-                'precio_unitario' => $clave === 'venta-215' ? round($minimoTraslado ?? 0, 2) : 0,
+                'cantidad' => round($referencia ?? 0, 2),
+                'precio_unitario' => null,
                 'importe' => 0,
             ];
             $claveAnterior = $clavesAnteriores[$clave] ?? null;
             $ajuste = $ajustes[$clave] ?? $ajustes[$claveAnterior ?? ''] ?? [];
             $cantidad = (float) ($ajuste['cantidad'] ?? $base['cantidad']);
-            $precio = (float) ($ajuste['precio_unitario'] ?? $base['precio_unitario']);
-            $ajustada = $cantidad !== (float) $base['cantidad'] || $precio !== (float) $base['precio_unitario'];
+            $precio = array_key_exists('precio_unitario', $ajuste) ? $ajuste['precio_unitario'] : $base['precio_unitario'];
+            $precio = $precio === null ? null : (float) $precio;
+            $ajustada = $cantidad !== (float) $base['cantidad'] || $precio !== $base['precio_unitario'];
 
             return $concepto + [
                 'cantidad' => $cantidad,
                 'precio_unitario' => $precio,
-                'importe' => $cantidad == 0 ? 0 : ($ajustada ? round($cantidad * $precio, 2) : $base['importe']),
+                'importe' => $cantidad == 0 || $precio <= 0 ? 0 : ($ajustada ? round($cantidad * $precio, 2) : $base['importe']),
+                'referencia' => $clave === self::PERFORACION_M3 ? $vol['totales']['perforacion'] : $referencia,
                 'base' => $base,
                 'clave_anterior' => $claveAnterior,
             ];
@@ -191,18 +199,14 @@ class PropuestaApupi
     {
         $minimos = $apupi['realista']['minimos'];
         $totalesVol = $vol['totales'];
-        $metraje = $vol['porDiametro'];
         $venta = self::totalVenta($filas);
-        $referencias = self::referencias($totalesVol, $costos, $duracion['realista']['semanas']);
         $porM3 = self::dividir($minimos['PERFORACION'], $totalesVol['perforacion']);
         $sugeridos = self::preciosSugeridos($minimos, $totalesVol, $costos, $duracion['realista']['semanas'], $venta);
-        $referencias[self::PERFORACION_M3] = $totalesVol['perforacion'];
         $sugeridos[self::PERFORACION_M3] = $porM3;
         $preciosDiametro = [];
         foreach ($filas as $clave => $fila) {
             if (isset($fila['diametro'])) {
-                $metros = $metraje[number_format($fila['diametro'], 3, '.', '')]['metros_lineales'] ?? 0;
-                $referencias[$clave] = $metros;
+                $metros = $fila['referencia'];
                 if ($metros > 0 && $porM3 !== null) {
                     $preciosDiametro[$clave] = pi() * $fila['diametro'] ** 2 / 4 * $porM3;
                 }
@@ -217,7 +221,6 @@ class PropuestaApupi
         }
 
         $filas = $filas->map(fn ($fila, $clave) => $fila + [
-            'referencia' => $referencias[$clave] ?? null,
             'sugerido' => isset($sugeridos[$clave]) ? round($sugeridos[$clave], 2) : null,
         ]);
         $grupos = $filas->groupBy('partida', preserveKeys: true);

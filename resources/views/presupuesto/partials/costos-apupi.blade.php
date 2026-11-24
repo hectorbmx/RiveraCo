@@ -18,7 +18,7 @@
             const clave = this.claveCampo(input);
             if (!Object.hasOwn(this.pendientesApupi, clave)) continue;
             const valor = this.pendientesApupi[clave];
-            if (valor !== '' && Number(valor) === Number(input.dataset.guardado)) {
+            if (this.mismoValor(valor, input.dataset.guardado)) {
                 this.confirmarCampo(input, valor);
             } else {
                 input.value = valor;
@@ -86,15 +86,18 @@
     alternarPartida(clave) {
         this.plegadas[clave] = !this.plegadas[clave];
     },
-    sincronizarPrecios() {
-        for (const costo of this.$root.querySelectorAll('[data-precio-apupi], [data-precio-propuesta]')) {
-            const precio = costo.dataset.precioPropuesta
-                ? this.resumen.propuesta.filas[costo.dataset.precioPropuesta]?.precio_unitario
-                : this.resumen.precios[costo.dataset.precioApupi];
-            if (precio == null || costo === document.activeElement || Object.hasOwn(this.pendientesApupi, this.claveCampo(costo))
-                || Number(costo.value) !== Number(costo.dataset.guardado)) continue;
-            costo.value = precio;
-            costo.dataset.guardado = costo.value;
+    mismoValor(valor, guardado) {
+        return valor === guardado || (valor !== '' && guardado !== '' && Number(valor) === Number(guardado));
+    },
+    sincronizarCampos() {
+        for (const input of this.$root.querySelectorAll('[data-precio-apupi], [data-renglon-propuesta]')) {
+            const valor = input.dataset.renglonPropuesta
+                ? this.resumen.propuesta.filas[input.dataset.renglonPropuesta]?.[input.name]
+                : this.resumen.precios[input.dataset.precioApupi];
+            if (valor === undefined || input === document.activeElement || Object.hasOwn(this.pendientesApupi, this.claveCampo(input))
+                || !this.mismoValor(input.value, input.dataset.guardado)) continue;
+            input.value = valor ?? '';
+            input.dataset.guardado = input.value;
         }
     },
     guardar(input) {
@@ -108,10 +111,10 @@
                 this.avisar(this.errorApupi, true);
                 return;
             }
-            if (Number(valor) === Number(input.dataset.guardado)) {
+            if (this.mismoValor(valor, input.dataset.guardado)) {
                 this.confirmarCampo(input, valor);
                 input.removeAttribute('aria-invalid');
-                this.sincronizarPrecios();
+                this.sincronizarCampos();
                 return;
             }
             try {
@@ -119,7 +122,7 @@
                     method: 'PATCH',
                     keepalive: true,
                     headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrf },
-                    body: JSON.stringify({ [input.name]: valor })
+                    body: JSON.stringify({ [input.name]: valor === '' ? null : valor })
                 });
                 const datos = await respuesta.json().catch(() => null);
                 if (!respuesta.ok || !datos?.propuesta) {
@@ -135,7 +138,7 @@
                 input.dataset.guardado = valor;
                 this.confirmarCampo(input, valor);
                 input.removeAttribute('aria-invalid');
-                this.sincronizarPrecios();
+                this.sincronizarCampos();
                 this.avisar('Guardado');
             } catch (error) {
                 input.setAttribute('aria-invalid', 'true');

@@ -52,6 +52,7 @@ class PresupuestoController extends Controller
             });
         $presupuestos = Presupuesto::query()
             ->addSelect(['ultimo_movimiento_id' => $movimientos, 'aceptacion_vigente_id' => $aceptacion])
+            ->withCount('versiones')
             ->withExists([
                 'eventos as tiene_seguimiento' => fn ($eventos) => $eventos->whereIn('tipo', array_keys(PresupuestoEvento::TIPOS_SEGUIMIENTO)),
                 'obras',
@@ -77,8 +78,54 @@ class PresupuestoController extends Controller
             $presupuesto->ultimoMovimiento?->version?->setRelation('presupuesto', $presupuesto);
             $presupuesto->aceptacionVigente?->version?->setRelation('presupuesto', $presupuesto);
         });
-        
-        return view('presupuesto.index', compact('presupuestos', 'buscar'));
+        $presupuestos->where('versiones_count', 1)->load('ultimaVersion');
+        $presupuestos->filter(fn (Presupuesto $p) => $p->estaAprobado())->load('versionAprobada');
+        $borradores = $presupuestos->reject(fn (Presupuesto $p) => $p->esImportado()
+            || $p->estaAprobado() || $this->versionComercialUnica($p));
+        $borradores->load(['detalles', 'pilas', 'pilasVol']);
+
+        $importes = $presupuestos->mapWithKeys(fn (Presupuesto $p) => [$p->id => $this->importesListado($p)]);
+
+        return view('presupuesto.index', compact('presupuestos', 'buscar', 'importes'));
+    }
+
+    private function versionComercialUnica(Presupuesto $presupuesto): ?PresupuestoVersion
+    {
+        if ($presupuesto->versiones_count !== 1) {
+            return null;
+        }
+
+        $version = $presupuesto->ultimaVersion;
+
+        return $version?->tieneVenta() ? $version : null;
+    }
+
+    private function importesListado(Presupuesto $presupuesto): array
+    {
+        $version = $presupuesto->estaAprobado() ? $presupuesto->versionAprobada : $this->versionComercialUnica($presupuesto);
+        if ($version) {
+            $datos = $version->datos;
+
+            return [
+                'directo' => $datos['previo']['escenarios']['realista']['directo']
+                    ?? $datos['apupi']['resumen']['realista']['total_directo']
+                    ?? $datos['presupuesto']['total_costo_directo'] ?? null,
+                'total' => $datos['presentacion']['total'] ?? $version->total_venta,
+            ];
+        }
+        if ($presupuesto->esImportado()) {
+            return ['directo' => $presupuesto->total_costo_directo, 'total' => $presupuesto->total_presupuesto];
+        }
+
+        $vol = $presupuesto->calcularVolumetria();
+        $duracion = $presupuesto->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+        [$costos, $resumen] = $this->calcularApupi($presupuesto, $vol, $duracion);
+        $directo = $resumen['realista']['total_directo'];
+
+        return [
+            'directo' => $directo === null ? null : round($directo + ($resumen['propuesta']['filas']['venta-218']['importe'] ?? 0), 2),
+            'total' => PresentacionPresupuesto::preparar($presupuesto, $costos, $resumen, $duracion)['total'],
+        ];
     }
     public function create(Request $request)
     {
@@ -328,7 +375,7 @@ class PresupuestoController extends Controller
         $datos = $request->validateWithBag('duracionApupi', [
             'duracion' => ['required', 'array:realista,optimista,pesimista', 'required_array_keys:realista,optimista,pesimista'],
             'duracion.*' => ['required', 'array:jornales,dias,semanas'],
-            'duracion.*.jornales' => ['present', 'nullable', 'numeric', 'decimal:0,2', 'between:0,999999'],
+            'duracion.*.jornales' => ['present', 'nullable', 'integer', 'between:0,999999'],
             'duracion.*.dias' => ['present', 'nullable', 'integer', 'between:0,999999'],
             'duracion.*.semanas' => ['present', 'nullable', 'integer', 'between:0,999999'],
         ], [], [
@@ -341,7 +388,7 @@ class PresupuestoController extends Controller
         foreach (Presupuesto::ESCENARIOS_APUPI as $escenario) {
             foreach ($datos['duracion'][$escenario] as $campo => $valor) {
                 if ($valor !== null) {
-                    $duracion[$escenario][$campo] = $campo === 'jornales' ? (float) $valor : (int) $valor;
+                    $duracion[$escenario][$campo] = (int) $valor;
                 }
             }
         }
@@ -454,20 +501,17 @@ class PresupuestoController extends Controller
 
     public function updateRenglonPropuestaApupi(Request $request, Presupuesto $presupuesto, string $renglon)
     {
+        abort_unless($request->hasAny(['cantidad', 'precio_unitario']), 422);
         $datos = $request->validate([
-            'cantidad' => ['required_without:precio_unitario', 'numeric', 'decimal:0,2', 'between:0,9999999999999.99'],
-            'precio_unitario' => ['required_without:cantidad', 'numeric', 'decimal:0,2', 'between:0,9999999999999.99'],
+            'cantidad' => ['sometimes', 'required', 'numeric', 'decimal:0,2', 'between:0,9999999999999.99'],
+            'precio_unitario' => ['sometimes', 'nullable', 'numeric', 'decimal:0,2', 'between:0,9999999999999.99'],
         ], [], ['precio_unitario' => 'precio unitario de venta']);
 
         DB::transaction(function () use ($presupuesto, $renglon, $datos) {
             $actual = $this->bloquearBorrador($presupuesto);
             $vol = $actual->calcularVolumetria();
-            if ($renglon === 'venta-215') {
-                $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
-                $filas = $this->filasPropuesta($actual, $vol, $duracion);
-            } else {
-                $filas = PropuestaApupi::filas($actual, $vol['porDiametro']);
-            }
+            $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+            $filas = $this->filasPropuesta($actual, $vol, $duracion);
             $fila = $filas->get($renglon);
             abort_if($fila === null, 404);
             $ajustes = $actual->ajustes_propuesta_apupi ?? [];
@@ -477,7 +521,8 @@ class PresupuestoController extends Controller
                 unset($ajustes[$anterior]);
             }
             foreach ($datos as $campo => $valor) {
-                if ((float) $valor === (float) $fila['base'][$campo]) {
+                $valor = $valor === null ? null : (float) $valor;
+                if ($valor === $fila['base'][$campo]) {
                     unset($cambios[$campo]);
                 } else {
                     $cambios[$campo] = $valor;
@@ -498,10 +543,7 @@ class PresupuestoController extends Controller
 
     private function filasPropuesta(Presupuesto $presupuesto, array $vol, array $duracion): Collection
     {
-        // La venta usa el mínimo de traslado y los precios capturados de fianza y financiamiento.
-        $resumen = $presupuesto->resumenApupi($presupuesto->filasApupi($duracion), $vol['totales']['perforacion']);
-
-        return PropuestaApupi::filas($presupuesto, $vol['porDiametro'], $resumen['realista']['minimos'][PresupuestoDetalle::PARTIDA_TRASLADO]);
+        return PropuestaApupi::filas($presupuesto, $vol, $presupuesto->filasApupi($duracion), $duracion['realista']['semanas']);
     }
 
     private function calcularApupi(Presupuesto $presupuesto, array $vol, array $duracion): array
@@ -608,11 +650,9 @@ class PresupuestoController extends Controller
         $previo = PrevioPresupuesto::preparar($presupuesto, $filasApupi, $resumenApupi['propuesta'], $duracionApupi);
         $versiones = $presupuesto->versiones()->orderByDesc('revision')->limit(2)->get(['id', 'revision']);
         $versionGuardada = $versiones->first();
-        $versionUnica = null;
-        if ($versiones->count() === 1 && $presupuesto->version_origen_borrador_id === null) {
-            $versionUnica = $presupuesto->versiones()->find($versionGuardada->id);
-            $versionUnica?->setRelation('presupuesto', $presupuesto);
-        }
+        $presupuesto->versiones_count = $versiones->count();
+        $versionUnica = $this->versionComercialUnica($presupuesto);
+        $versionUnica?->setRelation('presupuesto', $presupuesto);
 
         return view('presupuesto.show', compact('presupuesto', 'relacionGastos', 'volumetria', 'editarVol', 'diametrosVol', 'clienteSeleccionado', 'duracionApupi', 'filasApupi', 'resumenApupi', 'versionGuardada', 'versionUnica', 'presentacion', 'previo'));
     }
@@ -711,7 +751,7 @@ class PresupuestoController extends Controller
             return true;
         }, 3);
 
-        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'pilas'])
+        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'pilas', 'borrador' => 1])
             ->with('estadoPresupuesto', $creado ? 'Borrador de revisión creado.' : 'Ya hay un borrador de revisión en curso.');
     }
 
@@ -1064,24 +1104,32 @@ class PresupuestoController extends Controller
             return $this->imprimirPresentacion($cabecera, $datos['presentacion'], $archivo);
         }
 
-        $tablaConsolidada = collect($datos['propuesta']['filas'])->where('cantidad', '>', 0);
-        $totalGeneral = $version->total_venta;
-        $esVersion = true;
+        $filas = collect($datos['propuesta']['filas'])->where('cantidad', '>', 0)
+            ->map(fn (array $fila) => ['partida' => ''] + $fila)->all();
 
-        return Pdf::loadView('presupuesto.pdf_template', compact('cabecera', 'tablaConsolidada', 'totalGeneral', 'esVersion'))
-            ->stream($archivo);
+        return $this->imprimirPresentacion($cabecera, ['filas' => $filas, 'total' => $version->total_venta], $archivo);
     }
 
-    public function exportPdf($id)
+    public function exportPdf(Request $request, $id)
     {
         $presupuesto = Presupuesto::with(['detalles', 'resumenes', 'pilas', 'cliente'])->findOrFail($id);
         if ($presupuesto->estaAprobado()) {
             return $this->exportVersionPdf($presupuesto, $presupuesto->version_aprobada_id);
         }
+        if (!$request->boolean('borrador')) {
+            $presupuesto->loadCount('versiones');
+            if ($version = $this->versionComercialUnica($presupuesto)) {
+                return $this->exportVersionPdf($presupuesto, $version->id);
+            }
+        }
         $vol = $presupuesto->calcularVolumetria();
         $duracion = $presupuesto->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
         [$costos, $resumen] = $this->calcularApupi($presupuesto, $vol, $duracion);
         $presentacion = PresentacionPresupuesto::preparar($presupuesto, $costos, $resumen, $duracion);
+        if (empty($presentacion['filas'])) {
+            return redirect()->to(route('presupuesto.show', [$presupuesto, 'tab' => 'apupi', 'borrador' => 1]) . '#propuesta-apupi')
+                ->with('errorPdfPresupuesto', 'Para exportar el PDF, guarda una cantidad y un precio unitario de venta en Propuesta 1.');
+        }
         $cabecera = [
             'cliente' => $presupuesto->nombreClienteVisible(),
             'obra' => $presupuesto->nombre_obra,
@@ -1099,15 +1147,31 @@ class PresupuestoController extends Controller
         $presentacion['filas'] = PresentacionPresupuesto::numerar(collect($presentacion['filas']))->all();
         $pdf = Pdf::loadView('presupuesto.pdf-comercial', compact('cabecera', 'presentacion'))->setPaper('letter');
         $pdf->render();
-        $dompdf = $pdf->getDomPDF();
-        $lienzo = $dompdf->getCanvas();
-        $lienzo->page_text(
-            $lienzo->get_width() / 2 - 23,
-            $lienzo->get_height() - 22,
-            'Hoja {PAGE_NUM} de {PAGE_COUNT}',
-            $dompdf->getFontMetrics()->getFont('DejaVu Sans'),
-            7
-        );
+        $lienzo = $pdf->getDomPDF()->getCanvas();
+        $margen = 36;
+        if ($lienzo->get_page_count() > 1) {
+            $compacto = Pdf::loadView('presupuesto.pdf-comercial', compact('cabecera', 'presentacion') + ['compacto' => true])->setPaper('letter');
+            $compacto->render();
+            $lienzoCompacto = $compacto->getDomPDF()->getCanvas();
+            if ($lienzoCompacto->get_page_count() < $lienzo->get_page_count()) {
+                $pdf = $compacto;
+                $lienzo = $lienzoCompacto;
+                $margen = 30;
+            }
+        }
+
+        $lienzo->page_script(function (int $pagina, int $total, $lienzo, $fuentes) use ($margen): void {
+            $pie = $lienzo->get_height() - 23;
+            $color = [28 / 255, 39 / 255, 129 / 255];
+            $blanco = [1, 1, 1];
+            $fuente = $fuentes->getFont('DejaVu Sans');
+            $paginaTexto = "Hoja {$pagina} de {$total}";
+            $lienzo->filled_rectangle(0, $pie, $lienzo->get_width(), 23, $color);
+            $lienzo->text($margen, $pie + 7, 'RIVERA CONSTRUCCIONES, S.A. de C.V.', $fuente, 6.5, $blanco);
+            $lienzo->text($lienzo->get_width() / 2 + 10, $pie + 7, 'pilas@riveraco.com.mx', $fuente, 6.5, $blanco);
+            $lienzo->text($lienzo->get_width() - $margen - $fuentes->getTextWidth($paginaTexto, $fuente, 6.5),
+                $pie + 7, $paginaTexto, $fuente, 6.5, $blanco);
+        });
 
         return $pdf->stream($archivo);
     }

@@ -61,13 +61,13 @@ class PresupuestoVolPila extends Model
         $armadoPorCalibre = $this->calibre_varilla_l0 !== null || $this->calibre_varilla_l1 !== null;
         $calibreL0 = (string) ($this->calibre_varilla_l0 ?? self::CALIBRE_PREDETERMINADO);
         $calibreL1 = (string) ($this->calibre_varilla_l1 ?? self::CALIBRE_PREDETERMINADO);
-        $zunchosL0 = $metrosZunchoL0 * self::PESOS_VARILLA[$this->calibre_zuncho_l0 ?? 3];
-        $zunchosL1 = $metrosZunchoL1 * self::PESOS_VARILLA[$this->calibre_zuncho_l1 ?? 4];
-        $zunchosL2 = $metrosZunchoL2 * self::PESOS_VARILLA[$this->calibre_zuncho_l2 ?? 4];
-        // VOL R usa #4 para el traslape del zuncho L1 y #3 para los de L0 y L2.
-        $traslapeZunchoL0 = $this->pesoTraslapeZuncho($metrosZunchoL0, (int) ($this->calibre_zuncho_l0 ?? 3));
-        $traslapeZunchoL1 = $this->pesoTraslapeZuncho($metrosZunchoL1, (int) ($this->calibre_zuncho_l1 ?? ($armadoPorCalibre ? 4 : 3)));
-        $traslapeZunchoL2 = $this->pesoTraslapeZuncho($metrosZunchoL2, (int) ($this->calibre_zuncho_l2 ?? 3));
+        $calibresZuncho = self::calibresZunchoPredeterminados($armadoPorCalibre);
+        $zunchosL0 = $metrosZunchoL0 * self::PESOS_VARILLA[$this->calibre_zuncho_l0 ?? $calibresZuncho['l0']['peso']];
+        $zunchosL1 = $metrosZunchoL1 * self::PESOS_VARILLA[$this->calibre_zuncho_l1 ?? $calibresZuncho['l1']['peso']];
+        $zunchosL2 = $metrosZunchoL2 * self::PESOS_VARILLA[$this->calibre_zuncho_l2 ?? $calibresZuncho['l2']['peso']];
+        $traslapeZunchoL0 = $this->pesoTraslapeZuncho($metrosZunchoL0, (int) ($this->calibre_zuncho_l0 ?? $calibresZuncho['l0']['traslape']));
+        $traslapeZunchoL1 = $this->pesoTraslapeZuncho($metrosZunchoL1, (int) ($this->calibre_zuncho_l1 ?? $calibresZuncho['l1']['traslape']));
+        $traslapeZunchoL2 = $this->pesoTraslapeZuncho($metrosZunchoL2, (int) ($this->calibre_zuncho_l2 ?? $calibresZuncho['l2']['traslape']));
         $traslapeZunchos = $traslapeZunchoL0 + $traslapeZunchoL1 + $traslapeZunchoL2;
         $anclaje = $diametro * 0.4;
         $varillasL0 = $this->varillas_l0 ?? 0;
@@ -87,6 +87,10 @@ class PresupuestoVolPila extends Model
             || $this->calibre_zuncho_l1 !== null || $this->calibre_zuncho_l2 !== null;
         $aceroPorPila = $this->acero_kg_por_pila ?? ($calculoAutomatico ? $aceroCalculado : 0);
 
+        $jornalesExactos = $metrosLineales / $avance;
+        // Evita sumar un jornal por el error de punto flotante de un cociente entero.
+        $jornales = ceil($jornalesExactos - $jornalesExactos * PHP_FLOAT_EPSILON * 4);
+
         // VOL usa el mismo volumen teórico para perforación, concreto y bentonita.
         return [
             'area' => $area,
@@ -94,7 +98,8 @@ class PresupuestoVolPila extends Model
             'longitud_l0' => $longitudL0,
             'avance_metros_por_jornal' => $avance,
             'pilas_por_jornal' => $longitud > 0 ? $avance / $longitud : 0,
-            'jornales' => $metrosLineales / $avance,
+            'jornales' => $jornales,
+            'jornales_exactos' => $jornalesExactos,
             'longitud' => $longitud,
             'zunchos_l0' => $zunchosL0,
             'zunchos_l1' => $zunchosL1,
@@ -103,6 +108,7 @@ class PresupuestoVolPila extends Model
             'traslape_zunchos_l1' => $traslapeZunchoL1,
             'traslape_zunchos_l2' => $traslapeZunchoL2,
             'traslape_zunchos' => $traslapeZunchos,
+            'calibres_zuncho_predeterminados' => $calibresZuncho,
             'calibre_varilla_l0' => (float) $calibreL0,
             'calibre_varilla_l1' => (float) $calibreL1,
             'peso_varillas_l0' => $pesoVarillasL0,
@@ -116,6 +122,15 @@ class PresupuestoVolPila extends Model
             'comision_ml' => max(1, $diametro) * $metrosLineales,
             'acero_kg_por_pila' => (float) $aceroPorPila,
             'acero' => $this->piezas * $aceroPorPila,
+        ];
+    }
+
+    public static function calibresZunchoPredeterminados(bool $armadoPorCalibre): array
+    {
+        return [
+            'l0' => ['peso' => 3, 'traslape' => 3],
+            'l1' => ['peso' => 4, 'traslape' => $armadoPorCalibre ? 4 : 3],
+            'l2' => ['peso' => 4, 'traslape' => 3],
         ];
     }
 

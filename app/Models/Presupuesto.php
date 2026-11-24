@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -172,17 +173,18 @@ class Presupuesto extends Model
     {
         $manual = $this->duracion_apupi ?? [];
         $equipos = (int) ($manual['equipos'] ?? 1);
-        $realista = $manual['realista']['jornales'] ?? ($jornalesVol === null ? null : ceil($jornalesVol));
+        $baseRealista = $manual['realista']['jornales'] ?? $jornalesVol;
+        $realista = $baseRealista === null ? null : ceil((float) $baseRealista);
         // APUPI F7:H9: las duraciones de cada escenario parten de sus jornales.
         $jornales = [
             'realista' => $realista,
-            'optimista' => $realista === null ? null : floor($realista * 0.9),
-            'pesimista' => $realista === null ? null : ceil($realista * 1.2),
+            'optimista' => $realista === null ? null : ceil($realista * 9 / 10),
+            'pesimista' => $realista === null ? null : ceil($realista * 12 / 10),
         ];
 
         $duracion = [];
         foreach ($jornales as $escenario => $estimado) {
-            $jornalesEscenario = $manual[$escenario]['jornales'] ?? $estimado;
+            $jornalesEscenario = isset($manual[$escenario]['jornales']) ? ceil((float) $manual[$escenario]['jornales']) : $estimado;
             $dias = $manual[$escenario]['dias'] ?? ($jornalesEscenario === null ? null : floor($jornalesEscenario + $jornalesEscenario / 6));
             $duracion[$escenario] = [
                 'jornales' => $jornalesEscenario,
@@ -215,6 +217,11 @@ class Presupuesto extends Model
     public function versiones(): HasMany
     {
         return $this->hasMany(PresupuestoVersion::class);
+    }
+
+    public function ultimaVersion(): HasOne
+    {
+        return $this->hasOne(PresupuestoVersion::class)->ofMany('revision', 'max');
     }
 
     public function versionAprobada(): BelongsTo
@@ -315,13 +322,16 @@ class Presupuesto extends Model
 
         public function calcularVolumetria(): array
         {
-            $filas = $this->pilasVol()->orderBy('id')->get()->map(fn (PresupuestoVolPila $pila) => [
+            $pilas = $this->relationLoaded('pilasVol')
+                ? $this->pilasVol->sortBy('id')->values()
+                : $this->pilasVol()->orderBy('id')->get();
+            $filas = $pilas->map(fn (PresupuestoVolPila $pila) => [
                 'pila' => $pila,
                 'vol' => $pila->volumetria((float) $this->vol_traslape_varilla),
             ]);
 
             $totales = ['piezas' => $filas->sum('pila.piezas')];
-            foreach (['jornales', 'perforacion', 'metros_lineales', 'concreto', 'bentonita', 'retiro', 'comision_ml', 'acero'] as $campo) {
+            foreach (['jornales', 'jornales_exactos', 'perforacion', 'metros_lineales', 'concreto', 'bentonita', 'retiro', 'comision_ml', 'acero'] as $campo) {
                 $totales[$campo] = $filas->sum('vol.' . $campo);
             }
 
