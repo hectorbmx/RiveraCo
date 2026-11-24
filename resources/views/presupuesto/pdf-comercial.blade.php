@@ -14,11 +14,11 @@
         .marca img { display: block; }
         .membrete .empresa { padding-right: 36pt; font-size: 6.8pt; line-height: 1.25; }
         .empresa strong { display: block; font-size: 13pt; line-height: 1.15; margin-bottom: 2pt; }
-        .ficha { margin-top: 6pt; font-size: 7pt; line-height: 1.16; color: #505a70; }
-        .ficha td { width: 59%; vertical-align: top; }
-        .ficha .derecha { width: 41%; padding-left: 10pt; }
+        .ficha { margin-top: 6pt; table-layout: fixed; font-size: 7pt; line-height: 1.16; color: #505a70; }
+        .ficha .ficha-cliente { width: 68%; vertical-align: top; }
+        .ficha .derecha { width: 32%; vertical-align: top; }
         .ficha .fecha { margin-bottom: 2pt; }
-        .ficha .datos-cliente { padding-top: 2pt; font-size: 6.8pt; overflow-wrap: break-word; }
+        .ficha .datos-cliente { padding: 2pt 10pt 0 0; font-size: 6.8pt; overflow-wrap: break-word; }
         .derecha { text-align: right; }
         .rotulo { color: #1c2781; font-size: 7.5pt; font-weight: bold; letter-spacing: 1.3pt; }
         .cliente, .identificador { line-height: 1.2; color: #1b2134; font-weight: bold; overflow-wrap: break-word; }
@@ -98,16 +98,18 @@
 </table>
 <table class="ficha">
     <tr>
-        <td><div class="cliente">{{ $cabecera['cliente'] }}</div></td>
+        <td class="ficha-cliente">
+            <div class="cliente">{{ $cabecera['cliente'] }}</div>
+            @if($datosCliente !== '')
+                <div class="datos-cliente">{{ $datosCliente }}</div>
+            @endif
+        </td>
         <td class="derecha">
             <div class="fecha">{{ $cabecera['fecha'] }}</div>
             <div class="identificador">{{ $cabecera['folio'] }}</div>
             @if($cabecera['obra'])<div class="identificador">{{ $cabecera['obra'] }}</div>@endif
         </td>
     </tr>
-    @if($datosCliente !== '')
-        <tr><td colspan="2" class="datos-cliente">{{ $datosCliente }}</td></tr>
-    @endif
 </table>
 
 <table class="conceptos">
