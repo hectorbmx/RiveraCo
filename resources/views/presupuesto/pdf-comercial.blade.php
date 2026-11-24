@@ -18,6 +18,7 @@
         .ficha td { width: 59%; vertical-align: top; }
         .ficha .derecha { width: 41%; padding-left: 10pt; }
         .ficha .fecha { margin-bottom: 2pt; }
+        .ficha .datos-cliente { padding-top: 2pt; font-size: 6.8pt; overflow-wrap: break-word; }
         .derecha { text-align: right; }
         .rotulo { color: #1c2781; font-size: 7.5pt; font-weight: bold; letter-spacing: 1.3pt; }
         .cliente, .identificador { line-height: 1.2; color: #1b2134; font-weight: bold; overflow-wrap: break-word; }
@@ -25,8 +26,8 @@
         .identificador { font-size: 12pt; }
         .conceptos { margin-top: 8pt; table-layout: fixed; }
         .conceptos thead { display: table-header-group; }
-        .conceptos thead th { background: #1c2781; color: #fff; padding: 4pt 5pt; font-size: 7.3pt; letter-spacing: .6pt; }
-        .conceptos td { padding: 2.5pt 5pt; vertical-align: top; border-bottom: .5pt solid #dce1ef; }
+        .conceptos thead th { background: #1c2781; color: #fff; padding: 4pt; font-size: 7.3pt; letter-spacing: .6pt; }
+        .conceptos td { padding: 2.5pt 4pt; vertical-align: top; border-bottom: .5pt solid #dce1ef; }
         .conceptos td:first-child { overflow-wrap: break-word; }
         .conceptos tr, .notas tr { page-break-inside: avoid; }
         .conceptos tbody tr:nth-child(even) { background: #eff2fa; }
@@ -37,14 +38,15 @@
         .conceptos .subrenglon { padding-left: 17pt; }
         .importe { font-weight: bold; }
         .cierre { margin-top: 6pt; page-break-inside: avoid; }
+        .datos-ejecucion { padding-right: 10pt; }
         .cierre p { margin: 0 8pt 3pt 0; }
         .anticipo { color: #a41111; font-weight: bold; }
         .totales td { padding: 2pt 8pt; color: #505a70; }
         .totales .total td { padding: 4pt 8pt; font-size: 9pt; font-weight: bold; color: #fff; background: #1c2781; }
-        .nota-ejecucion { margin: 4pt 0 7pt; overflow-wrap: break-word; }
-        .nota-ejecucion p, .nota-ejecucion ol, .nota-ejecucion ul { margin: 0 0 3pt; }
-        .nota-ejecucion ol, .nota-ejecucion ul { padding-left: 15pt; }
-        .nota-ejecucion h2 { font-size: 7.5pt; margin: 0 0 3pt; page-break-after: avoid; }
+        .nota-ejecucion { margin: 3pt 0 0; font-size: 6.7pt; line-height: 1.15; overflow-wrap: break-word; }
+        .nota-ejecucion p, .nota-ejecucion ol, .nota-ejecucion ul { margin: 0 0 1pt; }
+        .nota-ejecucion ol, .nota-ejecucion ul { padding-left: 11pt; }
+        .nota-ejecucion h2 { font-size: 7pt; margin: 0 0 2pt; page-break-after: avoid; }
         .notas h2 { color: #1c2781; border-bottom: 1pt solid #1c2781; margin: 0 0 4pt; padding-bottom: 3pt; }
         .notas table { margin-top: 8pt; table-layout: fixed; font-size: 6.4pt; line-height: 1.17; color: #333d54; }
         .notas thead { display: table-header-group; }
@@ -60,6 +62,7 @@
             .conceptos { margin-top: 6pt; font-size: 7.2pt; line-height: 1.12; }
             .conceptos td { padding-top: 1.6pt; padding-bottom: 1.6pt; }
             .cierre { margin-top: 4pt; }
+            .nota-ejecucion { font-size: 6.4pt; }
             .notas table { margin-top: 6pt; font-size: 6.2pt; line-height: 1.12; }
         @endif
     </style>
@@ -69,6 +72,18 @@
     $moneda = fn ($valor) => '$' . number_format($valor, 2);
     $decimal = fn ($valor) => rtrim(rtrim(number_format($valor, 2, '.', ''), '0'), '.');
     $presentacion += array_fill_keys(['domicilio', 'correo', 'telefono', 'atencion', 'ubicacion', 'anticipo', 'condiciones_pago', 'plazo_semanas', 'tasa_iva', 'notas'], null);
+    $datosCliente = collect([
+        $presentacion['atencion'] ? 'Atención ' . $presentacion['atencion'] : null,
+        ...preg_split('/\R/u', (string) $presentacion['domicilio']),
+        $presentacion['correo'],
+        $presentacion['telefono'] ? 'Tel. ' . $presentacion['telefono'] : null,
+        $cabecera['referencia'] ? 'Referencia ' . $cabecera['referencia'] : null,
+        $presentacion['ubicacion'] ? 'Ubicación ' . $presentacion['ubicacion'] : null,
+        !isset($presentacion['tasa_iva']) && $cabecera['equipo'] ? 'Equipo propuesto ' . $cabecera['equipo'] : null,
+    ])->map(fn ($dato) => trim((string) $dato))->filter()->implode(' · ');
+    $operacionesNota = $presentacion['nota_ejecucion'] ?? [];
+    $textoNota = implode('', array_column($operacionesNota, 'insert'));
+    $notaEnCierre = mb_strlen($textoNota) <= 1500 && substr_count($textoNota, "\n") <= 35;
 @endphp
 <table class="membrete">
     <tr>
@@ -83,32 +98,26 @@
 </table>
 <table class="ficha">
     <tr>
-        <td>
-            <div class="cliente">{{ $cabecera['cliente'] }}</div>
-            @if($presentacion['atencion'])<div>Atención {{ $presentacion['atencion'] }}</div>@endif
-            @if($presentacion['domicilio'])<div>{!! nl2br(e($presentacion['domicilio'])) !!}</div>@endif
-            @if($presentacion['correo'])<div>{{ $presentacion['correo'] }}</div>@endif
-            @if($presentacion['telefono'])<div>Tel. {{ $presentacion['telefono'] }}</div>@endif
-            @if($cabecera['referencia'])<div>Referencia {{ $cabecera['referencia'] }}</div>@endif
-            @if($presentacion['ubicacion'])<div>Ubicación {{ $presentacion['ubicacion'] }}</div>@endif
-            @if(!isset($presentacion['tasa_iva']) && $cabecera['equipo'])<div>Equipo propuesto {{ $cabecera['equipo'] }}</div>@endif
-        </td>
+        <td><div class="cliente">{{ $cabecera['cliente'] }}</div></td>
         <td class="derecha">
             <div class="fecha">{{ $cabecera['fecha'] }}</div>
             <div class="identificador">{{ $cabecera['folio'] }}</div>
             @if($cabecera['obra'])<div class="identificador">{{ $cabecera['obra'] }}</div>@endif
         </td>
     </tr>
+    @if($datosCliente !== '')
+        <tr><td colspan="2" class="datos-cliente">{{ $datosCliente }}</td></tr>
+    @endif
 </table>
 
 <table class="conceptos">
     <thead>
         <tr>
-            <th scope="col" style="width:53%;text-align:left;">CONCEPTO</th>
-            <th scope="col" style="width:10%;">UNIDAD</th>
+            <th scope="col" style="width:58%;text-align:left;">CONCEPTO</th>
+            <th scope="col" style="width:8%;">UNIDAD</th>
             <th scope="col" class="cantidad" style="width:10%;">CANT.</th>
-            <th scope="col" class="cantidad" style="width:12%;">P.U.</th>
-            <th scope="col" class="cantidad" style="width:15%;">IMPORTE</th>
+            <th scope="col" class="cantidad" style="width:10%;">P.U.</th>
+            <th scope="col" class="cantidad" style="width:14%;">IMPORTE</th>
         </tr>
     </thead>
     <tbody>
@@ -130,13 +139,19 @@
 </table>
 <table class="cierre">
     <tr>
-        <td>
+        <td class="datos-ejecucion">
             @if($presentacion['anticipo'] !== null)
                 <p class="anticipo">Anticipo del {{ $decimal($presentacion['anticipo']) }} %.</p>
             @endif
             @if($presentacion['condiciones_pago'])<p>{!! nl2br(e($presentacion['condiciones_pago'])) !!}</p>@endif
             @if($presentacion['plazo_semanas'] !== null)
                 <p><strong>Periodo de ejecución</strong> {{ $decimal($presentacion['plazo_semanas']) }} semanas aproximadamente.</p>
+            @endif
+            @if($operacionesNota && $notaEnCierre)
+                <section class="nota-ejecucion">
+                    <h2>Notas de ejecución</h2>
+                    {!! \App\Support\PresentacionPresupuesto::htmlNotaEjecucion($operacionesNota) !!}
+                </section>
             @endif
         </td>
         <td style="width: 186pt;">
@@ -150,10 +165,10 @@
         </td>
     </tr>
 </table>
-@if(!empty($presentacion['nota_ejecucion']))
+@if($operacionesNota && !$notaEnCierre)
     <section class="nota-ejecucion">
         <h2>Notas de ejecución</h2>
-        {!! \App\Support\PresentacionPresupuesto::htmlNotaEjecucion($presentacion['nota_ejecucion']) !!}
+        {!! \App\Support\PresentacionPresupuesto::htmlNotaEjecucion($operacionesNota) !!}
     </section>
 @endif
 @if($presentacion['notas'])
