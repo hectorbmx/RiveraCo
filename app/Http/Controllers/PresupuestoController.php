@@ -129,7 +129,7 @@ class PresupuestoController extends Controller
         }
 
         $vol = $presupuesto->calcularVolumetria();
-        $duracion = $presupuesto->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+        $duracion = $this->duracionApupiDesdeVol($presupuesto, $vol);
         [$costos, $resumen] = $this->calcularApupi($presupuesto, $vol, $duracion);
         $directo = $resumen['realista']['total_directo'];
 
@@ -267,7 +267,7 @@ class PresupuestoController extends Controller
         DB::transaction(function () use ($presupuesto, $renglon, $datos) {
             $actual = $this->bloquearBorrador($presupuesto);
             $vol = $actual->calcularVolumetria();
-            $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+            $duracion = $this->duracionApupiDesdeVol($actual, $vol);
             $filas = $this->filasPropuesta($actual, $vol, $duracion)
                 ->filter(fn (array $fila) => $fila['cantidad'] > 0 && $fila['precio_unitario'] > 0);
             $captura = $actual->presentacion_comercial ?? [];
@@ -384,7 +384,7 @@ class PresupuestoController extends Controller
     private function calcularPrevio(Presupuesto $presupuesto): array
     {
         $vol = $presupuesto->calcularVolumetria();
-        $duracion = $presupuesto->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+        $duracion = $this->duracionApupiDesdeVol($presupuesto, $vol);
         [$costos, $resumen] = $this->calcularApupi($presupuesto, $vol, $duracion);
 
         return [$resumen['propuesta'], PrevioPresupuesto::preparar($presupuesto, $costos, $resumen['propuesta'], $duracion)];
@@ -453,7 +453,7 @@ class PresupuestoController extends Controller
         DB::transaction(function () use ($presupuesto, $detalle, $datos) {
             $actual = $this->bloquearBorrador($presupuesto);
             $vol = $actual->calcularVolumetria();
-            $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+            $duracion = $this->duracionApupiDesdeVol($actual, $vol);
             $propuesta = $this->filasPropuesta($actual, $vol, $duracion);
             $filas = $actual->filasApupi($duracion, PropuestaApupi::totalVenta($propuesta));
             $fila = $filas->get($detalle) ?? (ctype_digit($detalle) ? $filas->firstWhere('detalle.id', '===', (int) $detalle) : null);
@@ -530,7 +530,7 @@ class PresupuestoController extends Controller
         DB::transaction(function () use ($presupuesto, $renglon, $datos) {
             $actual = $this->bloquearBorrador($presupuesto);
             $vol = $actual->calcularVolumetria();
-            $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+            $duracion = $this->duracionApupiDesdeVol($actual, $vol);
             $filas = $this->filasPropuesta($actual, $vol, $duracion);
             $fila = $filas->get($renglon);
             abort_if($fila === null, 404);
@@ -561,6 +561,11 @@ class PresupuestoController extends Controller
         return $this->respuestaCostoApupi($request, $presupuesto);
     }
 
+    private function duracionApupiDesdeVol(Presupuesto $presupuesto, array $vol): array
+    {
+        return $presupuesto->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales_exactos']);
+    }
+
     private function filasPropuesta(Presupuesto $presupuesto, array $vol, array $duracion): Collection
     {
         return PropuestaApupi::filas($presupuesto, $vol, $presupuesto->filasApupi($duracion), $duracion['realista']['semanas']);
@@ -581,7 +586,7 @@ class PresupuestoController extends Controller
         if ($request->expectsJson()) {
             $presupuesto->refresh();
             $vol = $presupuesto->calcularVolumetria();
-            $duracion = $presupuesto->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+            $duracion = $this->duracionApupiDesdeVol($presupuesto, $vol);
 
             [$costos, $resumen] = $this->calcularApupi($presupuesto, $vol, $duracion);
             $resumen['presentacion'] = PresentacionPresupuesto::preparar($presupuesto, $costos, $resumen, $duracion);
@@ -672,7 +677,7 @@ class PresupuestoController extends Controller
             return redirect()->route('presupuesto.versiones.show', [$presupuesto, $presupuesto->version_aprobada_id]);
         }
         $volumetria = $presupuesto->calcularVolumetria();
-        $duracionApupi = $presupuesto->duracionApupi($volumetria['filas']->isEmpty() ? null : $volumetria['totales']['jornales']);
+        $duracionApupi = $this->duracionApupiDesdeVol($presupuesto, $volumetria);
         $editarVol = $volumetria['filas']->firstWhere('pila.id', $request->integer('editar_pila'))['pila'] ?? null;
         $diametrosVol = $this->diametrosPilasVol();
 
@@ -723,7 +728,7 @@ class PresupuestoController extends Controller
             $origenBorrador = $actual->version_origen_borrador_id;
             $actual->load(['cliente', 'detalles', 'pilas', 'resumenes']);
             $vol = $actual->calcularVolumetria();
-            $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+            $duracion = $this->duracionApupiDesdeVol($actual, $vol);
             [$costos, $resumen] = $this->calcularApupi($actual, $vol, $duracion);
             $autor = $request->user()->getKey();
             $version = $actual->versiones()->create([
@@ -932,7 +937,7 @@ class PresupuestoController extends Controller
         $relacion = DB::transaction(function () use ($presupuesto, $cambios, $restablecer): array {
             $actual = $this->bloquearBorrador($presupuesto);
             $vol = $actual->calcularVolumetria();
-            $duracion = $actual->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+            $duracion = $this->duracionApupiDesdeVol($actual, $vol);
             [$costos] = $this->calcularApupi($actual, $vol, $duracion);
             $base = $this->gastosBase($actual);
             $ajustes = $restablecer ? [] : ($actual->ajustes_gastos_semanales ?? []);
@@ -1163,7 +1168,7 @@ class PresupuestoController extends Controller
             }
         }
         $vol = $presupuesto->calcularVolumetria();
-        $duracion = $presupuesto->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales']);
+        $duracion = $this->duracionApupiDesdeVol($presupuesto, $vol);
         [$costos, $resumen] = $this->calcularApupi($presupuesto, $vol, $duracion);
         $presentacion = PresentacionPresupuesto::preparar($presupuesto, $costos, $resumen, $duracion);
         if (empty($presentacion['filas'])) {

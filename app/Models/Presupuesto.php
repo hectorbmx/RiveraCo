@@ -176,11 +176,11 @@ class Presupuesto extends Model
         $manual = $this->duracion_apupi ?? [];
         $equipos = (int) ($manual['equipos'] ?? 1);
         $baseRealista = $manual['realista']['jornales'] ?? $jornalesVol;
-        $realista = $baseRealista === null ? null : ceil((float) $baseRealista);
-        // APUPI F7:H9: las duraciones de cada escenario parten de sus jornales.
+        $realista = $baseRealista === null ? null : ceil(round((float) $baseRealista, 12));
+        // APUPI F7:H7: el optimista redondea hacia abajo y el pesimista hacia arriba.
         $jornales = [
             'realista' => $realista,
-            'optimista' => $realista === null ? null : ceil($realista * 9 / 10),
+            'optimista' => $realista === null ? null : floor($realista * 9 / 10),
             'pesimista' => $realista === null ? null : ceil($realista * 12 / 10),
         ];
 

@@ -15,6 +15,40 @@ use Tests\TestCase;
 
 class PresupuestoCabeceraTest extends TestCase
 {
+    public function test_apupi_suma_jornales_exactos_y_redondea_los_escenarios_como_excel(): void
+    {
+        $this->assertSame('rivera_v2_testing', DB::connection()->getDatabaseName());
+        $this->assertSame('127.0.0.1', DB::connection()->getConfig('host'));
+        $this->withoutExceptionHandling();
+        $this->actingAs(User::factory()->make());
+
+        DB::beginTransaction();
+        try {
+            $presupuesto = Presupuesto::create([
+                'codigo_proyecto' => 'PRUEBA-APUPI-' . str()->uuid(),
+                'nombre_cliente' => 'Cliente de prueba APUPI',
+                'origen' => Presupuesto::ORIGEN_SIRICO,
+            ]);
+            $base = ['longitud_l0' => 7, 'pilas_por_jornal' => 8, 'avance_metros_por_jornal' => 56];
+            $presupuesto->pilasVol()->createMany([
+                $base + ['tipo' => 'P1', 'diametro' => 0.8, 'piezas' => 16],
+                $base + ['tipo' => 'P2', 'diametro' => 0.6, 'piezas' => 4],
+                $base + ['tipo' => 'P3', 'diametro' => 0.6, 'piezas' => 2],
+            ]);
+
+            $this->get(route('presupuesto.show', [$presupuesto, 'tab' => 'apupi']))
+                ->assertOk()
+                ->assertViewHas('duracionApupi', fn (array $duracion) => array_column($duracion, 'jornales') === [3.0, 2.0, 4.0]);
+            $this->patchJson(route('presupuesto.apupi.update', [$presupuesto, 'apupi-38']), ['cantidad' => 1, 'precio_unitario' => 1200])
+                ->assertOk()
+                ->assertJsonPath('filas.apupi-38.realista', 3600)
+                ->assertJsonPath('filas.apupi-38.optimista', 2400)
+                ->assertJsonPath('filas.apupi-38.pesimista', 4800);
+        } finally {
+            DB::rollBack();
+        }
+    }
+
     public function test_el_alta_asigna_folios_mensuales_y_recupera_la_captura_en_el_modal(): void
     {
         $this->assertSame('rivera_v2_testing', DB::connection()->getDatabaseName());
