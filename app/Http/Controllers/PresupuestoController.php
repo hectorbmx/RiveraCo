@@ -43,8 +43,12 @@ class PresupuestoController extends Controller
 
     public function index(Request $request)
     {
-        $request->validate(['buscar' => ['nullable', 'string', 'max:255']]);
-        $buscar = trim((string) $request->input('buscar', ''));
+        $filtros = $request->validate([
+            'buscar' => ['nullable', 'string', 'max:255'],
+            'tipo' => ['nullable', 'string', Rule::in(array_keys(Presupuesto::TIPOS))],
+        ], [], ['tipo' => 'tipo de presupuesto']);
+        $buscar = trim($filtros['buscar'] ?? '');
+        $tipoFiltro = $filtros['tipo'] ?? null;
         $movimientos = PresupuestoEvento::query()
             ->select('presupuesto_eventos.id')
             ->join('presupuesto_versiones', 'presupuesto_versiones.id', '=', 'presupuesto_eventos.presupuesto_version_id')
@@ -68,6 +72,7 @@ class PresupuestoController extends Controller
                 'ultimoMovimiento.version:id,presupuesto_id,revision',
                 'aceptacionVigente.version:id,presupuesto_id,revision',
             ])
+            ->when($tipoFiltro !== null, fn ($query) => $query->where('presupuestos.tipo', $tipoFiltro))
             ->when($buscar !== '', function ($query) use ($buscar) {
                 $literal = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $buscar);
                 $query->where(function ($query) use ($literal) {
@@ -97,7 +102,7 @@ class PresupuestoController extends Controller
         $foliosNuevos = $this->folios->resumen(FoliosPresupuesto::periodoActual());
         $imagenesTipoPresupuesto = $this->imagenes->rutas();
 
-        return view('presupuesto.index', compact('presupuestos', 'buscar', 'importes', 'nuevoPresupuesto', 'clienteSeleccionado', 'foliosNuevos', 'imagenesTipoPresupuesto'));
+        return view('presupuesto.index', compact('presupuestos', 'buscar', 'tipoFiltro', 'importes', 'nuevoPresupuesto', 'clienteSeleccionado', 'foliosNuevos', 'imagenesTipoPresupuesto'));
     }
 
     private function versionComercialUnica(Presupuesto $presupuesto): ?PresupuestoVersion
@@ -636,6 +641,8 @@ class PresupuestoController extends Controller
                 : ['prohibited'],
             'cliente_id' => [$importado ? 'nullable' : 'required', 'integer', Rule::exists('clientes', 'id')],
             'nombre_obra' => [$importado ? 'nullable' : 'required', 'string', 'max:255'],
+            'estado' => ['nullable', 'string', 'digits:2', Rule::in(array_keys(config('sat_catalogs.estados')))],
+            'ciudad' => ['nullable', 'string', 'max:120'],
             'equipo_propuesto' => ['nullable', Rule::in(array_keys(Presupuesto::EQUIPOS_PROPUESTOS))],
         ], [], ['tipo' => 'tipo de presupuesto', 'codigo_proyecto' => 'folio', 'cliente_id' => 'cliente', 'nombre_obra' => 'nombre de obra', 'equipo_propuesto' => 'equipo propuesto']);
 

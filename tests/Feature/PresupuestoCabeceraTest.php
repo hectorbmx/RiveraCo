@@ -115,6 +115,8 @@ class PresupuestoCabeceraTest extends TestCase
                 'cliente_id' => $cliente->id,
                 'nombre_obra' => 'Obra de prueba para presupuesto',
                 'equipo_propuesto' => 'retro',
+                'estado' => '14',
+                'ciudad' => 'Zapopan',
             ];
 
             foreach ([$datos, $datos + ['tipo' => 'OTRO']] as $capturaInvalida) {
@@ -126,10 +128,14 @@ class PresupuestoCabeceraTest extends TestCase
             $this->from($listado)->post(route('presupuesto.store'), array_replace($datos, ['tipo' => 'MUROS', 'nombre_obra' => '']))
                 ->assertRedirect($listado)
                 ->assertSessionHasErrorsIn('datosPresupuesto', ['nombre_obra']);
+            $this->from($listado)->post(route('presupuesto.store'), array_replace($datos, ['tipo' => 'MUROS', 'estado' => '99']))
+                ->assertRedirect($listado)
+                ->assertSessionHasErrorsIn('datosPresupuesto', ['estado']);
             $this->get($listado)->assertOk()
                 ->assertSee('x-init="$el.showModal()"', false)
                 ->assertSee('value="MUROS" required x-model="tipoElegido" checked', false)
                 ->assertSee('value="' . $cliente->id . '" :value="seleccionado', false)
+                ->assertSee('value="Zapopan"', false)
                 ->assertSee('MU3111-10')
                 ->assertSee('images/SVG/Muros.svg');
             $this->assertDatabaseMissing('presupuesto_folios', ['tipo' => 'MUROS', 'periodo' => '2031-11']);
@@ -137,16 +143,23 @@ class PresupuestoCabeceraTest extends TestCase
             $alta = $this->from($listado)->post(route('presupuesto.store'), $datos + ['tipo' => 'MUROS']);
             $presupuesto = Presupuesto::where('codigo_proyecto', 'MU3111-10')->sole();
             $this->assertSame('MUROS', $presupuesto->tipo);
+            $this->assertSame('14', $presupuesto->estado);
+            $this->assertSame('Zapopan', $presupuesto->ciudad);
             $this->assertNotNull($presupuesto->folio_serie_id);
             $alta->assertRedirect(route('presupuesto.show', $presupuesto) . '#datos-generales');
 
             $this->get(route('presupuesto.show', $presupuesto))->assertOk()->assertSee('MUROS');
-            $this->get($listado)->assertOk()->assertSee('MU3111-10')->assertSee('MU3111-11');
+            $this->get($listado)->assertOk()->assertSee('MU3111-10')->assertSee('MU3111-11')
+                ->assertSeeInOrder(['MU3111-10', 'Jalisco', '>Zapopan</td>'], false);
 
             $this->patch(route('presupuesto.update', $presupuesto), $datos + ['tipo' => 'POZOS', 'codigo_proyecto' => 'OTRO'])
                 ->assertSessionHasErrorsIn('datosPresupuesto', ['tipo', 'codigo_proyecto']);
-            $this->patch(route('presupuesto.update', $presupuesto), $datos)->assertRedirect();
-            $this->assertSame('MU3111-10', $presupuesto->fresh()->codigo_proyecto);
+            $this->patch(route('presupuesto.update', $presupuesto), array_replace($datos, ['estado' => '01', 'ciudad' => 'Calvillo']))
+                ->assertRedirect();
+            $presupuesto->refresh();
+            $this->assertSame('MU3111-10', $presupuesto->codigo_proyecto);
+            $this->assertSame('01', $presupuesto->estado);
+            $this->assertSame('Calvillo', $presupuesto->ciudad);
 
             $configuracion = route('empresa_config.edit', ['tab' => 'folios', 'folio_seccion' => 'presupuestos', 'folio_periodo' => '2031-11']);
             $imagenes = app(ImagenesTipoPresupuesto::class);
@@ -187,6 +200,10 @@ class PresupuestoCabeceraTest extends TestCase
             $altaPilas = $this->post(route('presupuesto.store'), $datos + ['tipo' => 'PILAS']);
             $pilas = Presupuesto::where('codigo_proyecto', 'PI3111-01')->sole();
             $altaPilas->assertRedirect(route('presupuesto.show', [$pilas, 'tab' => 'pilas']));
+            $this->get(route('presupuesto.index', ['buscar' => $cliente->nombre_comercial, 'tipo' => 'PILAS']))
+                ->assertOk()->assertSee($pilas->codigo_proyecto)->assertDontSee($presupuesto->codigo_proyecto);
+            $this->get(route('presupuesto.index', ['buscar' => $cliente->nombre_comercial, 'tipo' => 'POZOS']))
+                ->assertOk()->assertSee('No se encontraron presupuestos con los filtros seleccionados.');
 
             $this->travelTo(now('America/Mexico_City')->addMonth());
             $this->assertSame('MU3112-01', app(FoliosPresupuesto::class)->resumen('2031-12')['MUROS']['siguiente']);

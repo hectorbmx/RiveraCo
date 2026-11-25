@@ -147,6 +147,28 @@
                 <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
             @enderror
         </div>
+        <div class="grid gap-3 sm:grid-cols-2">
+            <div>
+                <label for="presupuesto-estado" class="block text-sm font-medium text-slate-700">Estado de la obra</label>
+                <select id="presupuesto-estado" name="estado" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+                    <option value="">Seleccionar estado</option>
+                    @foreach(config('sat_catalogs.estados') as $clave => $estado)
+                        <option value="{{ $clave }}" @selected(old('estado', $presupuesto->estado) === (string) $clave)>{{ \Illuminate\Support\Str::after($estado, ' - ') }}</option>
+                    @endforeach
+                </select>
+                @error('estado', 'datosPresupuesto')
+                    <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
+                @enderror
+            </div>
+            <div>
+                <label for="presupuesto-ciudad" class="block text-sm font-medium text-slate-700">Ciudad de la obra</label>
+                <input id="presupuesto-ciudad" name="ciudad" maxlength="120" value="{{ old('ciudad', $presupuesto->ciudad) }}"
+                       class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+                @error('ciudad', 'datosPresupuesto')
+                    <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
         <div>
             <label for="presupuesto-equipo" class="block text-sm font-medium text-slate-700">Equipo propuesto</label>
             <select id="presupuesto-equipo" name="equipo_propuesto" class="mt-1 w-full rounded-lg border-slate-300 text-sm">

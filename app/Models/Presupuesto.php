@@ -49,6 +49,8 @@ class Presupuesto extends Model
         'origen',
         'cliente_id',
         'nombre_obra',
+        'estado',
+        'ciudad',
         'equipo_propuesto',
     ];
 

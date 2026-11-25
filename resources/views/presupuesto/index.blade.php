@@ -21,6 +21,7 @@
     </dialog>
 
 @php
+    $estados = config('sat_catalogs.estados');
     $estadoBadge = function ($estado) {
         $estado = strtolower(trim((string) $estado));
         return match ($estado) {
@@ -43,8 +44,20 @@
                     <p class="mt-1 text-xs text-red-700">{{ $message }}</p>
                 @enderror
             </div>
-            <button type="submit" class="rounded-xl bg-[#0B265A] px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">Buscar</button>
-            @if($buscar !== '')
+            <div>
+                <label for="filtrar-tipo-presupuesto" class="mb-1 block text-sm font-medium text-slate-700">Tipo de presupuesto</label>
+                <select id="filtrar-tipo-presupuesto" name="tipo" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="">Todos los tipos</option>
+                    @foreach(array_keys(\App\Models\Presupuesto::TIPOS) as $tipo)
+                        <option value="{{ $tipo }}" @selected($tipoFiltro === $tipo)>{{ $tipo }}</option>
+                    @endforeach
+                </select>
+                @error('tipo')
+                    <p class="mt-1 text-xs text-red-700">{{ $message }}</p>
+                @enderror
+            </div>
+            <button type="submit" class="rounded-xl bg-[#0B265A] px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">Filtrar</button>
+            @if($buscar !== '' || $tipoFiltro !== null)
                 <a href="{{ route('presupuesto.index') }}" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-white">Limpiar</a>
             @endif
         </form>
@@ -55,9 +68,11 @@
                     <th class="p-2 border font-semibold text-center">Código Proyecto</th>
                     <th class="p-2 border font-semibold text-left">Tipo</th>
                     <th class="p-2 border font-semibold text-left">Cliente</th>
+                    <th class="p-2 border font-semibold text-left">Estado</th>
+                    <th class="p-2 border font-semibold text-left">Ciudad</th>
                     <th class="p-2 border font-semibold text-center">Costo Directo</th>
                     <th class="p-2 border font-semibold text-center">Total Presupuesto</th>
-                    <th class="p-2 border font-semibold text-center">Estado</th>
+                    <th class="p-2 border font-semibold text-center">Estatus</th>
                     <th class="p-2 border font-semibold text-left">Seguimiento</th>
                     <th class="p-2 border font-semibold text-center">Origen</th>
                     <th class="p-2 border font-semibold text-center">Fecha de alta</th>
@@ -81,6 +96,10 @@
                     <td class="p-2 border text-left">
                         {{ $presupuesto->nombreClienteVisible() }}
                     </td>
+                    <td class="p-2 border">
+                        {{ \Illuminate\Support\Str::after($estados[$presupuesto->estado] ?? '—', ' - ') }}
+                    </td>
+                    <td class="p-2 border">{{ $presupuesto->ciudad ?? '—' }}</td>
                     <td class="p-2 border text-center">
                         {{ $importes[$presupuesto->id]['directo'] === null ? '—' : '$' . number_format($importes[$presupuesto->id]['directo'], 2) }}
                     </td>
@@ -143,8 +162,8 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="10" class="px-5 py-10 text-center text-slate-500">
-                        {{ $buscar !== '' ? 'No se encontraron presupuestos con ese cliente o código.' : 'Aún no hay presupuestos.' }}
+                    <td colspan="12" class="px-5 py-10 text-center text-slate-500">
+                        {{ $buscar !== '' || $tipoFiltro !== null ? 'No se encontraron presupuestos con los filtros seleccionados.' : 'Aún no hay presupuestos.' }}
                     </td>
                 </tr>
             @endforelse
