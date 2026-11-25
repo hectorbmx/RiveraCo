@@ -31,6 +31,7 @@ use App\Support\PropuestaApupi;
 use App\Support\RelacionGastosPresupuesto;
 use App\Support\PlaneacionSemanalPresupuesto;
 use App\Support\PlaneacionVersionObra;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -46,6 +47,7 @@ class PresupuestoController extends Controller
         $filtros = $request->validate([
             'buscar' => ['nullable', 'string', 'max:255'],
             'tipo' => ['nullable', 'string', Rule::in(array_keys(Presupuesto::TIPOS))],
+            'duplicar' => ['nullable', 'integer', 'min:1'],
         ], [], ['tipo' => 'tipo de presupuesto']);
         $buscar = trim($filtros['buscar'] ?? '');
         $tipoFiltro = $filtros['tipo'] ?? null;
@@ -97,12 +99,23 @@ class PresupuestoController extends Controller
 
         $importes = $presupuestos->mapWithKeys(fn (Presupuesto $p) => [$p->id => $this->importesListado($p)]);
 
+        $origenDuplicacion = isset($filtros['duplicar']) ? Presupuesto::findOrFail($filtros['duplicar']) : null;
+        $versionDuplicacion = $origenDuplicacion?->versionParaDuplicar();
+        abort_if($origenDuplicacion && ! $versionDuplicacion, 404, 'Guarda una versión para poder duplicar.');
         $nuevoPresupuesto = new Presupuesto(['origen' => Presupuesto::ORIGEN_SIRICO]);
+        if ($versionDuplicacion) {
+            $versionDuplicacion->setRelation('presupuesto', $origenDuplicacion);
+            $nuevoPresupuesto->fill($origenDuplicacion->only(['tipo', 'estado', 'ciudad']) + [
+                'cliente_id' => $versionDuplicacion->datos['cliente']['id'] ?? null,
+                'nombre_obra' => $versionDuplicacion->datos['presupuesto']['nombre_obra'] ?? null,
+                'equipo_propuesto' => $versionDuplicacion->datos['presupuesto']['equipo_propuesto'] ?? null,
+            ]);
+        }
         $clienteSeleccionado = $this->clienteSeleccionado($request, $nuevoPresupuesto);
         $foliosNuevos = $this->folios->resumen(FoliosPresupuesto::periodoActual());
         $imagenesTipoPresupuesto = $this->imagenes->rutas();
 
-        return view('presupuesto.index', compact('presupuestos', 'buscar', 'tipoFiltro', 'importes', 'nuevoPresupuesto', 'clienteSeleccionado', 'foliosNuevos', 'imagenesTipoPresupuesto'));
+        return view('presupuesto.index', compact('presupuestos', 'buscar', 'tipoFiltro', 'importes', 'nuevoPresupuesto', 'clienteSeleccionado', 'foliosNuevos', 'imagenesTipoPresupuesto', 'origenDuplicacion', 'versionDuplicacion'));
     }
 
     private function versionComercialUnica(Presupuesto $presupuesto): ?PresupuestoVersion
@@ -193,6 +206,50 @@ class PresupuestoController extends Controller
         }, 3);
 
         return $this->volverAlDetalle($request, $presupuesto, 'Datos del presupuesto actualizados.');
+    }
+
+    public function duplicar(Request $request, Presupuesto $presupuesto)
+    {
+        $datos = $request->validateWithBag('duplicarPresupuesto', ['version' => ['required', 'integer', 'min:1']]);
+        $copia = DB::transaction(function () use ($request, $presupuesto, $datos): Presupuesto {
+            $origen = Presupuesto::lockForUpdate()->findOrFail($presupuesto->id);
+            $version = $origen->versionParaDuplicar();
+            if (! $version || $version->id !== (int) $datos['version']) {
+                throw ValidationException::withMessages(['version' => 'La versión de origen cambió. Revisa la versión que se muestra antes de duplicar.'])
+                    ->errorBag('duplicarPresupuesto');
+            }
+
+            if (isset(Presupuesto::TIPOS[$origen->tipo])) {
+                $request->merge(['tipo' => $origen->tipo]);
+            }
+            $copia = new Presupuesto(['origen' => Presupuesto::ORIGEN_SIRICO, 'estatus' => 'borrador']);
+            $this->guardarDatos($request, $copia, 'duplicarPresupuesto');
+
+            $captura = $version->datos;
+            $captura['presupuesto'] = array_replace($captura['presupuesto'], $copia->only(['nombre_cliente', 'nombre_obra', 'equipo_propuesto']));
+            if ((int) ($captura['cliente']['id'] ?? 0) !== (int) $copia->cliente_id) {
+                $captura['presupuesto']['presentacion_comercial'] = Arr::except(
+                    $captura['presupuesto']['presentacion_comercial'] ?? [], ['atencion', 'telefono', 'correo', 'domicilio']
+                );
+            }
+
+            DatosPresupuestoVersion::restaurar($copia, $captura);
+            $copia->save();
+            foreach ($captura['gastos'] ?? [] as $gasto) {
+                ObraPlaneacionGasto::create([
+                    'presupuesto_id' => $copia->id,
+                    'numero_semana' => 0,
+                ] + Arr::only($gasto, ['partida', 'concepto', 'unidad', 'cantidad', 'precio_unitario', 'monto_programado']));
+            }
+
+            return $copia;
+        }, 3);
+
+        $destino = $copia->tipo === 'PILAS'
+            ? route('presupuesto.show', [$copia, 'tab' => 'pilas'])
+            : route('presupuesto.show', $copia) . '#datos-generales';
+
+        return redirect()->to($destino)->with('estadoPresupuesto', 'Presupuesto duplicado como borrador.');
     }
 
     public function updatePresentacion(Request $request, Presupuesto $presupuesto)
@@ -626,7 +683,7 @@ class PresupuestoController extends Controller
         return $actual;
     }
 
-    private function guardarDatos(Request $request, Presupuesto $presupuesto): void
+    private function guardarDatos(Request $request, Presupuesto $presupuesto, string $bolsaErrores = 'datosPresupuesto'): void
     {
         $importado = $presupuesto->esImportado();
         $folioAsignado = $presupuesto->folio_serie_id !== null;
@@ -634,7 +691,7 @@ class PresupuestoController extends Controller
         $reglaTipo = $presupuesto->exists
             ? ['sometimes', $presupuesto->tipo === null ? 'nullable' : 'required']
             : ['required'];
-        $datos = $request->validateWithBag('datosPresupuesto', [
+        $datos = $request->validateWithBag($bolsaErrores, [
             'tipo' => $folioAsignado ? ['prohibited'] : [...$reglaTipo, Rule::in(array_keys(Presupuesto::TIPOS))],
             'codigo_proyecto' => $folioEditable
                 ? ['required', 'string', 'max:255', Rule::unique('presupuestos', 'codigo_proyecto')->ignore($presupuesto)]
@@ -669,7 +726,7 @@ class PresupuestoController extends Controller
 
             $mensaje = $presupuesto->exists ? 'Este folio ya está en uso.' : 'Se ocupó el folio durante el alta. Vuelve a guardar el presupuesto.';
             throw ValidationException::withMessages(['codigo_proyecto' => $mensaje])
-                ->errorBag('datosPresupuesto');
+                ->errorBag($bolsaErrores);
         }
     }
 

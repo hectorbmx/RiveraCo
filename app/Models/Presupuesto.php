@@ -233,6 +233,11 @@ class Presupuesto extends Model
         return $this->belongsTo(PresupuestoVersion::class, 'version_aprobada_id');
     }
 
+    public function versionParaDuplicar(): ?PresupuestoVersion
+    {
+        return $this->estaAprobado() ? $this->versionAprobada()->first() : $this->ultimaVersion()->first();
+    }
+
     public function obraGenerada(): BelongsTo
     {
         return $this->belongsTo(Obra::class, 'obra_generada_id');

@@ -1,26 +1,38 @@
 @php
     $existente = $presupuesto->exists;
+    $duplicando = isset($versionParaCopiar);
+    $bolsaDatos = $duplicando ? 'duplicarPresupuesto' : 'datosPresupuesto';
+    $tipoFijo = $duplicando && isset(\App\Models\Presupuesto::TIPOS[$presupuesto->tipo]);
     $importado = $presupuesto->esImportado();
     $folioAsignado = $presupuesto->folio_serie_id !== null;
-    $tipo = $folioAsignado ? $presupuesto->tipo : old('tipo', $presupuesto->tipo);
+    $tipo = $folioAsignado || $tipoFijo ? $presupuesto->tipo : old('tipo', $presupuesto->tipo);
     $tipoRequerido = ! $existente || $presupuesto->tipo !== null;
     $tipoInicial = is_string($tipo) && isset(\App\Models\Presupuesto::TIPOS[$tipo]) ? $tipo : '';
+    $accion = $duplicando ? route('presupuesto.duplicar', $versionParaCopiar->presupuesto_id)
+        : ($existente ? route('presupuesto.update', $presupuesto) : route('presupuesto.store'));
 @endphp
 
-<form method="POST" action="{{ $existente ? route('presupuesto.update', $presupuesto) : route('presupuesto.store') }}" class="space-y-4"
+<form method="POST" action="{{ $accion }}" class="space-y-4"
       @unless($existente) x-data="{ tipoElegido: @js($tipoInicial), folios: @js(array_map(fn ($serie) => $serie['siguiente'], $foliosNuevos)) }" @endunless>
     @csrf
+    @if($duplicando)
+        <input type="hidden" name="version" value="{{ $versionParaCopiar->id }}">
+        @error('version', $bolsaDatos)
+            <p role="alert" class="text-sm text-red-700">{{ $message }}</p>
+        @enderror
+    @endif
     @if($existente)
         @method('PATCH')
         <input type="hidden" name="tab" value="{{ $tabInicial }}" :value="tab">
     @endif
-    @if($existente)
+    @if($existente || $duplicando)
         <div class="max-w-sm">
             <label for="presupuesto-tipo" class="block text-sm font-medium text-slate-700">Tipo de presupuesto</label>
-            @if($folioAsignado)
+            @if($folioAsignado || $tipoFijo)
                 <input id="presupuesto-tipo" readonly value="{{ $tipo }}" class="mt-1 w-full rounded-lg border-slate-300 bg-slate-100 text-sm">
             @else
-                <select id="presupuesto-tipo" name="tipo" @required($tipoRequerido) class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+                <select id="presupuesto-tipo" name="tipo" @required($tipoRequerido) @if($duplicando) x-model="tipoElegido" @endif
+                        class="mt-1 w-full rounded-lg border-slate-300 text-sm">
                     <option value="" @selected($tipoInicial === '') @disabled($tipoRequerido)>{{ $tipoRequerido ? 'Selecciona un tipo' : 'Sin clasificar' }}</option>
                     @foreach(array_keys(\App\Models\Presupuesto::TIPOS) as $opcion)
                         <option value="{{ $opcion }}" @selected($tipo === $opcion)>{{ $opcion }}</option>
@@ -48,7 +60,7 @@
             </div>
         </fieldset>
     @endif
-    @error('tipo', 'datosPresupuesto')
+    @error('tipo', $bolsaDatos)
         <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
     @enderror
     <fieldset @unless($existente) :disabled="!tipoElegido" @endunless
@@ -66,7 +78,7 @@
                 <input id="presupuesto-folio" name="codigo_proyecto" required maxlength="255" value="{{ old('codigo_proyecto', $presupuesto->codigo_proyecto) }}"
                        placeholder="Ej. PI2607-05" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
             @endif
-            @error('codigo_proyecto', 'datosPresupuesto')
+            @error('codigo_proyecto', $bolsaDatos)
                 <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
             @enderror
         </div>
@@ -135,7 +147,7 @@
             @if($importado)
                 <p class="mt-1 text-sm text-slate-500">Cliente importado: {{ $presupuesto->nombre_cliente }}</p>
             @endif
-            @error('cliente_id', 'datosPresupuesto')
+            @error('cliente_id', $bolsaDatos)
                 <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
             @enderror
         </div>
@@ -143,7 +155,7 @@
             <label for="presupuesto-nombre-obra" class="block text-sm font-medium text-slate-700">Nombre de obra</label>
             <input id="presupuesto-nombre-obra" name="nombre_obra" maxlength="255" @required(! $importado)
                    value="{{ old('nombre_obra', $presupuesto->nombre_obra) }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
-            @error('nombre_obra', 'datosPresupuesto')
+            @error('nombre_obra', $bolsaDatos)
                 <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
             @enderror
         </div>
@@ -156,7 +168,7 @@
                         <option value="{{ $clave }}" @selected(old('estado', $presupuesto->estado) === (string) $clave)>{{ \Illuminate\Support\Str::after($estado, ' - ') }}</option>
                     @endforeach
                 </select>
-                @error('estado', 'datosPresupuesto')
+                @error('estado', $bolsaDatos)
                     <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
                 @enderror
             </div>
@@ -164,7 +176,7 @@
                 <label for="presupuesto-ciudad" class="block text-sm font-medium text-slate-700">Ciudad de la obra</label>
                 <input id="presupuesto-ciudad" name="ciudad" maxlength="120" value="{{ old('ciudad', $presupuesto->ciudad) }}"
                        class="mt-1 w-full rounded-lg border-slate-300 text-sm">
-                @error('ciudad', 'datosPresupuesto')
+                @error('ciudad', $bolsaDatos)
                     <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
                 @enderror
             </div>
@@ -177,19 +189,21 @@
                     <option value="{{ $codigo }}" @selected(old('equipo_propuesto', $presupuesto->equipo_propuesto) === $codigo)>{{ $equipo }}</option>
                 @endforeach
             </select>
-            @error('equipo_propuesto', 'datosPresupuesto')
+            @error('equipo_propuesto', $bolsaDatos)
                 <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
             @enderror
         </div>
     </fieldset>
     <div @class(['flex flex-wrap gap-3', 'justify-end' => ! empty($enModal)])>
-        @if(! empty($enModal))
+        @if($duplicando)
+            <a href="{{ $cancelarDuplicacion }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancelar</a>
+        @elseif(! empty($enModal))
             <button type="button" @click="$el.closest('dialog').close()"
                     class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancelar</button>
         @endif
         <button type="submit" @unless($existente) :disabled="!tipoElegido" @endunless
                 class="rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white hover:bg-blue-900 disabled:opacity-60">
-            {{ $existente ? 'Guardar datos' : 'Crear presupuesto' }}
+            {{ $duplicando ? 'Crear copia' : ($existente ? 'Guardar datos' : 'Crear presupuesto') }}
         </button>
     </div>
 </form>

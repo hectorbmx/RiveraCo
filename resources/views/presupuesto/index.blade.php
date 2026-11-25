@@ -6,18 +6,36 @@
     .presupuestos-table tbody tr:hover,
     .presupuestos-table tbody tr:focus-within { background: #dce9fa; }
 </style>
+@php
+    $filtrosListado = array_filter(['buscar' => $buscar, 'tipo' => $tipoFiltro], fn ($valor) => $valor !== null && $valor !== '');
+    $claseAccion = 'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2';
+@endphp
 <div class="p-6" x-data>
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 class="text-xl font-semibold">Presupuestos</h1>
         <a href="{{ route('presupuesto.create') }}" aria-haspopup="dialog"
-           @click.prevent="$refs.nuevoPresupuesto.showModal()"
+           @unless($versionDuplicacion) @click.prevent="$refs.nuevoPresupuesto.showModal()" @endunless
            class="rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">Nuevo presupuesto</a>
     </div>
     <dialog x-ref="nuevoPresupuesto" aria-labelledby="titulo-nuevo-presupuesto"
-            @if($errors->datosPresupuesto->any()) x-init="$el.showModal()" @endif
+            @if($versionDuplicacion)
+                x-init="$el.showModal()" @cancel.prevent="window.location.assign(@js(route('presupuesto.index', $filtrosListado)))"
+            @elseif($errors->datosPresupuesto->any())
+                x-init="$el.showModal()"
+            @endif
             class="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-xl backdrop:bg-slate-900/50 sm:p-6">
-        <h2 id="titulo-nuevo-presupuesto" class="mb-4 text-xl font-semibold text-[#0B265A]">Nuevo presupuesto</h2>
-        @include('presupuesto.partials.datos', ['presupuesto' => $nuevoPresupuesto, 'enModal' => true])
+        <h2 id="titulo-nuevo-presupuesto" class="mb-4 text-xl font-semibold text-[#0B265A]">{{ $versionDuplicacion ? 'Duplicar presupuesto' : 'Nuevo presupuesto' }}</h2>
+        @if($versionDuplicacion)
+            <p class="mb-4 text-sm text-slate-600">
+                {{ $origenDuplicacion->codigo_proyecto }} · {{ $origenDuplicacion->estaAprobado() ? 'Versión aprobada' : 'Última versión guardada' }} {{ $versionDuplicacion->folio() }}
+            </p>
+        @endif
+        @include('presupuesto.partials.datos', [
+            'presupuesto' => $nuevoPresupuesto,
+            'enModal' => true,
+            'versionParaCopiar' => $versionDuplicacion,
+            'cancelarDuplicacion' => route('presupuesto.index', $filtrosListado),
+        ])
     </dialog>
 
 @php
@@ -76,7 +94,7 @@
                     <th class="p-2 border font-semibold text-left">Seguimiento</th>
                     <th class="p-2 border font-semibold text-center">Origen</th>
                     <th class="p-2 border font-semibold text-center">Fecha de alta</th>
-                    <th class="p-2 border font-semibold text-center"></th>
+                    <th class="p-2 border font-semibold text-center"><span class="sr-only">Acciones</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -135,16 +153,35 @@
                         {{ $presupuesto->created_at->format('d/m/Y H:i') }}
                     </td>
                     <td class="p-2 border text-center">
-                        <div class="flex items-center justify-center gap-3">
-                            {{-- Abrir detalle --}}
-                            <a href="{{ route('presupuesto.show', $presupuesto->id) }}" 
-                               class="text-blue-600 hover:underline flex items-center gap-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div class="flex items-center justify-center gap-1">
+                            <a href="{{ route('presupuesto.show', $presupuesto->id) }}" title="Abrir"
+                               aria-label="Abrir presupuesto {{ $presupuesto->codigo_proyecto }}"
+                               class="{{ $claseAccion }} text-blue-700 hover:bg-blue-50">
+                                <svg aria-hidden="true" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
-                                Abrir
                             </a>
+
+                            @if($presupuesto->versiones_count > 0)
+                                <a href="{{ route('presupuesto.index', $filtrosListado + ['duplicar' => $presupuesto->id]) }}"
+                                   aria-haspopup="dialog" title="Duplicar" aria-label="Duplicar presupuesto {{ $presupuesto->codigo_proyecto }}"
+                                   class="{{ $claseAccion }} text-blue-700 hover:bg-blue-50">
+                                    <svg aria-hidden="true" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                        <rect x="8" y="8" width="12" height="12" rx="2" />
+                                        <path stroke-linecap="round" d="M16 4H6a2 2 0 0 0-2 2v10" />
+                                    </svg>
+                                </a>
+                            @else
+                                <button type="button" aria-disabled="true" title="Duplicar. Guarda una versión para poder duplicar."
+                                        aria-label="Duplicar. Guarda una versión para poder duplicar."
+                                        class="{{ $claseAccion }} cursor-not-allowed text-slate-400">
+                                    <svg aria-hidden="true" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                        <rect x="8" y="8" width="12" height="12" rx="2" />
+                                        <path stroke-linecap="round" d="M16 4H6a2 2 0 0 0-2 2v10" />
+                                    </svg>
+                                </button>
+                            @endif
 
                             @can('presupuestos.delete.access')
                                 @if($presupuesto->esBorrador() && !$presupuesto->tiene_seguimiento && !$presupuesto->obras_exists)
@@ -152,8 +189,12 @@
                                           onsubmit="return confirm('¿Eliminar este borrador, sus datos y todas sus versiones guardadas?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="text-red-700 hover:underline"
-                                                aria-label="Eliminar borrador {{ $presupuesto->codigo_proyecto }}">Eliminar</button>
+                                        <button type="submit" title="Eliminar" aria-label="Eliminar borrador {{ $presupuesto->codigo_proyecto }}"
+                                                class="{{ $claseAccion }} text-red-700 hover:bg-red-50">
+                                            <svg aria-hidden="true" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7" />
+                                            </svg>
+                                        </button>
                                     </form>
                                 @endif
                             @endcan

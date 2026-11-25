@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Cliente;
+use App\Models\ObraPlaneacionGasto;
 use App\Models\Presupuesto;
 use App\Models\User;
 use App\Support\FoliosPresupuesto;
@@ -16,6 +17,92 @@ use Tests\TestCase;
 
 class PresupuestoCabeceraTest extends TestCase
 {
+    public function test_duplicar_usa_la_ultima_version_guardada_o_la_aprobada_y_crea_un_borrador_independiente(): void
+    {
+        $this->assertSame('rivera_v2_testing', DB::connection()->getDatabaseName());
+        $this->assertSame('127.0.0.1', DB::connection()->getConfig('host'));
+
+        DB::beginTransaction();
+        try {
+            $this->actingAs(User::factory()->create());
+            $cliente = Cliente::create(['nombre_comercial' => 'Cliente original de duplicación']);
+            $nuevoCliente = Cliente::create(['nombre_comercial' => 'Cliente nuevo de duplicación', 'email' => 'nuevo@example.test']);
+            $origen = Presupuesto::create([
+                'codigo_proyecto' => 'DUP-' . str()->uuid(),
+                'tipo' => 'PILAS',
+                'nombre_cliente' => $cliente->nombre_comercial,
+                'cliente_id' => $cliente->id,
+                'nombre_obra' => 'Nombre original aprobado',
+                'estado' => '14',
+                'ciudad' => 'Zapopan',
+                'origen' => Presupuesto::ORIGEN_SIRICO,
+                'estatus' => 'borrador',
+            ]);
+            $origen->forceFill(['presentacion_comercial' => [
+                'atencion' => 'Contacto del original', 'correo' => 'original@example.test', 'condiciones_pago' => 'Pago semanal',
+            ]])->save();
+            $pila = $origen->pilasVol()->create([
+                'tipo' => 'P1', 'diametro' => 0.8, 'piezas' => 2, 'longitud_l0' => 7,
+                'pilas_por_jornal' => 8, 'avance_metros_por_jornal' => 56,
+            ]);
+            $gasto = ObraPlaneacionGasto::create([
+                'presupuesto_id' => $origen->id, 'numero_semana' => 0, 'concepto' => 'Flete de prueba', 'monto_programado' => 200,
+            ]);
+            $listado = route('presupuesto.index', ['tipo' => 'PILAS', 'duplicar' => $origen->id]);
+            $duplicar = route('presupuesto.duplicar', $origen);
+            $datos = ['cliente_id' => $nuevoCliente->id, 'nombre_obra' => 'Obra nueva', 'estado' => '01', 'ciudad' => 'Calvillo'];
+
+            $this->get(route('presupuesto.index', ['buscar' => $origen->codigo_proyecto]))
+                ->assertOk()->assertSee('Guarda una versión para poder duplicar.');
+            $this->post($duplicar, $datos + ['version' => 1])->assertSessionHasErrorsIn('duplicarPresupuesto', ['version']);
+
+            $guardar = route('presupuesto.versiones.store', $origen);
+            $this->post($guardar, ['revision' => 0])->assertRedirect();
+            $primera = $origen->versiones()->where('revision', 0)->sole();
+            $pila->update(['piezas' => 3]);
+            $gasto->update(['monto_programado' => 300]);
+            $origen->update(['nombre_obra' => 'Nombre de la última versión']);
+            $this->post($guardar, ['revision' => 1])->assertRedirect();
+            $ultima = $origen->versiones()->where('revision', 1)->sole();
+            $pila->update(['piezas' => 4]);
+            $gasto->update(['monto_programado' => 400]);
+            $origen->update(['nombre_obra' => 'Cambio sin guardar en una versión']);
+
+            $this->get($listado)->assertOk()->assertSee('Última versión guardada')
+                ->assertSee('value="Nombre de la última versión"', false)->assertSee('value="Zapopan"', false);
+            $this->from($listado)->post($duplicar, $datos + ['version' => $primera->id])
+                ->assertRedirect($listado)->assertSessionHasErrorsIn('duplicarPresupuesto', ['version']);
+            $respuesta = $this->from($listado)->post($duplicar, $datos + ['version' => $ultima->id, 'tipo' => 'MUROS']);
+            $copia = Presupuesto::where('cliente_id', $nuevoCliente->id)->sole();
+            $respuesta->assertRedirect(route('presupuesto.show', [$copia, 'tab' => 'pilas']));
+            $this->assertSame('PILAS', $copia->tipo);
+            $this->assertNotSame($origen->codigo_proyecto, $copia->codigo_proyecto);
+            $this->assertSame('borrador', $copia->estatus);
+            $this->assertSame($nuevoCliente->nombre_comercial, $copia->nombre_cliente);
+            $this->assertSame('01', $copia->estado);
+            $this->assertSame('Calvillo', $copia->ciudad);
+            $this->assertNull($copia->consecutivo_cliente);
+            $this->assertSame(0, $copia->versiones()->count());
+            $this->assertSame(3, $copia->pilasVol()->sole()->piezas);
+            $this->assertSame(['condiciones_pago' => 'Pago semanal'], $copia->presentacion_comercial);
+            $this->assertDatabaseHas('obra_planeacion_gastos', [
+                'presupuesto_id' => $copia->id, 'obra_id' => null, 'numero_semana' => 0, 'monto_programado' => 300,
+            ]);
+
+            $origen->forceFill(['version_aprobada_id' => $primera->id, 'estatus' => 'aprobado'])->save();
+            $this->get($listado)->assertOk()->assertSee('Versión aprobada')->assertSee('value="Nombre original aprobado"', false);
+            $this->from($listado)->post($duplicar, ['cliente_id' => $cliente->id, 'nombre_obra' => 'Copia de la aprobada', 'version' => $primera->id])
+                ->assertRedirect();
+            $aprobada = Presupuesto::where('nombre_obra', 'Copia de la aprobada')->sole();
+            $this->assertSame(2, $aprobada->pilasVol()->sole()->piezas);
+            $this->assertSame('original@example.test', $aprobada->presentacion_comercial['correo']);
+            $this->assertNull($aprobada->version_aprobada_id);
+            $this->assertSame(4, $pila->fresh()->piezas);
+        } finally {
+            DB::rollBack();
+        }
+    }
+
     public function test_notas_de_ejecucion_precargan_las_semanas_realistas_y_conservan_el_texto_editado(): void
     {
         $this->assertSame('rivera_v2_testing', DB::connection()->getDatabaseName());
