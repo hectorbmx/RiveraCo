@@ -74,13 +74,21 @@ class PresupuestoVolPila extends Model
         $varillasL1 = $this->varillas_l1 ?? 0;
         $pesoL0 = self::PESOS_VARILLA[$calibreL0];
         $pesoL1 = self::PESOS_VARILLA[$calibreL1];
-        $pesoVarillasL0 = $varillasL0 * $pesoL0 * ($longitudL0 + $anclaje);
+        $longitudCorteL0 = $longitudL0 + $anclaje;
+        $pesoVarillasL0 = $varillasL0 * $pesoL0 * $longitudCorteL0;
         $pesoVarillasL1 = $varillasL1 * $pesoL1 * ((float) $this->longitud_l1 + $anclaje);
-        if ($armadoPorCalibre && $traslapeVarilla == 0.0) {
-            // La tabla de VOL expresa el traslape como 50 diámetros de la varilla.
-            $traslapeVarilla = self::TRASLAPES_METROS[$calibreL0] ?? 50 * (float) $calibreL0 * 0.0254 / 8;
+        $pesoTraslapeVarillas = 0.0;
+        if ($varillasL0 > 0 && round($longitudCorteL0, 12) >= self::LARGO_BARRA_METROS) {
+            if ($traslapeVarilla <= 0.0 || $traslapeVarilla >= self::LARGO_BARRA_METROS) {
+                $traslapeVarilla = self::TRASLAPES_METROS[$calibreL0] ?? 50 * (float) $calibreL0 * 0.0254 / 8;
+            }
+
+            // Cada barra adicional aporta su longitud menos el tramo que comparte con la anterior.
+            $barrasAdicionales = ($longitudCorteL0 - self::LARGO_BARRA_METROS)
+                / (self::LARGO_BARRA_METROS - $traslapeVarilla);
+            $empalmes = max(1, ceil($barrasAdicionales - $barrasAdicionales * PHP_FLOAT_EPSILON * 4));
+            $pesoTraslapeVarillas = $empalmes * $traslapeVarilla * $pesoL0 * $varillasL0;
         }
-        $pesoTraslapeVarillas = $traslapeVarilla * $pesoL0 * $varillasL0;
         $aceroCalculado = $zunchosL0 + $zunchosL1 + $zunchosL2 + $traslapeZunchos
             + $pesoVarillasL0 + $pesoVarillasL1 + $pesoTraslapeVarillas;
         $calculoAutomatico = $armadoPorCalibre || $this->calibre_zuncho_l0 !== null

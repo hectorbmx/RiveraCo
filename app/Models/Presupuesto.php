@@ -19,6 +19,7 @@ class Presupuesto extends Model
 
     public const ORIGEN_EXCEL = 'excel';
     public const ORIGEN_SIRICO = 'sirico';
+    public const TIPOS = ['PILAS' => 'PI', 'POZOS' => 'PO', 'MUROS' => 'MU', 'ANCLAS' => 'AN'];
     public const ESCENARIOS_APUPI = ['realista', 'optimista', 'pesimista'];
 
     // Opciones de perforadora de APUPI, filas 24 a 32.
@@ -39,6 +40,7 @@ class Presupuesto extends Model
 
     protected $fillable = [
         'codigo_proyecto',
+        'tipo',
         'nombre_cliente',
         'descripcion',
         'total_costo_directo',

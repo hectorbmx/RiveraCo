@@ -27,15 +27,21 @@ use App\Models\TipoIva;
 use App\Models\Obra;
 use App\Models\ObraFolio;
 use App\Models\ObraTipoConfiguracion;
+use App\Models\Presupuesto;
 use App\Models\NominaListaRaya;
 use App\Models\NominaTipoSueldo;
 use App\Models\Almacen;
 use App\Models\TipoRetencion;
 use App\Models\Producto;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use App\Services\Nomina\ListaRayaResolver;
 use App\Services\Maquinas\PreventivoMaquinaService;
 use App\Services\Empresa\EmpresaViaticoTarifaService;
+use App\Support\FoliosPresupuesto;
+use App\Support\ImagenesTipoPresupuesto;
+use RuntimeException;
+use Throwable;
 
 class EmpresaConfigController extends Controller
 {
@@ -60,7 +66,7 @@ public function index(){
 
     //     return view('empresa_config.edit', compact('config','maquinas'));
     // }
-    public function edit(PreventivoMaquinaService $preventivoService)
+    public function edit(Request $request, PreventivoMaquinaService $preventivoService, FoliosPresupuesto $foliosPresupuesto, ImagenesTipoPresupuesto $imagenes)
     {
 
         $config = EmpresaConfig::firstOrCreate(['id' => 1], [
@@ -204,6 +210,17 @@ public function index(){
             ->with('area')
             ->orderBy('tipo_obra')
             ->get();
+
+        $seccionFolios = $request->query('folio_seccion') === 'presupuestos' ? 'presupuestos' : 'obras';
+        $periodoFoliosPresupuesto = FoliosPresupuesto::periodoActual();
+        $seriesPresupuesto = [];
+        $imagenesTipoPresupuesto = [];
+        if ($seccionFolios === 'presupuestos') {
+            $periodoFoliosPresupuesto = $request->validate(['folio_periodo' => ['sometimes', 'required', 'date_format:Y-m']])['folio_periodo']
+                ?? $periodoFoliosPresupuesto;
+            $seriesPresupuesto = $foliosPresupuesto->resumen($periodoFoliosPresupuesto);
+            $imagenesTipoPresupuesto = $imagenes->rutas();
+        }
         
         // $Catrol = CatalogoRol::orderBy('id')->orderBy('nombre')->get();
 
@@ -294,6 +311,10 @@ public function index(){
         'foliosObra',
         'tiposObraConfiguraciones',
         'anioFoliosObra',
+        'seccionFolios',
+        'periodoFoliosPresupuesto',
+        'seriesPresupuesto',
+        'imagenesTipoPresupuesto',
         'preventivosMaquinaria',
         'serviciosPreventivosMaquinaria',
         'serviciosPreventivosVehiculos',
@@ -575,6 +596,55 @@ public function updateFolioObra(Request $request, ObraFolio $folio)
     return redirect()
         ->route('empresa_config.edit', ['tab' => 'folios', 'folio_anio' => $folio->anio])
         ->with('success', 'Consecutivo de obra actualizado.');
+}
+
+public function updateFolioPresupuesto(Request $request, FoliosPresupuesto $foliosPresupuesto, ImagenesTipoPresupuesto $imagenes)
+{
+    $datos = $request->validateWithBag('folioPresupuesto', [
+        'tipo' => ['required', Rule::in(array_keys(Presupuesto::TIPOS))],
+        'periodo' => ['required', 'date_format:Y-m'],
+        'ultimo_consecutivo' => ['required', 'integer', 'min:0', 'max:999999999'],
+        'imagen' => ['nullable', 'prohibited_if:quitar_imagen,1', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120',
+            'dimensions:max_width=4096,max_height=4096'],
+        'quitar_imagen' => ['sometimes', 'boolean'],
+    ], [
+        'imagen.image' => 'Selecciona una imagen válida.',
+        'imagen.mimes' => 'La imagen debe ser JPG, PNG o WebP.',
+        'imagen.max' => 'La imagen puede pesar hasta 5 MB.',
+        'imagen.dimensions' => 'La imagen puede medir hasta 4096 × 4096 px.',
+        'imagen.prohibited_if' => 'Elige entre subir una imagen nueva o quitar la actual.',
+    ]);
+
+    $nuevaImagen = null;
+    if ($request->hasFile('imagen')) {
+        try {
+            $nuevaImagen = $imagenes->subir($datos['imagen']);
+        } catch (RuntimeException $e) {
+            report($e);
+            throw ValidationException::withMessages(['imagen' => 'No se pudo procesar la imagen.'])
+                ->errorBag('folioPresupuesto');
+        }
+    }
+
+    try {
+        $anterior = DB::transaction(function () use ($datos, $foliosPresupuesto, $imagenes, $nuevaImagen) {
+            $foliosPresupuesto->actualizarUltimo($datos['tipo'], $datos['periodo'], (int) $datos['ultimo_consecutivo']);
+
+            return $nuevaImagen !== null || ! empty($datos['quitar_imagen'])
+                ? $imagenes->guardar($datos['tipo'], $nuevaImagen)
+                : null;
+        }, 3);
+    } catch (Throwable $e) {
+        $imagenes->eliminarCarga($nuevaImagen);
+        throw $e;
+    }
+    if ($anterior !== null) {
+        DB::afterCommit(fn () => $imagenes->eliminarCarga($anterior));
+    }
+
+    return redirect()->route('empresa_config.edit', [
+        'tab' => 'folios', 'folio_seccion' => 'presupuestos', 'folio_periodo' => $datos['periodo'],
+    ])->with('success', 'Configuración de folio actualizada.');
 }
 
 public function updateTipoObraConfiguracion(Request $request, ObraTipoConfiguracion $tipo)

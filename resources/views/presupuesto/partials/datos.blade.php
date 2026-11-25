@@ -1,18 +1,66 @@
 @php
     $existente = $presupuesto->exists;
     $importado = $presupuesto->esImportado();
+    $folioAsignado = $presupuesto->folio_serie_id !== null;
+    $tipo = $folioAsignado ? $presupuesto->tipo : old('tipo', $presupuesto->tipo);
+    $tipoRequerido = ! $existente || $presupuesto->tipo !== null;
+    $tipoInicial = is_string($tipo) && isset(\App\Models\Presupuesto::TIPOS[$tipo]) ? $tipo : '';
 @endphp
 
-<form method="POST" action="{{ $existente ? route('presupuesto.update', $presupuesto) : route('presupuesto.store') }}" class="space-y-4">
+<form method="POST" action="{{ $existente ? route('presupuesto.update', $presupuesto) : route('presupuesto.store') }}" class="space-y-4"
+      @unless($existente) x-data="{ tipoElegido: @js($tipoInicial), folios: @js(array_map(fn ($serie) => $serie['siguiente'], $foliosNuevos)) }" @endunless>
     @csrf
     @if($existente)
         @method('PATCH')
         <input type="hidden" name="tab" value="{{ $tabInicial }}" :value="tab">
     @endif
-    <div class="grid gap-4 md:grid-cols-2">
+    @if($existente)
+        <div class="max-w-sm">
+            <label for="presupuesto-tipo" class="block text-sm font-medium text-slate-700">Tipo de presupuesto</label>
+            @if($folioAsignado)
+                <input id="presupuesto-tipo" readonly value="{{ $tipo }}" class="mt-1 w-full rounded-lg border-slate-300 bg-slate-100 text-sm">
+            @else
+                <select id="presupuesto-tipo" name="tipo" @required($tipoRequerido) class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+                    <option value="" @selected($tipoInicial === '') @disabled($tipoRequerido)>{{ $tipoRequerido ? 'Selecciona un tipo' : 'Sin clasificar' }}</option>
+                    @foreach(array_keys(\App\Models\Presupuesto::TIPOS) as $opcion)
+                        <option value="{{ $opcion }}" @selected($tipo === $opcion)>{{ $opcion }}</option>
+                    @endforeach
+                </select>
+            @endif
+        </div>
+    @else
+        <fieldset>
+            <legend class="text-sm font-medium text-slate-700">Tipo de presupuesto</legend>
+            <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                @foreach(array_keys(\App\Models\Presupuesto::TIPOS) as $opcion)
+                    <label @class(['flex min-h-24 cursor-pointer flex-col rounded-lg border p-2 text-sm font-semibold text-slate-800',
+                               'justify-center' => !isset($imagenesTipoPresupuesto[$opcion]),
+                               'justify-between' => isset($imagenesTipoPresupuesto[$opcion])])
+                           :class="tipoElegido === @js($opcion) ? 'border-blue-700 bg-blue-50' : 'border-slate-300 bg-white'">
+                        @include('presupuesto.partials.imagen-tipo', ['tipoImagen' => $opcion, 'clasesImagen' => 'mx-auto h-12 w-12 object-contain'])
+                        <span @class(['flex items-center justify-center gap-1.5', 'pt-2' => isset($imagenesTipoPresupuesto[$opcion])])>
+                            <input type="radio" name="tipo" value="{{ $opcion }}" required x-model="tipoElegido" @checked($tipoInicial === $opcion)
+                                   @if($tipoInicial === $opcion || ($tipoInicial === '' && $loop->first)) autofocus @endif>
+                            {{ $opcion }}
+                        </span>
+                    </label>
+                @endforeach
+            </div>
+        </fieldset>
+    @endif
+    @error('tipo', 'datosPresupuesto')
+        <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
+    @enderror
+    <fieldset @unless($existente) :disabled="!tipoElegido" @endunless
+              @class(['grid min-w-0 gap-4 disabled:opacity-60', 'md:grid-cols-2' => empty($enModal)])>
         <div>
             <label for="presupuesto-folio" class="block text-sm font-medium text-slate-700">Folio</label>
-            @if($importado)
+            @if(! $existente)
+                <input id="presupuesto-folio" readonly :value="folios[tipoElegido] ?? ''"
+                       value="{{ $foliosNuevos[$tipoInicial]['siguiente'] ?? '' }}" placeholder="Selecciona un tipo"
+                       class="mt-1 w-full rounded-lg border-slate-300 bg-slate-100 text-sm">
+                <p class="mt-1 text-xs text-slate-600">Folio estimado. Se asigna al guardar.</p>
+            @elseif($importado || $folioAsignado)
                 <input id="presupuesto-folio" readonly value="{{ $presupuesto->codigo_proyecto }}" class="mt-1 w-full rounded-lg border-slate-300 bg-slate-100 text-sm">
             @else
                 <input id="presupuesto-folio" name="codigo_proyecto" required maxlength="255" value="{{ old('codigo_proyecto', $presupuesto->codigo_proyecto) }}"
@@ -69,7 +117,8 @@
             </div>
             <input id="presupuesto-buscar-cliente" type="search" x-ref="busqueda" autocomplete="off" maxlength="255"
                    data-url="{{ route('presupuesto.clientes.buscar') }}"
-                   @input.debounce.200ms="buscar()" @keydown.enter.prevent="buscar()" @keydown.escape.stop.prevent="limpiarBusqueda()"
+                   @input.debounce.200ms="buscar()" @keydown.enter.prevent="buscar()"
+                   @keydown.escape="if ($el.value || resultados.length) { $event.stopPropagation(); $event.preventDefault(); limpiarBusqueda(); }"
                    placeholder="Buscar por nombre, razón social o RFC" aria-controls="presupuesto-clientes-resultados"
                    class="mt-1 w-full rounded-lg border-slate-300 text-sm">
             <p role="status" x-text="mensaje" x-show="mensaje" x-cloak class="mt-1 text-sm text-slate-600"></p>
@@ -110,8 +159,15 @@
                 <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
             @enderror
         </div>
+    </fieldset>
+    <div @class(['flex flex-wrap gap-3', 'justify-end' => ! empty($enModal)])>
+        @if(! empty($enModal))
+            <button type="button" @click="$el.closest('dialog').close()"
+                    class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancelar</button>
+        @endif
+        <button type="submit" @unless($existente) :disabled="!tipoElegido" @endunless
+                class="rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white hover:bg-blue-900 disabled:opacity-60">
+            {{ $existente ? 'Guardar datos' : 'Crear presupuesto' }}
+        </button>
     </div>
-    <button type="submit" class="rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white hover:bg-blue-900">
-        {{ $existente ? 'Guardar datos' : 'Crear presupuesto' }}
-    </button>
 </form>

@@ -381,7 +381,7 @@
             @endif
         </div>
     @endif
-    <header class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+    <header id="datos-generales" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-5">
             <div>
                 <h1 class="text-lg font-semibold text-slate-800">Datos del presupuesto</h1>
@@ -392,6 +392,13 @@
                 @endif
                 <p class="mt-1 text-sm text-slate-500">{{ $presupuesto->esImportado() ? 'Sincronizado desde Excel' : 'Creado en SIRICO' }}</p>
                 <dl class="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                    <div>
+                        <dt class="font-medium text-slate-600">Tipo de presupuesto</dt>
+                        <dd class="flex items-center gap-2">
+                            @include('presupuesto.partials.imagen-tipo', ['tipoImagen' => $presupuesto->tipo, 'clasesImagen' => 'h-7 w-7 object-contain'])
+                            {{ $presupuesto->tipo ?? 'Sin clasificar' }}
+                        </dd>
+                    </div>
                     <div><dt class="font-medium text-slate-600">Nombre de obra</dt><dd>{{ $presupuesto->nombre_obra ?? 'Por definir' }}</dd></div>
                     <div><dt class="font-medium text-slate-600">Equipo propuesto</dt><dd>{{ \App\Models\Presupuesto::EQUIPOS_PROPUESTOS[$presupuesto->equipo_propuesto] ?? 'Por definir' }}</dd></div>
                 </dl>

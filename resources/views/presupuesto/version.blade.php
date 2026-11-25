@@ -37,6 +37,13 @@
             @endif
             <dl class="mt-4 space-y-1 text-sm text-slate-700">
                 <div class="flex gap-2"><dt class="font-medium">Folio de origen</dt><dd>{{ $cabecera['codigo_proyecto'] }}</dd></div>
+                <div class="flex items-center gap-2">
+                    <dt class="font-medium">Tipo de presupuesto</dt>
+                    <dd class="flex items-center gap-2">
+                        @include('presupuesto.partials.imagen-tipo', ['tipoImagen' => $presupuesto->tipo, 'clasesImagen' => 'h-6 w-6 object-contain'])
+                        {{ $presupuesto->tipo ?? 'Sin clasificar' }}
+                    </dd>
+                </div>
                 @if($version->origen)
                     <div class="flex gap-2">
                         <dt class="font-medium">Basado en</dt>

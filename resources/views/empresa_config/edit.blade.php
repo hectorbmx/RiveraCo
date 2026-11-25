@@ -133,7 +133,7 @@
 
     'folios' => [
         'label' => 'Folios',
-        'desc' => 'Consecutivos de obras'
+        'desc' => 'Consecutivos de obras y presupuestos'
     ],
 
     'listas_raya' => [
@@ -2029,6 +2029,18 @@ function cuentasBancoTab() {
      FOLIOS DE OBRA
 ======================= --}}
 <div x-show="tab === 'folios'" x-cloak class="space-y-6">
+    <nav aria-label="Series de folios" class="flex flex-wrap gap-2">
+        @foreach(['obras' => 'Obras', 'presupuestos' => 'Presupuestos'] as $seccion => $etiqueta)
+            <a href="{{ route('empresa_config.edit', ['tab' => 'folios', 'folio_seccion' => $seccion]) }}"
+               @if($seccionFolios === $seccion) aria-current="page" @endif
+               @class(['rounded-lg border px-4 py-2 text-sm font-semibold',
+                   'border-slate-900 bg-slate-900 text-white' => $seccionFolios === $seccion,
+                   'border-slate-300 bg-white text-slate-700 hover:bg-slate-100' => $seccionFolios !== $seccion])>{{ $etiqueta }}</a>
+        @endforeach
+    </nav>
+    @if($seccionFolios === 'presupuestos')
+        @include('empresa_config.partials.folios-presupuesto')
+    @else
     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
             <h2 class="text-lg font-semibold text-gray-900">Folios de obra</h2>
@@ -2270,6 +2282,7 @@ function cuentasBancoTab() {
     <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         El valor editable es el último consecutivo usado. El siguiente folio se genera sumando uno.
     </div>
+    @endif
 </div>
 {{-- ======================
      LISTAS DE RAYA

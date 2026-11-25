@@ -85,6 +85,12 @@
                     <span class="sidebar-text">Calendario</span>
                 </a>
                 @endif
+                <a href="{{ route('seguimientos.index') }}"
+                   class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('seguimientos.*') ? 'bg-white/10' : '' }}"
+                   title="Seguimientos" @if(request()->routeIs('seguimientos.*')) aria-current="page" @endif>
+                    <span class="text-lg" aria-hidden="true">✉️</span>
+                    <span class="sidebar-text">Seguimientos</span>
+                </a>
                 @if($canMenu('obras.access'))
                 <a href="{{ route('presupuesto.index') }}"
                    class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('presupuesto.*') ? 'bg-white/10' : '' }}"

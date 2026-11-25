@@ -6,11 +6,19 @@
     .presupuestos-table tbody tr:hover,
     .presupuestos-table tbody tr:focus-within { background: #dce9fa; }
 </style>
-<div class="p-6">
+<div class="p-6" x-data>
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 class="text-xl font-semibold">Presupuestos</h1>
-        <a href="{{ route('presupuesto.create') }}" class="rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">Nuevo presupuesto</a>
+        <a href="{{ route('presupuesto.create') }}" aria-haspopup="dialog"
+           @click.prevent="$refs.nuevoPresupuesto.showModal()"
+           class="rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">Nuevo presupuesto</a>
     </div>
+    <dialog x-ref="nuevoPresupuesto" aria-labelledby="titulo-nuevo-presupuesto"
+            @if($errors->datosPresupuesto->any()) x-init="$el.showModal()" @endif
+            class="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-xl backdrop:bg-slate-900/50 sm:p-6">
+        <h2 id="titulo-nuevo-presupuesto" class="mb-4 text-xl font-semibold text-[#0B265A]">Nuevo presupuesto</h2>
+        @include('presupuesto.partials.datos', ['presupuesto' => $nuevoPresupuesto, 'enModal' => true])
+    </dialog>
 
 @php
     $estadoBadge = function ($estado) {
@@ -45,6 +53,7 @@
             <thead>
                 <tr>
                     <th class="p-2 border font-semibold text-center">Código Proyecto</th>
+                    <th class="p-2 border font-semibold text-left">Tipo</th>
                     <th class="p-2 border font-semibold text-left">Cliente</th>
                     <th class="p-2 border font-semibold text-center">Costo Directo</th>
                     <th class="p-2 border font-semibold text-center">Total Presupuesto</th>
@@ -60,6 +69,14 @@
                 <tr class="border-b transition-colors">
                     <td class="p-2 border text-center font-bold text-blue-900">
                         {{ $presupuesto->codigo_proyecto }}
+                    </td>
+                    <td class="p-2 border text-left">
+                        <span class="inline-flex items-center gap-2">
+                            <span class="h-6 w-6 shrink-0">
+                                @include('presupuesto.partials.imagen-tipo', ['tipoImagen' => $presupuesto->tipo, 'clasesImagen' => 'h-full w-full object-contain'])
+                            </span>
+                            {{ $presupuesto->tipo ?? 'Sin clasificar' }}
+                        </span>
                     </td>
                     <td class="p-2 border text-left">
                         {{ $presupuesto->nombreClienteVisible() }}
@@ -126,7 +143,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="9" class="px-5 py-10 text-center text-slate-500">
+                    <td colspan="10" class="px-5 py-10 text-center text-slate-500">
                         {{ $buscar !== '' ? 'No se encontraron presupuestos con ese cliente o código.' : 'Aún no hay presupuestos.' }}
                     </td>
                 </tr>

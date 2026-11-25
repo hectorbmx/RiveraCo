@@ -51,7 +51,7 @@
                         <select name="tipo_obra" required class="mt-1 block w-full rounded-lg border-slate-300 text-sm">
                             <option value="">Selecciona el tipo</option>
                             @foreach($tipos as $clave => $etiqueta)
-                                <option value="{{ $clave }}" @selected(old('tipo_obra', 'PILAS') === $clave)>{{ $etiqueta }}</option>
+                                <option value="{{ $clave }}" @selected(old('tipo_obra', $presupuesto->tipo ?? 'PILAS') === $clave)>{{ $etiqueta }}</option>
                             @endforeach
                         </select>
                     </label>

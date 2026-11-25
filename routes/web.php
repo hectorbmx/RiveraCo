@@ -347,6 +347,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/', [CalendarioOperacionalController::class, 'index'])->name('index');
             Route::get('/events', [CalendarioOperacionalController::class, 'events'])->name('events');
         });
+
+    Route::get('/seguimientos', [\App\Http\Controllers\MailFollowupController::class, 'index'])->name('seguimientos.index');
+
     Route::prefix('usuarios')
     ->name('usuarios.')
     ->group(function () {
@@ -644,6 +647,7 @@ Route::middleware('auth','verified')->group(function () {
     Route::post('/configuracion-empresa/tipos-sueldo', [EmpresaConfigController::class, 'storeTipoSueldo'])->name('empresa_config.tipos-sueldo.store');
     Route::patch('/configuracion-empresa/tipos-sueldo/{tipoSueldo}/toggle-activo', [EmpresaConfigController::class, 'toggleTipoSueldo'])->name('empresa_config.tipos-sueldo.toggle-activo');
     Route::patch('/configuracion-empresa/folios-obra/{folio}', [EmpresaConfigController::class, 'updateFolioObra'])->name('empresa_config.folios-obra.update');
+    Route::patch('/configuracion-empresa/folios-presupuesto', [EmpresaConfigController::class, 'updateFolioPresupuesto'])->name('empresa_config.folios-presupuesto.update');
     Route::post('/configuracion-empresa/tipos-obra', [EmpresaConfigController::class, 'storeTipoObraConfiguracion'])->name('empresa_config.tipos-obra.store');
     Route::patch('/configuracion-empresa/tipos-obra/{tipo}', [EmpresaConfigController::class, 'updateTipoObraConfiguracion'])->name('empresa_config.tipos-obra.update');
 

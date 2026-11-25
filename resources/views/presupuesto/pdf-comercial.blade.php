@@ -13,6 +13,8 @@
         .membrete .marca { width: 34pt; padding: 0 8pt 0 36pt; }
         .marca img { display: block; }
         .membrete .empresa { padding-right: 36pt; font-size: 6.8pt; line-height: 1.25; }
+        .membrete .tipo-presupuesto { width: 57.2pt; padding: 0 36pt 0 6pt; text-align: right; line-height: 0; }
+        .tipo-presupuesto img { max-width: 57.2pt; max-height: 57.2pt; vertical-align: middle; }
         .empresa strong { display: block; font-size: 13pt; line-height: 1.15; margin-bottom: 2pt; }
         .ficha { margin-top: 6pt; table-layout: fixed; font-size: 7pt; line-height: 1.16; color: #505a70; }
         .ficha .ficha-cliente { width: 68%; vertical-align: top; }
@@ -58,6 +60,7 @@
             .membrete td { height: 60pt; }
             .membrete .marca { padding-left: 30pt; }
             .membrete .empresa { padding-right: 30pt; }
+            .membrete .tipo-presupuesto { padding-right: 30pt; }
             .ficha { margin-top: 5pt; }
             .conceptos { margin-top: 6pt; font-size: 7.2pt; line-height: 1.12; }
             .conceptos td { padding-top: 1.6pt; padding-bottom: 1.6pt; }
@@ -94,6 +97,9 @@
             Justo Sierra No. 2469 · C.P. 44600 · Guadalajara, Jalisco · pilas@riveraco.com.mx<br>
             Tel. 33 3615 0741 · 33 3630 1056 · 33 3616 8364
         </td>
+        @if(!empty($cabecera['imagen_tipo']))
+            <td class="tipo-presupuesto"><img src="{{ $cabecera['imagen_tipo'] }}" alt=""></td>
+        @endif
     </tr>
 </table>
 <table class="ficha">

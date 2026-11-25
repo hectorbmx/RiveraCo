@@ -283,16 +283,16 @@
         <form action="{{ route('presupuesto.pilas-vol.traslape', $presupuesto) }}" method="POST" class="border-t border-slate-200 p-4">
             @csrf
             @method('PATCH')
-            <label for="vol-traslape-varilla" class="block text-sm font-medium text-slate-700">Ajuste de traslape longitudinal (m)</label>
-            <input id="vol-traslape-varilla" name="vol_traslape_varilla" type="number" required min="0" max="99999.99999" step="0.00001"
+            <label for="vol-traslape-varilla" class="block text-sm font-medium text-slate-700">Traslape longitudinal por empalme (m)</label>
+            <input id="vol-traslape-varilla" name="vol_traslape_varilla" type="number" required min="0" max="11.99999" step="0.00001"
                    value="{{ old('vol_traslape_varilla', $presupuesto->vol_traslape_varilla) }}"
                    class="mt-1 rounded-lg border-slate-300 text-sm">
             <button type="submit" class="ml-2 rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white">Guardar traslape</button>
-            <p class="mt-1 text-xs text-slate-600">Con cero, los tipos de pila con calibre capturado usan el traslape de su varilla L0.</p>
+            <p class="mt-1 text-xs text-slate-600">Con cero, se usa el traslape del calibre L0.</p>
             @error('vol_traslape_varilla', 'traslapeVol')
                 <p class="mt-1 text-sm text-red-700">{{ $message }}</p>
             @enderror
-            <p class="mt-2 text-sm text-slate-600">Aplica a todos los tipos de pila del presupuesto. Equivale a U32 en VOL.</p>
+            <p class="mt-2 text-sm text-slate-600">Aplica a las varillas L0 con longitud de corte de 12 m o más, incluido el anclaje.</p>
         </form>
     </dialog>
 </div>

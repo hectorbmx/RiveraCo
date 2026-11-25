@@ -22,6 +22,8 @@ use App\Models\PresupuestoEvento;
 use App\Models\PresupuestoVolPila;
 use App\Models\PresupuestoVersion;
 use App\Support\DatosPresupuestoVersion;
+use App\Support\FoliosPresupuesto;
+use App\Support\ImagenesTipoPresupuesto;
 use App\Support\PlantillaApupi;
 use App\Support\PresentacionPresupuesto;
 use App\Support\PrevioPresupuesto;
@@ -35,6 +37,10 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 class PresupuestoController extends Controller
 {
+    public function __construct(private FoliosPresupuesto $folios, private ImagenesTipoPresupuesto $imagenes)
+    {
+    }
+
     public function index(Request $request)
     {
         $request->validate(['buscar' => ['nullable', 'string', 'max:255']]);
@@ -86,7 +92,12 @@ class PresupuestoController extends Controller
 
         $importes = $presupuestos->mapWithKeys(fn (Presupuesto $p) => [$p->id => $this->importesListado($p)]);
 
-        return view('presupuesto.index', compact('presupuestos', 'buscar', 'importes'));
+        $nuevoPresupuesto = new Presupuesto(['origen' => Presupuesto::ORIGEN_SIRICO]);
+        $clienteSeleccionado = $this->clienteSeleccionado($request, $nuevoPresupuesto);
+        $foliosNuevos = $this->folios->resumen(FoliosPresupuesto::periodoActual());
+        $imagenesTipoPresupuesto = $this->imagenes->rutas();
+
+        return view('presupuesto.index', compact('presupuestos', 'buscar', 'importes', 'nuevoPresupuesto', 'clienteSeleccionado', 'foliosNuevos', 'imagenesTipoPresupuesto'));
     }
 
     private function versionComercialUnica(Presupuesto $presupuesto): ?PresupuestoVersion
@@ -134,6 +145,8 @@ class PresupuestoController extends Controller
         return view('presupuesto.create', [
             'presupuesto' => $presupuesto,
             'clienteSeleccionado' => $this->clienteSeleccionado($request, $presupuesto),
+            'foliosNuevos' => $this->folios->resumen(FoliosPresupuesto::periodoActual()),
+            'imagenesTipoPresupuesto' => $this->imagenes->rutas(),
         ]);
     }
 
@@ -154,11 +167,18 @@ class PresupuestoController extends Controller
 
     public function store(Request $request)
     {
-        $presupuesto = new Presupuesto(['origen' => Presupuesto::ORIGEN_SIRICO, 'estatus' => 'borrador']);
-        $this->guardarDatos($request, $presupuesto);
+        $presupuesto = DB::transaction(function () use ($request) {
+            $presupuesto = new Presupuesto(['origen' => Presupuesto::ORIGEN_SIRICO, 'estatus' => 'borrador']);
+            $this->guardarDatos($request, $presupuesto);
 
-        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'pilas'])
-            ->with('estadoPresupuesto', 'Presupuesto creado.');
+            return $presupuesto;
+        }, 3);
+
+        $destino = $presupuesto->tipo === 'PILAS'
+            ? route('presupuesto.show', [$presupuesto, 'tab' => 'pilas'])
+            : route('presupuesto.show', $presupuesto) . '#datos-generales';
+
+        return redirect()->to($destino)->with('estadoPresupuesto', 'Presupuesto creado.');
     }
 
     public function update(Request $request, Presupuesto $presupuesto)
@@ -595,31 +615,44 @@ class PresupuestoController extends Controller
     private function guardarDatos(Request $request, Presupuesto $presupuesto): void
     {
         $importado = $presupuesto->esImportado();
-        $folioUnico = Rule::unique('presupuestos', 'codigo_proyecto');
-        if ($presupuesto->exists) {
-            $folioUnico->ignore($presupuesto);
-        }
+        $folioAsignado = $presupuesto->folio_serie_id !== null;
+        $folioEditable = $presupuesto->exists && ! $importado && ! $folioAsignado;
+        $reglaTipo = $presupuesto->exists
+            ? ['sometimes', $presupuesto->tipo === null ? 'nullable' : 'required']
+            : ['required'];
         $datos = $request->validateWithBag('datosPresupuesto', [
-            'codigo_proyecto' => $importado ? ['prohibited'] : ['required', 'string', 'max:255', $folioUnico],
+            'tipo' => $folioAsignado ? ['prohibited'] : [...$reglaTipo, Rule::in(array_keys(Presupuesto::TIPOS))],
+            'codigo_proyecto' => $folioEditable
+                ? ['required', 'string', 'max:255', Rule::unique('presupuestos', 'codigo_proyecto')->ignore($presupuesto)]
+                : ['prohibited'],
             'cliente_id' => [$importado ? 'nullable' : 'required', 'integer', Rule::exists('clientes', 'id')],
             'nombre_obra' => [$importado ? 'nullable' : 'required', 'string', 'max:255'],
             'equipo_propuesto' => ['nullable', Rule::in(array_keys(Presupuesto::EQUIPOS_PROPUESTOS))],
-        ], [], ['codigo_proyecto' => 'folio', 'cliente_id' => 'cliente', 'nombre_obra' => 'nombre de obra', 'equipo_propuesto' => 'equipo propuesto']);
+        ], [], ['tipo' => 'tipo de presupuesto', 'codigo_proyecto' => 'folio', 'cliente_id' => 'cliente', 'nombre_obra' => 'nombre de obra', 'equipo_propuesto' => 'equipo propuesto']);
 
-        if ($importado) {
+        if (! $folioEditable) {
             unset($datos['codigo_proyecto']);
-        } else {
+        }
+        if ($folioAsignado) {
+            unset($datos['tipo']);
+        }
+        if (! $importado) {
             $datos['nombre_cliente'] = Cliente::findOrFail($datos['cliente_id'])->nombre_comercial;
         }
 
         try {
-            $presupuesto->fill($datos)->save();
+            $presupuesto->fill($datos);
+            if (! $presupuesto->exists) {
+                $this->folios->asignar($presupuesto);
+            }
+            $presupuesto->save();
         } catch (UniqueConstraintViolationException $e) {
             if ($importado) {
                 throw $e;
             }
 
-            throw ValidationException::withMessages(['codigo_proyecto' => 'Este folio ya está en uso.'])
+            $mensaje = $presupuesto->exists ? 'Este folio ya está en uso.' : 'Se ocupó el folio durante el alta. Vuelve a guardar el presupuesto.';
+            throw ValidationException::withMessages(['codigo_proyecto' => $mensaje])
                 ->errorBag('datosPresupuesto');
         }
     }
@@ -654,7 +687,9 @@ class PresupuestoController extends Controller
         $versionUnica = $this->versionComercialUnica($presupuesto);
         $versionUnica?->setRelation('presupuesto', $presupuesto);
 
-        return view('presupuesto.show', compact('presupuesto', 'relacionGastos', 'volumetria', 'editarVol', 'diametrosVol', 'clienteSeleccionado', 'duracionApupi', 'filasApupi', 'resumenApupi', 'versionGuardada', 'versionUnica', 'presentacion', 'previo'));
+        $imagenesTipoPresupuesto = $this->imagenes->rutas();
+
+        return view('presupuesto.show', compact('presupuesto', 'relacionGastos', 'volumetria', 'editarVol', 'diametrosVol', 'clienteSeleccionado', 'duracionApupi', 'filasApupi', 'resumenApupi', 'versionGuardada', 'versionUnica', 'presentacion', 'previo', 'imagenesTipoPresupuesto'));
     }
 
     public function storeVersion(Request $request, Presupuesto $presupuesto)
@@ -768,7 +803,9 @@ class PresupuestoController extends Controller
         $obrasPlaneacion = $presupuesto->obras()->withPivot('planeacion_version_id')
             ->orderBy('obras.nombre')->get(['obras.id', 'obras.nombre'])->unique('id');
 
-        return view('presupuesto.version', compact('presupuesto', 'version', 'obrasPlaneacion'));
+        $imagenesTipoPresupuesto = $this->imagenes->rutas();
+
+        return view('presupuesto.version', compact('presupuesto', 'version', 'obrasPlaneacion', 'imagenesTipoPresupuesto'));
     }
 
     public function aplicarPlaneacionSemanal(Request $request, Presupuesto $presupuesto, int $version)
@@ -964,7 +1001,9 @@ class PresupuestoController extends Controller
     public function updateTraslapeVol(Request $request, Presupuesto $presupuesto)
     {
         $datos = $request->validateWithBag('traslapeVol', [
-            'vol_traslape_varilla' => ['required', 'numeric', 'decimal:0,5', 'between:0,99999.99999'],
+            'vol_traslape_varilla' => ['required', 'numeric', 'decimal:0,5', 'between:0,11.99999'],
+        ], [
+            'vol_traslape_varilla.between' => 'El traslape por empalme debe ser mayor o igual a 0 y menor a 12 m.',
         ]);
         DB::transaction(function () use ($presupuesto, $datos) {
             $actual = $this->bloquearBorrador($presupuesto);
@@ -1097,6 +1136,7 @@ class PresupuestoController extends Controller
             'folio' => $folio,
             'referencia' => $origen['codigo_proyecto'],
             'fecha' => $version->created_at->format('d/m/Y'),
+            'imagen_tipo' => $this->imagenes->rutaPdf($presupuesto->tipo),
         ];
         $archivo = $this->nombrePdf($origen['codigo_proyecto'], ltrim($folio, '#'));
 
@@ -1137,6 +1177,7 @@ class PresupuestoController extends Controller
             'folio' => $presupuesto->codigo_proyecto,
             'referencia' => null,
             'fecha' => now()->format('d/m/Y'),
+            'imagen_tipo' => $this->imagenes->rutaPdf($presupuesto->tipo),
         ];
 
         return $this->imprimirPresentacion($cabecera, $presentacion, $this->nombrePdf($presupuesto->codigo_proyecto));

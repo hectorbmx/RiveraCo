@@ -50,6 +50,20 @@ return [
             'user' => env('FACTURACION_GRAPH_USER', env('FACTURACION_MAIL_FROM_ADDRESS')),
         ],
     ],
+    'mail_followup' => [
+        'pilot_enabled' => env('MAIL_FOLLOWUP_PILOT_ENABLED', false),
+        'mailbox' => env('MAIL_FOLLOWUP_MAILBOX', 'pilas@riveraco.com.mx'),
+        'openai' => [
+            'enabled' => env('MAIL_FOLLOWUP_AI_ENABLED', false),
+            'key' => env('OPENAI_API_KEY'),
+            'model' => env('MAIL_FOLLOWUP_AI_MODEL', 'gpt-4.1-mini'),
+        ],
+        'microsoft_graph' => [
+            'tenant_id' => env('GRAPH_FOLLOWUP_TENANT_ID'),
+            'client_id' => env('GRAPH_FOLLOWUP_CLIENT_ID'),
+            'client_secret' => env('GRAPH_FOLLOWUP_CLIENT_SECRET'),
+        ],
+    ],
     'alertas_mail' => [
         'provider' => env('ALERTAS_MAIL_PROVIDER', env('FACTURACION_MAIL_PROVIDER', 'laravel')),
         'mailer' => env('ALERTAS_MAIL_MAILER', env('FACTURACION_MAIL_MAILER', 'facturas')),
