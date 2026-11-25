@@ -7,6 +7,7 @@ use App\Models\Presupuesto;
 use App\Models\User;
 use App\Support\FoliosPresupuesto;
 use App\Support\ImagenesTipoPresupuesto;
+use App\Support\PresentacionPresupuesto;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -15,6 +16,53 @@ use Tests\TestCase;
 
 class PresupuestoCabeceraTest extends TestCase
 {
+    public function test_notas_de_ejecucion_precargan_las_semanas_realistas_y_conservan_el_texto_editado(): void
+    {
+        $this->assertSame('rivera_v2_testing', DB::connection()->getDatabaseName());
+        $this->assertSame('127.0.0.1', DB::connection()->getConfig('host'));
+        $this->withoutExceptionHandling([ValidationException::class]);
+        $this->actingAs(User::factory()->make());
+
+        DB::beginTransaction();
+        try {
+            $presupuesto = Presupuesto::create([
+                'codigo_proyecto' => 'PRUEBA-NOTAS-' . str()->uuid(),
+                'nombre_cliente' => 'Cliente de prueba',
+                'origen' => Presupuesto::ORIGEN_SIRICO,
+            ]);
+            $presupuesto->duracion_apupi = ['realista' => ['semanas' => 3], 'optimista' => ['semanas' => 2]];
+            $presupuesto->save();
+            $detalle = route('presupuesto.show', $presupuesto);
+
+            $this->get($detalle)->assertOk()->assertViewHas('presentacion', function (array $presentacion) {
+                $nota = $presentacion['nota_ejecucion'];
+                $this->assertSame('#ff0000', $nota[0]['attributes']['color']);
+                $this->assertStringContainsString('50% de anticipo', $nota[0]['insert']);
+                $this->assertStringContainsString('3 semanas', $nota[2]['insert']);
+                $this->assertStringContainsString('"notas importantes"', $nota[4]['insert']);
+                $this->assertStringContainsString('<span style="color:#ff0000">', PresentacionPresupuesto::htmlNotaEjecucion($nota));
+
+                return true;
+            });
+
+            $ruta = route('presupuesto.presentacion.nota-ejecucion.update', $presupuesto);
+            $nota = [['insert' => "Plazo acordado con el cliente.\n", 'attributes' => ['color' => '#333399']]];
+            $this->patchJson($ruta, ['nota_ejecucion' => json_encode($nota)])->assertOk()->assertJson(['ok' => true]);
+            $this->get($detalle)->assertOk()->assertViewHas('presentacion', fn (array $presentacion) => $presentacion['nota_ejecucion'] == $nota);
+
+            $nota[0]['attributes']['color'] = '#333399;background:red';
+            $this->patchJson($ruta, ['nota_ejecucion' => json_encode($nota)])
+                ->assertUnprocessable()->assertJsonValidationErrors('nota_ejecucion.0.attributes.color');
+
+            $this->patchJson($ruta, ['nota_ejecucion' => '[]'])->assertOk();
+            $this->get($detalle)->assertOk()
+                ->assertViewHas('presentacion', fn (array $presentacion) => $presentacion['nota_ejecucion'] === []
+                    && $presentacion['anticipo_y_plazo_en_notas']);
+        } finally {
+            DB::rollBack();
+        }
+    }
+
     public function test_apupi_suma_jornales_exactos_y_redondea_los_escenarios_como_excel(): void
     {
         $this->assertSame('rivera_v2_testing', DB::connection()->getDatabaseName());

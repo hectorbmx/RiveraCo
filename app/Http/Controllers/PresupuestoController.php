@@ -236,10 +236,11 @@ class PresupuestoController extends Controller
             'nota_ejecucion' => ['present', 'array', 'max:1500'],
             'nota_ejecucion.*' => ['required', 'array:insert,attributes'],
             'nota_ejecucion.*.insert' => ['present', 'string', 'max:10000'],
-            'nota_ejecucion.*.attributes' => ['sometimes', 'array:bold,italic,list'],
+            'nota_ejecucion.*.attributes' => ['sometimes', 'array:bold,italic,list,color'],
             'nota_ejecucion.*.attributes.bold' => ['sometimes', 'boolean'],
             'nota_ejecucion.*.attributes.italic' => ['sometimes', 'boolean'],
             'nota_ejecucion.*.attributes.list' => ['sometimes', 'in:ordered,bullet'],
+            'nota_ejecucion.*.attributes.color' => ['sometimes', 'string', 'regex:/\A#[0-9a-f]{6}\z/i'],
         ], [], ['nota_ejecucion' => 'notas de ejecución'])->validate();
 
         $nota = $datos['nota_ejecucion'];
@@ -253,6 +254,9 @@ class PresupuestoController extends Controller
         DB::transaction(function () use ($presupuesto, $nota, $texto) {
             $actual = $this->bloquearBorrador($presupuesto);
             $presentacion = $actual->presentacion_comercial ?? [];
+            if (!isset($presentacion['nota_ejecucion'])) {
+                $presentacion['anticipo_y_plazo_en_notas'] = true;
+            }
             $presentacion['nota_ejecucion'] = trim($texto) === '' ? [] : $nota;
             $actual->presentacion_comercial = $presentacion;
             $actual->save();

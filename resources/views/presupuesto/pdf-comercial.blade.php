@@ -148,11 +148,11 @@
 <table class="cierre">
     <tr>
         <td class="datos-ejecucion">
-            @if($presentacion['anticipo'] !== null)
+            @if($presentacion['anticipo'] !== null && empty($presentacion['anticipo_y_plazo_en_notas']))
                 <p class="anticipo">Anticipo del {{ $decimal($presentacion['anticipo']) }} %.</p>
             @endif
             @if($presentacion['condiciones_pago'])<p>{!! nl2br(e($presentacion['condiciones_pago'])) !!}</p>@endif
-            @if($presentacion['plazo_semanas'] !== null)
+            @if($presentacion['plazo_semanas'] !== null && empty($presentacion['anticipo_y_plazo_en_notas']))
                 <p><strong>Periodo de ejecución</strong> {{ $decimal($presentacion['plazo_semanas']) }} semanas aproximadamente.</p>
             @endif
             @if($operacionesNota && $notaEnCierre)

@@ -48,6 +48,7 @@ class PresentacionPresupuesto
         $subtotal = PropuestaApupi::totalVenta($filas);
         $tasa = $captura['iva'] ?? 16;
         $iva = round($subtotal * (float) $tasa / 100, 2);
+        $notaEjecucion = $captura['nota_ejecucion'] ?? null;
 
         return [
             'domicilio' => $captura['domicilio'] ?? $direccion,
@@ -59,7 +60,10 @@ class PresentacionPresupuesto
             'anticipo' => $captura['anticipo'] ?? null,
             'condiciones_pago' => $captura['condiciones_pago'] ?? null,
             'plazo_semanas' => $captura['plazo_semanas'] ?? $duracion['realista']['semanas'],
-            'nota_ejecucion' => $captura['nota_ejecucion'] ?? [],
+            'nota_ejecucion' => $notaEjecucion ?? self::notasEjecucionIniciales(
+                $duracion['realista']['semanas'], (float) ($captura['anticipo'] ?? 50)
+            ),
+            'anticipo_y_plazo_en_notas' => $notaEjecucion === null || ($captura['anticipo_y_plazo_en_notas'] ?? false),
             'notas' => $captura['notas'] ?? self::notas($equipoPesado, $filas),
             'filas' => self::numerar($filas)->all(),
             'subtotal' => $subtotal,
@@ -87,6 +91,27 @@ class PresentacionPresupuesto
 
             return $fila + ['numero' => $numero, 'numero_encabezado' => $encabezado];
         });
+    }
+
+    private static function notasEjecucionIniciales(?int $semanas, float $anticipo): array
+    {
+        $porcentaje = rtrim(rtrim(number_format($anticipo, 2, '.', ''), '0'), '.');
+        $duracion = match (true) {
+            $semanas === null => 'por definir.',
+            $semanas === 1 => '1 semana aproximadamente con un equipo de perforación.',
+            default => "{$semanas} semanas aproximadamente con un equipo de perforación.",
+        };
+
+        return [
+            ['insert' => "- Se requiere el pago del {$porcentaje}% de anticipo, resto antes de terminar los trabajos.",
+                'attributes' => ['bold' => true, 'color' => '#ff0000']],
+            ['insert' => "\n"],
+            ['insert' => "- Periodo de ejecución de los trabajos: {$duracion}", 'attributes' => ['bold' => true]],
+            ['insert' => "\n"],
+            ['insert' => '- Al recibir el anticipo se dan por aceptadas las "notas importantes" abajo mencionadas.',
+                'attributes' => ['bold' => true]],
+            ['insert' => "\n"],
+        ];
     }
 
     public static function htmlNotaEjecucion(array $operaciones): string
@@ -129,6 +154,10 @@ class PresentacionPresupuesto
                 }
                 if ($atributos['bold'] ?? false) {
                     $texto = "<strong>{$texto}</strong>";
+                }
+                $color = $atributos['color'] ?? null;
+                if (is_string($color) && preg_match('/\A#[0-9a-f]{6}\z/i', $color)) {
+                    $texto = '<span style="color:' . $color . '">' . $texto . '</span>';
                 }
                 $renglon .= $texto;
             }

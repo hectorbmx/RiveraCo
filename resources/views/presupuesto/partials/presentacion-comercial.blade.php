@@ -16,6 +16,7 @@
                     </label>
                 @endforeach
                 @foreach(['anticipo' => ['Anticipo (%)',100], 'plazo_semanas' => ['Plazo (semanas)',99999], 'iva' => ['IVA (%)',100]] as $campo => [$etiqueta, $maximo])
+                    @continue($campo !== 'iva' && $presentacion['anticipo_y_plazo_en_notas'])
                     <label class="text-sm font-medium">{{ $etiqueta }}
                         <input name="{{ $campo }}" type="number" min="0" max="{{ $maximo }}" step="0.01" value="{{ old($campo, $campo === 'iva' ? $presentacion['tasa_iva'] : $presentacion[$campo]) }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm">
                     </label>
@@ -92,7 +93,9 @@
                     <div class="max-w-4xl space-y-2">
                         <h3 id="titulo-nota-ejecucion" class="font-semibold text-slate-800">Notas de ejecución</h3>
                         <div class="bg-white [&_.ql-editor]:min-h-24"
-                             x-init="$iniciarNotaEjecucion($el, JSON.parse(notaEjecucion), programarNotaEjecucion.bind($data)).catch(() => errorEditorNota = true)"></div>
+                             @focusout="if (!$el.contains($event.relatedTarget)) enviarNotaEjecucion()">
+                            <div x-init="$iniciarNotaEjecucion($el, JSON.parse(notaEjecucion), editarNotaEjecucion.bind($data)).catch(() => errorEditorNota = true)"></div>
+                        </div>
                         <p x-show="errorEditorNota" x-cloak role="alert" class="text-red-700">No se pudo cargar el editor de notas.</p>
                         <p x-show="notaPendiente || notaEnviada !== null" x-cloak role="status" class="text-slate-700">
                             <span x-text="errorNota || (notaEnviada !== null ? 'Guardando notas…' : 'Cambios de notas pendientes')"></span>

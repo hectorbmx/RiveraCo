@@ -28,7 +28,7 @@
     notaEjecucion: JSON.stringify(@js($presentacion['nota_ejecucion'])),
     notaGuardada: JSON.stringify(@js($presentacion['nota_ejecucion'])),
     notaEnviada: null,
-    temporizadorNota: null,
+    turnoNota: 0,
     errorNota: '',
     errorEditorNota: false,
     urlSemanas: @js(route('presupuesto.gastos-semanales.update', $presupuesto)),
@@ -58,19 +58,18 @@
     get notaPendiente() {
         return this.notaEjecucion !== this.notaGuardada;
     },
-    programarNotaEjecucion(operaciones) {
+    editarNotaEjecucion(operaciones) {
         this.notaEjecucion = JSON.stringify(operaciones);
         this.errorNota = '';
-        clearTimeout(this.temporizadorNota);
-        this.temporizadorNota = setTimeout(() => this.enviarNotaEjecucion(), 800);
     },
     enviarNotaEjecucion() {
-        clearTimeout(this.temporizadorNota);
-        if (!this.notaPendiente || this.notaEnviada !== null) return;
+        const nota = this.notaEjecucion;
+        if (nota === (this.notaEnviada ?? this.notaGuardada)) return;
 
-        const nota = this.notaEnviada = this.notaEjecucion;
-        this.errorNota = '';
+        const turno = ++this.turnoNota;
+        this.notaEnviada = nota;
         this.cola = this.cola.then(async () => {
+            this.errorNota = '';
             try {
                 const respuesta = await fetch(new URL(this.urlNotaEjecucion, location.href).pathname, {
                     method: 'PATCH',
@@ -87,8 +86,7 @@
                 this.errorNota = error instanceof TypeError ? 'No se pudo conectar para guardar las notas.' : error.message;
                 this.avisar(this.errorNota, true);
             } finally {
-                this.notaEnviada = null;
-                if (this.notaEjecucion !== nota && this.notaPendiente) this.enviarNotaEjecucion();
+                if (this.turnoNota === turno) this.notaEnviada = null;
             }
         });
     },
@@ -222,7 +220,7 @@
     async esperarCambios() {
         this.errorVersion = '';
         if (this.$root.contains(document.activeElement)
-            && document.activeElement.matches('[data-guardado], [data-concepto-guardado], [data-gasto-semanal], [data-previo-config] :is(input, select, textarea)')) {
+            && document.activeElement.matches('.ql-editor, [data-guardado], [data-concepto-guardado], [data-gasto-semanal], [data-previo-config] :is(input, select, textarea)')) {
             document.activeElement.blur();
         }
         let pendiente;
