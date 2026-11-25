@@ -11,8 +11,14 @@ class MailFollowupController extends Controller
 {
     public function index(): View
     {
-        if (!app()->environment('local') || !config('services.mail_followup.pilot_enabled')) {
+        $pilotoLocal = app()->environment('local') && config('services.mail_followup.pilot_enabled');
+        $produccionHabilitada = app()->environment('production') && config('services.mail_followup.production_enabled');
+        if (!$pilotoLocal && !$produccionHabilitada) {
             return view('seguimientos.index');
+        }
+
+        if ($produccionHabilitada) {
+            $this->authorize('seguimientos.view.access');
         }
 
         $mailbox = (string) config('services.mail_followup.mailbox');
@@ -56,7 +62,7 @@ class MailFollowupController extends Controller
             ])
             ->filter(fn (array $empleado) => $empleado['nombre'] !== '')->values();
 
-        return view('seguimientos.index', compact('hilosPiloto', 'mailbox', 'empleadosResponsables'));
+        return view('seguimientos.index', compact('hilosPiloto', 'mailbox', 'empleadosResponsables', 'pilotoLocal'));
     }
 
     private function localDate(string $date): string

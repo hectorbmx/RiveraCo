@@ -98,7 +98,7 @@
             <p class="mt-1 text-sm text-slate-600">Solicitudes de clientes en <span class="font-medium text-slate-800">{{ $mailbox ?? 'pilas@riveraco.com.mx' }}</span></p>
         </div>
         <p class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
-            {{ $piloto ? 'Piloto local · Correos reales' : 'Vista previa · Datos de ejemplo' }}
+            {{ $piloto ? ($pilotoLocal ? 'Piloto local · Correos reales' : 'Correos reales · Importación manual') : 'Vista previa · Datos de ejemplo' }}
         </p>
     </header>
 

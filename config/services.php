@@ -52,6 +52,7 @@ return [
     ],
     'mail_followup' => [
         'pilot_enabled' => env('MAIL_FOLLOWUP_PILOT_ENABLED', false),
+        'production_enabled' => env('MAIL_FOLLOWUP_PRODUCTION_ENABLED', false),
         'mailbox' => env('MAIL_FOLLOWUP_MAILBOX', 'pilas@riveraco.com.mx'),
         'openai' => [
             'enabled' => env('MAIL_FOLLOWUP_AI_ENABLED', false),

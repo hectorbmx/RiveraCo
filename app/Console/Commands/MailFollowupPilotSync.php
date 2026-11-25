@@ -13,7 +13,7 @@ class MailFollowupPilotSync extends Command
 {
     protected $signature = 'mail-followup:pilot-sync
         {--limite=10 : Mensajes recientes por carpeta, de 1 a 20}
-        {--guardar : Clasificar y guardar la muestra en la bitácora local}';
+        {--guardar : Clasificar y guardar la muestra en la bitácora}';
 
     protected $description = 'Lee una muestra acotada de Recibidos y Enviados para el piloto de Seguimientos';
 
@@ -29,8 +29,13 @@ class MailFollowupPilotSync extends Command
             return self::FAILURE;
         }
 
-        if (!app()->environment('local') || ($save && !config('services.mail_followup.pilot_enabled'))) {
-            $this->error('La prueba es local. Para guardar, activa MAIL_FOLLOWUP_PILOT_ENABLED y aplica la migración.');
+        if (app()->environment('local') && $save && !config('services.mail_followup.pilot_enabled')) {
+            $this->error('Para guardar en local, activa MAIL_FOLLOWUP_PILOT_ENABLED y aplica la migración.');
+            return self::FAILURE;
+        }
+
+        if (!app()->environment('local') && !(app()->environment('production') && config('services.mail_followup.production_enabled'))) {
+            $this->error('La importación manual está deshabilitada en este entorno. En producción se habilita con MAIL_FOLLOWUP_PRODUCTION_ENABLED.');
 
             return self::FAILURE;
         }
@@ -54,7 +59,7 @@ class MailFollowupPilotSync extends Command
 
             $counts = $pilot->import($mailbox, $inbox, $sent);
         } catch (QueryException) {
-            $this->error('Falló la escritura del piloto. Comprueba la migración y la conexión local. Puedes reintentar la muestra.');
+            $this->error('Falló la escritura en la bitácora. Comprueba la migración y la conexión a la base de datos. Puedes reintentar la muestra.');
 
             return self::FAILURE;
         } catch (RuntimeException $error) {

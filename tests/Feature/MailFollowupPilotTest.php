@@ -2,16 +2,66 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use App\Services\Mail\MailFollowupClassifier;
 use App\Services\Mail\MailFollowupPilot;
+use App\Services\Mail\MicrosoftGraphFollowupClient;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class MailFollowupPilotTest extends TestCase
 {
+    public function test_production_requires_explicit_activation_and_permission_to_view_imported_mail(): void
+    {
+        $this->assertSame('rivera_v2_testing', DB::connection()->getDatabaseName());
+        $this->assertSame('127.0.0.1', DB::connection()->getConfig('host'));
+        $this->assertTrue(Schema::hasTable('mail_followups'));
+        $this->app->instance('env', 'production');
+        $mailbox = str()->uuid() . '@example.test';
+        config([
+            'services.mail_followup.mailbox' => $mailbox,
+            'services.mail_followup.pilot_enabled' => true,
+            'services.mail_followup.production_enabled' => false,
+            'services.mail_followup.openai.enabled' => false,
+        ]);
+        Http::preventStrayRequests();
+        $graph = $this->mock(MicrosoftGraphFollowupClient::class);
+        $graph->shouldReceive('accessToken')->once()->andReturn('token-prueba');
+        $graph->shouldReceive('recentMessages')->once()->with($mailbox, 'inbox', 'token-prueba', 8)->andReturn([[
+            'id' => 'message-A', 'conversationId' => 'thread-a', 'subject' => 'Cotización real de prueba',
+            'bodyPreview' => 'Solicitamos cotización para perforación.', 'receivedDateTime' => '2026-11-24T15:00:00Z',
+        ]]);
+        $graph->shouldReceive('recentMessages')->once()->with($mailbox, 'sentitems', 'token-prueba', 8)->andReturn([]);
+
+        DB::beginTransaction();
+        try {
+            $usuario = User::factory()->create();
+            $this->actingAs($usuario);
+            $ruta = route('seguimientos.index');
+            $comando = 'mail-followup:pilot-sync --limite=8 --guardar';
+
+            $this->artisan($comando)->assertFailed();
+            $this->get($ruta)->assertOk()->assertSee('Vista previa · Datos de ejemplo');
+
+            config(['services.mail_followup.production_enabled' => true]);
+            $this->get($ruta)->assertForbidden();
+            $this->artisan($comando)->assertSuccessful();
+            $this->assertDatabaseHas('mail_followups', ['mailbox' => $mailbox, 'subject' => 'Cotización real de prueba']);
+
+            $usuario->givePermissionTo(Permission::findOrCreate('seguimientos.view.access', 'web'));
+            $this->get($ruta)->assertOk()->assertSee('Correos reales · Importación manual')->assertSee('Cotización real de prueba');
+        } finally {
+            DB::rollBack();
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+            $this->app->instance('env', 'testing');
+        }
+    }
+
     public function test_openai_receives_only_the_subject_and_excerpt_with_a_strict_schema(): void
     {
         config(['services.mail_followup.openai.enabled' => true, 'services.mail_followup.openai.key' => 'test-key']);
