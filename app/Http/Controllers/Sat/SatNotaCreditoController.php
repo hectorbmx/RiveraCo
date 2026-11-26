@@ -248,6 +248,8 @@ class SatNotaCreditoController extends Controller
             'sat_empresa_id' => ['required', Rule::exists('sat_empresas', 'id')->where('activo', true)],
             'cliente_id' => ['required', Rule::exists('clientes', 'id')->where('activo', true)],
             'motivo' => ['required', Rule::in(['anticipo', 'descuento', 'devolucion'])],
+            'detalle_motivo' => ['nullable', 'string', 'max:1000'],
+            'forma_pago' => ['exclude_if:motivo,anticipo', 'nullable', 'string', Rule::in(array_keys(NotaCreditoPreviewService::formasPagoEgreso()))],
             'tipo_relacion' => ['required', Rule::in(['01', '03', '07'])],
             'uuid_relacionado' => ['required', 'uuid'],
             'subtotal' => ['required', 'numeric', 'gt:0', 'max:9999999999999.99', 'decimal:0,2'],
@@ -257,7 +259,7 @@ class SatNotaCreditoController extends Controller
 
         $tiposPermitidos = ['anticipo' => '07', 'descuento' => '01', 'devolucion' => '03'];
         if ($data['tipo_relacion'] !== $tiposPermitidos[$data['motivo']]) {
-            throw ValidationException::withMessages(['tipo_relacion' => 'El tipo de relación no corresponde al motivo seleccionado.']);
+            throw ValidationException::withMessages(['tipo_relacion' => 'El tipo de relación no corresponde al tipo de operación seleccionado.']);
         }
 
         $factura = SatFactura::query()
@@ -286,6 +288,8 @@ class SatNotaCreditoController extends Controller
             'estado' => 'borrador',
             'payload' => [
                 'motivo' => $data['motivo'],
+                'detalle_motivo' => $data['detalle_motivo'] ?? null,
+                'forma_pago' => $data['forma_pago'] ?? null,
                 'tipo_relacion' => $data['tipo_relacion'],
                 'uuid_relacionado' => $factura->uuid,
                 'factura_relacionada_id' => $factura->id,
@@ -406,6 +410,8 @@ class SatNotaCreditoController extends Controller
         $clientes = Cliente::where('activo', true)->orderBy('razon_social')->orderBy('nombre_comercial')
             ->get(['id', 'razon_social', 'nombre_comercial', 'rfc']);
 
-        return view('sat.notas-credito.index', compact('notas', 'relaciones', 'foliosRelacionados', 'busqueda', 'estado', 'estados', 'empresas', 'clientes'));
+        $formasPago = NotaCreditoPreviewService::formasPagoEgreso();
+
+        return view('sat.notas-credito.index', compact('notas', 'relaciones', 'foliosRelacionados', 'busqueda', 'estado', 'estados', 'empresas', 'clientes', 'formasPago'));
     }
 }

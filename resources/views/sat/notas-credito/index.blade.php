@@ -6,11 +6,14 @@
 <div x-data="{
     modalAbierto: {{ $errors->any() ? 'true' : 'false' }}, motivo: {{ Illuminate\Support\Js::from(old('motivo', '')) }}, empresaId: {{ Illuminate\Support\Js::from((string) old('sat_empresa_id', '')) }}, clienteSeleccionado: {{ Illuminate\Support\Js::from((string) old('cliente_id', '')) }}, uuidFactura: {{ Illuminate\Support\Js::from(old('uuid_relacionado', '')) }}, moneda: {{ Illuminate\Support\Js::from(old('moneda', 'MXN')) }},
     borradorId: {{ Illuminate\Support\Js::from((string) old('borrador_id', '')) }}, tipoRelacion: {{ Illuminate\Support\Js::from(old('tipo_relacion', '')) }},
+    detalleMotivo: {{ Illuminate\Support\Js::from(old('detalle_motivo', '')) }},
+    formaPago: {{ Illuminate\Support\Js::from(old('forma_pago', '')) }},
     urlGuardar: {{ Illuminate\Support\Js::from(old('borrador_id') ? route('sat.notas-credito.borradores.update', old('borrador_id')) : route('sat.notas-credito.borradores.store')) }},
     consultaFactura: '', facturas: [], buscandoFacturas: false, errorFacturas: '', secuenciaFactura: 0,
     subtotal: {{ Illuminate\Support\Js::from((string) old('subtotal', '')) }}, tipoIva: {{ Illuminate\Support\Js::from(old('tipo_iva', '0.16')) }}, importeEnEdicion: false,
     dinero(valor) {
-        return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(Number(valor) || 0);
+        const moneda = /^[A-Z]{3}$/.test(this.moneda) ? this.moneda : 'MXN';
+        return new Intl.NumberFormat('es-MX', { style: 'currency', currency: moneda, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(valor) || 0);
     },
     actualizarSubtotal(evento) {
         let limpio = evento.target.value.replace(/[^0-9.]/g, '');
@@ -53,6 +56,8 @@
     nuevoBorrador() {
         this.borradorId = ''; this.urlGuardar = {{ Illuminate\Support\Js::from(route('sat.notas-credito.borradores.store')) }};
         this.empresaId = ''; this.clienteSeleccionado = ''; this.uuidFactura = ''; this.motivo = ''; this.tipoRelacion = '';
+        this.detalleMotivo = '';
+        this.formaPago = '';
         this.subtotal = ''; this.tipoIva = '0.16'; this.moneda = 'MXN'; this.consultaFactura = ''; this.facturas = [];
         this.$dispatch('nota-cliente-establecer', { id: '', nombre: '' });
         this.modalAbierto = true;
@@ -61,6 +66,8 @@
         this.borradorId = String(datos.id); this.urlGuardar = datos.url;
         this.empresaId = String(datos.empresa_id || ''); this.clienteSeleccionado = String(datos.cliente_id || '');
         this.uuidFactura = datos.uuid || ''; this.motivo = datos.motivo || ''; this.tipoRelacion = datos.tipo_relacion || '';
+        this.detalleMotivo = datos.detalle_motivo || '';
+        this.formaPago = datos.forma_pago || '';
         this.subtotal = String(datos.subtotal || ''); this.tipoIva = datos.tipo_iva || ''; this.moneda = datos.moneda || 'MXN';
         this.consultaFactura = ''; this.$dispatch('nota-cliente-establecer', { id: this.clienteSeleccionado, nombre: datos.cliente || '' });
         this.buscarFacturas(); this.modalAbierto = true;
@@ -177,10 +184,12 @@
                                                 'cliente' => $nota->cliente?->razon_social ?: $nota->cliente?->nombre_comercial,
                                                 'uuid' => $datosBorrador['uuid_relacionado'] ?? '',
                                                 'motivo' => $datosBorrador['motivo'] ?? '', 'tipo_relacion' => $datosBorrador['tipo_relacion'] ?? '',
+                                                'detalle_motivo' => $datosBorrador['detalle_motivo'] ?? '',
+                                                'forma_pago' => $datosBorrador['forma_pago'] ?? '',
                                                 'subtotal' => $datosBorrador['subtotal'] ?? '', 'tipo_iva' => $datosBorrador['tipo_iva'] ?? '',
                                                 'moneda' => $datosBorrador['moneda'] ?? 'MXN',
                                             ]) }})">Editar</button>
-                                        <a href="{{ route('sat.notas-credito.borradores.preview', $nota) }}" class="font-semibold text-blue-700 hover:underline">Previsualizar</a>
+                                        <a href="{{ route('sat.notas-credito.borradores.preview', $nota) }}" target="_blank" rel="noopener" class="font-semibold text-blue-700 hover:underline">Previsualizar</a>
                                         <form method="POST" action="{{ route('sat.notas-credito.borradores.destroy', $nota) }}" onsubmit="return confirm('¿Eliminar este borrador de nota de crédito? Esta acción no se puede deshacer.');">
                                             @csrf @method('DELETE')
                                             <button type="submit" class="font-semibold text-red-700 hover:underline">Borrar</button>
@@ -229,12 +238,12 @@
     <div x-cloak x-show="modalAbierto" class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4"
         role="dialog" aria-modal="true" aria-labelledby="nota-credito-modal-titulo" @click.self="modalAbierto = false">
         <div class="my-auto w-full max-w-3xl rounded-2xl bg-white shadow-xl">
-            <div class="flex items-start justify-between border-b border-slate-200 px-6 py-4">
+            <div class="flex items-start justify-between rounded-t-2xl bg-[#0B265A] px-6 py-4 text-white">
                 <div>
-                    <h2 id="nota-credito-modal-titulo" class="text-lg font-bold text-slate-900" x-text="borradorId ? 'Editar nota de crédito' : 'Nueva nota de crédito'"></h2>
-                    <p class="mt-1 text-sm text-slate-500">Datos del comprobante de egreso.</p>
+                    <h2 id="nota-credito-modal-titulo" class="text-lg font-bold" x-text="borradorId ? 'Editar nota de crédito' : 'Nueva nota de crédito'"></h2>
+                    <p class="mt-1 text-sm text-blue-100">Datos del comprobante de egreso.</p>
                 </div>
-                <button type="button" @click="modalAbierto = false" aria-label="Cerrar" class="rounded-lg px-2 text-2xl text-slate-500 hover:bg-slate-100">&times;</button>
+                <button type="button" @click="modalAbierto = false" aria-label="Cerrar" class="rounded-lg px-2 text-2xl text-white hover:bg-white/10">&times;</button>
             </div>
             <div class="max-h-[70vh] overflow-y-auto px-6 py-5">
                 @if($errors->any())
@@ -294,9 +303,11 @@
                         </div>
                     </div>
                     <div>
-                        <label for="nota-motivo" class="mb-1 block text-sm font-medium text-slate-700">Motivo</label>
-                        <select id="nota-motivo" name="motivo" x-model="motivo" class="w-full rounded-lg border-slate-300 text-sm">
-                            <option value="">Selecciona un motivo</option>
+                        <label for="nota-motivo" class="mb-1 block text-sm font-medium text-slate-700">Tipo de operación</label>
+                        <select id="nota-motivo" name="motivo" x-model="motivo"
+                            @change="tipoRelacion = ({ anticipo: '07', descuento: '01', devolucion: '03' })[$event.target.value] || ''"
+                            class="w-full rounded-lg border-slate-300 text-sm">
+                            <option value="">Selecciona un tipo de operación</option>
                             <option value="anticipo">Aplicación de anticipo</option>
                             <option value="descuento">Descuento o bonificación</option>
                             <option value="devolucion">Devolución</option>
@@ -310,6 +321,22 @@
                             <option value="01" @selected(old('tipo_relacion') === '01')>01 · Nota de crédito de los documentos relacionados</option>
                             <option value="03" @selected(old('tipo_relacion') === '03')>03 · Devolución de mercancía</option>
                         </select>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label for="nota-detalle-motivo" class="mb-1 block text-sm font-medium text-slate-700">Detalle del motivo (opcional)</label>
+                        <input id="nota-detalle-motivo" name="detalle_motivo" type="text" x-model="detalleMotivo" maxlength="1000"
+                            class="w-full rounded-lg border-slate-300 text-sm">
+                    </div>
+                    <div class="sm:col-span-2" x-show="motivo === 'descuento' || motivo === 'devolucion'">
+                        <label for="nota-forma-pago" class="mb-1 block text-sm font-medium text-slate-700">Forma de pago del egreso</label>
+                        <select id="nota-forma-pago" name="forma_pago" x-model="formaPago"
+                            :disabled="motivo !== 'descuento' && motivo !== 'devolucion'" class="w-full rounded-lg border-slate-300 text-sm">
+                            <option value="">Selecciona la forma de pago</option>
+                            @foreach($formasPago as $clave => $nombre)
+                                <option value="{{ $clave }}">{{ $nombre }}</option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1 text-xs text-slate-500">Requerida para timbrar. Usa 15 · Condonación si la factura de origen aún no se ha pagado y corresponde aplicar el egreso al saldo.</p>
                     </div>
                     <div class="sm:col-span-2">
                         <label for="nota-uuid" class="mb-1 block text-sm font-medium text-slate-700">UUID de la factura relacionada</label>
@@ -344,9 +371,9 @@
                         </div>
                         <p class="mt-1 text-xs text-slate-500">Se muestran facturas de ingreso timbradas en SIRICO para la empresa y cliente seleccionados.</p>
                     </div>
-                    <div class="sm:col-span-2 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div class="sm:col-span-2 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-5">
                     <div>
-                        <label for="nota-importe" class="mb-1 block text-sm font-medium text-slate-700">Importe antes de impuestos</label>
+                        <label for="nota-importe" class="mb-1 block text-sm font-medium text-slate-700">Subtotal</label>
                         <input type="hidden" name="subtotal" :value="subtotal">
                         <input id="nota-importe" type="text" inputmode="decimal" autocomplete="off" required
                             :value="importeEnEdicion || subtotal === '' ? subtotal : dinero(subtotal)"
@@ -361,7 +388,10 @@
                             <option value="exento">Exento (sin traslado)</option>
                             <option value="sin_iva">Sin IVA (no objeto)</option>
                         </select>
-                        <p class="mt-1 text-xs text-slate-500">Importe de IVA: <span x-text="dinero(iva)"></span></p>
+                    </div>
+                    <div>
+                        <label for="nota-iva-calculado" class="mb-1 block text-sm font-medium text-slate-700">Importe de IVA</label>
+                        <input id="nota-iva-calculado" type="text" :value="dinero(iva)" readonly class="w-full rounded-lg border-slate-300 bg-slate-50 text-sm">
                     </div>
                     <div>
                         <label for="nota-total" class="mb-1 block text-sm font-medium text-slate-700">Total</label>
