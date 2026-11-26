@@ -12,7 +12,6 @@ use App\Models\ObraSolicitudGastoDetalle;
 use App\Models\OrdenCompra;
 use App\Models\Presupuesto;
 use Illuminate\Http\Request;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 
@@ -21,6 +20,8 @@ use App\Models\PresupuestoDetalle;
 use App\Models\PresupuestoEvento;
 use App\Models\PresupuestoVolPila;
 use App\Models\PresupuestoVersion;
+use App\Services\Presupuestos\ConsultaPresupuesto;
+use App\Services\Presupuestos\PdfPresupuesto;
 use App\Support\DatosPresupuestoVersion;
 use App\Support\FoliosPresupuesto;
 use App\Support\ImagenesTipoPresupuesto;
@@ -38,8 +39,12 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 class PresupuestoController extends Controller
 {
-    public function __construct(private FoliosPresupuesto $folios, private ImagenesTipoPresupuesto $imagenes)
-    {
+    public function __construct(
+        private FoliosPresupuesto $folios,
+        private ImagenesTipoPresupuesto $imagenes,
+        private ConsultaPresupuesto $consulta,
+        private PdfPresupuesto $pdf,
+    ) {
     }
 
     public function index(Request $request)
@@ -62,42 +67,25 @@ class PresupuestoController extends Controller
                     ->whereColumn('posterior.presupuesto_version_id', 'presupuesto_eventos.presupuesto_version_id')
                     ->whereColumn('posterior.id', '>', 'presupuesto_eventos.id');
             });
-        $presupuestos = Presupuesto::query()
+        $presupuestos = $this->consulta->listado($buscar, $tipoFiltro)
             ->addSelect(['ultimo_movimiento_id' => $movimientos, 'aceptacion_vigente_id' => $aceptacion])
-            ->withCount('versiones')
             ->withExists([
                 'eventos as tiene_seguimiento' => fn ($eventos) => $eventos->whereIn('tipo', array_keys(PresupuestoEvento::TIPOS_SEGUIMIENTO)),
                 'obras',
             ])
             ->with([
-                'cliente:id,nombre_comercial',
                 'ultimoMovimiento.version:id,presupuesto_id,revision',
                 'aceptacionVigente.version:id,presupuesto_id,revision',
             ])
-            ->when($tipoFiltro !== null, fn ($query) => $query->where('presupuestos.tipo', $tipoFiltro))
-            ->when($buscar !== '', function ($query) use ($buscar) {
-                $literal = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $buscar);
-                $query->where(function ($query) use ($literal) {
-                    $query->whereRaw("nombre_cliente LIKE ? ESCAPE '!'", ['%' . $literal . '%'])
-                        ->orWhereRaw("codigo_proyecto LIKE ? ESCAPE '!'", ['%' . $literal . '%'])
-                        ->orWhereHas('cliente', fn ($cliente) => $cliente->whereRaw(
-                            "nombre_comercial LIKE ? ESCAPE '!'", ['%' . $literal . '%']
-                        ));
-                });
-            })
-            ->orderBy('created_at', 'desc')
             ->get();
         $presupuestos->each(function (Presupuesto $presupuesto) {
             $presupuesto->ultimoMovimiento?->version?->setRelation('presupuesto', $presupuesto);
             $presupuesto->aceptacionVigente?->version?->setRelation('presupuesto', $presupuesto);
         });
-        $presupuestos->where('versiones_count', 1)->load('ultimaVersion');
-        $presupuestos->filter(fn (Presupuesto $p) => $p->estaAprobado())->load('versionAprobada');
-        $borradores = $presupuestos->reject(fn (Presupuesto $p) => $p->esImportado()
-            || $p->estaAprobado() || $this->versionComercialUnica($p));
-        $borradores->load(['detalles', 'pilas', 'pilasVol']);
-
-        $importes = $presupuestos->mapWithKeys(fn (Presupuesto $p) => [$p->id => $this->importesListado($p)]);
+        $this->consulta->cargarImportes($presupuestos);
+        $importes = $presupuestos->mapWithKeys(fn (Presupuesto $p) => [
+            $p->id => $this->consulta->importes($p, $this->consulta->versionPreferida($p)),
+        ]);
 
         $origenDuplicacion = isset($filtros['duplicar']) ? Presupuesto::findOrFail($filtros['duplicar']) : null;
         $versionDuplicacion = $origenDuplicacion?->versionParaDuplicar();
@@ -118,44 +106,6 @@ class PresupuestoController extends Controller
         return view('presupuesto.index', compact('presupuestos', 'buscar', 'tipoFiltro', 'importes', 'nuevoPresupuesto', 'clienteSeleccionado', 'foliosNuevos', 'imagenesTipoPresupuesto', 'origenDuplicacion', 'versionDuplicacion'));
     }
 
-    private function versionComercialUnica(Presupuesto $presupuesto): ?PresupuestoVersion
-    {
-        if ($presupuesto->versiones_count !== 1) {
-            return null;
-        }
-
-        $version = $presupuesto->ultimaVersion;
-
-        return $version?->tieneVenta() ? $version : null;
-    }
-
-    private function importesListado(Presupuesto $presupuesto): array
-    {
-        $version = $presupuesto->estaAprobado() ? $presupuesto->versionAprobada : $this->versionComercialUnica($presupuesto);
-        if ($version) {
-            $datos = $version->datos;
-
-            return [
-                'directo' => $datos['previo']['escenarios']['realista']['directo']
-                    ?? $datos['apupi']['resumen']['realista']['total_directo']
-                    ?? $datos['presupuesto']['total_costo_directo'] ?? null,
-                'total' => $datos['presentacion']['total'] ?? $version->total_venta,
-            ];
-        }
-        if ($presupuesto->esImportado()) {
-            return ['directo' => $presupuesto->total_costo_directo, 'total' => $presupuesto->total_presupuesto];
-        }
-
-        $vol = $presupuesto->calcularVolumetria();
-        $duracion = $this->duracionApupiDesdeVol($presupuesto, $vol);
-        [$costos, $resumen] = $this->calcularApupi($presupuesto, $vol, $duracion);
-        $directo = $resumen['realista']['total_directo'];
-
-        return [
-            'directo' => $directo === null ? null : round($directo + ($resumen['propuesta']['filas']['venta-218']['importe'] ?? 0), 2),
-            'total' => PresentacionPresupuesto::preparar($presupuesto, $costos, $resumen, $duracion)['total'],
-        ];
-    }
     public function create(Request $request)
     {
         $presupuesto = new Presupuesto(['origen' => Presupuesto::ORIGEN_SIRICO]);
@@ -333,8 +283,8 @@ class PresupuestoController extends Controller
         DB::transaction(function () use ($presupuesto, $renglon, $datos) {
             $actual = $this->bloquearBorrador($presupuesto);
             $vol = $actual->calcularVolumetria();
-            $duracion = $this->duracionApupiDesdeVol($actual, $vol);
-            $filas = $this->filasPropuesta($actual, $vol, $duracion)
+            $duracion = $this->consulta->duracionApupiDesdeVol($actual, $vol);
+            $filas = $this->consulta->filasPropuesta($actual, $vol, $duracion)
                 ->filter(fn (array $fila) => $fila['cantidad'] > 0 && $fila['precio_unitario'] > 0);
             $captura = $actual->presentacion_comercial ?? [];
 
@@ -450,8 +400,8 @@ class PresupuestoController extends Controller
     private function calcularPrevio(Presupuesto $presupuesto): array
     {
         $vol = $presupuesto->calcularVolumetria();
-        $duracion = $this->duracionApupiDesdeVol($presupuesto, $vol);
-        [$costos, $resumen] = $this->calcularApupi($presupuesto, $vol, $duracion);
+        $duracion = $this->consulta->duracionApupiDesdeVol($presupuesto, $vol);
+        [$costos, $resumen] = $this->consulta->calcularApupi($presupuesto, $vol, $duracion);
 
         return [$resumen['propuesta'], PrevioPresupuesto::preparar($presupuesto, $costos, $resumen['propuesta'], $duracion)];
     }
@@ -519,8 +469,8 @@ class PresupuestoController extends Controller
         DB::transaction(function () use ($presupuesto, $detalle, $datos) {
             $actual = $this->bloquearBorrador($presupuesto);
             $vol = $actual->calcularVolumetria();
-            $duracion = $this->duracionApupiDesdeVol($actual, $vol);
-            $propuesta = $this->filasPropuesta($actual, $vol, $duracion);
+            $duracion = $this->consulta->duracionApupiDesdeVol($actual, $vol);
+            $propuesta = $this->consulta->filasPropuesta($actual, $vol, $duracion);
             $filas = $actual->filasApupi($duracion, PropuestaApupi::totalVenta($propuesta));
             $fila = $filas->get($detalle) ?? (ctype_digit($detalle) ? $filas->firstWhere('detalle.id', '===', (int) $detalle) : null);
             abort_if($fila === null, 404);
@@ -596,8 +546,8 @@ class PresupuestoController extends Controller
         DB::transaction(function () use ($presupuesto, $renglon, $datos) {
             $actual = $this->bloquearBorrador($presupuesto);
             $vol = $actual->calcularVolumetria();
-            $duracion = $this->duracionApupiDesdeVol($actual, $vol);
-            $filas = $this->filasPropuesta($actual, $vol, $duracion);
+            $duracion = $this->consulta->duracionApupiDesdeVol($actual, $vol);
+            $filas = $this->consulta->filasPropuesta($actual, $vol, $duracion);
             $fila = $filas->get($renglon);
             abort_if($fila === null, 404);
             $ajustes = $actual->ajustes_propuesta_apupi ?? [];
@@ -627,34 +577,14 @@ class PresupuestoController extends Controller
         return $this->respuestaCostoApupi($request, $presupuesto);
     }
 
-    private function duracionApupiDesdeVol(Presupuesto $presupuesto, array $vol): array
-    {
-        return $presupuesto->duracionApupi($vol['filas']->isEmpty() ? null : $vol['totales']['jornales_exactos']);
-    }
-
-    private function filasPropuesta(Presupuesto $presupuesto, array $vol, array $duracion): Collection
-    {
-        return PropuestaApupi::filas($presupuesto, $vol, $presupuesto->filasApupi($duracion), $duracion['realista']['semanas']);
-    }
-
-    private function calcularApupi(Presupuesto $presupuesto, array $vol, array $duracion): array
-    {
-        $filas = $this->filasPropuesta($presupuesto, $vol, $duracion);
-        $costos = $presupuesto->filasApupi($duracion, PropuestaApupi::totalVenta($filas));
-        $resumen = $presupuesto->resumenApupi($costos, $vol['totales']['perforacion']);
-        $resumen['propuesta'] = PropuestaApupi::calcular($filas, $vol, $resumen, $costos, $duracion);
-
-        return [$costos, $resumen];
-    }
-
     private function respuestaCostoApupi(Request $request, Presupuesto $presupuesto)
     {
         if ($request->expectsJson()) {
             $presupuesto->refresh();
             $vol = $presupuesto->calcularVolumetria();
-            $duracion = $this->duracionApupiDesdeVol($presupuesto, $vol);
+            $duracion = $this->consulta->duracionApupiDesdeVol($presupuesto, $vol);
 
-            [$costos, $resumen] = $this->calcularApupi($presupuesto, $vol, $duracion);
+            [$costos, $resumen] = $this->consulta->calcularApupi($presupuesto, $vol, $duracion);
             $resumen['presentacion'] = PresentacionPresupuesto::preparar($presupuesto, $costos, $resumen, $duracion);
             $resumen['previo'] = PrevioPresupuesto::preparar($presupuesto, $costos, $resumen['propuesta'], $duracion);
             $resumen['relacion_gastos'] = $this->relacionGastos($presupuesto, $costos, $duracion);
@@ -745,19 +675,19 @@ class PresupuestoController extends Controller
             return redirect()->route('presupuesto.versiones.show', [$presupuesto, $presupuesto->version_aprobada_id]);
         }
         $volumetria = $presupuesto->calcularVolumetria();
-        $duracionApupi = $this->duracionApupiDesdeVol($presupuesto, $volumetria);
+        $duracionApupi = $this->consulta->duracionApupiDesdeVol($presupuesto, $volumetria);
         $editarVol = $volumetria['filas']->firstWhere('pila.id', $request->integer('editar_pila'))['pila'] ?? null;
         $diametrosVol = $this->diametrosPilasVol();
 
         $clienteSeleccionado = $this->clienteSeleccionado($request, $presupuesto);
-        [$filasApupi, $resumenApupi] = $this->calcularApupi($presupuesto, $volumetria, $duracionApupi);
+        [$filasApupi, $resumenApupi] = $this->consulta->calcularApupi($presupuesto, $volumetria, $duracionApupi);
         $relacionGastos = $this->relacionGastos($presupuesto, $filasApupi, $duracionApupi);
         $presentacion = PresentacionPresupuesto::preparar($presupuesto, $filasApupi, $resumenApupi, $duracionApupi);
         $previo = PrevioPresupuesto::preparar($presupuesto, $filasApupi, $resumenApupi['propuesta'], $duracionApupi);
         $versiones = $presupuesto->versiones()->orderByDesc('revision')->limit(2)->get(['id', 'revision']);
         $versionGuardada = $versiones->first();
         $presupuesto->versiones_count = $versiones->count();
-        $versionUnica = $this->versionComercialUnica($presupuesto);
+        $versionUnica = $this->consulta->versionComercialUnica($presupuesto);
         $versionUnica?->setRelation('presupuesto', $presupuesto);
 
         $imagenesTipoPresupuesto = $this->imagenes->rutas();
@@ -796,8 +726,8 @@ class PresupuestoController extends Controller
             $origenBorrador = $actual->version_origen_borrador_id;
             $actual->load(['cliente', 'detalles', 'pilas', 'resumenes']);
             $vol = $actual->calcularVolumetria();
-            $duracion = $this->duracionApupiDesdeVol($actual, $vol);
-            [$costos, $resumen] = $this->calcularApupi($actual, $vol, $duracion);
+            $duracion = $this->consulta->duracionApupiDesdeVol($actual, $vol);
+            [$costos, $resumen] = $this->consulta->calcularApupi($actual, $vol, $duracion);
             $autor = $request->user()->getKey();
             $version = $actual->versiones()->create([
                 'revision' => $revision,
@@ -1005,8 +935,8 @@ class PresupuestoController extends Controller
         $relacion = DB::transaction(function () use ($presupuesto, $cambios, $restablecer): array {
             $actual = $this->bloquearBorrador($presupuesto);
             $vol = $actual->calcularVolumetria();
-            $duracion = $this->duracionApupiDesdeVol($actual, $vol);
-            [$costos] = $this->calcularApupi($actual, $vol, $duracion);
+            $duracion = $this->consulta->duracionApupiDesdeVol($actual, $vol);
+            [$costos] = $this->consulta->calcularApupi($actual, $vol, $duracion);
             $base = $this->gastosBase($actual);
             $ajustes = $restablecer ? [] : ($actual->ajustes_gastos_semanales ?? []);
             if ($cambios !== []) {
@@ -1198,29 +1128,8 @@ class PresupuestoController extends Controller
     public function exportVersionPdf(Presupuesto $presupuesto, int $version)
     {
         $version = $presupuesto->versiones()->findOrFail($version);
-        $version->setRelation('presupuesto', $presupuesto);
-        $datos = $version->datos;
-        $origen = $datos['presupuesto'];
-        $folio = $version->folio();
-        $cabecera = [
-            'cliente' => ($datos['cliente']['nombre_comercial'] ?? null) ?: $origen['nombre_cliente'],
-            'obra' => $origen['nombre_obra'],
-            'equipo' => $origen['equipo'],
-            'folio' => $folio,
-            'referencia' => $origen['codigo_proyecto'],
-            'fecha' => $version->created_at->format('d/m/Y'),
-            'imagen_tipo' => $this->imagenes->rutaPdf($presupuesto->tipo),
-        ];
-        $archivo = $this->nombrePdf($origen['codigo_proyecto'], ltrim($folio, '#'));
 
-        if (isset($datos['presentacion'])) {
-            return $this->imprimirPresentacion($cabecera, $datos['presentacion'], $archivo);
-        }
-
-        $filas = collect($datos['propuesta']['filas'])->where('cantidad', '>', 0)
-            ->map(fn (array $fila) => ['partida' => ''] + $fila)->all();
-
-        return $this->imprimirPresentacion($cabecera, ['filas' => $filas, 'total' => $version->total_venta], $archivo);
+        return $this->pdf->deVersion($presupuesto, $version, $this->consulta->presentacionVersion($version));
     }
 
     public function exportPdf(Request $request, $id)
@@ -1230,72 +1139,17 @@ class PresupuestoController extends Controller
             return $this->exportVersionPdf($presupuesto, $presupuesto->version_aprobada_id);
         }
         if (!$request->boolean('borrador')) {
-            $presupuesto->loadCount('versiones');
-            if ($version = $this->versionComercialUnica($presupuesto)) {
+            if ($version = $this->consulta->versionPreferida($presupuesto)) {
                 return $this->exportVersionPdf($presupuesto, $version->id);
             }
         }
-        $vol = $presupuesto->calcularVolumetria();
-        $duracion = $this->duracionApupiDesdeVol($presupuesto, $vol);
-        [$costos, $resumen] = $this->calcularApupi($presupuesto, $vol, $duracion);
-        $presentacion = PresentacionPresupuesto::preparar($presupuesto, $costos, $resumen, $duracion);
+        $presentacion = $this->consulta->borradorComercial($presupuesto)['presentacion'];
         if (empty($presentacion['filas'])) {
             return redirect()->to(route('presupuesto.show', [$presupuesto, 'tab' => 'apupi', 'borrador' => 1]) . '#propuesta-apupi')
                 ->with('errorPdfPresupuesto', 'Para exportar el PDF, guarda una cantidad y un precio unitario de venta en Propuesta 1.');
         }
-        $cabecera = [
-            'cliente' => $presupuesto->nombreClienteVisible(),
-            'obra' => $presupuesto->nombre_obra,
-            'equipo' => Presupuesto::EQUIPOS_PROPUESTOS[$presupuesto->equipo_propuesto] ?? null,
-            'folio' => $presupuesto->codigo_proyecto,
-            'referencia' => null,
-            'fecha' => now()->format('d/m/Y'),
-            'imagen_tipo' => $this->imagenes->rutaPdf($presupuesto->tipo),
-        ];
 
-        return $this->imprimirPresentacion($cabecera, $presentacion, $this->nombrePdf($presupuesto->codigo_proyecto));
-    }
-
-    private function imprimirPresentacion(array $cabecera, array $presentacion, string $archivo)
-    {
-        $presentacion['filas'] = PresentacionPresupuesto::numerar(collect($presentacion['filas']))->all();
-        $pdf = Pdf::loadView('presupuesto.pdf-comercial', compact('cabecera', 'presentacion'))->setPaper('letter');
-        $pdf->render();
-        $lienzo = $pdf->getDomPDF()->getCanvas();
-        $margen = 36;
-        if ($lienzo->get_page_count() > 1) {
-            $compacto = Pdf::loadView('presupuesto.pdf-comercial', compact('cabecera', 'presentacion') + ['compacto' => true])->setPaper('letter');
-            $compacto->render();
-            $lienzoCompacto = $compacto->getDomPDF()->getCanvas();
-            if ($lienzoCompacto->get_page_count() < $lienzo->get_page_count()) {
-                $pdf = $compacto;
-                $lienzo = $lienzoCompacto;
-                $margen = 30;
-            }
-        }
-
-        $lienzo->page_script(function (int $pagina, int $total, $lienzo, $fuentes) use ($margen): void {
-            $pie = $lienzo->get_height() - 23;
-            $color = [28 / 255, 39 / 255, 129 / 255];
-            $blanco = [1, 1, 1];
-            $fuente = $fuentes->getFont('DejaVu Sans');
-            $paginaTexto = "Hoja {$pagina} de {$total}";
-            $lienzo->filled_rectangle(0, $pie, $lienzo->get_width(), 23, $color);
-            $lienzo->text($margen, $pie + 7, 'RIVERA CONSTRUCCIONES, S.A. de C.V.', $fuente, 6.5, $blanco);
-            $lienzo->text($lienzo->get_width() / 2 + 10, $pie + 7, 'pilas@riveraco.com.mx', $fuente, 6.5, $blanco);
-            $lienzo->text($lienzo->get_width() - $margen - $fuentes->getTextWidth($paginaTexto, $fuente, 6.5),
-                $pie + 7, $paginaTexto, $fuente, 6.5, $blanco);
-        });
-
-        return $pdf->stream($archivo);
-    }
-
-    private function nombrePdf(string $referencia, ?string $revision = null): string
-    {
-        $referencia = substr(preg_replace('/[^A-Za-z0-9_-]+/', '_', $referencia), 0, 90);
-        $sufijo = $revision === null ? '' : "_{$revision}";
-
-        return "Presupuesto_{$referencia}{$sufijo}.pdf";
+        return $this->pdf->delPresupuesto($presupuesto, $presentacion);
     }
 
     public function destroy($id)

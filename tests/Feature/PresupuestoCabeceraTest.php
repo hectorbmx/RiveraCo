@@ -17,6 +17,71 @@ use Tests\TestCase;
 
 class PresupuestoCabeceraTest extends TestCase
 {
+    public function test_el_flujo_web_lista_guarda_versiones_y_exporta_el_pdf_del_borrador_o_de_la_version(): void
+    {
+        $this->assertSame('rivera_v2_testing', DB::connection()->getDatabaseName());
+        $this->assertSame('127.0.0.1', DB::connection()->getConfig('host'));
+
+        DB::beginTransaction();
+        try {
+            $this->actingAs(User::factory()->create());
+            $cliente = Cliente::create(['nombre_comercial' => 'Cliente del flujo web de presupuesto']);
+            $presupuesto = Presupuesto::create([
+                'codigo_proyecto' => 'FLUJO-WEB-' . str()->uuid(),
+                'cliente_id' => $cliente->id,
+                'nombre_cliente' => $cliente->nombre_comercial,
+                'nombre_obra' => 'Obra del flujo web',
+                'tipo' => 'PILAS',
+                'origen' => Presupuesto::ORIGEN_SIRICO,
+                'estatus' => 'borrador',
+            ]);
+
+            $pdf = route('presupuesto.pdf', $presupuesto);
+            $pdfBorrador = route('presupuesto.pdf', [$presupuesto, 'borrador' => 1]);
+            $destinoBorrador = route('presupuesto.show', [$presupuesto, 'tab' => 'apupi', 'borrador' => 1]);
+            $guardar = route('presupuesto.versiones.store', $presupuesto);
+            $historial = route('presupuesto.versiones.index', $presupuesto);
+            $propuesta = route('presupuesto.apupi.propuesta.update', [$presupuesto, 'venta-218']);
+            $listado = route('presupuesto.index', ['buscar' => $presupuesto->codigo_proyecto, 'tipo' => 'PILAS']);
+
+            $this->get($pdf)->assertRedirect($destinoBorrador . '#propuesta-apupi')->assertSessionHas('errorPdfPresupuesto');
+            $this->patch($propuesta, ['cantidad' => 1, 'precio_unitario' => 500])->assertRedirect();
+            $this->get($listado)->assertOk()->assertSee($presupuesto->codigo_proyecto)->assertSee('$580.00');
+            $borrador = $this->get($pdfBorrador)->assertOk()->assertHeader('Content-Type', 'application/pdf');
+            $this->assertStringStartsWith('%PDF-', $borrador->getContent());
+
+            $this->post($guardar, ['revision' => 0])->assertRedirect($destinoBorrador);
+            $primera = $presupuesto->versiones()->where('revision', 0)->sole();
+            $versionPdf = route('presupuesto.versiones.pdf', [$presupuesto, $primera]);
+            $primeraPdf = $this->get($versionPdf)->assertOk()->assertHeader('Content-Type', 'application/pdf');
+            $this->assertStringStartsWith('%PDF-', $primeraPdf->getContent());
+            $this->get($pdf)->assertOk()->assertHeader('Content-Disposition', $primeraPdf->headers->get('Content-Disposition'));
+
+            $this->post($guardar, ['revision' => 0])->assertRedirect($destinoBorrador);
+            $this->assertSame(1, $presupuesto->versiones()->count());
+            $this->assertSame(1, $primera->eventos()->count());
+
+            $this->patch($propuesta, ['cantidad' => 1, 'precio_unitario' => 750])->assertRedirect();
+            $this->get($listado)->assertOk()->assertSee('$580.00')->assertDontSee('$870.00');
+            $this->post($guardar, ['revision' => 1])->assertRedirect($destinoBorrador);
+            $segunda = $presupuesto->versiones()->where('revision', 1)->sole();
+            $this->assertSame($primera->id, $segunda->version_origen_id);
+            $this->get($listado)->assertOk()->assertSee('$870.00');
+
+            $this->get($historial)->assertOk()
+                ->assertSeeInOrder([$segunda->folio(), $primera->folio()])
+                ->assertSee($versionPdf);
+            $this->get(route('presupuesto.versiones.show', [$presupuesto, $primera]))->assertOk()
+                ->assertSee('$580.00')->assertDontSee('$870.00');
+            $this->get(route('presupuesto.versiones.show', [$presupuesto, $segunda]))->assertOk()
+                ->assertSee('$870.00');
+            $this->get($versionPdf)->assertOk()->assertHeader('Content-Disposition', $primeraPdf->headers->get('Content-Disposition'));
+            $this->get($pdf)->assertOk()->assertHeader('Content-Disposition', $borrador->headers->get('Content-Disposition'));
+        } finally {
+            DB::rollBack();
+        }
+    }
+
     public function test_duplicar_usa_la_ultima_version_guardada_o_la_aprobada_y_crea_un_borrador_independiente(): void
     {
         $this->assertSame('rivera_v2_testing', DB::connection()->getDatabaseName());

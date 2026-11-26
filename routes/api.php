@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\ResidenteReposicionGastoController;
 use App\Http\Controllers\Api\V1\ResidenteObraCivilAvanceController;
 use App\Http\Controllers\Api\V1\ResidenteObraCivilMaterialController;
 use App\Http\Controllers\Api\V1\Gerencial\ObrasGerencialController;
+use App\Http\Controllers\Api\V1\Gerencial\PresupuestosGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\MaquinasGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\VehiculosGerencialController;
 use App\Http\Controllers\Api\V1\Gerencial\PersonalGerencialController;
@@ -154,9 +155,21 @@ Route::prefix('v1')->group(function () {
           ])->group(function () {
 
                 Route::get('dashboard', [DashboardGerencialController::class, 'index']);
+                Route::get('dashboard/empleados-en-obra', [DashboardGerencialController::class, 'empleadosEnObra']);
 
                 Route::get('obras', [ObrasGerencialController::class, 'index']); // cabecera paginada
                 Route::get('obras/{obra}', [ObrasGerencialController::class, 'show']);
+
+                Route::prefix('presupuestos')->name('api.gerencial.presupuestos.')->group(function () {
+                    Route::get('/', [PresupuestosGerencialController::class, 'index'])->name('index');
+                    Route::get('{presupuesto}', [PresupuestosGerencialController::class, 'show'])->whereNumber('presupuesto')->name('show');
+                    Route::get('{presupuesto}/pdf', [PresupuestosGerencialController::class, 'pdf'])->whereNumber('presupuesto')->name('pdf');
+                    Route::get('{presupuesto}/versiones', [PresupuestosGerencialController::class, 'versiones'])->whereNumber('presupuesto')->name('versiones.index');
+                    Route::get('{presupuesto}/versiones/{version}', [PresupuestosGerencialController::class, 'showVersion'])
+                        ->whereNumber(['presupuesto', 'version'])->name('versiones.show');
+                    Route::get('{presupuesto}/versiones/{version}/pdf', [PresupuestosGerencialController::class, 'pdfVersion'])
+                        ->whereNumber(['presupuesto', 'version'])->name('versiones.pdf');
+                });
                 //catalogo de maquinas
                 Route::get('maquinas', [MaquinasGerencialController::class, 'index']);
                 Route::get('maquinas/{maquina}', [MaquinasGerencialController::class, 'show']);

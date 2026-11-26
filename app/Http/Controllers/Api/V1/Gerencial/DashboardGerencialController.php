@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Gerencial;
 
 use App\Http\Controllers\Controller;
+use App\Models\ObraEmpleado;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -15,12 +17,7 @@ class DashboardGerencialController extends Controller
             ->whereIn('estatus_nuevo', [1, 2])
             ->count();
 
-        // ✅ Empleados presentes (AJUSTA el criterio según tu negocio)
-        // Si NO tienes "presentes", por ahora puedes devolver "activos en obra"
-        $empleadosActivosEnObra = (int) DB::table('obra_empleado')
-            ->where('activo', 1)
-            ->whereNull('fecha_baja')
-            ->count();
+        $empleadosActivosEnObra = $this->asignacionesActivas()->count();
 
         // ✅ Maquinaria en uso (usa tu tabla obra_maquina + scope "activas" equivalente)
         // Ajusta condiciones: aquí asumo "fecha_fin is null" como activa
@@ -52,5 +49,34 @@ class DashboardGerencialController extends Controller
                 'inventario_stock_pct' => $inventarioStockPct,
             ],
         ]);
+    }
+
+    public function empleadosEnObra()
+    {
+        $obras = $this->asignacionesActivas()
+            ->with([
+                'obra' => fn ($obra) => $obra->withTrashed()->select('id', 'nombre'),
+                'empleado:id_Empleado,Nombre,Apellidos',
+            ])
+            ->get(['id', 'obra_id', 'empleado_id'])
+            ->groupBy('obra_id')
+            ->map(fn ($asignaciones, $obraId) => [
+                'id' => $obraId,
+                'nombre' => $asignaciones->first()->obra->nombre,
+                'empleados' => $asignaciones->sortBy('empleado.nombre_completo', SORT_NATURAL | SORT_FLAG_CASE)
+                    ->map(fn (ObraEmpleado $asignacion) => [
+                        'id' => $asignacion->id,
+                        'nombre' => $asignacion->empleado->nombre_completo,
+                    ])->values(),
+            ])
+            ->sortBy('nombre', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+
+        return response()->json(['ok' => true, 'data' => $obras]);
+    }
+
+    private function asignacionesActivas(): Builder
+    {
+        return ObraEmpleado::query()->where('activo', 1)->whereNull('fecha_baja');
     }
 }
