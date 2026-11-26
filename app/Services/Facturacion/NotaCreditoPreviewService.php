@@ -4,10 +4,19 @@ namespace App\Services\Facturacion;
 
 use App\Models\SatFactura;
 use App\Models\SatFacturaBorrador;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 
 class NotaCreditoPreviewService
 {
+    public static function formasPagoEgreso(): array
+    {
+        return Arr::except(config('sat_catalogs.formas_pago', []), ['30', '99']) + [
+            '15' => '15 - Condonación',
+            '17' => '17 - Compensación',
+        ];
+    }
+
     public function verificarEmisor(SatFacturaBorrador $borrador, FacturapiService $facturapi): void
     {
         $empresa = $borrador->empresa;
@@ -24,8 +33,23 @@ class NotaCreditoPreviewService
     public function payload(SatFacturaBorrador $borrador): array
     {
         $datos = $borrador->payload ?? [];
-        if (($datos['motivo'] ?? '') !== 'anticipo' || ($datos['tipo_relacion'] ?? '') !== '07') {
-            throw ValidationException::withMessages(['nota' => 'La previsualización está disponible por ahora para aplicación de anticipo.']);
+        $motivo = $datos['motivo'] ?? '';
+        $relacion = $datos['tipo_relacion'] ?? '';
+        $tipos = [
+            'anticipo' => ['07', 'Aplicación de anticipo'],
+            'descuento' => ['01', 'Descuento o bonificación'],
+            'devolucion' => ['03', 'Devolución de mercancía'],
+        ];
+        if (! isset($tipos[$motivo]) || $relacion !== $tipos[$motivo][0]) {
+            throw ValidationException::withMessages(['nota' => 'Edita el borrador y selecciona un tipo de operación con su relación SAT correspondiente.']);
+        }
+        $formaPago = $motivo === 'anticipo' ? '30' : ($datos['forma_pago'] ?? '');
+        if ($motivo !== 'anticipo' && ! array_key_exists($formaPago, self::formasPagoEgreso())) {
+            throw ValidationException::withMessages(['nota' => 'Edita el borrador y selecciona la forma de pago del descuento, bonificación o devolución.']);
+        }
+        $descripcion = $tipos[$motivo][1];
+        if ($motivo !== 'anticipo' && filled($datos['detalle_motivo'] ?? null)) {
+            $descripcion = $datos['detalle_motivo'];
         }
         if (! in_array($datos['tipo_iva'] ?? null, ['0.16', 'exento', 'sin_iva'], true)) {
             throw ValidationException::withMessages(['nota' => 'Edita el borrador y selecciona el tipo de IVA.']);
@@ -47,7 +71,7 @@ class NotaCreditoPreviewService
             throw ValidationException::withMessages(['nota' => 'El RFC actual del cliente no coincide con la factura relacionada.']);
         }
         if (($datos['moneda'] ?? '') !== 'MXN' || $factura->moneda !== 'MXN') {
-            throw ValidationException::withMessages(['nota' => 'La previsualización de notas en moneda extranjera aún no está disponible.']);
+            throw ValidationException::withMessages(['nota' => 'La emisión de notas en moneda extranjera aún no está disponible.']);
         }
         $subtotal = (float) ($datos['subtotal'] ?? 0);
         $iva = ($datos['tipo_iva'] === '0.16') ? round($subtotal * 0.16, 2) : 0.0;
@@ -76,18 +100,18 @@ class NotaCreditoPreviewService
             'items' => [[
                 'quantity' => 1,
                 'product' => [
-                    'description' => 'Aplicación de anticipo',
+                    'description' => $descripcion,
                     'product_key' => '84111506', 'unit_key' => 'ACT', 'unit_name' => 'Actividad',
                     'price' => $subtotal, 'tax_included' => false,
                     'taxability' => $datos['tipo_iva'] === 'sin_iva' ? '01' : '02',
                     'taxes' => $taxes,
                 ],
             ]],
-            'payment_form' => '30',
+            'payment_form' => $formaPago,
             'payment_method' => 'PUE',
             'use' => 'G02',
             'currency' => 'MXN',
-            'related_documents' => [['relationship' => '07', 'documents' => [$factura->uuid]]],
+            'related_documents' => [['relationship' => $relacion, 'documents' => [$factura->uuid]]],
         ];
     }
 }

@@ -101,6 +101,8 @@ class NotaCreditoTimbradoService
                 $b->update(['estado' => 'revision_emision']);
                 return ['estado' => 'revision_emision'];
             }
+            $solicitud = $datos['_emision']['solicitud'];
+            $relacion = $solicitud['related_documents'][0];
             $factura = SatFactura::create([
                 'sat_empresa_id' => $b->sat_empresa_id, 'cliente_id' => $b->cliente_id, 'obra_id' => $b->obra_id,
                 'facturapi_invoice_id' => $respuesta['id'], 'uuid' => $respuesta['uuid'],
@@ -108,13 +110,14 @@ class NotaCreditoTimbradoService
                 'tipo_comprobante' => 'E', 'cfdi_version' => $respuesta['cfdi_version'] ?? '4.0',
                 'receptor_rfc' => $b->cliente->rfc, 'receptor_nombre' => $b->cliente->razon_social ?: $b->cliente->nombre_comercial,
                 'receptor_regimen' => $b->cliente->regimen_fiscal, 'receptor_cp' => $b->cliente->codigo_postal,
-                'uso_cfdi' => 'G02', 'metodo_pago' => 'PUE', 'forma_pago' => '30', 'moneda' => 'MXN',
+                'uso_cfdi' => $solicitud['use'], 'metodo_pago' => $solicitud['payment_method'],
+                'forma_pago' => $solicitud['payment_form'], 'moneda' => $solicitud['currency'],
                 'subtotal' => $datos['subtotal'], 'iva' => $datos['iva'], 'total' => $datos['total'],
                 'estado' => 'timbrada', 'timbrado_por' => $datos['_emision']['usuario'],
                 'fecha_emision' => $respuesta['date'] ?? now(), 'fecha_timbrado' => $respuesta['stamp']['date'] ?? now(),
                 'facturapi_response' => $respuesta,
             ]);
-            $producto = $datos['_emision']['solicitud']['items'][0]['product'];
+            $producto = $solicitud['items'][0]['product'];
             SatFacturaConcepto::create([
                 'sat_factura_id' => $factura->id, 'descripcion' => $producto['description'], 'cantidad' => 1,
                 'unidad' => 'Actividad', 'clave_producto_servicio' => '84111506', 'clave_unidad' => 'ACT',
@@ -123,7 +126,7 @@ class NotaCreditoTimbradoService
             ]);
             DB::table('sat_factura_relaciones')->insert([
                 'sat_factura_id' => $factura->id, 'factura_relacionada_id' => $datos['factura_relacionada_id'],
-                'tipo_relacion' => '07', 'uuid_relacionado' => $datos['uuid_relacionado'],
+                'tipo_relacion' => $relacion['relationship'], 'uuid_relacionado' => $relacion['documents'][0],
                 'created_at' => now(), 'updated_at' => now(),
             ]);
             $b->update(['sat_factura_id' => $factura->id, 'estado' => 'timbrado']);
