@@ -1425,7 +1425,14 @@
                                 <a class="hover:underline" href="{{ route('presupuesto.versiones.pdf', [$pv, $pv->versionAprobada]) }}" target="_blank" rel="noopener">Exportar PDF</a>
                             </div>
                         </div>
-                        @include('presupuesto.partials.propuesta-version', ['version' => $pv->versionAprobada])
+                        @if(isset($pv->versionAprobada->datos['presentacion']['partidas']))
+                            @include('presupuesto.partials.partidas-version', [
+                                'partidas' => $pv->versionAprobada->datos['presentacion']['partidas'],
+                                'moneda' => fn ($valor) => '$' . number_format($valor, 2),
+                            ])
+                        @else
+                            @include('presupuesto.partials.propuesta-version', ['version' => $pv->versionAprobada])
+                        @endif
                     </div>
                 @else
                 <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">

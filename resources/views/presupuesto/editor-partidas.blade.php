@@ -190,20 +190,34 @@
                         <p class="mt-1 text-sm text-slate-600">Revisa las condiciones para este presupuesto. Los cambios se incluyen al guardar las partidas.</p>
                     </header>
                     <div class="overflow-y-auto overscroll-contain px-5 py-4">
-                        <ol class="list-decimal space-y-3 pl-6">
+                        @if($estadoEditor['nota_fija'])
+                            <p class="mb-3 rounded-lg bg-slate-50 p-3 text-sm">
+                                <strong>Nota 1 · Patente</strong>
+                                <span class="mt-1 block">{{ $estadoEditor['nota_fija'] }}</span>
+                            </p>
+                        @endif
+                        <ol start="{{ $estadoEditor['nota_fija'] ? 2 : 1 }}" class="list-decimal space-y-3 pl-6">
                             <template x-for="(nota, indice) in notasEnEdicion" :key="indice">
                                 <li class="pl-1">
                                     <div class="flex items-start gap-2">
-                                        <textarea x-model="notasEnEdicion[indice]" :aria-label="'Nota importante ' + (indice + 1)"
+                                        <textarea x-model="notasEnEdicion[indice]" :aria-label="'Nota importante ' + (indice + {{ $estadoEditor['nota_fija'] ? 2 : 1 }})"
                                                   maxlength="10000" rows="2" class="w-full rounded-md border-slate-300 text-sm"></textarea>
-                                        <button type="button" @click="notasEnEdicion.splice(indice, 1)" :aria-label="'Eliminar nota ' + (indice + 1)"
+                                        <button type="button" @click="notasEnEdicion.splice(indice, 1)" :aria-label="'Eliminar nota ' + (indice + {{ $estadoEditor['nota_fija'] ? 2 : 1 }})"
                                                 class="rounded px-2 py-1 text-red-700 hover:bg-red-50">×</button>
                                     </div>
                                 </li>
                             </template>
                         </ol>
-                        <button type="button" @click="notasEnEdicion.push('')" :disabled="notasEnEdicion.length >= 100"
-                                class="mt-3 text-sm font-semibold text-[#0B265A] hover:underline disabled:opacity-60">+ Agregar nota</button>
+                        <div class="mt-3 flex flex-wrap gap-4 text-sm font-semibold text-[#0B265A]">
+                            <button type="button" @click="notasEnEdicion.push('')" :disabled="notasEnEdicion.length >= 100"
+                                    class="hover:underline disabled:opacity-60">+ Agregar nota</button>
+                            @if($estadoEditor['nota_fija'])
+                                <button type="button" class="hover:underline"
+                                        @click="if (window.confirm('¿Reemplazar las notas editables por las notas base de Pozos?')) notasEnEdicion = @js($estadoEditor['notas_base'])">
+                                    Cargar notas base de Pozos
+                                </button>
+                            @endif
+                        </div>
                     </div>
                     <footer class="flex flex-wrap justify-end gap-2 border-t border-slate-200 px-5 py-4">
                         <button type="button" @click="$refs.notasImportantes.close()"

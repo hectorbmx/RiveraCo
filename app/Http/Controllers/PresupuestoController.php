@@ -141,7 +141,7 @@ class PresupuestoController extends Controller
         $presupuesto = DB::transaction(function () use ($request) {
             $presupuesto = new Presupuesto(['origen' => Presupuesto::ORIGEN_SIRICO, 'estatus' => 'borrador']);
             $this->guardarDatos($request, $presupuesto);
-            if (in_array($presupuesto->tipo, ['MUROS', 'ANCLAS'], true)) {
+            if (in_array($presupuesto->tipo, Presupuesto::TIPOS_EDITOR_POR_PARTIDAS, true)) {
                 $presupuesto->forceFill(['presentacion_comercial' => ['editor' => 'partidas']])->save();
             }
 

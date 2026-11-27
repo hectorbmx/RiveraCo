@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Cliente;
+use App\Models\ObraTipoConfiguracion;
 use App\Models\Presupuesto;
 use App\Models\User;
 use App\Services\Presupuestos\CalculoPresupuestoPorPartidas;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use App\Models\UsuarioApp;
 use Tests\TestCase;
 
@@ -98,7 +100,7 @@ class PresupuestoPorPartidasTest extends TestCase
             $this->actingAs($usuario);
             $cliente = Cliente::create(['nombre_comercial' => 'Cliente de la versión por partidas']);
             $this->post(route('presupuesto.store'), [
-                'tipo' => 'MUROS', 'cliente_id' => $cliente->id, 'nombre_obra' => 'Real Center de prueba',
+                'tipo' => 'POZOS', 'cliente_id' => $cliente->id, 'nombre_obra' => 'Pozos de prueba',
             ])->assertRedirect();
             $presupuesto = Presupuesto::where('cliente_id', $cliente->id)->sole();
             $calculo = app(CalculoPresupuestoPorPartidas::class);
@@ -116,25 +118,31 @@ class PresupuestoPorPartidasTest extends TestCase
                 ['insert' => " semanal.\n"],
             ];
             $inicial = $calculo->estadoEditor($presupuesto);
-            $this->assertCount(11, $inicial['notas']);
+            $this->assertCount(16, $inicial['notas']);
+            $patente = $inicial['nota_fija'];
+            $this->assertStringStartsWith('Patente N.º 163291.', $patente);
+            $this->assertStringContainsString('100 %', $inicial['notas'][1]);
             $this->assertSame([], $inicial['nota_ejecucion']);
 
             $this->get(route('presupuesto.pdf', $presupuesto))->assertRedirect(route('presupuesto.show', $presupuesto));
             $estado = $this->patchJson($guardarTabla, [
                 'revision' => $inicial['revision'], 'tasa_iva' => '16', 'partidas' => $tabla,
                 'nota_ejecucion' => json_encode($adicionales), 'notas' => ['Vigencia de prueba de 30 días.'],
-            ])->assertOk()->assertJsonPath('data.nota_ejecucion', $adicionales)->json('data');
+                'nota_fija' => 'Intento de cambiar la patente',
+            ])->assertOk()->assertJsonPath('data.nota_ejecucion', $adicionales)
+                ->assertJsonPath('data.nota_fija', $patente)->json('data');
             $this->get(route('presupuesto.show', $presupuesto))->assertOk()
                 ->assertSee('value="FLETE"', false)->assertSee('value="HRS"', false)
                 ->assertSee('value="TON"', false)->assertSee('value="M"', false)
-                ->assertSee('value="JORNADA"', false);
+                ->assertSee('value="JORNADA"', false)->assertSee('Nota 1 · Patente')
+                ->assertSee('Cargar notas base de Pozos')->assertSee('<ol start="2"', false);
             $this->get($listado)->assertOk()->assertSee('$116.00');
             $this->getJson($api)->assertOk()->assertJsonPath('data.total', 116);
             $this->post($guardarVersion, ['revision' => 0, 'revision_partidas' => $estado['revision']])->assertRedirect();
             $primera = $presupuesto->versiones()->where('revision', 0)->sole();
             $this->assertSame('116.00', $primera->datos['presentacion']['total']);
             $this->assertSame($adicionales, $primera->datos['presentacion']['nota_ejecucion']);
-            $this->assertSame(['Vigencia de prueba de 30 días.'], $primera->datos['presentacion']['notas']);
+            $this->assertSame([$patente, 'Vigencia de prueba de 30 días.'], $primera->datos['presentacion']['notas']);
             $this->getJson($api)->assertOk()->assertJsonPath('data.version.id', $primera->id);
 
             $tabla[0]['id'] = $estado['partidas'][0]['id'];
@@ -160,12 +168,12 @@ class PresupuestoPorPartidasTest extends TestCase
             $this->post($guardarVersion, ['revision' => 1, 'revision_partidas' => $notasActualizadas['revision']])->assertRedirect();
             $segunda = $presupuesto->versiones()->where('revision', 1)->sole();
             $this->assertSame('290.00', $segunda->datos['presentacion']['total']);
-            $this->assertSame([], $segunda->datos['presentacion']['notas']);
+            $this->assertSame([$patente], $segunda->datos['presentacion']['notas']);
             $this->get($listado)->assertOk()->assertSee('$290.00');
 
             $this->get(route('presupuesto.versiones.show', [$presupuesto, $primera]))->assertOk()
                 ->assertSee('A. Preliminares')->assertSee('B. Anclas')->assertSee('$116.00')->assertDontSee('Pilas / VOL')
-                ->assertSee('Notas adicionales')->assertSee('Vigencia de prueba de 30 días.');
+                ->assertSee('Notas adicionales')->assertSeeInOrder([$patente, 'Vigencia de prueba de 30 días.']);
             $this->get(route('presupuesto.versiones.index', $presupuesto))->assertOk()->assertSee('$116.00')->assertSee('$290.00');
             $detalle = $this->getJson("$api/versiones/{$primera->id}")->assertOk()
                 ->assertJsonPath('data.partidas.0.nombre', 'Preliminares')
@@ -192,6 +200,20 @@ class PresupuestoPorPartidasTest extends TestCase
             $this->assertSame('116.00', $calculo->calcular($presupuesto->fresh())['total']);
             $this->assertSame($adicionales, $calculo->estadoEditor($presupuesto->fresh())['nota_ejecucion']);
             $this->assertSame('290.00', $segunda->fresh()->datos['presentacion']['total']);
+
+            $usuario->assignRole(Role::findOrCreate('super-admin', 'web'));
+            $usuario->givePermissionTo(Permission::findOrCreate('presupuestos.approve.access', 'web'));
+            ObraTipoConfiguracion::updateOrCreate(['tipo_obra' => 'POZOS'], [
+                'label' => 'Pozos', 'prefijo' => 'PO', 'activo' => true,
+            ]);
+            $this->post(route('presupuesto.versiones.aprobar', [$presupuesto, $primera]), [
+                'tipo_obra' => 'POZOS',
+            ])->assertRedirect();
+            $obra = $presupuesto->fresh()->obraGenerada;
+            $this->assertNotNull($obra);
+            $this->assertFalse($obra->pilas()->exists());
+            $this->get(route('obras.edit', ['obra' => $obra, 'tab' => 'presupuestos']))->assertOk()
+                ->assertSee('A. Preliminares')->assertSee('Trazo y nivelación');
         } finally {
             DB::rollBack();
         }
@@ -211,13 +233,25 @@ class PresupuestoPorPartidasTest extends TestCase
                     'tipo' => $tipo, 'cliente_id' => $cliente->id, 'nombre_obra' => 'Obra de prueba',
                 ])->assertRedirect();
                 $presupuesto = Presupuesto::where('cliente_id', $cliente->id)->where('tipo', $tipo)->sole();
-                $porPartidas = in_array($tipo, ['MUROS', 'ANCLAS'], true);
-                $this->get(route('presupuesto.show', $presupuesto))->assertOk()
+                $porPartidas = in_array($tipo, ['POZOS', 'MUROS', 'ANCLAS'], true);
+                $detalle = $this->get(route('presupuesto.show', $presupuesto))->assertOk()
                     ->assertViewIs($porPartidas ? 'presupuesto.editor-partidas' : 'presupuesto.show');
+                if (in_array($tipo, ['MUROS', 'ANCLAS'], true)) {
+                    $detalle->assertViewHas('estadoEditor', fn ($estado) => count($estado['notas']) === 11
+                        && $estado['nota_fija'] === null)->assertDontSee('Cargar notas base de Pozos');
+                }
                 if (! $porPartidas) {
                     $this->patchJson(route('presupuesto.partidas.update', $presupuesto))->assertNotFound();
                 }
             }
+
+            $pozosAnterior = Presupuesto::create([
+                'tipo' => 'POZOS', 'origen' => Presupuesto::ORIGEN_SIRICO, 'estatus' => 'borrador',
+                'codigo_proyecto' => 'PO-ANT-' . $cliente->id, 'cliente_id' => $cliente->id,
+                'nombre_cliente' => $cliente->nombre_comercial,
+            ]);
+            $this->get(route('presupuesto.show', $pozosAnterior))->assertOk()->assertViewIs('presupuesto.show');
+            $this->patchJson(route('presupuesto.partidas.update', $pozosAnterior))->assertNotFound();
 
             $calculo = app(CalculoPresupuestoPorPartidas::class);
             $editor = route('presupuesto.partidas.update', $presupuesto);

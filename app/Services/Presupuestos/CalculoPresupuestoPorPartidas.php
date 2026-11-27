@@ -9,7 +9,7 @@ use Illuminate\Support\Arr;
 
 class CalculoPresupuestoPorPartidas
 {
-    private const NOTAS_IMPORTANTES = [
+    private const NOTAS_MUROS_Y_ANCLAS = [
         'Este presupuesto incluye EPP según la norma, seguro social y personal calificado.',
         'Este presupuesto no incluye segurista, suministro de acero ni concreto, ni habilitado de acero.',
         'Este presupuesto se contempla ejecutar mediante la modalidad de precio alzado. Si hay un aumento en el mercado del 3 %, se ajustarán los precios.',
@@ -23,27 +23,62 @@ class CalculoPresupuestoPorPartidas
         'Vigencia del presupuesto: 30 días a partir de la fecha de elaboración.',
     ];
 
+    private const PATENTE_POZOS = 'Patente N.º 163291. La invención de los pozos de infiltración prefabricados está protegida por la patente de la SECOFI N.º 163291 de S. H. Rivera. El desarrollo tecnológico y los procedimientos prácticos de aplicación son propiedad de Rivera Construcciones, S.A. de C.V.';
+
+    private const NOTAS_POZOS = [
+        'Este presupuesto no incluye trabajos de topografía como trazo y niveles de pozos, bocas de tormenta y trampas de grasa. En caso de derrumbes por materiales no estables, Rivera Construcciones, S.A. de C.V. no es responsable de las reparaciones correspondientes.',
+        'Para ejecutar los trabajos se requiere una orden de compra y un anticipo del 100 % del pago total para programar la máquina perforadora y suministrar el material.',
+        'Al recibir el pago se programará la realización de la obra.',
+        'El tiempo aproximado de ejecución del pozo es de un jornal.',
+        'Estos precios están sujetos a cambio sin previo aviso.',
+        'Las dimensiones del pozo se cobrarán sobre medidas teóricas y pueden variar en obra.',
+        'No incluye reposición de carpeta asfáltica.',
+        'No incluye retiro del material producto de la perforación del pozo.',
+        'No incluye ajustes de pozos, bocas de tormenta y trampas de grasa.',
+        'No incluye la interconexión de la boca de tormenta al pozo o entre pozos.',
+        'No incluye relleno fluido de 50 kg en pozos de infiltración.',
+        'No incluye el reempedrado o reencarpetamiento en la interconexión en la parte superior (20 cm).',
+        'Los pozos son exclusivamente para infiltrar aguas pluviales.',
+        'No realizamos trámites ante las dependencias correspondientes a la localidad del proyecto, tales como Obras Públicas y la Comisión Nacional del Agua.',
+        'No nos hacemos responsables por daños a instalaciones subterráneas como agua potable, drenaje, instalaciones eléctricas, teléfonos o gasoductos.',
+        'Al recibir el pago se dan por aceptadas las cláusulas y notas de este presupuesto.',
+    ];
+
     public function presentacion(Presupuesto $presupuesto): array
     {
+        $notas = $this->notas($presupuesto);
+        if ($notas['nota_fija'] !== null) {
+            array_unshift($notas['notas'], $notas['nota_fija']);
+        }
+
         return $this->calcular($presupuesto) + Arr::only($presupuesto->presentacion_comercial ?? [], [
             'domicilio', 'atencion', 'telefono', 'correo', 'ubicacion', 'anticipo', 'condiciones_pago',
             'plazo_semanas', 'anticipo_y_plazo_en_notas',
-        ]) + $this->notas($presupuesto);
+        ]) + $notas;
     }
 
     public function estadoEditor(Presupuesto $presupuesto): array
     {
         $calculo = $this->calcular($presupuesto) + $this->notas($presupuesto);
 
-        return $calculo + ['revision' => hash('sha256', json_encode($calculo, JSON_THROW_ON_ERROR))];
+        return $calculo + [
+            'revision' => hash('sha256', json_encode($calculo, JSON_THROW_ON_ERROR)),
+            'notas_base' => $this->notasBase($presupuesto),
+        ];
     }
 
     private function notas(Presupuesto $presupuesto): array
     {
         return [
             'nota_ejecucion' => $presupuesto->presentacion_comercial['nota_ejecucion'] ?? [],
-            'notas' => $presupuesto->presentacion_comercial['notas'] ?? self::NOTAS_IMPORTANTES,
+            'notas' => $presupuesto->presentacion_comercial['notas'] ?? $this->notasBase($presupuesto),
+            'nota_fija' => $presupuesto->tipo === 'POZOS' ? self::PATENTE_POZOS : null,
         ];
+    }
+
+    private function notasBase(Presupuesto $presupuesto): array
+    {
+        return $presupuesto->tipo === 'POZOS' ? self::NOTAS_POZOS : self::NOTAS_MUROS_Y_ANCLAS;
     }
 
     public function calcular(Presupuesto $presupuesto): array

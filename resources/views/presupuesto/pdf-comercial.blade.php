@@ -57,6 +57,7 @@
         .notas thead { display: table-header-group; }
         .notas th { text-align: left; padding: 0; }
         .notas td { width: 50%; vertical-align: top; padding: .5pt 7pt .5pt 11pt; text-indent: -8pt; }
+        .notas .nota-fija { width: 100%; }
         @if($compacto ?? false)
             @page { margin: 24pt 30pt 30pt; }
             .membrete { margin-left: -30pt; margin-right: -30pt; }
@@ -203,15 +204,20 @@
     <div class="notas">
         @php
             $notas = array_values($presentacion['notas']);
+            $notaFija = !empty($presentacion['nota_fija']) ? array_shift($notas) : null;
+            $inicio = $notaFija === null ? 1 : 2;
             $mitad = (int) ceil(count($notas) / 2);
         @endphp
         <table>
             <thead><tr><th colspan="2"><h2 class="rotulo">NOTAS IMPORTANTES</h2></th></tr></thead>
             <tbody>
+            @if($notaFija !== null)
+                <tr><td colspan="2" class="nota-fija">1. {!! nl2br(e($notaFija)) !!}</td></tr>
+            @endif
             @foreach(array_slice($notas, 0, $mitad) as $indice => $nota)
                 <tr>
-                    <td>{{ $indice + 1 }}. {!! nl2br(e($nota)) !!}</td>
-                    <td>@isset($notas[$indice + $mitad]){{ $indice + $mitad + 1 }}. {!! nl2br(e($notas[$indice + $mitad])) !!}@endisset</td>
+                    <td>{{ $indice + $inicio }}. {!! nl2br(e($nota)) !!}</td>
+                    <td>@isset($notas[$indice + $mitad]){{ $indice + $mitad + $inicio }}. {!! nl2br(e($notas[$indice + $mitad])) !!}@endisset</td>
                 </tr>
             @endforeach
             </tbody>

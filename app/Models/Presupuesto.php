@@ -20,6 +20,7 @@ class Presupuesto extends Model
     public const ORIGEN_EXCEL = 'excel';
     public const ORIGEN_SIRICO = 'sirico';
     public const TIPOS = ['PILAS' => 'PI', 'POZOS' => 'PO', 'MUROS' => 'MU', 'ANCLAS' => 'AN'];
+    public const TIPOS_EDITOR_POR_PARTIDAS = ['POZOS', 'MUROS', 'ANCLAS'];
     public const ESCENARIOS_APUPI = ['realista', 'optimista', 'pesimista'];
 
     // Opciones de perforadora de APUPI, filas 24 a 32.
@@ -322,7 +323,7 @@ class Presupuesto extends Model
     public function usaEditorPorPartidas(): bool
     {
         return $this->origen === self::ORIGEN_SIRICO
-            && in_array($this->tipo, ['MUROS', 'ANCLAS'], true)
+            && in_array($this->tipo, self::TIPOS_EDITOR_POR_PARTIDAS, true)
             && ($this->presentacion_comercial['editor'] ?? null) === 'partidas';
     }
 
