@@ -34,6 +34,9 @@
         .conceptos tr, .notas tr { page-break-inside: avoid; }
         .conceptos tbody tr:nth-child(even) { background: #eff2fa; }
         .conceptos .encabezado-perforacion td { color: #1c2781; font-weight: bold; }
+        .conceptos .encabezado-partida { page-break-after: avoid; }
+        .conceptos .subtotal-partida { page-break-before: avoid; }
+        .conceptos .subtotal-partida td { background: #e8edf8; color: #1c2781; font-weight: bold; }
         .partida { color: #1c2781; font-weight: bold; padding-right: 4pt; }
         .cantidad { text-align: right; white-space: nowrap; }
         .centro { text-align: center; }
@@ -86,7 +89,8 @@
     ])->map(fn ($dato) => trim((string) $dato))->filter()->implode(' · ');
     $operacionesNota = $presentacion['nota_ejecucion'] ?? [];
     $textoNota = implode('', array_column($operacionesNota, 'insert'));
-    $notaEnCierre = mb_strlen($textoNota) <= 1500 && substr_count($textoNota, "\n") <= 35;
+    $porPartidas = isset($presentacion['partidas']);
+    $notaEnCierre = !$porPartidas && mb_strlen($textoNota) <= 1500 && substr_count($textoNota, "\n") <= 35;
 @endphp
 <table class="membrete">
     <tr>
@@ -129,6 +133,21 @@
         </tr>
     </thead>
     <tbody>
+        @if(isset($presentacion['partidas']))
+        @foreach($presentacion['partidas'] as $partida)
+            <tr class="encabezado-perforacion encabezado-partida"><td colspan="5"><span class="partida">{{ $partida['clave'] }}.</span>{{ $partida['nombre'] }}</td></tr>
+            @foreach($partida['subpartidas'] as $fila)
+                <tr>
+                    <td class="subrenglon"><span class="partida">{{ $fila['numero'] }}.</span>{!! nl2br(e($fila['concepto'])) !!}</td>
+                    <td class="centro">{{ $fila['unidad'] }}</td>
+                    <td class="cantidad">{{ number_format($fila['cantidad'], 2) }}</td>
+                    <td class="cantidad">{{ $moneda($fila['precio_unitario']) }}</td>
+                    <td class="cantidad importe">{{ $moneda($fila['importe']) }}</td>
+                </tr>
+            @endforeach
+            <tr class="subtotal-partida"><td colspan="4">Subtotal {{ $partida['nombre'] }}</td><td class="cantidad">{{ $moneda($partida['subtotal']) }}</td></tr>
+        @endforeach
+        @else
         @forelse($presentacion['filas'] as $fila)
             @if($fila['numero_encabezado'] !== null)
                 <tr class="encabezado-perforacion"><td colspan="5"><span class="partida">{{ $fila['numero_encabezado'] }}</span>{!! nl2br(e($presentacion['descripcion_perforacion'])) !!}</td></tr>
@@ -143,6 +162,7 @@
         @empty
             <tr><td colspan="5">Sin partidas cobrables</td></tr>
         @endforelse
+        @endif
     </tbody>
 </table>
 <table class="cierre">
@@ -175,7 +195,7 @@
 </table>
 @if($operacionesNota && !$notaEnCierre)
     <section class="nota-ejecucion">
-        <h2>Notas de ejecución</h2>
+        <h2>{{ $porPartidas ? 'Notas adicionales' : 'Notas de ejecución' }}</h2>
         {!! \App\Support\PresentacionPresupuesto::htmlNotaEjecucion($operacionesNota) !!}
     </section>
 @endif
@@ -190,8 +210,8 @@
             <tbody>
             @foreach(array_slice($notas, 0, $mitad) as $indice => $nota)
                 <tr>
-                    <td>{{ $indice + 1 }}. {{ $nota }}</td>
-                    <td>@isset($notas[$indice + $mitad]){{ $indice + $mitad + 1 }}. {{ $notas[$indice + $mitad] }}@endisset</td>
+                    <td>{{ $indice + 1 }}. {!! nl2br(e($nota)) !!}</td>
+                    <td>@isset($notas[$indice + $mitad]){{ $indice + $mitad + 1 }}. {!! nl2br(e($notas[$indice + $mitad])) !!}@endisset</td>
                 </tr>
             @endforeach
             </tbody>

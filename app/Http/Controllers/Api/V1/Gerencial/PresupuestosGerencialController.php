@@ -97,22 +97,29 @@ class PresupuestosGerencialController extends Controller
         $urlPdf = $version
             ? route('api.gerencial.presupuestos.versiones.pdf', [$presupuesto, $version->id], false)
             : route('api.gerencial.presupuestos.pdf', [$presupuesto, 'borrador' => 1], false);
-        $filas = collect($presentacion['filas']);
-        if ($version) {
-            $filas = PresentacionPresupuesto::numerar($filas);
+        $partidas = null;
+        if (isset($presentacion['partidas'])) {
+            $partidas = collect($presentacion['partidas'])->map(fn (array $partida) => [
+                'clave' => $partida['clave'],
+                'nombre' => $partida['nombre'],
+                'subtotal' => $this->importe($partida['subtotal']),
+                'conceptos' => array_map(
+                    fn (array $fila) => $this->concepto($fila + ['partida' => $partida['nombre']]),
+                    $partida['subpartidas'],
+                ),
+            ])->all();
+            $conceptos = collect($partidas)->pluck('conceptos')->collapse()->values();
+        } else {
+            $filas = collect($presentacion['filas']);
+            if ($version) {
+                $filas = PresentacionPresupuesto::numerar($filas);
+            }
+            $conceptos = $filas->map(fn (array $fila) => $this->concepto($fila))->values();
         }
 
         return response()->json(['ok' => true, 'data' => $this->cabecera($presupuesto, $version) + [
-            'conceptos' => $filas->map(fn (array $fila) => [
-                'numero' => $fila['numero'] ?? null,
-                'numero_encabezado' => $fila['numero_encabezado'] ?? null,
-                'partida' => $fila['partida'],
-                'concepto' => $fila['concepto'],
-                'unidad' => $fila['unidad'],
-                'cantidad' => $this->importe($fila['cantidad']),
-                'precio_unitario' => $this->importe($fila['precio_unitario']),
-                'importe' => $this->importe($fila['importe']),
-            ])->values(),
+            'conceptos' => $conceptos,
+            'partidas' => $partidas,
             'descripcion_perforacion' => $presentacion['descripcion_perforacion'] ?? null,
             'subtotal' => $this->importe($presentacion['subtotal'] ?? null),
             'tasa_iva' => $this->importe($presentacion['tasa_iva'] ?? null),
@@ -121,6 +128,20 @@ class PresupuestosGerencialController extends Controller
             'pdf_disponible' => $pdfDisponible,
             'pdf_url' => $pdfDisponible ? $urlPdf : null,
         ]]);
+    }
+
+    private function concepto(array $fila): array
+    {
+        return [
+            'numero' => $fila['numero'] ?? null,
+            'numero_encabezado' => $fila['numero_encabezado'] ?? null,
+            'partida' => $fila['partida'],
+            'concepto' => $fila['concepto'],
+            'unidad' => $fila['unidad'],
+            'cantidad' => $this->importe($fila['cantidad']),
+            'precio_unitario' => $this->importe($fila['precio_unitario']),
+            'importe' => $this->importe($fila['importe']),
+        ];
     }
 
     private function presentacion(Presupuesto $presupuesto, ?PresupuestoVersion $version): array
@@ -142,7 +163,7 @@ class PresupuestosGerencialController extends Controller
 
     private function puedeExportar(Presupuesto $presupuesto, ?PresupuestoVersion $version, array $presentacion): bool
     {
-        return ($version !== null || ! $presupuesto->esImportado()) && ! empty($presentacion['filas']);
+        return ($version !== null || ! $presupuesto->esImportado()) && PresentacionPresupuesto::tieneConceptos($presentacion);
     }
 
     private function exportar(Presupuesto $presupuesto, ?PresupuestoVersion $version)

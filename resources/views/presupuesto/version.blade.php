@@ -7,7 +7,8 @@
     $cabecera = $datos['presupuesto'];
     $moneda = fn ($valor) => $valor === null ? '—' : '$' . number_format($valor, 2);
     $presentacion = $datos['presentacion'] ?? null;
-    $costos = collect($datos['apupi']['filas'])->where('cantidad', '>', 0);
+    $porPartidas = isset($presentacion['partidas']);
+    $costos = collect($datos['apupi']['filas'] ?? [])->where('cantidad', '>', 0);
 @endphp
 <div class="space-y-5">
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -16,17 +17,22 @@
             @if($presupuesto->estaAprobado())
                 <a href="{{ route('obras.edit', $presupuesto->obra_generada_id) }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-[#0B265A]">Ver obra</a>
             @else
-                <a href="{{ route('presupuesto.show', [$presupuesto, 'tab' => 'apupi', 'borrador' => 1]) }}"
-                   class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-[#0B265A] hover:bg-slate-50">Editar en APUPI</a>
+                <a href="{{ route('presupuesto.show', $porPartidas ? [$presupuesto] : [$presupuesto, 'tab' => 'apupi', 'borrador' => 1]) }}"
+                   class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-[#0B265A] hover:bg-slate-50">{{ $porPartidas ? 'Editar borrador' : 'Editar en APUPI' }}</a>
                 @can('presupuestos.approve.access')
                     <a href="{{ route('presupuesto.versiones.aprobar.confirmar', [$presupuesto, $version]) }}"
                        class="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white">Aprobar y crear obra</a>
                 @endcan
             @endif
-            <a href="{{ route('presupuesto.versiones.pdf', [$presupuesto, $version]) }}" target="_blank" rel="noopener"
-               class="rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">Exportar PDF</a>
+            @if(!$porPartidas || \App\Support\PresentacionPresupuesto::tieneConceptos($presentacion))
+                <a href="{{ route('presupuesto.versiones.pdf', [$presupuesto, $version]) }}" target="_blank" rel="noopener"
+                   class="rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">Exportar PDF</a>
+            @endif
         </div>
     </div>
+    @if(session('errorPdfPresupuesto'))
+        <p role="alert" class="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">{{ session('errorPdfPresupuesto') }}</p>
+    @endif
     <header class="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6">
         <div>
             <p class="text-sm font-medium text-slate-600">{{ (int) $presupuesto->version_aprobada_id === $version->id ? 'Versión aprobada' : 'Versión guardada' }}</p>
@@ -122,9 +128,36 @@
         </details>
     @endif
     <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white" aria-labelledby="venta-version">
-        <h2 id="venta-version" class="p-5 text-lg font-semibold text-slate-800">Propuesta 1</h2>
-        @include('presupuesto.partials.propuesta-version')
+        <h2 id="venta-version" class="p-5 text-lg font-semibold text-slate-800">{{ $porPartidas ? 'Partidas y subpartidas' : 'Propuesta 1' }}</h2>
+        @if($porPartidas)
+            @include('presupuesto.partials.partidas-version', ['partidas' => $presentacion['partidas']])
+            @if(!empty($presentacion['nota_ejecucion']) || !empty($presentacion['notas']))
+                <div class="space-y-5 border-t border-slate-200 p-5 text-sm text-slate-800">
+                    @if(!empty($presentacion['nota_ejecucion']))
+                        <section>
+                            <h3 class="mb-2 font-semibold text-[#0B265A]">Notas adicionales</h3>
+                            <div class="[&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6">
+                                {!! \App\Support\PresentacionPresupuesto::htmlNotaEjecucion($presentacion['nota_ejecucion']) !!}
+                            </div>
+                        </section>
+                    @endif
+                    @if(!empty($presentacion['notas']))
+                        <section>
+                            <h3 class="mb-2 font-semibold text-[#0B265A]">Notas importantes</h3>
+                            <ol class="list-decimal space-y-1 pl-6">
+                                @foreach($presentacion['notas'] as $nota)
+                                    <li class="whitespace-pre-line">{{ $nota }}</li>
+                                @endforeach
+                            </ol>
+                        </section>
+                    @endif
+                </div>
+            @endif
+        @else
+            @include('presupuesto.partials.propuesta-version')
+        @endif
     </section>
+    @unless($porPartidas)
     <details class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <summary class="cursor-pointer p-5 font-semibold text-slate-800">Pilas / VOL</summary>
         <div class="overflow-x-auto">
@@ -170,5 +203,6 @@
             </table>
         </div>
     </details>
+    @endunless
 </div>
 @endsection

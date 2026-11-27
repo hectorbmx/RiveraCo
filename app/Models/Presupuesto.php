@@ -314,6 +314,18 @@ class Presupuesto extends Model
         return $this->cliente?->nombre_comercial ?: $this->nombre_cliente;
     }
 
+    public function partidas(): HasMany
+    {
+        return $this->hasMany(PresupuestoPartida::class)->orderBy('orden')->orderBy('id');
+    }
+
+    public function usaEditorPorPartidas(): bool
+    {
+        return $this->origen === self::ORIGEN_SIRICO
+            && in_array($this->tipo, ['MUROS', 'ANCLAS'], true)
+            && ($this->presentacion_comercial['editor'] ?? null) === 'partidas';
+    }
+
     public function detalles()
         {
             return $this->hasMany(PresupuestoDetalle::class);

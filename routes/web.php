@@ -421,6 +421,10 @@ Route::middleware('auth','verified')->group(function () {
         Route::post('presupuestos', [App\Http\Controllers\PresupuestoController::class, 'store'])->name('presupuesto.store');
         Route::post('presupuestos/{presupuesto}/duplicar', [App\Http\Controllers\PresupuestoController::class, 'duplicar'])->name('presupuesto.duplicar');
         Route::patch('presupuestos/{presupuesto}', [App\Http\Controllers\PresupuestoController::class, 'update'])->name('presupuesto.update');
+        Route::patch('presupuestos/{presupuesto}/partidas', [App\Http\Controllers\PresupuestoPartidasController::class, 'update'])
+            ->name('presupuesto.partidas.update');
+        Route::post('presupuestos/{presupuesto}/partidas/importacion', [App\Http\Controllers\PresupuestoPartidasController::class, 'previsualizarImportacion'])
+            ->name('presupuesto.partidas.importacion');
         Route::patch('presupuestos/{presupuesto}/presentacion', [App\Http\Controllers\PresupuestoController::class, 'updatePresentacion'])->name('presupuesto.presentacion.update');
         Route::patch('presupuestos/{presupuesto}/presentacion/nota-ejecucion', [App\Http\Controllers\PresupuestoController::class, 'updateNotaEjecucion'])
             ->name('presupuesto.presentacion.nota-ejecucion.update');

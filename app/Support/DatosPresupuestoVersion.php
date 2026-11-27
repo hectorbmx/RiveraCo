@@ -22,6 +22,20 @@ class DatosPresupuestoVersion
         $presupuesto->indirectos_por_partida_apupi = $datos['presupuesto']['indirectos_por_partida_apupi'] ?? null;
         $presupuesto->ajustes_gastos_semanales = $datos['presupuesto']['ajustes_gastos_semanales'] ?? null;
 
+        if (isset($datos['presentacion']['partidas'])) {
+            $presupuesto->partidas()->delete();
+            foreach ($datos['presentacion']['partidas'] as $fila) {
+                $partida = $presupuesto->partidas()->create(Arr::only($fila, ['nombre', 'orden']));
+                $partida->subpartidas()->createMany(array_map(
+                    fn (array $renglon) => Arr::only($renglon, ['concepto', 'unidad', 'cantidad', 'precio_unitario', 'orden']),
+                    $fila['subpartidas'],
+                ));
+            }
+            $presupuesto->unsetRelation('partidas');
+
+            return;
+        }
+
         foreach ([
             'detalles' => $datos['importacion']['detalles'],
             'pilas' => $datos['importacion']['pilas'],
@@ -31,6 +45,19 @@ class DatosPresupuestoVersion
             $presupuesto->{$relacion}()->delete();
             $presupuesto->{$relacion}()->createMany($filas);
         }
+    }
+
+    public static function capturarPorPartidas(Presupuesto $presupuesto, array $presentacion): array
+    {
+        return [
+            'estructura' => 4,
+            'presupuesto' => $presupuesto->only([
+                'codigo_proyecto', 'origen', 'nombre_cliente', 'nombre_obra', 'descripcion',
+                'equipo_propuesto', 'presentacion_comercial',
+            ]) + ['equipo' => Presupuesto::EQUIPOS_PROPUESTOS[$presupuesto->equipo_propuesto] ?? null],
+            'cliente' => $presupuesto->cliente?->only(['id', 'nombre_comercial', 'razon_social', 'rfc']) ?? [],
+            'presentacion' => $presentacion,
+        ];
     }
 
     public static function capturar(Presupuesto $presupuesto, array $vol, array $duracion, Collection $costos, array $resumen, Collection $gastos): array

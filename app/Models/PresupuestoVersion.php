@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PresentacionPresupuesto;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -77,6 +78,6 @@ class PresupuestoVersion extends Model
 
         return $presentacion === null
             ? (float) $this->total_venta > 0
-            : !empty($presentacion['filas']) && ($presentacion['subtotal'] ?? 0) > 0;
+            : PresentacionPresupuesto::tieneConceptos($presentacion) && ($presentacion['subtotal'] ?? 0) > 0;
     }
 }

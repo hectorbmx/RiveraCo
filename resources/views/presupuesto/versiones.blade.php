@@ -33,7 +33,7 @@
                         <td class="whitespace-nowrap px-4 py-3">{{ $version->created_at->format('d/m/Y H:i') }}</td>
                         <td class="px-4 py-3">{{ $version->autor?->name ?? '—' }}</td>
                         <td class="px-4 py-3">{{ $version->motivo ?: '—' }}</td>
-                        <td class="whitespace-nowrap px-4 py-3 text-right font-semibold">${{ number_format($version->total_venta, 2) }}</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right font-semibold">${{ number_format($version->datos['presentacion']['total'] ?? $version->total_venta, 2) }}</td>
                         <td class="px-4 py-3">
                             <a href="{{ route('presupuesto.versiones.show', [$presupuesto, $version]) }}#seguimiento" class="font-semibold text-[#0B265A] hover:underline">
                                 {{ $version->ultimoEvento?->etiqueta() ?? 'Registrar movimiento' }}

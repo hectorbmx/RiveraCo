@@ -11,6 +11,7 @@ use App\Models\ObraReposicionGastoDetalle;
 use App\Models\ObraSolicitudGastoDetalle;
 use App\Models\OrdenCompra;
 use App\Models\Presupuesto;
+use App\Services\Presupuestos\CalculoPresupuestoPorPartidas;
 use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -25,6 +26,7 @@ use App\Services\Presupuestos\PdfPresupuesto;
 use App\Support\DatosPresupuestoVersion;
 use App\Support\FoliosPresupuesto;
 use App\Support\ImagenesTipoPresupuesto;
+use App\Support\Inventario\UnidadMedidaCatalogo;
 use App\Support\PlantillaApupi;
 use App\Support\PresentacionPresupuesto;
 use App\Support\PrevioPresupuesto;
@@ -44,6 +46,7 @@ class PresupuestoController extends Controller
         private ImagenesTipoPresupuesto $imagenes,
         private ConsultaPresupuesto $consulta,
         private PdfPresupuesto $pdf,
+        private CalculoPresupuestoPorPartidas $calculoPorPartidas,
     ) {
     }
 
@@ -138,6 +141,9 @@ class PresupuestoController extends Controller
         $presupuesto = DB::transaction(function () use ($request) {
             $presupuesto = new Presupuesto(['origen' => Presupuesto::ORIGEN_SIRICO, 'estatus' => 'borrador']);
             $this->guardarDatos($request, $presupuesto);
+            if (in_array($presupuesto->tipo, ['MUROS', 'ANCLAS'], true)) {
+                $presupuesto->forceFill(['presentacion_comercial' => ['editor' => 'partidas']])->save();
+            }
 
             return $presupuesto;
         }, 3);
@@ -244,32 +250,15 @@ class PresupuestoController extends Controller
     {
         // Los saltos de línea y los espacios entre fragmentos forman parte del Delta de Quill.
         $entrada = $request->validate(['nota_ejecucion' => ['required', 'string', 'max:200000', 'json']]);
-        $datos = validator(['nota_ejecucion' => json_decode($entrada['nota_ejecucion'], true)], [
-            'nota_ejecucion' => ['present', 'array', 'max:1500'],
-            'nota_ejecucion.*' => ['required', 'array:insert,attributes'],
-            'nota_ejecucion.*.insert' => ['present', 'string', 'max:10000'],
-            'nota_ejecucion.*.attributes' => ['sometimes', 'array:bold,italic,list,color'],
-            'nota_ejecucion.*.attributes.bold' => ['sometimes', 'boolean'],
-            'nota_ejecucion.*.attributes.italic' => ['sometimes', 'boolean'],
-            'nota_ejecucion.*.attributes.list' => ['sometimes', 'in:ordered,bullet'],
-            'nota_ejecucion.*.attributes.color' => ['sometimes', 'string', 'regex:/\A#[0-9a-f]{6}\z/i'],
-        ], [], ['nota_ejecucion' => 'notas de ejecución'])->validate();
+        $nota = PresentacionPresupuesto::validarNotaEjecucion($entrada['nota_ejecucion']);
 
-        $nota = $datos['nota_ejecucion'];
-        $texto = implode('', array_column($nota, 'insert'));
-        if (!array_is_list($nota) || mb_strlen($texto) > 10000) {
-            throw ValidationException::withMessages([
-                'nota_ejecucion' => 'Las notas de ejecución admiten hasta 10,000 caracteres.',
-            ]);
-        }
-
-        DB::transaction(function () use ($presupuesto, $nota, $texto) {
+        DB::transaction(function () use ($presupuesto, $nota) {
             $actual = $this->bloquearBorrador($presupuesto);
             $presentacion = $actual->presentacion_comercial ?? [];
             if (!isset($presentacion['nota_ejecucion'])) {
                 $presentacion['anticipo_y_plazo_en_notas'] = true;
             }
-            $presentacion['nota_ejecucion'] = trim($texto) === '' ? [] : $nota;
+            $presentacion['nota_ejecucion'] = $nota;
             $actual->presentacion_comercial = $presentacion;
             $actual->save();
         }, 3);
@@ -674,6 +663,28 @@ class PresupuestoController extends Controller
         if ($presupuesto->estaAprobado()) {
             return redirect()->route('presupuesto.versiones.show', [$presupuesto, $presupuesto->version_aprobada_id]);
         }
+        if ($presupuesto->usaEditorPorPartidas()) {
+            $estadoEditor = $this->calculoPorPartidas->estadoEditor($presupuesto);
+            $unidades = UnidadMedidaCatalogo::opciones() + [
+                'FLETE' => 'Flete',
+                'HRS' => 'Horas',
+                'M' => 'Metro',
+                'M3/KM' => 'Metro cúbico por kilómetro',
+                'TON' => 'Tonelada',
+            ];
+            $unidadesGuardadas = collect($estadoEditor['partidas'])->pluck('subpartidas')->collapse()
+                ->pluck('unidad')->unique()->diff(array_keys($unidades));
+
+            return view('presupuesto.editor-partidas', [
+                'presupuesto' => $presupuesto,
+                'estadoEditor' => $estadoEditor,
+                'unidades' => $unidades,
+                'unidadesGuardadas' => $unidadesGuardadas,
+                'clienteSeleccionado' => $this->clienteSeleccionado($request, $presupuesto),
+                'imagenesTipoPresupuesto' => $this->imagenes->rutas(),
+                'ultimaVersion' => $presupuesto->versiones()->orderByDesc('revision')->first(['id', 'revision']),
+            ]);
+        }
         $volumetria = $presupuesto->calcularVolumetria();
         $duracionApupi = $this->consulta->duracionApupiDesdeVol($presupuesto, $volumetria);
         $editarVol = $volumetria['filas']->firstWhere('pila.id', $request->integer('editar_pila'))['pila'] ?? null;
@@ -698,9 +709,12 @@ class PresupuestoController extends Controller
     public function storeVersion(Request $request, Presupuesto $presupuesto)
     {
         abort_if($presupuesto->estaAprobado(), 409, 'El presupuesto aprobado está bloqueado.');
-        $datos = $request->validateWithBag('versionPresupuesto', ['revision' => ['sometimes', 'required', 'integer', 'min:0']]);
+        $datos = $request->validateWithBag('versionPresupuesto', [
+            'revision' => ['sometimes', 'required', 'integer', 'min:0'],
+            'revision_partidas' => [Rule::requiredIf($presupuesto->usaEditorPorPartidas()), 'nullable', 'string', 'size:64'],
+        ]);
         $revision = (int) ($datos['revision'] ?? 0);
-        [$version, $creada] = DB::transaction(function () use ($request, $presupuesto, $revision): array {
+        [$version, $creada] = DB::transaction(function () use ($request, $presupuesto, $revision, $datos): array {
             if ($revision === 0 && $presupuesto->consecutivo_cliente === null) {
                 try {
                     (clone $presupuesto)->asignarConsecutivoCliente();
@@ -724,18 +738,37 @@ class PresupuestoController extends Controller
             }
 
             $origenBorrador = $actual->version_origen_borrador_id;
-            $actual->load(['cliente', 'detalles', 'pilas', 'resumenes']);
-            $vol = $actual->calcularVolumetria();
-            $duracion = $this->consulta->duracionApupiDesdeVol($actual, $vol);
-            [$costos, $resumen] = $this->consulta->calcularApupi($actual, $vol, $duracion);
+            if ($actual->usaEditorPorPartidas()) {
+                $estado = $this->calculoPorPartidas->estadoEditor($actual);
+                if ($estado['revision'] !== ($datos['revision_partidas'] ?? null)) {
+                    throw ValidationException::withMessages([
+                        'revision_partidas' => 'Las partidas o las notas cambiaron. Recarga el presupuesto antes de guardar la versión.',
+                    ])->errorBag('versionPresupuesto');
+                }
+                $presentacion = $this->calculoPorPartidas->presentacion($actual);
+                $totalVenta = $presentacion['subtotal'];
+                if (\Brick\Math\BigDecimal::of($totalVenta)->isGreaterThan('9999999999999.99')) {
+                    throw ValidationException::withMessages([
+                        'revision_partidas' => 'El subtotal supera el límite permitido para una versión.',
+                    ])->errorBag('versionPresupuesto');
+                }
+                $captura = DatosPresupuestoVersion::capturarPorPartidas($actual, $presentacion);
+            } else {
+                $actual->load(['cliente', 'detalles', 'pilas', 'resumenes']);
+                $vol = $actual->calcularVolumetria();
+                $duracion = $this->consulta->duracionApupiDesdeVol($actual, $vol);
+                [$costos, $resumen] = $this->consulta->calcularApupi($actual, $vol, $duracion);
+                $captura = DatosPresupuestoVersion::capturar($actual, $vol, $duracion, $costos, $resumen, $this->gastosBase($actual));
+                $totalVenta = $resumen['propuesta']['total'];
+            }
             $autor = $request->user()->getKey();
             $version = $actual->versiones()->create([
                 'revision' => $revision,
                 'version_origen_id' => $origenBorrador ?? $ultima?->id,
                 'motivo' => $actual->motivo_borrador_revision,
                 'creado_por' => $autor,
-                'datos' => DatosPresupuestoVersion::capturar($actual, $vol, $duracion, $costos, $resumen, $this->gastosBase($actual)),
-                'total_venta' => $resumen['propuesta']['total'],
+                'datos' => $captura,
+                'total_venta' => $totalVenta,
             ]);
             $version->eventos()->create(['tipo' => PresupuestoEvento::GUARDADO, 'registrado_por' => $autor]);
             if ($origenBorrador !== null) {
@@ -749,14 +782,19 @@ class PresupuestoController extends Controller
             ? "Versión {$version->folio()} guardada. Puedes seguir editando el borrador."
             : 'Ese número de versión ya estaba guardado. Puedes guardar el borrador actual como la siguiente versión.';
 
-        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'apupi', 'borrador' => 1])
+        return redirect()->route('presupuesto.show', $presupuesto->usaEditorPorPartidas()
+            ? [$presupuesto] : [$presupuesto, 'tab' => 'apupi', 'borrador' => 1])
             ->with('estadoPresupuesto', $mensaje);
     }
 
     public function historialVersiones(Presupuesto $presupuesto)
     {
+        $columnas = ['id', 'presupuesto_id', 'revision', 'creado_por', 'motivo', 'total_venta', 'created_at'];
+        if ($presupuesto->usaEditorPorPartidas()) {
+            $columnas[] = 'datos';
+        }
         $versiones = $presupuesto->versiones()->with(['autor:id,name', 'ultimoEvento'])->orderByDesc('revision')
-            ->get(['id', 'presupuesto_id', 'revision', 'creado_por', 'motivo', 'total_venta', 'created_at']);
+            ->get($columnas);
         $versiones->each(fn (PresupuestoVersion $version) => $version->setRelation('presupuesto', $presupuesto));
 
         return view('presupuesto.versiones', compact('presupuesto', 'versiones'));
@@ -789,7 +827,8 @@ class PresupuestoController extends Controller
             return true;
         }, 3);
 
-        return redirect()->route('presupuesto.show', [$presupuesto, 'tab' => 'pilas', 'borrador' => 1])
+        return redirect()->route('presupuesto.show', $presupuesto->usaEditorPorPartidas()
+            ? [$presupuesto] : [$presupuesto, 'tab' => 'pilas', 'borrador' => 1])
             ->with('estadoPresupuesto', $creado ? 'Borrador de revisión creado.' : 'Ya hay un borrador de revisión en curso.');
     }
 
@@ -1128,8 +1167,13 @@ class PresupuestoController extends Controller
     public function exportVersionPdf(Presupuesto $presupuesto, int $version)
     {
         $version = $presupuesto->versiones()->findOrFail($version);
+        $presentacion = $this->consulta->presentacionVersion($version);
+        if (isset($presentacion['partidas']) && ! PresentacionPresupuesto::tieneConceptos($presentacion)) {
+            return redirect()->route('presupuesto.versiones.show', [$presupuesto, $version])
+                ->with('errorPdfPresupuesto', 'La versión no contiene subpartidas para exportar.');
+        }
 
-        return $this->pdf->deVersion($presupuesto, $version, $this->consulta->presentacionVersion($version));
+        return $this->pdf->deVersion($presupuesto, $version, $presentacion);
     }
 
     public function exportPdf(Request $request, $id)
@@ -1144,7 +1188,11 @@ class PresupuestoController extends Controller
             }
         }
         $presentacion = $this->consulta->borradorComercial($presupuesto)['presentacion'];
-        if (empty($presentacion['filas'])) {
+        if (! PresentacionPresupuesto::tieneConceptos($presentacion)) {
+            if ($presupuesto->usaEditorPorPartidas()) {
+                return redirect()->route('presupuesto.show', $presupuesto)
+                    ->with('errorPdfPresupuesto', 'Agrega y guarda una subpartida antes de exportar el PDF.');
+            }
             return redirect()->to(route('presupuesto.show', [$presupuesto, 'tab' => 'apupi', 'borrador' => 1]) . '#propuesta-apupi')
                 ->with('errorPdfPresupuesto', 'Para exportar el PDF, guarda una cantidad y un precio unitario de venta en Propuesta 1.');
         }

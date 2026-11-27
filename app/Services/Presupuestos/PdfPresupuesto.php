@@ -51,7 +51,9 @@ class PdfPresupuesto
 
     private function imprimir(array $cabecera, array $presentacion, string $archivo)
     {
-        $presentacion['filas'] = PresentacionPresupuesto::numerar(collect($presentacion['filas']))->all();
+        if (! isset($presentacion['partidas'])) {
+            $presentacion['filas'] = PresentacionPresupuesto::numerar(collect($presentacion['filas']))->all();
+        }
         $pdf = Pdf::loadView('presupuesto.pdf-comercial', compact('cabecera', 'presentacion'))->setPaper('letter');
         $pdf->render();
         $lienzo = $pdf->getDomPDF()->getCanvas();

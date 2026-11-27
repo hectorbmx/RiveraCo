@@ -5,9 +5,43 @@ namespace App\Support;
 use App\Models\Presupuesto;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class PresentacionPresupuesto
 {
+    public static function validarNotaEjecucion(string $json, string $etiqueta = 'notas de ejecución'): array
+    {
+        $datos = validator(['nota_ejecucion' => json_decode($json, true)], [
+            'nota_ejecucion' => ['present', 'array', 'max:1500'],
+            'nota_ejecucion.*' => ['required', 'array:insert,attributes'],
+            'nota_ejecucion.*.insert' => ['present', 'string', 'max:10000'],
+            'nota_ejecucion.*.attributes' => ['sometimes', 'array:bold,italic,list,color'],
+            'nota_ejecucion.*.attributes.bold' => ['sometimes', 'boolean'],
+            'nota_ejecucion.*.attributes.italic' => ['sometimes', 'boolean'],
+            'nota_ejecucion.*.attributes.list' => ['sometimes', 'in:ordered,bullet'],
+            'nota_ejecucion.*.attributes.color' => ['sometimes', 'string', 'regex:/\A#[0-9a-f]{6}\z/i'],
+        ], [], ['nota_ejecucion' => $etiqueta])->validate();
+
+        $nota = $datos['nota_ejecucion'];
+        $texto = implode('', array_column($nota, 'insert'));
+        if (! array_is_list($nota) || mb_strlen($texto) > 10000) {
+            throw ValidationException::withMessages([
+                'nota_ejecucion' => 'Las ' . $etiqueta . ' admiten hasta 10,000 caracteres.',
+            ]);
+        }
+
+        return trim($texto) === '' ? [] : $nota;
+    }
+
+    public static function tieneConceptos(array $presentacion): bool
+    {
+        if (isset($presentacion['partidas'])) {
+            return collect($presentacion['partidas'])->contains(fn (array $partida) => ! empty($partida['subpartidas']));
+        }
+
+        return ! empty($presentacion['filas']);
+    }
+
     public const ENCABEZADO_PERFORACION = 'encabezado-perforacion';
 
     private const CONCEPTOS = [

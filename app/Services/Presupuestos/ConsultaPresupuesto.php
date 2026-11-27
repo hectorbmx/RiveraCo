@@ -12,6 +12,10 @@ use Illuminate\Support\Collection;
 
 class ConsultaPresupuesto
 {
+    public function __construct(private CalculoPresupuestoPorPartidas $calculoPorPartidas)
+    {
+    }
+
     public function listado(string $buscar, ?string $tipo): Builder
     {
         return Presupuesto::query()
@@ -36,9 +40,10 @@ class ConsultaPresupuesto
     {
         $presupuestos->where('versiones_count', 1)->load('ultimaVersion');
         $presupuestos->filter(fn (Presupuesto $p) => $p->estaAprobado())->load('versionAprobada');
-        $presupuestos->reject(fn (Presupuesto $p) => $p->esImportado()
-            || $p->estaAprobado() || $this->versionComercialUnica($p))
-            ->load(['detalles', 'pilas', 'pilasVol', 'resumenes']);
+        $borradores = $presupuestos->reject(fn (Presupuesto $p) => $p->esImportado()
+            || $p->estaAprobado() || $this->versionComercialUnica($p));
+        $borradores->filter(fn (Presupuesto $p) => $p->usaEditorPorPartidas())->load('partidas.subpartidas');
+        $borradores->reject(fn (Presupuesto $p) => $p->usaEditorPorPartidas())->load(['detalles', 'pilas', 'pilasVol', 'resumenes']);
     }
 
     public function versionComercialUnica(Presupuesto $presupuesto): ?PresupuestoVersion
@@ -89,6 +94,10 @@ class ConsultaPresupuesto
 
     public function borradorComercial(Presupuesto $presupuesto): array
     {
+        if ($presupuesto->usaEditorPorPartidas()) {
+            return ['directo' => null, 'presentacion' => $this->calculoPorPartidas->presentacion($presupuesto)];
+        }
+
         $vol = $presupuesto->calcularVolumetria();
         $duracion = $this->duracionApupiDesdeVol($presupuesto, $vol);
         [$costos, $resumen] = $this->calcularApupi($presupuesto, $vol, $duracion);
