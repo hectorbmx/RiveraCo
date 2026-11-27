@@ -13,9 +13,17 @@
 <div class="p-6" x-data>
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 class="text-xl font-semibold">Presupuestos</h1>
-        <a href="{{ route('presupuesto.create') }}" aria-haspopup="dialog"
-           @unless($versionDuplicacion) @click.prevent="$refs.nuevoPresupuesto.showModal()" @endunless
-           class="rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">Nuevo presupuesto</a>
+        <div class="flex items-center gap-2">
+            @can('empresa.access')
+                <a href="{{ route('presupuesto.notas.edit') }}" aria-label="Notas base" title="Notas base"
+                   class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-3 py-2 text-xl text-[#0B265A] hover:bg-slate-50">
+                    <span aria-hidden="true">⚙</span>
+                </a>
+            @endcan
+            <a href="{{ route('presupuesto.create') }}" aria-haspopup="dialog"
+               @unless($versionDuplicacion) @click.prevent="$refs.nuevoPresupuesto.showModal()" @endunless
+               class="rounded-xl bg-[#0B265A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">Nuevo presupuesto</a>
+        </div>
     </div>
     <dialog x-ref="nuevoPresupuesto" aria-labelledby="titulo-nuevo-presupuesto"
             @if($versionDuplicacion)

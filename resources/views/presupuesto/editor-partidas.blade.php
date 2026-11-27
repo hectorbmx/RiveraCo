@@ -211,12 +211,10 @@
                         <div class="mt-3 flex flex-wrap gap-4 text-sm font-semibold text-[#0B265A]">
                             <button type="button" @click="notasEnEdicion.push('')" :disabled="notasEnEdicion.length >= 100"
                                     class="hover:underline disabled:opacity-60">+ Agregar nota</button>
-                            @if($estadoEditor['nota_fija'])
-                                <button type="button" class="hover:underline"
-                                        @click="if (window.confirm('¿Reemplazar las notas editables por las notas base de Pozos?')) notasEnEdicion = @js($estadoEditor['notas_base'])">
-                                    Cargar notas base de Pozos
-                                </button>
-                            @endif
+                            <button type="button" class="hover:underline"
+                                    @click="if (window.confirm('¿Reemplazar las notas editables por la plantilla vigente?')) notasEnEdicion = @js($notasBaseVigentes)">
+                                {{ $estadoEditor['nota_fija'] ? 'Cargar notas base de Pozos' : 'Cargar notas base actualizadas' }}
+                            </button>
                         </div>
                     </div>
                     <footer class="flex flex-wrap justify-end gap-2 border-t border-slate-200 px-5 py-4">

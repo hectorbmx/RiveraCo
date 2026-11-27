@@ -98,7 +98,7 @@ class PresentacionPresupuesto
                 $duracion['realista']['semanas'], (float) ($captura['anticipo'] ?? 50)
             ),
             'anticipo_y_plazo_en_notas' => $notaEjecucion === null || ($captura['anticipo_y_plazo_en_notas'] ?? false),
-            'notas' => $captura['notas'] ?? self::notas($equipoPesado, $filas),
+            'notas' => $captura['notas'] ?? self::notas(PlantillasNotasPresupuesto::delBorrador($presupuesto, 'PILAS'), $equipoPesado, $filas),
             'filas' => self::numerar($filas)->all(),
             'subtotal' => $subtotal,
             'tasa_iva' => $tasa,
@@ -244,7 +244,7 @@ class PresentacionPresupuesto
             ]);
     }
 
-    private static function notas(bool $equipoPesado, Collection $filas): array
+    private static function notas(array $plantilla, bool $equipoPesado, Collection $filas): array
     {
         $exclusiones = collect([
             'venta-209' => 'suministro de concreto', 'venta-210' => 'suministro de acero',
@@ -256,33 +256,18 @@ class PresentacionPresupuesto
         $diametro = $equipoPesado ? '1.60' : '1.00';
         $volumen = $equipoPesado ? '2.00' : '1.00';
 
-        return array_values(array_filter([
-            'Se requiere la mecánica de suelos y visita a la obra para validar el presupuesto.',
-            'Incluye EPP, seguro social y personal calificado.',
-            $exclusiones->isEmpty() ? null : 'Esta propuesta no incluye ' . $exclusiones->join(', ', ' ni ') . '.',
-            'Se cobrará la cantidad real medida en obra. Si cambia el volumen o la ejecución se divide en varios eventos, se revisarán los precios y traslados.',
-            'La perforación en roca o escombro queda fuera del alcance.',
-            'Cuando el armado sea por cuenta del cliente, deberá acercarlo al punto de perforación.',
-            'Equipo sujeto a disponibilidad. Confirmar antes del inicio de los trabajos.',
-            'Para autorizar, enviar la orden de compra y el presupuesto firmado.',
-            'Si el material perforado difiere del presupuestado, se ajustarán los precios unitarios.',
-            "El terreno y sus accesos deberán soportar aproximadamente {$peso} toneladas.",
-            'El cliente deberá informar la ubicación de las instalaciones subterráneas.',
-            'Los puntos de perforación deberán estar libres de obstáculos.',
-            'Mantener los cables eléctricos a un mínimo de 6 m de la torre.',
-            'El ingreso a la obra y la zona de perforación deberán ser accesibles.',
-            'Hora extra o equipo en espera por causas ajenas a Rivera Construcciones: $' . $horaExtra . '.00 por hora de perforadora y $1,600.00 por hora de grúa.',
-            'El cliente proporcionará trazo, niveles, agua, iluminación y corriente eléctrica según lo requiera la obra.',
-            'Marcar el centro de cada perforación e indicar los niveles de perforación, acero y colado.',
-            'Se requiere retroexcavadora para mover el material producto de la perforación a un primer punto.',
-            'Para preparar lodos bentoníticos, se requiere un cárcamo de al menos 20 m³.',
-            'Las actividades fuera del presupuesto requieren autorización previa del precio unitario.',
-            'Compartir el SIROC para el registro correspondiente.',
-            'Se requiere velador o seguridad privada para el resguardo de maquinaria y herramientas.',
-            "Las pilas de diámetro mayor a {$diametro} m se perforan con rima. Considerar aproximadamente {$volumen} m³ de sobreperforación en el suministro de concreto.",
-            'En obras fuera de Guadalajara el personal toma salida de obra al final de cada tercera semana.',
-            'Vigencia del presupuesto: 30 días a partir de la fecha de elaboración.',
-        ]));
+        $automaticas = [
+            'exclusiones' => $exclusiones->isEmpty() ? null : 'Esta propuesta no incluye ' . $exclusiones->join(', ', ' ni ') . '.',
+            'peso_acceso' => "El terreno y sus accesos deberán soportar aproximadamente {$peso} toneladas.",
+            'hora_extra' => 'Hora extra o equipo en espera por causas ajenas a Rivera Construcciones: $' . $horaExtra . '.00 por hora de perforadora y $1,600.00 por hora de grúa.',
+            'rima' => "Las pilas de diámetro mayor a {$diametro} m se perforan con rima. Considerar aproximadamente {$volumen} m³ de sobreperforación en el suministro de concreto.",
+        ];
+
+        return collect($plantilla)
+            ->map(fn (array $nota) => $nota['texto'] ?? $automaticas[$nota['regla']] ?? null)
+            ->filter(fn ($nota) => $nota !== null)
+            ->values()
+            ->all();
     }
 
     public static function notaPorRenglon(string $texto): array

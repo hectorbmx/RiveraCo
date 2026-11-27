@@ -29,6 +29,7 @@ use App\Support\ImagenesTipoPresupuesto;
 use App\Support\Inventario\UnidadMedidaCatalogo;
 use App\Support\PlantillaApupi;
 use App\Support\PresentacionPresupuesto;
+use App\Support\PlantillasNotasPresupuesto;
 use App\Support\PrevioPresupuesto;
 use App\Support\PropuestaApupi;
 use App\Support\RelacionGastosPresupuesto;
@@ -141,9 +142,13 @@ class PresupuestoController extends Controller
         $presupuesto = DB::transaction(function () use ($request) {
             $presupuesto = new Presupuesto(['origen' => Presupuesto::ORIGEN_SIRICO, 'estatus' => 'borrador']);
             $this->guardarDatos($request, $presupuesto);
+            $presentacion = [
+                'notas_plantilla' => PlantillasNotasPresupuesto::vigente(PlantillasNotasPresupuesto::grupo($presupuesto->tipo)),
+            ];
             if (in_array($presupuesto->tipo, Presupuesto::TIPOS_EDITOR_POR_PARTIDAS, true)) {
-                $presupuesto->forceFill(['presentacion_comercial' => ['editor' => 'partidas']])->save();
+                $presentacion['editor'] = 'partidas';
             }
+            $presupuesto->forceFill(['presentacion_comercial' => $presentacion])->save();
 
             return $presupuesto;
         }, 3);
@@ -264,6 +269,20 @@ class PresupuestoController extends Controller
         }, 3);
 
         return response()->json(['ok' => true]);
+    }
+
+    public function recargarNotasPilas(Request $request, Presupuesto $presupuesto)
+    {
+        DB::transaction(function () use ($presupuesto) {
+            $actual = $this->bloquearBorrador($presupuesto);
+            abort_unless($actual->tipo === 'PILAS', 404);
+            $presentacion = $actual->presentacion_comercial ?? [];
+            unset($presentacion['notas']);
+            $presentacion['notas_plantilla'] = PlantillasNotasPresupuesto::vigente('PILAS');
+            $actual->forceFill(['presentacion_comercial' => $presentacion])->save();
+        }, 3);
+
+        return $this->volverAlDetalle($request, $presupuesto, 'Se cargaron las notas base actualizadas.');
     }
 
     public function updateConceptoPresentacion(Request $request, Presupuesto $presupuesto, string $renglon)
@@ -678,6 +697,9 @@ class PresupuestoController extends Controller
             return view('presupuesto.editor-partidas', [
                 'presupuesto' => $presupuesto,
                 'estadoEditor' => $estadoEditor,
+                'notasBaseVigentes' => array_column(
+                    PlantillasNotasPresupuesto::vigente(PlantillasNotasPresupuesto::grupo($presupuesto->tipo)), 'texto'
+                ),
                 'unidades' => $unidades,
                 'unidadesGuardadas' => $unidadesGuardadas,
                 'clienteSeleccionado' => $this->clienteSeleccionado($request, $presupuesto),

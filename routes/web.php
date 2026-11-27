@@ -417,6 +417,12 @@ Route::middleware('auth','verified')->group(function () {
     Route::prefix('presupuesto')->group(function(){
         Route::get('presupuestos', [App\Http\Controllers\PresupuestoController::class, 'index'])->name('presupuesto.index');
         Route::get('presupuestos/nuevo', [App\Http\Controllers\PresupuestoController::class, 'create'])->name('presupuesto.create');
+        Route::middleware('can:empresa.access')->group(function () {
+            Route::get('presupuestos/notas/{grupo?}', [App\Http\Controllers\PresupuestoNotasController::class, 'edit'])
+                ->name('presupuesto.notas.edit');
+            Route::put('presupuestos/notas/{grupo}', [App\Http\Controllers\PresupuestoNotasController::class, 'update'])
+                ->name('presupuesto.notas.update');
+        });
         Route::get('clientes/buscar', [App\Http\Controllers\PresupuestoController::class, 'buscarClientes'])->name('presupuesto.clientes.buscar');
         Route::post('presupuestos', [App\Http\Controllers\PresupuestoController::class, 'store'])->name('presupuesto.store');
         Route::post('presupuestos/{presupuesto}/duplicar', [App\Http\Controllers\PresupuestoController::class, 'duplicar'])->name('presupuesto.duplicar');
@@ -428,6 +434,8 @@ Route::middleware('auth','verified')->group(function () {
         Route::patch('presupuestos/{presupuesto}/presentacion', [App\Http\Controllers\PresupuestoController::class, 'updatePresentacion'])->name('presupuesto.presentacion.update');
         Route::patch('presupuestos/{presupuesto}/presentacion/nota-ejecucion', [App\Http\Controllers\PresupuestoController::class, 'updateNotaEjecucion'])
             ->name('presupuesto.presentacion.nota-ejecucion.update');
+        Route::post('presupuestos/{presupuesto}/presentacion/notas-base', [App\Http\Controllers\PresupuestoController::class, 'recargarNotasPilas'])
+            ->name('presupuesto.presentacion.notas-base');
         Route::patch('presupuestos/{presupuesto}/presentacion/conceptos/{renglon}', [App\Http\Controllers\PresupuestoController::class, 'updateConceptoPresentacion'])
             ->where('renglon', '[a-z0-9-]+')->name('presupuesto.presentacion.conceptos.update');
         Route::patch('presupuestos/{presupuesto}/previo', [App\Http\Controllers\PresupuestoController::class, 'updatePrevio'])->name('presupuesto.previo.update');

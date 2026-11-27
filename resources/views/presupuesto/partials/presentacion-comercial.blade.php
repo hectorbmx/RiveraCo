@@ -28,8 +28,14 @@
                 @endforeach
             </div>
             <label class="block text-sm font-medium">Notas importantes
-                <textarea name="notas" rows="4" maxlength="10000" placeholder="Una nota por renglón. Deja vacío para usar las notas del formato." class="mt-1 block w-full rounded-md border-slate-300 text-sm">{{ old('notas', implode("\n", $presupuesto->presentacion_comercial['notas'] ?? [])) }}</textarea>
+                <textarea name="notas" x-ref="notasPorPresupuesto" rows="4" maxlength="10000" placeholder="Una nota por renglón. Deja vacío para usar las notas base del borrador." class="mt-1 block w-full rounded-md border-slate-300 text-sm">{{ old('notas', implode("\n", $presupuesto->presentacion_comercial['notas'] ?? [])) }}</textarea>
             </label>
+            @if($presupuesto->tipo === 'PILAS' && !isset($presupuesto->presentacion_comercial['notas']))
+                <button type="button" class="text-sm font-semibold text-[#0B265A] hover:underline"
+                        @click="$refs.notasPorPresupuesto.value = @js(implode("\n", $presentacion['notas'])); $refs.notasPorPresupuesto.focus()">
+                    Copiar notas del borrador para editarlas
+                </button>
+            @endif
             <details class="text-sm">
                 <summary class="cursor-pointer font-semibold">Unidades impresas</summary>
                 <template x-for="([clave, fila]) in Object.entries(presentacion.filas)" :key="clave">
@@ -44,6 +50,14 @@
             </details>
             <button type="submit" class="rounded-lg bg-[#0B265A] px-4 py-2 text-sm font-semibold text-white">Guardar datos para impresión</button>
         </form>
+        @if($presupuesto->tipo === 'PILAS')
+            <form method="POST" action="{{ route('presupuesto.presentacion.notas-base', $presupuesto) }}" class="mt-3"
+                  @submit="if (!window.confirm('¿Reemplazar las notas importantes de este borrador por la plantilla vigente?')) $event.preventDefault()">
+                @csrf
+                <input type="hidden" name="tab" value="presupuesto">
+                <button type="submit" class="text-sm font-semibold text-[#0B265A] hover:underline">Cargar notas base actualizadas</button>
+            </form>
+        @endif
     </details>
     <p class="text-sm text-slate-600">Los cambios en Concepto se guardan al salir del campo.</p>
 </div>
