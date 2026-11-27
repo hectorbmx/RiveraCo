@@ -3470,6 +3470,16 @@
 @if($tab === 'pilas')
     <h2 class="text-lg font-semibold mb-4">Perforaciones de la obra</h2>
 
+    @if($puedeCargarPerforacionesPresupuesto)
+        <form method="POST" action="{{ route('obras.pilas.presupuesto', $obra) }}"
+              data-loading-message="Cargando perforaciones…" class="mb-4">
+            @csrf
+            <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-[#0B265A]">
+                Cargar perforaciones del presupuesto aprobado
+            </button>
+        </form>
+    @endif
+
     @if(session('success'))
         <div class="mb-4 p-3 bg-green-100 text-green-700 rounded-lg text-sm">
             {{ session('success') }}
@@ -3478,7 +3488,7 @@
 
     @if($errors->any())
         <div class="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
-            Hay errores en el formulario, revisa la información.
+            {{ $errors->first('perforaciones') ?: 'Hay errores en el formulario, revisa la información.' }}
         </div>
     @endif
 
@@ -3513,7 +3523,7 @@
                                 $faltan      = max($programadas - $ejecutadas, 0);
                             @endphp
                             <tr class="border-b hover:bg-slate-50">
-                                    <td class="py-2 px-3">
+                                    <td class="py-2 px-3" @if($pila->notas) title="{{ $pila->notas }}" @endif>
                                         {{ $pila->tipo ?? '—' }}
                                     </td>    
                                     <td class="py-2 px-3">

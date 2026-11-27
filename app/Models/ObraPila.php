@@ -13,7 +13,7 @@ class ObraPila extends Model
 
     protected $fillable = [
         'obra_id',
-        // 'numero_pila',
+        'numero_pila',
         'tipo',
         'diametro_proyecto',
         'profundidad_proyecto',

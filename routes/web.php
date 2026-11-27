@@ -1206,6 +1206,8 @@ Route::middleware('auth','verified')->group(function () {
 
     Route::post('obras/{obra}/pilas', [ObraPilaController::class, 'store'])
         ->name('obras.pilas.store');
+    Route::post('obras/{obra}/pilas/presupuesto', [ObraController::class, 'cargarPerforacionesPresupuesto'])
+        ->middleware('permission:presupuestos.approve.access')->name('obras.pilas.presupuesto');
 
     Route::patch('obras/{obra}/pilas/{pila}/baja', [ObraPilaController::class, 'baja'])
         ->name('obras.pilas.baja');

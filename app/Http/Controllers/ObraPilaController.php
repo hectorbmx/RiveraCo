@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Obra;
 use App\Models\ObraPila;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ObraPilaController extends Controller
 {
@@ -22,14 +23,13 @@ public function store(Request $request, Obra $obra)
         'notas'                 => ['nullable', 'string'],
     ]);
 
-    $data['obra_id'] = $obra->id;
-    $data['activo']  = true;
-
-    // ✅ asignar consecutivo por obra
-    $max = ObraPila::where('obra_id', $obra->id)->max('numero_pila');
-    $data['numero_pila'] = $max ? ($max + 1) : 1;
-
-    ObraPila::create($data);
+    DB::transaction(function () use ($obra, $data): void {
+        $actual = Obra::lockForUpdate()->findOrFail($obra->id);
+        $actual->pilas()->create($data + [
+            'activo' => true,
+            'numero_pila' => (int) $actual->pilas()->max('numero_pila') + 1,
+        ]);
+    }, 3);
 
     return redirect()
         ->route('obras.edit', ['obra' => $obra->id, 'tab' => 'pilas'])

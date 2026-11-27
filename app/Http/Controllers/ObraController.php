@@ -55,6 +55,7 @@ use App\Services\Maquinas\MaquinaService;
 use App\Services\Mobile\AppMobileContextService;
 use App\Services\Image\InterventionImageOptimizer;
 use App\Support\PlaneacionVersionObra;
+use App\Support\PerforacionesVersionObra;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
@@ -291,6 +292,7 @@ class ObraController extends Controller
                 'bentonita_total' => $usaBentonita ? ($totales['bentonita'] ?? null) : null,
             ]);
 
+            PerforacionesVersionObra::copiar($obra, $guardada);
             PlaneacionVersionObra::copiar($obra, $gastos, $planeada);
             $obra->presupuestos_vinculados()->attach($actual->id, [
                 'planeacion_version_id' => $planeada ? $guardada->id : null,
@@ -316,6 +318,15 @@ class ObraController extends Controller
         };
 
         return redirect()->route('obras.edit', $obra)->with('success', $mensaje);
+    }
+
+    public function cargarPerforacionesPresupuesto(Obra $obra)
+    {
+        $this->abortarSiObraFueraDeArea($obra);
+        $cantidad = PerforacionesVersionObra::cargarAprobadas($obra);
+
+        return redirect()->route('obras.edit', ['obra' => $obra, 'tab' => 'pilas'])
+            ->with('success', "Se cargaron {$cantidad} tipos de perforación del presupuesto aprobado.");
     }
 
 private function areaUsuarioActualId(): ?int
@@ -1258,6 +1269,7 @@ if ($tab === 'caja-chica') {
     $pilasAsignadasActivas       = collect();
     $pilasAsignadasHistoricas    = collect();
     $pilasCatalogo               = collect();
+    $puedeCargarPerforacionesPresupuesto = false;
 
         if ($tab === 'pilas' || $tab === 'comisiones') {
         // Pilas de esta obra
@@ -1272,6 +1284,8 @@ if ($tab === 'caja-chica') {
 
         $pilasAsignadasActivas    = $pilasObra->where('activo', true);
         $pilasAsignadasHistoricas = $pilasObra->where('activo', false);
+        $puedeCargarPerforacionesPresupuesto = $tab === 'pilas' && $pilasObra->isEmpty()
+            && $request->user()->can('presupuestos.approve.access') && PerforacionesVersionObra::versionAprobada($obra) !== null;
 
         // Catálogo de pilas (para el <select> de asignacion)
         $pilasCatalogo = CatalogoPila::where('activa', true)
@@ -1785,6 +1799,7 @@ return view('obras.edit', [
     'pilasAsignadasActivas'       => $pilasAsignadasActivas,
     'pilasAsignadasHistoricas'    => $pilasAsignadasHistoricas,
     'pilasCatalogo'               => $pilasCatalogo,
+    'puedeCargarPerforacionesPresupuesto' => $puedeCargarPerforacionesPresupuesto,
 
     'comisiones'                  => $comisiones,
     'comisionesAgrupadas'         => $comisionesAgrupadas,
